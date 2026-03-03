@@ -1,2 +1,7 @@
 [build]
   publish = "."
+
+[[redirects]]
+  from = "/guide"
+  to = "/guide.html"
+  status = 200
