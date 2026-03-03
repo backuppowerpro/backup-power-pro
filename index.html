@@ -41,12 +41,6 @@ img{max-width:100%;display:block}
 .btn svg{width:15px;height:15px;flex-shrink:0}
 .cta-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 
-/* Mobile bar */
-.mbar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:99;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid rgba(11,31,59,.07);box-shadow:0 -2px 16px rgba(0,0,0,.06);-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}
-.mbar::after{content:'';position:absolute;bottom:-100px;left:0;right:0;height:100px;background:inherit}
-.mbar .btn{width:100%;justify-content:center;font-size:14px;padding:12px 20px}
-.mbar-proof{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:4px}
-.mbar-proof span{font-size:10px;color:#7b7b8a;font-weight:500}
 
 /* ==================== HEADER ==================== */
 .hdr{position:sticky;top:0;z-index:90;padding:14px 0;background:rgba(255,255,255,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(11,31,59,.07)}
@@ -294,8 +288,6 @@ img{max-width:100%;display:block}
   .faq-side{position:static}
   .hdr-btn{display:none}
   
-  .mbar{display:block}
-  body{padding-bottom:90px}
   .sec{padding:60px 0}
 }
 @media(max-width:480px){
@@ -612,16 +604,6 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 
 <footer class="ftr"><div class="w">Backup Power Pro · A service by Key Electric · &copy; 2026 · Serving Pickens, Greenville &amp; Spartanburg, SC</div></footer>
 
-<div class="mbar" id="mbar">
-  <div class="mbar-inner" id="mbarInner">
-    <a href="#steps-section" class="btn btn-gold mbar-soft" id="mbarSoft">See How It Works</a>
-    <a href="https://network.backuppowerpro.com/public/appointment-scheduler/69a24fd5076c500a205ec116/schedule" class="btn btn-gold mbar-book" id="mbarBook" style="display:none">Schedule My Assessment <svg fill="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M4 0l16 12.279-6.951 1.17 4.325 8.817-3.596 1.734-4.35-8.879L4 20.592z"/></svg></a>
-    <div class="mbar-proof">
-      <svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:#ffba00"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      <span>4.9 · 100+ reviews · Licensed SC Electrician</span>
-    </div>
-  </div>
-</div>
 
 
 <script>
@@ -635,26 +617,6 @@ document.querySelectorAll('.bento-card,.stp,.rv,.fit,.fq').forEach(e=>{e.style.o
 // Video modal
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('vmod').classList.remove('on');document.getElementById('vframe').src=''}});
 
-// Sticky bar scroll behavior
-(function(){
-  var steps=document.getElementById('steps-section');
-  var soft=document.getElementById('mbarSoft');
-  var book=document.getElementById('mbarBook');
-  if(!steps||!soft||!book)return;
-  var switched=false;
-  window.addEventListener('scroll',function(){
-    var rect=steps.getBoundingClientRect();
-    if(rect.top<0&&!switched){
-      soft.style.display='none';
-      book.style.display='inline-flex';
-      switched=true;
-    } else if(rect.top>=0&&switched){
-      soft.style.display='inline-flex';
-      book.style.display='none';
-      switched=false;
-    }
-  });
-})();
 
 // Review carousel
 (function(){
