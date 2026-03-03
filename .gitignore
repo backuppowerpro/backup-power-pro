@@ -1,2 +1,12 @@
 .claude/
 .DS_Store
+*.PNG
+*.TIFF
+*.tiff
+*.jpg
+*.jpeg
+*.png
+eyJ*.jpeg
+Untitled_Artwork*
+IMG_*
+bpp-claude-code-context.md
