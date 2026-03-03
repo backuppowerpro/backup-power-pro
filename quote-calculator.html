@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BPP Quote">
+<title>BPP Quote Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  button { font-family: inherit; cursor: pointer; }
+
+  body {
+    --bg: #0c0c0f;
+    --bg-header: #0c0c0f;
+    --surface: rgba(255,255,255,0.035);
+    --border: rgba(255,255,255,0.07);
+    --border-subtle: rgba(255,255,255,0.04);
+    --text: #fff;
+    --text-muted: #888;
+    --text-dim: #666;
+    --text-faint: #555;
+    --text-xfaint: #444;
+    --profit-box-bg: rgba(0,0,0,0.25);
+    --template-bg: rgba(255,255,255,0.02);
+    --tell-bg: rgba(245,166,35,0.05);
+    --range-track: rgba(255,255,255,0.08);
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    min-height: 100vh;
+    overscroll-behavior: none;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  body.light {
+    --bg: #f4f4f6;
+    --bg-header: #ffffff;
+    --surface: rgba(0,0,0,0.04);
+    --border: rgba(0,0,0,0.09);
+    --border-subtle: rgba(0,0,0,0.06);
+    --text: #111;
+    --text-muted: #555;
+    --text-dim: #666;
+    --text-faint: #888;
+    --text-xfaint: #aaa;
+    --profit-box-bg: rgba(0,0,0,0.05);
+    --template-bg: rgba(0,0,0,0.03);
+    --tell-bg: rgba(245,166,35,0.07);
+    --range-track: rgba(0,0,0,0.1);
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%; height: 3px; border-radius: 2px;
+    background: var(--range-track);
+    outline: none; cursor: pointer; display: block;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #F5A623; cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(245,166,35,0.18);
+  }
+
+  .header {
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg-header);
+  }
+  .header-icon {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: linear-gradient(135deg, #F5A623, #f97316);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .header-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); }
+  .header-sub { color: var(--text-faint); font-size: 10px; margin-top: 1px; }
+  .header-actions { margin-left: auto; display: flex; align-items: center; gap: 7px; }
+  .reset-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 7px; padding: 6px 12px;
+    color: var(--text-muted); font-size: 11px; font-weight: 600;
+  }
+  .mode-toggle {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 7px; padding: 6px 9px;
+    font-size: 15px; line-height: 1;
+  }
+
+  .content { max-width: 420px; margin: 0 auto; padding: 16px 16px 60px; }
+
+  .quote-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px; margin-bottom: 20px;
+  }
+  .price-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .price-label { color: var(--text-muted); font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .price-big { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(30px, 9vw, 42px); line-height: 1; color: var(--text); }
+  .price-note { color: var(--text-faint); font-size: 10px; margin-top: 4px; }
+  .profit-box {
+    background: var(--profit-box-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 12px; text-align: right; flex-shrink: 0;
+  }
+  .profit-label { color: var(--text-muted); font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+  .profit-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; line-height: 1; }
+  .profit-pct { color: var(--text-xfaint); font-size: 9.5px; margin-top: 3px; }
+
+  .pips { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 12px; }
+  .pip { background: var(--surface); border-radius: 8px; padding: 8px 10px; border: 1px solid var(--border); }
+  .pip.accent { border-color: rgba(245,166,35,0.28); }
+  .pip-label { color: var(--text-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .pip-val { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-dim); }
+  .pip.accent .pip-val { color: #F5A623; }
+
+  .breakdown-toggle {
+    background: none; border: none; color: var(--text-dim); font-size: 10px;
+    margin-top: 11px; padding: 0; display: flex; align-items: center; gap: 4px;
+  }
+  .breakdown-arrow { font-size: 7px; display: inline-block; transition: transform 0.15s; }
+  .breakdown-body { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
+  .breakdown-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-subtle); }
+  .breakdown-key { color: var(--text-faint); font-size: 11px; }
+  .breakdown-val { color: var(--text-dim); font-size: 11px; font-weight: 600; margin-left: 8px; flex-shrink: 0; }
+  .breakdown-total { display: flex; justify-content: space-between; padding-top: 7px; margin-top: 2px; }
+  .breakdown-total-key { color: var(--text-muted); font-size: 11px; font-weight: 600; }
+  .breakdown-total-val { color: var(--text); font-size: 11px; font-weight: 700; }
+
+  .section { margin-bottom: 20px; }
+  .section-title { color: var(--text-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 9px; }
+
+  .amp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .amp-btn { padding: 13px 0; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); transition: all 0.12s; }
+  .amp-btn.active { border-color: rgba(245,166,35,0.28); background: rgba(245,166,35,0.10); }
+  .amp-num { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text-faint); }
+  .amp-btn.active .amp-num { color: #F5A623; }
+  .amp-sub { font-size: 10px; color: var(--text-xfaint); margin-top: 2px; }
+  .amp-btn.active .amp-sub { color: #8a6010; }
+
+  .slider-wrap { margin-bottom: 16px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+  .slider-label { color: var(--text-muted); font-size: 12px; }
+  .slider-val { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: #F5A623; }
+  .slider-val span { font-size: 10px; color: var(--text-faint); margin-left: 2px; }
+  .slider-note { font-size: 9.5px; margin-top: 4px; color: var(--text-dim); }
+  .slider-note.highlight { color: #F5A623; }
+
+  .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .big-toggle {
+    padding: 11px 10px; border-radius: 9px; width: 100%;
+    border: 1px solid var(--border); background: var(--surface);
+    transition: all 0.12s; display: flex; justify-content: space-between; align-items: center; text-align: left;
+  }
+  .big-toggle.active { border-color: rgba(245,166,35,0.28); background: rgba(245,166,35,0.10); }
+  .toggle-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+  .big-toggle.active .toggle-label { color: #F5A623; }
+  .toggle-sub { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+  .big-toggle.active .toggle-sub { color: #8a6010; }
+  .toggle-right { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-left: 8px; flex-shrink: 0; }
+  .big-toggle.active .toggle-right { color: #F5A623; }
+
+  .surge-btn {
+    padding: 11px 14px; border-radius: 9px; width: 100%;
+    border: 1px solid var(--border); background: var(--surface);
+    transition: all 0.12s; display: flex; justify-content: space-between; align-items: center;
+    text-align: left; margin-bottom: 10px;
+  }
+  .surge-btn.active { border-color: rgba(245,166,35,0.28); background: rgba(245,166,35,0.10); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 9px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-dim); font-size: 11px; font-weight: 600;
+    transition: all 0.12s; white-space: nowrap;
+  }
+  .chip.active { border-color: rgba(245,166,35,0.28); background: rgba(245,166,35,0.10); color: #F5A623; }
+  .cord-sub-label { color: var(--text-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 7px; }
+  .adapter-note { color: var(--text-dim); font-size: 10px; margin-top: 7px; line-height: 1.5; }
+
+  .template-box { background: var(--template-bg); border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; margin-bottom: 12px; }
+  .template-title { color: var(--text-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+  .template-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .template-key { color: var(--text-muted); font-size: 12px; }
+  .template-num {
+    font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--text);
+    background: rgba(245,166,35,0.10); border: 1px solid rgba(245,166,35,0.28);
+    border-radius: 7px; padding: 3px 10px;
+  }
+  .template-note { color: var(--text-dim); font-size: 10px; line-height: 1.6; }
+
+  .tell-box { background: var(--tell-bg); border: 1px solid rgba(245,166,35,0.28); border-radius: 12px; padding: 14px 16px; }
+  .tell-title { color: #F5A623; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+  .tell-total { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 12px; }
+  .tell-items { display: flex; flex-direction: column; gap: 5px; }
+  .tell-item { display: flex; justify-content: space-between; align-items: center; }
+  .tell-item-key { color: var(--text-dim); font-size: 11px; }
+  .tell-item-val { color: var(--text-muted); font-size: 11px; font-weight: 600; margin-left: 10px; flex-shrink: 0; }
+  .tell-divider { border-top: 1px solid rgba(245,166,35,0.15); margin-top: 4px; padding-top: 7px; display: flex; justify-content: space-between; }
+  .tell-divider-key { color: var(--text-muted); font-size: 12px; font-weight: 600; }
+  .tell-divider-val { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: var(--text); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">⚡</div>
+  <div style="flex:1">
+    <div class="header-title">BPP Quote Builder</div>
+    <div class="header-sub">Priced as sub · Min $700 profit enforced</div>
+  </div>
+  <div class="header-actions">
+    <button class="mode-toggle" onclick="toggleMode()" id="mode-btn">🌙</button>
+    <button class="reset-btn" onclick="resetAll()">↺ Reset</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="quote-card">
+    <div class="price-row">
+      <div>
+        <div class="price-label">Total Quote</div>
+        <div class="price-big" id="total-sell">$1,457</div>
+        <div class="price-note hidden" id="long-run-note"></div>
+      </div>
+      <div class="profit-box">
+        <div class="profit-label">Profit</div>
+        <div class="profit-num" id="profit-num">$717</div>
+        <div class="profit-pct" id="profit-pct">49%</div>
+      </div>
+    </div>
+    <div class="pips">
+      <div class="pip"><div class="pip-label">Your Cost</div><div class="pip-val" id="pip-cost">$740</div></div>
+      <div class="pip accent"><div class="pip-label">Sub Payout</div><div class="pip-val" id="pip-sub">$375</div></div>
+      <div class="pip"><div class="pip-label">Est. Time</div><div class="pip-val" id="pip-time">2.5h</div></div>
+    </div>
+    <button class="breakdown-toggle" onclick="toggleBreakdown()">
+      <span class="breakdown-arrow" id="breakdown-arrow">▶</span>
+      <span id="breakdown-label">Show cost breakdown</span>
+    </button>
+    <div id="breakdown-body" class="breakdown-body hidden">
+      <div class="breakdown-row"><span class="breakdown-key">Your supplies (inlet, interlock, permit…)</span><span class="breakdown-val" id="bd-supplies">$0</span></div>
+      <div class="breakdown-row"><span class="breakdown-key">Cords / adapter</span><span class="breakdown-val" id="bd-cords">$0</span></div>
+      <div class="breakdown-row"><span class="breakdown-key" id="bd-sub-label">Sub payout</span><span class="breakdown-val" id="bd-sub">$375</span></div>
+      <div class="breakdown-row"><span class="breakdown-key">Ad cost allocation</span><span class="breakdown-val">$185</span></div>
+      <div class="breakdown-total"><span class="breakdown-total-key">Total cost</span><span class="breakdown-total-val" id="bd-total">$740</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Step 1 · Amperage</div>
+    <div class="amp-grid">
+      <button class="amp-btn active" id="btn-30" onclick="setAmp(30)"><div class="amp-num">30A</div><div class="amp-sub">Standard</div></button>
+      <button class="amp-btn" id="btn-50" onclick="setAmp(50)"><div class="amp-num">50A</div><div class="amp-sub">Large / Future-proof</div></button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Step 2 · Run Length</div>
+    <div class="slider-wrap">
+      <div class="slider-header"><span class="slider-label">Total run</span><span class="slider-val" id="run-display">5<span>ft</span></span></div>
+      <input type="range" min="1" max="120" value="5" id="run-slider" oninput="onRunChange(this.value)">
+      <div class="slider-note" id="run-note">No long-run adder</div>
+    </div>
+    <div class="slider-wrap">
+      <div class="slider-header"><span class="slider-label">Exterior portion</span><span class="slider-val" id="ext-display">5<span>ft</span></span></div>
+      <input type="range" min="0" max="5" value="5" id="ext-slider" oninput="onExtChange(this.value)">
+      <div class="slider-note" id="ext-note">First 5ft exterior included</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Step 3 · Panel Complications</div>
+    <div class="toggle-grid">
+      <button class="big-toggle" id="btn-main" onclick="toggle('mainBreaker')">
+        <div><div class="toggle-label">Main Breaker</div><div class="toggle-sub">Needed for interlock</div></div>
+        <span class="toggle-right">+$250</span>
+      </button>
+      <button class="big-toggle" id="btn-twin" onclick="toggle('twinQuad')">
+        <div><div class="toggle-label">Twin / Quad</div><div class="toggle-sub">Making panel space</div></div>
+        <span class="toggle-right">+$150</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Step 4 · Upsells</div>
+    <button class="surge-btn" id="btn-surge" onclick="toggle('surge')">
+      <div><div class="toggle-label">Whole Home Surge Protector</div><div class="toggle-sub">Same panel visit · strong upsell</div></div>
+      <span class="toggle-right">+$450</span>
+    </button>
+    <div class="cord-sub-label" id="cord-section-label">Generator Cord</div>
+    <div class="chips" id="cord-chips"></div>
+    <div class="adapter-note hidden" id="adapter-note">Customer buying 50A inlet for future expansion — currently has 30A generator</div>
+  </div>
+
+  <div class="template-box">
+    <div class="template-title">Quote Template — Paste This</div>
+    <div class="template-row">
+      <span class="template-key">Inlet installation line item</span>
+      <span class="template-num" id="inlet-line-item">$1,290</span>
+    </div>
+    <div class="template-note">Permit ($150) and cords/adapters already in your template</div>
+  </div>
+
+  <div class="tell-box">
+    <div class="tell-title">Tell the Customer</div>
+    <div class="tell-total" id="tell-total">$1,457</div>
+    <div class="tell-items" id="tell-items"></div>
+    <div class="tell-divider">
+      <span class="tell-divider-key">Total</span>
+      <span class="tell-divider-val" id="tell-divider-val">$1,457</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const C = {
+  inlet30:55, inlet50:85, interlock:25,
+  permitActual:75, permitCustomer:150, licenseAmortized:25,
+  mainBreaker:125, twinQuad:35, surgeProtector:85,
+  cord30Cost:60, cord50Cost:125, adapterCost:65,
+  sub30:375, sub50:425,
+  subLongRun30per30ft:100, subLongRun50per30ft:120, subExtAdderPer5ft:25,
+  adCost:185, minProfit:700,
+};
+const S = {
+  base30:1400, base50:1800, longRun30perFt:14, longRun50perFt:15,
+  mainBreaker:250, twinQuad:150, surge:450,
+  cord30:150, cord50:250, adapter:175, cordAndAdapter:300,
+  offset30:17, offset50:23,
+};
+
+let state = { amp:30, runFt:5, extFt:5, mainBreaker:false, twinQuad:false, surge:false, cordType:null };
+let breakdownOpen = false;
+let lightMode = false;
+
+function calc(s) {
+  const is50 = s.amp === 50;
+  const extraFt = Math.max(0, s.runFt - 20);
+  const extraInc = Math.ceil(extraFt / 30);
+  const hours = 2.5 + extraInc * 1.25;
+  const yourSupplies = (is50?C.inlet50:C.inlet30)+C.interlock+C.permitActual+C.licenseAmortized+
+    (s.mainBreaker?C.mainBreaker:0)+(s.twinQuad?C.twinQuad:0)+(s.surge?C.surgeProtector:0);
+  let cordAdapterCost = 0;
+  if (s.cordType==='cord30') cordAdapterCost=C.cord30Cost;
+  if (s.cordType==='cord50') cordAdapterCost=C.cord50Cost;
+  if (s.cordType==='cordAndAdapter') cordAdapterCost=C.cord30Cost+C.adapterCost;
+  if (s.cordType==='adapterOnly') cordAdapterCost=C.adapterCost;
+  const subBase = is50?C.sub50:C.sub30;
+  const subLR = extraInc*(is50?C.subLongRun50per30ft:C.subLongRun30per30ft);
+  const subExt = Math.floor(Math.max(0,s.extFt-5)/5)*C.subExtAdderPer5ft;
+  const subTotal = subBase+subLR+subExt;
+  const totalCost = yourSupplies+cordAdapterCost+subTotal+C.adCost;
+  const longRunSell = extraFt*(is50?S.longRun50perFt:S.longRun30perFt);
+  let cordSell=0;
+  if (s.cordType==='cord30') cordSell=S.cord30;
+  if (s.cordType==='cord50') cordSell=S.cord50;
+  if (s.cordType==='cordAndAdapter') cordSell=S.cordAndAdapter;
+  if (s.cordType==='adapterOnly') cordSell=S.adapter;
+  const addonSell=(s.mainBreaker?S.mainBreaker:0)+(s.twinQuad?S.twinQuad:0)+(s.surge?S.surge:0);
+  const offset=is50?S.offset50:S.offset30;
+  const standardSell=(is50?S.base50:S.base30)+longRunSell+addonSell+cordSell+offset;
+  const totalSell=Math.max(standardSell, totalCost+C.minProfit+offset);
+  const profit=Math.round(totalSell-totalCost);
+  const margin=Math.round(profit/totalSell*100);
+  return {
+    totalSell:Math.round(totalSell), totalCost:Math.round(totalCost), profit, margin,
+    subTotal:Math.round(subTotal), subExt:Math.round(subExt),
+    yourSupplies:Math.round(yourSupplies), cordAdapterCost:Math.round(cordAdapterCost),
+    cordSell:Math.round(cordSell), longRunSell:Math.round(longRunSell),
+    inletLineItem:Math.round(totalSell-C.permitCustomer-cordSell),
+    extraFt, hours,
+  };
+}
+
+function fmt(n) { return '$'+n.toLocaleString(); }
+
+function render() {
+  const r = calc(state);
+  const is50 = state.amp===50;
+
+  document.getElementById('total-sell').textContent = fmt(r.totalSell);
+  document.getElementById('tell-total').textContent = fmt(r.totalSell);
+  document.getElementById('tell-divider-val').textContent = fmt(r.totalSell);
+
+  const lrNote = document.getElementById('long-run-note');
+  if (r.extraFt > 0) { lrNote.classList.remove('hidden'); lrNote.textContent=`incl. +${fmt(r.longRunSell)} long-run (${r.extraFt}ft)`; }
+  else lrNote.classList.add('hidden');
+
+  const profitEl = document.getElementById('profit-num');
+  profitEl.textContent = fmt(r.profit);
+  profitEl.style.color = r.profit>=900?'#4ade80':r.profit>=C.minProfit?'#F5A623':'#f87171';
+  document.getElementById('profit-pct').textContent = r.margin+'%';
+
+  document.getElementById('pip-cost').textContent = fmt(r.totalCost);
+  document.getElementById('pip-sub').textContent = fmt(r.subTotal);
+  document.getElementById('pip-time').textContent = r.hours.toFixed(1)+'h';
+
+  document.getElementById('bd-supplies').textContent = fmt(r.yourSupplies);
+  document.getElementById('bd-cords').textContent = fmt(r.cordAdapterCost);
+  document.getElementById('bd-sub-label').textContent = r.subExt>0?`Sub payout (incl. ${fmt(r.subExt)} ext. adder)`:'Sub payout';
+  document.getElementById('bd-sub').textContent = fmt(r.subTotal);
+  document.getElementById('bd-total').textContent = fmt(r.totalCost);
+
+  document.getElementById('run-display').innerHTML = state.runFt+'<span>ft</span>';
+  document.getElementById('ext-display').innerHTML = state.extFt+'<span>ft</span>';
+  document.getElementById('ext-slider').max = state.runFt;
+
+  const runNote = document.getElementById('run-note');
+  const lrRate = is50?S.longRun50perFt:S.longRun30perFt;
+  if (state.runFt>20) { runNote.textContent=`+${state.runFt-20}ft long-run @ $${lrRate}/ft = +${fmt(r.longRunSell)}`; runNote.classList.add('highlight'); }
+  else { runNote.textContent='No long-run adder'; runNote.classList.remove('highlight'); }
+
+  const extNote = document.getElementById('ext-note');
+  if (state.extFt>5) { extNote.textContent=`${state.extFt-5}ft over first 5ft → +${fmt(r.subExt)} sub adder`; extNote.classList.add('highlight'); }
+  else { extNote.textContent='First 5ft exterior included'; extNote.classList.remove('highlight'); }
+
+  document.getElementById('btn-30').classList.toggle('active', state.amp===30);
+  document.getElementById('btn-50').classList.toggle('active', state.amp===50);
+  document.getElementById('btn-main').classList.toggle('active', state.mainBreaker);
+  document.getElementById('btn-twin').classList.toggle('active', state.twinQuad);
+  document.getElementById('btn-surge').classList.toggle('active', state.surge);
+
+  document.getElementById('cord-section-label').textContent = is50?'Cord / Adapter':'Generator Cord';
+  const cordOpts = is50
+    ? [{id:'cord50',label:`50A Cord +$${S.cord50}`},{id:'adapterOnly',label:`Adapter Only +$${S.adapter}`},{id:'cordAndAdapter',label:`30A Cord + Adapter +$${S.cordAndAdapter}`}]
+    : [{id:'cord30',label:`30A Cord +$${S.cord30}`}];
+  let chipsHtml = cordOpts.map(o=>`<button class="chip${state.cordType===o.id?' active':''}" onclick="setCord('${o.id}')">${o.label}</button>`).join('');
+  if (state.cordType) chipsHtml+=`<button class="chip" onclick="setCord(null)">✕ Remove</button>`;
+  document.getElementById('cord-chips').innerHTML = chipsHtml;
+  document.getElementById('adapter-note').classList.toggle('hidden',!(is50&&(state.cordType==='adapterOnly'||state.cordType==='cordAndAdapter')));
+
+  document.getElementById('inlet-line-item').textContent = fmt(r.inletLineItem);
+  const items = [
+    ['Inlet installation',fmt(r.inletLineItem)],['Permit',fmt(C.permitCustomer)],
+    state.mainBreaker&&['Main breaker',fmt(S.mainBreaker)],
+    state.twinQuad&&['Panel space breaker',fmt(S.twinQuad)],
+    state.surge&&['Whole home surge protector',fmt(S.surge)],
+    state.cordType==='cord30'&&['30A generator cord',fmt(S.cord30)],
+    state.cordType==='cord50'&&['50A generator cord',fmt(S.cord50)],
+    state.cordType==='adapterOnly'&&['30→50A adapter',fmt(S.adapter)],
+    state.cordType==='cordAndAdapter'&&['30A cord + 30→50A adapter',fmt(S.cordAndAdapter)],
+  ].filter(Boolean);
+  document.getElementById('tell-items').innerHTML = items.map(([k,v])=>
+    `<div class="tell-item"><span class="tell-item-key">${k}</span><span class="tell-item-val">${v}</span></div>`).join('');
+}
+
+function setAmp(a) { state.amp=a; state.cordType=null; render(); }
+function onRunChange(v) {
+  state.runFt=parseInt(v);
+  if (state.extFt>state.runFt) { state.extFt=state.runFt; document.getElementById('ext-slider').value=state.runFt; }
+  render();
+}
+function onExtChange(v) { state.extFt=parseInt(v); render(); }
+function toggle(key) { state[key]=!state[key]; render(); }
+function setCord(id) { state.cordType=state.cordType===id?null:id; render(); }
+function toggleBreakdown() {
+  breakdownOpen=!breakdownOpen;
+  document.getElementById('breakdown-body').classList.toggle('hidden',!breakdownOpen);
+  document.getElementById('breakdown-arrow').style.transform=breakdownOpen?'rotate(90deg)':'none';
+  document.getElementById('breakdown-label').textContent=breakdownOpen?'Hide cost breakdown':'Show cost breakdown';
+}
+function toggleMode() {
+  lightMode=!lightMode;
+  document.body.classList.toggle('light',lightMode);
+  document.getElementById('mode-btn').textContent=lightMode?'🌙':'☀️';
+}
+function resetAll() {
+  state={amp:30,runFt:5,extFt:5,mainBreaker:false,twinQuad:false,surge:false,cordType:null};
+  document.getElementById('run-slider').value=5;
+  document.getElementById('ext-slider').value=5;
+  if (breakdownOpen) toggleBreakdown();
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
