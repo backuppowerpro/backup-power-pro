@@ -42,7 +42,8 @@ img{max-width:100%;display:block}
 .cta-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 
 /* Mobile bar */
-.mbar{display:none;position:fixed;bottom:-100px;left:0;right:0;z-index:99;padding:10px 16px 110px 16px;background:#ffffff;border-top:1px solid rgba(11,31,59,.07);box-shadow:0 -2px 16px rgba(0,0,0,.06)}
+.mbar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:99;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px)) 16px;background:#ffffff;border-top:1px solid rgba(11,31,59,.07);box-shadow:0 -2px 16px rgba(0,0,0,.06);-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}
+.mbar-fill{display:none;position:fixed;bottom:-150px;left:0;right:0;height:200px;background:#ffffff;z-index:98;-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}
 .mbar .btn{width:100%;justify-content:center;font-size:14px;padding:12px 20px}
 .mbar-proof{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:4px}
 .mbar-proof span{font-size:10px;color:#7b7b8a;font-weight:500}
@@ -294,6 +295,7 @@ img{max-width:100%;display:block}
   .hdr-btn{display:none}
   
   .mbar{display:block}
+  .mbar-fill{display:block}
   body{padding-bottom:90px}
   .sec{padding:60px 0}
 }
@@ -621,6 +623,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
     </div>
   </div>
 </div>
+<div class="mbar-fill" aria-hidden="true"></div>
 
 <script>
 // FAQ
