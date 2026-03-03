@@ -13,7 +13,7 @@
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generator Power Guide — Backup Power Pro</title>
+<title>The Portable Generator Power Guide — Backup Power Pro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
@@ -409,49 +409,48 @@ h1, h2, h3, h4 {
   background: linear-gradient(160deg, var(--navy) 0%, var(--navy-mid) 50%, #2a5a7a 100%);
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding: 1in;
+  text-align: center;
+  padding: 0.8in 1in;
+}
+.cover-logo {
+  height: 44px;
+  width: auto;
+  margin-bottom: 40px;
 }
 .page-cover h1 {
-  font-size: 44px;
+  font-size: 48px;
   font-weight: 800;
   line-height: 1.1;
   color: var(--white);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 .page-cover h1 span {
   color: var(--gold);
 }
-.cover-subtitle {
-  font-size: 16px;
-  line-height: 1.55;
-  color: rgba(255,255,255,.75);
-  margin-bottom: 40px;
-  max-width: 480px;
+.page-cover .cover-subtitle {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #ffffff;
+  margin-bottom: 36px;
+  max-width: 440px;
 }
 .cover-divider {
   width: 60px;
   height: 3px;
   background: var(--gold);
   border-radius: 2px;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 }
-.cover-tagline {
+.page-cover .cover-tagline {
   font-size: 13px;
-  color: rgba(255,255,255,.5);
-  margin-bottom: 6px;
+  color: rgba(255,255,255,.8);
+  margin-bottom: 2px;
 }
-.cover-brand {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--white);
-  letter-spacing: normal;
-}
-.cover-url {
+.page-cover .cover-url {
   font-size: 12px;
-  color: rgba(255,255,255,.45);
-  margin-top: 4px;
+  color: rgba(255,255,255,.7);
 }
 
 /* ===== CTA PAGE ===== */
@@ -535,16 +534,15 @@ h1, h2, h3, h4 {
 
 <!-- ===== PAGE 1: COVER ===== -->
 <div class="page page-cover">
-  <p class="cover-tagline">A free guide from</p>
-  <p class="cover-brand">Backup Power Pro</p>
-  <p class="cover-url">backuppowerpro.com</p>
-
-  <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
-    <h1>The Generator<br><span>Power Guide</span></h1>
-    <p class="cover-subtitle">How to use the portable generator you already own &mdash; safely, legally, and without running extension cords through your windows.</p>
+  <img src="Untitled_Artwork 47.png" alt="Backup Power Pro" class="cover-logo">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <h1>The Portable Generator<br><span>Power Guide</span></h1>
+    <p class="cover-subtitle">Everything you need to know about generator safety, what your generator can actually power, and how to connect it to your home the right way.</p>
     <div class="cover-divider"></div>
-    <p style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;max-width:420px">You made the smart move buying a generator. This guide helps you get the most out of it &mdash; and shows you the safest way to connect it to your home.</p>
+    <p style="font-size:13px;color:rgba(255,255,255,.85);line-height:1.7;max-width:400px">You made the smart move buying a generator. This guide helps you get the most out of it &mdash; and shows you the safest way to connect it to your home.</p>
   </div>
+  <p class="cover-tagline">A free guide from Backup Power Pro</p>
+  <p class="cover-url">backuppowerpro.com</p>
 </div>
 
 <!-- ===== PAGE 2: WHAT YOUR GENERATOR CAN POWER ===== -->
@@ -558,7 +556,7 @@ h1, h2, h3, h4 {
   <p class="page-subtitle">Most homeowners have no idea how much their generator can handle. Here is a straightforward breakdown.</p>
 
   <h3 style="margin-bottom:8px">Running Watts vs. Starting Watts</h3>
-  <p style="margin-bottom:16px"><strong>Running watts</strong> is the steady power an appliance uses while it is on. <strong>Starting watts</strong> is the extra burst of power some appliances need for the first second or two when they kick on &mdash; like a fridge compressor or a well pump. Your generator needs to handle both.</p>
+  <p style="margin-bottom:16px"><strong>Running watts</strong> is the steady power an appliance uses while it is on. <strong>Starting watts</strong> is the extra burst of power some appliances need for the first second or two when they kick on. Anything with a motor &mdash; fridge, well pump, A/C &mdash; draws two to three times more watts to start than it does to run. Your generator needs to handle both, so plan for the surge.</p>
 
   <table class="data-table">
     <thead>
@@ -750,6 +748,16 @@ h1, h2, h3, h4 {
     <h3 style="font-size:12px;margin-bottom:4px">What About My Specific Setup?</h3>
     <p style="font-size:11.5px;line-height:1.55">Every home's panel is different. The number of circuits you can run depends on your generator size, your panel layout, and which circuits matter most to you. A quick video assessment covers all of this in about 10 minutes &mdash; just point your phone at your breaker panel. No one needs to come to your house.</p>
   </div>
+
+  <div style="background:var(--light-blue);border-radius:var(--radius);padding:16px 18px;margin-top:14px;border-left:3px solid var(--gold)">
+    <h3 style="font-size:12px;margin-bottom:4px">Can I Run My Central A/C?</h3>
+    <p style="font-size:11.5px;line-height:1.55">Central air conditioners draw 3,000&ndash;6,000 starting watts &mdash; more than most portable generators can handle. But a device called a <strong>soft start</strong> can cut that surge by up to 70%. An HVAC technician installs it on your A/C unit (not the generator), and it lets the compressor ramp up gradually instead of all at once. With a soft start, many homeowners can run their A/C on a mid-size portable generator. Ask your HVAC tech about it.</p>
+  </div>
+
+  <div style="background:var(--light-blue);border-radius:var(--radius);padding:16px 18px;margin-top:14px;border-left:3px solid var(--gold)">
+    <h3 style="font-size:12px;margin-bottom:4px">What About Sensitive Electronics?</h3>
+    <p style="font-size:11.5px;line-height:1.55">Standard generators produce rougher power with voltage fluctuations. That is fine for fridges, lights, pumps, and furnace blowers. But sensitive electronics like computers and medical equipment do better with an <strong>inverter generator</strong>, which produces clean, stable power. For a typical outage running the essentials, a regular generator through an inlet and interlock works great.</p>
+  </div>
 </div>
 
 <!-- ===== PAGE 6: WORKSHEET ===== -->
@@ -855,10 +863,22 @@ h1, h2, h3, h4 {
     </ul>
   </div>
 
+  <div class="tip-section">
+    <h3>Fuel Planning</h3>
+    <ul>
+      <li>Most portable generators burn 0.5&ndash;1 gallon per hour at half load</li>
+      <li>A 5-gallon tank gives you roughly 6&ndash;10 hours of runtime depending on load</li>
+      <li>Keep at least 10&ndash;15 gallons on hand for a multi-day outage</li>
+      <li>Store gas in approved containers, in a ventilated area away from heat sources</li>
+      <li>Rotate your stored fuel every 6 months or treat it with stabilizer</li>
+    </ul>
+  </div>
+
   <div class="callout">
     <span class="callout-label">15 Minutes, Once a Quarter</span>
     <p>That is all it takes to make sure your generator starts when it matters. About 50 cents in gas buys you peace of mind that your backup power actually works.</p>
   </div>
+
 </div>
 
 <!-- ===== PAGE 8: CTA ===== -->

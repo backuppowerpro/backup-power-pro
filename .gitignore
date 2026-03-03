@@ -8,5 +8,7 @@
 *.png
 eyJ*.jpeg
 Untitled_Artwork*
+!Untitled_Artwork 46.png
+!Untitled_Artwork 47.png
 IMG_*
 bpp-claude-code-context.md
