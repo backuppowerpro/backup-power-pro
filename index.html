@@ -205,6 +205,14 @@ img{max-width:100%;display:block}
 .verdict.over{background:rgba(220,38,38,.06);color:#dc2626;border-color:rgba(220,38,38,.12)}
 .verdict.empty{background:var(--light-blue);color:#7b7b8a}
 
+/* ==================== GALLERY ==================== */
+.gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.gallery-item{border-radius:var(--r);overflow:hidden;aspect-ratio:1;position:relative}
+.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.gallery-item:hover img{transform:scale(1.05)}
+.gallery-cap{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;background:linear-gradient(transparent,rgba(0,0,0,.7));font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--white);letter-spacing:.02em}
+@media(max-width:768px){.gallery{grid-template-columns:1fr 1fr;gap:8px}}
+
 /* ==================== FIT ==================== */
 .fits{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 .fit{padding:32px 28px;border-radius:var(--r2);border:1px solid rgba(11,31,59,.07);background:#ffffff}
@@ -498,6 +506,19 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
     <div class="why-pt"><span class="why-ico">💰</span><div><h3>Upfront Pricing</h3><p>We review your panel on the call and send your exact quote the same day.</p></div></div>
     <div class="why-pt"><span class="why-ico">⚡</span><div><h3>Done in One Day</h3><p>Inlet, interlock, permit, and inspection — all handled in a single visit.</p></div></div>
     <div class="why-pt"><span class="why-ico">🔌</span><div><h3>Surge Protection Available</h3><p>Whole-home surge protection can be added during your install.</p></div></div>
+  </div>
+</div></section>
+
+<!-- ==================== OUR WORK GALLERY ==================== -->
+<section class="sec sec-blue"><div class="w" style="text-align:center">
+  <p class="label">Our Work</p>
+  <h2 class="sec-h">What It Looks Like When It's Done Right</h2>
+  <p class="sec-sub" style="margin-left:auto;margin-right:auto">Real installs from Upstate SC homes. Clean, code-compliant, and built to last.</p>
+  <div class="gallery">
+    <div class="gallery-item"><img src="work-generator-connected.jpg" alt="Portable generator connected to inlet box on exterior wall" loading="lazy"><div class="gallery-cap">Generator Connected</div></div>
+    <div class="gallery-item"><img src="work-inlet-brick.jpg" alt="Generator inlet box mounted on brick wall" loading="lazy"><div class="gallery-cap">Inlet on Brick</div></div>
+    <div class="gallery-item"><img src="work-inlet-detail.jpg" alt="Reliance inlet box with conduit on brick wall" loading="lazy"><div class="gallery-cap">Inlet Detail</div></div>
+    <div class="gallery-item"><img src="work-panel-interlock.jpg" alt="Breaker panel with interlock kit and inlet below" loading="lazy"><div class="gallery-cap">Panel &amp; Interlock</div></div>
   </div>
 </div></section>
 
