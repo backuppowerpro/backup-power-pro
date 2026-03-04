@@ -271,8 +271,9 @@ img{max-width:100%;display:block}
 .endcta{padding:96px 0;text-align:center;background:linear-gradient(180deg,var(--navy),var(--navy-mid));color:var(--white)}
 .endcta h2{font-size:clamp(28px,4.5vw,42px);font-weight:800;letter-spacing:-1.5px;margin-bottom:20px}
 .endcta h2 em{font-style:normal;color:var(--gold)}
-.endcta p{font-size:17px;color:rgba(255,255,255,.6);margin-bottom:14px;line-height:160%}
-.end-sub{font-size:14px;color:rgba(255,255,255,.3);margin-bottom:44px}
+.endcta p{font-size:16px;color:rgba(255,255,255,.55);margin-bottom:12px;line-height:160%}
+.end-tagline{font-family:'Outfit',sans-serif;font-size:19px;font-weight:600;color:rgba(255,255,255,.9);margin-bottom:8px;letter-spacing:-.3px}
+.end-guarantee{font-size:13px;color:rgba(255,255,255,.35);margin-bottom:0}
 .endcta .cta-row{justify-content:center}
 
 /* Footer */
@@ -285,6 +286,8 @@ img{max-width:100%;display:block}
 .d1{animation-delay:.08s}.d2{animation-delay:.16s}.d3{animation-delay:.24s}
 
 .rv-grid{display:grid;grid-template-columns:280px 1fr;gap:48px;align-items:start}
+
+.sticky-cta{display:none}
 
 /* ==================== RESPONSIVE ==================== */
 @media(max-width:768px){
@@ -634,10 +637,9 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 <section class="endcta"><div class="w">
   <h2>Next Outage, <em style="white-space:nowrap;display:inline-block">You're Ready.</em></h2>
   <p>Storm season doesn't send a calendar invite. The next one could be next week.</p>
-  <p style="font-size:14px;color:rgba(255,255,255,.45);margin-bottom:8px">Every install is permitted, inspected, and backed by our SC contractor license.</p>
-  <p class="end-sub">One video call. One honest price. One day of work. Only 5 installs per week.</p>
-  <div style="margin-top:48px">
-    <p style="font-size:12px;color:rgba(255,255,255,.3);margin-bottom:20px">📅 Only 5 installs per week — booking next available week</p>
+  <p class="end-tagline">One video call. One honest price. One day of work. Only 5 installs per week.</p>
+  <p class="end-guarantee">Every install is permitted, inspected, and backed by our SC contractor license.</p>
+  <div style="margin-top:40px">
     <div class="cta-row" style="justify-content:center">
       <a href="https://network.backuppowerpro.com/public/appointment-scheduler/69a24fd5076c500a205ec116/schedule" class="btn btn-gold">Schedule My Assessment <svg fill="currentColor" viewBox="0 0 24 24"><path d="M4 0l16 12.279-6.951 1.17 4.325 8.817-3.596 1.734-4.35-8.879L4 20.592z"/></svg></a>
     </div>
