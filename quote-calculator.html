@@ -214,7 +214,7 @@
   <div class="header-icon">⚡</div>
   <div style="flex:1">
     <div class="header-title">BPP Quote Builder</div>
-    <div class="header-sub">Priced as sub · Min $700 profit enforced</div>
+    <div class="header-sub">Cord bundled · Min $700 profit enforced</div>
   </div>
   <div class="header-actions">
     <button class="mode-toggle" onclick="toggleMode()" id="mode-btn">🌙</button>
@@ -247,8 +247,8 @@
       <span id="breakdown-label">Show cost breakdown</span>
     </button>
     <div id="breakdown-body" class="breakdown-body hidden">
-      <div class="breakdown-row"><span class="breakdown-key">Your supplies (inlet, interlock, permit…)</span><span class="breakdown-val" id="bd-supplies">$0</span></div>
-      <div class="breakdown-row"><span class="breakdown-key">Cords / adapter</span><span class="breakdown-val" id="bd-cords">$0</span></div>
+      <div class="breakdown-row"><span class="breakdown-key">Your supplies (inlet, interlock, cord, permit…)</span><span class="breakdown-val" id="bd-supplies">$0</span></div>
+      <div class="breakdown-row"><span class="breakdown-key">Adapter (if added)</span><span class="breakdown-val" id="bd-cords">$0</span></div>
       <div class="breakdown-row"><span class="breakdown-key" id="bd-sub-label">Sub payout</span><span class="breakdown-val" id="bd-sub">$375</span></div>
       <div class="breakdown-row"><span class="breakdown-key">Ad cost allocation</span><span class="breakdown-val">$185</span></div>
       <div class="breakdown-total"><span class="breakdown-total-key">Total cost</span><span class="breakdown-total-val" id="bd-total">$740</span></div>
@@ -297,9 +297,13 @@
       <div><div class="toggle-label">Whole Home Surge Protector</div><div class="toggle-sub">Same panel visit · strong upsell</div></div>
       <span class="toggle-right">+$450</span>
     </button>
-    <div class="cord-sub-label" id="cord-section-label">Generator Cord</div>
+    <div class="cord-sub-label">Generator Cord</div>
+    <button class="big-toggle active" id="btn-cord" onclick="toggle('cordIncluded')" style="width:100%;margin-bottom:8px">
+      <div><div class="toggle-label" id="cord-toggle-label">30A Generator Cord</div><div class="toggle-sub" id="cord-toggle-sub">Included · tap to remove</div></div>
+      <span class="toggle-right" id="cord-toggle-right">✓</span>
+    </button>
     <div class="chips" id="cord-chips"></div>
-    <div class="adapter-note hidden" id="adapter-note">Customer buying 50A inlet for future expansion — currently has 30A generator</div>
+    <div class="adapter-note hidden" id="adapter-note">50A cord included · Adapter lets their 30A generator plug into the 50A inlet</div>
   </div>
 
   <div class="template-box">
@@ -308,7 +312,7 @@
       <span class="template-key">Inlet installation line item</span>
       <span class="template-num" id="inlet-line-item">$1,290</span>
     </div>
-    <div class="template-note">Permit ($150) and cords/adapters already in your template</div>
+    <div class="template-note">Cord included in base · Permit ($150) in your template</div>
   </div>
 
   <div class="tell-box">
@@ -334,13 +338,13 @@ const C = {
   adCost:185, minProfit:700,
 };
 const S = {
-  base30:1400, base50:1800, longRun30perFt:14, longRun50perFt:15,
+  base30:1550, base50:2000, longRun30perFt:14, longRun50perFt:15,
   mainBreaker:250, twinQuad:150, surge:450,
-  cord30:150, cord50:250, adapter:175, cordAndAdapter:300,
-  offset30:17, offset50:23,
+  adapter:175, cordValue30:150, cordValue50:250,
+  offset30:0, offset50:0,
 };
 
-let state = { amp:30, runFt:5, extFt:5, mainBreaker:false, twinQuad:false, surge:false, cordType:null };
+let state = { amp:30, runFt:5, extFt:5, mainBreaker:false, twinQuad:false, surge:false, cordType:null, cordIncluded:true };
 let breakdownOpen = false;
 let lightMode = false;
 
@@ -349,12 +353,12 @@ function calc(s) {
   const extraFt = Math.max(0, s.runFt - 20);
   const extraInc = Math.ceil(extraFt / 30);
   const hours = 2.5 + extraInc * 1.25;
+  const baseCordCost = is50?C.cord50Cost:C.cord30Cost;
+  const cordValue = is50?S.cordValue50:S.cordValue30;
   const yourSupplies = (is50?C.inlet50:C.inlet30)+C.interlock+C.permitActual+C.licenseAmortized+
+    (s.cordIncluded?baseCordCost:0)+
     (s.mainBreaker?C.mainBreaker:0)+(s.twinQuad?C.twinQuad:0)+(s.surge?C.surgeProtector:0);
   let cordAdapterCost = 0;
-  if (s.cordType==='cord30') cordAdapterCost=C.cord30Cost;
-  if (s.cordType==='cord50') cordAdapterCost=C.cord50Cost;
-  if (s.cordType==='cordAndAdapter') cordAdapterCost=C.cord30Cost+C.adapterCost;
   if (s.cordType==='adapterOnly') cordAdapterCost=C.adapterCost;
   const subBase = is50?C.sub50:C.sub30;
   const subLR = extraInc*(is50?C.subLongRun50per30ft:C.subLongRun30per30ft);
@@ -363,14 +367,13 @@ function calc(s) {
   const totalCost = yourSupplies+cordAdapterCost+subTotal+C.adCost;
   const longRunSell = extraFt*(is50?S.longRun50perFt:S.longRun30perFt);
   let cordSell=0;
-  if (s.cordType==='cord30') cordSell=S.cord30;
-  if (s.cordType==='cord50') cordSell=S.cord50;
-  if (s.cordType==='cordAndAdapter') cordSell=S.cordAndAdapter;
   if (s.cordType==='adapterOnly') cordSell=S.adapter;
+  const cordDiscount = s.cordIncluded?0:cordValue;
   const addonSell=(s.mainBreaker?S.mainBreaker:0)+(s.twinQuad?S.twinQuad:0)+(s.surge?S.surge:0);
   const offset=is50?S.offset50:S.offset30;
-  const standardSell=(is50?S.base50:S.base30)+longRunSell+addonSell+cordSell+offset;
-  const totalSell=Math.max(standardSell, totalCost+C.minProfit+offset);
+  const standardSell=(is50?S.base50:S.base30)+longRunSell+addonSell+cordSell-cordDiscount+offset;
+  let totalSell=Math.round(Math.max(standardSell, totalCost+C.minProfit+offset));
+  if (totalSell%2===0) totalSell+=1;
   const profit=Math.round(totalSell-totalCost);
   const margin=Math.round(profit/totalSell*100);
   return {
@@ -431,25 +434,30 @@ function render() {
   document.getElementById('btn-twin').classList.toggle('active', state.twinQuad);
   document.getElementById('btn-surge').classList.toggle('active', state.surge);
 
-  document.getElementById('cord-section-label').textContent = is50?'Cord / Adapter':'Generator Cord';
-  const cordOpts = is50
-    ? [{id:'cord50',label:`50A Cord +$${S.cord50}`},{id:'adapterOnly',label:`Adapter Only +$${S.adapter}`},{id:'cordAndAdapter',label:`30A Cord + Adapter +$${S.cordAndAdapter}`}]
-    : [{id:'cord30',label:`30A Cord +$${S.cord30}`}];
-  let chipsHtml = cordOpts.map(o=>`<button class="chip${state.cordType===o.id?' active':''}" onclick="setCord('${o.id}')">${o.label}</button>`).join('');
-  if (state.cordType) chipsHtml+=`<button class="chip" onclick="setCord(null)">✕ Remove</button>`;
-  document.getElementById('cord-chips').innerHTML = chipsHtml;
-  document.getElementById('adapter-note').classList.toggle('hidden',!(is50&&(state.cordType==='adapterOnly'||state.cordType==='cordAndAdapter')));
+  const cordValue = is50?S.cordValue50:S.cordValue30;
+  const cordBtn = document.getElementById('btn-cord');
+  cordBtn.classList.toggle('active', state.cordIncluded);
+  document.getElementById('cord-toggle-label').textContent = `${is50?'50':'30'}A Generator Cord`;
+  document.getElementById('cord-toggle-sub').textContent = state.cordIncluded?'Included · tap to remove':'Customer has their own';
+  document.getElementById('cord-toggle-right').textContent = state.cordIncluded?'✓':`-${fmt(cordValue)}`;
+
+  if (is50) {
+    let chipsHtml = `<button class="chip${state.cordType==='adapterOnly'?' active':''}" onclick="setCord('adapterOnly')">30→50A Adapter +$${S.adapter}</button>`;
+    if (state.cordType) chipsHtml+=`<button class="chip" onclick="setCord(null)">✕ Remove</button>`;
+    document.getElementById('cord-chips').innerHTML = chipsHtml;
+  } else {
+    document.getElementById('cord-chips').innerHTML = '';
+  }
+  document.getElementById('adapter-note').classList.toggle('hidden',!(is50&&state.cordType==='adapterOnly'));
 
   document.getElementById('inlet-line-item').textContent = fmt(r.inletLineItem);
+  const cordLabel = state.cordIncluded?`(${is50?'50':'30'}A cord included)`:'(no cord)';
   const items = [
-    ['Inlet installation',fmt(r.inletLineItem)],['Permit',fmt(C.permitCustomer)],
+    [`Inlet installation ${cordLabel}`,fmt(r.inletLineItem)],['Permit',fmt(C.permitCustomer)],
     state.mainBreaker&&['Main breaker',fmt(S.mainBreaker)],
     state.twinQuad&&['Panel space breaker',fmt(S.twinQuad)],
     state.surge&&['Whole home surge protector',fmt(S.surge)],
-    state.cordType==='cord30'&&['30A generator cord',fmt(S.cord30)],
-    state.cordType==='cord50'&&['50A generator cord',fmt(S.cord50)],
     state.cordType==='adapterOnly'&&['30→50A adapter',fmt(S.adapter)],
-    state.cordType==='cordAndAdapter'&&['30A cord + 30→50A adapter',fmt(S.cordAndAdapter)],
   ].filter(Boolean);
   document.getElementById('tell-items').innerHTML = items.map(([k,v])=>
     `<div class="tell-item"><span class="tell-item-key">${k}</span><span class="tell-item-val">${v}</span></div>`).join('');
@@ -476,7 +484,7 @@ function toggleMode() {
   document.getElementById('mode-btn').textContent=lightMode?'🌙':'☀️';
 }
 function resetAll() {
-  state={amp:30,runFt:5,extFt:5,mainBreaker:false,twinQuad:false,surge:false,cordType:null};
+  state={amp:30,runFt:5,extFt:5,mainBreaker:false,twinQuad:false,surge:false,cordType:null,cordIncluded:true};
   document.getElementById('run-slider').value=5;
   document.getElementById('ext-slider').value=5;
   if (breakdownOpen) toggleBreakdown();

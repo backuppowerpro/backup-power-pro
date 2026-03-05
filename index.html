@@ -174,6 +174,36 @@ img{max-width:100%;display:block}
 .stp h3{font-size:17px;font-weight:700;color:var(--navy);margin-bottom:6px;letter-spacing:-.3px}
 .stp p{font-size:14px;color:#4a4a5a;line-height:160%;max-width:240px;margin:0 auto}
 
+/* Value Stack */
+.vstack{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#2a5a7a 100%);border-radius:var(--r2);padding:40px 36px 32px;margin-top:36px;max-width:520px;margin-left:auto;margin-right:auto;position:relative;overflow:hidden;box-shadow:0 12px 40px rgba(11,31,59,.25)}
+.vstack::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.vstack-t{font-family:'Outfit',sans-serif;font-weight:800;font-size:20px;color:var(--white);text-align:center;margin-bottom:6px;letter-spacing:-.5px}
+.vstack-sub{font-size:13px;color:rgba(255,255,255,.35);text-align:center;margin-bottom:24px}
+.vstack-items{display:flex;flex-direction:column;gap:10px}
+.vstack-item{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border-radius:12px;padding:14px 18px;border:1px solid rgba(255,255,255,.06);transition:background .2s}
+.vstack-item:hover{background:rgba(255,255,255,.08)}
+.vstack-chk{width:30px;height:30px;border-radius:50%;background:rgba(255,186,0,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vstack-chk svg{width:15px;height:15px}
+.vstack-item p{font-size:14px;color:rgba(255,255,255,.8);line-height:145%;text-align:left}
+.vstack-div{height:1px;background:rgba(255,255,255,.06);margin:20px 0 16px}
+.vstack-guar{text-align:center;font-family:'Outfit',sans-serif;font-weight:600;font-size:14px;color:var(--gold);letter-spacing:-.2px;line-height:160%}
+.vstack-val{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;margin-left:auto;flex-shrink:0;opacity:.65}
+.vstack-total{display:flex;justify-content:space-between;align-items:center;padding:2px 18px}
+.vstack-total-label{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:rgba(255,255,255,.45)}
+.vstack-total-val{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;color:var(--gold);letter-spacing:-.5px;text-shadow:0 0 24px rgba(255,186,0,.3)}
+
+/* Alt Costs */
+.alt-costs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px;max-width:520px;margin-left:auto;margin-right:auto}
+.alt-cost{padding:22px 18px;border-radius:14px;text-align:center;position:relative;overflow:hidden}
+.alt-cost-danger{background:linear-gradient(135deg,#fff5f5,#fee2e2);border:1.5px solid rgba(220,38,38,.15)}
+.alt-cost-exp{background:linear-gradient(135deg,#fff5f5,#fee2e2);border:1.5px solid rgba(220,38,38,.15)}
+.alt-cost-ico{font-size:28px;margin-bottom:8px;display:block}
+.alt-cost h4{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:8px;letter-spacing:-.3px}
+.alt-cost-danger p{font-size:12px;color:#991b1b;line-height:165%;font-weight:500}
+.alt-cost-exp .price-x{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:#dc2626;text-decoration:line-through;text-decoration-thickness:2.5px;display:block;margin-bottom:4px;letter-spacing:-.5px}
+.alt-cost-exp p{font-size:12px;color:#991b1b;font-weight:500}
+.alt-vs{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--navy);margin-top:20px;max-width:520px;margin-left:auto;margin-right:auto;text-align:center;letter-spacing:-.3px}
+
 /* ==================== INTERACTIVE CALC ==================== */
 .pc{max-width:600px;margin:0 auto}
 .gen-row{display:flex;gap:6px;margin-bottom:20px;justify-content:center;flex-wrap:wrap}
@@ -298,6 +328,16 @@ img{max-width:100%;display:block}
   .bento-sig{grid-column:span 2;flex-direction:column;text-align:center}
   .steps-row{grid-template-columns:1fr;gap:28px}
   .steps-row::before{display:none}
+  .vstack{padding:28px 20px 24px;margin-top:28px}
+  .vstack-t{font-size:18px}
+  .vstack-item{padding:12px 14px;gap:12px}
+  .vstack-item p{font-size:13px}
+  .vstack-val{font-size:11px}
+  .vstack-total-val{font-size:22px}
+  .alt-costs{grid-template-columns:1fr;gap:10px;margin-top:24px}
+  .alt-cost{padding:18px 16px}
+  .alt-cost-exp .price-x{font-size:20px}
+  .alt-vs{font-size:14px;margin-top:14px}
   .fits{grid-template-columns:1fr}
   .faq-grid{grid-template-columns:1fr;gap:24px}
   .rv-grid{grid-template-columns:1fr;gap:24px}
@@ -309,9 +349,9 @@ img{max-width:100%;display:block}
   .hdr-btn{display:none}
 
   .sec{padding:60px 0}
-  .sticky-cta{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--navy);padding:12px 20px;justify-content:center;box-shadow:0 -4px 20px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .3s ease}
+  .sticky-cta{display:flex;position:fixed;bottom:16px;left:20px;right:20px;z-index:100;background:transparent;padding:0;justify-content:center;transform:translateY(calc(100% + 32px));transition:transform .3s ease}
   .sticky-cta.show{transform:translateY(0)}
-  .sticky-cta .btn{width:100%;justify-content:center;font-size:15px;padding:14px 24px}
+  .sticky-cta .btn{width:100%;justify-content:center;font-size:15px;padding:16px 24px;box-shadow:0 4px 24px rgba(11,31,59,.35);border-radius:var(--r3)}
   body{padding-bottom:0}
   .sticky-cta.show ~ *{padding-bottom:70px}
   .ftr{padding-bottom:80px}
@@ -430,15 +470,38 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
     <div class="stp"><div class="stp-num">2</div><h3>Get Your Exact Price</h3><p>Every panel is different — we review yours on the call and send your exact quote the same day. No surprises.</p></div>
     <div class="stp"><div class="stp-num">3</div><h3>One-Day Install</h3><p>We pull the permit, install your inlet and interlock, and get it inspected. If you added whole-home surge protection on your call, we install that the same day too.</p></div>
   </div>
-  <p style="font-size:14px;color:var(--navy);opacity:.6;margin-top:24px;margin-bottom:0">A Generac whole-home standby runs $12,000–$20,000 installed. This gives you 80% of the protection at a fraction of the cost.</p>
-  <div style="margin-top:28px;text-align:left;max-width:440px;margin-left:auto;margin-right:auto;font-size:14px;color:var(--navy);line-height:180%">
-    <p style="font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;margin-bottom:10px;text-align:center">Everything Included:</p>
-    <p style="margin-bottom:4px">✓ Generator inlet &amp; interlock kit installation</p>
-    <p style="margin-bottom:4px">✓ Full electrical panel safety inspection</p>
-    <p style="margin-bottom:4px">✓ Custom generator sizing recommendation</p>
-    <p style="margin-bottom:4px">✓ Permit filing &amp; county inspection — handled for you</p>
-    <p style="margin-bottom:4px">✓ 30-day post-install check-in</p>
-    <p style="margin-bottom:0;font-weight:600;font-style:italic;opacity:.7;text-align:center;margin-top:8px">Your install passes inspection or we fix it free.</p>
+  <div class="alt-costs">
+    <div class="alt-cost alt-cost-danger">
+      <span class="alt-cost-ico">⚡</span>
+      <h4>Extension Cords</h4>
+      <p>Fire risk · Carbon monoxide · Code violations · Insurance won't cover it</p>
+    </div>
+    <div class="alt-cost alt-cost-exp">
+      <span class="alt-cost-ico">🏠</span>
+      <h4>Whole-Home Standby</h4>
+      <span class="price-x">$12,000 – $20,000</span>
+      <p>installed · months-long waitlist</p>
+    </div>
+  </div>
+  <p class="alt-vs">80% of the protection. A fraction of the cost.</p>
+
+  <div class="vstack">
+    <p class="vstack-t">Everything Included</p>
+    <p class="vstack-sub">One price. No extras. No surprises.</p>
+    <div class="vstack-items">
+      <div class="vstack-item"><div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p>Generator inlet &amp; interlock kit installation</p><span class="vstack-val">$1,200 value</span></div>
+      <div class="vstack-item"><div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p>Full electrical panel safety inspection</p><span class="vstack-val">$250 value</span></div>
+      <div class="vstack-item"><div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p>Custom generator sizing recommendation</p><span class="vstack-val">$150 value</span></div>
+      <div class="vstack-item"><div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p>Permit filing &amp; county inspection — handled for you</p><span class="vstack-val">$350 value</span></div>
+      <div class="vstack-item"><div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p>30-day post-install check-in</p><span class="vstack-val">$150 value</span></div>
+    </div>
+    <div class="vstack-div"></div>
+    <div class="vstack-total">
+      <span class="vstack-total-label">Total Value</span>
+      <span class="vstack-total-val">$2,100+</span>
+    </div>
+    <div class="vstack-div"></div>
+    <p class="vstack-guar">Your install passes inspection or we fix it free.</p>
   </div>
   <div style="margin-top:20px">
     <div class="cta-row" style="justify-content:center">
@@ -666,7 +729,7 @@ document.querySelectorAll('.fq-btn').forEach(b=>{b.onclick=()=>{const i=b.parent
 
 // Scroll animations
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.style.opacity='1';x.target.style.transform='none'}})},{threshold:.1,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.bento-card,.stp,.rv,.fit,.fq').forEach(e=>{e.style.opacity='0';e.style.transform='translateY(14px)';e.style.transition='opacity .4s ease,transform .4s ease';ob.observe(e)});
+document.querySelectorAll('.bento-card,.stp,.rv,.fit,.fq,.vstack,.alt-cost').forEach(e=>{e.style.opacity='0';e.style.transform='translateY(14px)';e.style.transition='opacity .4s ease,transform .4s ease';ob.observe(e)});
 
 // Video modal
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('vmod').classList.remove('on');document.getElementById('vframe').src=''}});
