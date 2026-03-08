@@ -377,6 +377,15 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 </script>
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></noscript>
 
+<!-- Microsoft Clarity -->
+<script type="text/javascript">
+(function(c,l,a,r,i,t,y){
+  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+})(window,document,"clarity","script","vhj3s6jt82");
+</script>
+
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"LocalBusiness","name":"Backup Power Pro","description":"Generator inlet and interlock installation for portable generators in upstate South Carolina. Licensed, permitted, inspected. One-day install.","url":"https://backuppowerpro.com","image":"https://backuppowerpro.com/og-image.png","telephone":"+1-864-863-8009","address":{"@type":"PostalAddress","streetAddress":"22 Kimbell Ct","addressLocality":"Greenville","addressRegion":"SC","postalCode":"29617","addressCountry":"US"},"geo":{"@type":"GeoCoordinates","latitude":"34.8967","longitude":"-82.4221"},"areaServed":[{"@type":"Place","name":"Greenville County, SC"},{"@type":"Place","name":"Pickens County, SC"},{"@type":"Place","name":"Spartanburg County, SC"}],"priceRange":"$1400-$2000","aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"101","bestRating":"5"},"parentOrganization":{"@type":"Organization","name":"Key Electric","url":"https://keyelectricupstate.com"},"hasOfferCatalog":{"@type":"OfferCatalog","name":"Generator Services","itemListElement":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Generator Inlet Installation","description":"Professional installation of a generator inlet and interlock kit for portable generators. Permitted and inspected."}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Whole-Home Surge Protection","description":"Panel-mount surge protection to guard electronics and appliances from power restoration spikes."}}]}}
 </script>
@@ -795,6 +804,17 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElement
   window.addEventListener('resize',check);
   check();
 })();
+</script>
+
+<!-- CTA Click Tracking -->
+<script>
+document.querySelectorAll('a[href*="appointment-scheduler"]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    if(typeof fbq!=='undefined'){
+      fbq('track','Schedule',{content_name:'cta-click',content_category:'assessment'});
+    }
+  });
+});
 </script>
 </body>
 </html>
