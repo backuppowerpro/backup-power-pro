@@ -817,12 +817,18 @@ async function submitForm() {
   btn.classList.add('btn-loading');
   btn.innerHTML = '<div class="spinner"></div> Sending...';
 
+  const ap = window.addrParts || {};
   const payload = {
     firstName,
     lastName: document.getElementById('lastName').value.trim(),
     phone: document.getElementById('phone').value.trim(),
     email: document.getElementById('email').value.trim(),
     address: document.getElementById('address').value.trim(),
+    addressStreet:  ap.street  || '',
+    addressCity:    ap.city    || '',
+    addressCounty:  ap.county  || '',
+    addressState:   ap.state   || '',
+    addressZip:     ap.zip     || '',
     generatorSize: document.querySelector('input[name="genSize"]:checked')?.value || '',
     panelSize: document.querySelector('input[name="panelSize"]:checked')?.value || '',
     mainBreaker: document.querySelector('input[name="mainBreaker"]:checked')?.value || '',
@@ -871,8 +877,9 @@ function initPlaces() {
   let focusedIdx = -1;
   let addrVerified = false;
 
-  // Expose verification state to validateStep()
+  // Expose verification state and address parts to validateStep() / submitForm()
   window.isAddrVerified = function() { return addrVerified; };
+  window.addrParts = { street: '', city: '', county: '', state: '', zip: '' };
 
   function resetHint() {
     if (hintText) { hintText.textContent = "Start typing — we'll suggest your address"; hintText.style.color = ''; }
@@ -893,9 +900,10 @@ function initPlaces() {
     }
   }
 
-  function selectAddress(label) {
+  function selectAddress(label, parts) {
     input.value = label;
     addrVerified = true;
+    window.addrParts = parts;
     resetHint();
     document.getElementById('f-address').classList.remove('has-error');
     hide();
@@ -903,6 +911,7 @@ function initPlaces() {
 
   input.addEventListener('input', function() {
     addrVerified = false;
+    window.addrParts = { street: '', city: '', county: '', state: '', zip: '' };
     resetHint();
     clearTimeout(debounceTimer);
     const val = input.value.trim();
@@ -927,23 +936,29 @@ function initPlaces() {
         var seen = {};
         features.forEach(function(feature) {
           const p = feature.properties || {};
-          const parts = [];
-          if (p.housenumber && p.street) parts.push(p.housenumber + ' ' + p.street);
-          else if (p.street) parts.push(p.street);
-          else if (p.name) parts.push(p.name);
-          const city = p.city || p.town || p.village || p.county || '';
-          if (city) parts.push(city);
-          if (p.state) parts.push(p.state);
-          if (p.postcode) parts.push(p.postcode);
-          const label = parts.filter(Boolean).join(', ');
+
+          // Extract individual components
+          const street = (p.housenumber && p.street)
+            ? (p.housenumber + ' ' + p.street)
+            : (p.street || p.name || '');
+          const city   = p.city || p.town || p.village || '';
+          const county = p.county || '';
+          const state  = p.state || '';
+          const zip    = p.postcode || '';
+
+          const labelParts = [street, city || county, state, zip].filter(Boolean);
+          const label = labelParts.join(', ');
           if (!label || seen[label]) return;
           seen[label] = true;
 
+          const parts = { street, city, county, state, zip };
+
           const li = document.createElement('li');
           li.textContent = label;
+          li._addrParts = parts;
           li.addEventListener('mousedown', function(e) {
             e.preventDefault();
-            selectAddress(label);
+            selectAddress(label, parts);
           });
           dropdown.appendChild(li);
         });
@@ -965,7 +980,7 @@ function initPlaces() {
       setFocus(Math.max(focusedIdx - 1, 0));
     } else if (e.key === 'Enter' && focusedIdx >= 0) {
       e.preventDefault();
-      selectAddress(items[focusedIdx].textContent);
+      selectAddress(items[focusedIdx].textContent, items[focusedIdx]._addrParts || {});
     } else if (e.key === 'Escape') {
       hide();
     }
