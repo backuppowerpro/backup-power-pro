@@ -226,6 +226,13 @@ a{text-decoration:none;color:inherit}
 .success-step-num{width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .success-step p{font-size:13px;color:var(--text2);line-height:1.5}
 
+/* Surge protection upsell card */
+.surge-card{display:flex;gap:12px;align-items:flex-start;text-align:left;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:16px 18px;margin-top:14px;max-width:320px;margin-left:auto;margin-right:auto}
+.surge-card-icon{width:34px;height:34px;background:#fef3c7;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.surge-card-icon svg{width:17px;height:17px;color:#d97706}
+.surge-card-body h4{font-size:13px;font-weight:700;color:var(--navy);margin:0 0 5px}
+.surge-card-body p{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0}
+
 /* Step visibility */
 .step{display:none}
 .step.active{display:block}
@@ -498,6 +505,7 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
       </div>
 
       <!-- ── SUCCESS STATE ── -->
+
       <div class="success" id="successState">
         <div class="success-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -521,6 +529,17 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
           <div class="success-step">
             <div class="success-step-num">3</div>
             <p>We'll give you a quick call to go over everything — no pressure, just your quote.</p>
+          </div>
+        </div>
+
+        <!-- Surge protection card -->
+        <div class="surge-card">
+          <div class="surge-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div class="surge-card-body">
+            <h4>While We Have Your Panel Open</h4>
+            <p>When utility power comes back after an outage, voltage can spike — and those surges silently damage appliances, TVs, and electronics over time. A whole-home surge protector mounts right on your panel and takes about 15 minutes to install. Since we're already there, it's the easiest time to add it. Just mention it when we chat and we'll include it in your quote.</p>
           </div>
         </div>
       </div>
