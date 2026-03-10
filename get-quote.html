@@ -62,7 +62,7 @@ a{text-decoration:none;color:inherit}
 
 /* ── Card ── */
 .card-wrap{max-width:520px;margin:0 auto;padding:0 20px 60px}
-.card{background:var(--white);border-radius:var(--r2);box-shadow:0 4px 32px rgba(11,31,59,.1);margin-top:16px;position:relative;overflow:hidden}
+.card{background:var(--white);border-radius:var(--r2);box-shadow:0 4px 32px rgba(11,31,59,.1);margin-top:16px;position:relative;overflow:visible}
 .card-inner{padding:28px 28px 32px}
 
 /* Steps indicator */
@@ -102,6 +102,8 @@ a{text-decoration:none;color:inherit}
 .addr-dropdown li{padding:10px 14px;cursor:pointer;font-size:13.5px;color:var(--text2);line-height:1.4;border-top:1px solid rgba(11,31,59,.05);transition:background .15s}
 .addr-dropdown li:first-child{border-top:none}
 .addr-dropdown li:hover,.addr-dropdown li.focused{background:var(--light-blue);color:var(--navy)}
+.addr-dropdown li.addr-manual{color:var(--text3);font-style:italic;font-size:12.5px;border-top:1px solid var(--border)}
+.addr-dropdown li.addr-manual:hover,.addr-dropdown li.addr-manual.focused{background:#fff8e6;color:var(--navy)}
 
 /* Option cards (radio-style) */
 .opt-group{display:grid;gap:10px;margin-top:2px}
@@ -176,7 +178,7 @@ a{text-decoration:none;color:inherit}
 .callout strong{font-weight:600;color:var(--text)}
 
 /* Progress bar */
-.progress-bar{height:3px;background:var(--border);border-radius:0}
+.progress-bar{height:3px;background:var(--border);border-radius:var(--r2) var(--r2) 0 0;overflow:hidden}
 .progress-fill{height:3px;background:var(--gold);border-radius:0;transition:width .4s ease}
 
 /* Trust bar */
@@ -909,6 +911,24 @@ function initPlaces() {
     hide();
   }
 
+  function selectManual(val) {
+    input.value = val;
+    addrVerified = true;
+    window.addrParts = { street: val, city: '', county: '', state: '', zip: '' };
+    resetHint();
+    document.getElementById('f-address').classList.remove('has-error');
+    hide();
+  }
+
+  function addManualOption(val) {
+    const li = document.createElement('li');
+    li.className = 'addr-manual';
+    li.textContent = '📍 Can\'t find it? Use "' + val + '"';
+    li.addEventListener('mousedown', function(e) { e.preventDefault(); selectManual(val); });
+    li._addrParts = { street: val, city: '', county: '', state: '', zip: '' };
+    dropdown.appendChild(li);
+  }
+
   input.addEventListener('input', function() {
     addrVerified = false;
     window.addrParts = { street: '', city: '', county: '', state: '', zip: '' };
@@ -931,17 +951,27 @@ function initPlaces() {
         focusedIdx = -1;
 
         const features = (data.features || []).filter(function(f) {
-          // Must be US and must have a street — real addresses always have streets,
-          // landmarks/dams/parks/schools do not
           return f.properties &&
                  f.properties.countrycode === 'US' &&
                  f.properties.street;
         });
 
-        if (!features.length) { hide(); return; }
+        // Prefer SC + neighboring states; fall back to all US if no local results
+        const LOCAL_STATES = ['South Carolina', 'North Carolina', 'Georgia'];
+        const localFeatures = features.filter(function(f) {
+          return LOCAL_STATES.includes(f.properties.state || '');
+        });
+        const displayFeatures = localFeatures.length > 0 ? localFeatures : features;
+
+        if (!displayFeatures.length) {
+          dropdown.innerHTML = '';
+          if (val.length >= 5) { addManualOption(val); dropdown.style.display = 'block'; }
+          else hide();
+          return;
+        }
 
         var seen = {};
-        features.forEach(function(feature) {
+        displayFeatures.forEach(function(feature) {
           const p = feature.properties || {};
 
           // Extract individual components
@@ -970,8 +1000,10 @@ function initPlaces() {
           dropdown.appendChild(li);
         });
 
-        if (dropdown.children.length) dropdown.style.display = 'block';
-        else hide();
+        if (dropdown.children.length) {
+          addManualOption(val);
+          dropdown.style.display = 'block';
+        } else hide();
       } catch(e) { hide(); }
     }, 200);
   });
@@ -987,7 +1019,12 @@ function initPlaces() {
       setFocus(Math.max(focusedIdx - 1, 0));
     } else if (e.key === 'Enter' && focusedIdx >= 0) {
       e.preventDefault();
-      selectAddress(items[focusedIdx].textContent, items[focusedIdx]._addrParts || {});
+      const focused = items[focusedIdx];
+      if (focused.classList.contains('addr-manual')) {
+        selectManual(input.value.trim());
+      } else {
+        selectAddress(focused.textContent, focused._addrParts || {});
+      }
     } else if (e.key === 'Escape') {
       hide();
     }
