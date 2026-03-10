@@ -293,7 +293,7 @@ a{text-decoration:none;color:inherit}
   <div class="card">
 
     <!-- Progress bar -->
-    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:33%"></div></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:50%"></div></div>
 
     <div class="card-inner">
 
@@ -302,13 +302,11 @@ a{text-decoration:none;color:inherit}
         <div class="step-dot active" id="dot1">1</div>
         <div class="step-line" id="line1"></div>
         <div class="step-dot inactive" id="dot2">2</div>
-        <div class="step-line" id="line2"></div>
-        <div class="step-dot inactive" id="dot3">3</div>
       </div>
 
       <!-- ── STEP 1: Contact Info ── -->
       <div class="step active" id="step1">
-        <div class="sec-label">Step 1 of 3 · Your Info</div>
+        <div class="sec-label">Step 1 of 2 · Your Info</div>
 
         <!-- Icon badges replacing the paragraph -->
         <div class="step-badges">
@@ -375,7 +373,7 @@ a{text-decoration:none;color:inherit}
 
         <div class="nav">
           <button class="btn btn-gold" onclick="goStep(2)">
-            Next — Generator Info
+            Next — Quick Details
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
         </div>
@@ -385,11 +383,11 @@ a{text-decoration:none;color:inherit}
         </div>
       </div>
 
-      <!-- ── STEP 2: Generator Setup ── -->
+      <!-- ── STEP 2: Quick Details ── -->
       <div class="step" id="step2">
-        <div class="sec-label">Step 2 of 3 · Your Generator Setup</div>
+        <div class="sec-label">Step 2 of 2 · Quick Details</div>
 
-        <!-- Icon badges replacing the paragraph -->
+        <!-- Icon badges -->
         <div class="step-badges">
           <span class="step-badge badge-green">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -397,251 +395,66 @@ a{text-decoration:none;color:inherit}
           </span>
           <span class="step-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            3 quick questions
-          </span>
-          <span class="step-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Instant price estimate
+            2 quick questions
           </span>
         </div>
 
-        <div class="field" id="f-genwatts">
-          <label>Generator Size <span class="req">*</span></label>
-          <div class="opt-group cols-2">
-            <label class="opt-label">
-              <input type="radio" name="genSize" value="Under 3500W">
-              <div class="opt-card">
-                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                <div><div class="opt-text">Under 3,500W</div><div class="opt-sub">Small / inverter</div></div>
-              </div>
-            </label>
-            <label class="opt-label">
-              <input type="radio" name="genSize" value="3500-5000W">
-              <div class="opt-card">
-                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                <div><div class="opt-text">3,500–5,000W</div><div class="opt-sub">Mid-size</div></div>
-              </div>
-            </label>
-            <label class="opt-label">
-              <input type="radio" name="genSize" value="5000-8000W">
-              <div class="opt-card">
-                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                <div><div class="opt-text">5,000–8,000W</div><div class="opt-sub">Large</div></div>
-              </div>
-            </label>
-            <label class="opt-label">
-              <input type="radio" name="genSize" value="8000W+">
-              <div class="opt-card">
-                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                <div><div class="opt-text">8,000W+</div><div class="opt-sub">Extra large</div></div>
-              </div>
-            </label>
-          </div>
-          <div class="err" id="genSize-err">Please select one</div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="field" id="f-panel">
-          <label>Panel Size <span class="req">*</span></label>
+        <div class="field" id="f-panellocation">
+          <label>Main Breaker Panel Location <span class="req">*</span></label>
           <div class="opt-group cols-3">
             <label class="opt-label">
-              <input type="radio" name="panelSize" value="100 Amp">
+              <input type="radio" name="panelLocation" value="Garage / Exterior">
               <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
-                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="6" x2="12" y2="10"/></svg></div>
-                <div class="opt-text">100 Amp</div>
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/></svg></div>
+                <div class="opt-text">Garage / Exterior</div>
               </div>
             </label>
             <label class="opt-label">
-              <input type="radio" name="panelSize" value="200 Amp">
+              <input type="radio" name="panelLocation" value="Inside the home">
               <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
                 <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="6" x2="12" y2="10"/></svg></div>
-                <div class="opt-text">200 Amp</div>
+                <div class="opt-text">Inside the Home</div>
               </div>
             </label>
             <label class="opt-label">
-              <input type="radio" name="panelSize" value="Not sure">
+              <input type="radio" name="panelLocation" value="Unsure">
               <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
                 <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-                <div class="opt-text">Not sure</div>
+                <div class="opt-text">Unsure</div>
               </div>
             </label>
           </div>
-          <div class="err" id="panelSize-err">Please select one</div>
+          <div class="err" id="panelLocation-err">Please select one</div>
         </div>
 
         <div class="divider"></div>
 
-        <div class="field" id="f-mainbreaker">
-          <label>Does your panel have a main breaker? <span class="req">*</span></label>
-          <p style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.5">The main breaker is usually a large double-pole switch at the top of your panel.</p>
+        <div class="field" id="f-genvoltage">
+          <label>Is Your Generator 240 Volts? <span class="req">*</span></label>
           <div class="opt-group cols-3">
             <label class="opt-label">
-              <input type="radio" name="mainBreaker" value="Yes">
+              <input type="radio" name="genVoltage" value="Yes - 240V">
               <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
                 <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                <div class="opt-text">Yes</div>
+                <div class="opt-text">Yes, it's 240V</div>
               </div>
             </label>
             <label class="opt-label">
-              <input type="radio" name="mainBreaker" value="No">
+              <input type="radio" name="genVoltage" value="No - 120V">
               <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
                 <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-                <div class="opt-text">No</div>
+                <div class="opt-text">No, it's 120V</div>
               </div>
             </label>
             <label class="opt-label">
-              <input type="radio" name="mainBreaker" value="Not sure">
+              <input type="radio" name="genVoltage" value="Unsure">
               <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
                 <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-                <div class="opt-text">Not sure</div>
+                <div class="opt-text">Unsure</div>
               </div>
             </label>
           </div>
-          <div class="err" id="mainBreaker-err">Please select one</div>
-        </div>
-
-        <div class="nav">
-          <button class="btn btn-ghost" onclick="goStep(1)" style="width:auto;flex-shrink:0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            Back
-          </button>
-          <button class="btn btn-gold" onclick="goStep(3)">
-            Next — Final Step
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- ── STEP 3: Final Details ── -->
-      <div class="step" id="step3">
-        <div class="sec-label">Step 3 of 3 · Almost Done!</div>
-
-        <!-- Comparison table -->
-        <div class="compare-wrap">
-          <div class="compare-label">Your options compared</div>
-          <div class="compare-table">
-
-            <!-- Extension cords -->
-            <div class="compare-col danger">
-              <div class="compare-head">
-                <div class="ch-label">Extension Cords</div>
-                <div class="ch-price">⚠️ Unsafe</div>
-              </div>
-              <div class="compare-body">
-                <div class="compare-row">
-                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-                  <div class="cr-text strike">Legal &amp; safe</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-                  <div class="cr-text strike">Panel power</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-                  <div class="cr-text strike">Code compliant</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-                  <div class="cr-text strike">Fire-safe setup</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- BPP — WINNER -->
-            <div class="compare-col winner">
-              <div class="compare-head">
-                <div class="ch-label">⚡ BPP Install</div>
-                <div class="ch-price">$1,400–$2,000</div>
-              </div>
-              <div class="compare-body">
-                <div class="compare-row">
-                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                  <div class="cr-text">Legal &amp; safe</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                  <div class="cr-text">Panel power</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                  <div class="cr-text">Permitted &amp; inspected</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                  <div class="cr-text">Done in one day</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Standby generator -->
-            <div class="compare-col expensive">
-              <div class="compare-head">
-                <div class="ch-label">Standby Generator</div>
-                <div class="ch-price">$15,000+</div>
-              </div>
-              <div class="compare-body">
-                <div class="compare-row">
-                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                  <div class="cr-text">Legal &amp; safe</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                  <div class="cr-text">Panel power</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                  <div class="cr-text">Permitted</div>
-                </div>
-                <div class="compare-row">
-                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-                  <div class="cr-text">3–5 day install</div>
-                </div>
-              </div>
-            </div>
-
-          </div><!-- /compare-table -->
-        </div><!-- /compare-wrap -->
-
-        <div class="field" id="f-panelbrand">
-          <label>Panel Brand <span style="font-weight:400;color:var(--text3)">(if you know it)</span></label>
-          <select id="panelBrand">
-            <option value="">Select brand...</option>
-            <option>Square D</option>
-            <option>Siemens</option>
-            <option>Eaton / Cutler-Hammer</option>
-            <option>GE</option>
-            <option>Leviton</option>
-            <option>Murray</option>
-            <option>Federal Pacific</option>
-            <option>Not sure</option>
-          </select>
-        </div>
-
-        <div class="field" id="f-location">
-          <label>Where is your panel located? <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
-          <select id="panelLocation">
-            <option value="">Select location...</option>
-            <option>Garage</option>
-            <option>Basement</option>
-            <option>Utility room / laundry room</option>
-            <option>Hallway</option>
-            <option>Outside / exterior</option>
-            <option>Other</option>
-          </select>
-        </div>
-
-        <div class="field" id="f-source">
-          <label>How did you hear about us?</label>
-          <select id="hearAbout">
-            <option value="">Select...</option>
-            <option>Facebook or Instagram ad</option>
-            <option>Google search</option>
-            <option>Neighbor or friend</option>
-            <option>Nextdoor</option>
-            <option>Google Business Profile</option>
-            <option>Other</option>
-          </select>
+          <div class="err" id="genVoltage-err">Please select one</div>
         </div>
 
         <div class="divider"></div>
@@ -664,7 +477,7 @@ a{text-decoration:none;color:inherit}
         </p>
 
         <div class="nav">
-          <button class="btn btn-ghost" onclick="goStep(2)" style="width:auto;flex-shrink:0">
+          <button class="btn btn-ghost" onclick="goStep(1)" style="width:auto;flex-shrink:0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Back
           </button>
@@ -740,9 +553,9 @@ const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
 let currentStep = 1;
 
 function updateProgress(step) {
-  const pct = step === 1 ? 33 : step === 2 ? 66 : 100;
+  const pct = step === 1 ? 50 : 100;
   document.getElementById('progressFill').style.width = pct + '%';
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 2; i++) {
     const dot = document.getElementById('dot' + i);
     dot.className = 'step-dot ' + (i < step ? 'done' : i === step ? 'active' : 'inactive');
     dot.innerHTML = i < step
@@ -751,8 +564,6 @@ function updateProgress(step) {
   }
   if (step > 1) document.getElementById('line1').classList.add('done');
   else document.getElementById('line1').classList.remove('done');
-  if (step > 2) document.getElementById('line2').classList.add('done');
-  else document.getElementById('line2').classList.remove('done');
 }
 
 function goStep(n) {
@@ -789,12 +600,10 @@ function validateStep(step) {
     if (addrOk && !svcOk) ok = false; // banner already shown inline, no extra error needed
   }
   if (step === 2) {
-    const gs = document.querySelector('input[name="genSize"]:checked');
-    const ps = document.querySelector('input[name="panelSize"]:checked');
-    const mb = document.querySelector('input[name="mainBreaker"]:checked');
-    setErrById('genSize-err', !gs); if (!gs) ok = false;
-    setErrById('panelSize-err', !ps); if (!ps) ok = false;
-    setErrById('mainBreaker-err', !mb); if (!mb) ok = false;
+    const pl = document.querySelector('input[name="panelLocation"]:checked');
+    const gv = document.querySelector('input[name="genVoltage"]:checked');
+    setErrById('panelLocation-err', !pl); if (!pl) ok = false;
+    setErrById('genVoltage-err', !gv); if (!gv) ok = false;
   }
   return ok;
 }
@@ -820,7 +629,7 @@ document.getElementById('phone').addEventListener('input', function(e) {
 });
 
 async function submitForm() {
-  if (!validateStep(3)) return;
+  if (!validateStep(2)) return;
 
   const firstName = document.getElementById('firstName').value.trim();
   const btn = document.getElementById('submitBtn');
@@ -839,12 +648,8 @@ async function submitForm() {
     addressCounty:  ap.county  || '',
     addressState:   ap.state   || '',
     addressZip:     ap.zip     || '',
-    generatorSize: document.querySelector('input[name="genSize"]:checked')?.value || '',
-    panelSize: document.querySelector('input[name="panelSize"]:checked')?.value || '',
-    mainBreaker: document.querySelector('input[name="mainBreaker"]:checked')?.value || '',
-    panelBrand: document.getElementById('panelBrand').value || 'Not provided',
-    panelLocation: document.getElementById('panelLocation').value || 'Not provided',
-    hearAbout: document.getElementById('hearAbout').value || 'Not provided',
+    panelLocation: document.querySelector('input[name="panelLocation"]:checked')?.value || '',
+    genVoltage: document.querySelector('input[name="genVoltage"]:checked')?.value || '',
     submittedAt: new Date().toISOString(),
     source: 'get-quote-page'
   };
@@ -863,7 +668,7 @@ async function submitForm() {
 }
 
 function showSuccess(firstName) {
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 2; i++) {
     const s = document.getElementById('step' + i);
     if (s) s.style.display = 'none';
   }
