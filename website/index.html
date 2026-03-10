@@ -191,6 +191,16 @@ img{max-width:100%;display:block}
 .vstack-total{display:flex;justify-content:space-between;align-items:center;padding:2px 18px}
 .vstack-total-label{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:rgba(255,255,255,.45)}
 .vstack-total-val{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;color:var(--gold);letter-spacing:-.5px;text-shadow:0 0 24px rgba(255,186,0,.3)}
+/* Surge add-on row */
+.vstack-addon-divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px}
+.vstack-addon-divider::before,.vstack-addon-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+.vstack-addon-divider span{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.3);text-transform:uppercase;white-space:nowrap}
+.vstack-item-addon{background:rgba(255,186,0,.06);border-color:rgba(255,186,0,.15)}
+.vstack-item-addon:hover{background:rgba(255,186,0,.1)}
+.vstack-item-addon .vstack-chk{background:rgba(255,186,0,.15)}
+.vstack-addon-sub{font-size:11.5px;color:rgba(255,255,255,.4);margin-top:3px;line-height:1.4}
+.vstack-addon-price{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;margin-left:auto;flex-shrink:0;text-align:right;line-height:1.3}
+.vstack-addon-price small{display:block;font-size:10px;font-weight:400;opacity:.6}
 
 /* Alt Costs */
 .alt-costs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px;max-width:520px;margin-left:auto;margin-right:auto}
@@ -503,6 +513,17 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
       <div class="vstack-item"><div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p>Full electrical panel safety inspection</p><span class="vstack-val">$180 value</span></div>
       <div class="vstack-item"><div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p>Generator power cord</p><span class="vstack-val">$175 value</span></div>
       <div class="vstack-item"><div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p>Custom generator sizing recommendation</p><span class="vstack-val">$150 value</span></div>
+    </div>
+    <div class="vstack-addon-divider"><span>Optional Add-On</span></div>
+    <div class="vstack-items">
+      <div class="vstack-item vstack-item-addon">
+        <div class="vstack-chk"><svg viewBox="0 0 24 24" fill="none" stroke="#ffba00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div>
+          <p>Whole-home surge protection — $75,000 warranty on connected devices</p>
+          <p class="vstack-addon-sub">Utility restoration spikes &amp; lightning can destroy a fridge, TV, washer in seconds. Insurance usually won't cover it.</p>
+        </div>
+        <div class="vstack-addon-price">+$450<small>&lt;1¢/dollar covered</small></div>
+      </div>
     </div>
     <div class="vstack-div"></div>
     <div class="vstack-total">
