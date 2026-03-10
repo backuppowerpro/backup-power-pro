@@ -29,19 +29,10 @@ a{text-decoration:none;color:inherit}
 
 /* ── Hero ── */
 .hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#2a5a7a 100%);padding:32px 24px 36px;text-align:center;color:var(--white)}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,186,0,.15);border:1px solid rgba(255,186,0,.3);border-radius:100px;padding:6px 14px;margin-bottom:16px}
-.hero-badge span{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--gold);letter-spacing:.05em;text-transform:uppercase}
 .hero h1{font-size:clamp(21px,5vw,28px);font-weight:800;line-height:1.25;margin-bottom:16px;letter-spacing:-.3px}
 .hero h1 em{font-style:normal;color:var(--gold)}
 
 /* Hero icon pills */
-.hero-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-bottom:18px}
-.hero-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:100px;padding:6px 12px;font-size:12px;font-weight:600;color:rgba(255,255,255,.95);white-space:nowrap}
-.hero-pill svg{width:12px;height:12px;flex-shrink:0}
-.hero-pill.pill-gold{background:rgba(255,186,0,.15);border-color:rgba(255,186,0,.3)}
-.hero-pill.pill-gold svg{color:var(--gold)}
-.hero-pill.pill-green{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.3)}
-.hero-pill.pill-green svg{color:#4ade80}
 
 /* Price comparison strip (inside hero) */
 .price-vs{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px}
@@ -55,10 +46,6 @@ a{text-decoration:none;color:inherit}
 .pv-vs{font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.05em}
 
 /* Social proof strip */
-.social-strip{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 14px;max-width:420px;margin:0 auto}
-.social-strip .stars{color:var(--gold);font-size:14px;letter-spacing:1px}
-.social-strip span{font-size:12px;color:rgba(255,255,255,.7);font-weight:500}
-.social-strip .dot{color:rgba(255,255,255,.3);font-size:10px}
 
 /* ── Card ── */
 .card-wrap{max-width:520px;margin:0 auto;padding:0 20px 60px}
@@ -223,8 +210,6 @@ a{text-decoration:none;color:inherit}
   .opt-group.cols-3{grid-template-columns:1fr 1fr}
   .field-row{grid-template-columns:1fr}
   .card-inner{padding:24px 20px 28px}
-  .hero-pills{gap:5px}
-  .hero-pill{font-size:11px;padding:5px 10px}
   .price-vs{gap:6px}
   .pv-item{padding:8px 12px}
   .pv-price{font-size:14px}
@@ -240,31 +225,7 @@ a{text-decoration:none;color:inherit}
 
 <!-- Hero -->
 <div class="hero">
-  <div class="hero-badge">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-    <span>Free Quote · No Obligation</span>
-  </div>
   <h1>You Already Own the Generator.<br><em>Now Make It Power Your Whole Home.</em></h1>
-
-  <!-- Icon pills — replace text paragraph -->
-  <div class="hero-pills">
-    <div class="hero-pill pill-gold">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      Done in one day
-    </div>
-    <div class="hero-pill pill-green">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      Permitted &amp; inspected
-    </div>
-    <div class="hero-pill">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Licensed SC electrician
-    </div>
-    <div class="hero-pill">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      No $15K standby needed
-    </div>
-  </div>
 
   <!-- Price comparison — replaces the floating gold box -->
   <div class="price-vs">
@@ -279,13 +240,6 @@ a{text-decoration:none;color:inherit}
     </div>
   </div>
 
-  <div class="social-strip">
-    <span class="stars">★★★★★</span>
-    <span class="dot">·</span>
-    <span>50+ Upstate SC homes connected</span>
-    <span class="dot">·</span>
-    <span>Licensed SC Electrician</span>
-  </div>
 </div>
 
 <!-- Card -->
@@ -535,10 +489,6 @@ a{text-decoration:none;color:inherit}
       <div class="trust-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         One-Day Install
-      </div>
-      <div class="trust-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        100% Free Quote
       </div>
     </div>
 
