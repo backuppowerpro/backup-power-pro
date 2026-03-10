@@ -361,9 +361,9 @@ a{text-decoration:none;color:inherit}
           </div>
           <div class="field-hint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 7.05 11.5 7.72 12.06a.5.5 0 0 0 .56 0C12.95 21.5 20 15.4 20 10a8 8 0 0 0-8-8z"/></svg>
-            Start typing — we'll suggest your address
+            <span id="addr-hint-text">Start typing — we'll suggest your address</span>
           </div>
-          <div class="err">Required</div>
+          <div class="err" id="addr-err">Required</div>
         </div>
 
         <div class="nav">
@@ -774,7 +774,9 @@ function validateStep(step) {
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
     document.getElementById('email-err').textContent = em ? 'Enter a valid email (e.g. name@example.com)' : 'Required';
     setErr('f-email', !emailOk); if (!emailOk) ok = false;
-    setErr('f-address', !ad); if (!ad) ok = false;
+    const addrOk = ad && (typeof window.isAddrVerified === 'function' ? window.isAddrVerified() : true);
+    document.getElementById('addr-err').textContent = !ad ? 'Required' : 'Please select your address from the suggestions above';
+    setErr('f-address', !addrOk); if (!addrOk) ok = false;
   }
   if (step === 2) {
     const gs = document.querySelector('input[name="genSize"]:checked');
@@ -857,75 +859,99 @@ function showSuccess(firstName) {
 }
 </script>
 
-<!-- Address autocomplete — Nominatim (OpenStreetMap), no API key required -->
+<!-- Address autocomplete — Photon (Komoot/OpenStreetMap), no API key required -->
 <script>
 function initPlaces() {
   const input = document.getElementById('address');
   const dropdown = document.getElementById('addrDropdown');
+  const hintText = document.getElementById('addr-hint-text');
   if (!input || !dropdown) return;
 
   let debounceTimer;
   let focusedIdx = -1;
+  let addrVerified = false;
+
+  // Expose verification state to validateStep()
+  window.isAddrVerified = function() { return addrVerified; };
+
+  function resetHint() {
+    if (hintText) { hintText.textContent = "Start typing — we'll suggest your address"; hintText.style.color = ''; }
+  }
 
   function hide() {
     dropdown.style.display = 'none';
     focusedIdx = -1;
-    const items = dropdown.querySelectorAll('li');
-    items.forEach(li => li.classList.remove('focused'));
+    dropdown.querySelectorAll('li').forEach(function(li) { li.classList.remove('focused'); });
   }
 
   function setFocus(idx) {
     const items = dropdown.querySelectorAll('li');
-    items.forEach(li => li.classList.remove('focused'));
+    items.forEach(function(li) { li.classList.remove('focused'); });
     if (idx >= 0 && idx < items.length) {
       items[idx].classList.add('focused');
       focusedIdx = idx;
     }
   }
 
+  function selectAddress(label) {
+    input.value = label;
+    addrVerified = true;
+    resetHint();
+    document.getElementById('f-address').classList.remove('has-error');
+    hide();
+  }
+
   input.addEventListener('input', function() {
+    addrVerified = false;
+    resetHint();
     clearTimeout(debounceTimer);
+    const val = input.value.trim();
+    if (val.length < 3) { hide(); return; }
     debounceTimer = setTimeout(async function() {
-      const val = input.value.trim();
-      if (val.length < 4) { hide(); return; }
       try {
+        // Photon: fast Elasticsearch-based geocoder, bias to Upstate SC
         const res = await fetch(
-          'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(val) +
-          '&format=json&limit=5&countrycodes=us&addressdetails=1',
-          { headers: { 'Accept-Language': 'en-US,en', 'User-Agent': 'BackupPowerProQuoteForm/1.0' } }
+          'https://photon.komoot.io/api/?q=' + encodeURIComponent(val) +
+          '&limit=6&lat=34.8526&lon=-82.3940&lang=en'
         );
         const data = await res.json();
         dropdown.innerHTML = '';
         focusedIdx = -1;
-        if (!data.length) { hide(); return; }
-        data.forEach(function(item) {
-          const a = item.address || {};
-          const street = (a.house_number && a.road) ? (a.house_number + ' ' + a.road) : (a.road || '');
-          const city = a.city || a.town || a.village || a.hamlet || a.county || '';
-          const state = a.state || '';
-          const zip = a.postcode || '';
-          const parts = [street, city, state, zip].filter(Boolean);
-          const label = parts.join(', ');
-          if (!label) return;
+
+        const features = (data.features || []).filter(function(f) {
+          return f.properties && f.properties.countrycode === 'US';
+        });
+
+        if (!features.length) { hide(); return; }
+
+        var seen = {};
+        features.forEach(function(feature) {
+          const p = feature.properties || {};
+          const parts = [];
+          if (p.housenumber && p.street) parts.push(p.housenumber + ' ' + p.street);
+          else if (p.street) parts.push(p.street);
+          else if (p.name) parts.push(p.name);
+          const city = p.city || p.town || p.village || p.county || '';
+          if (city) parts.push(city);
+          if (p.state) parts.push(p.state);
+          if (p.postcode) parts.push(p.postcode);
+          const label = parts.filter(Boolean).join(', ');
+          if (!label || seen[label]) return;
+          seen[label] = true;
+
           const li = document.createElement('li');
           li.textContent = label;
           li.addEventListener('mousedown', function(e) {
             e.preventDefault();
-            input.value = label;
-            document.getElementById('f-address').classList.remove('has-error');
-            hide();
+            selectAddress(label);
           });
           dropdown.appendChild(li);
         });
-        if (dropdown.children.length) {
-          dropdown.style.display = 'block';
-        } else {
-          hide();
-        }
-      } catch(e) {
-        hide();
-      }
-    }, 350);
+
+        if (dropdown.children.length) dropdown.style.display = 'block';
+        else hide();
+      } catch(e) { hide(); }
+    }, 200);
   });
 
   input.addEventListener('keydown', function(e) {
@@ -939,13 +965,23 @@ function initPlaces() {
       setFocus(Math.max(focusedIdx - 1, 0));
     } else if (e.key === 'Enter' && focusedIdx >= 0) {
       e.preventDefault();
-      input.value = items[focusedIdx].textContent;
-      document.getElementById('f-address').classList.remove('has-error');
-      hide();
+      selectAddress(items[focusedIdx].textContent);
     } else if (e.key === 'Escape') {
       hide();
     }
   });
+
+  input.addEventListener('blur', function() {
+    setTimeout(function() {
+      hide();
+      if (input.value.trim() && !addrVerified && hintText) {
+        hintText.textContent = '⚠ Please select your address from the suggestions';
+        hintText.style.color = '#dc2626';
+      }
+    }, 160);
+  });
+
+  input.addEventListener('focus', resetHint);
 
   document.addEventListener('click', function(e) {
     if (!e.target.closest('#addrWrap')) hide();
