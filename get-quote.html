@@ -35,15 +35,19 @@ a{text-decoration:none;color:inherit}
 /* Hero icon pills */
 
 /* Price comparison strip (inside hero) */
-.price-vs{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px}
-.pv-item{text-align:center;padding:9px 16px;border-radius:12px}
-.pv-bad{background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.25)}
-.pv-good{background:rgba(255,186,0,.15);border:1px solid rgba(255,186,0,.35)}
-.pv-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,.65);margin-bottom:3px}
-.pv-price{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;line-height:1.1}
-.pv-bad .pv-price{color:#f87171}
-.pv-good .pv-price{color:var(--gold)}
-.pv-vs{font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.05em}
+.price-vs{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:18px}
+.pv-row{display:flex;align-items:center;justify-content:center;gap:8px}
+.pv-item{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;white-space:nowrap}
+.pv-bad{background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.22)}
+.pv-good{background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.3);padding:10px 20px;border-radius:12px}
+.pv-icon{width:18px;height:18px;flex-shrink:0}
+.pv-bad .pv-icon{color:#f87171}
+.pv-good .pv-icon{color:#4ade80}
+.pv-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.7)}
+.pv-price{font-family:'Outfit',sans-serif;font-weight:800;line-height:1.1;margin-left:2px}
+.pv-bad .pv-price{font-size:13px;color:#f87171}
+.pv-good .pv-label{font-size:12px;color:rgba(255,255,255,.85)}
+.pv-good .pv-price{font-size:18px;color:#4ade80}
 
 /* Social proof strip */
 
@@ -211,8 +215,12 @@ a{text-decoration:none;color:inherit}
   .field-row{grid-template-columns:1fr}
   .card-inner{padding:24px 20px 28px}
   .price-vs{gap:6px}
-  .pv-item{padding:8px 12px}
-  .pv-price{font-size:14px}
+  .pv-row{gap:6px}
+  .pv-item{padding:7px 10px;gap:6px}
+  .pv-good{padding:8px 14px}
+  .pv-label{font-size:10px}
+  .pv-bad .pv-price{font-size:11px}
+  .pv-good .pv-price{font-size:15px}
 }
 </style>
 </head>
@@ -227,16 +235,24 @@ a{text-decoration:none;color:inherit}
 <div class="hero">
   <h1>You Already Own the Generator.<br><em>Now Make It Power Your Whole Home.</em></h1>
 
-  <!-- Price comparison — replaces the floating gold box -->
+  <!-- Price comparison -->
   <div class="price-vs">
-    <div class="pv-item pv-bad">
-      <div class="pv-label">Standby generator</div>
-      <div class="pv-price">$15,000+</div>
+    <div class="pv-row">
+      <div class="pv-item pv-bad">
+        <svg class="pv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <span class="pv-label">Extension cords</span>
+        <span class="pv-price">Unsafe</span>
+      </div>
+      <div class="pv-item pv-bad">
+        <svg class="pv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <span class="pv-label">Standby generator</span>
+        <span class="pv-price">$15,000+</span>
+      </div>
     </div>
-    <div class="pv-vs">vs</div>
     <div class="pv-item pv-good">
-      <div class="pv-label">⚡ BPP install</div>
-      <div class="pv-price">$1,400–$2,000</div>
+      <svg class="pv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span class="pv-label">Backup Power Pro</span>
+      <span class="pv-price">$1,400–$2,000</span>
     </div>
   </div>
 
