@@ -96,12 +96,13 @@ a{text-decoration:none;color:inherit}
 .field-hint{font-size:11.5px;color:var(--text3);margin-top:5px;display:flex;align-items:center;gap:4px}
 .field-hint svg{width:12px;height:12px;flex-shrink:0}
 
-/* Address autocomplete dropdown */
+/* Address autocomplete wrapper */
 .addr-wrap{position:relative}
-.addr-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:9999;background:var(--white);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(11,31,59,.12);padding:4px 0;list-style:none;max-height:220px;overflow-y:auto}
-.addr-dropdown li{padding:10px 14px;cursor:pointer;font-size:14px;color:var(--text2);line-height:1.4;border-top:1px solid rgba(11,31,59,.05);transition:background .15s}
-.addr-dropdown li:first-child{border-top:none}
-.addr-dropdown li:hover,.addr-dropdown li.focused{background:var(--light-blue);color:var(--navy)}
+/* Style the PlaceAutocompleteElement to match our inputs */
+gmp-place-autocomplete{display:block;width:100%}
+gmp-place-autocomplete input{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:12px;font-family:'Inter',system-ui,sans-serif;font-size:15px;color:var(--text);background:var(--white);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;box-sizing:border-box}
+gmp-place-autocomplete input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(11,31,59,.08)}
+gmp-place-autocomplete input::placeholder{color:var(--text3)}
 
 /* Option cards (radio-style) */
 .opt-group{display:grid;gap:10px;margin-top:2px}
@@ -355,9 +356,8 @@ a{text-decoration:none;color:inherit}
 
         <div class="field" id="f-address">
           <label>Service Address <span class="req">*</span></label>
-          <div class="addr-wrap">
+          <div class="addr-wrap" id="addrWrap">
             <input type="text" id="address" placeholder="123 Oak Street, Greenville SC" autocomplete="off">
-            <ul class="addr-dropdown" id="addrDropdown"></ul>
           </div>
           <div class="field-hint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 7.05 11.5 7.72 12.06a.5.5 0 0 0 .56 0C12.95 21.5 20 15.4 20 10a8 8 0 0 0-8-8z"/></svg>
@@ -857,8 +857,7 @@ function showSuccess(firstName) {
 }
 </script>
 
-<!-- Google Maps — new Places API (AutocompleteSuggestion) -->
-<!-- Works with keys created after March 2025 (replaces deprecated Autocomplete widget) -->
+<!-- Google Maps — PlaceAutocompleteElement (official new API for keys created after March 2025) -->
 <script>
 (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
   key: "AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ",
@@ -866,99 +865,40 @@ function showSuccess(firstName) {
 });
 
 async function initPlaces() {
-  const input = document.getElementById('address');
-  const dropdown = document.getElementById('addrDropdown');
-  if (!input || !dropdown) return;
+  const plainInput = document.getElementById('address');
+  const wrap = document.getElementById('addrWrap');
+  if (!plainInput || !wrap) return;
 
   try {
-    const { AutocompleteSuggestion, AutocompleteSessionToken } =
-      await google.maps.importLibrary("places");
+    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
 
-    let token = new AutocompleteSessionToken();
-    let focusedIndex = -1;
-    let debounceTimer;
-
-    const hideDropdown = () => {
-      dropdown.style.display = 'none';
-      focusedIndex = -1;
-    };
-    const showDropdown = () => { dropdown.style.display = 'block'; };
-
-    input.addEventListener('input', () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(async () => {
-        const val = input.value.trim();
-        if (val.length < 2) { hideDropdown(); return; }
-
-        try {
-          const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input: val,
-            sessionToken: token,
-            includedRegionCodes: ['us']
-          });
-
-          dropdown.innerHTML = '';
-          focusedIndex = -1;
-
-          if (!suggestions.length) { hideDropdown(); return; }
-
-          suggestions.slice(0, 5).forEach((s, i) => {
-            const pred = s.placePrediction;
-            const li = document.createElement('li');
-            li.textContent = pred.text.toString();
-            li.dataset.index = i;
-
-            li.addEventListener('mousedown', async (e) => {
-              e.preventDefault();
-              try {
-                const place = pred.toPlace();
-                await place.fetchFields({ fields: ['formattedAddress'] });
-                input.value = place.formattedAddress;
-              } catch {
-                input.value = pred.text.toString();
-              }
-              hideDropdown();
-              document.getElementById('f-address').classList.remove('has-error');
-              token = new AutocompleteSessionToken();
-            });
-
-            dropdown.appendChild(li);
-          });
-
-          showDropdown();
-        } catch (err) {
-          hideDropdown();
-        }
-      }, 220);
+    // Create the official new autocomplete element
+    const pac = new PlaceAutocompleteElement({
+      componentRestrictions: { country: 'us' }
     });
 
-    // Keyboard navigation
-    input.addEventListener('keydown', (e) => {
-      const items = dropdown.querySelectorAll('li');
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        focusedIndex = Math.min(focusedIndex + 1, items.length - 1);
-        items.forEach((li, i) => li.classList.toggle('focused', i === focusedIndex));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        focusedIndex = Math.max(focusedIndex - 1, -1);
-        items.forEach((li, i) => li.classList.toggle('focused', i === focusedIndex));
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (focusedIndex >= 0 && items[focusedIndex]) {
-          items[focusedIndex].dispatchEvent(new MouseEvent('mousedown'));
-        }
-      } else if (e.key === 'Escape') {
-        hideDropdown();
-      }
+    // Swap: insert PAC element, hide the plain input
+    wrap.insertBefore(pac, plainInput);
+    plainInput.style.display = 'none';
+
+    // Sync typed text back to plain input (for form validation)
+    pac.addEventListener('input', () => {
+      plainInput.value = pac.value || '';
+      if (plainInput.value) document.getElementById('f-address').classList.remove('has-error');
     });
 
-    document.addEventListener('click', (e) => {
-      if (!input.contains(e.target) && !dropdown.contains(e.target)) hideDropdown();
+    // On selection: pull the formatted address
+    pac.addEventListener('gmp-placeselect', async ({ place }) => {
+      await place.fetchFields({ fields: ['formattedAddress'] });
+      plainInput.value = place.formattedAddress;
+      pac.value = place.formattedAddress;
+      document.getElementById('f-address').classList.remove('has-error');
     });
 
   } catch (err) {
-    console.warn('Places API unavailable — address field will work as plain text input.', err);
+    // PlaceAutocompleteElement unavailable — plain text input stays visible
+    plainInput.style.display = '';
+    console.warn('Google Places unavailable, using plain text input:', err.message);
   }
 }
 
