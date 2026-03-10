@@ -227,11 +227,19 @@ a{text-decoration:none;color:inherit}
 .success-step p{font-size:13px;color:var(--text2);line-height:1.5}
 
 /* Surge protection upsell card */
-.surge-card{display:flex;gap:12px;align-items:flex-start;text-align:left;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:16px 18px;margin-top:14px;max-width:320px;margin-left:auto;margin-right:auto}
+.surge-card{text-align:left;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:16px 18px;margin-top:14px;max-width:320px;margin-left:auto;margin-right:auto}
+.surge-card-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
 .surge-card-icon{width:34px;height:34px;background:#fef3c7;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .surge-card-icon svg{width:17px;height:17px;color:#d97706}
-.surge-card-body h4{font-size:13px;font-weight:700;color:var(--navy);margin:0 0 5px}
-.surge-card-body p{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0}
+.surge-card-body h4{font-size:13px;font-weight:700;color:var(--navy);margin:0 0 4px}
+.surge-card-body p{font-size:12px;color:var(--text2);line-height:1.5;margin:0}
+.surge-causes{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:4px}
+.surge-causes li{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px;line-height:1.4}
+.surge-causes li::before{content:'';width:5px;height:5px;border-radius:50%;background:#d97706;flex-shrink:0}
+.surge-warranty{background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:8px 11px;margin-bottom:10px;line-height:1.35}
+.surge-warranty-amt{font-size:17px;font-weight:800;color:#92400e;display:block}
+.surge-warranty-label{font-size:11.5px;color:#78350f;font-weight:500}
+.surge-cta{font-size:12px;color:var(--text2);line-height:1.5;margin:0}
 
 /* Step visibility */
 .step{display:none}
@@ -534,13 +542,24 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 
         <!-- Surge protection card -->
         <div class="surge-card">
-          <div class="surge-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <div class="surge-card-top">
+            <div class="surge-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div class="surge-card-body">
+              <h4>While We Have Your Panel Open</h4>
+              <p>Voltage surges silently damage appliances, TVs, and electronics — and they happen more than most people realize:</p>
+            </div>
           </div>
-          <div class="surge-card-body">
-            <h4>While We Have Your Panel Open</h4>
-            <p>When utility power comes back after an outage, voltage can spike — and those surges silently damage appliances, TVs, and electronics over time. A whole-home surge protector mounts right on your panel and takes about 15 minutes to install. Since we're already there, it's the easiest time to add it. Just mention it when we chat and we'll include it in your quote.</p>
+          <ul class="surge-causes">
+            <li>Utility line damage &amp; power restoration spikes</li>
+            <li>Lightning storms — even nearby strikes</li>
+          </ul>
+          <div class="surge-warranty">
+            <span class="surge-warranty-amt">$75,000</span>
+            <span class="surge-warranty-label">manufacturer's warranty on connected devices</span>
           </div>
+          <p class="surge-cta">A whole-home surge protector mounts right on your panel. Since we're already there, it's the easiest time to add one — just mention it when we chat.</p>
         </div>
       </div>
 
