@@ -451,6 +451,7 @@ a{text-decoration:none;color:inherit}
               </button>
             </div>
           </div>
+          <div class="err" id="voltageAck-err" style="display:none">Please acknowledge the 240V warning above</div>
         </div>
 
         <!-- Scarcity callout -->
@@ -534,6 +535,13 @@ const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
 // ─────────────────────────────────────────────────────────────────────
 
 let currentStep = 1;
+
+// Fetch IP address for Meta CAPI
+let userIP = '';
+fetch('https://api.ipify.org?format=json')
+  .then(r => r.json())
+  .then(d => { userIP = d.ip || ''; })
+  .catch(() => {});
 
 function updateProgress(step) {
   const pct = step === 1 ? 50 : 100;
@@ -678,6 +686,7 @@ voltageAckBtn.addEventListener('click', function() {
   voltage120Acknowledged = true;
   voltageAckBtn.classList.add('done');
   voltageAckBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Acknowledged';
+  document.getElementById('voltageAck-err').style.display = 'none';
 });
 
 async function submitForm() {
@@ -685,10 +694,13 @@ async function submitForm() {
 
   // Block submit if 120V not acknowledged
   const gv = document.querySelector('input[name="genVoltage"]:checked');
+  const voltageErrEl = document.getElementById('voltageAck-err');
   if (gv && gv.value === 'No - 120V' && !voltage120Acknowledged) {
+    voltageErrEl.style.display = 'block';
     voltageWarn.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
+  voltageErrEl.style.display = 'none';
 
   const firstName = document.getElementById('firstName').value.trim();
   const btn = document.getElementById('submitBtn');
@@ -710,7 +722,15 @@ async function submitForm() {
     panelLocation: document.querySelector('input[name="panelLocation"]:checked')?.value || '',
     genVoltage: document.querySelector('input[name="genVoltage"]:checked')?.value || '',
     submittedAt: new Date().toISOString(),
-    source: 'get-quote-page'
+    source: 'get-quote-page',
+    // Meta CAPI / tracking fields
+    ipAddress: userIP,
+    userAgent: navigator.userAgent || '',
+    fbp: (document.cookie.match(/(?:^|;\s*)_fbp=([^;]*)/) || [])[1] || '',
+    fbc: (document.cookie.match(/(?:^|;\s*)_fbc=([^;]*)/) || [])[1] || '',
+    fbclid: new URLSearchParams(window.location.search).get('fbclid') || '',
+    pageUrl: window.location.href,
+    referrer: document.referrer || ''
   };
 
   try {
