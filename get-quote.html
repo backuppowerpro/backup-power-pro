@@ -802,8 +802,15 @@ async function submitForm() {
     // ── Meta CAPI matching signals (raw) ─────────
     clientIpAddress: userIP,
     clientUserAgent: navigator.userAgent || '',
-    fbp:     (document.cookie.match(/(?:^|;\s*)_fbp=([^;]*)/) || [])[1] || '',
-    fbc:     (document.cookie.match(/(?:^|;\s*)_fbc=([^;]*)/) || [])[1] || '',
+    // _fbp: Facebook Browser ID — set by Pixel on first page load
+    fbp: (document.cookie.match(/(?:^|;\s*)_fbp=([^;]*)/) || [])[1] || '',
+    // _fbc: Facebook Click ID — read from cookie, or construct from fbclid param if cookie not yet written
+    fbc: (function() {
+      const fromCookie = (document.cookie.match(/(?:^|;\s*)_fbc=([^;]*)/) || [])[1] || '';
+      if (fromCookie) return fromCookie;
+      const fbclidParam = new URLSearchParams(window.location.search).get('fbclid') || '';
+      return fbclidParam ? ('fb.1.' + Date.now() + '.' + fbclidParam) : '';
+    })(),
     fbclid:  new URLSearchParams(window.location.search).get('fbclid') || '',
     pageUrl:  window.location.href,
     referrer: document.referrer || '',
