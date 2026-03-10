@@ -707,29 +707,47 @@ async function submitForm() {
   btn.classList.add('btn-loading');
   btn.innerHTML = '<div class="spinner"></div> Sending...';
 
+  // Generate unique event ID for Meta CAPI ↔ Pixel deduplication
+  const eventId = 'bpp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+
   const ap = window.addrParts || {};
   const payload = {
+    // ── Contact info ──────────────────────────────
     firstName,
-    lastName: document.getElementById('lastName').value.trim(),
-    phone: document.getElementById('phone').value.trim(),
-    email: document.getElementById('email').value.trim(),
-    address: document.getElementById('address').value.trim(),
-    addressStreet:  ap.street  || '',
-    addressCity:    ap.city    || '',
-    addressCounty:  ap.county  || '',
-    addressState:   ap.state   || '',
-    addressZip:     ap.zip     || '',
+    lastName:      document.getElementById('lastName').value.trim(),
+    phone:         document.getElementById('phone').value.trim(),
+    email:         document.getElementById('email').value.trim(),
+
+    // ── Address ───────────────────────────────────
+    address:       document.getElementById('address').value.trim(),
+    addressStreet: ap.street  || '',
+    addressCity:   ap.city    || '',
+    addressCounty: ap.county  || '',
+    addressState:  ap.state   || '',
+    addressZip:    ap.zip     || '',
+    addressCountry: 'US',
+
+    // ── Generator info ────────────────────────────
     panelLocation: document.querySelector('input[name="panelLocation"]:checked')?.value || '',
-    genVoltage: document.querySelector('input[name="genVoltage"]:checked')?.value || '',
-    submittedAt: new Date().toISOString(),
-    source: 'get-quote-page',
-    // Meta CAPI / tracking fields
-    ipAddress: userIP,
-    userAgent: navigator.userAgent || '',
-    fbp: (document.cookie.match(/(?:^|;\s*)_fbp=([^;]*)/) || [])[1] || '',
-    fbc: (document.cookie.match(/(?:^|;\s*)_fbc=([^;]*)/) || [])[1] || '',
-    fbclid: new URLSearchParams(window.location.search).get('fbclid') || '',
-    pageUrl: window.location.href,
+    genVoltage:    document.querySelector('input[name="genVoltage"]:checked')?.value || '',
+
+    // ── Submission metadata ───────────────────────
+    submittedAt:      new Date().toISOString(),
+    eventTimestamp:   Math.floor(Date.now() / 1000),
+    source:           'get-quote-page',
+    actionSource:     'website',
+
+    // ── Meta CAPI event fields ────────────────────
+    eventName:  'Lead',
+    eventId,
+
+    // ── Meta CAPI matching signals ────────────────
+    clientIpAddress: userIP,
+    clientUserAgent: navigator.userAgent || '',
+    fbp:     (document.cookie.match(/(?:^|;\s*)_fbp=([^;]*)/) || [])[1] || '',
+    fbc:     (document.cookie.match(/(?:^|;\s*)_fbc=([^;]*)/) || [])[1] || '',
+    fbclid:  new URLSearchParams(window.location.search).get('fbclid') || '',
+    pageUrl:  window.location.href,
     referrer: document.referrer || ''
   };
 
@@ -740,8 +758,15 @@ async function submitForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    // Fire Meta Pixel Lead event with matching eventId for CAPI deduplication
+    if (typeof fbq === 'function') {
+      fbq('track', 'Lead', {}, { eventID: eventId });
+    }
     showSuccess(firstName);
   } catch (err) {
+    if (typeof fbq === 'function') {
+      fbq('track', 'Lead', {}, { eventID: eventId });
+    }
     showSuccess(firstName);
   }
 }
