@@ -248,6 +248,23 @@ a{text-decoration:none;color:inherit}
   .pv-good .pv-price{font-size:15px}
 }
 </style>
+
+<!-- Meta Pixel -->
+<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','1389648775800936');
+fbq('track','PageView');
+fbq('track','ViewContent',{
+  content_name:'generator-inlet-quote-form',
+  content_category:'lead-gen',
+  value:1500,currency:'USD'
+});</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></noscript>
+
 </head>
 <body>
 
@@ -532,7 +549,17 @@ a{text-decoration:none;color:inherit}
 <script>
 // ─── ZAPIER WEBHOOK URL ───────────────────────────────────────────────
 const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
+const META_PIXEL_ID  = '1389648775800936';
 // ─────────────────────────────────────────────────────────────────────
+
+// SHA-256 hash helper (for Meta Advanced Matching + CAPI)
+async function sha256(str) {
+  if (!str) return '';
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(str).trim().toLowerCase()));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  } catch(e) { return ''; }
+}
 
 let currentStep = 1;
 
@@ -567,6 +594,16 @@ function goStep(n) {
   document.getElementById('stepLabel').textContent = stepLabels[currentStep];
   updateProgress(currentStep);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Fire InitiateCheckout when user reaches Step 2
+  if (n === 2 && typeof fbq === 'function') {
+    fbq('track', 'InitiateCheckout', {
+      content_name: 'generator-inlet-quote',
+      content_category: 'generator-installation',
+      num_items: 1,
+      value: 1500,
+      currency: 'USD'
+    });
+  }
 }
 
 function validateStep(step) {
@@ -711,20 +748,41 @@ async function submitForm() {
   const eventId = 'bpp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
 
   const ap = window.addrParts || {};
+
+  // ── Raw values ────────────────────────────────
+  const rawEmail  = document.getElementById('email').value.trim();
+  const rawPhone  = document.getElementById('phone').value.trim();
+  const rawLast   = document.getElementById('lastName').value.trim();
+  const rawCity   = ap.city   || '';
+  const rawState  = ap.state  || '';
+  const rawZip    = ap.zip    || '';
+
+  // ── Hash PII for Meta Advanced Matching + CAPI ──
+  const [emH, phH, fnH, lnH, ctH, stH, zpH, countryH] = await Promise.all([
+    sha256(rawEmail),
+    sha256(rawPhone.replace(/\D/g,'')),        // digits only
+    sha256(firstName),
+    sha256(rawLast),
+    sha256(rawCity),
+    sha256(rawState.slice(0,2)),               // "South Carolina" → "so" (Mapbox) — we pass full value, hash handles it
+    sha256(rawZip),
+    sha256('us')
+  ]);
+
   const payload = {
     // ── Contact info ──────────────────────────────
     firstName,
-    lastName:      document.getElementById('lastName').value.trim(),
-    phone:         document.getElementById('phone').value.trim(),
-    email:         document.getElementById('email').value.trim(),
+    lastName:      rawLast,
+    phone:         rawPhone,
+    email:         rawEmail,
 
     // ── Address ───────────────────────────────────
     address:       document.getElementById('address').value.trim(),
     addressStreet: ap.street  || '',
-    addressCity:   ap.city    || '',
+    addressCity:   rawCity,
     addressCounty: ap.county  || '',
-    addressState:  ap.state   || '',
-    addressZip:    ap.zip     || '',
+    addressState:  rawState,
+    addressZip:    rawZip,
     addressCountry: 'US',
 
     // ── Generator info ────────────────────────────
@@ -732,24 +790,50 @@ async function submitForm() {
     genVoltage:    document.querySelector('input[name="genVoltage"]:checked')?.value || '',
 
     // ── Submission metadata ───────────────────────
-    submittedAt:      new Date().toISOString(),
-    eventTimestamp:   Math.floor(Date.now() / 1000),
-    source:           'get-quote-page',
-    actionSource:     'website',
+    submittedAt:    new Date().toISOString(),
+    eventTimestamp: Math.floor(Date.now() / 1000),
+    source:         'get-quote-page',
+    actionSource:   'website',
 
     // ── Meta CAPI event fields ────────────────────
-    eventName:  'Lead',
+    eventName: 'Lead',
     eventId,
 
-    // ── Meta CAPI matching signals ────────────────
+    // ── Meta CAPI matching signals (raw) ─────────
     clientIpAddress: userIP,
     clientUserAgent: navigator.userAgent || '',
     fbp:     (document.cookie.match(/(?:^|;\s*)_fbp=([^;]*)/) || [])[1] || '',
     fbc:     (document.cookie.match(/(?:^|;\s*)_fbc=([^;]*)/) || [])[1] || '',
     fbclid:  new URLSearchParams(window.location.search).get('fbclid') || '',
     pageUrl:  window.location.href,
-    referrer: document.referrer || ''
+    referrer: document.referrer || '',
+
+    // ── SHA-256 hashed PII (for CAPI direct API or Zapier passthrough) ──
+    hashedEmail:    emH,
+    hashedPhone:    phH,
+    hashedFirstName: fnH,
+    hashedLastName:  lnH,
+    hashedCity:     ctH,
+    hashedState:    stH,
+    hashedZip:      zpH,
+    hashedCountry:  countryH
   };
+
+  // ── Fire Meta Pixel with Advanced Matching ────
+  function firePixelLead() {
+    if (typeof fbq !== 'function') return;
+    // Re-init with hashed user data for Advanced Matching
+    fbq('init', META_PIXEL_ID, {
+      em: emH, ph: phH, fn: fnH, ln: lnH,
+      zp: zpH, ct: ctH, country: countryH
+    });
+    fbq('track', 'Lead', {
+      content_name:     'generator-inlet-quote',
+      content_category: 'generator-installation',
+      value:    1500,
+      currency: 'USD'
+    }, { eventID: eventId });
+  }
 
   try {
     await fetch(ZAPIER_WEBHOOK, {
@@ -758,15 +842,10 @@ async function submitForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    // Fire Meta Pixel Lead event with matching eventId for CAPI deduplication
-    if (typeof fbq === 'function') {
-      fbq('track', 'Lead', {}, { eventID: eventId });
-    }
+    firePixelLead();
     showSuccess(firstName);
   } catch (err) {
-    if (typeof fbq === 'function') {
-      fbq('track', 'Lead', {}, { eventID: eventId });
-    }
+    firePixelLead();
     showSuccess(firstName);
   }
 }
