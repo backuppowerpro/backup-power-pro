@@ -96,13 +96,12 @@ a{text-decoration:none;color:inherit}
 .field-hint{font-size:11.5px;color:var(--text3);margin-top:5px;display:flex;align-items:center;gap:4px}
 .field-hint svg{width:12px;height:12px;flex-shrink:0}
 
-/* Address autocomplete wrapper */
+/* Address autocomplete */
 .addr-wrap{position:relative}
-/* Style the PlaceAutocompleteElement to match our inputs */
-gmp-place-autocomplete{display:block;width:100%}
-gmp-place-autocomplete input{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:12px;font-family:'Inter',system-ui,sans-serif;font-size:15px;color:var(--text);background:var(--white);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;box-sizing:border-box}
-gmp-place-autocomplete input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(11,31,59,.08)}
-gmp-place-autocomplete input::placeholder{color:var(--text3)}
+.addr-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:9999;background:var(--white);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(11,31,59,.12);padding:4px 0;list-style:none;max-height:240px;overflow-y:auto}
+.addr-dropdown li{padding:10px 14px;cursor:pointer;font-size:13.5px;color:var(--text2);line-height:1.4;border-top:1px solid rgba(11,31,59,.05);transition:background .15s}
+.addr-dropdown li:first-child{border-top:none}
+.addr-dropdown li:hover,.addr-dropdown li.focused{background:var(--light-blue);color:var(--navy)}
 
 /* Option cards (radio-style) */
 .opt-group{display:grid;gap:10px;margin-top:2px}
@@ -358,6 +357,7 @@ gmp-place-autocomplete input::placeholder{color:var(--text3)}
           <label>Service Address <span class="req">*</span></label>
           <div class="addr-wrap" id="addrWrap">
             <input type="text" id="address" placeholder="123 Oak Street, Greenville SC" autocomplete="off">
+            <ul class="addr-dropdown" id="addrDropdown"></ul>
           </div>
           <div class="field-hint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 7.05 11.5 7.72 12.06a.5.5 0 0 0 .56 0C12.95 21.5 20 15.4 20 10a8 8 0 0 0-8-8z"/></svg>
@@ -857,49 +857,99 @@ function showSuccess(firstName) {
 }
 </script>
 
-<!-- Google Maps — PlaceAutocompleteElement (official new API for keys created after March 2025) -->
+<!-- Address autocomplete — Nominatim (OpenStreetMap), no API key required -->
 <script>
-(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
-  key: "AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ",
-  v: "weekly"
-});
+function initPlaces() {
+  const input = document.getElementById('address');
+  const dropdown = document.getElementById('addrDropdown');
+  if (!input || !dropdown) return;
 
-async function initPlaces() {
-  const plainInput = document.getElementById('address');
-  const wrap = document.getElementById('addrWrap');
-  if (!plainInput || !wrap) return;
+  let debounceTimer;
+  let focusedIdx = -1;
 
-  try {
-    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
-
-    // Create the official new autocomplete element
-    const pac = new PlaceAutocompleteElement({
-      componentRestrictions: { country: 'us' }
-    });
-
-    // Swap: insert PAC element, hide the plain input
-    wrap.insertBefore(pac, plainInput);
-    plainInput.style.display = 'none';
-
-    // Sync typed text back to plain input (for form validation)
-    pac.addEventListener('input', () => {
-      plainInput.value = pac.value || '';
-      if (plainInput.value) document.getElementById('f-address').classList.remove('has-error');
-    });
-
-    // On selection: pull the formatted address
-    pac.addEventListener('gmp-placeselect', async ({ place }) => {
-      await place.fetchFields({ fields: ['formattedAddress'] });
-      plainInput.value = place.formattedAddress;
-      pac.value = place.formattedAddress;
-      document.getElementById('f-address').classList.remove('has-error');
-    });
-
-  } catch (err) {
-    // PlaceAutocompleteElement unavailable — plain text input stays visible
-    plainInput.style.display = '';
-    console.warn('Google Places unavailable, using plain text input:', err.message);
+  function hide() {
+    dropdown.style.display = 'none';
+    focusedIdx = -1;
+    const items = dropdown.querySelectorAll('li');
+    items.forEach(li => li.classList.remove('focused'));
   }
+
+  function setFocus(idx) {
+    const items = dropdown.querySelectorAll('li');
+    items.forEach(li => li.classList.remove('focused'));
+    if (idx >= 0 && idx < items.length) {
+      items[idx].classList.add('focused');
+      focusedIdx = idx;
+    }
+  }
+
+  input.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async function() {
+      const val = input.value.trim();
+      if (val.length < 4) { hide(); return; }
+      try {
+        const res = await fetch(
+          'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(val) +
+          '&format=json&limit=5&countrycodes=us&addressdetails=1',
+          { headers: { 'Accept-Language': 'en-US,en', 'User-Agent': 'BackupPowerProQuoteForm/1.0' } }
+        );
+        const data = await res.json();
+        dropdown.innerHTML = '';
+        focusedIdx = -1;
+        if (!data.length) { hide(); return; }
+        data.forEach(function(item) {
+          const a = item.address || {};
+          const street = (a.house_number && a.road) ? (a.house_number + ' ' + a.road) : (a.road || '');
+          const city = a.city || a.town || a.village || a.hamlet || a.county || '';
+          const state = a.state || '';
+          const zip = a.postcode || '';
+          const parts = [street, city, state, zip].filter(Boolean);
+          const label = parts.join(', ');
+          if (!label) return;
+          const li = document.createElement('li');
+          li.textContent = label;
+          li.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            input.value = label;
+            document.getElementById('f-address').classList.remove('has-error');
+            hide();
+          });
+          dropdown.appendChild(li);
+        });
+        if (dropdown.children.length) {
+          dropdown.style.display = 'block';
+        } else {
+          hide();
+        }
+      } catch(e) {
+        hide();
+      }
+    }, 350);
+  });
+
+  input.addEventListener('keydown', function(e) {
+    const items = dropdown.querySelectorAll('li');
+    if (!items.length || dropdown.style.display === 'none') return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocus(Math.min(focusedIdx + 1, items.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocus(Math.max(focusedIdx - 1, 0));
+    } else if (e.key === 'Enter' && focusedIdx >= 0) {
+      e.preventDefault();
+      input.value = items[focusedIdx].textContent;
+      document.getElementById('f-address').classList.remove('has-error');
+      hide();
+    } else if (e.key === 'Escape') {
+      hide();
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#addrWrap')) hide();
+  });
 }
 
 initPlaces();
