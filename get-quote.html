@@ -110,6 +110,13 @@ a{text-decoration:none;color:inherit}
 .addr-area-msg.out strong{color:#7f1d1d}
 .addr-area-msg.good{display:flex;align-items:center;background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
 
+/* 120V voltage warning */
+.voltage-warn{display:none;margin-top:10px;padding:12px 14px;border-radius:10px;background:#fffbeb;border:1.5px solid #fcd34d;color:#92400e;font-size:12.5px;line-height:1.5;gap:10px;align-items:flex-start}
+.voltage-warn.show{display:flex}
+.voltage-warn svg{width:18px;height:18px;flex-shrink:0;color:#f59e0b;margin-top:1px}
+.voltage-warn strong{display:block;font-size:13px;color:#78350f;margin-bottom:2px}
+.voltage-warn p{margin:0}
+
 /* Option cards (radio-style) */
 .opt-group{display:grid;gap:10px;margin-top:2px}
 .opt-group.cols-2{grid-template-columns:1fr 1fr}
@@ -430,6 +437,13 @@ a{text-decoration:none;color:inherit}
             </label>
           </div>
           <div class="err" id="genVoltage-err">Please select one</div>
+          <div class="voltage-warn" id="voltageWarn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <strong>Heads up — 240V generator required</strong>
+              <p>A 240-volt generator is needed to connect to your home's panel. We can still do the installation, but a portable generator upgrade may be required. No worries — we'll walk you through it.</p>
+            </div>
+          </div>
         </div>
 
         <!-- Scarcity callout -->
@@ -631,8 +645,26 @@ phoneConfirmBtn.addEventListener('click', function() {
   phoneConfirmEl.classList.add('confirmed');
 });
 
+// 120V voltage warning
+document.querySelectorAll('input[name="genVoltage"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    const warn = document.getElementById('voltageWarn');
+    if (this.value === 'No - 120V') warn.classList.add('show');
+    else warn.classList.remove('show');
+  });
+});
+
+let voltage120Acknowledged = false;
+
 async function submitForm() {
   if (!validateStep(2)) return;
+
+  // If 120V selected and not yet acknowledged, show confirm
+  const gv = document.querySelector('input[name="genVoltage"]:checked');
+  if (gv && gv.value === 'No - 120V' && !voltage120Acknowledged) {
+    if (!confirm('Your generator is 120V. A 240-volt generator is required to connect to your home\'s panel. We can still proceed with the quote — a generator upgrade may be needed.\n\nContinue with your quote?')) return;
+    voltage120Acknowledged = true;
+  }
 
   const firstName = document.getElementById('firstName').value.trim();
   const btn = document.getElementById('submitBtn');
