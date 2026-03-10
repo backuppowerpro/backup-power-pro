@@ -919,16 +919,23 @@ function initPlaces() {
     debounceTimer = setTimeout(async function() {
       try {
         // Photon: fast Elasticsearch-based geocoder, bias to Upstate SC
+        // osm_tag filters to place/building types only (excludes dams, parks, landmarks, etc.)
         const res = await fetch(
           'https://photon.komoot.io/api/?q=' + encodeURIComponent(val) +
-          '&limit=6&lat=34.8526&lon=-82.3940&lang=en'
+          '&limit=10&lat=34.8526&lon=-82.3940&lang=en' +
+          '&osm_tag=place:house&osm_tag=building:house&osm_tag=building:residential' +
+          '&osm_tag=building:apartments&osm_tag=building:detached&osm_tag=building:yes'
         );
         const data = await res.json();
         dropdown.innerHTML = '';
         focusedIdx = -1;
 
         const features = (data.features || []).filter(function(f) {
-          return f.properties && f.properties.countrycode === 'US';
+          // Must be US and must have a street — real addresses always have streets,
+          // landmarks/dams/parks/schools do not
+          return f.properties &&
+                 f.properties.countrycode === 'US' &&
+                 f.properties.street;
         });
 
         if (!features.length) { hide(); return; }
