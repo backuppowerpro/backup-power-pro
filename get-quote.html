@@ -288,7 +288,8 @@ a{text-decoration:none;color:inherit}
 
     <div class="card-inner">
 
-      <!-- Step indicators -->
+      <!-- Step label + indicators -->
+      <div class="sec-label" id="stepLabel">Step 1 of 2 · Your Info</div>
       <div class="steps">
         <div class="step-dot active" id="dot1">1</div>
         <div class="step-line" id="line1"></div>
@@ -297,7 +298,6 @@ a{text-decoration:none;color:inherit}
 
       <!-- ── STEP 1: Contact Info ── -->
       <div class="step active" id="step1">
-        <div class="sec-label">Step 1 of 2 · Your Info</div>
 
         <div class="field-row">
           <div class="field" id="f-first">
@@ -378,8 +378,6 @@ a{text-decoration:none;color:inherit}
 
       <!-- ── STEP 2: Quick Details ── -->
       <div class="step" id="step2">
-        <div class="sec-label">Step 2 of 2 · Quick Details</div>
-
 
         <div class="field" id="f-panellocation">
           <label>Main Breaker Panel Location <span class="req">*</span></label>
@@ -542,11 +540,14 @@ function updateProgress(step) {
   else document.getElementById('line1').classList.remove('done');
 }
 
+const stepLabels = { 1: 'Step 1 of 2 · Your Info', 2: 'Step 2 of 2 · Quick Details' };
+
 function goStep(n) {
   if (n > currentStep && !validateStep(currentStep)) return;
   document.getElementById('step' + currentStep).classList.remove('active');
   currentStep = n;
   document.getElementById('step' + currentStep).classList.add('active');
+  document.getElementById('stepLabel').textContent = stepLabels[currentStep];
   updateProgress(currentStep);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
