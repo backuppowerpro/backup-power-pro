@@ -709,6 +709,7 @@ function showSuccess(firstName) {
     if (s) s.style.display = 'none';
   }
   document.querySelector('.steps').style.display = 'none';
+  document.getElementById('stepLabel').style.display = 'none';
   document.getElementById('progressFill').style.width = '100%';
   document.getElementById('successName').textContent = firstName;
   document.getElementById('successState').style.display = 'block';
