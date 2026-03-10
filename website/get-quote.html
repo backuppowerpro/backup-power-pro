@@ -335,7 +335,7 @@ a{text-decoration:none;color:inherit}
           </div>
           <div class="field-hint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 7.05 11.5 7.72 12.06a.5.5 0 0 0 .56 0C12.95 21.5 20 15.4 20 10a8 8 0 0 0-8-8z"/></svg>
-            <span id="addr-hint-text">Start typing — we'll suggest your address</span>
+            <span id="addr-hint-text">Type your address — we'll confirm we service your area</span>
           </div>
           <div class="err" id="addr-err">Required</div>
           <div class="addr-area-msg" id="addr-area-msg"></div>
@@ -695,7 +695,7 @@ function showSuccess(firstName) {
   }
 
   function resetHint() {
-    if (hintText) { hintText.textContent = "Start typing — we'll suggest your address"; hintText.style.color = ''; }
+    if (hintText) { hintText.textContent = "Type your address — we'll confirm we service your area"; hintText.style.color = ''; }
   }
 
   function hide() {
