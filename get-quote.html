@@ -651,6 +651,13 @@ function validateStep(step) {
     const gv = document.querySelector('input[name="genVoltage"]:checked');
     setErrById('panelLocation-err', !pl); if (!pl) ok = false;
     setErrById('genVoltage-err', !gv); if (!gv) ok = false;
+    // 120V acknowledgment check — runs alongside other errors, not after
+    if (gv && gv.value === 'No - 120V' && !voltage120Acknowledged) {
+      document.getElementById('voltageAck-err').style.display = 'block';
+      ok = false;
+    } else {
+      document.getElementById('voltageAck-err').style.display = 'none';
+    }
   }
   return ok;
 }
@@ -730,15 +737,6 @@ voltageAckBtn.addEventListener('click', function() {
 async function submitForm() {
   if (!validateStep(2)) return;
 
-  // Block submit if 120V not acknowledged
-  const gv = document.querySelector('input[name="genVoltage"]:checked');
-  const voltageErrEl = document.getElementById('voltageAck-err');
-  if (gv && gv.value === 'No - 120V' && !voltage120Acknowledged) {
-    voltageErrEl.style.display = 'block';
-    voltageWarn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-  voltageErrEl.style.display = 'none';
 
   const firstName = document.getElementById('firstName').value.trim();
   const btn = document.getElementById('submitBtn');
