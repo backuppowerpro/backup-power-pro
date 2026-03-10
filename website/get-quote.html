@@ -891,10 +891,7 @@ function initPlaces() {
   let addrVerified = false;
   let serviceAreaOk = true;
   let sessionToken = new google.maps.places.AutocompleteSessionToken();
-
-  const autoSvc   = new google.maps.places.AutocompleteService();
-  const placesSvc = new google.maps.places.PlacesService(document.createElement('div'));
-  const CENTER    = new google.maps.LatLng(34.8526, -82.3940); // Greenville SC
+  const CENTER = { lat: 34.8526, lng: -82.3940 }; // Greenville SC bias
 
   // Expose state to validateStep()
   window.isAddrVerified = function() { return addrVerified; };
@@ -978,13 +975,13 @@ function initPlaces() {
   function parseAddressComponents(components) {
     let streetNum = '', route = '', city = '', county = '', state = '', zip = '';
     (components || []).forEach(function(c) {
-      const t = c.types[0];
-      if (t === 'street_number')             streetNum = c.long_name;
-      else if (t === 'route')                route     = c.long_name;
-      else if (t === 'locality')             city      = c.long_name;
-      else if (t === 'administrative_area_level_2') county = c.long_name;
-      else if (t === 'administrative_area_level_1') state  = c.long_name;
-      else if (t === 'postal_code')          zip       = c.long_name;
+      const types = c.types || [];
+      if (types.includes('street_number'))             streetNum = c.longText || c.long_name || '';
+      else if (types.includes('route'))                route     = c.longText || c.long_name || '';
+      else if (types.includes('locality'))             city      = c.longText || c.long_name || '';
+      else if (types.includes('administrative_area_level_2')) county = c.longText || c.long_name || '';
+      else if (types.includes('administrative_area_level_1')) state  = c.longText || c.long_name || '';
+      else if (types.includes('postal_code'))          zip       = c.longText || c.long_name || '';
     });
     return { street: (streetNum ? streetNum + ' ' : '') + route, city, county, state, zip };
   }
@@ -998,49 +995,50 @@ function initPlaces() {
     clearTimeout(debounceTimer);
     const val = input.value.trim();
     if (val.length < 3) { hide(); return; }
-    debounceTimer = setTimeout(function() {
-      autoSvc.getPlacePredictions({
-        input: val,
-        types: ['address'],
-        componentRestrictions: { country: 'us' },
-        location: CENTER,
-        radius: 80000,
-        sessionToken: sessionToken
-      }, function(predictions, status) {
+    debounceTimer = setTimeout(async function() {
+      try {
         dropdown.innerHTML = '';
         focusedIdx = -1;
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions || !predictions.length) {
+        // Use new AutocompleteSuggestion API (required for accounts created after March 2025)
+        const { suggestions } = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: val,
+          includedPrimaryTypes: ['street_address'],
+          includedRegionCodes: ['us'],
+          locationBias: CENTER,
+          sessionToken: sessionToken
+        });
+        if (!suggestions || !suggestions.length) {
           if (val.length >= 5) { addManualOption(val); dropdown.style.display = 'block'; }
           else hide();
           return;
         }
-        predictions.forEach(function(pred) {
+        suggestions.forEach(function(s) {
+          const pred = s.placePrediction;
+          const label = pred.text ? pred.text.toString() : pred.mainText.text + ', ' + pred.secondaryText.text;
           const li = document.createElement('li');
-          li.textContent = pred.description;
-          li._placeId = pred.place_id;
-          li.addEventListener('mousedown', function(e) {
+          li.textContent = label;
+          li.addEventListener('mousedown', async function(e) {
             e.preventDefault();
-            input.value = pred.description; // instant feedback
+            input.value = label;
             hide();
-            placesSvc.getDetails({
-              placeId: pred.place_id,
-              fields: ['address_components', 'formatted_address'],
-              sessionToken: sessionToken
-            }, function(place, ds) {
+            try {
+              const place = pred.toPlace();
+              await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
               sessionToken = new google.maps.places.AutocompleteSessionToken();
-              if (ds === google.maps.places.PlacesServiceStatus.OK && place) {
-                selectAddress(place.formatted_address || pred.description,
-                              parseAddressComponents(place.address_components));
-              } else {
-                selectManual(pred.description);
-              }
-            });
+              const parts = parseAddressComponents(place.addressComponents);
+              selectAddress(place.formattedAddress || label, parts);
+            } catch(err) {
+              selectManual(label);
+            }
           });
           dropdown.appendChild(li);
         });
         addManualOption(val);
         dropdown.style.display = 'block';
-      });
+      } catch(e) {
+        if (val.length >= 5) { addManualOption(val); dropdown.style.display = 'block'; }
+        else hide();
+      }
     }, 200);
   });
 
@@ -1086,7 +1084,7 @@ function initPlaces() {
 // initPlaces is called by Google Maps API loader callback below
 </script>
 <script async defer
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ&libraries=places&callback=initPlaces&loading=async">
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ&libraries=places&v=weekly&callback=initPlaces">
 </script>
 
 </body>
