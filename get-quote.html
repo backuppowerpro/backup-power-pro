@@ -468,7 +468,7 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
               </button>
             </div>
           </div>
-          <div class="err" id="voltageAck-err" style="display:none">Please acknowledge the 240V warning above</div>
+          <div class="err" id="voltageAck-err" style="display:none">Please click "I understand" above to continue</div>
         </div>
 
         <!-- Scarcity callout -->
@@ -715,6 +715,7 @@ document.querySelectorAll('input[name="genVoltage"]').forEach(function(radio) {
     } else {
       voltageWarn.classList.remove('show');
       voltage120Acknowledged = false;
+      document.getElementById('voltageAck-err').style.display = 'none';
     }
   });
 });
