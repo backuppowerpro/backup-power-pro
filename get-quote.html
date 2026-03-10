@@ -875,7 +875,7 @@ function showSuccess(firstName) {
 }
 </script>
 
-<!-- Address autocomplete — Photon (Komoot/OpenStreetMap), no API key required -->
+<!-- Address autocomplete — Google Places (AutocompleteService + PlacesService) -->
 <script>
 function initPlaces() {
   const input = document.getElementById('address');
@@ -890,6 +890,11 @@ function initPlaces() {
   let focusedIdx = -1;
   let addrVerified = false;
   let serviceAreaOk = true;
+  let sessionToken = new google.maps.places.AutocompleteSessionToken();
+
+  const autoSvc   = new google.maps.places.AutocompleteService();
+  const placesSvc = new google.maps.places.PlacesService(document.createElement('div'));
+  const CENTER    = new google.maps.LatLng(34.8526, -82.3940); // Greenville SC
 
   // Expose state to validateStep()
   window.isAddrVerified = function() { return addrVerified; };
@@ -970,84 +975,72 @@ function initPlaces() {
     dropdown.appendChild(li);
   }
 
+  function parseAddressComponents(components) {
+    let streetNum = '', route = '', city = '', county = '', state = '', zip = '';
+    (components || []).forEach(function(c) {
+      const t = c.types[0];
+      if (t === 'street_number')             streetNum = c.long_name;
+      else if (t === 'route')                route     = c.long_name;
+      else if (t === 'locality')             city      = c.long_name;
+      else if (t === 'administrative_area_level_2') county = c.long_name;
+      else if (t === 'administrative_area_level_1') state  = c.long_name;
+      else if (t === 'postal_code')          zip       = c.long_name;
+    });
+    return { street: (streetNum ? streetNum + ' ' : '') + route, city, county, state, zip };
+  }
+
   input.addEventListener('input', function() {
     addrVerified = false;
     serviceAreaOk = true;
     window.addrParts = { street: '', city: '', county: '', state: '', zip: '' };
-    document.getElementById('addr-area-msg').className = 'addr-area-msg'; // hide banner
+    document.getElementById('addr-area-msg').className = 'addr-area-msg';
     resetHint();
     clearTimeout(debounceTimer);
     const val = input.value.trim();
     if (val.length < 3) { hide(); return; }
-    debounceTimer = setTimeout(async function() {
-      try {
-        // Photon: fast Elasticsearch-based geocoder, bias to Upstate SC
-        // osm_tag filters to place/building types only (excludes dams, parks, landmarks, etc.)
-        const res = await fetch(
-          'https://photon.komoot.io/api/?q=' + encodeURIComponent(val) +
-          '&limit=10&lat=34.8526&lon=-82.3940&lang=en' +
-          '&osm_tag=place:house&osm_tag=building:house&osm_tag=building:residential' +
-          '&osm_tag=building:apartments&osm_tag=building:detached&osm_tag=building:yes'
-        );
-        const data = await res.json();
+    debounceTimer = setTimeout(function() {
+      autoSvc.getPlacePredictions({
+        input: val,
+        types: ['address'],
+        componentRestrictions: { country: 'us' },
+        location: CENTER,
+        radius: 80000,
+        sessionToken: sessionToken
+      }, function(predictions, status) {
         dropdown.innerHTML = '';
         focusedIdx = -1;
-
-        const features = (data.features || []).filter(function(f) {
-          return f.properties &&
-                 f.properties.countrycode === 'US' &&
-                 f.properties.street;
-        });
-
-        // Prefer SC + neighboring states; fall back to all US if no local results
-        const LOCAL_STATES = ['South Carolina', 'North Carolina', 'Georgia'];
-        const localFeatures = features.filter(function(f) {
-          return LOCAL_STATES.includes(f.properties.state || '');
-        });
-        const displayFeatures = localFeatures.length > 0 ? localFeatures : features;
-
-        if (!displayFeatures.length) {
-          dropdown.innerHTML = '';
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions || !predictions.length) {
           if (val.length >= 5) { addManualOption(val); dropdown.style.display = 'block'; }
           else hide();
           return;
         }
-
-        var seen = {};
-        displayFeatures.forEach(function(feature) {
-          const p = feature.properties || {};
-
-          // Extract individual components
-          const street = (p.housenumber && p.street)
-            ? (p.housenumber + ' ' + p.street)
-            : (p.street || p.name || '');
-          const city   = p.city || p.town || p.village || '';
-          const county = p.county || '';
-          const state  = p.state || '';
-          const zip    = p.postcode || '';
-
-          const labelParts = [street, city || county, state, zip].filter(Boolean);
-          const label = labelParts.join(', ');
-          if (!label || seen[label]) return;
-          seen[label] = true;
-
-          const parts = { street, city, county, state, zip };
-
+        predictions.forEach(function(pred) {
           const li = document.createElement('li');
-          li.textContent = label;
-          li._addrParts = parts;
+          li.textContent = pred.description;
+          li._placeId = pred.place_id;
           li.addEventListener('mousedown', function(e) {
             e.preventDefault();
-            selectAddress(label, parts);
+            input.value = pred.description; // instant feedback
+            hide();
+            placesSvc.getDetails({
+              placeId: pred.place_id,
+              fields: ['address_components', 'formatted_address'],
+              sessionToken: sessionToken
+            }, function(place, ds) {
+              sessionToken = new google.maps.places.AutocompleteSessionToken();
+              if (ds === google.maps.places.PlacesServiceStatus.OK && place) {
+                selectAddress(place.formatted_address || pred.description,
+                              parseAddressComponents(place.address_components));
+              } else {
+                selectManual(pred.description);
+              }
+            });
           });
           dropdown.appendChild(li);
         });
-
-        if (dropdown.children.length) {
-          addManualOption(val);
-          dropdown.style.display = 'block';
-        } else hide();
-      } catch(e) { hide(); }
+        addManualOption(val);
+        dropdown.style.display = 'block';
+      });
     }, 200);
   });
 
@@ -1066,7 +1059,7 @@ function initPlaces() {
       if (focused.classList.contains('addr-manual')) {
         selectManual(input.value.trim());
       } else {
-        selectAddress(focused.textContent, focused._addrParts || {});
+        focused.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
       }
     } else if (e.key === 'Escape') {
       hide();
@@ -1090,7 +1083,10 @@ function initPlaces() {
   });
 }
 
-initPlaces();
+// initPlaces is called by Google Maps API loader callback below
+</script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ&libraries=places&callback=initPlaces&loading=async">
 </script>
 
 </body>
