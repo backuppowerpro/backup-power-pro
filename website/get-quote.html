@@ -116,6 +116,11 @@ a{text-decoration:none;color:inherit}
 .voltage-warn svg{width:18px;height:18px;flex-shrink:0;color:#f59e0b;margin-top:1px}
 .voltage-warn strong{display:block;font-size:13px;color:#78350f;margin-bottom:2px}
 .voltage-warn p{margin:0}
+.voltage-ack-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:100px;border:1.5px solid rgba(245,158,11,.4);background:var(--white);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#b45309;cursor:pointer;transition:all .2s;margin-top:8px}
+.voltage-ack-btn:hover{background:#fffbeb;border-color:#f59e0b}
+.voltage-ack-btn svg{width:13px;height:13px}
+.voltage-ack-btn.done{background:#f59e0b;color:var(--white);border-color:#f59e0b;pointer-events:none}
+.voltage-ack-btn.done svg{color:var(--white)}
 
 /* Option cards (radio-style) */
 .opt-group{display:grid;gap:10px;margin-top:2px}
@@ -440,6 +445,10 @@ a{text-decoration:none;color:inherit}
             <div>
               <strong>Heads up — 240V generator required</strong>
               <p>A 240-volt generator is needed to connect to your home's panel. We can still do the installation, but a portable generator upgrade may be required. No worries — we'll walk you through it.</p>
+              <button type="button" class="voltage-ack-btn" id="voltageAckBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                I understand
+              </button>
             </div>
           </div>
         </div>
@@ -646,25 +655,39 @@ phoneConfirmBtn.addEventListener('click', function() {
   phoneConfirmEl.classList.add('confirmed');
 });
 
-// 120V voltage warning
+// 120V voltage warning + acknowledge
+let voltage120Acknowledged = false;
+const voltageWarn = document.getElementById('voltageWarn');
+const voltageAckBtn = document.getElementById('voltageAckBtn');
+
 document.querySelectorAll('input[name="genVoltage"]').forEach(function(radio) {
   radio.addEventListener('change', function() {
-    const warn = document.getElementById('voltageWarn');
-    if (this.value === 'No - 120V') warn.classList.add('show');
-    else warn.classList.remove('show');
+    if (this.value === 'No - 120V') {
+      voltageWarn.classList.add('show');
+      voltage120Acknowledged = false;
+      voltageAckBtn.classList.remove('done');
+      voltageAckBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> I understand';
+    } else {
+      voltageWarn.classList.remove('show');
+      voltage120Acknowledged = false;
+    }
   });
 });
 
-let voltage120Acknowledged = false;
+voltageAckBtn.addEventListener('click', function() {
+  voltage120Acknowledged = true;
+  voltageAckBtn.classList.add('done');
+  voltageAckBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Acknowledged';
+});
 
 async function submitForm() {
   if (!validateStep(2)) return;
 
-  // If 120V selected and not yet acknowledged, show confirm
+  // Block submit if 120V not acknowledged
   const gv = document.querySelector('input[name="genVoltage"]:checked');
   if (gv && gv.value === 'No - 120V' && !voltage120Acknowledged) {
-    if (!confirm('Your generator is 120V. A 240-volt generator is required to connect to your home\'s panel. We can still proceed with the quote — a generator upgrade may be needed.\n\nContinue with your quote?')) return;
-    voltage120Acknowledged = true;
+    voltageWarn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
   }
 
   const firstName = document.getElementById('firstName').value.trim();
