@@ -875,9 +875,12 @@ function showSuccess(firstName) {
 }
 </script>
 
-<!-- Address autocomplete — Google Places (AutocompleteService + PlacesService) -->
+<!-- Address autocomplete — Mapbox Geocoding v5 -->
 <script>
-function initPlaces() {
+(function() {
+  const MAPBOX_TOKEN = 'pk.eyJ1Ijoia2V5ZWxlY3RyaWN1cHN0YXRlIiwiYSI6ImNtbWsyYzlybzFpbWwycW9pc2R2eW1wZ3UifQ.Y2nGIeYV6l57CMbf3sqbqw';
+  const PROXIMITY = '-82.3940,34.8526'; // Greenville SC bias
+
   const input = document.getElementById('address');
   const dropdown = document.getElementById('addrDropdown');
   const hintText = document.getElementById('addr-hint-text');
@@ -890,8 +893,6 @@ function initPlaces() {
   let focusedIdx = -1;
   let addrVerified = false;
   let serviceAreaOk = true;
-  let sessionToken = new google.maps.places.AutocompleteSessionToken();
-  const CENTER = { lat: 34.8526, lng: -82.3940 }; // Greenville SC bias
 
   // Expose state to validateStep()
   window.isAddrVerified = function() { return addrVerified; };
@@ -901,7 +902,6 @@ function initPlaces() {
   function checkServiceArea(state, county) {
     const banner = document.getElementById('addr-area-msg');
     if (!state) {
-      // Manual entry — can't verify, allow through silently
       serviceAreaOk = true;
       banner.className = 'addr-area-msg';
       return;
@@ -918,7 +918,6 @@ function initPlaces() {
       banner.innerHTML = '⚠️ &nbsp;<span><strong>' + county + ' is outside our current service area.</strong><br>We serve Greenville, Spartanburg, and Pickens counties. Expanding soon — check back!</span>';
       return;
     }
-    // In service area
     serviceAreaOk = true;
     banner.className = 'addr-area-msg good';
     banner.innerHTML = '✅ &nbsp;Great — we service ' + (county || SERVICE_STATE) + '!';
@@ -957,7 +956,7 @@ function initPlaces() {
     input.value = val;
     addrVerified = true;
     window.addrParts = { street: val, city: '', county: '', state: '', zip: '' };
-    checkServiceArea('', ''); // can't verify, allow through
+    checkServiceArea('', '');
     resetHint();
     document.getElementById('f-address').classList.remove('has-error');
     hide();
@@ -968,22 +967,34 @@ function initPlaces() {
     li.className = 'addr-manual';
     li.textContent = '📍 Can\'t find it? Use "' + val + '"';
     li.addEventListener('mousedown', function(e) { e.preventDefault(); selectManual(val); });
-    li._addrParts = { street: val, city: '', county: '', state: '', zip: '' };
     dropdown.appendChild(li);
   }
 
-  function parseAddressComponents(components) {
-    let streetNum = '', route = '', city = '', county = '', state = '', zip = '';
-    (components || []).forEach(function(c) {
-      const types = c.types || [];
-      if (types.includes('street_number'))             streetNum = c.longText || c.long_name || '';
-      else if (types.includes('route'))                route     = c.longText || c.long_name || '';
-      else if (types.includes('locality'))             city      = c.longText || c.long_name || '';
-      else if (types.includes('administrative_area_level_2')) county = c.longText || c.long_name || '';
-      else if (types.includes('administrative_area_level_1')) state  = c.longText || c.long_name || '';
-      else if (types.includes('postal_code'))          zip       = c.longText || c.long_name || '';
+  // Parse Mapbox feature into address parts
+  function parseMapboxFeature(feature) {
+    let street = '';
+    let city = '', county = '', state = '', zip = '';
+
+    // Street: house number + street name
+    if (feature.address && feature.text) {
+      street = feature.address + ' ' + feature.text;
+    } else if (feature.text) {
+      street = feature.text;
+    }
+
+    // Parse context array for city, county, state, zip
+    (feature.context || []).forEach(function(ctx) {
+      const id = ctx.id || '';
+      if (id.startsWith('postcode'))  zip    = ctx.text || '';
+      else if (id.startsWith('place'))     city   = ctx.text || '';
+      else if (id.startsWith('district'))  county = ctx.text || '';
+      else if (id.startsWith('region'))    state  = ctx.text || '';
     });
-    return { street: (streetNum ? streetNum + ' ' : '') + route, city, county, state, zip };
+
+    // Mapbox returns county without "County" suffix — normalize for service area check
+    if (county && !county.includes('County')) county = county + ' County';
+
+    return { street: street, city: city, county: county, state: state, zip: zip };
   }
 
   input.addEventListener('input', function() {
@@ -999,37 +1010,28 @@ function initPlaces() {
       try {
         dropdown.innerHTML = '';
         focusedIdx = -1;
-        // Use new AutocompleteSuggestion API (required for accounts created after March 2025)
-        const { suggestions } = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-          input: val,
-          includedPrimaryTypes: ['street_address'],
-          includedRegionCodes: ['us'],
-          locationBias: CENTER,
-          sessionToken: sessionToken
-        });
-        if (!suggestions || !suggestions.length) {
+        const url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'
+          + encodeURIComponent(val)
+          + '.json?access_token=' + MAPBOX_TOKEN
+          + '&country=us&types=address&autocomplete=true&limit=5'
+          + '&proximity=' + PROXIMITY;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Mapbox request failed');
+        const data = await resp.json();
+        const features = data.features || [];
+        if (!features.length) {
           if (val.length >= 5) { addManualOption(val); dropdown.style.display = 'block'; }
           else hide();
           return;
         }
-        suggestions.forEach(function(s) {
-          const pred = s.placePrediction;
-          const label = pred.text ? pred.text.toString() : pred.mainText.text + ', ' + pred.secondaryText.text;
+        features.forEach(function(feature) {
+          const label = feature.place_name || '';
+          const parts = parseMapboxFeature(feature);
           const li = document.createElement('li');
           li.textContent = label;
-          li.addEventListener('mousedown', async function(e) {
+          li.addEventListener('mousedown', function(e) {
             e.preventDefault();
-            input.value = label;
-            hide();
-            try {
-              const place = pred.toPlace();
-              await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
-              sessionToken = new google.maps.places.AutocompleteSessionToken();
-              const parts = parseAddressComponents(place.addressComponents);
-              selectAddress(place.formattedAddress || label, parts);
-            } catch(err) {
-              selectManual(label);
-            }
+            selectAddress(label, parts);
           });
           dropdown.appendChild(li);
         });
@@ -1039,7 +1041,7 @@ function initPlaces() {
         if (val.length >= 5) { addManualOption(val); dropdown.style.display = 'block'; }
         else hide();
       }
-    }, 200);
+    }, 250);
   });
 
   input.addEventListener('keydown', function(e) {
@@ -1079,12 +1081,7 @@ function initPlaces() {
   document.addEventListener('click', function(e) {
     if (!e.target.closest('#addrWrap')) hide();
   });
-}
-
-// initPlaces is called by Google Maps API loader callback below
-</script>
-<script async defer
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ&libraries=places&v=weekly&callback=initPlaces">
+})();
 </script>
 
 </body>
