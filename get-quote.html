@@ -485,7 +485,7 @@ a{text-decoration:none;color:inherit}
           <h4>What happens next</h4>
           <div class="success-step">
             <div class="success-step-num">1</div>
-            <p>We review your setup and prepare your quote — usually within the hour.</p>
+            <p>We'll review your info and reach out via text to get started.</p>
           </div>
           <div class="success-step">
             <div class="success-step-num">2</div>
@@ -714,7 +714,17 @@ function showSuccess(firstName) {
   document.getElementById('successName').textContent = firstName;
   document.getElementById('successState').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Persist thank you page across refresh
+  try { sessionStorage.setItem('bpp_submitted', firstName); } catch(e) {}
 }
+
+// Restore thank you page if already submitted this session
+(function() {
+  try {
+    const name = sessionStorage.getItem('bpp_submitted');
+    if (name) showSuccess(name);
+  } catch(e) {}
+})();
 </script>
 
 <!-- Address autocomplete — Mapbox Geocoding v5 -->
