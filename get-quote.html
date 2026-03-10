@@ -95,8 +95,6 @@ a{text-decoration:none;color:inherit}
 .addr-dropdown li{padding:10px 14px;cursor:pointer;font-size:13.5px;color:var(--text2);line-height:1.4;border-top:1px solid rgba(11,31,59,.05);transition:background .15s}
 .addr-dropdown li:first-child{border-top:none}
 .addr-dropdown li:hover,.addr-dropdown li.focused{background:var(--light-blue);color:var(--navy)}
-.addr-dropdown li.addr-manual{color:var(--text3);font-style:italic;font-size:12.5px;border-top:1px solid var(--border)}
-.addr-dropdown li.addr-manual:hover,.addr-dropdown li.addr-manual.focused{background:#fff8e6;color:var(--navy)}
 .addr-area-msg{display:none;margin-top:8px;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.5;gap:8px;align-items:flex-start}
 .addr-area-msg.out{display:flex;background:#fef2f2;border:1.5px solid #fca5a5;color:#991b1b}
 .addr-area-msg.out strong{color:#7f1d1d}
@@ -331,11 +329,7 @@ a{text-decoration:none;color:inherit}
           <div class="addr-area-msg" id="addr-area-msg"></div>
         </div>
 
-        <!-- Testimonials + Google badge -->
-        <div class="testimonial" style="margin-bottom:8px">
-          <div class="stars">★★★★★</div>
-          <p>"Installation of a generator to home. Wonderful service. Professionally completed &amp; very good support services." <span class="author">— Gary Brittain</span></p>
-        </div>
+        <!-- Testimonial + Google badge -->
         <div class="testimonial" style="margin-bottom:10px">
           <div class="stars">★★★★★</div>
           <p>"Key showed up on time and installed my generator inlet. Work was professional and price was reasonable." <span class="author">— Chris Burton</span></p>
@@ -715,23 +709,6 @@ function showSuccess(firstName) {
     hide();
   }
 
-  function selectManual(val) {
-    input.value = val;
-    addrVerified = true;
-    window.addrParts = { street: val, city: '', county: '', state: '', zip: '' };
-    checkServiceArea('', '');
-    resetHint();
-    document.getElementById('f-address').classList.remove('has-error');
-    hide();
-  }
-
-  function addManualOption(val) {
-    const li = document.createElement('li');
-    li.className = 'addr-manual';
-    li.textContent = '📍 Can\'t find it? Use "' + val + '"';
-    li.addEventListener('mousedown', function(e) { e.preventDefault(); selectManual(val); });
-    dropdown.appendChild(li);
-  }
 
   // Parse Mapbox feature into address parts
   function parseMapboxFeature(feature) {
@@ -783,8 +760,7 @@ function showSuccess(firstName) {
         const data = await resp.json();
         const features = data.features || [];
         if (!features.length) {
-          if (val.length >= 5) { addManualOption(val); dropdown.style.display = 'block'; }
-          else hide();
+          hide();
           return;
         }
         features.forEach(function(feature) {
@@ -798,11 +774,9 @@ function showSuccess(firstName) {
           });
           dropdown.appendChild(li);
         });
-        addManualOption(val);
         dropdown.style.display = 'block';
       } catch(e) {
-        if (val.length >= 5) { addManualOption(val); dropdown.style.display = 'block'; }
-        else hide();
+        hide();
       }
     }, 250);
   });
@@ -818,12 +792,7 @@ function showSuccess(firstName) {
       setFocus(Math.max(focusedIdx - 1, 0));
     } else if (e.key === 'Enter' && focusedIdx >= 0) {
       e.preventDefault();
-      const focused = items[focusedIdx];
-      if (focused.classList.contains('addr-manual')) {
-        selectManual(input.value.trim());
-      } else {
-        focused.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-      }
+      items[focusedIdx].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     } else if (e.key === 'Escape') {
       hide();
     }
