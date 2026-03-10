@@ -104,6 +104,10 @@ a{text-decoration:none;color:inherit}
 .addr-dropdown li:hover,.addr-dropdown li.focused{background:var(--light-blue);color:var(--navy)}
 .addr-dropdown li.addr-manual{color:var(--text3);font-style:italic;font-size:12.5px;border-top:1px solid var(--border)}
 .addr-dropdown li.addr-manual:hover,.addr-dropdown li.addr-manual.focused{background:#fff8e6;color:var(--navy)}
+.addr-area-msg{display:none;margin-top:8px;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.5;gap:8px;align-items:flex-start}
+.addr-area-msg.out{display:flex;background:#fef2f2;border:1.5px solid #fca5a5;color:#991b1b}
+.addr-area-msg.out strong{color:#7f1d1d}
+.addr-area-msg.good{display:flex;align-items:center;background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
 
 /* Option cards (radio-style) */
 .opt-group{display:grid;gap:10px;margin-top:2px}
@@ -366,6 +370,7 @@ a{text-decoration:none;color:inherit}
             <span id="addr-hint-text">Start typing — we'll suggest your address</span>
           </div>
           <div class="err" id="addr-err">Required</div>
+          <div class="addr-area-msg" id="addr-area-msg"></div>
         </div>
 
         <div class="nav">
@@ -779,6 +784,9 @@ function validateStep(step) {
     const addrOk = ad && (typeof window.isAddrVerified === 'function' ? window.isAddrVerified() : true);
     document.getElementById('addr-err').textContent = !ad ? 'Required' : 'Please select your address from the suggestions above';
     setErr('f-address', !addrOk); if (!addrOk) ok = false;
+    // Service area check — block if outside Greenville/Spartanburg/Pickens
+    const svcOk = typeof window.isServiceArea === 'function' ? window.isServiceArea() : true;
+    if (addrOk && !svcOk) ok = false; // banner already shown inline, no extra error needed
   }
   if (step === 2) {
     const gs = document.querySelector('input[name="genSize"]:checked');
@@ -875,13 +883,44 @@ function initPlaces() {
   const hintText = document.getElementById('addr-hint-text');
   if (!input || !dropdown) return;
 
+  const SERVICE_COUNTIES = ['Greenville County', 'Spartanburg County', 'Pickens County'];
+  const SERVICE_STATE = 'South Carolina';
+
   let debounceTimer;
   let focusedIdx = -1;
   let addrVerified = false;
+  let serviceAreaOk = true;
 
-  // Expose verification state and address parts to validateStep() / submitForm()
+  // Expose state to validateStep()
   window.isAddrVerified = function() { return addrVerified; };
+  window.isServiceArea  = function() { return serviceAreaOk; };
   window.addrParts = { street: '', city: '', county: '', state: '', zip: '' };
+
+  function checkServiceArea(state, county) {
+    const banner = document.getElementById('addr-area-msg');
+    if (!state) {
+      // Manual entry — can't verify, allow through silently
+      serviceAreaOk = true;
+      banner.className = 'addr-area-msg';
+      return;
+    }
+    if (state !== SERVICE_STATE) {
+      serviceAreaOk = false;
+      banner.className = 'addr-area-msg out';
+      banner.innerHTML = '⚠️ &nbsp;<span>We currently only serve South Carolina. We\'re expanding — check back soon!</span>';
+      return;
+    }
+    if (county && !SERVICE_COUNTIES.includes(county)) {
+      serviceAreaOk = false;
+      banner.className = 'addr-area-msg out';
+      banner.innerHTML = '⚠️ &nbsp;<span><strong>' + county + ' is outside our current service area.</strong><br>We serve Greenville, Spartanburg, and Pickens counties. Expanding soon — check back!</span>';
+      return;
+    }
+    // In service area
+    serviceAreaOk = true;
+    banner.className = 'addr-area-msg good';
+    banner.innerHTML = '✅ &nbsp;Great — we service ' + (county || SERVICE_STATE) + '!';
+  }
 
   function resetHint() {
     if (hintText) { hintText.textContent = "Start typing — we'll suggest your address"; hintText.style.color = ''; }
@@ -906,6 +945,7 @@ function initPlaces() {
     input.value = label;
     addrVerified = true;
     window.addrParts = parts;
+    checkServiceArea(parts.state, parts.county);
     resetHint();
     document.getElementById('f-address').classList.remove('has-error');
     hide();
@@ -915,6 +955,7 @@ function initPlaces() {
     input.value = val;
     addrVerified = true;
     window.addrParts = { street: val, city: '', county: '', state: '', zip: '' };
+    checkServiceArea('', ''); // can't verify, allow through
     resetHint();
     document.getElementById('f-address').classList.remove('has-error');
     hide();
@@ -931,7 +972,9 @@ function initPlaces() {
 
   input.addEventListener('input', function() {
     addrVerified = false;
+    serviceAreaOk = true;
     window.addrParts = { street: '', city: '', county: '', state: '', zip: '' };
+    document.getElementById('addr-area-msg').className = 'addr-area-msg'; // hide banner
     resetHint();
     clearTimeout(debounceTimer);
     const val = input.value.trim();
