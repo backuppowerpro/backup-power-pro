@@ -23,12 +23,14 @@ body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:#f7f9
 h1,h2,h3,h4{font-family:'Outfit',sans-serif;font-weight:700}
 a{text-decoration:none;color:inherit}
 
-/* ── Header ── */
-.hdr{background:var(--navy);padding:14px 24px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.06)}
+/* ── Header + Hero wrapper ── */
+.hero-wrap{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#2a5a7a 100%)}
+.hdr{padding:14px 24px;display:flex;align-items:center;justify-content:center}
+.hdr-link{display:flex;align-items:center}
 .hdr-logo{height:36px;width:auto;display:block}
 
 /* ── Hero ── */
-.hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#2a5a7a 100%);padding:32px 24px 36px;text-align:center;color:var(--white)}
+.hero{padding:32px 24px 36px;text-align:center;color:var(--white)}
 .hero h1{font-size:clamp(21px,5vw,28px);font-weight:800;line-height:1.25;margin-bottom:16px;letter-spacing:-.3px}
 .hero h1 em{font-style:normal;color:var(--gold)}
 
@@ -226,12 +228,12 @@ a{text-decoration:none;color:inherit}
 </head>
 <body>
 
-<!-- Header -->
+<!-- Header + Hero -->
+<div class="hero-wrap">
 <header class="hdr">
-  <img src="Untitled_Artwork 47.png" alt="Backup Power Pro" class="hdr-logo">
+  <a href="https://backuppowerpro.com" class="hdr-link"><img src="Untitled_Artwork 47.png" alt="Backup Power Pro" class="hdr-logo"></a>
 </header>
 
-<!-- Hero -->
 <div class="hero">
   <h1>You Already Own the Generator.<br><em>Now Power What Matters — Safely.</em></h1>
 
@@ -256,6 +258,7 @@ a{text-decoration:none;color:inherit}
     </div>
   </div>
 
+</div>
 </div>
 
 <!-- Card -->
@@ -539,8 +542,16 @@ function validateStep(step) {
     const phOk = phClean.length >= 10;
     document.getElementById('phone-err').textContent = ph ? 'Enter a valid phone number' : 'Required';
     setErr('f-phone', !phOk); if (!phOk) ok = false;
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
-    document.getElementById('email-err').textContent = em ? 'Enter a valid email (e.g. name@example.com)' : 'Required';
+    const emailFmt = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(em);
+    const emailTrunc = /\.(co|cm|ne|or|gm|ya|og)$/i.test(em);
+    const emailTypo = {'gmial.com':'gmail.com','gmal.com':'gmail.com','gmaill.com':'gmail.com','gmil.com':'gmail.com','gmai.com':'gmail.com','yaho.com':'yahoo.com','hotmal.com':'hotmail.com','hotmai.com':'hotmail.com','outloo.com':'outlook.com','outlok.com':'outlook.com'};
+    const emailDomain = em.split('@')[1]?.toLowerCase() || '';
+    const emailOk = emailFmt && !emailTrunc && !emailTypo[emailDomain];
+    let emailMsg = 'Required';
+    if (em && !emailFmt) emailMsg = 'Enter a valid email (e.g. name@gmail.com)';
+    else if (em && emailTypo[emailDomain]) emailMsg = 'Did you mean @' + emailTypo[emailDomain] + '?';
+    else if (em && emailTrunc) emailMsg = 'This looks incomplete — did you finish typing?';
+    document.getElementById('email-err').textContent = emailMsg;
     setErr('f-email', !emailOk); if (!emailOk) ok = false;
     const addrOk = ad && (typeof window.isAddrVerified === 'function' ? window.isAddrVerified() : true);
     document.getElementById('addr-err').textContent = !ad ? 'Required' : 'Please select your address from the suggestions above';
