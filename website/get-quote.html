@@ -527,8 +527,12 @@ function validateStep(step) {
     const ph = document.getElementById('phone').value.trim();
     const em = document.getElementById('email').value.trim();
     const ad = document.getElementById('address').value.trim();
-    setErr('f-first', !fn); if (!fn) ok = false;
-    setErr('f-last', !ln); if (!ln) ok = false;
+    const fnOk = fn && !/\s/.test(fn);
+    document.querySelector('#f-first .err').textContent = !fn ? 'Required' : 'First name only — no spaces';
+    setErr('f-first', !fnOk); if (!fnOk) ok = false;
+    const lnOk = ln && !/\s/.test(ln);
+    document.querySelector('#f-last .err').textContent = !ln ? 'Required' : 'Last name only — no spaces';
+    setErr('f-last', !lnOk); if (!lnOk) ok = false;
     const phClean = ph.replace(/\D/g, '');
     const phOk = phClean.length >= 10;
     document.getElementById('phone-err').textContent = ph ? 'Enter a valid phone number' : 'Required';
