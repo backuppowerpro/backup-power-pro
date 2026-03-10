@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Start My Free Quote | Backup Power Pro</title>
+<meta name="theme-color" content="#0b1f3b">
+<meta name="description" content="Answer a few quick questions about your generator setup and we'll text you next steps for a free quote. Licensed SC electrician.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#0b1f3b;--navy-mid:#1a3a5c;
+  --gold:#ffba00;--gold-hover:#ffc519;
+  --white:#ffffff;--light-blue:#e8f1f8;
+  --text:#1a1a2e;--text2:#4a4a5a;--text3:#7b7b8a;
+  --border:rgba(11,31,59,.08);
+  --r:16px;--r2:20px;--r3:100px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:#f7f9fc;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+h1,h2,h3,h4{font-family:'Outfit',sans-serif;font-weight:700}
+a{text-decoration:none;color:inherit}
+
+/* Header */
+.hdr{background:var(--navy);padding:14px 24px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.06)}
+.hdr-logo{height:34px;width:auto;display:block}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#2a5a7a 100%);padding:36px 24px 52px;text-align:center;color:var(--white)}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,186,0,.15);border:1px solid rgba(255,186,0,.3);border-radius:100px;padding:6px 14px;margin-bottom:18px}
+.hero-badge span{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--gold);letter-spacing:.05em;text-transform:uppercase}
+.hero h1{font-size:clamp(21px,5vw,28px);font-weight:800;line-height:1.25;margin-bottom:12px;letter-spacing:-.3px}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero p{font-size:15px;color:rgba(255,255,255,.8);line-height:1.7;max-width:440px;margin:0 auto 20px}
+
+/* Social proof strip */
+.social-strip{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 16px;max-width:420px;margin:0 auto}
+.social-strip .stars{color:var(--gold);font-size:14px;letter-spacing:1px}
+.social-strip span{font-size:12px;color:rgba(255,255,255,.7);font-weight:500}
+.social-strip .dot{color:rgba(255,255,255,.3);font-size:10px}
+
+/* Price anchor banner */
+.anchor-bar{background:rgba(255,186,0,.12);border:1px solid rgba(255,186,0,.25);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:8px;margin:0 20px;position:relative;z-index:2;top:-8px;max-width:520px;margin-left:auto;margin-right:auto}
+.anchor-bar svg{width:16px;height:16px;color:var(--gold);flex-shrink:0}
+.anchor-bar span{font-size:12.5px;color:rgba(255,255,255,.9);font-weight:500;line-height:1.4;text-align:center}
+.anchor-bar strong{color:var(--gold)}
+
+/* Card */
+.card-wrap{max-width:520px;margin:0 auto;padding:0 20px 60px}
+.card{background:var(--white);border-radius:var(--r2);box-shadow:0 4px 32px rgba(11,31,59,.1);margin-top:4px;position:relative;overflow:hidden}
+.card-inner{padding:28px 28px 32px}
+
+/* Steps indicator */
+.steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:24px}
+.step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;flex-shrink:0;transition:all .3s}
+.step-dot.active{background:var(--navy);color:var(--white)}
+.step-dot.done{background:var(--gold);color:var(--navy)}
+.step-dot.inactive{background:var(--light-blue);color:var(--text3)}
+.step-line{flex:1;height:2px;background:var(--border);max-width:40px}
+.step-line.done{background:var(--gold)}
+
+/* Section label */
+.sec-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.sec-sub{font-size:12.5px;color:var(--text3);line-height:1.5;margin-bottom:18px}
+.sec-sub strong{color:var(--navy);font-weight:600}
+
+/* Form fields */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.field label .req{color:var(--gold);margin-left:2px}
+.field input,.field select{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:12px;font-family:'Inter',system-ui,sans-serif;font-size:15px;color:var(--text);background:var(--white);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237b7b8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
+.field input:focus,.field select:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(11,31,59,.08)}
+.field input::placeholder{color:var(--text3)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-hint{font-size:11.5px;color:var(--text3);margin-top:5px;display:flex;align-items:center;gap:4px}
+.field-hint svg{width:12px;height:12px;flex-shrink:0}
+
+/* Option cards (radio-style) */
+.opt-group{display:grid;gap:10px;margin-top:2px}
+.opt-group.cols-2{grid-template-columns:1fr 1fr}
+.opt-group.cols-3{grid-template-columns:1fr 1fr 1fr}
+.opt-label{position:relative;cursor:pointer}
+.opt-label input[type="radio"]{position:absolute;opacity:0;width:0;height:0}
+.opt-card{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;background:var(--white)}
+.opt-card .opt-icon{width:32px;height:32px;border-radius:8px;background:var(--light-blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
+.opt-card .opt-icon svg{width:16px;height:16px;color:var(--navy)}
+.opt-card .opt-text{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+.opt-card .opt-sub{font-size:11px;color:var(--text3);font-weight:400;margin-top:1px}
+.opt-label input[type="radio"]:checked + .opt-card{border-color:var(--navy);background:#f8faff;box-shadow:0 0 0 3px rgba(11,31,59,.06)}
+.opt-label input[type="radio"]:checked + .opt-card .opt-icon{background:var(--navy)}
+.opt-label input[type="radio"]:checked + .opt-card .opt-icon svg{color:var(--white)}
+.opt-label input[type="radio"]:checked + .opt-card .opt-text{color:var(--navy)}
+
+/* Divider */
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+/* Nav buttons */
+.nav{display:flex;gap:12px;margin-top:24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;padding:14px 24px;border-radius:var(--r3);border:none;cursor:pointer;transition:all .2s;line-height:1;width:100%}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:var(--gold);color:var(--navy);box-shadow:0 4px 20px rgba(255,186,0,.3)}
+.btn-gold:hover{background:var(--gold-hover);box-shadow:0 4px 28px rgba(255,186,0,.4)}
+.btn-ghost{background:transparent;color:var(--text3);border:1.5px solid var(--border);font-size:14px;padding:14px 20px;width:auto;flex-shrink:0}
+.btn-ghost:hover{border-color:rgba(11,31,59,.2);color:var(--text)}
+.btn svg{width:16px;height:16px}
+.btn-sub{font-size:11.5px;color:var(--text3);text-align:center;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:5px}
+.btn-sub svg{width:12px;height:12px;color:var(--text3)}
+
+/* Callout boxes */
+.callout{border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:flex-start;gap:10px}
+.callout-anchor{background:#fff8e6;border:1px solid rgba(255,186,0,.3)}
+.callout-scarcity{background:#fff1f1;border:1px solid rgba(220,38,38,.15)}
+.callout-qualify{background:#f0f7ff;border:1px solid rgba(11,31,59,.12)}
+.callout svg{width:16px;height:16px;flex-shrink:0;margin-top:1px}
+.callout-anchor svg{color:#c48a00}
+.callout-scarcity svg{color:#dc2626}
+.callout-qualify svg{color:var(--navy)}
+.callout p{font-size:12.5px;line-height:1.55;color:var(--text2)}
+.callout strong{font-weight:600;color:var(--text)}
+
+/* Comparison table */
+.compare-wrap{margin-bottom:20px}
+.compare-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;text-align:center}
+.compare-table{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.compare-col{border-radius:12px;overflow:hidden;border:1.5px solid var(--border)}
+.compare-col.winner{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,186,0,.2)}
+.compare-head{padding:10px 10px 8px;text-align:center}
+.compare-col:not(.winner) .compare-head{background:#f7f9fc}
+.compare-col.winner .compare-head{background:var(--gold)}
+.compare-head .ch-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;line-height:1.3}
+.compare-col:not(.winner) .ch-label{color:var(--text2)}
+.compare-col.winner .ch-label{color:var(--navy)}
+.compare-head .ch-price{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;margin-top:3px;line-height:1.2}
+.compare-col.danger .ch-price{color:#dc2626}
+.compare-col.expensive .ch-price{color:var(--text3)}
+.compare-col.winner .ch-price{color:var(--navy)}
+.compare-body{padding:8px 8px 10px}
+.compare-row{display:flex;align-items:center;gap:6px;padding:4px 2px;border-bottom:1px solid var(--border)}
+.compare-row:last-child{border-bottom:none}
+.compare-row .cr-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.compare-row .cr-icon.yes{background:rgba(22,163,74,.12)}
+.compare-row .cr-icon.no{background:rgba(220,38,38,.1)}
+.compare-row .cr-icon svg{width:9px;height:9px}
+.compare-row .cr-icon.yes svg{color:#16a34a}
+.compare-row .cr-icon.no svg{color:#dc2626}
+.compare-row .cr-text{font-size:10.5px;color:var(--text2);line-height:1.3}
+.compare-row .cr-text.strike{text-decoration:line-through;color:var(--text3)}
+
+/* Testimonial */
+.testimonial{background:var(--light-blue);border-radius:12px;padding:14px 16px;margin-bottom:20px}
+.testimonial .stars{color:var(--gold);font-size:13px;letter-spacing:1px;margin-bottom:6px}
+.testimonial p{font-size:12.5px;color:var(--text2);line-height:1.6;font-style:italic}
+.testimonial .author{font-size:12px;color:var(--text3);font-style:normal;font-weight:600;margin-top:6px}
+
+/* Progress bar */
+.progress-bar{height:3px;background:var(--border);border-radius:0}
+.progress-fill{height:3px;background:var(--gold);border-radius:0;transition:width .4s ease}
+
+/* Trust bar */
+.trust{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:14px;padding:18px 24px;border-top:1px solid var(--border)}
+.trust-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text3);font-weight:500}
+.trust-item svg{width:13px;height:13px;color:var(--gold);flex-shrink:0}
+
+/* Error */
+.err{font-size:12px;color:#dc2626;margin-top:5px;display:none}
+.field.has-error input,.field.has-error select{border-color:#dc2626}
+.field.has-error .err{display:block}
+
+/* Success state */
+.success{display:none;text-align:center;padding:36px 28px 40px}
+.success-icon{width:64px;height:64px;background:rgba(22,163,74,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.success-icon svg{width:32px;height:32px;color:#16a34a}
+.success h2{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:10px}
+.success p{font-size:14.5px;color:var(--text2);line-height:1.7;max-width:320px;margin:0 auto}
+.success .phone-chip{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:var(--white);font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;padding:10px 20px;border-radius:100px;margin:16px auto 0}
+.success .phone-chip svg{width:16px;height:16px;color:var(--gold)}
+.success-steps{text-align:left;background:#f7f9fc;border-radius:12px;padding:16px 18px;margin-top:20px;max-width:320px;margin-left:auto;margin-right:auto}
+.success-steps h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px}
+.success-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.success-step:last-child{margin-bottom:0}
+.success-step-num{width:20px;height:20px;border-radius:50%;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.success-step p{font-size:13px;color:var(--text2);line-height:1.5}
+
+/* Steps */
+.step{display:none}
+.step.active{display:block}
+
+/* Loading spinner on button */
+.btn-loading{pointer-events:none;opacity:.8}
+.spinner{width:16px;height:16px;border:2px solid rgba(11,31,59,.2);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:400px){
+  .opt-group.cols-3{grid-template-columns:1fr 1fr}
+  .field-row{grid-template-columns:1fr}
+  .card-inner{padding:24px 20px 28px}
+}
+
+/* Google Places autocomplete dropdown */
+.pac-container{border-radius:12px;border:1.5px solid var(--border);box-shadow:0 8px 24px rgba(11,31,59,.12);margin-top:4px;font-family:'Inter',system-ui,sans-serif;font-size:14px;z-index:9999}
+.pac-item{padding:10px 14px;cursor:pointer;color:var(--text2);border-top:1px solid var(--border)}
+.pac-item:first-child{border-top:none}
+.pac-item:hover,.pac-item-selected{background:var(--light-blue)}
+.pac-item-query{font-weight:600;color:var(--text)}
+.pac-icon{display:none}
+.pac-logo::after{display:none}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="hdr">
+  <img src="logo-white.png" alt="Backup Power Pro" class="hdr-logo">
+</header>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <span>Free Quote · No Obligation</span>
+  </div>
+  <h1>You Already Own the Generator.<br><em>Now Make It Power Your Whole Home.</em></h1>
+  <p>Answer 3 quick questions and we'll text you exactly how to get safe, code-compliant backup power — done in one day. No $15,000 standby required.</p>
+  <div class="social-strip">
+    <span class="stars">★★★★★</span>
+    <span class="dot">·</span>
+    <span>50+ Upstate SC homes connected</span>
+    <span class="dot">·</span>
+    <span>Licensed SC Electrician</span>
+  </div>
+</div>
+
+<!-- Price anchor banner -->
+<div class="card-wrap" style="padding-bottom:0;padding-top:0">
+  <div class="anchor-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    <span>Most installs run <strong>$1,400–$2,000 all-in</strong> — vs $15,000+ for a standby generator. Cord, permit &amp; inspection included.</span>
+  </div>
+</div>
+
+<!-- Card -->
+<div class="card-wrap">
+  <div class="card">
+
+    <!-- Progress bar -->
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:33%"></div></div>
+
+    <div class="card-inner">
+
+      <!-- Step indicators -->
+      <div class="steps">
+        <div class="step-dot active" id="dot1">1</div>
+        <div class="step-line" id="line1"></div>
+        <div class="step-dot inactive" id="dot2">2</div>
+        <div class="step-line" id="line2"></div>
+        <div class="step-dot inactive" id="dot3">3</div>
+      </div>
+
+      <!-- ── STEP 1: Contact Info ── -->
+      <div class="step active" id="step1">
+        <div class="sec-label">Step 1 of 3 · Your Info</div>
+        <p class="sec-sub">Takes less than 2 minutes. <strong>We'll text you — no spam, no cold calls until you're ready.</strong></p>
+
+        <div class="field-row">
+          <div class="field" id="f-first">
+            <label>First Name <span class="req">*</span></label>
+            <input type="text" id="firstName" placeholder="John" autocomplete="given-name">
+            <div class="err">Required</div>
+          </div>
+          <div class="field" id="f-last">
+            <label>Last Name <span class="req">*</span></label>
+            <input type="text" id="lastName" placeholder="Smith" autocomplete="family-name">
+            <div class="err">Required</div>
+          </div>
+        </div>
+
+        <div class="field" id="f-phone">
+          <label>Cell Phone <span class="req">*</span></label>
+          <input type="tel" id="phone" placeholder="(864) 555-0100" autocomplete="tel" inputmode="tel">
+          <div class="field-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            We'll only send you a text with your quote next steps
+          </div>
+          <div class="err" id="phone-err">Enter a valid phone number</div>
+        </div>
+
+        <div class="field" id="f-email">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" id="email" placeholder="john@example.com" autocomplete="email" inputmode="email">
+          <div class="field-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            For your quote summary — no spam, ever
+          </div>
+          <div class="err" id="email-err">Enter a valid email address</div>
+        </div>
+
+        <div class="field" id="f-address">
+          <label>Service Address <span class="req">*</span></label>
+          <input type="text" id="address" placeholder="123 Oak Street, Greenville SC" autocomplete="off">
+          <div class="field-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 7.05 11.5 7.72 12.06a.5.5 0 0 0 .56 0C12.95 21.5 20 15.4 20 10a8 8 0 0 0-8-8z"/></svg>
+            Start typing — we'll suggest your address
+          </div>
+          <div class="err">Required</div>
+        </div>
+
+        <div class="nav">
+          <button class="btn btn-gold" onclick="goStep(2)">
+            Next — Generator Info
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+        <div class="btn-sub">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Your info is private and never sold
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Generator Setup ── -->
+      <div class="step" id="step2">
+        <div class="sec-label">Step 2 of 3 · Your Generator Setup</div>
+        <p class="sec-sub"><strong>✓ Most setups qualify.</strong> These 3 questions let us give you an exact price on the spot.</p>
+
+        <div class="field" id="f-genwatts">
+          <label>Generator Size <span class="req">*</span></label>
+          <div class="opt-group cols-2">
+            <label class="opt-label">
+              <input type="radio" name="genSize" value="Under 3500W">
+              <div class="opt-card">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                <div><div class="opt-text">Under 3,500W</div><div class="opt-sub">Small / inverter</div></div>
+              </div>
+            </label>
+            <label class="opt-label">
+              <input type="radio" name="genSize" value="3500-5000W">
+              <div class="opt-card">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                <div><div class="opt-text">3,500–5,000W</div><div class="opt-sub">Mid-size</div></div>
+              </div>
+            </label>
+            <label class="opt-label">
+              <input type="radio" name="genSize" value="5000-8000W">
+              <div class="opt-card">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                <div><div class="opt-text">5,000–8,000W</div><div class="opt-sub">Large</div></div>
+              </div>
+            </label>
+            <label class="opt-label">
+              <input type="radio" name="genSize" value="8000W+">
+              <div class="opt-card">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                <div><div class="opt-text">8,000W+</div><div class="opt-sub">Extra large</div></div>
+              </div>
+            </label>
+          </div>
+          <div class="err" id="genSize-err">Please select one</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field" id="f-panel">
+          <label>Panel Size <span class="req">*</span></label>
+          <div class="opt-group cols-3">
+            <label class="opt-label">
+              <input type="radio" name="panelSize" value="100 Amp">
+              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="6" x2="12" y2="10"/></svg></div>
+                <div class="opt-text">100 Amp</div>
+              </div>
+            </label>
+            <label class="opt-label">
+              <input type="radio" name="panelSize" value="200 Amp">
+              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="6" x2="12" y2="10"/></svg></div>
+                <div class="opt-text">200 Amp</div>
+              </div>
+            </label>
+            <label class="opt-label">
+              <input type="radio" name="panelSize" value="Not sure">
+              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                <div class="opt-text">Not sure</div>
+              </div>
+            </label>
+          </div>
+          <div class="err" id="panelSize-err">Please select one</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field" id="f-mainbreaker">
+          <label>Does your panel have a main breaker? <span class="req">*</span></label>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.5">The main breaker is usually a large double-pole switch at the top of your panel.</p>
+          <div class="opt-group cols-3">
+            <label class="opt-label">
+              <input type="radio" name="mainBreaker" value="Yes">
+              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <div class="opt-text">Yes</div>
+              </div>
+            </label>
+            <label class="opt-label">
+              <input type="radio" name="mainBreaker" value="No">
+              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                <div class="opt-text">No</div>
+              </div>
+            </label>
+            <label class="opt-label">
+              <input type="radio" name="mainBreaker" value="Not sure">
+              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
+                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                <div class="opt-text">Not sure</div>
+              </div>
+            </label>
+          </div>
+          <div class="err" id="mainBreaker-err">Please select one</div>
+        </div>
+
+        <div class="nav">
+          <button class="btn btn-ghost" onclick="goStep(1)" style="width:auto;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
+          </button>
+          <button class="btn btn-gold" onclick="goStep(3)">
+            Next — Final Step
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Final Details ── -->
+      <div class="step" id="step3">
+        <div class="sec-label">Step 3 of 3 · Almost Done!</div>
+        <p class="sec-sub">Just a couple of optional details to help us prepare your quote faster.</p>
+
+        <!-- Comparison table -->
+        <div class="compare-wrap">
+          <div class="compare-label">Your options compared</div>
+          <div class="compare-table">
+
+            <!-- Extension cords -->
+            <div class="compare-col danger">
+              <div class="compare-head">
+                <div class="ch-label">Extension Cords</div>
+                <div class="ch-price">⚠️ Unsafe</div>
+              </div>
+              <div class="compare-body">
+                <div class="compare-row">
+                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                  <div class="cr-text strike">Legal &amp; safe</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                  <div class="cr-text strike">Panel power</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                  <div class="cr-text strike">Code compliant</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                  <div class="cr-text strike">Fire-safe setup</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BPP — WINNER -->
+            <div class="compare-col winner">
+              <div class="compare-head">
+                <div class="ch-label">⚡ BPP Install</div>
+                <div class="ch-price">$1,400–$2,000</div>
+              </div>
+              <div class="compare-body">
+                <div class="compare-row">
+                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <div class="cr-text">Legal &amp; safe</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <div class="cr-text">Panel power</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <div class="cr-text">Permitted &amp; inspected</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <div class="cr-text">Done in one day</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Standby generator -->
+            <div class="compare-col expensive">
+              <div class="compare-head">
+                <div class="ch-label">Standby Generator</div>
+                <div class="ch-price">$15,000+</div>
+              </div>
+              <div class="compare-body">
+                <div class="compare-row">
+                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <div class="cr-text">Legal &amp; safe</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <div class="cr-text">Panel power</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <div class="cr-text">Permitted</div>
+                </div>
+                <div class="compare-row">
+                  <div class="cr-icon no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                  <div class="cr-text">3–5 day install</div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /compare-table -->
+        </div><!-- /compare-wrap -->
+
+        <div class="field" id="f-panelbrand">
+          <label>Panel Brand <span style="font-weight:400;color:var(--text3)">(if you know it)</span></label>
+          <select id="panelBrand">
+            <option value="">Select brand...</option>
+            <option>Square D</option>
+            <option>Siemens</option>
+            <option>Eaton / Cutler-Hammer</option>
+            <option>GE</option>
+            <option>Leviton</option>
+            <option>Murray</option>
+            <option>Federal Pacific</option>
+            <option>Not sure</option>
+          </select>
+        </div>
+
+        <div class="field" id="f-location">
+          <label>Where is your panel located? <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+          <select id="panelLocation">
+            <option value="">Select location...</option>
+            <option>Garage</option>
+            <option>Basement</option>
+            <option>Utility room / laundry room</option>
+            <option>Hallway</option>
+            <option>Outside / exterior</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="field" id="f-source">
+          <label>How did you hear about us?</label>
+          <select id="hearAbout">
+            <option value="">Select...</option>
+            <option>Facebook or Instagram ad</option>
+            <option>Google search</option>
+            <option>Neighbor or friend</option>
+            <option>Nextdoor</option>
+            <option>Google Business Profile</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Testimonial -->
+        <div class="testimonial">
+          <div class="stars">★★★★★</div>
+          <p>"Key came out, connected our generator to the panel, pulled the permit, and had everything done before lunch. We've used it twice already in outages and it works perfectly."</p>
+          <div class="author">— Mark T., Greenville SC homeowner</div>
+        </div>
+
+        <!-- Scarcity callout -->
+        <div class="callout callout-scarcity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <p><strong>We schedule 5 installs per week</strong> — spots fill up fast heading into storm season. Submit now to hold your place in the queue.</p>
+        </div>
+
+        <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:16px;text-align:center">
+          By submitting you agree to receive a text from us at the number provided. Standard message rates may apply.
+        </p>
+
+        <div class="nav">
+          <button class="btn btn-ghost" onclick="goStep(2)" style="width:auto;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
+          </button>
+          <button class="btn btn-gold" id="submitBtn" onclick="submitForm()">
+            Get My Free Quote
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </button>
+        </div>
+        <div class="btn-sub">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          100% free. No commitment. We'll only text you.
+        </div>
+      </div>
+
+      <!-- ── SUCCESS STATE ── -->
+      <div class="success" id="successState">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2>You're all set, <span id="successName"></span>!</h2>
+        <p>Smart move. Most homeowners never unlock the generator they already paid for. You just changed that.</p>
+        <div class="phone-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Watch for a text from (864) 400-5302
+        </div>
+        <div class="success-steps">
+          <h4>What happens next</h4>
+          <div class="success-step">
+            <div class="success-step-num">1</div>
+            <p>We review your setup and prepare your quote — usually within the hour.</p>
+          </div>
+          <div class="success-step">
+            <div class="success-step-num">2</div>
+            <p>We'll text you with a few photo requests to finalize the price.</p>
+          </div>
+          <div class="success-step">
+            <div class="success-step-num">3</div>
+            <p>We'll give you a quick call to go over everything — no pressure, just your quote.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /card-inner -->
+
+    <!-- Trust bar -->
+    <div class="trust">
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Licensed &amp; Insured
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Permit Included
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        One-Day Install
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        100% Free Quote
+      </div>
+    </div>
+
+  </div><!-- /card -->
+</div><!-- /card-wrap -->
+
+<script>
+// ─── ZAPIER WEBHOOK URL ───────────────────────────────────────────────
+const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
+// ─────────────────────────────────────────────────────────────────────
+
+let currentStep = 1;
+
+function updateProgress(step) {
+  const pct = step === 1 ? 33 : step === 2 ? 66 : 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById('dot' + i);
+    dot.className = 'step-dot ' + (i < step ? 'done' : i === step ? 'active' : 'inactive');
+    dot.innerHTML = i < step
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+      : i;
+  }
+  if (step > 1) document.getElementById('line1').classList.add('done');
+  else document.getElementById('line1').classList.remove('done');
+  if (step > 2) document.getElementById('line2').classList.add('done');
+  else document.getElementById('line2').classList.remove('done');
+}
+
+function goStep(n) {
+  if (n > currentStep && !validateStep(currentStep)) return;
+  document.getElementById('step' + currentStep).classList.remove('active');
+  currentStep = n;
+  document.getElementById('step' + currentStep).classList.add('active');
+  updateProgress(currentStep);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function validateStep(step) {
+  let ok = true;
+  if (step === 1) {
+    const fn = document.getElementById('firstName').value.trim();
+    const ln = document.getElementById('lastName').value.trim();
+    const ph = document.getElementById('phone').value.trim();
+    const em = document.getElementById('email').value.trim();
+    const ad = document.getElementById('address').value.trim();
+    setErr('f-first', !fn); if (!fn) ok = false;
+    setErr('f-last', !ln); if (!ln) ok = false;
+    const phClean = ph.replace(/\D/g, '');
+    const phOk = phClean.length >= 10;
+    document.getElementById('phone-err').textContent = ph ? 'Enter a valid phone number' : 'Required';
+    setErr('f-phone', !phOk); if (!phOk) ok = false;
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
+    document.getElementById('email-err').textContent = em ? 'Enter a valid email (e.g. name@example.com)' : 'Required';
+    setErr('f-email', !emailOk); if (!emailOk) ok = false;
+    setErr('f-address', !ad); if (!ad) ok = false;
+  }
+  if (step === 2) {
+    const gs = document.querySelector('input[name="genSize"]:checked');
+    const ps = document.querySelector('input[name="panelSize"]:checked');
+    const mb = document.querySelector('input[name="mainBreaker"]:checked');
+    setErrById('genSize-err', !gs); if (!gs) ok = false;
+    setErrById('panelSize-err', !ps); if (!ps) ok = false;
+    setErrById('mainBreaker-err', !mb); if (!mb) ok = false;
+  }
+  return ok;
+}
+
+function setErr(fieldId, show) {
+  const el = document.getElementById(fieldId);
+  if (show) el.classList.add('has-error');
+  else el.classList.remove('has-error');
+}
+
+function setErrById(errId, show) {
+  document.getElementById(errId).style.display = show ? 'block' : 'none';
+}
+
+// Phone formatting
+document.getElementById('phone').addEventListener('input', function(e) {
+  let v = e.target.value.replace(/\D/g,'');
+  if (v.length > 10) v = v.slice(0,10);
+  if (v.length >= 7) v = '(' + v.slice(0,3) + ') ' + v.slice(3,6) + '-' + v.slice(6);
+  else if (v.length >= 4) v = '(' + v.slice(0,3) + ') ' + v.slice(3);
+  else if (v.length > 0) v = '(' + v;
+  e.target.value = v;
+});
+
+async function submitForm() {
+  if (!validateStep(3)) return;
+
+  const firstName = document.getElementById('firstName').value.trim();
+  const btn = document.getElementById('submitBtn');
+  btn.classList.add('btn-loading');
+  btn.innerHTML = '<div class="spinner"></div> Sending...';
+
+  const payload = {
+    firstName,
+    lastName: document.getElementById('lastName').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    address: document.getElementById('address').value.trim(),
+    generatorSize: document.querySelector('input[name="genSize"]:checked')?.value || '',
+    panelSize: document.querySelector('input[name="panelSize"]:checked')?.value || '',
+    mainBreaker: document.querySelector('input[name="mainBreaker"]:checked')?.value || '',
+    panelBrand: document.getElementById('panelBrand').value || 'Not provided',
+    panelLocation: document.getElementById('panelLocation').value || 'Not provided',
+    hearAbout: document.getElementById('hearAbout').value || 'Not provided',
+    submittedAt: new Date().toISOString(),
+    source: 'get-quote-page'
+  };
+
+  try {
+    await fetch(ZAPIER_WEBHOOK, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    showSuccess(firstName);
+  } catch (err) {
+    showSuccess(firstName);
+  }
+}
+
+function showSuccess(firstName) {
+  for (let i = 1; i <= 3; i++) {
+    const s = document.getElementById('step' + i);
+    if (s) s.style.display = 'none';
+  }
+  document.querySelector('.steps').style.display = 'none';
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('successName').textContent = firstName;
+  document.getElementById('successState').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+<!-- Google Places Autocomplete -->
+<!-- Enable: Maps JavaScript API + Places API. Restrict key to your domain. -->
+<script>
+function initPlaces() {
+  const input = document.getElementById('address');
+  if (!window.google || !google.maps || !google.maps.places) return;
+
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+    types: ['address'],
+    componentRestrictions: { country: 'us' },
+    fields: ['formatted_address']
+  });
+
+  // Prevent form submit on Enter while dropdown is open
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') e.preventDefault();
+  });
+
+  autocomplete.addListener('place_changed', function() {
+    const place = autocomplete.getPlace();
+    if (place.formatted_address) {
+      input.value = place.formatted_address;
+      // Clear any error state
+      document.getElementById('f-address').classList.remove('has-error');
+    }
+  });
+}
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ&libraries=places&callback=initPlaces" async defer></script>
+</body>
+</html>
