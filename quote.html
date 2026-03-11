@@ -21,8 +21,9 @@
   --border:rgba(11,31,59,.08);
   --r:16px;--r2:20px;--r3:100px;
 }
-html{scroll-behavior:smooth;margin:0;padding:0;background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 60%,#2a5a7a 100%);min-height:100%}
-body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 60%,#2a5a7a 100%);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;margin:0;padding:0}
+html{scroll-behavior:smooth;margin:0;padding:0;background-color:#0b1f3b;min-height:100%}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background-color:#0b1f3b;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;margin:0;padding:0}
+body::before{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 60%,#2a5a7a 100%)}
 h1,h2,h3,h4{font-family:'Outfit',sans-serif;font-weight:700}
 a{text-decoration:none;color:inherit}
 
@@ -41,7 +42,7 @@ a{text-decoration:none;color:inherit}
 
 /* Price comparison strip (inside hero) */
 .price-vs{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:18px}
-.pv-item{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;white-space:nowrap;min-width:220px;justify-content:space-between}
+.pv-item{display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:10px;white-space:nowrap;min-width:240px;justify-content:space-between}
 .pv-bad{background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.22)}
 .pv-good{background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.3);padding:12px 22px;border-radius:12px;min-width:240px;justify-content:center;gap:10px}
 .pv-icon{width:18px;height:18px;flex-shrink:0}
