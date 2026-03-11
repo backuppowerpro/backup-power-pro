@@ -21,13 +21,14 @@
   --border:rgba(11,31,59,.08);
   --r:16px;--r2:20px;--r3:100px;
 }
-html{scroll-behavior:smooth;margin:0;padding:0;background-color:#0b1f3b;background-image:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 60%,#2a5a7a 100%);background-attachment:fixed;background-size:100% 100%;min-height:100vh}
-body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:transparent;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;margin:0;padding:0}
+html{scroll-behavior:smooth;margin:0;padding:0;background:#0b1f3b;min-height:100%}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:#0b1f3b;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;margin:0;padding:0}
+.bg-layer{position:fixed;inset:0;z-index:0;background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 60%,#2a5a7a 100%);pointer-events:none}
 h1,h2,h3,h4{font-family:'Outfit',sans-serif;font-weight:700}
 a{text-decoration:none;color:inherit}
 
 /* ── Header + Hero wrapper ── */
-.hero-wrap{background:transparent}
+.hero-wrap{background:transparent;position:relative;z-index:1}
 .hdr{padding:14px 24px;padding-top:calc(14px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:center}
 .hdr-link{display:flex;align-items:center}
 .hdr-logo{height:36px;width:auto;display:block}
@@ -56,7 +57,7 @@ a{text-decoration:none;color:inherit}
 /* Social proof strip */
 
 /* ── Card ── */
-.card-wrap{max-width:520px;margin:0 auto;padding:0 20px;padding-bottom:max(32px,env(safe-area-inset-bottom,32px))}
+.card-wrap{max-width:520px;margin:0 auto;padding:0 20px;padding-bottom:max(32px,env(safe-area-inset-bottom,32px));position:relative;z-index:1}
 .card{background:var(--white);border-radius:var(--r2);box-shadow:0 4px 32px rgba(11,31,59,.1);margin-top:16px;position:relative;overflow:hidden}
 .card-inner{padding:28px 28px 32px}
 
@@ -289,6 +290,7 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 
 </head>
 <body>
+<div class="bg-layer"></div>
 
 <!-- Header + Hero -->
 <div class="hero-wrap">
