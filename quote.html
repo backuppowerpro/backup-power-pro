@@ -111,6 +111,12 @@ a{text-decoration:none;color:inherit}
 .addr-area-msg.out{display:flex;background:#fef2f2;border:1.5px solid #fca5a5;color:#991b1b}
 .addr-area-msg.out strong{color:#7f1d1d}
 .addr-area-msg.good{display:flex;align-items:center;background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
+.addr-area-msg.out .waitlist-section{margin-top:10px;width:100%}
+.addr-area-msg.out .waitlist-btn{display:inline-block;background:#0b1f3b;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:background .2s}
+.addr-area-msg.out .waitlist-btn:hover{background:#1a3a5c}
+.addr-area-msg.out .waitlist-btn:disabled{opacity:.6;cursor:not-allowed}
+.addr-area-msg.out .waitlist-success{color:#166534;font-weight:600;font-size:13px}
+.addr-area-msg.waitlisted{display:flex;background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
 
 /* 120V voltage warning */
 .voltage-warn{display:none;margin-top:10px;padding:12px 14px;border-radius:10px;background:#fffbeb;border:1.5px solid #fcd34d;color:#92400e;font-size:12.5px;line-height:1.5;gap:10px;align-items:flex-start}
@@ -566,7 +572,7 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
             <span class="surge-warranty-label">manufacturer's warranty on connected devices</span>
           </div>
           <div class="surge-math">
-            <div class="surge-math-price">Add-on: <strong>$450</strong></div>
+            <div class="surge-math-price">Add-on: <strong>$375</strong></div>
             <div class="surge-math-ratio">Less than 1¢ per dollar of coverage</div>
           </div>
           <p class="surge-window">Panel's already open — after we leave, this requires a separate service call.</p>
@@ -599,6 +605,8 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 // ─── ZAPIER WEBHOOK URL ───────────────────────────────────────────────
 const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
 const META_PIXEL_ID  = '1389648775800936';
+// ── WAITLIST: Google Apps Script Web App URL ─────────────────────────
+const WAITLIST_SHEET_URL = 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
 // ─────────────────────────────────────────────────────────────────────
 
 // SHA-256 hash helper (for Meta Advanced Matching + CAPI)
@@ -608,6 +616,45 @@ async function sha256(str) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(str).trim().toLowerCase()));
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
   } catch(e) { return ''; }
+}
+
+// ── Waitlist submission ──────────────────────────────────────────────
+async function joinWaitlist(btn) {
+  const fn = document.getElementById('firstName').value.trim();
+  const ln = document.getElementById('lastName').value.trim();
+  const ph = document.getElementById('phone').value.trim();
+  const em = document.getElementById('email').value.trim();
+  const ad = document.getElementById('address').value.trim();
+  const county = window.addrParts ? window.addrParts.county : '';
+
+  if (!fn || !ph) {
+    alert('Please fill in your name and phone number above first.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    await fetch(WAITLIST_SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: fn,
+        lastName: ln,
+        phone: ph,
+        email: em,
+        address: ad,
+        county: county,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch(e) { /* no-cors won't throw on success */ }
+
+  const banner = document.getElementById('addr-area-msg');
+  banner.className = 'addr-area-msg waitlisted';
+  banner.innerHTML = '✅ &nbsp;<span><strong>You\'re on the list!</strong><br>We\'ll reach out as soon as we\'re serving ' + (county || 'your area') + '. Thanks, ' + fn + '!</span>';
 }
 
 let currentStep = 1;
@@ -649,7 +696,7 @@ function goStep(n) {
       content_name: 'generator-inlet-quote',
       content_category: 'generator-installation',
       num_items: 1,
-      value: 1500,
+      value: 1197,
       currency: 'USD'
     });
   }
@@ -885,7 +932,7 @@ async function submitForm() {
     fbq('track', 'Lead', {
       content_name:     'generator-inlet-quote',
       content_category: 'generator-installation',
-      value:    1500,
+      value:    1197,
       currency: 'USD'
     }, { eventID: eventId });
   }
@@ -940,7 +987,7 @@ function showSuccess(firstName) {
   const hintText = document.getElementById('addr-hint-text');
   if (!input || !dropdown) return;
 
-  const SERVICE_COUNTIES = ['Greenville County', 'Spartanburg County', 'Pickens County'];
+  const SERVICE_COUNTIES = ['Greenville County'];
   const SERVICE_STATE = 'South Carolina';
 
   let debounceTimer;
@@ -969,7 +1016,7 @@ function showSuccess(firstName) {
     if (county && !SERVICE_COUNTIES.includes(county)) {
       serviceAreaOk = false;
       banner.className = 'addr-area-msg out';
-      banner.innerHTML = '⚠️ &nbsp;<span><strong>' + county + ' is outside our current service area.</strong><br>We serve Greenville, Spartanburg, and Pickens counties. Expanding soon — check back!</span>';
+      banner.innerHTML = '⚠️ &nbsp;<span><strong>' + county + ' isn\'t in our service area yet.</strong><br>We\'re currently serving Greenville County and expanding soon!<div class="waitlist-section"><button class="waitlist-btn" onclick="joinWaitlist(this)" type="button">🔔 Join the Waitlist — We\'ll Text You When We\'re There</button></div></span>';
       return;
     }
     serviceAreaOk = true;
