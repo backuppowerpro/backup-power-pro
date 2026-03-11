@@ -128,9 +128,9 @@ a{text-decoration:none;color:inherit}
 .opt-group{display:grid;gap:10px;margin-top:2px}
 .opt-group.cols-2{grid-template-columns:1fr 1fr}
 .opt-group.cols-3{grid-template-columns:1fr 1fr 1fr}
-.opt-label{position:relative;cursor:pointer}
+.opt-label{position:relative;cursor:pointer;display:flex}
 .opt-label input[type="radio"]{position:absolute;opacity:0;width:0;height:0}
-.opt-card{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;background:var(--white)}
+.opt-card{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex:1;align-items:center;gap:10px;transition:all .2s;background:var(--white)}
 .opt-card .opt-icon{width:32px;height:32px;border-radius:8px;background:var(--light-blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
 .opt-card .opt-icon svg{width:16px;height:16px;color:var(--navy)}
 .opt-card .opt-text{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
@@ -214,14 +214,14 @@ a{text-decoration:none;color:inherit}
 .field.has-error .err{display:block}
 
 /* Success state */
-.success{display:none;text-align:center;padding:36px 28px 40px}
+.success{display:none;text-align:center;padding:8px 0 16px}
 .success-icon{width:64px;height:64px;background:rgba(22,163,74,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
 .success-icon svg{width:32px;height:32px;color:#16a34a}
 .success h2{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:10px}
 .success p{font-size:14.5px;color:var(--text2);line-height:1.7;max-width:320px;margin:0 auto}
 .success .phone-chip{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:var(--white);font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;padding:10px 20px;border-radius:100px;margin:16px auto 0}
 .success .phone-chip svg{width:16px;height:16px;color:var(--gold)}
-.success-steps{text-align:left;background:#f7f9fc;border-radius:12px;padding:16px 18px;margin-top:20px;max-width:320px;margin-left:auto;margin-right:auto}
+.success-steps{text-align:left;background:#f7f9fc;border-radius:12px;padding:16px 18px;margin-top:20px;max-width:100%;}
 .success-steps h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px}
 .success-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
 .success-step:last-child{margin-bottom:0}
@@ -229,7 +229,7 @@ a{text-decoration:none;color:inherit}
 .success-step p{font-size:13px;color:var(--text2);line-height:1.5}
 
 /* Surge protection upsell card — base font 12px throughout, only $75k breaks out */
-.surge-card{text-align:left;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:16px 18px;margin-top:14px;max-width:320px;margin-left:auto;margin-right:auto;font-size:12px;line-height:1.5;color:var(--text2)}
+.surge-card{text-align:left;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:16px 18px;margin-top:14px;max-width:100%;font-size:12px;line-height:1.5;color:var(--text2)}
 .surge-card-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
 .surge-card-icon{width:34px;height:34px;background:#fef3c7;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .surge-card-icon svg{width:17px;height:17px;color:#d97706}
