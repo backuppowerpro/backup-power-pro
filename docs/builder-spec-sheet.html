@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder Spec Sheet — Backup Power Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#0b1f3b;
+  --navy-mid:#1a3a5c;
+  --gold:#ffba00;
+  --white:#ffffff;
+  --light:#f4f7fb;
+  --text:#1a1a2e;
+  --text2:#4a4a5a;
+  --text3:#7b7b8a;
+  --border:#dde4ee;
+}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:#fff;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.6}
+h1,h2,h3,h4{font-family:'Outfit',sans-serif;font-weight:700}
+
+/* Page shell */
+.page{max-width:780px;margin:0 auto;padding:48px 40px}
+
+/* Header / letterhead */
+.lh{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:24px;border-bottom:3px solid var(--navy);margin-bottom:36px}
+.lh-logo{display:flex;flex-direction:column;gap:4px}
+.lh-brand{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
+.lh-div{font-size:12px;color:var(--text3);font-weight:500;letter-spacing:.04em}
+.lh-contact{text-align:right;font-size:12px;color:var(--text2);line-height:1.8}
+.lh-contact strong{font-weight:600;color:var(--navy);display:block;font-family:'Outfit',sans-serif;font-size:13px}
+
+/* Gold accent bar */
+.accent-bar{height:4px;background:linear-gradient(90deg,var(--gold),#ffd966);border-radius:2px;margin-bottom:32px}
+
+/* Hero headline */
+.doc-hero{margin-bottom:32px}
+.doc-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.doc-hero h1{font-size:28px;font-weight:800;color:var(--navy);line-height:1.2;margin-bottom:10px}
+.doc-hero p{font-size:15px;color:var(--text2);line-height:1.7;max-width:560px}
+
+/* Two-col layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px}
+.col-full{margin-bottom:28px}
+
+/* Section cards */
+.card{background:var(--light);border-radius:12px;padding:22px 24px;border:1px solid var(--border)}
+.card h3{font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+.card-navy{background:var(--navy);border-color:var(--navy)}
+.card-navy h3{color:var(--gold);border-color:rgba(255,255,255,.1)}
+.card-navy p,.card-navy li{color:rgba(255,255,255,.8)}
+.card-navy strong{color:#fff}
+.card-gold{background:linear-gradient(135deg,#fffbf0,#fff8e1);border:1.5px solid rgba(255,186,0,.3)}
+.card-gold h3{color:var(--navy)}
+
+/* Lists */
+ul.check{list-style:none;display:flex;flex-direction:column;gap:8px}
+ul.check li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text2);line-height:1.6}
+ul.check li::before{content:'✓';font-weight:700;color:var(--gold);flex-shrink:0;margin-top:1px}
+.card-navy ul.check li{color:rgba(255,255,255,.8)}
+.card-navy ul.check li::before{color:var(--gold)}
+
+/* Spec table */
+.spec-table{width:100%;border-collapse:collapse}
+.spec-table tr{border-bottom:1px solid var(--border)}
+.spec-table tr:last-child{border-bottom:none}
+.spec-table td{padding:9px 4px;font-size:13px;vertical-align:top}
+.spec-table td:first-child{font-weight:600;color:var(--navy);width:48%;padding-right:12px}
+.spec-table td:last-child{color:var(--text2)}
+
+/* Pricing block */
+.pricing-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.pricing-row:last-child{border-bottom:none}
+.pricing-name{font-size:13.5px;font-weight:600;color:var(--navy)}
+.pricing-sub{font-size:11.5px;color:var(--text3);margin-top:1px}
+.pricing-val{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
+.pricing-val.gold{color:var(--gold)}
+
+/* Process steps */
+.steps-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.stp{text-align:center;padding:16px 12px;background:var(--light);border-radius:10px;border:1px solid var(--border)}
+.stp-num{width:34px;height:34px;border-radius:50%;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.stp h4{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:5px}
+.stp p{font-size:12px;color:var(--text2);line-height:1.55}
+
+/* Quote callout */
+.callout{background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:14px;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:28px}
+.callout-text h3{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
+.callout-text p{font-size:13px;color:rgba(255,255,255,.7);line-height:1.6;max-width:380px}
+.callout-cta{text-align:right;flex-shrink:0}
+.callout-phone{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:var(--gold);white-space:nowrap}
+.callout-email{font-size:12px;color:rgba(255,255,255,.55);margin-top:4px}
+
+/* Footer */
+.doc-footer{border-top:1px solid var(--border);padding-top:18px;display:flex;justify-content:space-between;align-items:center}
+.doc-footer p{font-size:11px;color:var(--text3)}
+.doc-footer strong{color:var(--text2)}
+
+/* Credential pills */
+.creds{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.cred{font-size:11.5px;font-weight:600;color:var(--navy);background:#fff;border:1.5px solid var(--border);padding:5px 12px;border-radius:100px}
+
+/* Print */
+@media print{
+  body{font-size:12px}
+  .page{padding:24px 28px;max-width:100%}
+  .callout{break-inside:avoid}
+  .two-col,.steps-row{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Letterhead -->
+  <div class="lh">
+    <div class="lh-logo">
+      <span class="lh-brand">Backup Power Pro</span>
+      <span class="lh-div">A division of Key Electric, LLC</span>
+    </div>
+    <div class="lh-contact">
+      <strong>Key Goodson</strong>
+      (864) 863-8009<br>
+      key@backuppowerpro.com<br>
+      backuppowerpro.com
+    </div>
+  </div>
+
+  <div class="accent-bar"></div>
+
+  <!-- Hero -->
+  <div class="doc-hero">
+    <p class="doc-label">Builder &amp; Developer Partnership</p>
+    <h1>Offer Your Buyers a Generator Connection.<br>We Handle Everything.</h1>
+    <p>Backup Power Pro installs a code-compliant generator inlet and interlock kit that allows any portable generator to power a home directly through the electrical panel. One-day install. Fully permitted and inspected. Priced at a fraction of standby generator cost — and your buyers already own the generator.</p>
+  </div>
+
+  <!-- Why it works for builders -->
+  <div class="two-col">
+    <div class="card">
+      <h3>Why Builders Offer This</h3>
+      <ul class="check">
+        <li>Differentiator that buyers in Upstate SC ask for — especially after storm seasons</li>
+        <li>Adds perceived value well above actual cost</li>
+        <li>One-day install — zero impact on your timeline or trades schedule</li>
+        <li>You refer, we do everything — permit, install, inspection, customer communication</li>
+        <li>No liability on your end — work is permitted and inspected under our license</li>
+        <li>Works with any portable generator your buyer already owns</li>
+      </ul>
+    </div>
+    <div class="card card-navy">
+      <h3>The Alternative</h3>
+      <ul class="check">
+        <li><strong>Whole-home standby generator: $12,000 – $20,000+</strong> installed, plus annual service contracts</li>
+        <li>Months-long waitlist for propane or natural gas standby units</li>
+        <li>Permits and inspections add project risk and timeline</li>
+        <li>Most buyers already own a portable generator — they just need the connection</li>
+      </ul>
+      <p style="margin-top:14px;font-size:13px;color:rgba(255,255,255,.6);font-style:italic">Our install is 80% of the protection at less than 15% of the standby cost.</p>
+    </div>
+  </div>
+
+  <!-- Specs -->
+  <div class="two-col">
+    <div class="card">
+      <h3>What Gets Installed</h3>
+      <table class="spec-table">
+        <tr><td>Generator inlet box</td><td>30A or 50A, exterior-mounted, weatherproof</td></tr>
+        <tr><td>Interlock kit</td><td>Panel-specific, UL-listed, prevents backfeed</td></tr>
+        <tr><td>Wire run</td><td>Panel to inlet — up to 20ft standard, longer available</td></tr>
+        <tr><td>Hardware</td><td>Included — inlet, interlock, wire, conduit, breaker if needed</td></tr>
+        <tr><td>Permit</td><td>Filed with county, included in price</td></tr>
+        <tr><td>Inspection</td><td>Scheduled and passed — included in price</td></tr>
+        <tr><td>Install time</td><td>One day — single visit, single trade</td></tr>
+        <tr><td>Warranty</td><td>1-year workmanship</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Pricing</h3>
+      <div class="pricing-row">
+        <div>
+          <div class="pricing-name">30A Installation</div>
+          <div class="pricing-sub">Standard — most portable generators</div>
+        </div>
+        <div class="pricing-val">$1,197</div>
+      </div>
+      <div class="pricing-row">
+        <div>
+          <div class="pricing-name">50A Installation</div>
+          <div class="pricing-sub">Heavy-duty — dual-fuel and larger units</div>
+        </div>
+        <div class="pricing-val">$1,497</div>
+      </div>
+      <div class="pricing-row">
+        <div>
+          <div class="pricing-name">Long wire runs</div>
+          <div class="pricing-sub">Over 20ft — quoted per job</div>
+        </div>
+        <div class="pricing-val" style="font-size:13px">+$14–15/ft</div>
+      </div>
+      <div class="pricing-row">
+        <div>
+          <div class="pricing-name">Whole-home surge protector</div>
+          <div class="pricing-sub">Optional add-on at time of install</div>
+        </div>
+        <div class="pricing-val" style="font-size:13px">+$450</div>
+      </div>
+      <p style="font-size:11.5px;color:var(--text3);margin-top:12px">Permit and inspection included in all prices. Prices are all-in — no surprises.</p>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div style="margin-bottom:10px">
+    <p style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px">How the Builder Referral Works</p>
+  </div>
+  <div class="steps-row">
+    <div class="stp">
+      <div class="stp-num">1</div>
+      <h4>You Refer the Buyer</h4>
+      <p>Give your buyer our number or card. No forms, no portal — just a warm handoff.</p>
+    </div>
+    <div class="stp">
+      <div class="stp-num">2</div>
+      <h4>We Quote &amp; Schedule</h4>
+      <p>We handle the video assessment, exact quote, and scheduling. Zero work on your end.</p>
+    </div>
+    <div class="stp">
+      <div class="stp-num">3</div>
+      <h4>One-Day Install</h4>
+      <p>We pull the permit, install, and get inspected. Buyer's home is ready. You look good.</p>
+    </div>
+  </div>
+
+  <!-- Callout -->
+  <div class="callout">
+    <div class="callout-text">
+      <h3>Ready to talk about adding this to your builds?</h3>
+      <p>We work with builders in Greenville, Pickens, and Spartanburg counties. Volume arrangements available for builders doing multiple units. Call or email — we respond same day.</p>
+    </div>
+    <div class="callout-cta">
+      <div class="callout-phone">(864) 863-8009</div>
+      <div class="callout-email">key@backuppowerpro.com</div>
+    </div>
+  </div>
+
+  <!-- Credentials -->
+  <div class="card card-gold" style="margin-bottom:28px">
+    <h3>Contractor Credentials</h3>
+    <div class="creds">
+      <span class="cred">SC Electrical Contractor LIC #2942</span>
+      <span class="cred">Key Electric, LLC</span>
+      <span class="cred">Licensed &amp; Insured</span>
+      <span class="cred">Permit on every job</span>
+      <span class="cred">100+ Five-Star Google Reviews</span>
+      <span class="cred">Upstate SC — Greenville · Pickens · Spartanburg</span>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-top:14px">COI available on request. All work performed by or under the direct supervision of Key Goodson, licensed SC electrical contractor.</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <p><strong>Backup Power Pro</strong> — a division of Key Electric, LLC &nbsp;|&nbsp; backuppowerpro.com</p>
+    <p>March 2026</p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOA ARC Submission Package — Generator Inlet Installation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#0b1f3b;--navy-mid:#1a3a5c;
+  --gold:#ffba00;
+  --white:#ffffff;--light:#f4f7fb;
+  --text:#1a1a2e;--text2:#4a4a5a;--text3:#7b7b8a;
+  --border:#dde4ee;
+}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:#fff;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.6}
+h1,h2,h3,h4{font-family:'Outfit',sans-serif;font-weight:700}
+
+.page{max-width:780px;margin:0 auto;padding:48px 40px}
+
+/* Letterhead */
+.lh{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:24px;border-bottom:3px solid var(--navy);margin-bottom:32px}
+.lh-brand{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.4px}
+.lh-div{font-size:12px;color:var(--text3);font-weight:500;letter-spacing:.04em;margin-top:3px}
+.lh-contact{text-align:right;font-size:12px;color:var(--text2);line-height:1.8}
+.lh-contact strong{font-weight:700;color:var(--navy);display:block;font-family:'Outfit',sans-serif}
+
+/* Section divider */
+.sec-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:36px}
+.sec-rule{border:none;border-top:2px solid var(--light);margin:0 0 24px}
+
+/* Cover letter */
+.letter-date{font-size:13px;color:var(--text3);margin-bottom:20px}
+.letter-to{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.8}
+.letter-body p{font-size:14px;color:var(--text2);line-height:1.8;margin-bottom:14px}
+.letter-sig{margin-top:32px;font-size:14px;color:var(--text2);line-height:2}
+.letter-sig strong{display:block;color:var(--navy);font-weight:700;font-family:'Outfit',sans-serif;margin-top:4px}
+
+/* Fill-in fields */
+.fill{display:inline-block;border-bottom:1.5px solid var(--navy);min-width:180px;padding:0 4px;color:var(--navy);font-weight:600}
+.fill-lg{min-width:280px}
+.fill-sm{min-width:100px}
+
+/* Cards */
+.card{background:var(--light);border-radius:12px;padding:22px 24px;border:1px solid var(--border);margin-bottom:20px}
+.card h3{font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* Spec table */
+.spec-table{width:100%;border-collapse:collapse}
+.spec-table tr{border-bottom:1px solid var(--border)}
+.spec-table tr:last-child{border-bottom:none}
+.spec-table td{padding:9px 6px;font-size:13px;vertical-align:top}
+.spec-table td:first-child{font-weight:600;color:var(--navy);width:42%;padding-right:14px}
+.spec-table td:last-child{color:var(--text2)}
+
+/* Check list */
+ul.check{list-style:none;display:flex;flex-direction:column;gap:8px}
+ul.check li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text2);line-height:1.6}
+ul.check li::before{content:'✓';font-weight:800;color:var(--gold);flex-shrink:0}
+
+/* Compliance box */
+.compliance{background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:12px;padding:24px 28px;color:#fff;margin-bottom:20px}
+.compliance h3{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--gold);margin-bottom:12px}
+.compliance p{font-size:13px;color:rgba(255,255,255,.75);line-height:1.7;margin-bottom:8px}
+.compliance p:last-child{margin-bottom:0}
+
+/* Credential block */
+.creds{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.cred{font-size:11.5px;font-weight:600;color:var(--navy);background:#fff;border:1.5px solid var(--border);padding:5px 12px;border-radius:100px}
+
+/* Page break hint */
+.page-break{border:none;border-top:2px dashed var(--border);margin:40px 0;position:relative}
+.page-break::after{content:'— page break —';font-size:10px;color:var(--text3);position:absolute;left:50%;transform:translateX(-50%);top:-8px;background:#fff;padding:0 8px;white-space:nowrap}
+
+/* Footer */
+.doc-footer{border-top:1px solid var(--border);padding-top:16px;display:flex;justify-content:space-between;align-items:center;margin-top:40px}
+.doc-footer p{font-size:11px;color:var(--text3)}
+
+/* Print */
+@media print{
+  body{font-size:12px}
+  .page{padding:24px 28px;max-width:100%}
+  .page-break{page-break-before:always;border:none;margin:0}
+  .page-break::after{display:none}
+  .card,.compliance{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============================================================
+       SECTION 1: COVER LETTER (homeowner fills in HOA details)
+       ============================================================ -->
+
+  <!-- Letterhead -->
+  <div class="lh">
+    <div>
+      <div class="lh-brand">Backup Power Pro</div>
+      <div class="lh-div">A division of Key Electric, LLC — Greenville, SC</div>
+    </div>
+    <div class="lh-contact">
+      <strong>Key Goodson, Licensed Contractor</strong>
+      SC Electrical Contractor LIC #2942<br>
+      (864) 863-8009<br>
+      key@backuppowerpro.com
+    </div>
+  </div>
+
+  <p class="letter-date">Date: <span class="fill fill-sm">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></p>
+
+  <div class="letter-to">
+    To: <span class="fill fill-lg">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> Architectural Review Committee<br>
+    Re: ARC Modification Request — Generator Inlet Installation<br>
+    Property: <span class="fill fill-lg">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br>
+    Owner: <span class="fill fill-lg">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+  </div>
+
+  <div class="letter-body">
+    <p>Dear Architectural Review Committee,</p>
+    <p>I am writing to request approval for an exterior electrical modification at my property: the installation of a <strong>generator inlet box</strong> on the exterior wall of my home. This document includes a full description of the work, equipment specifications, installation contractor credentials, and code compliance information for your review.</p>
+    <p>The installation consists of a single weatherproof generator inlet box mounted to the exterior of the home, connected by conduit and wire to the interior electrical panel. The inlet box is compact, professionally finished, and designed to be as unobtrusive as possible. All work is performed by a licensed South Carolina electrical contractor, and a county permit is pulled and inspected on every job.</p>
+    <p>I have enclosed the full technical specification sheet and contractor credentials for your reference. Please do not hesitate to contact the installing contractor directly with any technical questions.</p>
+
+    <div class="letter-sig">
+      Respectfully submitted,<br>
+      <br>
+      Signature: <span class="fill fill-lg">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br>
+      <strong><span class="fill fill-lg">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></strong>
+      Phone: <span class="fill fill-sm">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> &nbsp; Email: <span class="fill">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    </div>
+  </div>
+
+  <hr class="page-break">
+
+  <!-- ============================================================
+       SECTION 2: TECHNICAL SPECIFICATION SHEET
+       ============================================================ -->
+
+  <div class="sec-label">Technical Specification</div>
+  <hr class="sec-rule">
+
+  <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:6px">Generator Inlet Installation — Specification Sheet</h2>
+  <p style="font-size:13px;color:var(--text3);margin-bottom:28px">Prepared by Backup Power Pro · Key Electric, LLC · SC LIC #2942</p>
+
+  <div class="two-col">
+    <div class="card">
+      <h3>What Is Being Installed</h3>
+      <table class="spec-table">
+        <tr><td>Modification type</td><td>Exterior generator inlet box (single unit)</td></tr>
+        <tr><td>Location</td><td>Exterior wall of home, near electrical panel — typically garage wall or side of home</td></tr>
+        <tr><td>Inlet size</td><td>30A or 50A (approximately 4" × 4" face plate)</td></tr>
+        <tr><td>Housing</td><td>NEMA 3R weatherproof enclosure — outdoor-rated</td></tr>
+        <tr><td>Cover</td><td>Spring-loaded flip cover, closed when not in use</td></tr>
+        <tr><td>Color/finish</td><td>Gray or black (matches standard electrical hardware)</td></tr>
+        <tr><td>Conduit</td><td>Gray PVC or metallic, surface-mounted along exterior wall</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Interior Components</h3>
+      <table class="spec-table">
+        <tr><td>Interlock kit</td><td>Mechanical device installed inside existing electrical panel — prevents generator and utility from being on simultaneously</td></tr>
+        <tr><td>Panel modification</td><td>Interlock bracket only — no structural changes to panel</td></tr>
+        <tr><td>Wire run</td><td>From panel to inlet — runs inside wall or surface conduit</td></tr>
+        <tr><td>Breaker</td><td>Dedicated generator breaker added to panel</td></tr>
+        <tr><td>Backfeed protection</td><td>Interlock kit physically prevents backfeed — utility workers are protected</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h3>Visual Footprint</h3>
+      <table class="spec-table">
+        <tr><td>Inlet box face</td><td>Approx. 4" wide × 4" tall × 3" deep</td></tr>
+        <tr><td>Conduit diameter</td><td>¾" to 1" — low profile, follows wall contour</td></tr>
+        <tr><td>Mounting method</td><td>Lag-screwed to exterior sheathing or masonry — no permanent structural modification</td></tr>
+        <tr><td>Reversibility</td><td>Can be removed and patched — no permanent alteration to home structure</td></tr>
+        <tr><td>Appearance when idle</td><td>Closed cover — looks similar to an outdoor outlet or dryer vent</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Installation Process</h3>
+      <ul class="check">
+        <li>One-day installation — single technician visit</li>
+        <li>Work area cleaned up completely upon completion</li>
+        <li>No heavy equipment or vehicles on lawn</li>
+        <li>No open trenching or ground disturbance</li>
+        <li>Work completed entirely on the home's structure — no impact to common areas</li>
+        <li>Final inspection by county electrical inspector confirms code compliance</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="compliance">
+    <h3>Code Compliance Statement</h3>
+    <p>This installation is performed in full compliance with the <strong>National Electrical Code (NEC)</strong> and applicable South Carolina state electrical standards. A building/electrical permit is filed with the county authority having jurisdiction (AHJ) on every job — this is not optional and is included in the project price.</p>
+    <p>A county electrical inspector performs a final inspection after installation. The interlock kit is a UL-listed device that physically prevents the generator and utility power from being connected to the panel simultaneously, eliminating the risk of backfeeding the utility grid (required by NEC Article 702).</p>
+    <p>Permitted work means the installation is documented in the public record and compliant with all local building codes.</p>
+  </div>
+
+  <hr class="page-break">
+
+  <!-- ============================================================
+       SECTION 3: CONTRACTOR CREDENTIALS
+       ============================================================ -->
+
+  <div class="sec-label">Contractor Credentials</div>
+  <hr class="sec-rule">
+
+  <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:6px">Installing Contractor Information</h2>
+  <p style="font-size:13px;color:var(--text3);margin-bottom:28px">Available for ARC verification</p>
+
+  <div class="two-col">
+    <div class="card">
+      <h3>Business Information</h3>
+      <table class="spec-table">
+        <tr><td>Business name</td><td>Key Electric, LLC (d/b/a Backup Power Pro)</td></tr>
+        <tr><td>Contractor of record</td><td>Key Goodson</td></tr>
+        <tr><td>SC Electrical Contractor License</td><td>#2942</td></tr>
+        <tr><td>EIN</td><td>93-2627526</td></tr>
+        <tr><td>Business type</td><td>Licensed electrical contractor, SC</td></tr>
+        <tr><td>Service area</td><td>Greenville, Pickens, Spartanburg Counties</td></tr>
+        <tr><td>Phone</td><td>(864) 863-8009</td></tr>
+        <tr><td>Email</td><td>key@backuppowerpro.com</td></tr>
+        <tr><td>Website</td><td>backuppowerpro.com</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Insurance &amp; Compliance</h3>
+      <ul class="check" style="margin-bottom:16px">
+        <li>General liability insurance — COI available on request</li>
+        <li>Workers' compensation coverage in force</li>
+        <li>SC Electrical Contractor License verified active</li>
+        <li>All work permitted through the county AHJ</li>
+        <li>Final inspection by licensed county inspector on every job</li>
+      </ul>
+      <p style="font-size:12px;color:var(--text3)">To request a Certificate of Insurance (COI) naming your HOA as an additional interested party, contact Key Goodson at (864) 863-8009 or key@backuppowerpro.com.</p>
+    </div>
+  </div>
+
+  <div class="card" style="background:linear-gradient(135deg,#fffbf0,#fff8e1);border-color:rgba(255,186,0,.3)">
+    <h3>Additional Verification</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">Google Reviews</div>
+        <div style="font-size:13px;color:var(--text2)">100+ reviews · 4.9 stars<br><span style="font-size:11px;color:var(--text3)">Search "Key Electric Greenville SC"</span></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">License Verification</div>
+        <div style="font-size:13px;color:var(--text2)">SC LLR License #2942<br><span style="font-size:11px;color:var(--text3)">llr.sc.gov — verify online</span></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">Permit Records</div>
+        <div style="font-size:13px;color:var(--text2)">Permit on file with county<br><span style="font-size:11px;color:var(--text3)">Available from county AHJ</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <p><strong>Backup Power Pro</strong> — a division of Key Electric, LLC &nbsp;|&nbsp; backuppowerpro.com &nbsp;|&nbsp; (864) 863-8009</p>
+    <p>March 2026</p>
+  </div>
+
+</div>
+</body>
+</html>

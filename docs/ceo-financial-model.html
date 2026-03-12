@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEO Financial Model — Backup Power Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#0b1f3b;--navy-mid:#1a3a5c;
+  --gold:#ffba00;--gold-light:#fff8e1;
+  --green:#16a34a;--green-light:#f0fdf4;
+  --red:#dc2626;--red-light:#fff1f1;
+  --white:#fff;--light:#f4f7fb;
+  --text:#1a1a2e;--text2:#4a4a5a;--text3:#7b7b8a;
+  --border:#dde4ee;
+}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:#f0f4f8;-webkit-font-smoothing:antialiased;font-size:14px}
+h1,h2,h3,h4{font-family:'Outfit',sans-serif;font-weight:700}
+
+.page{max-width:1000px;margin:0 auto;padding:32px 24px}
+
+/* Header */
+.hdr{background:var(--navy);border-radius:16px;padding:28px 32px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between}
+.hdr-left h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:4px}
+.hdr-left p{font-size:13px;color:rgba(255,255,255,.55)}
+.hdr-right{text-align:right}
+.hdr-right .goal{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;color:var(--gold)}
+.hdr-right p{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px}
+
+/* Assumption editor */
+.assumptions{background:#fff;border-radius:14px;padding:24px 28px;margin-bottom:24px;border:1px solid var(--border)}
+.assumptions h2{font-size:15px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid var(--light)}
+.asm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.asm-item label{font-size:11.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px}
+.asm-item input{width:100%;font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:var(--navy);background:var(--light);border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;outline:none}
+.asm-item input:focus{border-color:var(--gold);background:var(--gold-light)}
+.asm-item .asm-hint{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi{background:#fff;border-radius:12px;padding:18px 20px;border:1px solid var(--border)}
+.kpi-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.kpi-val{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;color:var(--navy);line-height:1}
+.kpi-val.gold{color:var(--gold)}
+.kpi-val.green{color:var(--green)}
+.kpi-val.red{color:var(--red)}
+.kpi-sub{font-size:11.5px;color:var(--text3);margin-top:4px}
+
+/* Two col */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+
+/* Cards */
+.card{background:#fff;border-radius:14px;padding:22px 24px;border:1px solid var(--border)}
+.card h3{font-size:13px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--light)}
+
+/* Scenario table */
+.sc-table{width:100%;border-collapse:collapse}
+.sc-table th{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:8px 10px;background:var(--light);border-bottom:2px solid var(--border)}
+.sc-table td{padding:10px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+.sc-table tr:last-child td{border-bottom:none}
+.sc-table td:first-child{font-weight:600;color:var(--navy)}
+.sc-table .highlight{background:rgba(255,186,0,.08);font-weight:700}
+.sc-table .highlight td{color:var(--navy)}
+.badge{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px}
+.badge-green{background:var(--green-light);color:var(--green)}
+.badge-gold{background:var(--gold-light);color:#7a5800}
+.badge-red{background:var(--red-light);color:var(--red)}
+
+/* Payoff bar */
+.payoff-bar{margin-bottom:12px}
+.payoff-bar-label{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12.5px}
+.payoff-bar-label span:first-child{font-weight:600;color:var(--text)}
+.payoff-bar-label span:last-child{font-weight:700;color:var(--navy)}
+.bar-track{height:10px;background:var(--light);border-radius:100px;overflow:hidden}
+.bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),#ffd966);transition:width .5s ease}
+
+/* Cost breakdown */
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.cost-row:last-child{border-bottom:none;padding-top:12px;margin-top:4px}
+.cost-row:last-child .cost-label{font-weight:700;color:var(--navy)}
+.cost-row:last-child .cost-val{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--green)}
+.cost-label{font-size:13px;color:var(--text2)}
+.cost-val{font-size:13px;font-weight:600;color:var(--text);font-family:'Outfit',sans-serif}
+.cost-val.neg{color:var(--red)}
+
+/* Directives */
+.directives{background:var(--navy);border-radius:14px;padding:24px 28px;margin-bottom:24px}
+.directives h2{font-size:15px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:18px}
+.directive{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.directive:last-child{border-bottom:none}
+.d-num{width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.d-text h4{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:3px}
+.d-text p{font-size:12.5px;color:rgba(255,255,255,.6);line-height:1.6}
+.d-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:2px 7px;border-radius:100px;margin-top:5px}
+.d-tag-now{background:rgba(220,38,38,.2);color:#f87171}
+.d-tag-week{background:rgba(255,186,0,.15);color:var(--gold)}
+.d-tag-me{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)}
+
+/* Bottleneck */
+.bottleneck{background:var(--red-light);border:1.5px solid rgba(220,38,38,.2);border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:14px}
+.bottleneck-ico{font-size:24px;flex-shrink:0}
+.bottleneck h4{font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:var(--red);margin-bottom:4px}
+.bottleneck p{font-size:13px;color:#7f1d1d;line-height:1.6}
+
+/* Channel table */
+.ch-table{width:100%;border-collapse:collapse}
+.ch-table th{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;background:var(--light);border-bottom:2px solid var(--border);text-align:left}
+.ch-table td{padding:10px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top;line-height:1.5}
+.ch-table tr:last-child td{border-bottom:none}
+.ch-table td:first-child{font-weight:600;color:var(--navy)}
+
+/* Footer */
+.pg-footer{text-align:center;font-size:11.5px;color:var(--text3);padding-top:16px}
+
+@media(max-width:700px){
+  .asm-grid{grid-template-columns:1fr 1fr}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .two-col{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <h1>Backup Power Pro — CEO Financial Model</h1>
+      <p>Goal: Pay off mortgage as fast as possible. Updated March 2026.</p>
+    </div>
+    <div class="hdr-right">
+      <div class="goal" id="payoff-display">—</div>
+      <p>Projected payoff from today</p>
+    </div>
+  </div>
+
+  <!-- ASSUMPTION INPUTS -->
+  <div class="assumptions">
+    <h2>Your Numbers — Edit These</h2>
+    <div class="asm-grid">
+      <div class="asm-item">
+        <label>Jobs per Week</label>
+        <input type="number" id="jobs_per_week" value="5" min="1" max="40">
+        <div class="asm-hint">Current realistic capacity with 1 sub</div>
+      </div>
+      <div class="asm-item">
+        <label>% That Are 50A Jobs</label>
+        <input type="number" id="pct_50a" value="30" min="0" max="100">
+        <div class="asm-hint">Estimate — 30A is more common</div>
+      </div>
+      <div class="asm-item">
+        <label>Monthly Personal Expenses ($)</label>
+        <input type="number" id="personal_expenses" value="3500" min="0" max="20000">
+        <div class="asm-hint">Everything except mortgage (food, car, utilities, etc.)</div>
+      </div>
+      <div class="asm-item">
+        <label>Mortgage Balance ($)</label>
+        <input type="number" id="mortgage_balance" value="150000" min="0" max="500000">
+        <div class="asm-hint">Current payoff balance</div>
+      </div>
+      <div class="asm-item">
+        <label>Mortgage Payment ($/mo)</label>
+        <input type="number" id="mortgage_payment" value="1250" min="0" max="5000">
+        <div class="asm-hint">Your current monthly payment</div>
+      </div>
+      <div class="asm-item">
+        <label>Interest Rate (%)</label>
+        <input type="number" id="interest_rate" value="7" min="1" max="15" step="0.1">
+        <div class="asm-hint">Your mortgage interest rate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Monthly Revenue</div>
+      <div class="kpi-val gold" id="kpi-revenue">—</div>
+      <div class="kpi-sub" id="kpi-jobs-mo">— jobs/month</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Monthly Profit (Business)</div>
+      <div class="kpi-val green" id="kpi-profit">—</div>
+      <div class="kpi-sub">After all business costs</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Available for Mortgage</div>
+      <div class="kpi-val" id="kpi-available">—</div>
+      <div class="kpi-sub">After personal expenses</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Extra Monthly Payment</div>
+      <div class="kpi-val green" id="kpi-extra">—</div>
+      <div class="kpi-sub">Above minimum payment</div>
+    </div>
+  </div>
+
+  <!-- Payoff scenarios + Cost breakdown -->
+  <div class="two-col">
+    <div class="card">
+      <h3>Mortgage Payoff Scenarios</h3>
+      <table class="sc-table">
+        <thead>
+          <tr>
+            <th>Jobs/Week</th>
+            <th>Monthly Profit</th>
+            <th>Extra Payment</th>
+            <th>Payoff Time</th>
+          </tr>
+        </thead>
+        <tbody id="scenario-table">
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Per Job Economics (30A)</h3>
+      <div class="cost-row"><span class="cost-label">Revenue</span><span class="cost-val">$1,197</span></div>
+      <div class="cost-row"><span class="cost-label">Sub labor payout</span><span class="cost-val neg">−$375</span></div>
+      <div class="cost-row"><span class="cost-label">Inlet + interlock hardware</span><span class="cost-val neg">−$80</span></div>
+      <div class="cost-row"><span class="cost-label">Permit (actual cost)</span><span class="cost-val neg">−$75</span></div>
+      <div class="cost-row"><span class="cost-label">License amortized</span><span class="cost-val neg">−$25</span></div>
+      <div class="cost-row"><span class="cost-label">Ad cost allocation</span><span class="cost-val neg">−$185</span></div>
+      <div class="cost-row"><span class="cost-label">Net Profit</span><span class="cost-val" style="color:var(--green);font-size:16px;font-family:'Outfit',sans-serif;font-weight:800">$457</span></div>
+      <div style="height:16px"></div>
+      <h3 style="margin-top:0">Per Job Economics (50A)</h3>
+      <div class="cost-row"><span class="cost-label">Revenue</span><span class="cost-val">$1,497</span></div>
+      <div class="cost-row"><span class="cost-label">Sub labor payout</span><span class="cost-val neg">−$425</span></div>
+      <div class="cost-row"><span class="cost-label">Inlet + interlock hardware</span><span class="cost-val neg">−$110</span></div>
+      <div class="cost-row"><span class="cost-label">Permit (actual cost)</span><span class="cost-val neg">−$75</span></div>
+      <div class="cost-row"><span class="cost-label">License amortized</span><span class="cost-val neg">−$25</span></div>
+      <div class="cost-row"><span class="cost-label">Ad cost allocation</span><span class="cost-val neg">−$185</span></div>
+      <div class="cost-row"><span class="cost-label">Net Profit</span><span class="cost-val" style="color:var(--green);font-size:16px;font-family:'Outfit',sans-serif;font-weight:800">$677</span></div>
+    </div>
+  </div>
+
+  <!-- Progress bar: payoff timeline -->
+  <div class="card" style="margin-bottom:24px">
+    <h3>Payoff Timeline Comparison</h3>
+    <div id="payoff-bars"></div>
+  </div>
+
+  <!-- Critical bottleneck -->
+  <div class="bottleneck">
+    <div class="bottleneck-ico">🚨</div>
+    <div>
+      <h4>Critical Bottleneck: No Locked-In Sub</h4>
+      <p>You cannot scale past 5 jobs/week without a reliable sub handling installs while you focus on marketing and sales. This is the #1 constraint on reaching the house payoff goal. Everything else — ads, SEO, HOA outreach — feeds a machine that needs the sub as its engine.</p>
+    </div>
+  </div>
+
+  <!-- Revenue channels -->
+  <div class="card" style="margin-bottom:24px">
+    <h3>Revenue Channels — Priority Order</h3>
+    <table class="ch-table">
+      <thead>
+        <tr><th>Channel</th><th>Status</th><th>Est. Jobs/Month</th><th>Cost Per Lead</th><th>Action Needed</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Google Business Profile (GBP)</td>
+          <td><span class="badge badge-red">Not set up</span></td>
+          <td>4–8 (organic)</td>
+          <td>$0</td>
+          <td>Set up this week — free, high intent, compounds over time</td>
+        </tr>
+        <tr>
+          <td>Meta Ads (Facebook/Instagram)</td>
+          <td><span class="badge badge-green">Active</span></td>
+          <td>~10–15 leads → 3–4 jobs</td>
+          <td>$40</td>
+          <td>Increase budget + new creative to fight frequency (2.26)</td>
+        </tr>
+        <tr>
+          <td>Quote Form (backuppowerpro.com)</td>
+          <td><span class="badge badge-green">Live</span></td>
+          <td>Depends on traffic</td>
+          <td>Included in Meta</td>
+          <td>Connect Google Ads traffic to this form</td>
+        </tr>
+        <tr>
+          <td>Google Search Ads (LSA first)</td>
+          <td><span class="badge badge-red">Not started</span></td>
+          <td>4–8 once live</td>
+          <td>$15–50</td>
+          <td>Highest buyer intent. Set up LSAs first (free leads until you pay)</td>
+        </tr>
+        <tr>
+          <td>Builder/Developer referrals</td>
+          <td><span class="badge badge-gold">Ready to launch</span></td>
+          <td>2–6 (slow ramp)</td>
+          <td>$0 ongoing</td>
+          <td>Start outreach with spec sheet — 5 calls this week</td>
+        </tr>
+        <tr>
+          <td>HOA/Neighborhood referrals</td>
+          <td><span class="badge badge-gold">Ready to launch</span></td>
+          <td>2–4 (slow ramp)</td>
+          <td>$0 ongoing</td>
+          <td>Start outreach — list being compiled now</td>
+        </tr>
+        <tr>
+          <td>Organic Google (SEO)</td>
+          <td><span class="badge badge-red">Not started</span></td>
+          <td>2–6 (60–90 days)</td>
+          <td>$0</td>
+          <td>16 city landing pages — building now</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Week 1 Directives -->
+  <div class="directives">
+    <h2>Your Week 1 Directives</h2>
+
+    <div class="directive">
+      <div class="d-num">1</div>
+      <div class="d-text">
+        <h4>Lock in a sub — TODAY</h4>
+        <p>Text or call 3 licensed electricians you know. Script: "Hey [name], I've got steady generator inlet work in Greenville/Pickens/Spartanburg. You just show up and install — I source jobs, handle all customers. $375–425/job base. Interested?" You need a yes from one person this week. Without this, nothing else matters.</p>
+        <span class="d-tag d-tag-now">Do today</span>
+      </div>
+    </div>
+
+    <div class="directive">
+      <div class="d-num">2</div>
+      <div class="d-text">
+        <h4>Set up Google Business Profile</h4>
+        <p>Go to business.google.com — search "Key Electric Greenville SC" and claim the listing, or create new. Business name: "Backup Power Pro | Key Electric". Category: Electrician. Add your phone, website, hours, and at least 5 job photos. I'll write the description and posts — you just need to do the setup and verify it. Google will mail a postcard to verify address.</p>
+        <span class="d-tag d-tag-week">This week</span>
+      </div>
+    </div>
+
+    <div class="directive">
+      <div class="d-num">3</div>
+      <div class="d-text">
+        <h4>Film one new Meta ad</h4>
+        <p>Your frequency is at 2.26 on the SC audience — ads are showing to the same people repeatedly, killing CPL. New creative resets this. One video, phone camera, outdoor setting, 30–45 seconds. New hook: "If you lost power last year and were running extension cords, this is what you should have had." I'll write 3 hook options if you want them. Just film this week.</p>
+        <span class="d-tag d-tag-week">This week</span>
+      </div>
+    </div>
+
+    <div class="directive">
+      <div class="d-num">4</div>
+      <div class="d-text">
+        <h4>Tell me your monthly personal expenses</h4>
+        <p>I need your rough monthly spend on everything except the mortgage — food, utilities, car payment/insurance, phone, subscriptions, etc. Ballpark is fine ($2,500? $4,000?). This is the missing variable in the payoff model — once I have it, I can give you an exact date to pay off the house and the jobs-per-week required to hit it.</p>
+        <span class="d-tag d-tag-now">Do today</span>
+      </div>
+    </div>
+
+    <div class="directive">
+      <div class="d-num">5</div>
+      <div class="d-text">
+        <h4>Make 5 builder outreach calls (not emails)</h4>
+        <p>Use the phone script in docs/outreach-builders/. Start with Ryan Homes Greenville (864-284-9300, ask for Steve Bertling) and 4 local custom builders. Goal is one meeting or "send me the info." Calls convert 3x better than cold email for contractor-to-contractor. I'll have the full builder list ready today.</p>
+        <span class="d-tag d-tag-week">This week</span>
+      </div>
+    </div>
+
+    <div class="directive">
+      <div class="d-num">6</div>
+      <div class="d-text">
+        <h4>Set up Google Local Services Ads (LSAs)</h4>
+        <p>Go to ads.google.com/local-services-ads — these are "Google Guaranteed" badge ads that show above regular search results. You pay per lead only when someone calls. For electricians in Greenville SC, CPL is $15–50. I'll write the full setup walkthrough. This is the highest-intent lead source available and it's separate from regular Google Ads.</p>
+        <span class="d-tag d-tag-week">This week</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- My work in progress -->
+  <div class="card" style="margin-bottom:24px;background:var(--light)">
+    <h3>CEO Work In Progress (My Tasks)</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">✓ Complete</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.5">Quote form · Landing page · Guide page · Terms/Privacy · Builder spec sheet · HOA ARC package · Outreach email templates</div>
+      </div>
+      <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">In Progress</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.5">HOA contact list CSV · Builder contact list CSV · Financial model (this doc)</div>
+      </div>
+      <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Next Up</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.5">16 city landing pages · GBP description + first posts · LSA setup guide · Google Ads campaign structure</div>
+      </div>
+      <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Blocked On You</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.5">Monthly personal expenses figure · Sub confirmed · GBP claimed by you · New ad video filmed</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg-footer">Backup Power Pro — CEO Financial Model — For internal use only — Updated March 2026</div>
+</div>
+
+<script>
+function fmt(n){return '$'+Math.round(n).toLocaleString()}
+function fmtMo(months){
+  if(months<=0)return'<span style="color:var(--green);font-weight:800">PAID OFF</span>';
+  if(months>600)return'<span style="color:var(--red)">Never (negative cash)</span>';
+  const y=Math.floor(months/12),m=Math.round(months%12);
+  if(y===0)return m+' months';
+  if(m===0)return y+' yr';
+  return y+'yr '+m+'mo';
+}
+
+function calcPayoff(balance,rate,extraPerMonth,minPayment){
+  if(extraPerMonth+minPayment<=0)return 999;
+  const monthly_rate=rate/100/12;
+  let bal=balance;
+  let months=0;
+  while(bal>0&&months<600){
+    const interest=bal*monthly_rate;
+    const payment=Math.min(bal+interest,minPayment+Math.max(0,extraPerMonth));
+    bal=bal+interest-payment;
+    months++;
+  }
+  return months;
+}
+
+function calcAvgProfit(pct50){
+  const p30=0.457*1000*(1-pct50/100); // $457 per 30A
+  const p50=0.677*1000*(pct50/100);   // $677 per 50A
+  return (p30+p50)/1000;
+}
+
+// Actually using exact values
+function avgProfit(pct50){
+  const profit30=457;
+  const profit50=677;
+  return profit30*(1-pct50/100)+profit50*(pct50/100);
+}
+
+function update(){
+  const jpw=parseFloat(document.getElementById('jobs_per_week').value)||5;
+  const pct50=parseFloat(document.getElementById('pct_50a').value)||30;
+  const personal=parseFloat(document.getElementById('personal_expenses').value)||3500;
+  const balance=parseFloat(document.getElementById('mortgage_balance').value)||150000;
+  const mtgPayment=parseFloat(document.getElementById('mortgage_payment').value)||1250;
+  const rate=parseFloat(document.getElementById('interest_rate').value)||7;
+
+  const jpm=jpw*4.33;
+  const profitPerJob=avgProfit(pct50);
+  const rev30=1197,rev50=1497;
+  const avgRev=rev30*(1-pct50/100)+rev50*(pct50/100);
+  const monthlyRev=avgRev*jpm;
+  const monthlyProfit=profitPerJob*jpm;
+  const availableForLife=monthlyProfit-personal;
+  const extraPayment=Math.max(0,availableForLife-mtgPayment);
+  const monthsToPay=calcPayoff(balance,rate,extraPayment,mtgPayment);
+
+  // Update KPIs
+  document.getElementById('kpi-revenue').textContent=fmt(monthlyRev);
+  document.getElementById('kpi-jobs-mo').textContent=Math.round(jpm)+' jobs/month';
+  document.getElementById('kpi-profit').textContent=fmt(monthlyProfit);
+  document.getElementById('kpi-available').textContent=availableForLife>0?fmt(availableForLife):'$('+fmt(Math.abs(availableForLife))+')';
+  document.getElementById('kpi-available').style.color=availableForLife>0?'var(--navy)':'var(--red)';
+  document.getElementById('kpi-extra').textContent=fmt(extraPayment)+'/mo';
+
+  const yrStr=fmtMo(monthsToPay);
+  document.getElementById('payoff-display').innerHTML=yrStr;
+
+  // Scenario table
+  const scenarios=[
+    {jobs:3,label:'3 jobs/wk',badge:'badge-red'},
+    {jobs:5,label:'5 jobs/wk',badge:'badge-gold',current:true},
+    {jobs:8,label:'8 jobs/wk',badge:'badge-green'},
+    {jobs:10,label:'10 jobs/wk',badge:'badge-green'},
+    {jobs:15,label:'15 jobs/wk',badge:'badge-green'},
+    {jobs:20,label:'20 jobs/wk',badge:'badge-green'},
+  ];
+  let tableHtml='';
+  scenarios.forEach(s=>{
+    const sjpm=s.jobs*4.33;
+    const sp=avgProfit(pct50)*sjpm;
+    const avail=sp-personal;
+    const extra=Math.max(0,avail-mtgPayment);
+    const mo=calcPayoff(balance,rate,extra,mtgPayment);
+    const isActive=s.jobs===Math.round(jpw);
+    tableHtml+=`<tr class="${isActive?'highlight':''}">
+      <td>${s.label}${isActive?' ←':''}${s.current&&!isActive?' (default)':''}</td>
+      <td>${fmt(sp)}</td>
+      <td>${extra>0?fmt(extra)+'/mo':'<span style="color:var(--red)">underfunded</span>'}</td>
+      <td>${fmtMo(mo)}</td>
+    </tr>`;
+  });
+  document.getElementById('scenario-table').innerHTML=tableHtml;
+
+  // Payoff bars
+  const barScenarios=[
+    {label:'No extra payments (minimum only)',jobs:0,extraOverride:0},
+    {label:'3 jobs/week',jobs:3},
+    {label:'5 jobs/week',jobs:5},
+    {label:'8 jobs/week',jobs:8},
+    {label:'12 jobs/week',jobs:12},
+  ];
+  let barsHtml='';
+  const maxMo=calcPayoff(balance,rate,0,mtgPayment);
+  barScenarios.forEach(bs=>{
+    let extra=0;
+    if(bs.extraOverride!==undefined){extra=bs.extraOverride;}
+    else{const p=avgProfit(pct50)*bs.jobs*4.33;extra=Math.max(0,p-personal-mtgPayment);}
+    const mo=calcPayoff(balance,rate,extra,mtgPayment);
+    const pct=Math.max(5,Math.min(100,100-(mo/maxMo*100)));
+    const color=mo<24?'var(--green)':mo<48?'var(--gold)':'var(--red)';
+    barsHtml+=`<div class="payoff-bar">
+      <div class="payoff-bar-label"><span>${bs.label}</span><span style="color:${color}">${fmtMo(mo)}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}40;border:2px solid ${color}"></div></div>
+    </div>`;
+  });
+  document.getElementById('payoff-bars').innerHTML=barsHtml;
+}
+
+// Listen for input changes
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input',update));
+update();
+</script>
+</body>
+</html>

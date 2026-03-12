@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neighborhood Group Pitch — Backup Power Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#0b1f3b;--navy-mid:#1a3a5c;
+  --gold:#ffba00;
+  --white:#ffffff;--light:#f4f7fb;
+  --text:#1a1a2e;--text2:#4a4a5a;--text3:#7b7b8a;
+  --border:#dde4ee;
+}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:#fff;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.6}
+h1,h2,h3,h4{font-family:'Outfit',sans-serif;font-weight:700}
+
+.page{max-width:780px;margin:0 auto;padding:48px 40px}
+
+/* Letterhead */
+.lh{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:24px;border-bottom:3px solid var(--navy);margin-bottom:32px}
+.lh-brand{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.4px}
+.lh-div{font-size:12px;color:var(--text3);margin-top:3px}
+.lh-contact{text-align:right;font-size:12px;color:var(--text2);line-height:1.8}
+.lh-contact strong{font-weight:700;color:var(--navy);display:block;font-family:'Outfit',sans-serif}
+
+.accent-bar{height:4px;background:linear-gradient(90deg,var(--gold),#ffd966);border-radius:2px;margin-bottom:32px}
+
+/* Hero */
+.doc-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.doc-hero{margin-bottom:32px}
+.doc-hero h1{font-size:26px;font-weight:800;color:var(--navy);line-height:1.25;margin-bottom:10px}
+.doc-hero p{font-size:15px;color:var(--text2);line-height:1.75;max-width:600px}
+
+/* Cards */
+.card{background:var(--light);border-radius:12px;padding:22px 24px;border:1px solid var(--border);margin-bottom:20px}
+.card h3{font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+.card-navy{background:var(--navy);border-color:var(--navy)}
+.card-navy h3{color:var(--gold);border-color:rgba(255,255,255,.1)}
+.card-navy p,.card-navy li{color:rgba(255,255,255,.75)}
+.card-navy strong{color:#fff}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+
+/* Lists */
+ul.check{list-style:none;display:flex;flex-direction:column;gap:8px}
+ul.check li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--text2);line-height:1.6}
+ul.check li::before{content:'✓';font-weight:800;color:var(--gold);flex-shrink:0}
+
+/* Stat blocks */
+.stat-block{text-align:center;padding:18px 12px;background:var(--light);border-radius:10px;border:1px solid var(--border)}
+.stat-num{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:4px}
+.stat-num span{color:var(--gold)}
+.stat-label{font-size:12px;color:var(--text2);line-height:1.5}
+
+/* Pricing table */
+.price-table{width:100%;border-collapse:collapse}
+.price-table th{font-family:'Outfit',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);text-align:left;padding:9px 12px;background:var(--light);border-bottom:2px solid var(--border)}
+.price-table td{font-size:13.5px;padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.price-table tr:last-child td{border-bottom:none}
+.price-table td:first-child{font-weight:600;color:var(--navy)}
+.price-table td.price-val{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
+.price-table td.note{font-size:12px;color:var(--text3)}
+
+/* Savings block */
+.savings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.savings-row:last-child{border-bottom:none}
+.savings-label{font-size:13px;font-weight:600;color:var(--navy)}
+.savings-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.savings-val{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800}
+.savings-val.green{color:#16a34a}
+
+/* CTA box */
+.callout{background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:14px;padding:28px 32px;margin-bottom:28px}
+.callout h3{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:10px}
+.callout p{font-size:13.5px;color:rgba(255,255,255,.75);line-height:1.7;margin-bottom:12px}
+.callout-details{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,.1)}
+.callout-detail-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:3px}
+.callout-detail-val{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--gold)}
+.callout-detail-sub{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:2px}
+
+/* Creds */
+.creds{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.cred{font-size:11.5px;font-weight:600;color:var(--navy);background:#fff;border:1.5px solid var(--border);padding:5px 12px;border-radius:100px}
+
+/* Footer */
+.doc-footer{border-top:1px solid var(--border);padding-top:16px;display:flex;justify-content:space-between;align-items:center;margin-top:40px}
+.doc-footer p{font-size:11px;color:var(--text3)}
+
+/* Fill fields */
+.fill{display:inline-block;border-bottom:1.5px solid var(--navy);min-width:200px;padding:0 4px;color:var(--navy);font-weight:600}
+
+@media print{
+  body{font-size:12px}
+  .page{padding:24px 28px;max-width:100%}
+  .callout,.card{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Letterhead -->
+  <div class="lh">
+    <div>
+      <div class="lh-brand">Backup Power Pro</div>
+      <div class="lh-div">A division of Key Electric, LLC — Greenville, SC</div>
+    </div>
+    <div class="lh-contact">
+      <strong>Key Goodson</strong>
+      SC Contractor LIC #2942<br>
+      (864) 863-8009<br>
+      key@backuppowerpro.com
+    </div>
+  </div>
+
+  <div class="accent-bar"></div>
+
+  <!-- Hero -->
+  <div class="doc-hero">
+    <p class="doc-label">Neighborhood &amp; HOA Group Offer</p>
+    <h1>Your Neighbors Own Generators.<br>Most of Them Still Aren't Using Them Safely.</h1>
+    <p>Extension cords through windows and doors are the default — and they're a fire hazard, a code violation, and a carbon monoxide risk. Backup Power Pro installs a permanent, code-compliant generator connection that eliminates all of that. One day. Permitted. Inspected. Done.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="three-col">
+    <div class="stat-block">
+      <div class="stat-num">1<span> day</span></div>
+      <div class="stat-label">Installation complete — permit and inspection included</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-num"><span>$</span>1,197</div>
+      <div class="stat-label">Starting price — all-in, no surprises, no add-ons</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-num">100<span>+</span></div>
+      <div class="stat-label">5-star Google reviews from Upstate SC homeowners</div>
+    </div>
+  </div>
+
+  <!-- Two col -->
+  <div class="two-col">
+    <div class="card">
+      <h3>What We Install</h3>
+      <ul class="check">
+        <li>Generator inlet box — mounted to exterior of home</li>
+        <li>Interlock kit — installed in the electrical panel</li>
+        <li>Wiring from panel to inlet</li>
+        <li>Permit filed with county — every single job</li>
+        <li>Inspection scheduled and passed — included in price</li>
+        <li>Works with any portable generator your neighbor already owns</li>
+      </ul>
+    </div>
+    <div class="card card-navy">
+      <h3>Why It Matters</h3>
+      <ul class="check">
+        <li><strong>Extension cords are dangerous.</strong> Fire risk, CO risk, and technically a code violation</li>
+        <li><strong>Standby generators cost $12,000–$20,000.</strong> Most homeowners don't need that</li>
+        <li><strong>Most people already own a generator.</strong> They just can't use it safely right now</li>
+        <li><strong>Upstate SC gets storm outages.</strong> This is practical preparedness, not a luxury</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Pricing -->
+  <div class="card" style="margin-bottom:20px">
+    <h3>Pricing — All-In, Permit and Inspection Included</h3>
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Who It's For</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>30A Generator Inlet Installation</td>
+          <td class="note">Most portable generators (5,500W–7,500W)</td>
+          <td class="price-val">$1,197</td>
+        </tr>
+        <tr>
+          <td>50A Generator Inlet Installation</td>
+          <td class="note">Larger dual-fuel or inverter generators (10,000W+)</td>
+          <td class="price-val">$1,497</td>
+        </tr>
+        <tr>
+          <td>Generator power cord</td>
+          <td class="note">Optional — the cord that connects generator to inlet</td>
+          <td class="price-val" style="font-size:14px">$150–$250</td>
+        </tr>
+        <tr>
+          <td>Whole-home surge protector</td>
+          <td class="note">Optional add-on at time of installation</td>
+          <td class="price-val" style="font-size:14px">+$450</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--text3);margin-top:12px">Prices are fixed, all-in, and don't land on round numbers on purpose — that's how you know this isn't a generic quote. Every job is assessed individually on a free 10-minute video call or online quote form.</p>
+  </div>
+
+  <!-- Group arrangement section -->
+  <div class="callout">
+    <h3>Interested in a Group Arrangement for Your Neighborhood?</h3>
+    <p>If you're an HOA board member, neighborhood association leader, or just someone who wants to get a few neighbors done in the same week — reach out. When we're already in a neighborhood, we can schedule multiple jobs back to back, which saves everyone time.</p>
+    <p style="font-size:13px;color:rgba(255,255,255,.6)">We don't do volume discounts as a rule — our prices are already as low as they can go while keeping the work quality high. But we will prioritize your neighborhood's scheduling and make the logistics easy.</p>
+    <div class="callout-details">
+      <div>
+        <div class="callout-detail-label">Call or Text</div>
+        <div class="callout-detail-val">(864) 863-8009</div>
+        <div class="callout-detail-sub">Key Goodson — responds same day</div>
+      </div>
+      <div>
+        <div class="callout-detail-label">Email</div>
+        <div class="callout-detail-val" style="font-size:14px">key@backuppowerpro.com</div>
+        <div class="callout-detail-sub">Or fill out the quote form at backuppowerpro.com</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="card">
+    <h3>How It Works for Your Neighbors</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div style="text-align:center;padding:12px 8px">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">1</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:5px">Get a Quote</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.55">Fill out a 2-minute form at backuppowerpro.com or call us. No sales visit required.</div>
+      </div>
+      <div style="text-align:center;padding:12px 8px">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">2</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:5px">Get an Exact Price</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.55">We review their setup and send an all-in price. No estimates. No surprises.</div>
+      </div>
+      <div style="text-align:center;padding:12px 8px">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">3</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:5px">Done in One Day</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.55">We install everything, pull the permit, and get it inspected. One visit, fully complete.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Credentials -->
+  <div class="card" style="background:linear-gradient(135deg,#fffbf0,#fff8e1);border-color:rgba(255,186,0,.3);margin-bottom:28px">
+    <h3>Why Neighbors Trust Us</h3>
+    <div class="creds">
+      <span class="cred">SC Electrical Contractor LIC #2942</span>
+      <span class="cred">Licensed &amp; Insured</span>
+      <span class="cred">Permit on every job</span>
+      <span class="cred">County inspection included</span>
+      <span class="cred">100+ Five-Star Google Reviews · 4.9 Stars</span>
+      <span class="cred">1-Year Workmanship Warranty</span>
+      <span class="cred">Greenville · Pickens · Spartanburg Counties</span>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <p><strong>Backup Power Pro</strong> — a division of Key Electric, LLC &nbsp;|&nbsp; backuppowerpro.com &nbsp;|&nbsp; (864) 863-8009</p>
+    <p>March 2026</p>
+  </div>
+
+</div>
+</body>
+</html>
