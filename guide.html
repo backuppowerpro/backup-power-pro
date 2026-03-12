@@ -71,21 +71,22 @@ img{max-width:100%;display:block}
 .step p{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:0}
 
 /* Value Stack */
-.vstack{background:linear-gradient(135deg,var(--navy) 0%,#1a3a5c 60%,#2a5a7a 100%);border-radius:20px;padding:36px 32px 28px;margin:32px auto 28px;max-width:520px;position:relative;overflow:hidden;box-shadow:0 12px 40px rgba(11,31,59,.25)}
+.vstack{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#2a5a7a 100%);border-radius:16px;padding:40px 36px 32px;margin:36px auto 28px;max-width:520px;position:relative;overflow:hidden;box-shadow:0 12px 40px rgba(11,31,59,.25)}
 .vstack::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.vstack-t{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:#fff;text-align:center;margin-bottom:5px;letter-spacing:-.4px}
-.vstack-sub{font-size:12px;color:rgba(255,255,255,.35);text-align:center;margin-bottom:20px}
-.vstack-items{display:flex;flex-direction:column;gap:8px}
-.vstack-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border-radius:10px;padding:12px 16px;border:1px solid rgba(255,255,255,.06)}
-.vstack-chk{width:26px;height:26px;border-radius:50%;background:rgba(255,186,0,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.vstack-chk svg{width:13px;height:13px}
-.vstack-item p{font-size:13px;color:rgba(255,255,255,.8);line-height:140%;margin-bottom:0}
-.vstack-div{height:1px;background:rgba(255,255,255,.06);margin:16px 0 14px}
-.vstack-guar{text-align:center;font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;color:var(--gold);letter-spacing:-.2px}
-.vstack-val{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap;margin-left:auto;flex-shrink:0;opacity:.65}
-.vstack-total{display:flex;justify-content:space-between;align-items:center;padding:2px 16px}
-.vstack-total-label{font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,.45)}
-.vstack-total-val{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:var(--gold);letter-spacing:-.5px;text-shadow:0 0 24px rgba(255,186,0,.3)}
+.vstack-t{font-family:'Outfit',sans-serif;font-weight:800;font-size:20px;color:var(--white);text-align:center;margin-bottom:6px;letter-spacing:-.5px}
+.vstack-sub{font-size:13px;color:rgba(255,255,255,.35);text-align:center;margin-bottom:24px}
+.vstack-items{display:flex;flex-direction:column;gap:10px}
+.vstack-item{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border-radius:12px;padding:14px 18px;border:1px solid rgba(255,255,255,.06);transition:background .2s}
+.vstack-item:hover{background:rgba(255,255,255,.08)}
+.vstack-chk{width:30px;height:30px;border-radius:50%;background:rgba(255,186,0,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vstack-chk svg{width:15px;height:15px}
+.vstack-item p{font-size:14px;color:rgba(255,255,255,.8);line-height:145%;text-align:left}
+.vstack-div{height:1px;background:rgba(255,255,255,.06);margin:20px 0 16px}
+.vstack-guar{text-align:center;font-family:'Outfit',sans-serif;font-weight:600;font-size:14px;color:var(--gold);letter-spacing:-.2px;line-height:160%}
+.vstack-val{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;margin-left:auto;flex-shrink:0;opacity:.65}
+.vstack-total{display:flex;justify-content:space-between;align-items:center;padding:2px 18px}
+.vstack-total-label{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:rgba(255,255,255,.45)}
+.vstack-total-val{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;color:var(--gold);letter-spacing:-.5px;text-shadow:0 0 24px rgba(255,186,0,.3)}
 
 /* Alt Costs */
 .alt-costs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px}
@@ -123,11 +124,12 @@ img{max-width:100%;display:block}
   .step h3{font-size:15px;margin-bottom:4px}
   .step p{font-size:13px;line-height:1.65}
   .btn{width:100%;justify-content:center;padding:16px 24px;font-size:15px}
-  .vstack{padding:24px 18px 20px;margin:24px auto 20px}
-  .vstack-item{padding:10px 12px;gap:10px}
-  .vstack-item p{font-size:12px}
-  .vstack-val{font-size:10px}
-  .vstack-total-val{font-size:20px}
+  .vstack{padding:28px 20px 24px;margin:28px auto 20px}
+  .vstack-t{font-size:18px}
+  .vstack-item{padding:12px 14px;gap:12px}
+  .vstack-item p{font-size:13px}
+  .vstack-val{font-size:11px}
+  .vstack-total-val{font-size:22px}
   .alt-costs{grid-template-columns:1fr;gap:8px}
   .alt-cost{padding:14px 12px}
   .alt-cost-exp .price-x{font-size:18px}
@@ -247,7 +249,7 @@ fbq('track','ViewContent',{content_name:'guide-download',content_category:'lead-
         <span class="vstack-total-label">Total Price</span>
         <span class="vstack-total-val" style="text-decoration:line-through;opacity:.5">$2,355+</span>
       </div>
-      <p style="font-family:'Outfit',sans-serif;font-size:clamp(22px,4vw,28px);font-weight:700;color:var(--gold);margin:8px 0 4px;text-align:right;padding:0 16px"><span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.7)">Typical setups for</span> $1,197–$1,497</p>
+      <p style="font-family:'Outfit',sans-serif;font-size:clamp(22px,4vw,28px);font-weight:700;color:var(--gold);margin:8px 0 4px"><span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.7)">Typical setups for</span> $1,197–$1,497</p>
       <p class="vstack-guar">Your install passes inspection or we fix it free.</p>
     </div>
 
