@@ -15,3 +15,8 @@
   from = "/privacy"
   to = "/privacy.html"
   status = 200
+
+[[redirects]]
+  from = "/quote"
+  to = "/website/get-quote.html"
+  status = 200
