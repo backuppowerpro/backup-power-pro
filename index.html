@@ -817,7 +817,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElement
 document.querySelectorAll('a[href="/quote"]').forEach(function(btn){
   btn.addEventListener('click',function(){
     if(typeof fbq!=='undefined'){
-      fbq('track','Lead',{content_name:'cta-click',content_category:'quote-form'});
+      fbq('track','InitiateCheckout',{content_name:'cta-click',content_category:'quote-form'});
     }
   });
 });
