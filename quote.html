@@ -1014,7 +1014,10 @@ function showSuccess(firstName) {
     }
     serviceAreaOk = true;
     banner.className = 'addr-area-msg good';
-    banner.innerHTML = '✅ &nbsp;Great — we service ' + (county || SERVICE_STATE) + '!';
+    var isGreenville = county === 'Greenville County';
+    banner.innerHTML = isGreenville
+      ? '✅ &nbsp;Great — we service Greenville County!'
+      : '📍 &nbsp;Got it — we\'ll confirm availability for your area when we reach out.';
   }
 
   function resetHint() {
