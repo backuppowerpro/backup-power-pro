@@ -1000,7 +1000,6 @@ function showSuccess(firstName) {
   const hintText = document.getElementById('addr-hint-text');
   if (!input || !dropdown) return;
 
-  const SERVICE_COUNTIES = ['Greenville County', 'Spartanburg County', 'Pickens County'];
   const SERVICE_STATE = 'South Carolina';
 
   let debounceTimer;
@@ -1024,12 +1023,6 @@ function showSuccess(firstName) {
       serviceAreaOk = false;
       banner.className = 'addr-area-msg out';
       banner.innerHTML = '⚠️ &nbsp;<span>We currently only serve South Carolina. We\'re expanding — check back soon!</span>';
-      return;
-    }
-    if (county && !SERVICE_COUNTIES.includes(county)) {
-      serviceAreaOk = false;
-      banner.className = 'addr-area-msg out';
-      banner.innerHTML = '⚠️ &nbsp;<span><strong>' + county + ' is outside our current service area.</strong><br>We serve Greenville, Spartanburg, and Pickens counties. Expanding soon — check back!</span>';
       return;
     }
     serviceAreaOk = true;
