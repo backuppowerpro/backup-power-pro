@@ -107,16 +107,16 @@ a{text-decoration:none;color:inherit}
 .addr-dropdown li{padding:10px 14px;cursor:pointer;font-size:13.5px;color:var(--text2);line-height:1.4;border-top:1px solid rgba(11,31,59,.05);transition:background .15s}
 .addr-dropdown li:first-child{border-top:none}
 .addr-dropdown li:hover,.addr-dropdown li.focused{background:var(--light-blue);color:var(--navy)}
-.addr-area-msg{display:none;margin-top:6px;font-size:13px;line-height:1.5;color:var(--text2)}
-.addr-area-msg.out{display:block}
-.addr-area-msg.out strong{color:var(--text)}
-.addr-area-msg.good{display:block}
+.addr-area-msg{display:none;margin-top:8px;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.5;gap:8px;align-items:flex-start}
+.addr-area-msg.out{display:flex;background:#fef2f2;border:1.5px solid #fca5a5;color:#991b1b}
+.addr-area-msg.out strong{color:#7f1d1d}
+.addr-area-msg.good{display:flex;align-items:center;background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
 .addr-area-msg.out .waitlist-section{margin-top:10px;width:100%}
 .addr-area-msg.out .waitlist-btn{display:inline-block;background:#0b1f3b;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:background .2s}
 .addr-area-msg.out .waitlist-btn:hover{background:#1a3a5c}
 .addr-area-msg.out .waitlist-btn:disabled{opacity:.6;cursor:not-allowed}
-.addr-area-msg.out .waitlist-success{font-weight:600;font-size:13px}
-.addr-area-msg.waitlisted{display:block}
+.addr-area-msg.out .waitlist-success{color:#166534;font-weight:600;font-size:13px}
+.addr-area-msg.waitlisted{display:flex;background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
 
 /* 120V voltage warning */
 .voltage-warn{display:none;margin-top:10px;padding:12px 14px;border-radius:10px;background:#fffbeb;border:1.5px solid #fcd34d;color:#92400e;font-size:12.5px;line-height:1.5;gap:10px;align-items:flex-start}
@@ -216,7 +216,7 @@ a{text-decoration:none;color:inherit}
 
 /* Error */
 .err{font-size:12px;color:#dc2626;margin-top:5px;display:none}
-.field.has-error input,.field.has-error select{border-color:#cbd5e1}
+.field.has-error input,.field.has-error select{border-color:#dc2626}
 .field.has-error .err{display:block}
 
 /* Success state */
@@ -305,24 +305,6 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 <div class="hero">
   <h1>You Already Own the Generator.<br><em>Now Power What Matters — Safely.</em></h1>
 
-  <!-- Price comparison -->
-  <div class="price-vs">
-    <div class="pv-item pv-bad">
-      <svg class="pv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      <span class="pv-label">Extension cords</span>
-      <span class="pv-price">Unsafe</span>
-    </div>
-    <div class="pv-item pv-bad">
-      <svg class="pv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      <span class="pv-label">Standby generator</span>
-      <span class="pv-price">$15,000+</span>
-    </div>
-    <div class="pv-item pv-good">
-      <svg class="pv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      <span class="pv-label">Backup Power Pro</span>
-      <span class="pv-price">$1,197–$1,497</span>
-    </div>
-  </div>
 
 </div>
 </div>
