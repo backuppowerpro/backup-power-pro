@@ -987,7 +987,6 @@ function showSuccess(firstName) {
   const hintText = document.getElementById('addr-hint-text');
   if (!input || !dropdown) return;
 
-  const SERVICE_COUNTIES = ['Greenville County'];
   const SERVICE_STATE = 'South Carolina';
 
   let debounceTimer;
@@ -1011,12 +1010,6 @@ function showSuccess(firstName) {
       serviceAreaOk = false;
       banner.className = 'addr-area-msg out';
       banner.innerHTML = '⚠️ &nbsp;<span>We currently only serve South Carolina. We\'re expanding — check back soon!</span>';
-      return;
-    }
-    if (county && !SERVICE_COUNTIES.includes(county)) {
-      serviceAreaOk = false;
-      banner.className = 'addr-area-msg out';
-      banner.innerHTML = '⚠️ &nbsp;<span><strong>' + county + ' isn\'t in our service area yet.</strong><br>We\'re currently serving Greenville County and expanding soon!<div class="waitlist-section"><button class="waitlist-btn" onclick="joinWaitlist(this)" type="button">🔔 Join the Waitlist — We\'ll Text You When We\'re There</button></div></span>';
       return;
     }
     serviceAreaOk = true;
