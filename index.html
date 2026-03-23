@@ -602,6 +602,15 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
               <span class="vstack-val">Included</span>
             </div>
           </div>
+          <div style="height:1px;background:rgba(11,31,59,.08);margin:16px 0 14px"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0 16px;margin-bottom:6px">
+            <span style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:rgba(11,31,59,.45)">Total value</span>
+            <span class="vstack-total" style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:var(--navy)">$2,175</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0 16px">
+            <span style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--navy)">You pay</span>
+            <span class="vstack-youpay" style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--navy)">$1,197<span style="font-size:14px;font-weight:600;color:#7b7b8a">–$1,497</span></span>
+          </div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column">
@@ -814,6 +823,61 @@ document.querySelectorAll('.ba-card,.invest-stat,.gallery-item,.rv,.fq,.vstack,.
   },{passive:true});
   bg.style.transition='transform .1s linear';
   bg.style.transform='scale(1.02)';
+})();
+
+// Value stack counter — counts up total, slashes it, pops the real price
+(function(){
+  var totalEl=document.querySelector('.vstack-total');
+  var youPayEl=document.querySelector('.vstack-youpay');
+  if(!totalEl||!youPayEl)return;
+  var counted=false;
+  var THRESHOLD=1497;
+
+  function countUp(el,target,duration,onTick){
+    var startTime=null;
+    function step(ts){
+      if(!startTime)startTime=ts;
+      var p=Math.min((ts-startTime)/duration,1);
+      var ease=1-Math.pow(1-p,3);
+      var current=Math.round(target*ease);
+      el.textContent='$'+current.toLocaleString();
+      if(onTick)onTick(current,p);
+      if(p<1)requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  var cob=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting&&!counted){
+        counted=true;
+        totalEl.textContent='$0';
+        totalEl.style.color='var(--navy)';
+        totalEl.style.textDecoration='none';
+        totalEl.style.display='inline-block';
+        totalEl.style.transition='color .3s ease';
+        countUp(totalEl,2175,1400,function(current,progress){
+          if(current>THRESHOLD) totalEl.style.color='#dc2626';
+          if(progress>=1){
+            setTimeout(function(){
+              totalEl.style.textDecoration='line-through';
+              totalEl.style.textDecorationThickness='3.5px';
+              totalEl.style.transform='scale(1.15)';
+              totalEl.style.transition='color .3s ease,transform .2s cubic-bezier(.34,1.56,.64,1)';
+              youPayEl.style.transition='transform .35s cubic-bezier(.34,1.56,.64,1)';
+              youPayEl.style.display='inline-block';
+              youPayEl.style.transform='scale(1.25)';
+              youPayEl.style.transformOrigin='right center';
+              setTimeout(function(){youPayEl.style.transform='scale(1)'},400);
+              setTimeout(function(){totalEl.style.transform='scale(1)'},300);
+            },250);
+          }
+        });
+      }
+    });
+  },{threshold:.3});
+  var vstack=document.querySelector('.vstack');
+  if(vstack)cob.observe(vstack);
 })();
 
 // Review carousel
