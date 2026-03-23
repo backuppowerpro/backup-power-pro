@@ -812,9 +812,11 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 // FAQ accordion
 document.querySelectorAll('.fq-btn').forEach(b=>{b.onclick=()=>{const i=b.parentElement,o=i.classList.contains('on');document.querySelectorAll('.fq').forEach(x=>x.classList.remove('on'));if(!o)i.classList.add('on')}});
 
-// Scroll animations
-const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.style.opacity='1';x.target.style.transform='none'}})},{threshold:.1,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.ba-card,.invest-stat,.gallery-item,.rv,.fq,.vstack,.vstack-item,.invest-img,.offer-anchor').forEach(e=>{e.style.opacity='0';e.style.transform='translateY(14px)';e.style.transition='opacity .4s ease,transform .4s ease';ob.observe(e)});
+// Scroll animations — skip if page loaded with hash anchor (prevents jank on refresh)
+if(!window.location.hash){
+  const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.style.opacity='1';x.target.style.transform='none'}})},{threshold:.1,rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.ba-card,.invest-stat,.gallery-item,.rv,.fq,.vstack,.vstack-item,.invest-img,.offer-anchor').forEach(e=>{e.style.opacity='0';e.style.transform='translateY(14px)';e.style.transition='opacity .4s ease,transform .4s ease';ob.observe(e)});
+}
 
 // Hero parallax — subtle bg movement on scroll
 (function(){
