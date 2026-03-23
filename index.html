@@ -23,6 +23,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{opacity:0;transition:opacity .05s ease}
 :root{
   --navy:#0b1f3b;--navy-mid:#1a3a5c;
   --gold:#ffba00;--gold-hover:#ffc519;
@@ -813,6 +814,9 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 <script>
 // FAQ accordion
 document.querySelectorAll('.fq-btn').forEach(b=>{b.onclick=()=>{const i=b.parentElement,o=i.classList.contains('on');document.querySelectorAll('.fq').forEach(x=>x.classList.remove('on'));if(!o)i.classList.add('on')}});
+
+// Show page after scroll position is restored (prevents hero flash on refresh)
+requestAnimationFrame(function(){document.documentElement.style.opacity='1'});
 
 // Scroll animations — skip if page loaded with hash anchor (prevents jank on refresh)
 if(!window.location.hash){
