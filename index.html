@@ -23,7 +23,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{opacity:0;transition:opacity .05s ease}
+html{opacity:0;animation:showPage .01s .15s forwards}
+@keyframes showPage{to{opacity:1}}
 :root{
   --navy:#0b1f3b;--navy-mid:#1a3a5c;
   --gold:#ffba00;--gold-hover:#ffc519;
