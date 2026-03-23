@@ -276,7 +276,7 @@ img{max-width:100%;display:block}
 }
 @media(max-width:768px){
   .hdr-btn{display:none}
-  .sec{padding:64px 0}
+  .sec{padding:56px 0}
   .hero{min-height:100svh}
   .hero-content{padding:60px 0 56px}
   .hero h1{letter-spacing:-1.5px}
@@ -290,13 +290,13 @@ img{max-width:100%;display:block}
   .offer-wrap{grid-template-columns:1fr}
   .faq-wrap{grid-template-columns:1fr;gap:24px}
   .faq-side{position:static}
+  .endcta{padding:64px 0!important}
   .endcta .btn{width:100%;justify-content:center}
   .offer-anchor{padding:24px!important}
   .vstack{padding:24px 20px 20px!important}
   .sec-dark .sec-h{font-size:28px}
   .anchor-price{font-size:28px!important}
-  .endcta [style*="flex-wrap:wrap"]{gap:8px!important}
-  .endcta [style*="flex-wrap:wrap"] > div{flex:1 1 calc(50% - 8px)!important;justify-content:center}
+  .endcta [style*="display:grid"]{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
   .sticky-cta{display:flex;position:fixed;bottom:24px;left:0;right:0;z-index:100;background:none;padding:0;justify-content:center;transform:translateY(calc(100% + 48px));transition:transform .3s ease;pointer-events:none}
   .sticky-cta.show{transform:translateY(0)}
   .sticky-cta .btn{width:auto;justify-content:center;font-size:15px;padding:16px 32px;box-shadow:0 4px 24px rgba(11,31,59,.4);border-radius:60px;pointer-events:auto}
@@ -307,7 +307,7 @@ img{max-width:100%;display:block}
   .ba-split{gap:10px}
   .gallery{grid-template-columns:1fr 1fr}
   .invest-stat{flex-direction:column;text-align:center;gap:8px}
-  .endcta [style*="flex-wrap:wrap"] > div{flex:1 1 100%!important}
+  .endcta [style*="display:grid"]{grid-template-columns:repeat(2,1fr)!important}
   .gp{flex-wrap:wrap;justify-content:center}
 }
 </style>
