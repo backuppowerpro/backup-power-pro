@@ -846,9 +846,14 @@ voltageAckBtn.addEventListener('click', function() {
 async function submitForm() {
   if (!validateStep(2)) return;
 
-
   const firstName = document.getElementById('firstName').value.trim();
+  const rawPhoneGuard = document.getElementById('phone').value.trim();
+
+  // Final guard — bail if required fields are somehow empty (safety net against edge cases)
+  if (!firstName || rawPhoneGuard.replace(/\D/g,'').length < 10) return;
+
   const btn = document.getElementById('submitBtn');
+  btn.disabled = true; // prevent double-submit
   btn.classList.add('btn-loading');
   btn.innerHTML = '<div class="spinner"></div> Sending...';
 

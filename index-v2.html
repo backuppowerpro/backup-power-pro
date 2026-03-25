@@ -347,7 +347,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 
 <!-- HEADER -->
 <header class="hdr"><div class="w hdr-in">
-  <img src="Untitled_Artwork 46.png" alt="Backup Power Pro" class="hdr-logo">
+  <img src="assets/images/logo-main.png" alt="Backup Power Pro" class="hdr-logo">
   <div class="hdr-r">
     <a href="#getStarted" class="btn btn-navy hdr-btn">Get Your Exact Price</a>
   </div>
@@ -404,7 +404,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
         </div>
       </div>
       <div class="ba-card">
-        <img src="work-generator-plugged.png" alt="Generator connected to home via inlet — powering essential circuits" loading="lazy" style="object-position:center 22%">
+        <img src="assets/images/work-generator-plugged.png" alt="Generator connected to home via inlet — powering essential circuits" loading="lazy" style="object-position:center 22%">
         <div class="ba-label">
           <span class="ba-tag ba-tag-good">After</span>
           <p class="ba-cap">All your essentials. One cord. Every window closed.</p>
@@ -468,19 +468,19 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
     <p style="font-size:16px;color:#4a4a5a;margin-bottom:40px;max-width:500px;margin-left:auto;margin-right:auto">Every install is permitted, inspected, and documented. Here's what our work looks like.</p>
     <div class="gallery">
       <div class="gallery-item">
-        <img src="work-surge-protector-installed.jpg" alt="HEPD80 whole-home surge protector installed on interior wall" loading="lazy">
+        <img src="assets/images/work-surge-protector-installed.jpg" alt="HEPD80 whole-home surge protector installed on interior wall" loading="lazy">
         <div class="gallery-cap">Electronics Protected</div>
       </div>
       <div class="gallery-item">
-        <img src="work-inlet-lightbrick.jpg" alt="Reliance inlet box mounted on light brick wall with conduit" loading="lazy">
+        <img src="assets/images/work-inlet-lightbrick.jpg" alt="Reliance inlet box mounted on light brick wall with conduit" loading="lazy">
         <div class="gallery-cap">Plug In &amp; Go</div>
       </div>
       <div class="gallery-item">
-        <img src="work-full-install.jpg" alt="Full outdoor panel with meter and generator inlet on siding" loading="lazy">
+        <img src="assets/images/work-full-install.jpg" alt="Full outdoor panel with meter and generator inlet on siding" loading="lazy">
         <div class="gallery-cap">Same-Day Install</div>
       </div>
       <div class="gallery-item">
-        <img src="work-panel-interlock.jpg" alt="Breaker panel with interlock kit and inlet below" loading="lazy">
+        <img src="assets/images/work-panel-interlock.jpg" alt="Breaker panel with interlock kit and inlet below" loading="lazy">
         <div class="gallery-cap">Safe &amp; Inspected</div>
       </div>
     </div>
@@ -632,7 +632,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
           </div>
           <!-- Who's doing the work -->
           <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(11,31,59,.04);border-radius:var(--r3);margin-bottom:20px">
-            <img src="key-headshot.jpg" alt="Key Goodson — Licensed SC Electrician" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--gold)">
+            <img src="assets/images/key-headshot.jpg" alt="Key Goodson — Licensed SC Electrician" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--gold)">
             <div style="font-size:12px;color:var(--navy);line-height:155%">
               <strong style="font-size:14px;display:block;margin-bottom:2px">Key Goodson</strong>
               Licensed SC Electrician · Owner, Key Electric<br>
@@ -953,6 +953,9 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     }else{document.getElementById('qf-phone').classList.remove('has-error');}
 
     if(!ok) return;
+
+    // Final guard — safety net against any edge case
+    if(!name || phone.length!==10) return;
 
     var btn=this;
     btn.disabled=true;

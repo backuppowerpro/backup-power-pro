@@ -293,7 +293,7 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 <!-- Header + Hero -->
 <div class="hero-wrap">
 <header class="hdr">
-  <a href="https://backuppowerpro.com" class="hdr-link"><img src="Untitled_Artwork 47.png" alt="Backup Power Pro" class="hdr-logo"></a>
+  <a href="https://backuppowerpro.com" class="hdr-link"><img src="assets/images/logo-alt.png" alt="Backup Power Pro" class="hdr-logo"></a>
 </header>
 
 <div class="hero">
@@ -788,9 +788,14 @@ voltageAckBtn.addEventListener('click', function() {
 async function submitForm() {
   if (!validateStep(2)) return;
 
-
   const firstName = document.getElementById('firstName').value.trim();
+  const rawPhoneGuard = document.getElementById('phone').value.trim();
+
+  // Final guard — bail if required fields are somehow empty (safety net against edge cases)
+  if (!firstName || rawPhoneGuard.replace(/\D/g,'').length < 10) return;
+
   const btn = document.getElementById('submitBtn');
+  btn.disabled = true; // prevent double-submit
   btn.classList.add('btn-loading');
   btn.innerHTML = '<div class="spinner"></div> Sending...';
 
