@@ -363,6 +363,9 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
     document.documentElement.classList.add('bpp-ready');
     if(typeof posthog!=='undefined') posthog.capture('$experiment_started',{'experiment name':'landing-page-variant','variant':variant||'control'});
   }
+  // URL param override for previewing: ?v=stripped or ?v=control
+  var urlVariant=new URLSearchParams(window.location.search).get('v');
+  if(urlVariant==='stripped'||urlVariant==='control'){revealPage(urlVariant);return;}
   posthog.onFeatureFlags(function(){
     revealPage(posthog.getFeatureFlag('landing-page-variant'));
   });
