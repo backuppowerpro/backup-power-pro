@@ -365,7 +365,10 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
   }
   // URL param override for previewing: ?v=stripped or ?v=control
   var urlVariant=new URLSearchParams(window.location.search).get('v');
-  if(urlVariant==='stripped'||urlVariant==='control'){revealPage(urlVariant);return;}
+  if(urlVariant==='stripped'||urlVariant==='control'){
+    document.addEventListener('DOMContentLoaded',function(){revealPage(urlVariant);});
+    return;
+  }
   posthog.onFeatureFlags(function(){
     revealPage(posthog.getFeatureFlag('landing-page-variant'));
   });
