@@ -24,8 +24,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{opacity:0;animation:showPage .01s .15s forwards}
-@keyframes showPage{to{opacity:1}}
+html{opacity:0;transition:opacity .15s}
+html.bpp-ready{opacity:1}
 :root{
   --navy:#0b1f3b;--navy-mid:#1a3a5c;
   --gold:#ffba00;--gold-hover:#ffc519;
@@ -209,6 +209,11 @@ img{max-width:100%;display:block}
 .fq-ans{max-height:0;overflow:hidden;transition:max-height .3s}
 .fq.on .fq-ans{max-height:300px}
 .fq-ans p{font-size:14px;line-height:175%;color:#4a4a5a;padding-bottom:20px}
+/* ==================== A/B TEST ==================== */
+#bpp-var-hero{display:none}
+body.bpp-var .hero,body.bpp-var .sec,body.bpp-var .endcta,body.bpp-var .sticky-cta{display:none!important}
+body.bpp-var #bpp-var-hero{display:flex!important;min-height:100svh;align-items:center;justify-content:center;background:var(--navy)}
+body.bpp-var .hdr{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.08)}
 
 /* ==================== INLINE FORM ==================== */
 .qform{padding:80px 0;background:var(--light-blue)}
@@ -351,6 +356,22 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 </script>
 <!-- PostHog Analytics -->
 <script>!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);posthog.init('phc_qoA51lePZqXYtPJYkrIpdA4U8iMDJ79L1kje7r4pD40',{api_host:'https://us.i.posthog.com',person_profiles:'identified_only',session_recording:{recordCrossOriginIframes:false},capture_pageview:true,capture_pageleave:true})</script>
+<script>
+(function(){
+  function revealPage(variant){
+    document.body.classList.add(variant==='stripped'?'bpp-var':'bpp-ctrl');
+    document.documentElement.classList.add('bpp-ready');
+    if(typeof posthog!=='undefined') posthog.capture('$experiment_started',{'experiment name':'landing-page-variant','variant':variant||'control'});
+  }
+  posthog.onFeatureFlags(function(){
+    revealPage(posthog.getFeatureFlag('landing-page-variant'));
+  });
+  // Fallback: show control if flags haven't loaded in 1s
+  setTimeout(function(){
+    if(!document.documentElement.classList.contains('bpp-ready')) revealPage('control');
+  },1000);
+})();
+</script>
 </head>
 <body>
 
@@ -396,6 +417,17 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ==================== VARIANT B: STRIPPED HERO ==================== -->
+<section id="bpp-var-hero">
+  <div style="width:100%;max-width:660px;padding:80px 28px;text-align:center">
+    <p style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:20px">Greenville, SC &nbsp;·&nbsp; Licensed &amp; Permitted</p>
+    <h1 style="font-family:'Outfit',sans-serif;font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-2px;line-height:1.1;color:#fff;margin-bottom:24px">You Already Own the Generator.<br><span style="color:var(--gold)">Now Make It Worth Every Dollar.</span></h1>
+    <p style="font-size:clamp(16px,2vw,19px);line-height:1.75;color:rgba(255,255,255,.78);margin-bottom:40px">One licensed connection to your breaker panel. Your essentials — fridge, lights, WiFi, well pump — all run at once. No extension cords. No open windows. Done in one day for <strong style="color:#fff">$1,197–$1,497 all-in</strong>.</p>
+    <a href="#getStarted" style="display:inline-flex;align-items:center;gap:10px;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-size:17px;font-weight:700;padding:18px 42px;border-radius:100px;text-decoration:none;transition:background .2s">Get Your Exact Price <svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></a>
+    <p style="margin-top:20px;font-size:13px;color:rgba(255,255,255,.4)">We text you — no phone call, no salesperson visit</p>
   </div>
 </section>
 
