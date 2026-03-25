@@ -362,7 +362,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
   function revealPage(variant){
     document.body.classList.add(variant==='stripped'?'bpp-var':'bpp-ctrl');
     document.documentElement.classList.add('bpp-ready');
-    if(variant==='stripped'){var l=document.querySelector('.hdr-logo');if(l)l.src=l.src.replace('logo-main','logo-white');}
+    if(variant==='stripped'){var l=document.querySelector('.hdr-logo');if(l)l.src='/assets/images/logo-white.png';}
     if(typeof posthog!=='undefined') posthog.capture('$experiment_started',{'experiment name':'landing-page-variant','variant':variant||'control'});
   }
   // URL param override for previewing: ?v=stripped or ?v=control
