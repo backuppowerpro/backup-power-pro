@@ -214,6 +214,7 @@ img{max-width:100%;display:block}
 body.bpp-var .hero,body.bpp-var .sec,body.bpp-var .endcta,body.bpp-var .sticky-cta,body.bpp-var .qform{display:none!important}
 body.bpp-var #bpp-var-hero{display:flex!important;min-height:100svh;align-items:center;justify-content:center;background:var(--navy)}
 body.bpp-var .hdr{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.08)}
+body.bpp-var .hdr-btn{display:none!important}
 
 /* ==================== INLINE FORM ==================== */
 .qform{padding:80px 0;background:var(--light-blue)}
@@ -361,6 +362,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
   function revealPage(variant){
     document.body.classList.add(variant==='stripped'?'bpp-var':'bpp-ctrl');
     document.documentElement.classList.add('bpp-ready');
+    if(variant==='stripped'){var l=document.querySelector('.hdr-logo');if(l)l.src=l.src.replace('logo-main','logo-white');}
     if(typeof posthog!=='undefined') posthog.capture('$experiment_started',{'experiment name':'landing-page-variant','variant':variant||'control'});
   }
   // URL param override for previewing: ?v=stripped or ?v=control
