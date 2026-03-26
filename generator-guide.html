@@ -929,7 +929,15 @@ body {
 /* ─── PRINT ──────────────────────────────────────────────── */
 @media print {
   body { background: white; padding: 0; }
-  .page { margin: 0; box-shadow: none; page-break-after: always; }
+  .page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+    page-break-inside: avoid;
+    height: 11in !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
   .page:last-child { page-break-after: auto; }
   @page { size: letter portrait; margin: 0; }
 }
@@ -1095,10 +1103,10 @@ body {
     <span class="pg-bar-num">02 — Your Power Plan</span>
   </div>
 
-  <div class="sec-head" style="margin-bottom:0">
+  <div class="sec-head" style="margin-bottom:10px;">
     <div class="sec-step">Step two</div>
-    <div class="sec-h2">Your power plan</div>
-    <div class="sec-sub">Check what your household needs and add up the watts. Numbers shown are <strong>running watts</strong> — motors (AC, pumps, fridge compressor) pull 2–3× more for a second on startup. Your generator handles those spikes automatically, but it's why some items are marked "Tight."</div>
+    <div class="sec-h2" style="font-size:24px;">Your power plan</div>
+    <div class="sec-sub" style="font-size:12px; margin-top:5px;">Numbers shown are <strong>running watts</strong>. Motors (AC, pumps, fridge) pull 2–3× more for a second on startup — your generator handles those spikes, but it's why some items show "Tight."</div>
   </div>
 
   <table class="pplan-table">
