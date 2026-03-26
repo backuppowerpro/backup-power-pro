@@ -369,9 +369,17 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
     if(typeof posthog!=='undefined') posthog.capture('$experiment_started',{'experiment name':'landing-page-variant','variant':variant||'control'});
   }
   // URL param override for previewing: ?v=stripped or ?v=control
-  var urlVariant=new URLSearchParams(window.location.search).get('v');
+  var params=new URLSearchParams(window.location.search);
+  var urlVariant=params.get('v');
   if(urlVariant==='stripped'||urlVariant==='control'){
     document.addEventListener('DOMContentLoaded',function(){revealPage(urlVariant);});
+    return;
+  }
+  // Only run A/B test for Meta Ads traffic — Google/organic always gets control
+  var utmSource=(params.get('utm_source')||'').toLowerCase();
+  var isMetaTraffic=utmSource==='facebook'||utmSource==='instagram'||utmSource==='fb'||utmSource==='ig';
+  if(!isMetaTraffic){
+    document.addEventListener('DOMContentLoaded',function(){revealPage('control');});
     return;
   }
   posthog.onFeatureFlags(function(){
