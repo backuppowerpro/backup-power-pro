@@ -503,6 +503,65 @@ body {
   padding-bottom: 2px;
 }
 
+/* power plan table (combined wattage + capability + worksheet) */
+.pplan-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+.pplan-table th {
+  background: var(--navy);
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.pplan-table th.center { text-align: center; }
+.pplan-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  vertical-align: middle;
+}
+.pplan-table td.center { text-align: center; }
+.pplan-table tr:nth-child(even):not(.pp-sec) td { background: var(--off); }
+.pplan-table tr:last-child td { border-bottom: none; }
+.pplan-table .pp-sec td {
+  background: var(--navy);
+  color: var(--gold);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  padding: 7px 12px;
+  border-bottom: none;
+}
+.pp-watts {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  color: var(--navy);
+  text-align: right !important;
+  width: .75in;
+  white-space: nowrap;
+}
+.pp-cap { width: .45in; }
+.pp-chk { width: .35in; text-align: center !important; }
+.pp-legend {
+  font-size: 10px;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: 5px;
+  text-align: right;
+}
+
 /* comparison table */
 .cmp-table {
   width: 100%;
@@ -912,12 +971,10 @@ body {
     </div>
 
     <div class="cover-toc">
-      <div class="toc-pill"><span class="num">01</span> 30A vs 50A</div>
-      <div class="toc-pill"><span class="num">02</span> Wattage chart</div>
-      <div class="toc-pill"><span class="num">03</span> Your outage plan</div>
-      <div class="toc-pill"><span class="num">04</span> Safety rules</div>
-      <div class="toc-pill"><span class="num">05</span> Extension cords</div>
-      <div class="toc-pill"><span class="num">06</span> Permits &amp; protection</div>
+      <div class="toc-pill"><span class="num">01</span> Know your generator</div>
+      <div class="toc-pill"><span class="num">02</span> Your power plan</div>
+      <div class="toc-pill"><span class="num">03</span> Safety rules</div>
+      <div class="toc-pill"><span class="num">04</span> Permits &amp; protection</div>
     </div>
   </div>
 
@@ -976,31 +1033,6 @@ body {
   <div class="callout callout-gold" style="margin-top:18px;">
     <div class="callout-head">💡 Some generators have both outlets</div>
     <div class="callout-text">If yours does, you have more flexibility. The inlet we install matches your generator — a 30A generator gets a 30A inlet, a 50A gets a 50A. You're never paying for more than you need.</div>
-  </div>
-
-  <table class="cmp-table">
-    <thead>
-      <tr>
-        <th>What you want to run</th>
-        <th class="center">30 Amp</th>
-        <th class="center">50 Amp</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td>Refrigerator + freezer</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td></tr>
-      <tr><td>All lights + WiFi + devices</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td></tr>
-      <tr><td>Sump pump</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td></tr>
-      <tr><td>Window AC unit</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td></tr>
-      <tr><td>Central AC (2.5 ton)</td><td class="center"><span class="icon-warn">Tight</span></td><td class="center"><span class="icon-yes">✓</span></td></tr>
-      <tr><td>Well pump</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td></tr>
-      <tr><td>Multiple large appliances at once</td><td class="center"><span class="icon-warn">Limited</span></td><td class="center"><span class="icon-yes">✓</span></td></tr>
-    </tbody>
-  </table>
-
-  <!-- SOFT START NOTE -->
-  <div class="callout callout-gold" style="margin-top:14px;">
-    <div class="callout-head">❄️ A note on central AC</div>
-    <div class="callout-text">"Tight" means your generator <em>may</em> start a 2.5-ton central AC — but the startup surge (often 2–3× the running watts) is the risky part. Whether it works depends on your specific unit and your generator's surge rating. A device called a <strong>soft start</strong> (also called a hard start kit) installs on your AC compressor and reduces that startup spike by 50–70%, making it much more reliable. An HVAC technician can install one for $150–300 in parts and labor. Without it, we can't guarantee AC will start — even on a 50A system.</div>
   </div>
 
   <!-- QUALIFICATION CHECK -->
@@ -1069,127 +1101,59 @@ body {
 
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!-- PAGE 3 — WATTAGE CHART                                 -->
+<!-- PAGE 3 — YOUR POWER PLAN (wattage + capability + plan) -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div class="page interior">
 
   <div class="pg-bar">
     <span class="pg-bar-brand">Backup Power Pro</span>
-    <span class="pg-bar-num">02 — Wattage Chart</span>
+    <span class="pg-bar-num">02 — Your Power Plan</span>
   </div>
 
-  <div class="sec-head">
+  <div class="sec-head" style="margin-bottom:0">
     <div class="sec-step">Step two</div>
-    <div class="sec-h2">What your generator<br>can actually power</div>
-    <div class="sec-sub">These are <strong>running watts</strong> — what each appliance draws once it's already on. Motors (fridge compressor, sump pump, AC) pull 2–3× this for a second or two when they start up. Your generator handles those startup spikes automatically.</div>
+    <div class="sec-h2">Your power plan</div>
+    <div class="sec-sub">Check what your household needs, see what your system handles, and add up the watts. Your fridge, freezer, all the lights, WiFi, TV, and charging combined is typically only <strong>800–1,200W</strong> — about 15% of a 7,500W generator.</div>
   </div>
 
-  <div class="two-col" style="gap:20px; align-items: start;">
-
-    <div>
-      <table class="watt-table">
-        <tbody>
-          <tr class="watt-sec-row"><td colspan="3">Essentials</td></tr>
-          <tr><td>Refrigerator</td><td class="watt-num">150–400W</td><td class="watt-note">Varies by age &amp; size</td></tr>
-          <tr><td>Chest freezer</td><td class="watt-num">100–200W</td><td class="watt-note"></td></tr>
-          <tr><td>LED light bulbs (each)</td><td class="watt-num">8–12W</td><td class="watt-note"></td></tr>
-          <tr><td>WiFi router</td><td class="watt-num">15–25W</td><td class="watt-note"></td></tr>
-          <tr><td>Phone &amp; tablet charging</td><td class="watt-num">25–65W</td><td class="watt-note">Per device</td></tr>
-          <tr><td>TV (55" LED)</td><td class="watt-num">80–130W</td><td class="watt-note"></td></tr>
-          <tr><td>CPAP machine</td><td class="watt-num">30–60W</td><td class="watt-note">Without humidifier</td></tr>
-
-          <tr class="watt-sec-row"><td colspan="3">Comfort &amp; Convenience</td></tr>
-          <tr><td>Sump pump (½ HP)</td><td class="watt-num">800–1,100W</td><td class="watt-note">Surge: ~2,200W</td></tr>
-          <tr><td>Microwave</td><td class="watt-num">800–1,200W</td><td class="watt-note"></td></tr>
-          <tr><td>Coffee maker</td><td class="watt-num">800–1,200W</td><td class="watt-note"></td></tr>
-          <tr><td>Window AC (10,000 BTU)</td><td class="watt-num">900–1,200W</td><td class="watt-note">Surge: ~2,400W</td></tr>
-          <tr><td>Space heater</td><td class="watt-num">750–1,500W</td><td class="watt-note"></td></tr>
-          <tr><td>Garage door opener</td><td class="watt-num">350–500W</td><td class="watt-note"></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div>
-      <table class="watt-table">
-        <tbody>
-          <tr class="watt-sec-row"><td colspan="3">Larger Loads</td></tr>
-          <tr><td>Central AC (2.5 ton)</td><td class="watt-num">2,500–4,000W</td><td class="watt-note">Needs 8,000W+ gen.</td></tr>
-          <tr><td>Well pump (1 HP)</td><td class="watt-num">750–1,500W</td><td class="watt-note">Check pump label</td></tr>
-          <tr><td>Electric water heater</td><td class="watt-num">3,000–4,500W</td><td class="watt-note"></td></tr>
-          <tr><td>Electric dryer</td><td class="watt-num">4,000–5,500W</td><td class="watt-note"></td></tr>
-          <tr><td>Electric range / oven</td><td class="watt-num">2,000–5,000W</td><td class="watt-note"></td></tr>
-        </tbody>
-      </table>
-
-      <div class="callout callout-green" style="margin-top:14px;">
-        <div class="callout-head">🔥 Have gas appliances?</div>
-        <div class="callout-text">Gas water heater, dryer, and stove only use electricity for ignition and controls — roughly 150–400W total for all three. Those big loads essentially disappear from your list, freeing up most of your generator's capacity for everything else.</div>
-      </div>
-
-      <div class="callout callout-navy" style="margin-top:10px;">
-        <div class="callout-head">⛽ Natural gas generators</div>
-        <div class="callout-text">Some generators are designed to run on natural gas or propane instead of gasoline — no fuel storage, no stale fuel, runs as long as the line has pressure. If you have natural gas service at your home and want to explore this, a licensed plumber can run a gas line to where the generator would sit. It's a separate project from the inlet installation, but the two work together.</div>
-      </div>
-
-      <div class="spacer"></div>
-
-      <div class="insight">
-        <div class="insight-text">
-          Your fridge, freezer, all the lights in your home, WiFi, TV, and every device charging — together that's roughly <strong>800–1,200 watts</strong>. A 7,500-watt generator is running at about <strong>15% capacity</strong> just covering all of that.
-        </div>
-      </div>
-
-    </div>
-  </div><!-- /two-col -->
-
-  <div class="pg-foot">
-    <span class="pg-foot-brand">Backup Power Pro · backuppowerpro.com</span>
-    <span class="pg-foot-right">(864) 400-5302</span>
-  </div>
-
-</div><!-- /page 3 -->
-
-
-<!-- ═══════════════════════════════════════════════════════ -->
-<!-- PAGE 4 — PLANNING WORKSHEET                            -->
-<!-- ═══════════════════════════════════════════════════════ -->
-<div class="page interior">
-
-  <div class="pg-bar">
-    <span class="pg-bar-brand">Backup Power Pro</span>
-    <span class="pg-bar-num">03 — Your Outage Plan</span>
-  </div>
-
-  <div class="sec-head">
-    <div class="sec-step">Step three</div>
-    <div class="sec-h2">Plan what matters<br>to your household</div>
-    <div class="sec-sub">Think through a 72-hour outage at your home. Check the boxes for what your household actually needs, add up the watts, and compare to your generator's running wattage. Five minutes here tells you exactly where you stand.</div>
-  </div>
-
-  <table class="ws-table">
-    <tbody>
-      <tr class="ws-head">
-        <td>Appliance</td>
-        <td class="ws-watts">Typical Watts</td>
-        <td class="ws-check">Include?</td>
+  <table class="pplan-table">
+    <thead>
+      <tr>
+        <th>Appliance</th>
+        <th class="pp-watts">Typical Watts</th>
+        <th class="pp-cap center">30A</th>
+        <th class="pp-cap center">50A</th>
+        <th class="pp-chk center">Include?</th>
       </tr>
+    </thead>
+    <tbody>
+      <tr class="pp-sec"><td colspan="5">Essentials</td></tr>
+      <tr><td>Refrigerator</td><td class="pp-watts">250W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Chest freezer</td><td class="pp-watts">150W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Lights throughout home (10 LED bulbs)</td><td class="pp-watts">100W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>WiFi router + devices</td><td class="pp-watts">100W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>TV</td><td class="pp-watts">100W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Phone &amp; tablet charging</td><td class="pp-watts">50W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>CPAP / medical equipment</td><td class="pp-watts">50W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
 
-      <tr><td><strong>Refrigerator</strong></td><td class="ws-watts">250W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Chest freezer</td><td class="ws-watts">150W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Lights throughout home (10 LED bulbs)</td><td class="ws-watts">100W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>WiFi router</td><td class="ws-watts">20W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Phone &amp; tablet charging (all devices)</td><td class="ws-watts">50W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>TV</td><td class="ws-watts">100W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td><strong>Sump pump</strong> — if you have a basement or crawl space</td><td class="ws-watts">1,000W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Microwave</td><td class="ws-watts">1,000W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Coffee maker</td><td class="ws-watts">1,000W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Window AC unit</td><td class="ws-watts">1,100W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Space heater (winter outages)</td><td class="ws-watts">1,200W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Well pump</td><td class="ws-watts">1,200W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Medical equipment (CPAP, oxygen, etc.)</td><td class="ws-watts">______W</td><td class="ws-check"><div class="cb"></div></td></tr>
-      <tr><td>Other: ____________________________</td><td class="ws-watts">______W</td><td class="ws-check"><div class="cb"></div></td></tr>
+      <tr class="pp-sec"><td colspan="5">Comfort &amp; convenience</td></tr>
+      <tr><td>Sump pump</td><td class="pp-watts">1,000W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Window AC unit</td><td class="pp-watts">1,100W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Well pump</td><td class="pp-watts">1,200W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Microwave</td><td class="pp-watts">1,000W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Coffee maker</td><td class="pp-watts">1,000W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Space heater</td><td class="pp-watts">1,200W</td><td class="center"><span class="icon-yes">✓</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+
+      <tr class="pp-sec"><td colspan="5">Larger loads</td></tr>
+      <tr><td>Central AC (2.5 ton) — see note ❄️</td><td class="pp-watts">3,200W</td><td class="center"><span class="icon-warn">Tight</span></td><td class="center"><span class="icon-yes">✓</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Electric water heater</td><td class="pp-watts">3,750W</td><td class="center"><span class="icon-no">–</span></td><td class="center"><span class="icon-warn">Tight</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+      <tr><td>Electric dryer / stove</td><td class="pp-watts">4,750W</td><td class="center"><span class="icon-no">–</span></td><td class="center"><span class="icon-no">–</span></td><td class="pp-chk"><div class="cb"></div></td></tr>
+
+      <tr><td>Other: __________________________________</td><td class="pp-watts">______W</td><td></td><td></td><td class="pp-chk"><div class="cb"></div></td></tr>
     </tbody>
   </table>
+
+  <p class="pp-legend">✓ = runs easily &nbsp;·&nbsp; Tight = possible, depends on your generator's surge rating &nbsp;·&nbsp; – = won't run</p>
 
   <div class="total-bar">
     <div class="total-label">My total watts needed</div>
@@ -1206,10 +1170,14 @@ body {
     </div>
   </div>
 
-  <div class="callout callout-navy" style="margin-top:14px;">
-    <div class="callout-head">📋 How to read your result</div>
-    <div class="callout-text">
-      <strong>If your total is less than your generator's running watts</strong> — you can run everything on your list simultaneously. <strong>If your total is higher</strong> — that's fine. You prioritize. Run the must-haves first and rotate others in as needed. Most people find they never actually run everything at once anyway. The goal is knowing your priorities before the lights go out, not during.
+  <div class="two-col" style="gap:12px; margin-top:10px;">
+    <div class="callout callout-green" style="margin:0">
+      <div class="callout-head">🔥 Gas appliances?</div>
+      <div class="callout-text">Gas water heater, dryer, and stove use only 150–400W total for ignition — those large loads essentially disappear from your list.</div>
+    </div>
+    <div class="callout callout-gold" style="margin:0">
+      <div class="callout-head">❄️ Central AC note</div>
+      <div class="callout-text">A soft start kit ($150–300, HVAC-installed) cuts compressor startup surge by 50–70%, making central AC more reliable on a 30A system.</div>
     </div>
   </div>
 
@@ -1218,7 +1186,7 @@ body {
     <span class="pg-foot-right">(864) 400-5302</span>
   </div>
 
-</div><!-- /page 4 -->
+</div><!-- /page 3 combined -->
 
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1228,11 +1196,11 @@ body {
 
   <div class="pg-bar">
     <span class="pg-bar-brand">Backup Power Pro</span>
-    <span class="pg-bar-num">04 — Safety</span>
+    <span class="pg-bar-num">03 — Safety</span>
   </div>
 
   <div class="sec-head">
-    <div class="sec-step">Step four</div>
+    <div class="sec-step">Step three</div>
     <div class="sec-h2">Running it safely</div>
     <div class="sec-sub">None of what's in this guide matters if the generator isn't run safely. Most of the rules are simple. One of them isn't optional.</div>
   </div>
@@ -1297,11 +1265,11 @@ body {
 
   <div class="pg-bar">
     <span class="pg-bar-brand">Backup Power Pro</span>
-    <span class="pg-bar-num">05 — Permits &amp; Protection</span>
+    <span class="pg-bar-num">04 — Permits &amp; Protection</span>
   </div>
 
   <div class="sec-head">
-    <div class="sec-step">Step five</div>
+    <div class="sec-step">Step four</div>
     <div class="sec-h2">Why the permit matters<br>to you personally</div>
     <div class="sec-sub">Some contractors skip the permit. Here's what that decision actually costs the homeowner — not the contractor.</div>
   </div>
