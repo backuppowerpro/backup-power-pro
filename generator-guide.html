@@ -486,7 +486,7 @@ body {
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 5px;
+  gap: 16px;
 }
 .fill-box-label {
   font-family: 'Outfit', sans-serif;
@@ -495,7 +495,7 @@ body {
   color: var(--navy);
   white-space: nowrap;
 }
-.fill-line { width: 100%; height: 1.5px; background: rgba(255,186,0,.6); }
+.fill-line { width: 100%; height: 2px; background: rgba(11,31,59,.35); border-radius: 1px; }
 .fill-box-sub {
   font-size: 11px;
   color: var(--text3);
@@ -701,10 +701,10 @@ body {
   gap: 12px;
 }
 .total-field {
-  background: rgba(255,255,255,.92);
-  border: 1.5px solid rgba(255,255,255,.7);
+  background: #ffffff;
+  border: none;
   border-radius: 8px;
-  padding: 8px 20px;
+  padding: 10px 20px 8px;
   min-width: 1in;
   text-align: center;
 }
@@ -713,14 +713,14 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .1em;
-  color: rgba(11,31,59,.6);
-  margin-bottom: 3px;
+  color: rgba(11,31,59,.55);
+  margin-bottom: 8px;
 }
 .total-field-val {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 800;
-  font-size: 18px;
-  color: var(--navy);
+  display: block;
+  height: 24px;
+  border-bottom: 2px solid var(--navy);
+  margin: 0 8px;
 }
 .total-vs {
   font-family: 'Outfit', sans-serif;
@@ -1196,12 +1196,12 @@ body {
     <div class="total-fields">
       <div class="total-field">
         <div class="total-field-label">My Total</div>
-        <div class="total-field-val">_______</div>
+        <div class="total-field-val"></div>
       </div>
       <div class="total-vs">vs</div>
       <div class="total-field">
         <div class="total-field-label">My Generator</div>
-        <div class="total-field-val">_______</div>
+        <div class="total-field-val"></div>
       </div>
     </div>
   </div>
