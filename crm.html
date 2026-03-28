@@ -944,6 +944,7 @@ async function loadContacts() {
   const { data, error } = await db.from('contacts').select('*').order('created_at', { ascending: false });
   if (error) { showToast('Failed to load leads', 'error'); return; }
   allContacts = data || [];
+  buildDuplicateMap();
   renderContacts();
   loadPermitAnalytics();
   loadTrendAnalytics();
@@ -1011,9 +1012,12 @@ function renderContacts() {
     const jur = c.jurisdiction_id ? allJurisdictions.find(j => j.id === c.jurisdiction_id) : null;
     const jurCell = jur ? `<span style="font-size:12px">${esc(jur.name)}</span>` : '<span style="color:var(--text3);font-size:12px">—</span>';
 
+    const dupIds = getDupIds(c.id);
+    const dupBadge = dupIds.length ? `<span style="font-size:9px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:2px 6px;border-radius:100px;font-weight:700;margin-left:6px;cursor:pointer" onclick="event.stopPropagation();openMergeModal('${c.id}','${dupIds[0]}')">DUP</span>` : '';
+
     const isArchived = c.status === 'Archived';
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
-      <td class="name">${esc(c.name)}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
+      <td class="name">${esc(c.name)}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
       <td class="phone col-phone">${esc(c.phone||'—')}</td>
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
@@ -1744,6 +1748,103 @@ function fmt12(t) {
   const [h, m] = t.split(':').map(Number);
   const ampm = h >= 12 ? 'pm' : 'am';
   return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+// ── DUPLICATE DETECTION ──────────────────────────────────
+let duplicateMap = {}; // contactId → [array of duplicate contactIds]
+
+function buildDuplicateMap() {
+  duplicateMap = {};
+  const active = allContacts.filter(c => c.status !== 'Archived');
+  const byPhone = {}, byEmail = {}, byName = {};
+
+  active.forEach(c => {
+    const phone = stripPhone(c.phone);
+    if (phone.length >= 7) {
+      if (!byPhone[phone]) byPhone[phone] = [];
+      byPhone[phone].push(c.id);
+    }
+    const email = (c.email || '').toLowerCase().trim();
+    if (email) {
+      if (!byEmail[email]) byEmail[email] = [];
+      byEmail[email].push(c.id);
+    }
+    const name = (c.name || '').toLowerCase().trim();
+    if (name) {
+      if (!byName[name]) byName[name] = [];
+      byName[name].push(c.id);
+    }
+  });
+
+  [byPhone, byEmail, byName].forEach(bucket => {
+    Object.values(bucket).forEach(ids => {
+      if (ids.length > 1) {
+        ids.forEach(id => {
+          if (!duplicateMap[id]) duplicateMap[id] = new Set();
+          ids.forEach(oid => { if (oid !== id) duplicateMap[id].add(oid); });
+        });
+      }
+    });
+  });
+}
+
+function getDupIds(id) {
+  return duplicateMap[id] ? [...duplicateMap[id]] : [];
+}
+
+function openMergeModal(keepId, removeId) {
+  const keep = allContacts.find(c => c.id === keepId);
+  const remove = allContacts.find(c => c.id === removeId);
+  if (!keep || !remove) return;
+
+  const fields = ['phone','email','address','notes'];
+  let rows = '';
+  fields.forEach(f => {
+    const kv = keep[f] || '';
+    const rv = remove[f] || '';
+    if (rv && !kv) {
+      rows += `<div class="jur-detail" style="flex-direction:column;align-items:flex-start"><div class="jur-detail-label">${f}</div><div style="font-size:12px;margin-top:2px"><span style="color:var(--text3)">Will merge:</span> ${esc(rv)}</div></div>`;
+    }
+  });
+
+  // Use higher stage
+  const keepStage = keep.stage || 1;
+  const removeStage = remove.stage || 1;
+  const mergedStage = Math.max(keepStage, removeStage);
+
+  const body = document.getElementById('jur-view-body');
+  document.getElementById('jur-view-title').textContent = 'Merge Duplicates';
+  document.getElementById('jur-view-logo').innerHTML = '⚠️';
+  body.innerHTML = `
+    <div class="jur-detail" style="flex-direction:column;align-items:flex-start">
+      <div class="jur-detail-label">Keep</div>
+      <div class="jur-detail-value">${esc(keep.name)}</div>
+    </div>
+    <div class="jur-detail" style="flex-direction:column;align-items:flex-start">
+      <div class="jur-detail-label">Remove</div>
+      <div class="jur-detail-value" style="text-decoration:line-through;color:var(--text3)">${esc(remove.name)}</div>
+    </div>
+    ${rows}
+    <div style="font-size:12px;color:var(--text3);margin-top:4px">Missing fields from the removed lead will be copied to the kept lead. The removed lead will be deleted.</div>
+  `;
+  document.getElementById('jur-view-edit-btn').textContent = 'Merge';
+  document.getElementById('jur-view-edit-btn').onclick = async () => {
+    // Merge missing fields
+    const payload = {};
+    fields.forEach(f => { if (!keep[f] && remove[f]) payload[f] = remove[f]; });
+    if (mergedStage > keepStage) payload.stage = mergedStage;
+    if (remove.jurisdiction_id && !keep.jurisdiction_id) payload.jurisdiction_id = remove.jurisdiction_id;
+    if (Object.keys(payload).length) {
+      await db.from('contacts').update(payload).eq('id', keepId);
+    }
+    // Delete removed contact
+    await db.from('contacts').delete().eq('id', removeId);
+    showToast('Leads merged', 'success');
+    closeModal('jur-view-overlay');
+    loadContacts();
+  };
+  document.body.classList.add('modal-open');
+  document.getElementById('jur-view-overlay').classList.add('open');
 }
 
 // ── SMART SEARCH ─────────────────────────────────────────
