@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backup Power Pro — Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:   #0b1f3b;
+  --navy2:  #1a3a5c;
+  --gold:   #ffba00;
+  --green:  #059669;
+  --red:    #dc2626;
+  --border: #e4e8f0;
+  --bg:     #f4f6fa;
+  --text:   #1a2a42;
+  --text2:  #4a5568;
+  --text3:  #8a9ab5;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+}
+
+/* ── HEADER ──────────────────────────────────────────────── */
+.site-header {
+  background: var(--navy);
+  padding: 18px 24px;
+  text-align: center;
+}
+.site-header .brand {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  color: #fff;
+  letter-spacing: -.01em;
+}
+.site-header .brand span { color: var(--gold); }
+.site-header .tagline {
+  font-size: 12px;
+  color: rgba(255,255,255,.5);
+  margin-top: 2px;
+}
+
+/* ── PAGE WRAPPER ────────────────────────────────────────── */
+.page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+/* ── HERO CARD ───────────────────────────────────────────── */
+.hero-card {
+  background: var(--navy);
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  color: #fff;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 160px; height: 160px;
+  background: var(--gold);
+  opacity: .06;
+  border-radius: 50%;
+}
+.hero-eyebrow {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.hero-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 6px;
+}
+.hero-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,.6);
+  margin-bottom: 20px;
+}
+.hero-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255,255,255,.12);
+  padding-top: 16px;
+}
+.hero-meta-item { }
+.hero-meta-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.45);
+  margin-bottom: 3px;
+  font-family: 'Outfit', sans-serif;
+}
+.hero-meta-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* ── SECTION CARD ────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-head {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.card-head h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--navy);
+}
+.card-body { padding: 18px 20px; }
+
+/* ── SCOPE LIST ──────────────────────────────────────────── */
+.scope-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.scope-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+.scope-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.scope-check svg { width: 10px; height: 10px; }
+.scope-item-text strong { display: block; font-weight: 600; }
+.scope-item-text span { font-size: 12px; color: var(--text3); }
+
+/* ── PRICING TABLE ───────────────────────────────────────── */
+.price-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.price-table td { padding: 11px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.price-table tr:last-child td { border-bottom: none; }
+.price-table td:last-child { text-align: right; font-weight: 600; color: var(--text); }
+.price-item-name { font-weight: 500; color: var(--text); }
+.price-item-desc { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.price-total-row td {
+  padding-top: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--navy);
+}
+.total-badge {
+  background: var(--navy);
+  color: var(--gold);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  padding: 5px 14px;
+  border-radius: 8px;
+}
+
+/* ── COMPARISON CALLOUT ──────────────────────────────────── */
+.compare-box {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--green);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.5;
+}
+.compare-box span { font-size: 11px; font-weight: 400; color: #065f46; }
+
+/* ── SIGN SECTION ────────────────────────────────────────── */
+.sign-card {
+  background: #fff;
+  border: 2px solid var(--navy);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.sign-card-head {
+  background: var(--navy);
+  padding: 16px 20px;
+}
+.sign-card-head h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+.sign-card-head p {
+  font-size: 13px;
+  color: rgba(255,255,255,.6);
+  margin-top: 3px;
+}
+.sign-card-body { padding: 20px; }
+
+.ack-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8f9fb;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+.ack-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--navy);
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+}
+.ack-row label {
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1.5;
+}
+.ack-row label a {
+  color: var(--navy);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 7px;
+  letter-spacing: .03em;
+  display: block;
+}
+.form-label .req { color: var(--red); }
+.name-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border .15s;
+}
+.name-input:focus { border-color: var(--navy); }
+.name-hint {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 6px;
+}
+
+.approve-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.approve-btn:hover { background: var(--navy2); }
+.approve-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── APPROVED STATE ──────────────────────────────────────── */
+.approved-banner {
+  background: var(--green);
+  border-radius: 14px;
+  padding: 28px 24px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.approved-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255,255,255,.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+.approved-banner h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.approved-banner p { font-size: 14px; opacity: .85; }
+
+/* ── ERROR / LOADING ─────────────────────────────────────── */
+.state-wrap {
+  text-align: center;
+  padding: 60px 24px;
+}
+.state-wrap svg { width: 48px; height: 48px; opacity: .25; margin-bottom: 14px; }
+.state-wrap h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.state-wrap p { font-size: 14px; color: var(--text3); }
+.spinner-large {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+.site-footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 12px;
+  color: var(--text3);
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+.site-footer a { color: var(--text3); text-decoration: none; }
+.site-footer a:hover { color: var(--navy); }
+
+@media (max-width: 480px) {
+  .hero-title { font-size: 22px; }
+  .hero-meta { gap: 14px; }
+  .page { padding: 16px 14px 48px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="brand">Backup Power <span>Pro</span></div>
+  <div class="tagline">Licensed Electrical Contractor · Upstate SC</div>
+</header>
+
+<!-- ── MAIN ──────────────────────────────────────────────── -->
+<main class="page" id="main">
+  <div class="state-wrap">
+    <div class="spinner-large"></div>
+    <p>Loading your proposal…</p>
+  </div>
+</main>
+
+<!-- ── FOOTER ────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <a href="https://backuppowerpro.com">backuppowerpro.com</a> &nbsp;·&nbsp; (864) 400-5302
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+
+// ── CONFIG — same values as crm.html ──────────────────────
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+// ──────────────────────────────────────────────────────────
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── INIT ───────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+
+  if (!token) {
+    showError('No proposal found.', 'This link is missing a proposal token. Please check the link and try again.');
+    return;
+  }
+
+  const { data, error } = await db
+    .from('proposals')
+    .select('*')
+    .eq('token', token)
+    .single();
+
+  if (error || !data) {
+    showError('Proposal not found.', 'This proposal link may be invalid or has been removed.');
+    return;
+  }
+
+  if (data.status === 'Approved') {
+    renderApproved(data);
+  } else {
+    renderProposal(data);
+  }
+});
+
+// ── RENDER PROPOSAL ────────────────────────────────────────
+function renderProposal(p) {
+  const createdDate = new Date(p.created_at).toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+  });
+
+  // Build includes list
+  const includes = [];
+  includes.push({ name: 'Generator inlet box', desc: 'Installed on exterior of home, weather-rated' });
+  includes.push({ name: 'Interlock kit', desc: 'Code-compliant, UL-listed — prevents back-feed' });
+  includes.push({ name: 'Permit pulled & filed', desc: 'We handle all paperwork with the county' });
+  includes.push({ name: 'State electrical inspection', desc: 'Scheduled and coordinated for you' });
+  includes.push({ name: 'Site cleanup', desc: 'We leave it the way we found it' });
+  includes.push({ name: 'Customer walkthrough', desc: 'Step-by-step how to use your new system' });
+  if (p.include_cord) includes.push({ name: 'Power transfer cord', desc: 'Connects your generator to the inlet box' });
+  if (p.include_surge) includes.push({ name: 'Whole-house surge protector', desc: 'Installed on your main panel' });
+
+  // Build pricing rows
+  let priceRows = `
+    <tr>
+      <td>
+        <div class="price-item-name">Base installation</div>
+        <div class="price-item-desc">Inlet box, interlock kit, permit, inspection, walkthrough</div>
+      </td>
+      <td>$${Number(p.price_base).toLocaleString()}</td>
+    </tr>`;
+
+  if (p.include_cord) {
+    priceRows += `
+    <tr>
+      <td>
+        <div class="price-item-name">Power transfer cord</div>
+        <div class="price-item-desc">Connects generator to inlet box</div>
+      </td>
+      <td>$${Number(p.price_cord).toLocaleString()}</td>
+    </tr>`;
+  }
+
+  if (p.include_surge) {
+    priceRows += `
+    <tr>
+      <td>
+        <div class="price-item-name">Whole-house surge protector</div>
+        <div class="price-item-desc">Installed on main panel</div>
+      </td>
+      <td>$${Number(p.price_surge).toLocaleString()}</td>
+    </tr>`;
+  }
+
+  const notesSection = p.notes ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h2>Notes</h2>
+      </div>
+      <div class="card-body" style="font-size:14px;color:var(--text2);line-height:1.6">
+        ${esc(p.notes)}
+      </div>
+    </div>` : '';
+
+  document.getElementById('main').innerHTML = `
+
+    <!-- Hero -->
+    <div class="hero-card">
+      <div class="hero-eyebrow">Proposal</div>
+      <div class="hero-title">The Storm-Ready<br>Connection System</div>
+      <div class="hero-sub">One cord. Full power. Done in a day.</div>
+      <div class="hero-meta">
+        <div class="hero-meta-item">
+          <div class="hero-meta-label">Prepared For</div>
+          <div class="hero-meta-value">${esc(p.contact_name)}</div>
+        </div>
+        ${p.contact_address ? `<div class="hero-meta-item">
+          <div class="hero-meta-label">Address</div>
+          <div class="hero-meta-value">${esc(p.contact_address)}</div>
+        </div>` : ''}
+        <div class="hero-meta-item">
+          <div class="hero-meta-label">Date</div>
+          <div class="hero-meta-value">${createdDate}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- What's Included -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2>Everything Included</h2>
+      </div>
+      <div class="card-body">
+        <ul class="scope-list">
+          ${includes.map(item => `
+          <li class="scope-item">
+            <div class="scope-check">
+              <svg viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg>
+            </div>
+            <div class="scope-item-text">
+              <strong>${esc(item.name)}</strong>
+              <span>${esc(item.desc)}</span>
+            </div>
+          </li>`).join('')}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Pricing -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h2>Investment</h2>
+      </div>
+      <div class="card-body">
+        <table class="price-table">
+          ${priceRows}
+          <tr class="price-total-row">
+            <td>Total</td>
+            <td><span class="total-badge">$${Number(p.total).toLocaleString()}</span></td>
+          </tr>
+        </table>
+        <div class="compare-box">
+          Get backup power for your whole home — without the $15,000 standby generator.<br>
+          <span>You already own the generator. We connect it the right way.</span>
+        </div>
+      </div>
+    </div>
+
+    ${notesSection}
+
+    <!-- Approve & Sign -->
+    <div class="sign-card" id="sign-section">
+      <div class="sign-card-head">
+        <h2>Approve This Proposal</h2>
+        <p>Read and acknowledge the safety information, then type your name below to approve.</p>
+      </div>
+      <div class="sign-card-body">
+
+        <div class="ack-row" onclick="toggleSafety()">
+          <input type="checkbox" id="safety-ack">
+          <label for="safety-ack" onclick="event.stopPropagation()">
+            I have read and understood the
+            <a href="inlet-safety-instructions.html" target="_blank" onclick="event.stopPropagation()">Generator Safety Instructions</a>
+            for portable generator inlet installations.
+          </label>
+        </div>
+
+        <div>
+          <label class="form-label">Your Full Name <span class="req">*</span></label>
+          <input class="name-input" id="signer-name" type="text" placeholder="Type your full name here" autocomplete="name">
+          <div class="name-hint">Typing your name serves as your digital signature approving this proposal.</div>
+        </div>
+
+        <button class="approve-btn" id="approve-btn" onclick="approveProposal('${esc(p.token)}')" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Approve Proposal
+        </button>
+        <div id="approve-err" style="font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:center"></div>
+
+      </div>
+    </div>
+
+    <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6">
+      Questions? Call or text us at <strong style="color:var(--navy)">(864) 400-5302</strong>
+    </div>
+  `;
+
+  // Wire up live validation
+  document.getElementById('signer-name').addEventListener('input', validateForm);
+  document.getElementById('safety-ack').addEventListener('change', validateForm);
+}
+
+function toggleSafety() {
+  const cb = document.getElementById('safety-ack');
+  if (cb) { cb.checked = !cb.checked; validateForm(); }
+}
+
+function validateForm() {
+  const name = (document.getElementById('signer-name')?.value || '').trim();
+  const ack  = document.getElementById('safety-ack')?.checked;
+  const btn  = document.getElementById('approve-btn');
+  if (btn) btn.disabled = !(name.length >= 2 && ack);
+}
+
+// ── APPROVE ────────────────────────────────────────────────
+async function approveProposal(token) {
+  const name = document.getElementById('signer-name').value.trim();
+  const ack  = document.getElementById('safety-ack').checked;
+  const err  = document.getElementById('approve-err');
+  const btn  = document.getElementById('approve-btn');
+
+  if (!name) { err.textContent = 'Please type your full name.'; return; }
+  if (!ack)  { err.textContent = 'Please read and acknowledge the safety instructions.'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner-large" style="width:20px;height:20px;border-width:2.5px;margin:0"></div> Submitting…';
+
+  const { error } = await db
+    .from('proposals')
+    .update({
+      status:      'Approved',
+      signed_at:   new Date().toISOString(),
+      signer_name: name,
+      safety_ack:  true,
+    })
+    .eq('token', token);
+
+  if (error) {
+    err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.';
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve Proposal`;
+    return;
+  }
+
+  // Re-fetch to render approved state
+  const { data } = await db.from('proposals').select('*').eq('token', token).single();
+  renderApproved(data || { signer_name: name, contact_name: '' });
+}
+
+// ── RENDER APPROVED STATE ──────────────────────────────────
+function renderApproved(p) {
+  const signedDate = p.signed_at
+    ? new Date(p.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : '';
+
+  document.getElementById('main').innerHTML = `
+    <div class="approved-banner">
+      <div class="approved-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2>Proposal Approved!</h2>
+      <p>Signed by <strong>${esc(p.signer_name)}</strong>${signedDate ? ` on ${signedDate}` : ''}.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-body" style="font-size:14px;color:var(--text2);line-height:1.7">
+        <p style="margin-bottom:12px"><strong style="color:var(--navy)">You're all set, ${esc(p.contact_name)}!</strong></p>
+        <p>We've received your approved proposal. We'll be in touch shortly to schedule your installation.</p>
+        <p style="margin-top:12px">In the meantime, if you have any questions, call or text us:</p>
+        <p style="margin-top:10px;font-size:18px;font-weight:700;color:var(--navy)">(864) 400-5302</p>
+      </div>
+    </div>
+
+    <div class="card" style="background:#f0fdf4;border-color:#bbf7d0">
+      <div class="card-body">
+        <div style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--green);margin-bottom:10px">What happens next</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13px;color:#065f46">
+          <li>✓ &nbsp;Key will reach out to confirm your installation date</li>
+          <li>✓ &nbsp;We'll pull the permit with your local county</li>
+          <li>✓ &nbsp;Installation completed in one day</li>
+          <li>✓ &nbsp;State inspection scheduled and coordinated for you</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+// ── ERROR STATE ────────────────────────────────────────────
+function showError(title, msg) {
+  document.getElementById('main').innerHTML = `
+    <div class="state-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <h2>${title}</h2>
+      <p>${msg}</p>
+    </div>`;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+</script>
+</body>
+</html>
