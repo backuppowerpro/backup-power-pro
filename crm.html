@@ -143,7 +143,7 @@ td.actions{white-space:nowrap}
 .cal-day-name{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
 .cal-day-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:var(--text);line-height:1}
 .cal-day.today .cal-day-num{color:var(--navy)}
-.cal-day-body{flex:1;padding:5px;display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.cal-day-body{flex:1;padding:4px;display:flex;flex-direction:column;gap:3px;cursor:pointer}
 .cal-day-body:hover{background:rgba(59,130,246,.04)}
 .cal-event{border-radius:4px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4}
 .cal-event.evt-contact{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
@@ -885,6 +885,21 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <div class="form-row">
         <label>Notes</label>
         <textarea class="form-textarea" id="jur-notes" placeholder="Processing time, fees, requirements…" style="min-height:80px"></textarea>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:6px">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Links</label>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input class="form-input" id="jur-link1-title" placeholder="Title" style="flex:1;min-width:0">
+          <input class="form-input" id="jur-link1-url" placeholder="https://…" style="flex:2;min-width:0">
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input class="form-input" id="jur-link2-title" placeholder="Title" style="flex:1;min-width:0">
+          <input class="form-input" id="jur-link2-url" placeholder="https://…" style="flex:2;min-width:0">
+        </div>
+        <div style="display:flex;gap:6px">
+          <input class="form-input" id="jur-link3-title" placeholder="Title" style="flex:1;min-width:0">
+          <input class="form-input" id="jur-link3-url" placeholder="https://…" style="flex:2;min-width:0">
+        </div>
       </div>
     </div>
   </div>
@@ -1654,7 +1669,7 @@ function renderCalendar() {
       const label = j.contact_name || j.title || 'Event';
       const time  = j.time ? fmt12(j.time) + ' · ' : '';
       const cls = j.status === 'Complete' || j.status === 'Completed' ? 'complete' : j.contact_id ? 'evt-contact' : 'evt-nocontact';
-      return `<div class="cal-event ${cls}" onclick="event.stopPropagation();openJobModal('${j.id}',null)">${time}${esc(label)}</div>`;
+      return `<div class="cal-event ${cls}" style="flex:1;display:flex;align-items:center;overflow:hidden" onclick="event.stopPropagation();openJobModal('${j.id}',null)">${time}${esc(label)}</div>`;
     }).join('');
 
     html += `
@@ -1665,7 +1680,7 @@ function renderCalendar() {
       </div>
       <div class="cal-day-body" ${atLimit ? '' : `onclick="openJobModal(null,'${dateStr}')"`}>
         ${events}
-        ${atLimit ? '' : '<div class="cal-add-hint">+ Add event</div>'}
+        ${atLimit ? '' : '<div class="cal-add-hint" style="flex:1;display:flex;align-items:center;justify-content:center">+ Add event</div>'}
       </div>
     </div>`;
   }
@@ -2027,6 +2042,15 @@ function viewJurisdiction(id) {
   if (j.password) {
     rows += `<div class="jur-detail"><div><div class="jur-detail-label">Password</div><div class="jur-detail-value">${esc(j.password)}</div></div><div class="jur-detail-action"><button onclick="navigator.clipboard.writeText('${esc(j.password)}');showToast('Copied!','success')">Copy</button></div></div>`;
   }
+  const links = [
+    { title: j.link1_title, url: j.link1_url },
+    { title: j.link2_title, url: j.link2_url },
+    { title: j.link3_title, url: j.link3_url },
+  ].filter(l => l.url);
+  if (links.length) {
+    const linkBtns = links.map(l => `<a class="btn-map" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.title || 'Link')} ↗</a>`).join(' ');
+    rows += `<div class="jur-detail" style="flex-direction:column;align-items:flex-start"><div class="jur-detail-label">Links</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${linkBtns}</div></div>`;
+  }
   if (j.notes) {
     rows += `<div class="jur-detail" style="flex-direction:column;align-items:flex-start"><div class="jur-detail-label">Notes</div><div class="jur-detail-value" style="margin-top:4px;word-break:normal;white-space:pre-wrap">${esc(j.notes)}</div></div>`;
   }
@@ -2046,6 +2070,12 @@ function openJurisdictionModal(id) {
   document.getElementById('jur-username').value = j ? (j.username || '') : '';
   document.getElementById('jur-password').value = j ? (j.password || '') : '';
   document.getElementById('jur-notes').value    = j ? (j.notes   || '') : '';
+  document.getElementById('jur-link1-title').value = j ? (j.link1_title || '') : '';
+  document.getElementById('jur-link1-url').value   = j ? (j.link1_url   || '') : '';
+  document.getElementById('jur-link2-title').value = j ? (j.link2_title || '') : '';
+  document.getElementById('jur-link2-url').value   = j ? (j.link2_url   || '') : '';
+  document.getElementById('jur-link3-title').value = j ? (j.link3_title || '') : '';
+  document.getElementById('jur-link3-url').value   = j ? (j.link3_url   || '') : '';
   document.getElementById('jur-overlay').classList.add('open');
 }
 
@@ -2055,11 +2085,17 @@ async function saveJurisdiction() {
   if (!name) { showToast('Name is required', 'error'); return; }
   const payload = {
     name,
-    portal_url: document.getElementById('jur-website').value.trim() || null,
-    phone:      document.getElementById('jur-phone').value.trim()    || null,
-    username:   document.getElementById('jur-username').value.trim() || null,
-    password:   document.getElementById('jur-password').value.trim() || null,
-    notes:      document.getElementById('jur-notes').value.trim()    || null,
+    portal_url:  document.getElementById('jur-website').value.trim()     || null,
+    phone:       document.getElementById('jur-phone').value.trim()       || null,
+    username:    document.getElementById('jur-username').value.trim()    || null,
+    password:    document.getElementById('jur-password').value.trim()    || null,
+    notes:       document.getElementById('jur-notes').value.trim()       || null,
+    link1_title: document.getElementById('jur-link1-title').value.trim() || null,
+    link1_url:   document.getElementById('jur-link1-url').value.trim()   || null,
+    link2_title: document.getElementById('jur-link2-title').value.trim() || null,
+    link2_url:   document.getElementById('jur-link2-url').value.trim()   || null,
+    link3_title: document.getElementById('jur-link3-title').value.trim() || null,
+    link3_url:   document.getElementById('jur-link3-url').value.trim()   || null,
   };
   let error;
   if (id) {
