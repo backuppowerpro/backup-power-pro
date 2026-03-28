@@ -21,8 +21,8 @@ export function ToastProvider({ children }) {
         {toasts.map(t => (
           <div
             key={t.id}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-sm font-medium pointer-events-auto transition-all
-              ${t.type === 'success' ? 'bg-green-900 text-green-100 border border-green-700' : 'bg-red-900 text-red-100 border border-red-700'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-md text-sm font-medium pointer-events-auto transition-all
+              ${t.type === 'success' ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'}`}
           >
             {t.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
             {t.message}

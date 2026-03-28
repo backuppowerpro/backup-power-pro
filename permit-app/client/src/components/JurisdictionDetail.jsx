@@ -15,9 +15,9 @@ function CopyButton({ value, label = 'Value', large = false }) {
   return (
     <button
       onClick={handleCopy}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors text-xs font-medium shrink-0 ${large ? 'px-4 py-2' : ''}`}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#edf0f7] hover:bg-[#e4e8f0] text-[#4a5568] hover:text-[#1a2a42] transition-colors text-xs font-medium shrink-0 ${large ? 'px-4 py-2' : ''}`}
     >
-      {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+      {copied ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
       {copied ? 'Copied!' : `Copy ${label}`}
     </button>
   )
@@ -25,8 +25,8 @@ function CopyButton({ value, label = 'Value', large = false }) {
 
 function CredRow({ label, children }) {
   return (
-    <div className="flex items-center gap-3 py-3.5 border-b border-slate-800 last:border-0">
-      <span className="text-xs text-slate-500 w-20 shrink-0 uppercase tracking-wide">{label}</span>
+    <div className="flex items-center gap-3 py-3.5 border-b border-[#e4e8f0] last:border-0">
+      <span className="text-xs text-[#8a9ab5] w-20 shrink-0 uppercase tracking-wide">{label}</span>
       <div className="flex-1 min-w-0 flex items-center gap-2 justify-between">
         {children}
       </div>
@@ -39,7 +39,6 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    // Slide in after mount
     requestAnimationFrame(() => setVisible(true))
   }, [])
 
@@ -48,7 +47,6 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
     setTimeout(onClose, 280)
   }
 
-  // Parse notes — first line is description, rest may be extra links
   const noteLines = (j.notes || '').split('\n').filter(Boolean)
   const description = noteLines[0] || ''
   const extraLinks = noteLines.slice(1).map(line => {
@@ -66,14 +64,14 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-slate-950"
+      className="fixed inset-0 z-50 flex flex-col bg-white"
       style={{
         transform: visible ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 280ms cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
       {/* Hero section */}
-      <div className="relative h-48 shrink-0 overflow-hidden bg-slate-800">
+      <div className="relative h-48 shrink-0 overflow-hidden bg-[#dde3ef]">
         {j.background_url ? (
           <img
             src={j.background_url}
@@ -82,10 +80,8 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
             onError={e => { e.target.style.display = 'none' }}
           />
         ) : null}
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/70" />
 
-        {/* Back button */}
         <button
           onClick={handleClose}
           className="absolute top-4 left-4 z-10 flex items-center gap-2 text-white/90 hover:text-white transition-colors"
@@ -94,7 +90,6 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
           <span className="text-sm font-medium">Back</span>
         </button>
 
-        {/* Edit button */}
         <button
           onClick={onEdit}
           className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/30 text-white/80 hover:text-white hover:bg-black/50 transition-colors"
@@ -102,7 +97,6 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
           <Pencil size={16} />
         </button>
 
-        {/* Logo + name */}
         <div className="absolute bottom-4 left-4 right-4 flex items-end gap-3">
           <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm shrink-0 flex items-center justify-center border border-white/20">
             {j.logo_url ? (
@@ -125,7 +119,7 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
       </div>
 
       {/* Action buttons */}
-      <div className="px-4 py-4 flex gap-2 border-b border-slate-800 shrink-0">
+      <div className="px-4 py-4 flex gap-2 border-b border-[#e4e8f0] shrink-0">
         {j.portal_url && (
           <a
             href={j.portal_url}
@@ -140,7 +134,7 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
         {j.phone && (
           <a
             href={`tel:${j.phone}`}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-medium text-sm transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-[#edf0f7] hover:bg-[#e4e8f0] text-[#1a2a42] rounded-xl font-medium text-sm transition-colors"
           >
             <Phone size={16} />
             Call
@@ -153,20 +147,20 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
         <div className="px-4">
           {j.username && (
             <CredRow label="Username">
-              <span className="text-sm text-slate-200 truncate">{j.username}</span>
+              <span className="text-sm text-[#1a2a42] truncate">{j.username}</span>
               <CopyButton value={j.username} label="Username" />
             </CredRow>
           )}
 
           {j.password && (
             <CredRow label="Password">
-              <span className="text-sm text-slate-200 font-mono">
+              <span className="text-sm text-[#1a2a42] font-mono">
                 {showPassword ? j.password : '••••••••••'}
               </span>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => setShowPassword(!showPassword)}
-                  className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+                  className="p-1.5 rounded-lg bg-[#edf0f7] hover:bg-[#e4e8f0] text-[#4a5568] hover:text-[#1a2a42] transition-colors"
                 >
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -177,13 +171,12 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
 
           {j.phone && (
             <CredRow label="Phone">
-              <a href={`tel:${j.phone}`} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+              <a href={`tel:${j.phone}`} className="text-sm text-blue-600 hover:text-blue-700 transition-colors">
                 {formatPhone(j.phone)}
               </a>
             </CredRow>
           )}
 
-          {/* Extra links from notes */}
           {extraLinks.map((link, i) => (
             link.url ? (
               <CredRow key={i} label={link.label}>
@@ -191,7 +184,7 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1.5 transition-colors"
+                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1.5 transition-colors"
                 >
                   <ExternalLink size={13} className="shrink-0" />
                   <span className="truncate">Open →</span>
@@ -199,7 +192,7 @@ export default function JurisdictionDetail({ jurisdiction: j, onClose, onEdit })
               </CredRow>
             ) : (
               <CredRow key={i} label={link.label}>
-                <span className="text-sm text-slate-400">{link.label}</span>
+                <span className="text-sm text-[#8a9ab5]">{link.label}</span>
               </CredRow>
             )
           ))}

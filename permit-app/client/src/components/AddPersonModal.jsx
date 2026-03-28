@@ -24,37 +24,39 @@ export default function AddPersonModal({ onClose }) {
     mutation.mutate({ ...form, stage: parseInt(form.stage) })
   }
 
+  const inputClass = "w-full bg-white border border-[#e4e8f0] rounded-lg px-3 py-2 text-sm text-[#1a2a42] focus:outline-none focus:border-blue-500"
+
   return (
     <Modal title="Add Person" onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div>
-          <label className="text-xs text-slate-400 mb-1 block">Name *</label>
+          <label className="text-xs text-[#8a9ab5] mb-1 block">Name *</label>
           <input
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+            className={inputClass}
             value={form.name} onChange={e => setForm({...form, name: e.target.value})}
             placeholder="Full name" autoFocus
           />
         </div>
         <div>
-          <label className="text-xs text-slate-400 mb-1 block">Phone</label>
+          <label className="text-xs text-[#8a9ab5] mb-1 block">Phone</label>
           <input
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+            className={inputClass}
             value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}
             placeholder="(864) 555-0000" type="tel"
           />
         </div>
         <div>
-          <label className="text-xs text-slate-400 mb-1 block">Email</label>
+          <label className="text-xs text-[#8a9ab5] mb-1 block">Email</label>
           <input
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+            className={inputClass}
             value={form.email} onChange={e => setForm({...form, email: e.target.value})}
             placeholder="email@example.com" type="email"
           />
         </div>
         <div>
-          <label className="text-xs text-slate-400 mb-1 block">Starting Stage</label>
+          <label className="text-xs text-[#8a9ab5] mb-1 block">Starting Stage</label>
           <select
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+            className={inputClass}
             value={form.stage} onChange={e => setForm({...form, stage: e.target.value})}
           >
             {STAGES.map(s => (
@@ -63,14 +65,14 @@ export default function AddPersonModal({ onClose }) {
           </select>
         </div>
         <div>
-          <label className="text-xs text-slate-400 mb-1 block">Notes</label>
+          <label className="text-xs text-[#8a9ab5] mb-1 block">Notes</label>
           <textarea
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500 resize-none"
+            className={`${inputClass} resize-none`}
             value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}
             placeholder="Optional notes..." rows={2}
           />
         </div>
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-red-500">{error}</p>}
         <button
           type="submit"
           disabled={mutation.isPending}

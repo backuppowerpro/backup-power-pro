@@ -14,8 +14,8 @@ export default function StageSection({ stage, people }) {
         <div className={`w-6 h-6 rounded-full ${stage.tailwind} flex items-center justify-center shrink-0`}>
           <Icon size={14} className="text-white" />
         </div>
-        <h2 className="text-sm font-semibold text-slate-300">{stage.label}</h2>
-        <span className="text-xs text-slate-500 ml-auto">{people.length}</span>
+        <h2 className="text-sm font-semibold text-[#4a5568]">{stage.label}</h2>
+        <span className="text-xs text-[#8a9ab5] ml-auto">{people.length}</span>
       </div>
       <div className="flex flex-col gap-2">
         {people.map(person => (

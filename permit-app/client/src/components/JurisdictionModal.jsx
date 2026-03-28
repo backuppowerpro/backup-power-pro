@@ -32,7 +32,6 @@ export default function JurisdictionModal({ jurisdiction = null, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!form.name.trim()) { setError('Name is required'); return }
-    // Send nulls for empty strings
     const payload = {}
     for (const [k, v] of Object.entries(form)) {
       payload[k] = v.trim() || null
@@ -40,11 +39,13 @@ export default function JurisdictionModal({ jurisdiction = null, onClose }) {
     mutation.mutate(payload)
   }
 
+  const inputClass = "w-full bg-white border border-[#e4e8f0] rounded-lg px-3 py-2 text-sm text-[#1a2a42] focus:outline-none focus:border-blue-500"
+
   const Field = ({ fieldKey, label, type = 'text', placeholder }) => (
     <div>
-      <label className="text-xs text-slate-400 mb-1 block">{label}</label>
+      <label className="text-xs text-[#8a9ab5] mb-1 block">{label}</label>
       <input
-        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
+        className={inputClass}
         type={type}
         placeholder={placeholder}
         value={form[fieldKey]}
@@ -64,16 +65,16 @@ export default function JurisdictionModal({ jurisdiction = null, onClose }) {
         <Field fieldKey="logo_url" label="Logo Image URL" type="url" placeholder="https://..." />
         <Field fieldKey="background_url" label="Background Image URL" type="url" placeholder="https://..." />
         <div>
-          <label className="text-xs text-slate-400 mb-1 block">Notes</label>
+          <label className="text-xs text-[#8a9ab5] mb-1 block">Notes</label>
           <textarea
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500 resize-none"
+            className={`${inputClass} resize-none`}
             value={form.notes}
             onChange={e => setForm({ ...form, notes: e.target.value })}
             rows={3}
             placeholder="First line = description. Then: Label: https://url.com"
           />
         </div>
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-xs text-red-500">{error}</p>}
         <button
           type="submit"
           disabled={mutation.isPending}

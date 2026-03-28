@@ -33,18 +33,18 @@ export default function PersonCard({ person, isArchived = false }) {
   const daysLabel = days === 0 ? 'today' : days === 1 ? '1 day' : `${days} days`
 
   return (
-    <div className={`bg-slate-800 rounded-lg p-3 border-l-4 ${stage?.border || 'border-slate-600'} relative`}>
+    <div className={`bg-white rounded-lg p-3 border-l-4 ${stage?.border || 'border-slate-400'} border border-[#e4e8f0] relative`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-100 truncate">{person.name}</p>
-          {person.phone && <p className="text-xs text-slate-400 mt-0.5">{person.phone}</p>}
-          <p className="text-xs text-slate-500 mt-1">{daysLabel} in stage</p>
+          <p className="font-medium text-[#1a2a42] truncate">{person.name}</p>
+          {person.phone && <p className="text-xs text-[#8a9ab5] mt-0.5">{person.phone}</p>}
+          <p className="text-xs text-[#8a9ab5] mt-1">{daysLabel} in stage</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {!isArchived && person.stage < 9 && (
             <button
               onClick={() => mutation.mutate({ stage: person.stage + 1 })}
-              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-[#f0f3f8] hover:bg-[#e4e8f0] text-[#4a5568] hover:text-[#1a2a42] transition-colors"
               title="Advance to next stage"
             >
               <ChevronRight size={16} />
@@ -53,7 +53,7 @@ export default function PersonCard({ person, isArchived = false }) {
           {!isArchived && (
             <button
               onClick={() => setShowMoveMenu(!showMoveMenu)}
-              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors text-xs font-mono"
+              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-[#f0f3f8] hover:bg-[#e4e8f0] text-[#8a9ab5] hover:text-[#1a2a42] transition-colors text-xs font-mono"
               title="Move to stage"
             >
               ↕
@@ -62,7 +62,7 @@ export default function PersonCard({ person, isArchived = false }) {
           {!isArchived && (
             <button
               onClick={() => setShowEditModal(true)}
-              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white transition-colors"
+              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-[#f0f3f8] hover:bg-[#e4e8f0] text-[#8a9ab5] hover:text-[#1a2a42] transition-colors"
               title="Edit details"
             >
               <Pencil size={16} />
@@ -71,7 +71,7 @@ export default function PersonCard({ person, isArchived = false }) {
           {!isArchived ? (
             <button
               onClick={() => mutation.mutate({ is_archived: true, archive_reason: 'manual' })}
-              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-slate-700 hover:bg-red-900 text-slate-400 hover:text-red-300 transition-colors"
+              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-[#f0f3f8] hover:bg-red-100 text-[#8a9ab5] hover:text-red-600 transition-colors"
               title="Archive"
             >
               <Archive size={16} />
@@ -79,7 +79,7 @@ export default function PersonCard({ person, isArchived = false }) {
           ) : (
             <button
               onClick={() => mutation.mutate({ is_archived: false, archive_reason: null })}
-              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-slate-700 hover:bg-green-900 text-slate-400 hover:text-green-300 transition-colors"
+              className="p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-[#f0f3f8] hover:bg-green-100 text-[#8a9ab5] hover:text-green-600 transition-colors"
               title="Restore"
             >
               <RotateCcw size={16} />
@@ -94,7 +94,7 @@ export default function PersonCard({ person, isArchived = false }) {
             <button
               key={s.id}
               onClick={() => { mutation.mutate({ stage: s.id }); setShowMoveMenu(false) }}
-              className={`text-xs py-1 px-2 rounded ${s.tailwind} text-white opacity-80 hover:opacity-100 transition-opacity ${person.stage === s.id ? 'ring-2 ring-white' : ''}`}
+              className={`text-xs py-1 px-2 rounded ${s.tailwind} text-white opacity-80 hover:opacity-100 transition-opacity ${person.stage === s.id ? 'ring-2 ring-[#1a2a42]' : ''}`}
             >
               {s.id}. {s.label.split(' ')[0]}
             </button>
