@@ -970,9 +970,7 @@ function renderContacts() {
     return true;
   });
 
-  if (stageFilter === 'all') {
-    list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }
+  list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   const total = list.length;
   const visible = list.slice(0, contactsShown);
