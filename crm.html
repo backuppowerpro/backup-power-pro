@@ -48,10 +48,20 @@ html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:va
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .search-input{flex:1;min-width:180px;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;background:var(--card);color:var(--text);outline:none;transition:border .15s}
 .search-input:focus{border-color:var(--navy)}
-.filter-pills{display:flex;gap:5px;flex-wrap:wrap}
-.pill{padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s;font-family:'Outfit',sans-serif}
-.pill:hover{border-color:var(--navy2);color:var(--navy)}
-.pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+/* ── STAGE FILTER DROPDOWN ───────────────────────────── */
+.stage-filter-wrap{position:relative}
+.stage-filter-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text2);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.stage-filter-btn:hover{border-color:var(--navy);color:var(--navy)}
+.stage-filter-btn.active{border-color:var(--navy);background:var(--navy);color:#fff}
+.stage-filter-btn svg{transition:transform .15s}
+.stage-filter-btn.open svg{transform:rotate(180deg)}
+.stage-filter-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 20px rgba(11,31,59,.13);min-width:200px;z-index:100;overflow:hidden;display:none}
+.stage-filter-dropdown.open{display:block}
+.stage-filter-opt{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;color:var(--text2);transition:background .1s;white-space:nowrap}
+.stage-filter-opt:hover{background:var(--bg)}
+.stage-filter-opt.selected{background:#f0f4ff;color:var(--navy);font-weight:600}
+.stage-filter-opt .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.stage-filter-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
 
 /* CONTACTS TABLE */
 .table-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);background:var(--card)}
@@ -180,9 +190,7 @@ td.actions{white-space:nowrap}
   td.phone,.col-phone{display:none}
   .toolbar{flex-direction:column;align-items:stretch}
   .search-input{min-width:0}
-  .filter-pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;scrollbar-width:none}
-  .filter-pills::-webkit-scrollbar{display:none}
-  .pill{flex-shrink:0}
+  .stage-filter-dropdown{right:auto;left:0}
 }
 
 /* ── HIDDEN UTILITY ──────────────────────────────────── */
@@ -352,12 +360,12 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   <div id="contacts-view">
     <div class="toolbar">
       <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
-      <div class="filter-pills" id="lead-pills">
-        <span class="pill active" onclick="setPropFilter('all',this)">All</span>
-        <span class="pill" onclick="setPropFilter('none',this)">No Proposal</span>
-        <span class="pill" onclick="setPropFilter('sent',this)">Proposal Sent</span>
-        <span class="pill" onclick="setPropFilter('approved',this)">Approved ✓</span>
-        <span class="pill" onclick="setPropFilter('archived',this)" style="color:var(--text3)">Archived</span>
+      <div class="stage-filter-wrap" id="stage-filter-wrap">
+        <button class="stage-filter-btn" id="stage-filter-btn" onclick="toggleStageDropdown()">
+          <span id="stage-filter-label">All Stages</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="stage-filter-dropdown" id="stage-filter-dropdown"></div>
       </div>
     </div>
     <div id="contacts-table"></div>
@@ -848,7 +856,7 @@ let allJobs          = [];
 let allProposals     = [];
 let allJurisdictions = [];
 let proposalMap  = {};   // contact_id → latest proposal
-let propFilter   = 'all';
+let stageFilter  = 'all'; // 'all' | 1..9 | 'archived'
 let contactsShown = 5;
 let searchTerm   = '';
 let weekStart    = getMonday(new Date());
@@ -920,14 +928,9 @@ function renderContacts() {
 
   let list = allContacts.filter(c => {
     const isArchived = c.status === 'Archived';
-    // Archived filter
-    if (propFilter === 'archived') return isArchived;
-    if (isArchived) return false; // hide archived in all other views
-    // Proposal filter
-    const p = proposalMap[c.id];
-    if (propFilter === 'none'     && p) return false;
-    if (propFilter === 'sent'     && (!p || p.status === 'Approved')) return false;
-    if (propFilter === 'approved' && (!p || p.status !== 'Approved')) return false;
+    if (stageFilter === 'archived') return isArchived;
+    if (isArchived) return false;
+    if (stageFilter !== 'all' && (c.stage || 1) !== stageFilter) return false;
     // Search filter
     if (searchTerm) {
       const hay = ((c.name||'')+(c.phone||'')+(c.address||'')+(c.email||'')+(c.notes||'')).toLowerCase();
@@ -1003,13 +1006,53 @@ function showMoreContacts() {
   renderContacts();
 }
 
-function setPropFilter(val, el) {
-  propFilter = val;
+function buildStageDropdown() {
+  const dd = document.getElementById('stage-filter-dropdown');
+  if (!dd) return;
+  const opts = [
+    { val: 'all', label: 'All Stages', color: null },
+    ...PERMIT_STAGES.map(s => ({ val: s.id, label: s.label, color: s.color })),
+    null, // divider
+    { val: 'archived', label: 'Archived', color: '#94a3b8' },
+  ];
+  dd.innerHTML = opts.map(o => {
+    if (!o) return '<hr class="stage-filter-divider">';
+    const dot = o.color ? `<span class="dot" style="background:${o.color}"></span>` : `<span class="dot" style="background:var(--text3)"></span>`;
+    const sel = stageFilter === o.val ? ' selected' : '';
+    return `<div class="stage-filter-opt${sel}" onclick="setStageFilter(${typeof o.val==='number'?o.val:`'${o.val}'`})">${dot}${o.label}</div>`;
+  }).join('');
+}
+
+function setStageFilter(val) {
+  stageFilter = val;
   contactsShown = 5;
-  document.querySelectorAll('#lead-pills .pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
+  const stage = PERMIT_STAGES.find(s => s.id === val);
+  const label = val === 'all' ? 'All Stages' : val === 'archived' ? 'Archived' : stage ? stage.label : 'All Stages';
+  document.getElementById('stage-filter-label').textContent = label;
+  const btn = document.getElementById('stage-filter-btn');
+  btn.classList.toggle('active', val !== 'all');
+  closeStageDropdown();
+  buildStageDropdown();
   renderContacts();
 }
+
+function toggleStageDropdown() {
+  const dd = document.getElementById('stage-filter-dropdown');
+  const btn = document.getElementById('stage-filter-btn');
+  const isOpen = dd.classList.contains('open');
+  if (!isOpen) buildStageDropdown();
+  dd.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+}
+
+function closeStageDropdown() {
+  document.getElementById('stage-filter-dropdown')?.classList.remove('open');
+  document.getElementById('stage-filter-btn')?.classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('stage-filter-wrap')?.contains(e.target)) closeStageDropdown();
+});
 
 function openContactModal(id) {
   clearAddressField();
