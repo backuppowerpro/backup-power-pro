@@ -372,19 +372,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <div id="contacts-table"></div>
   </div>
 
-  <div id="pipeline-view" style="display:none">
-    <div class="toolbar">
-      <input type="text" id="pipeline-search" class="search-input" placeholder="Search by name or phone…" oninput="renderPipelinePeople()">
-      <div class="filter-pills" id="pipeline-pills">
-        <span class="pill active" onclick="setPipelineFilter('all',this)">All</span>
-        <span class="pill" onclick="setPipelineFilter('active',this)">Active</span>
-        <span class="pill" onclick="setPipelineFilter('completed',this)">Completed ✓</span>
-        <span class="pill" onclick="setPipelineFilter('cold',this)" style="color:var(--text3)">Cold Leads</span>
-      </div>
-    </div>
-    <div id="pipeline-table"></div>
-  </div>
-
   <hr class="section-divider">
 
   <!-- ── CALENDAR SECTION ─────────────────────────────── -->
@@ -794,6 +781,20 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <label>Notes</label>
       <textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…"></textarea>
     </div>
+    <div class="form-row">
+      <label>Pipeline Stage</label>
+      <select class="form-select" id="panel-stage">
+        <option value="1">1 · Form Submitted</option>
+        <option value="2">2 · Responded</option>
+        <option value="3">3 · Quote Sent</option>
+        <option value="4">4 · Booked</option>
+        <option value="5">5 · Permit Submitted</option>
+        <option value="6">6 · Permit Paid</option>
+        <option value="7">7 · Permit Approved</option>
+        <option value="8">8 · Inspection Scheduled</option>
+        <option value="9">9 · Complete</option>
+      </select>
+    </div>
   </div>
   <div class="panel-foot">
     <button class="btn btn-danger btn-sm" id="panel-delete-btn" onclick="panelDelete()" style="margin-right:auto">Delete</button>
@@ -855,8 +856,7 @@ let allContacts      = [];
 let allJobs          = [];
 let allProposals     = [];
 let allJurisdictions = [];
-let allPermitPeople  = [];
-let pipelineFilter   = 'all';
+let leadsView        = 'contacts'; // 'contacts' | 'pipeline'
 let proposalMap  = {};   // contact_id → latest proposal
 let propFilter   = 'all';
 let contactsShown = 5;
@@ -901,12 +901,12 @@ function switchTab(name) {
 
 // ── LEADS VIEW TOGGLE ─────────────────────────────────────
 function setLeadsView(view) {
-  document.getElementById('contacts-view').style.display  = view === 'contacts' ? '' : 'none';
-  document.getElementById('pipeline-view').style.display  = view === 'pipeline' ? '' : 'none';
+  leadsView = view;
   document.getElementById('view-btn-contacts').classList.toggle('active', view === 'contacts');
   document.getElementById('view-btn-pipeline').classList.toggle('active', view === 'pipeline');
-  const countEl = document.getElementById('leads-count');
-  if (countEl) countEl.style.visibility = view === 'contacts' ? 'visible' : 'hidden';
+  contactsShown = 999; // show all in pipeline mode; reset to 5 in contacts mode
+  if (view === 'contacts') contactsShown = 5;
+  renderContacts();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -920,7 +920,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
   renderCalendar(); // render empty calendar immediately
-  await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions(), loadPipelinePeople()]);
+  await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions(), loadPermitAnalytics()]);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -955,6 +955,11 @@ function renderContacts() {
     return true;
   });
 
+  // Pipeline mode: sort by stage ascending (1→9), show all
+  if (leadsView === 'pipeline') {
+    list.sort((a, b) => (a.stage || 1) - (b.stage || 1));
+  }
+
   const total = list.length;
   const visible = list.slice(0, contactsShown);
   document.getElementById('leads-count').textContent = total === 0 ? '' : `${Math.min(contactsShown, total)} of ${total}`;
@@ -977,6 +982,9 @@ function renderContacts() {
         : `<span class="prop-badge prop-sent">Sent ↗</span>`
       : `<span class="prop-badge prop-none">No Proposal</span>`;
 
+    const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
+    const stageBadge = `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color};border-color:${stageInfo.color}55">${esc(stageInfo.label)}</span>`;
+
     const addrCell = c.address
       ? `<a href="https://maps.google.com/?q=${encodeURIComponent(c.address)}" target="_blank" onclick="event.stopPropagation()" title="${esc(c.address)}">
            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -985,12 +993,20 @@ function renderContacts() {
       : '<span style="color:var(--text3);font-size:12px">—</span>';
 
     const isArchived = c.status === 'Archived';
+    if (leadsView === 'pipeline') {
+      return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
+        <td class="name">${esc(c.name)}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
+        <td class="phone"><a href="tel:${esc(c.phone||'')}" onclick="event.stopPropagation()">${esc(c.phone||'—')}</a></td>
+        <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
+        <td>${stageBadge}</td>
+      </tr>`;
+    }
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
       <td class="name">${esc(c.name)}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
       <td class="phone"><a href="tel:${esc(c.phone||'')}" onclick="event.stopPropagation()">${esc(c.phone||'—')}</a></td>
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
-      <td>${propBadge}</td>
+      <td>${stageBadge}</td>
     </tr>`;
   }).join('');
 
@@ -1003,12 +1019,13 @@ function renderContacts() {
     </div>`;
   }
 
+  const thead = leadsView === 'pipeline'
+    ? `<tr><th>Name</th><th>Phone</th><th class="col-notes">Notes</th><th>Stage</th></tr>`
+    : `<tr><th>Name</th><th>Phone</th><th>Address</th><th class="col-notes">Notes</th><th>Stage</th></tr>`;
+
   wrap.innerHTML = `<div class="table-wrap">
     <table>
-      <thead><tr>
-        <th>Name</th><th>Phone</th><th>Address</th>
-        <th class="col-notes">Notes</th><th>Proposal</th>
-      </tr></thead>
+      <thead>${thead}</thead>
       <tbody>${rows}</tbody>
     </table>
     ${showMoreHTML}
@@ -1116,6 +1133,7 @@ function openPanel(id) {
   document.getElementById('panel-phone').value       = c.phone || '';
   document.getElementById('panel-email').value       = c.email || '';
   document.getElementById('panel-notes').value       = c.notes || '';
+  document.getElementById('panel-stage').value       = c.stage || 1;
 
   // Address — plain, no locking
   document.getElementById('panel-address').value = c.address || '';
@@ -1159,6 +1177,7 @@ async function panelSave() {
     email:   document.getElementById('panel-email').value.trim(),
     address: document.getElementById('panel-address').value.trim(),
     notes:   document.getElementById('panel-notes').value.trim(),
+    stage:   parseInt(document.getElementById('panel-stage').value) || 1,
     status:  c?.status || null,
   };
   const { error } = await db.from('contacts').update(payload).eq('id', id);
@@ -1661,80 +1680,6 @@ function showToast(msg, type) {
   t.className = 'toast show' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-// ══════════════════════════════════════════════════════════
-// PIPELINE (permit people as native rows)
-// ══════════════════════════════════════════════════════════
-
-async function loadPipelinePeople() {
-  const { data, error } = await db.from('permit_people').select('*').order('created_at', { ascending: false });
-  if (error) { console.warn('Pipeline load failed:', error.message); return; }
-  allPermitPeople = data || [];
-  renderPipelinePeople();
-  renderPermitAnalytics(allPermitPeople); // sync analytics with same data
-}
-
-function setPipelineFilter(f, el) {
-  pipelineFilter = f;
-  document.querySelectorAll('#pipeline-pills .pill').forEach(p => p.classList.remove('active'));
-  if (el) el.classList.add('active');
-  renderPipelinePeople();
-}
-
-function renderPipelinePeople() {
-  const search = (document.getElementById('pipeline-search')?.value || '').toLowerCase();
-
-  let list = allPermitPeople.filter(p => {
-    if (pipelineFilter === 'active')    return !p.is_archived;
-    if (pipelineFilter === 'completed') return p.is_archived && p.archive_reason === 'completed';
-    if (pipelineFilter === 'cold')      return p.is_archived && (p.archive_reason === 'cold_lead' || p.archive_reason === 'manual');
-    return true;
-  });
-
-  if (search) {
-    list = list.filter(p =>
-      ((p.name||'')+(p.phone||'')+(p.email||'')+(p.notes||'')).toLowerCase().includes(search)
-    );
-  }
-
-  const wrap = document.getElementById('pipeline-table');
-  if (!wrap) return;
-
-  if (!list.length) {
-    wrap.innerHTML = `<div class="empty">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg>
-      <p>No permit leads found</p>
-    </div>`;
-    return;
-  }
-
-  const rows = list.map(p => {
-    const stage  = PERMIT_STAGES.find(s => s.id === p.stage) || PERMIT_STAGES[0];
-    const clr    = stage.color;
-    const badge  = `<span class="prop-badge" style="background:${clr}18;color:${clr};border-color:${clr}55">${esc(stage.label)}</span>`;
-    const archived = p.is_archived ? `<span class="prop-badge prop-none" style="margin-left:4px;font-size:10px">${p.archive_reason === 'completed' ? '✓ Done' : 'Archived'}</span>` : '';
-    return `<tr>
-      <td class="name">${esc(p.name)}${archived}</td>
-      <td class="phone">${p.phone ? `<a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>` : '<span style="color:var(--text3)">—</span>'}</td>
-      <td class="notes-cell">${esc(p.notes || '')}</td>
-      <td class="actions">${badge}</td>
-    </tr>`;
-  }).join('');
-
-  wrap.innerHTML = `
-    <div class="contact-count">${list.length} permit lead${list.length !== 1 ? 's' : ''}</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>NAME</th>
-          <th class="col-phone">PHONE</th>
-          <th class="col-notes">NOTES</th>
-          <th>STAGE</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
 }
 
 // ══════════════════════════════════════════════════════════
