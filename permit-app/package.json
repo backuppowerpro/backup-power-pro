@@ -1,0 +1,16 @@
+{
+  "name": "permit-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:server": "server/node_modules/.bin/nodemon server/index.js",
+    "dev:client": "client/node_modules/.bin/vite --config client/vite.config.js",
+    "dev:tunnel": "node_modules/.bin/cloudflared tunnel --url http://localhost:3001",
+    "start": "concurrently --names \"SERVER,CLIENT,TUNNEL\" --prefix-colors \"cyan,green,yellow\" --kill-others \"npm run dev:server\" \"npm run dev:client\" \"npm run dev:tunnel\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "cloudflared": "^0.3.0"
+  }
+}
