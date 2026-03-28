@@ -375,16 +375,10 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <hr class="section-divider">
 
-  <!-- ── CALENDAR SECTION ─────────────────────────────── -->
-  <div class="section-head" style="margin-bottom:10px">
-    <div class="section-title">Schedule</div>
-  </div>
-
   <div class="cal-nav">
-    <button class="btn btn-outline btn-sm" onclick="navigateWeek(-1)">← Prev</button>
-    <button class="btn btn-outline btn-sm" onclick="navigateWeek(0)">Today</button>
-    <span class="week-label" id="week-label"></span>
-    <button class="btn btn-outline btn-sm" onclick="navigateWeek(1)">Next →</button>
+    <button class="btn btn-outline btn-sm" onclick="navigateWeek(-1)">←</button>
+    <span class="week-label" id="week-label" onclick="navigateWeek(0)" style="cursor:pointer"></span>
+    <button class="btn btn-outline btn-sm" onclick="navigateWeek(1)">→</button>
   </div>
 
   <div class="cal-grid" id="cal-grid"></div>
@@ -1574,8 +1568,7 @@ function renderCalendar() {
   // Week label
   const ws = new Date(weekStart);
   const we = new Date(ws); we.setDate(we.getDate() + 4);
-  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  document.getElementById('week-label').textContent = `${fmt(ws)} – ${fmt(we)}`;
+  document.getElementById('week-label').textContent = ws.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   let html = '';
   for (let i = 0; i < 5; i++) {
