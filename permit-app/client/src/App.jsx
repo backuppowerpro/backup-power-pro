@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { HashRouter, Routes, Route, NavLink } from 'react-router-dom'
 import { Layers, BarChart3, MapPin } from 'lucide-react'
 import Pipeline from './pages/Pipeline'
 import Analytics from './pages/Analytics'
@@ -6,7 +6,7 @@ import Jurisdictions from './pages/Jurisdictions'
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="flex flex-col h-screen bg-slate-950 text-white">
         <div className="flex-1 overflow-y-auto pb-20">
           <Routes>
@@ -37,6 +37,6 @@ export default function App() {
           ))}
         </nav>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
