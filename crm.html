@@ -14,6 +14,25 @@
   --gray:#6b7280; --border:#e4e8f0; --bg:#f4f6fa;
   --card:#ffffff; --text:#1a2a42; --text2:#4a5568; --text3:#8a9ab5;
 }
+html.dark {
+  --navy:#2a2520; --navy2:#3d352e; --gold:#e6a800;
+  --border:#3d3830; --bg:#1e1b17; --card:#28241f;
+  --text:#e8e0d4; --text2:#bbb3a6; --text3:#8a8275;
+}
+html.dark .nav{background:#2a2520}
+html.dark thead th{background:#2e2a24}
+html.dark tbody tr:hover{background:#302b25}
+html.dark .cal-day{background:var(--card);border-color:var(--border)}
+html.dark .cal-day.today{border-color:var(--gold);background:#2e2920}
+html.dark .cal-day-head{background:rgba(255,255,255,.03)}
+html.dark .modal,.dark .side-panel{background:var(--card)}
+html.dark .panel-head,.dark .modal-head{background:var(--card)}
+html.dark .panel-close{background:#3d3830;color:var(--text2)}
+html.dark .form-input,.dark .form-select,.dark .form-textarea{background:#1e1b17;color:var(--text);border-color:var(--border)}
+html.dark .search-input{background:var(--card);color:var(--text);border-color:var(--border)}
+html.dark .btn-outline{color:var(--text2);border-color:var(--border)}
+html.dark .btn-outline:hover{border-color:var(--gold);color:var(--gold);background:rgba(230,168,0,.08)}
+html.dark .jur-logo{background:#3d3830;border-color:var(--border)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 
@@ -89,9 +108,9 @@ td.actions{white-space:nowrap}
 .prop-sent{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
 .prop-approved{background:#d1fae5;color:var(--green);border:1px solid #a7f3d0}
 
-/* SHOW MORE */
-.show-more-bar{text-align:center;padding:10px;background:var(--card);border-top:1px solid var(--border);border-radius:0 0 10px 10px}
-.contact-count{font-size:12px;color:var(--text3);margin-bottom:6px}
+/* SCROLLABLE CONTACTS */
+.table-scroll{max-height:240px;overflow-y:auto;border-top:1px solid var(--border)}
+.table-scroll table{border-top:none}
 
 /* EMPTY STATE */
 .empty{padding:40px 20px;text-align:center;color:var(--text3)}
@@ -110,9 +129,12 @@ td.actions{white-space:nowrap}
 .cal-day.today .cal-day-num{color:var(--navy)}
 .cal-day-body{flex:1;padding:5px;display:flex;flex-direction:column;gap:4px;cursor:pointer}
 .cal-day-body:hover{background:rgba(59,130,246,.04)}
-.cal-event{background:var(--navy);color:#fff;border-radius:4px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4}
-.cal-event:hover{background:var(--navy2)}
-.cal-event.complete{background:#6b7280}
+.cal-event{border-radius:4px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4}
+.cal-event.evt-contact{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.cal-event.evt-contact:hover{background:#fde68a}
+.cal-event.evt-nocontact{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+.cal-event.evt-nocontact:hover{background:#bfdbfe}
+.cal-event.complete{background:#e5e7eb;color:#6b7280;border:1px solid #d1d5db}
 .cal-add-hint{font-size:10px;color:var(--text3);text-align:center;padding:4px;opacity:0;transition:opacity .15s;margin-top:auto}
 .cal-day-body:hover .cal-add-hint{opacity:1}
 
@@ -341,7 +363,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
 <!-- ── NAV ───────────────────────────────────────────────── -->
 <nav class="nav" id="main-nav" style="display:none">
-  <img src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin-right:auto">
+  <img id="nav-logo" src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin-right:auto;cursor:pointer;-webkit-user-select:none;user-select:none">
 </nav>
 
 <!-- ── TAB BAR ──────────────────────────────────────────── -->
@@ -814,11 +836,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── JURISDICTION EDIT MODAL ────────────────────────────── -->
-<div class="modal-overlay" id="jur-overlay" onclick="if(event.target===this)closeModal('jur-overlay')">
+<div class="modal-overlay" id="jur-overlay" onclick="if(event.target===this)saveJurisdiction()">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-title" id="jur-modal-title">Add Jurisdiction</div>
-      <button class="modal-close" onclick="closeModal('jur-overlay')">✕</button>
+      <div class="modal-title" id="jur-modal-title">Edit Jurisdiction</div>
+      <button class="panel-close" onclick="cancelJurisdiction()" style="font-size:12px;width:auto;padding:4px 12px;border-radius:6px;font-weight:600">Cancel</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="jur-id">
@@ -846,11 +868,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         <label>Notes</label>
         <textarea class="form-textarea" id="jur-notes" placeholder="Processing time, fees, requirements…" style="min-height:80px"></textarea>
       </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-danger btn-sm" id="jur-delete-btn" onclick="deleteJurisdiction()" style="display:none;margin-right:auto">Delete</button>
-      <button class="btn btn-outline" onclick="closeModal('jur-overlay')">Cancel</button>
-      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveJurisdiction()">Save</button>
     </div>
   </div>
 </div>
@@ -916,6 +933,9 @@ function switchTab(name) {
 }
 
 
+// Apply dark mode immediately to prevent flash
+if (localStorage.getItem('crm_dark') === '1') document.documentElement.classList.add('dark');
+
 window.addEventListener('DOMContentLoaded', () => {
   if (sessionStorage.getItem('crm_auth') === '1') {
     showApp();
@@ -924,8 +944,31 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// ── DARK MODE (long-press logo) ──────────────────────────
+function initDarkMode() {
+  if (localStorage.getItem('crm_dark') === '1') document.documentElement.classList.add('dark');
+  let pressTimer;
+  const logo = document.getElementById('nav-logo');
+  if (!logo) return;
+  const start = () => { pressTimer = setTimeout(() => {
+    document.documentElement.classList.toggle('dark');
+    const isDark = document.documentElement.classList.contains('dark');
+    localStorage.setItem('crm_dark', isDark ? '1' : '0');
+    showToast(isDark ? 'Dark mode on' : 'Light mode on', 'success');
+  }, 600); };
+  const cancel = () => clearTimeout(pressTimer);
+  logo.addEventListener('mousedown', start);
+  logo.addEventListener('mouseup', cancel);
+  logo.addEventListener('mouseleave', cancel);
+  logo.addEventListener('touchstart', start, { passive: true });
+  logo.addEventListener('touchend', cancel);
+  logo.addEventListener('touchcancel', cancel);
+  logo.addEventListener('click', e => e.preventDefault());
+}
+
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
+  initDarkMode();
   renderCalendar(); // render empty calendar immediately
   await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions()]);
 }
@@ -968,8 +1011,8 @@ function renderContacts() {
   });
 
   const total = list.length;
-  const visible = list.slice(0, contactsShown);
-  document.getElementById('leads-count').textContent = total === 0 ? '' : `${Math.min(contactsShown, total)} of ${total}`;
+  const visible = list;
+  document.getElementById('leads-count').textContent = total === 0 ? '' : `${total}`;
 
   // Hide search bar when filter has no leads
   const toolbar = document.querySelector('#contacts-view .toolbar');
@@ -1023,30 +1066,20 @@ function renderContacts() {
     </tr>`;
   }).join('');
 
-  let showMoreHTML = '';
-  if (total > contactsShown) {
-    const next = Math.min(contactsShown + 5, total);
-    showMoreHTML = `<div class="show-more-bar">
-      <div class="contact-count">Showing ${contactsShown} of ${total}</div>
-      <button class="btn btn-outline btn-sm" onclick="showMoreContacts()">Show ${next - contactsShown} more</button>
-    </div>`;
-  }
-
   const thead = `<tr><th>Name</th><th class="col-phone">Phone</th><th>Address</th><th class="col-notes">Notes</th><th class="col-jur">Jurisdiction</th><th>Stage</th></tr>`;
 
   wrap.innerHTML = `<div class="table-wrap">
     <table>
       <thead>${thead}</thead>
-      <tbody>${rows}</tbody>
     </table>
-    ${showMoreHTML}
+    <div class="table-scroll">
+      <table>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
   </div>`;
 }
 
-function showMoreContacts() {
-  contactsShown = Math.min(contactsShown + 5, 9999);
-  renderContacts();
-}
 
 function toggleAnalyticsFilter(stageId) {
   // Double-tap All to collapse/expand stage rows
@@ -1173,8 +1206,6 @@ async function saveContact() {
 // SIDE PANEL
 // ══════════════════════════════════════════════════════════
 
-let panelDeletePending = false;
-let panelDeleteTimer;
 let panelArchivePending = false;
 let panelArchiveTimer;
 let panelAddrFocusedIdx = -1;
@@ -1185,14 +1216,9 @@ function openPanel(id) {
   if (!c) return;
 
   // Reset two-step states
-  panelDeletePending = false;
   panelArchivePending = false;
-  clearTimeout(panelDeleteTimer);
   clearTimeout(panelArchiveTimer);
-  const delBtn = document.getElementById('panel-delete-btn');
   const arcBtn = document.getElementById('panel-archive-btn');
-  delBtn.textContent = 'Delete';
-  delBtn.classList.remove('delete-btn-confirm');
   const isArchived = c.status === 'Archived';
   arcBtn.textContent = isArchived ? 'Unarchive' : 'Archive';
   arcBtn.classList.remove('delete-btn-confirm');
@@ -1277,25 +1303,6 @@ async function panelSave() {
   closePanel();
   renderContacts();
   loadPermitAnalytics();
-}
-
-function panelDelete() {
-  if (!panelDeletePending) {
-    panelDeletePending = true;
-    const btn = document.getElementById('panel-delete-btn');
-    btn.textContent = 'Really delete? Click again';
-    btn.classList.add('delete-btn-confirm');
-    panelDeleteTimer = setTimeout(() => {
-      panelDeletePending = false;
-      btn.textContent = 'Delete';
-      btn.classList.remove('delete-btn-confirm');
-    }, 3500);
-  } else {
-    clearTimeout(panelDeleteTimer);
-    const id = document.getElementById('panel-id').value;
-    deleteContact(id);
-    closePanel();
-  }
 }
 
 function panelArchive() {
@@ -1626,11 +1633,13 @@ function renderCalendar() {
     const dateStr = day.toISOString().split('T')[0];
     const isToday = dateStr === todayStr;
     const dayJobs = allJobs.filter(j => j.date === dateStr);
+    const atLimit = dayJobs.length >= 4;
 
     const events = dayJobs.map(j => {
       const label = j.contact_name || j.title || 'Event';
       const time  = j.time ? fmt12(j.time) + ' · ' : '';
-      return `<div class="cal-event ${j.status==='Complete'?'complete':''}" onclick="event.stopPropagation();openJobModal('${j.id}',null)">${time}${esc(label)}</div>`;
+      const cls = j.status === 'Complete' || j.status === 'Completed' ? 'complete' : j.contact_id ? 'evt-contact' : 'evt-nocontact';
+      return `<div class="cal-event ${cls}" onclick="event.stopPropagation();openJobModal('${j.id}',null)">${time}${esc(label)}</div>`;
     }).join('');
 
     html += `
@@ -1639,9 +1648,9 @@ function renderCalendar() {
         <span class="cal-day-name">${days[i]}</span>
         <span class="cal-day-num">${day.getDate()}</span>
       </div>
-      <div class="cal-day-body" onclick="openJobModal(null,'${dateStr}')">
+      <div class="cal-day-body" ${atLimit ? '' : `onclick="openJobModal(null,'${dateStr}')"`}>
         ${events}
-        <div class="cal-add-hint">+ Add event</div>
+        ${atLimit ? '' : '<div class="cal-add-hint">+ Add event</div>'}
       </div>
     </div>`;
   }
@@ -2022,7 +2031,6 @@ function openJurisdictionModal(id) {
   document.getElementById('jur-username').value = j ? (j.username || '') : '';
   document.getElementById('jur-password').value = j ? (j.password || '') : '';
   document.getElementById('jur-notes').value    = j ? (j.notes   || '') : '';
-  document.getElementById('jur-delete-btn').style.display = j ? '' : 'none';
   document.getElementById('jur-overlay').classList.add('open');
 }
 
@@ -2050,15 +2058,8 @@ async function saveJurisdiction() {
   loadJurisdictions();
 }
 
-async function deleteJurisdiction() {
-  const id = document.getElementById('jur-id').value;
-  if (!id) return;
-  if (!confirm('Delete this jurisdiction? This cannot be undone.')) return;
-  const { error } = await db.from('permit_jurisdictions').delete().eq('id', id);
-  if (error) { showToast('Delete failed', 'error'); return; }
-  showToast('Jurisdiction deleted', 'success');
+function cancelJurisdiction() {
   closeModal('jur-overlay');
-  loadJurisdictions();
 }
 
 // ══════════════════════════════════════════════════════════
