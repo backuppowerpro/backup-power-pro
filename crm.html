@@ -67,7 +67,7 @@ td.actions{white-space:nowrap}
 /* ── SIDE PANEL ─────────────────────────────────────────── */
 .side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
 .side-panel-overlay.open{display:flex}
-.side-panel{background:#fff;border-radius:14px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.2)}
+.side-panel{background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.2);overflow:hidden}
 .panel-head{padding:18px 20px 14px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:10px;background:#fff;position:sticky;top:0;z-index:2}
 .panel-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:19px;color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel-close{width:32px;height:32px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;font-size:18px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -720,10 +720,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── SIDE PANEL ────────────────────────────────────────── -->
-<div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this)closePanel()">
+<div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this)panelSave()">
 <div class="side-panel" id="side-panel">
   <div class="panel-head">
     <div class="panel-name" id="panel-name">Lead</div>
+    <button class="panel-close" onclick="cancelPanel()" style="font-size:12px;width:auto;padding:4px 12px;border-radius:6px;font-weight:600">Cancel</button>
   </div>
   <div class="panel-body">
     <input type="hidden" id="panel-id">
@@ -731,7 +732,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <!-- Proposal action -->
     <div id="panel-prop-section"></div>
 
-    <div class="panel-section-label">Details</div>
     <div class="form-row">
       <label>Name *</label>
       <div class="field-row">
@@ -796,9 +796,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     </div>
   </div>
   <div class="panel-foot">
-    <button class="btn btn-danger btn-sm" id="panel-delete-btn" onclick="panelDelete()" style="margin-right:auto">Delete</button>
-    <button class="btn btn-outline btn-sm" id="panel-archive-btn" onclick="panelArchive()">Archive</button>
-    <button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" onclick="panelSave()">Save</button>
+    <button class="btn btn-outline btn-sm" id="panel-archive-btn" onclick="panelArchive()" style="margin-right:auto">Archive</button>
   </div>
 </div>
 </div><!-- /side-panel-overlay -->
@@ -1243,6 +1241,11 @@ function closePanel() {
   document.getElementById('side-panel-overlay').classList.remove('open');
   document.body.classList.remove('modal-open');
   panelAddrHide();
+}
+
+function cancelPanel() {
+  closePanel();
+  loadContacts();
 }
 
 async function panelSave() {
