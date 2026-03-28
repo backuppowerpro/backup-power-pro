@@ -1782,13 +1782,20 @@ function loadPermitAnalytics() {
       <span class="pa-stage-count">${count}</span>
     </div>`;
   }).join('');
+  const allActive = stageFilter === 'all';
+  const allRow = `<div class="pa-stage-row${allActive ? ' active' : ''}" onclick="toggleAnalyticsFilter('all')">
+    <div class="pa-stage-dot" style="background:${allActive ? '#fff' : 'var(--navy)'}"></div>
+    <span class="pa-stage-name">All</span>
+    <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:100%;background:${allActive ? '#fff' : 'var(--navy)'}"></div></div>
+    <span class="pa-stage-count">${active}</span>
+  </div>`;
   el.innerHTML = `
     <div class="pa-grid">
       <div class="pa-stat"><div class="pa-stat-num">${total}</div><div class="pa-stat-label">Total</div></div>
       <div class="pa-stat"><div class="pa-stat-num">${active}</div><div class="pa-stat-label">Active</div></div>
       <div class="pa-stat"><div class="pa-stat-num">${completed}</div><div class="pa-stat-label">Completed</div></div>
     </div>
-    <div class="pa-stage-list">${stageRows}</div>
+    <div class="pa-stage-list">${allRow}${stageRows}</div>
   `;
 }
 
