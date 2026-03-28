@@ -379,10 +379,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <hr class="section-divider">
 
-  <!-- ── JURISDICTIONS SECTION ────────────────────────── -->
-  <div class="section-head" style="margin-bottom:10px">
-    <div class="section-title" style="cursor:pointer" onclick="openJurisdictionModal(null)">+ Jurisdictions</div>
-  </div>
   <div id="jur-list" class="jur-list"></div>
 
 
@@ -966,7 +962,10 @@ function renderContacts() {
     return true;
   });
 
-  list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  list.sort((a, b) => {
+    const diff = new Date(b.created_at) - new Date(a.created_at);
+    return diff !== 0 ? diff : (b.id > a.id ? 1 : -1);
+  });
 
   const total = list.length;
   const visible = list.slice(0, contactsShown);
@@ -1271,9 +1270,13 @@ async function panelSave() {
   if (newStage !== oldStage) {
     db.from('stage_history').insert([{ contact_id: id, from_stage: oldStage, to_stage: newStage }]);
   }
+  // Update local data in place to preserve order
+  if (c) Object.assign(c, payload);
+  buildDuplicateMap();
   showToast('Lead saved', 'success');
   closePanel();
-  loadContacts();
+  renderContacts();
+  loadPermitAnalytics();
 }
 
 function panelDelete() {
