@@ -274,20 +274,23 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 @media(max-width:480px){.qb-wrap{padding:14px 12px 50px}.qb-toggle-grid{grid-template-columns:1fr}}
 
 /* ── JURISDICTION CARDS ──────────────────────────────── */
-.jur-list{display:flex;flex-direction:column;gap:8px}
-.jur-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s}
-.jur-card:hover{border-color:var(--navy)}
-.jur-logo{width:40px;height:40px;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden}
+.jur-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px}
+.jur-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:border-color .15s}
+.jur-card:hover{border-color:var(--navy);background:#f8faff}
+.jur-logo{width:48px;height:48px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden}
 .jur-logo img{width:100%;height:100%;object-fit:contain}
-.jur-info{flex:1;min-width:0}
-.jur-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--navy)}
-.jur-desc{font-size:12px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jur-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.jur-btn{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s;white-space:nowrap}
-.jur-btn:hover{border-color:var(--navy);color:var(--navy)}
-.jur-btn.portal{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe}
-.jur-btn.portal:hover{background:#bfdbfe}
+.jur-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;color:var(--navy);text-align:center;line-height:1.2}
 .jur-empty{padding:28px 20px;text-align:center;color:var(--text3);font-size:13px}
+.jur-detail{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)}
+.jur-detail-label{font-size:11px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.5px}
+.jur-detail-value{font-size:13px;color:var(--navy);font-weight:600;margin-top:2px;word-break:break-all}
+.jur-detail-action{flex-shrink:0;margin-left:10px}
+.jur-detail-action a,.jur-detail-action button{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s;white-space:nowrap;text-decoration:none;display:inline-block}
+.jur-detail-action a:hover,.jur-detail-action button:hover{border-color:var(--navy);color:var(--navy)}
+.jur-detail-action .btn-portal{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe}
+.jur-detail-action .btn-portal:hover{background:#bfdbfe}
+.jur-detail-action .btn-call{background:#dcfce7;color:#16a34a;border-color:#bbf7d0}
+.jur-detail-action .btn-call:hover{background:#bbf7d0}
 
 /* ── PERMIT ANALYTICS ────────────────────────────────── */
 .pa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
@@ -805,7 +808,25 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   </div>
 </div>
 
-<!-- ── JURISDICTION MODAL ────────────────────────────────── -->
+<!-- ── JURISDICTION VIEW POPUP ──────────────────────────── -->
+<div class="modal-overlay" id="jur-view-overlay" onclick="if(event.target===this)closeModal('jur-view-overlay')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="jur-view-logo" class="jur-logo" style="width:36px;height:36px"></div>
+        <div class="modal-title" id="jur-view-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('jur-view-overlay')">✕</button>
+    </div>
+    <div class="modal-body" id="jur-view-body" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('jur-view-overlay')">Close</button>
+      <button class="btn btn-primary" style="background:var(--navy);color:#fff" id="jur-view-edit-btn">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── JURISDICTION EDIT MODAL ────────────────────────────── -->
 <div class="modal-overlay" id="jur-overlay" onclick="if(event.target===this)closeModal('jur-overlay')">
   <div class="modal">
     <div class="modal-head">
@@ -825,6 +846,14 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <div class="form-row">
         <label>Phone</label>
         <input class="form-input" id="jur-phone" type="tel" placeholder="(864) 000-0000">
+      </div>
+      <div class="form-row">
+        <label>Username</label>
+        <input class="form-input" id="jur-username" placeholder="Portal username">
+      </div>
+      <div class="form-row">
+        <label>Password</label>
+        <input class="form-input" id="jur-password" placeholder="Portal password">
       </div>
       <div class="form-row">
         <label>Notes</label>
@@ -1725,19 +1754,39 @@ function renderJurisdictions() {
     return;
   }
   el.innerHTML = allJurisdictions.map(j => `
-    <div class="jur-card">
+    <div class="jur-card" onclick="viewJurisdiction(${j.id})">
       <div class="jur-logo">${j.logo_url ? `<img src="${esc(j.logo_url)}" alt="">` : '🏛️'}</div>
-      <div class="jur-info">
-        <div class="jur-name">${esc(j.name)}</div>
-        <div class="jur-desc">${esc(j.notes || j.portal_url || '')}</div>
-      </div>
-      <div class="jur-actions">
-        ${j.portal_url ? `<a class="jur-btn portal" href="${esc(j.portal_url)}" target="_blank" rel="noopener">Portal ↗</a>` : ''}
-        ${j.phone ? `<a class="jur-btn" href="tel:${esc(j.phone)}">${esc(j.phone)}</a>` : ''}
-        <button class="jur-btn" onclick="openJurisdictionModal(${JSON.stringify(j.id)})">Edit</button>
-      </div>
+      <div class="jur-name">${esc(j.name)}</div>
     </div>
   `).join('');
+}
+
+function viewJurisdiction(id) {
+  const j = allJurisdictions.find(x => x.id === id);
+  if (!j) return;
+  document.getElementById('jur-view-title').textContent = j.name;
+  const logo = document.getElementById('jur-view-logo');
+  logo.innerHTML = j.logo_url ? `<img src="${esc(j.logo_url)}" alt="">` : '🏛️';
+
+  let rows = '';
+  if (j.portal_url) {
+    rows += `<div class="jur-detail"><div><div class="jur-detail-label">Portal</div><div class="jur-detail-value" style="font-size:12px">${esc(j.portal_url.replace(/https?:\/\//, '').slice(0,40))}…</div></div><div class="jur-detail-action"><a class="btn-portal" href="${esc(j.portal_url)}" target="_blank" rel="noopener">Open ↗</a></div></div>`;
+  }
+  if (j.phone) {
+    rows += `<div class="jur-detail"><div><div class="jur-detail-label">Phone</div><div class="jur-detail-value">${esc(j.phone)}</div></div><div class="jur-detail-action"><a class="btn-call" href="tel:${esc(j.phone)}">Call</a></div></div>`;
+  }
+  if (j.username) {
+    rows += `<div class="jur-detail"><div><div class="jur-detail-label">Username</div><div class="jur-detail-value">${esc(j.username)}</div></div><div class="jur-detail-action"><button onclick="navigator.clipboard.writeText('${esc(j.username)}');showToast('Copied!','success')">Copy</button></div></div>`;
+  }
+  if (j.password) {
+    rows += `<div class="jur-detail"><div><div class="jur-detail-label">Password</div><div class="jur-detail-value">${esc(j.password)}</div></div><div class="jur-detail-action"><button onclick="navigator.clipboard.writeText('${esc(j.password)}');showToast('Copied!','success')">Copy</button></div></div>`;
+  }
+  if (j.notes) {
+    rows += `<div class="jur-detail" style="flex-direction:column;align-items:flex-start"><div class="jur-detail-label">Notes</div><div class="jur-detail-value" style="margin-top:4px;word-break:normal;white-space:pre-wrap">${esc(j.notes)}</div></div>`;
+  }
+  document.getElementById('jur-view-body').innerHTML = rows;
+  document.getElementById('jur-view-edit-btn').onclick = () => { closeModal('jur-view-overlay'); openJurisdictionModal(id); };
+  document.getElementById('jur-view-overlay').classList.add('open');
 }
 
 function openJurisdictionModal(id) {
@@ -1747,6 +1796,8 @@ function openJurisdictionModal(id) {
   document.getElementById('jur-name').value     = j ? j.name     : '';
   document.getElementById('jur-website').value  = j ? (j.portal_url || '') : '';
   document.getElementById('jur-phone').value    = j ? (j.phone   || '') : '';
+  document.getElementById('jur-username').value = j ? (j.username || '') : '';
+  document.getElementById('jur-password').value = j ? (j.password || '') : '';
   document.getElementById('jur-notes').value    = j ? (j.notes   || '') : '';
   document.getElementById('jur-delete-btn').style.display = j ? '' : 'none';
   document.getElementById('jur-overlay').classList.add('open');
@@ -1759,8 +1810,10 @@ async function saveJurisdiction() {
   const payload = {
     name,
     portal_url: document.getElementById('jur-website').value.trim() || null,
-    phone:   document.getElementById('jur-phone').value.trim()   || null,
-    notes:   document.getElementById('jur-notes').value.trim()   || null,
+    phone:      document.getElementById('jur-phone').value.trim()    || null,
+    username:   document.getElementById('jur-username').value.trim() || null,
+    password:   document.getElementById('jur-password').value.trim() || null,
+    notes:      document.getElementById('jur-notes').value.trim()    || null,
   };
   let error;
   if (id) {
