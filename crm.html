@@ -877,7 +877,7 @@ let allProposals     = [];
 let allJurisdictions = [];
 let proposalMap  = {};   // contact_id → latest proposal
 let stageFilter  = 'all'; // 'all' | 1..9 | 'archived'
-let analyticsCollapsed = false;
+let analyticsCollapsed = true;
 let contactsShown = 5;
 let searchTerm   = '';
 let weekStart    = getMonday(new Date());
@@ -943,7 +943,8 @@ async function loadContacts() {
   loadPermitAnalytics();
   loadTrendAnalytics();
   // Hide trend until analytics collapsed
-  setTimeout(() => { const t = document.getElementById('trend-analytics'); if (t) t.style.display = 'none'; }, 0);
+  // Trend visible when analytics collapsed (default)
+  setTimeout(() => { const t = document.getElementById('trend-analytics'); if (t) t.style.display = analyticsCollapsed ? '' : 'none'; }, 0);
 }
 
 function renderContacts() {
