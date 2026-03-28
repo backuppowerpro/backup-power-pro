@@ -983,10 +983,16 @@ function renderContacts() {
   const wrap = document.getElementById('contacts-table');
 
   if (total === 0) {
-    wrap.innerHTML = `<div class="empty">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads match your filter.'}</p>
-    </div>`;
+    if (searchTerm) {
+      wrap.innerHTML = `<div class="empty">
+        <button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff;padding:10px 20px;font-size:14px" onclick="addFromSearch()">+ Add New Lead</button>
+      </div>`;
+    } else {
+      wrap.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads match your filter.'}</p>
+      </div>`;
+    }
     return;
   }
 
@@ -1076,6 +1082,22 @@ function toggleAnalyticsFilter(stageId) {
     body.style.right = '';
     window.scrollTo(0, scrollY);
   });
+}
+
+function addFromSearch() {
+  const term = (document.getElementById('search').value || '').trim();
+  openContactModal(null);
+  const emailRe = /\S+@\S+\.\S+/;
+  const phoneRe = /[\d\(\)\-\+\s]{7,}/;
+  if (emailRe.test(term)) {
+    document.getElementById('c-email').value = term;
+  } else if (phoneRe.test(term)) {
+    document.getElementById('c-phone').value = term.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+  } else {
+    const parts = term.split(/\s+/);
+    document.getElementById('c-fname').value = capName(parts[0] || '');
+    document.getElementById('c-lname').value = capName(parts.slice(1).join(' ') || '');
+  }
 }
 
 function openContactModal(id) {
