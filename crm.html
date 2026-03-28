@@ -1061,10 +1061,14 @@ function toggleAnalyticsFilter(stageId) {
     if (trend) trend.style.display = analyticsCollapsed ? '' : 'none';
     return;
   }
-  // Lock layout height to prevent page jump during filter swap
-  const cv = document.getElementById('contacts-view');
-  const prevH = cv.offsetHeight;
-  cv.style.minHeight = prevH + 'px';
+  // Lock scroll to prevent page jump during filter swap
+  const scrollY = window.scrollY;
+  const body = document.body;
+  body.style.overflow = 'hidden';
+  body.style.position = 'fixed';
+  body.style.top = `-${scrollY}px`;
+  body.style.left = '0';
+  body.style.right = '0';
   stageFilter = stageFilter === stageId ? 'all' : stageId;
   analyticsCollapsed = false;
   contactsShown = 5;
@@ -1072,7 +1076,14 @@ function toggleAnalyticsFilter(stageId) {
   loadPermitAnalytics();
   const trend = document.getElementById('trend-analytics');
   if (trend) trend.style.display = 'none';
-  requestAnimationFrame(() => { cv.style.minHeight = ''; });
+  requestAnimationFrame(() => {
+    body.style.overflow = '';
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.right = '';
+    window.scrollTo(0, scrollY);
+  });
 }
 
 function openContactModal(id) {
