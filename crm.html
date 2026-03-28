@@ -909,7 +909,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
   renderCalendar(); // render empty calendar immediately
-  await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions(), loadPermitAnalytics()]);
+  await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions()]);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -921,6 +921,7 @@ async function loadContacts() {
   if (error) { showToast('Failed to load leads', 'error'); return; }
   allContacts = data || [];
   renderContacts();
+  loadPermitAnalytics();
 }
 
 function renderContacts() {
@@ -1783,25 +1784,16 @@ const PERMIT_STAGES = [
   { id:9, label:'Complete',             color:'#f59e0b' },
 ];
 
-async function loadPermitAnalytics() {
-  // Re-fetch and re-render (used by the ↺ refresh button)
+function loadPermitAnalytics() {
   const el = document.getElementById('permit-analytics');
   if (!el) return;
-  el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0">Loading…</div>';
-  const { data, error } = await db.from('permit_people').select('stage,is_archived,archive_reason');
-  if (error) { el.innerHTML = '<div style="color:var(--red);font-size:13px;padding:8px 0">Failed to load permit data</div>'; return; }
-  renderPermitAnalytics(data || []);
-}
-
-function renderPermitAnalytics(people) {
-  const el = document.getElementById('permit-analytics');
-  if (!el) return;
-  const total     = people.length;
-  const active    = people.filter(p => !p.is_archived).length;
-  const completed = people.filter(p => p.is_archived && p.archive_reason === 'completed').length;
+  const total     = allContacts.length;
+  const active    = allContacts.filter(c => c.status !== 'Archived').length;
+  const completed = allContacts.filter(c => (c.stage || 1) === 9).length;
   const stageCounts = {};
-  people.filter(p => !p.is_archived).forEach(p => {
-    stageCounts[p.stage] = (stageCounts[p.stage] || 0) + 1;
+  allContacts.filter(c => c.status !== 'Archived').forEach(c => {
+    const s = c.stage || 1;
+    stageCounts[s] = (stageCounts[s] || 0) + 1;
   });
   const maxCount = Math.max(1, ...Object.values(stageCounts).concat([0]));
   const stageRows = PERMIT_STAGES.map(s => {
