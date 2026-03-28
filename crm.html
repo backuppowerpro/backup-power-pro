@@ -321,7 +321,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .trend-period-bar{display:flex;gap:5px;margin-bottom:12px}
 .trend-period-btn{padding:4px 12px;border-radius:6px;border:1.5px solid var(--border);background:var(--card);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .15s}
 .trend-period-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.trend-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.trend-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.trend-stat-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .trend-stat{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
 .trend-num{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:var(--navy);line-height:1}
 .trend-label{font-size:10px;color:var(--text3);margin-top:3px;line-height:1.3}
@@ -1908,6 +1909,36 @@ function renderTrendAnalytics() {
     return `<div class="trend-delta ${cls}">${diff > 0 ? '↑' : '↓'}${Math.abs(diff)} vs ${plbl}</div>`;
   }
 
+  // Conversion rate: % of all non-archived leads that reached stage 4+ (Booked)
+  const active = allContacts.filter(c => c.status !== 'Archived');
+  const totalLeads = active.length;
+  const bookedLeads = active.filter(c => (c.stage || 1) >= 4).length;
+  const convRate = totalLeads > 0 ? Math.round((bookedLeads / totalLeads) * 100) : 0;
+
+  // Average days to book: from stage_history, find time from first entry (stage 1→2) to reaching stage 4
+  // Use all contacts that have reached stage 4+ and have history
+  const allHist = stageHistoryCache || [];
+  const contactFirstMove = {};
+  const contactBookedAt = {};
+  allHist.forEach(h => {
+    const cid = h.contact_id;
+    const t = new Date(h.changed_at).getTime();
+    if (!contactFirstMove[cid] || t < contactFirstMove[cid]) contactFirstMove[cid] = t;
+    if (h.to_stage >= 4 && (!contactBookedAt[cid] || t < contactBookedAt[cid])) contactBookedAt[cid] = t;
+  });
+  // For contacts with history, calc days from created_at to booked
+  let daysSum = 0, daysCount = 0;
+  allContacts.forEach(c => {
+    if ((c.stage || 1) >= 4 && contactBookedAt[c.id] && c.created_at) {
+      const created = new Date(c.created_at).getTime();
+      const booked = contactBookedAt[c.id];
+      const days = Math.max(0, Math.round((booked - created) / 86400000));
+      daysSum += days; daysCount++;
+    }
+  });
+  const avgDays = daysCount > 0 ? Math.round(daysSum / daysCount) : '—';
+  const avgDaysLabel = avgDays === '—' ? 'Need more data' : (avgDays === 0 ? 'Same day' : `${avgDays} day${avgDays===1?'':'s'} avg`);
+
   el.innerHTML = `<div class="trend-stat-grid">
     <div class="trend-stat">
       <div class="trend-num">${currLeads}</div>
@@ -1923,6 +1954,18 @@ function renderTrendAnalytics() {
       <div class="trend-num">${currDone}</div>
       <div class="trend-label">Jobs completed<br>this ${lbl}</div>
       ${delta(currDone, prevDone)}
+    </div>
+  </div>
+  <div class="trend-stat-grid-2">
+    <div class="trend-stat">
+      <div class="trend-num">${convRate}%</div>
+      <div class="trend-label">Lead → Booked<br>conversion rate</div>
+      <div class="trend-delta flat">${bookedLeads} of ${totalLeads} leads</div>
+    </div>
+    <div class="trend-stat">
+      <div class="trend-num">${avgDays === '—' ? '—' : avgDays + 'd'}</div>
+      <div class="trend-label">Avg days<br>to book</div>
+      <div class="trend-delta flat">${avgDaysLabel}</div>
     </div>
   </div>`;
 }
