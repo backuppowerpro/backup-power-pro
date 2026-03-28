@@ -6,735 +6,155 @@
 <title>BPP CRM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script>function initMapsCallback(){window.mapsReady=true;setupAddressAutocomplete();}</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ&libraries=places&callback=initMapsCallback" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --navy:    #0b1f3b;
-  --navy2:   #1a3a5c;
-  --gold:    #ffba00;
-  --green:   #059669;
-  --red:     #dc2626;
-  --blue:    #3b82f6;
-  --purple:  #7c3aed;
-  --amber:   #d97706;
-  --gray:    #6b7280;
-  --border:  #e4e8f0;
-  --bg:      #f4f6fa;
-  --card:    #ffffff;
-  --text:    #1a2a42;
-  --text2:   #4a5568;
-  --text3:   #8a9ab5;
+  --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
+  --green:#059669; --red:#dc2626; --blue:#3b82f6;
+  --gray:#6b7280; --border:#e4e8f0; --bg:#f4f6fa;
+  --card:#ffffff; --text:#1a2a42; --text2:#4a5568; --text3:#8a9ab5;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 
-/* ── NAV ─────────────────────────────────────────────────── */
-.nav {
-  background: var(--navy);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  height: 54px;
-  gap: 0;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
-}
-.nav-brand {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 800;
-  font-size: 16px;
-  color: #fff;
-  margin-right: 28px;
-  white-space: nowrap;
-}
-.nav-brand span { color: var(--gold); }
-.nav-tabs { display: flex; gap: 2px; }
-.nav-tab {
-  padding: 8px 18px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255,255,255,.6);
-  cursor: pointer;
-  transition: all .15s;
-  user-select: none;
-  font-family: 'Outfit', sans-serif;
-}
-.nav-tab:hover { color: #fff; background: rgba(255,255,255,.08); }
-.nav-tab.active { color: #fff; background: rgba(255,255,255,.15); }
+/* NAV */
+.nav{background:var(--navy);display:flex;align-items:center;padding:0 20px;height:54px;gap:10px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.nav-brand{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:#fff;margin-right:auto}
+.nav-brand span{color:var(--gold)}
 
-/* ── LAYOUT ──────────────────────────────────────────────── */
-.view { display: none; padding: 20px; max-width: 1100px; margin: 0 auto; }
-.view.active { display: block; }
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Outfit',sans-serif;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--gold);color:var(--navy)}
+.btn-primary:hover{background:#e6a800}
+.btn-ghost{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.btn-outline{background:transparent;color:var(--text2);border:1.5px solid var(--border)}
+.btn-outline:hover{border-color:var(--navy);color:var(--navy);background:#f0f4ff}
+.btn-danger{background:#fee2e2;color:var(--red);border:1.5px solid #fecaca}
+.btn-danger:hover{background:#fecaca}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px}
+.btn-map{background:#e8f4fd;color:#1d6fa4;border:1px solid #b3d9f5;padding:4px 10px;font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-family:'Outfit',sans-serif}
+.btn-map:hover{background:#cde8f8}
 
-/* ── TOOLBAR ─────────────────────────────────────────────── */
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.search-input {
-  flex: 1;
-  min-width: 200px;
-  padding: 9px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
-  background: var(--card);
-  color: var(--text);
-  outline: none;
-  transition: border .15s;
-}
-.search-input:focus { border-color: var(--navy); }
-.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
-.pill {
-  padding: 5px 12px;
-  border-radius: 100px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1.5px solid var(--border);
-  background: var(--card);
-  color: var(--text2);
-  transition: all .15s;
-  font-family: 'Outfit', sans-serif;
-  white-space: nowrap;
-}
-.pill:hover { border-color: var(--navy); color: var(--navy); }
-.pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  font-family: 'Outfit', sans-serif;
-  transition: all .15s;
-  white-space: nowrap;
-  text-decoration: none;
-}
-.btn-primary { background: var(--navy); color: #fff; }
-.btn-primary:hover { background: var(--navy2); }
-.btn-gold { background: var(--gold); color: var(--navy); }
-.btn-gold:hover { background: #e6a800; }
-.btn-sm {
-  padding: 5px 11px;
-  font-size: 12px;
-  border-radius: 6px;
-  gap: 4px;
-}
-.btn-ghost { background: transparent; color: var(--text2); border: 1.5px solid var(--border); }
-.btn-ghost:hover { border-color: var(--navy); color: var(--navy); }
-.btn-danger { background: transparent; color: var(--red); border: 1.5px solid rgba(220,38,38,.25); }
-.btn-danger:hover { background: #fef2f2; }
+/* LAYOUT */
+.main{max-width:1140px;margin:0 auto;padding:20px}
 
-/* ── STATUS BADGES ───────────────────────────────────────── */
-.badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 100px;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: 'Outfit', sans-serif;
-  letter-spacing: .03em;
-  white-space: nowrap;
-}
-.badge-new       { background: #eff6ff; color: #1d4ed8; }
-.badge-quoted    { background: #fffbeb; color: #b45309; }
-.badge-scheduled { background: #f5f3ff; color: #6d28d9; }
-.badge-complete  { background: #f0fdf4; color: #065f46; }
-.badge-notafit   { background: #f9fafb; color: #6b7280; }
-.badge-install   { background: #eff6ff; color: #1e40af; }
-.badge-estimate  { background: #fffbeb; color: #b45309; }
-.badge-followup  { background: #fdf4ff; color: #7e22ce; }
-.badge-other     { background: #f9fafb; color: #6b7280; }
-.badge-cancelled { background: #fef2f2; color: #b91c1c; }
-.badge-draft     { background: #fffbeb; color: #b45309; }
-.badge-sent      { background: #eff6ff; color: #1d4ed8; }
-.badge-approved  { background: #f0fdf4; color: #065f46; }
+/* SECTION HEADERS */
+.section-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.section-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:var(--navy);flex:1}
+.section-divider{border:none;border-top:2px solid var(--border);margin:28px 0}
 
-/* ── CONTACTS TABLE ──────────────────────────────────────── */
-.table-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-thead th {
-  background: #f8f9fb;
-  padding: 11px 14px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text3);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; cursor: pointer; }
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: #f8f9fb; }
-td { padding: 12px 14px; vertical-align: middle; }
-td.name { font-weight: 600; color: var(--text); }
-td.muted { color: var(--text2); font-size: 13px; }
-td.actions { text-align: right; white-space: nowrap; }
-td.actions .btn { display: inline-flex; }
-.td-phone a { color: var(--text2); text-decoration: none; font-size: 13px; }
-.td-phone a:hover { color: var(--navy); text-decoration: underline; }
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.search-input{flex:1;min-width:180px;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;background:var(--card);color:var(--text);outline:none;transition:border .15s}
+.search-input:focus{border-color:var(--navy)}
+.filter-pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s;font-family:'Outfit',sans-serif}
+.pill:hover{border-color:var(--navy2);color:var(--navy)}
+.pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 
-/* ── SCHEDULE CARDS ──────────────────────────────────────── */
-.job-list { display: flex; flex-direction: column; gap: 10px; }
-.job-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
-  display: grid;
-  grid-template-columns: 90px 1fr auto;
-  gap: 12px 16px;
-  align-items: center;
-  transition: box-shadow .15s;
-}
-.job-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.08); }
-.job-card.complete { opacity: .6; }
-.job-date-block { text-align: center; }
-.job-date-day { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1; }
-.job-date-month { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
-.job-date-time { font-size: 12px; color: var(--text3); margin-top: 3px; }
-.job-info { min-width: 0; }
-.job-contact { font-weight: 600; font-size: 15px; color: var(--text); margin-bottom: 4px; }
-.job-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.job-price { font-size: 13px; color: var(--green); font-weight: 600; }
-.job-notes { font-size: 12px; color: var(--text3); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
-.job-actions { display: flex; gap: 6px; flex-direction: column; align-items: flex-end; }
+/* CONTACTS TABLE */
+.table-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:#f8fafc;padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1.5px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f8faff}
+td{padding:10px 14px;vertical-align:middle}
+td.name{font-weight:600;color:var(--navy)}
+td.phone a{color:var(--blue);text-decoration:none;font-weight:500}
+td.phone a:hover{text-decoration:underline}
+td.addr a{color:var(--text2);text-decoration:none;font-size:12.5px;display:flex;align-items:center;gap:4px}
+td.addr a:hover{color:var(--blue)}
+td.notes-cell{color:var(--text3);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.actions{white-space:nowrap}
 
-/* ── SECTION HEADER ──────────────────────────────────────── */
-.section-label {
-  font-family: 'Outfit', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin: 20px 0 10px;
-}
-.section-label:first-child { margin-top: 0; }
+/* PROPOSAL BADGES */
+.prop-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11.5px;font-weight:700;font-family:'Outfit',sans-serif;white-space:nowrap}
+.prop-none{background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb}
+.prop-sent{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+.prop-approved{background:#d1fae5;color:var(--green);border:1px solid #a7f3d0}
 
-/* ── EMPTY STATE ─────────────────────────────────────────── */
-.empty {
-  text-align: center;
-  padding: 56px 24px;
-  color: var(--text3);
-}
-.empty svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: .35; }
-.empty p { font-size: 14px; }
+/* SHOW MORE */
+.show-more-bar{text-align:center;padding:10px;background:var(--card);border-top:1px solid var(--border);border-radius:0 0 10px 10px}
+.contact-count{font-size:12px;color:var(--text3);margin-bottom:6px}
 
-/* ── MODAL ───────────────────────────────────────────────── */
-.overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 100;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.overlay.open { display: flex; }
-.modal {
-  background: var(--card);
-  border-radius: 14px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,.3);
-}
-.modal-wide { max-width: 540px; }
-.modal-head {
-  padding: 20px 22px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.modal-head h2 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: var(--navy); }
-.modal-close {
-  width: 30px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--text3);
-  font-size: 18px;
-  border: none;
-  background: transparent;
-  transition: all .15s;
-}
-.modal-close:hover { background: var(--bg); color: var(--text); }
-.modal-body { padding: 20px 22px; }
-.modal-foot {
-  padding: 14px 22px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-.form-row { margin-bottom: 16px; }
-.form-row label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text2);
-  margin-bottom: 6px;
-  letter-spacing: .03em;
-}
-.form-row label .req { color: var(--red); margin-left: 2px; }
-.form-input, .form-select, .form-textarea {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
-  color: var(--text);
-  background: #fff;
-  outline: none;
-  transition: border .15s;
-}
-.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--navy); }
-.form-textarea { resize: vertical; min-height: 80px; }
-.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* EMPTY STATE */
+.empty{padding:40px 20px;text-align:center;color:var(--text3)}
+.empty svg{width:36px;height:36px;margin:0 auto 12px;display:block;opacity:.4}
+.empty p{font-size:14px}
 
-/* ── PROPOSAL PRICING ────────────────────────────────────── */
-.contact-preview {
-  background: #f0f6ff;
-  border: 1.5px solid #c7dcf7;
-  border-radius: 8px;
-  padding: 11px 14px;
-  margin-top: -8px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: var(--text2);
-  display: none;
-  line-height: 1.6;
-}
-.contact-preview.show { display: block; }
-.contact-preview strong { color: var(--text); font-weight: 600; display: block; font-size: 14px; }
+/* ── WEEKLY CALENDAR ──────────────────────────────── */
+.cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.week-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;min-height:220px}
+.cal-day{background:var(--card);border-radius:8px;border:1.5px solid var(--border);min-height:180px;display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s}
+.cal-day.today{border-color:var(--navy);background:#f0f4ff}
+.cal-day-head{padding:7px 8px 5px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:5px;background:rgba(0,0,0,.02)}
+.cal-day-name{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.cal-day-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:var(--text);line-height:1}
+.cal-day.today .cal-day-num{color:var(--navy)}
+.cal-day-body{flex:1;padding:5px;display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.cal-day-body:hover{background:rgba(59,130,246,.04)}
+.cal-event{background:var(--navy);color:#fff;border-radius:4px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4}
+.cal-event:hover{background:var(--navy2)}
+.cal-event.complete{background:#6b7280}
+.cal-add-hint{font-size:10px;color:var(--text3);text-align:center;padding:4px;opacity:0;transition:opacity .15s;margin-top:auto}
+.cal-day-body:hover .cal-add-hint{opacity:1}
 
-.line-items {
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.line-item-row {
-  display: flex;
-  align-items: center;
-  padding: 11px 14px;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-  background: #fff;
-}
-.line-item-label {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 14px;
-  color: var(--text);
-  cursor: pointer;
-  user-select: none;
-}
-.line-item-label input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--navy);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.line-item-price-wrap {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text2);
-  font-size: 13px;
-  font-weight: 600;
-}
-.line-item-price-wrap span { color: var(--text3); }
-.price-field {
-  width: 80px;
-  padding: 5px 8px;
-  border: 1.5px solid var(--border);
-  border-radius: 6px;
-  font-size: 13px;
-  font-family: 'Inter', sans-serif;
-  text-align: right;
-  outline: none;
-  transition: border .15s, opacity .15s;
-  color: var(--text);
-}
-.price-field:focus { border-color: var(--navy); }
-.price-field:disabled { opacity: .4; background: #f8f9fb; }
-.base-row-label {
-  flex: 1;
-  font-size: 14px;
-  color: var(--text);
-  font-weight: 500;
-}
-.total-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  background: var(--navy);
-}
-.total-label {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 700;
-  font-size: 13px;
-  color: rgba(255,255,255,.7);
-  letter-spacing: .07em;
-}
-.total-amount {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 800;
-  font-size: 22px;
-  color: var(--gold);
-}
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.2)}
+.modal-head{padding:20px 24px 0;display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.modal-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:var(--navy);flex:1}
+.modal-close{width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;font-size:17px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:#e2e8f0}
+.modal-body{padding:16px 24px}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.form-row{margin-bottom:14px}
+.form-row label{display:block;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--text);background:var(--card);outline:none;transition:border .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--navy)}
+.form-input.locked{background:#f8fafc;color:var(--text2)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
+.addr-wrap{position:relative}
+.addr-change{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--blue);cursor:pointer;font-weight:600;display:none}
 
-/* ── TOAST ───────────────────────────────────────────────── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  padding: 12px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  z-index: 200;
-  transform: translateY(80px);
-  opacity: 0;
-  transition: all .25s;
-  pointer-events: none;
-  max-width: 300px;
-}
-.toast.show { transform: translateY(0); opacity: 1; }
-.toast.success { background: var(--green); color: #fff; }
-.toast.error   { background: var(--red); color: #fff; }
+/* Proposal form */
+.line-items{background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:14px}
+.line-item{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.line-item:last-child{margin-bottom:0;border-top:1px solid var(--border);padding-top:10px}
+.line-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--navy)}
+.line-item label{flex:1;font-size:13px;font-weight:600;cursor:pointer}
+.line-price{font-size:14px;font-weight:700;color:var(--navy);min-width:60px;text-align:right}
+.total-label{font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;flex:1}
+.total-amount{font-size:22px;font-weight:800;color:var(--navy);font-family:'Outfit',sans-serif}
 
-/* ── LOADING ─────────────────────────────────────────────── */
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  color: var(--text3);
-  font-size: 14px;
-  gap: 10px;
-}
-.spinner {
-  width: 18px; height: 18px;
-  border: 2px solid var(--border);
-  border-top-color: var(--navy);
-  border-radius: 50%;
-  animation: spin .6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+/* After proposal created */
+.link-box{background:#f0f4ff;border:1.5px solid #c7d8ff;border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.link-url{font-size:12px;color:var(--blue);word-break:break-all;margin-bottom:8px;font-family:monospace}
+.link-actions{display:flex;gap:8px}
 
-/* ── RESPONSIVE ──────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .view { padding: 14px; }
-  .job-card { grid-template-columns: 70px 1fr; }
-  .job-actions { flex-direction: row; grid-column: 1 / -1; }
-  .form-row-2 { grid-template-columns: 1fr; }
-  thead th:nth-child(4), td:nth-child(4),
-  thead th:nth-child(5), td:nth-child(5) { display: none; }
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Outfit',sans-serif;z-index:9999;opacity:0;transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+
+@media(max-width:700px){
+  .cal-grid{grid-template-columns:repeat(7,minmax(90px,1fr));overflow-x:auto}
+  td.notes-cell,.col-notes{display:none}
 }
 </style>
 </head>
 <body>
 
-<!-- ── NAV ───────────────────────────────────────────────── -->
-<nav class="nav">
-  <div class="nav-brand">BPP <span>CRM</span></div>
-  <div class="nav-tabs">
-    <div class="nav-tab active" onclick="switchTab('contacts',this)">Contacts</div>
-    <div class="nav-tab" onclick="switchTab('schedule',this)">Schedule</div>
-    <div class="nav-tab" onclick="switchTab('proposals',this)">Proposals</div>
-  </div>
-</nav>
-
-<!-- ── CONTACTS VIEW ──────────────────────────────────────── -->
-<div id="view-contacts" class="view active">
-  <div class="toolbar">
-    <input class="search-input" id="search" placeholder="Search contacts…" oninput="filterContacts()">
-    <div class="filter-pills" id="contact-pills">
-      <div class="pill active" onclick="setFilter('All',this)">All</div>
-      <div class="pill" onclick="setFilter('New Lead',this)">New Lead</div>
-      <div class="pill" onclick="setFilter('Quoted',this)">Quoted</div>
-      <div class="pill" onclick="setFilter('Scheduled',this)">Scheduled</div>
-      <div class="pill" onclick="setFilter('Complete',this)">Complete</div>
-      <div class="pill" onclick="setFilter('Not a Fit',this)">Not a Fit</div>
-    </div>
-    <button class="btn btn-primary" onclick="openContactModal()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add Contact
-    </button>
-  </div>
-  <div id="contacts-table" class="table-card">
-    <div class="loading"><div class="spinner"></div> Loading…</div>
-  </div>
-</div>
-
-<!-- ── SCHEDULE VIEW ──────────────────────────────────────── -->
-<div id="view-schedule" class="view">
-  <div class="toolbar">
-    <div class="filter-pills">
-      <div class="pill active" onclick="setSchedFilter('upcoming',this)">Upcoming</div>
-      <div class="pill" onclick="setSchedFilter('all',this)">All Jobs</div>
-    </div>
-    <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openJobModal()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Schedule Event
-    </button>
-  </div>
-  <div id="schedule-list"><div class="loading"><div class="spinner"></div> Loading…</div></div>
-</div>
-
-<!-- ── PROPOSALS VIEW ─────────────────────────────────────── -->
-<div id="view-proposals" class="view">
-  <div class="toolbar">
-    <div class="filter-pills" id="prop-pills">
-      <div class="pill active" onclick="setPropFilter('All',this)">All</div>
-      <div class="pill" onclick="setPropFilter('Draft',this)">Draft</div>
-      <div class="pill" onclick="setPropFilter('Sent',this)">Sent</div>
-      <div class="pill" onclick="setPropFilter('Approved',this)">Approved</div>
-    </div>
-    <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openProposalModal()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New Proposal
-    </button>
-  </div>
-  <div id="proposals-list"><div class="loading"><div class="spinner"></div> Loading…</div></div>
-</div>
-
-<!-- ── CONTACT MODAL ──────────────────────────────────────── -->
-<div class="overlay" id="contact-overlay" onclick="closeOverlay(event,'contact-overlay')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-head">
-      <h2 id="contact-modal-title">Add Contact</h2>
-      <button class="modal-close" onclick="closeModal('contact-overlay')">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="c-id">
-      <div class="form-row">
-        <label>Name <span class="req">*</span></label>
-        <input class="form-input" id="c-name" placeholder="Full name" autocomplete="off">
-      </div>
-      <div class="form-row-2">
-        <div class="form-row" style="margin-bottom:0">
-          <label>Phone <span class="req">*</span></label>
-          <input class="form-input" id="c-phone" type="tel" placeholder="(864) 555-0100">
-        </div>
-        <div class="form-row" style="margin-bottom:0">
-          <label>Email</label>
-          <input class="form-input" id="c-email" type="email" placeholder="email@example.com">
-        </div>
-      </div>
-      <div class="form-row" style="margin-top:16px">
-        <label>Address</label>
-        <input class="form-input" id="c-address" placeholder="123 Main St, Greenville, SC">
-      </div>
-      <div class="form-row-2">
-        <div class="form-row" style="margin-bottom:0">
-          <label>Generator</label>
-          <input class="form-input" id="c-generator" placeholder="e.g. Honda 7500W">
-        </div>
-        <div class="form-row" style="margin-bottom:0">
-          <label>Status</label>
-          <select class="form-select" id="c-status">
-            <option>New Lead</option>
-            <option>Quoted</option>
-            <option>Scheduled</option>
-            <option>Complete</option>
-            <option>Not a Fit</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row" style="margin-top:16px">
-        <label>Notes</label>
-        <textarea class="form-textarea" id="c-notes" placeholder="Any details about the job, access, panel location…"></textarea>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('contact-overlay')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveContact()">Save Contact</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── JOB MODAL ─────────────────────────────────────────── -->
-<div class="overlay" id="job-overlay" onclick="closeOverlay(event,'job-overlay')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-head">
-      <h2 id="job-modal-title">Schedule Event</h2>
-      <button class="modal-close" onclick="closeModal('job-overlay')">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="j-id">
-      <div class="form-row">
-        <label>Contact <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
-        <select class="form-select" id="j-contact">
-          <option value="">— No contact linked —</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>Event Title <span style="font-weight:400;color:var(--text3)">(required when no contact)</span></label>
-        <input class="form-input" id="j-title" placeholder="e.g. PTO, Vendor run, Team meeting…">
-      </div>
-      <div class="form-row-2">
-        <div class="form-row" style="margin-bottom:0">
-          <label>Date <span class="req">*</span></label>
-          <input class="form-input" id="j-date" type="date">
-        </div>
-        <div class="form-row" style="margin-bottom:0">
-          <label>Time</label>
-          <input class="form-input" id="j-time" type="time">
-        </div>
-      </div>
-      <div class="form-row-2" style="margin-top:16px">
-        <div class="form-row" style="margin-bottom:0">
-          <label>Type</label>
-          <select class="form-select" id="j-type">
-            <option>Install</option>
-            <option>Estimate</option>
-            <option>Follow-up</option>
-            <option>Other</option>
-          </select>
-        </div>
-        <div class="form-row" style="margin-bottom:0">
-          <label>Status</label>
-          <select class="form-select" id="j-status">
-            <option>Scheduled</option>
-            <option>Complete</option>
-            <option>Cancelled</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row" style="margin-top:16px">
-        <label>Price ($)</label>
-        <input class="form-input" id="j-price" type="number" placeholder="1300">
-      </div>
-      <div class="form-row">
-        <label>Notes</label>
-        <textarea class="form-textarea" id="j-notes" placeholder="Anything to remember about this appointment…"></textarea>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('job-overlay')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveJob()">Save Event</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── PROPOSAL MODAL ────────────────────────────────────── -->
-<div class="overlay" id="proposal-overlay" onclick="closeOverlay(event,'proposal-overlay')">
-  <div class="modal modal-wide" onclick="event.stopPropagation()">
-    <div class="modal-head">
-      <h2>New Proposal</h2>
-      <button class="modal-close" onclick="closeModal('proposal-overlay')">✕</button>
-    </div>
-    <div class="modal-body">
-
-      <div class="form-row">
-        <label>Contact <span class="req">*</span></label>
-        <select class="form-select" id="p-contact" onchange="onContactChange()">
-          <option value="">— Select a contact —</option>
-        </select>
-      </div>
-
-      <div class="contact-preview" id="p-preview">
-        <strong id="p-preview-name"></strong>
-        <span id="p-preview-phone"></span>
-        <span id="p-preview-address" style="display:block;margin-top:1px;color:var(--text3)"></span>
-      </div>
-
-      <div class="form-row">
-        <label>Pricing</label>
-        <div class="line-items">
-          <!-- Base install -->
-          <div class="line-item-row">
-            <div class="base-row-label">Base installation</div>
-            <div class="line-item-price-wrap">
-              <span>$</span>
-              <input class="price-field" id="p-base" type="number" min="0" placeholder="0" oninput="calcTotal()">
-            </div>
-          </div>
-          <!-- Power cord -->
-          <div class="line-item-row">
-            <label class="line-item-label">
-              <input type="checkbox" id="p-cord" checked onchange="toggleCord(); calcTotal()">
-              Power transfer cord
-            </label>
-            <div class="line-item-price-wrap">
-              <span>$</span>
-              <input class="price-field" id="p-cord-price" type="number" min="0" value="150" oninput="calcTotal()">
-            </div>
-          </div>
-          <!-- Surge -->
-          <div class="line-item-row">
-            <label class="line-item-label">
-              <input type="checkbox" id="p-surge" onchange="toggleSurge(); calcTotal()">
-              Whole-house surge protector
-            </label>
-            <div class="line-item-price-wrap">
-              <span>$</span>
-              <input class="price-field" id="p-surge-price" type="number" min="0" value="450" oninput="calcTotal()" disabled>
-            </div>
-          </div>
-          <!-- Total -->
-          <div class="total-row">
-            <span class="total-label">TOTAL</span>
-            <span class="total-amount" id="p-total">$0</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <label>Notes <span style="font-weight:400;color:var(--text3)">(optional — visible on proposal)</span></label>
-        <textarea class="form-textarea" id="p-notes" placeholder="Any special instructions or details for this proposal…"></textarea>
-      </div>
-
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('proposal-overlay')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveProposal()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        Create &amp; Copy Link
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ── TOAST ──────────────────────────────────────────────── -->
-<div class="toast" id="toast"></div>
-
-<!-- ── PASSWORD GATE ──────────────────────────────────────── -->
-<div id="gate" style="
-  display:flex;position:fixed;inset:0;z-index:999;
-  background:var(--navy);align-items:center;justify-content:center;padding:24px;">
+<!-- ── PASSWORD GATE ──────────────────────────────────── -->
+<div id="gate" style="display:flex;position:fixed;inset:0;z-index:999;background:var(--navy);align-items:center;justify-content:center;padding:24px">
   <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
     <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px">BPP <span style="color:var(--gold)">CRM</span></div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:24px">Backup Power Pro</div>
@@ -744,45 +164,278 @@ td.actions .btn { display: inline-flex; }
       onfocus="this.style.borderColor='var(--navy)'"
       onblur="this.style.borderColor='var(--border)'">
     <div id="gate-err" style="font-size:12px;color:var(--red);min-height:18px;margin-bottom:8px"></div>
-    <button onclick="checkPass()" style="
-      width:100%;padding:12px;background:var(--navy);color:#fff;
-      border:none;border-radius:8px;font-family:'Outfit',sans-serif;
-      font-size:15px;font-weight:700;cursor:pointer;transition:background .15s"
-      onmouseover="this.style.background='#1a3a5c'"
-      onmouseout="this.style.background='var(--navy)'">
-      Enter
-    </button>
+    <button onclick="checkPass()" style="width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
   </div>
 </div>
 
+<!-- ── NAV ───────────────────────────────────────────────── -->
+<nav class="nav" id="main-nav" style="display:none">
+  <div class="nav-brand">BPP <span>CRM</span></div>
+  <button class="btn btn-ghost btn-sm" onclick="openJobModal(null,null)">+ Event</button>
+  <button class="btn btn-primary btn-sm" onclick="openContactModal(null)">+ Lead</button>
+</nav>
+
+<!-- ── MAIN ──────────────────────────────────────────────── -->
+<main class="main" id="main-content" style="display:none">
+
+  <!-- ── CONTACTS SECTION ─────────────────────────────── -->
+  <div class="section-head">
+    <div class="section-title">Leads</div>
+    <span id="leads-count" style="font-size:12px;color:var(--text3)"></span>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
+    <div class="filter-pills" id="lead-pills">
+      <span class="pill active" onclick="setPropFilter('all',this)">All</span>
+      <span class="pill" onclick="setPropFilter('none',this)">No Proposal</span>
+      <span class="pill" onclick="setPropFilter('sent',this)">Proposal Sent</span>
+      <span class="pill" onclick="setPropFilter('approved',this)">Approved ✓</span>
+    </div>
+  </div>
+
+  <div id="contacts-table"></div>
+
+  <hr class="section-divider">
+
+  <!-- ── CALENDAR SECTION ─────────────────────────────── -->
+  <div class="section-head" style="margin-bottom:10px">
+    <div class="section-title">Schedule</div>
+  </div>
+
+  <div class="cal-nav">
+    <button class="btn btn-outline btn-sm" onclick="navigateWeek(-1)">← Prev</button>
+    <button class="btn btn-outline btn-sm" onclick="navigateWeek(0)">Today</button>
+    <span class="week-label" id="week-label"></span>
+    <button class="btn btn-outline btn-sm" onclick="navigateWeek(1)">Next →</button>
+  </div>
+
+  <div class="cal-grid" id="cal-grid"></div>
+
+</main>
+
+<!-- ── CONTACT MODAL ────────────────────────────────────── -->
+<div class="modal-overlay" id="contact-overlay" onclick="if(event.target===this)closeModal('contact-overlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="contact-modal-title">Add Lead</div>
+      <button class="modal-close" onclick="closeModal('contact-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="c-id">
+      <div class="form-row">
+        <label>Name *</label>
+        <input class="form-input" id="c-name" placeholder="Full name" onkeydown="if(event.key==='Enter')document.getElementById('c-phone').focus()">
+      </div>
+      <div class="form-row">
+        <label>Phone</label>
+        <input class="form-input" id="c-phone" type="tel" placeholder="(864) 000-0000">
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        <input class="form-input" id="c-email" type="email" placeholder="email@example.com">
+      </div>
+      <div class="form-row">
+        <label>Address</label>
+        <div class="addr-wrap">
+          <input class="form-input" id="c-address" placeholder="Start typing address…" autocomplete="off">
+          <span class="addr-change" id="addr-change-btn" onclick="clearAddressField()">✕ Change</span>
+        </div>
+        <div class="form-hint" id="addr-hint">Type to search — select from the dropdown to lock in the address.</div>
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea class="form-textarea" id="c-notes" placeholder="Generator model, special instructions, anything useful…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('contact-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveContact()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROPOSAL MODAL ────────────────────────────────────── -->
+<div class="modal-overlay" id="proposal-overlay" onclick="if(event.target===this)closeModal('proposal-overlay')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div class="modal-title" id="proposal-modal-title">Create Proposal</div>
+      <button class="modal-close" onclick="closeModal('proposal-overlay')">✕</button>
+    </div>
+    <div class="modal-body" id="proposal-modal-body">
+      <input type="hidden" id="p-contact-id">
+
+      <!-- Before creation: pricing form -->
+      <div id="p-form">
+        <div style="background:#f0f4ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--navy)">
+          <strong id="p-contact-name"></strong>
+          <div id="p-contact-addr" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
+        </div>
+
+        <div class="line-items">
+          <div class="line-item">
+            <input type="checkbox" id="p-base-check" checked disabled>
+            <label for="p-base-check">Base install — inlet box + interlock kit + permit + inspection</label>
+          </div>
+          <div class="line-item" style="margin-bottom:0;border:none">
+            <span style="font-size:12px;color:var(--text3);flex:1">Base price</span>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span style="font-size:13px;color:var(--text3)">$</span>
+              <input id="p-base-price" type="number" min="0" value="1295"
+                style="width:80px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;text-align:right;outline:none;font-family:'Outfit',sans-serif"
+                onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
+                oninput="calcTotal()">
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--border);margin:10px 0"></div>
+
+          <div class="line-item">
+            <input type="checkbox" id="p-cord-check" checked onchange="calcTotal()">
+            <label for="p-cord-check" style="cursor:pointer">30A compatible power cord</label>
+            <span class="line-price" id="p-cord-price-lbl">+$150</span>
+          </div>
+
+          <div class="line-item">
+            <input type="checkbox" id="p-surge-check" onchange="calcTotal()">
+            <label for="p-surge-check" style="cursor:pointer">Whole-house surge protector</label>
+            <span class="line-price" id="p-surge-price-lbl">+$450</span>
+          </div>
+
+          <div style="border-top:1.5px solid var(--border);margin:10px 0"></div>
+          <div class="line-item" style="border:none;padding-top:0;margin-bottom:0">
+            <span class="total-label">Total</span>
+            <span class="total-amount" id="p-total">$1,295</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Notes <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+          <textarea class="form-textarea" id="p-notes" placeholder="Special instructions visible on the proposal…" style="min-height:64px"></textarea>
+        </div>
+      </div>
+
+      <!-- After creation: link ready -->
+      <div id="p-created" style="display:none">
+        <div style="text-align:center;padding:10px 0 16px">
+          <div style="font-size:28px;margin-bottom:6px">🔗</div>
+          <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--navy)">Proposal link ready</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">Send it via text or email</div>
+        </div>
+        <div class="link-box">
+          <div class="link-url" id="p-link-url"></div>
+          <div class="link-actions">
+            <button class="btn btn-outline btn-sm" style="flex:1" onclick="copyProposalLink()">📋 Copy Link</button>
+            <a id="p-email-link" class="btn btn-outline btn-sm" style="flex:1;text-decoration:none;justify-content:center" href="#">✉️ Email</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot" id="proposal-modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('proposal-overlay')">Cancel</button>
+      <button class="btn btn-primary" id="p-create-btn" style="background:var(--navy);color:#fff" onclick="saveProposal()">Create &amp; Get Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── JOB / EVENT MODAL ─────────────────────────────────── -->
+<div class="modal-overlay" id="job-overlay" onclick="if(event.target===this)closeModal('job-overlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="job-modal-title">Add Event</div>
+      <button class="modal-close" onclick="closeModal('job-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="j-id">
+      <div class="form-row">
+        <label>Linked Lead <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <select class="form-select" id="j-contact" onchange="onJobContactChange()">
+          <option value="">— No contact —</option>
+        </select>
+      </div>
+      <div class="form-row" id="j-title-row">
+        <label>Event Title</label>
+        <input class="form-input" id="j-title" placeholder="e.g. Site visit, Call, Block time…">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-row">
+          <label>Date</label>
+          <input class="form-input" id="j-date" type="date">
+        </div>
+        <div class="form-row">
+          <label>Time <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+          <input class="form-input" id="j-time" type="time">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-row">
+          <label>Type</label>
+          <select class="form-select" id="j-type">
+            <option value="Install">Install</option>
+            <option value="Assessment">Assessment</option>
+            <option value="Follow-up">Follow-up</option>
+            <option value="Block">Block Time</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Status</label>
+          <select class="form-select" id="j-status">
+            <option value="Scheduled">Scheduled</option>
+            <option value="Complete">Complete</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Price <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <input class="form-input" id="j-price" type="number" min="0" placeholder="0">
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea class="form-textarea" id="j-notes" style="min-height:64px" placeholder="Notes for this event…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="j-delete-btn" onclick="deleteJob()" style="display:none;margin-right:auto;color:var(--red);border-color:#fecaca">Delete</button>
+      <button class="btn btn-outline" onclick="closeModal('job-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveJob()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ─────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
 <!-- ── SCRIPTS ────────────────────────────────────────────── -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
-// ── CONFIG ─────────────────────────────────────────────────
+// ── CONFIG ────────────────────────────────────────────────
 const SUPABASE_URL      = 'https://reowtzedjflwmlptupbk.supabase.co';
 const SUPABASE_KEY      = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
 const CRM_PASSWORD      = 'bpp2026';
 const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
-// ──────────────────────────────────────────────────────────
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── STATE ──────────────────────────────────────────────────
-let allContacts   = [];
-let allJobs       = [];
-let allProposals  = [];
-let contactFilter = 'All';
-let schedFilter   = 'upcoming';
-let propFilter    = 'All';
+// ── STATE ─────────────────────────────────────────────────
+let allContacts  = [];
+let allJobs      = [];
+let allProposals = [];
+let proposalMap  = {};   // contact_id → latest proposal
+let propFilter   = 'all';
+let contactsShown = 5;
+let searchTerm   = '';
+let weekStart    = getMonday(new Date());
+let acInstance   = null;   // Google Maps Autocomplete instance
 
-// ── PASSWORD GATE ──────────────────────────────────────────
+// ── PASSWORD GATE ─────────────────────────────────────────
 function checkPass() {
   const val = document.getElementById('gate-input').value;
   if (val === CRM_PASSWORD) {
     sessionStorage.setItem('crm_auth', '1');
-    document.getElementById('gate').style.display = 'none';
-    init();
+    showApp();
   } else {
     const err = document.getElementById('gate-err');
     const inp = document.getElementById('gate-input');
@@ -793,28 +446,25 @@ function checkPass() {
   }
 }
 
-// ── INIT ───────────────────────────────────────────────────
+function showApp() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('main-nav').style.display = 'flex';
+  document.getElementById('main-content').style.display = 'block';
+  init();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   if (sessionStorage.getItem('crm_auth') === '1') {
-    document.getElementById('gate').style.display = 'none';
-    init();
+    showApp();
   } else {
     setTimeout(() => document.getElementById('gate-input').focus(), 100);
   }
 });
 
-function init() {
-  loadContacts();
-  loadJobs();
-  loadProposals();
-}
-
-// ── TABS ───────────────────────────────────────────────────
-function switchTab(tab, el) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('view-' + tab).classList.add('active');
-  el.classList.add('active');
+// ── INIT ──────────────────────────────────────────────────
+async function init() {
+  renderCalendar(); // render empty calendar immediately
+  await Promise.all([loadContacts(), loadJobs(), loadProposals()]);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -822,288 +472,439 @@ function switchTab(tab, el) {
 // ══════════════════════════════════════════════════════════
 
 async function loadContacts() {
-  const { data, error } = await db
-    .from('contacts')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { showToast('Failed to load contacts', 'error'); return; }
+  const { data, error } = await db.from('contacts').select('*').order('created_at', { ascending: false });
+  if (error) { showToast('Failed to load leads', 'error'); return; }
   allContacts = data || [];
   renderContacts();
 }
 
 function renderContacts() {
-  const search = document.getElementById('search').value.toLowerCase();
+  searchTerm = (document.getElementById('search').value || '').toLowerCase();
+
   let list = allContacts.filter(c => {
-    const matchFilter = contactFilter === 'All' || c.status === contactFilter;
-    const matchSearch = !search ||
-      (c.name    || '').toLowerCase().includes(search) ||
-      (c.phone   || '').toLowerCase().includes(search) ||
-      (c.email   || '').toLowerCase().includes(search) ||
-      (c.address || '').toLowerCase().includes(search);
-    return matchFilter && matchSearch;
+    // Proposal filter
+    const p = proposalMap[c.id];
+    if (propFilter === 'none'     && p) return false;
+    if (propFilter === 'sent'     && (!p || p.status === 'Approved')) return false;
+    if (propFilter === 'approved' && (!p || p.status !== 'Approved')) return false;
+    // Search filter
+    if (searchTerm) {
+      const hay = ((c.name||'')+(c.phone||'')+(c.address||'')+(c.email||'')+(c.notes||'')).toLowerCase();
+      if (!hay.includes(searchTerm)) return false;
+    }
+    return true;
   });
+
+  const total = list.length;
+  const visible = list.slice(0, contactsShown);
+  document.getElementById('leads-count').textContent = total === 0 ? '' : `${Math.min(contactsShown, total)} of ${total}`;
 
   const wrap = document.getElementById('contacts-table');
 
-  if (list.length === 0) {
+  if (total === 0) {
     wrap.innerHTML = `<div class="empty">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <p>${allContacts.length === 0 ? 'No contacts yet — add your first one.' : 'No contacts match your search.'}</p>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads match your filter.'}</p>
     </div>`;
     return;
   }
 
-  wrap.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr>
-      <th>Name</th>
-      <th>Phone</th>
-      <th>Status</th>
-      <th>Generator</th>
-      <th>Address</th>
-      <th></th>
-    </tr></thead>
-    <tbody>
-      ${list.map(c => `
-        <tr onclick="openContactModal('${c.id}')">
-          <td class="name">${esc(c.name)}</td>
-          <td class="td-phone"><a href="tel:${esc(c.phone)}" onclick="event.stopPropagation()">${esc(c.phone)}</a></td>
-          <td>${statusBadge(c.status)}</td>
-          <td class="muted">${esc(c.generator)}</td>
-          <td class="muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.address)}</td>
-          <td class="actions" onclick="event.stopPropagation()">
-            <button class="btn btn-ghost btn-sm" onclick="openContactModal('${c.id}')">Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteContact('${c.id}')">Delete</button>
-          </td>
-        </tr>`).join('')}
-    </tbody>
-  </table></div>`;
+  const rows = visible.map(c => {
+    const p = proposalMap[c.id];
+    const propCell = p
+      ? p.status === 'Approved'
+        ? `<a href="${PROPOSAL_BASE_URL}?token=${p.token}" target="_blank" class="prop-badge prop-approved">✓ Approved</a>`
+        : `<a href="${PROPOSAL_BASE_URL}?token=${p.token}" target="_blank" class="prop-badge prop-sent">Sent ↗</a>`
+      : `<button class="prop-badge prop-none" onclick="event.stopPropagation();openProposalModal('${c.id}')">+ Proposal</button>`;
+
+    const addrCell = c.address
+      ? `<a href="https://maps.google.com/?q=${encodeURIComponent(c.address)}" target="_blank" onclick="event.stopPropagation()" title="${esc(c.address)}">
+           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+           ${esc(c.address.split(',')[0])}
+         </a>`
+      : '<span style="color:var(--text3);font-size:12px">—</span>';
+
+    const notesPreview = c.notes
+      ? `<span title="${esc(c.notes)}">${esc(c.notes).slice(0,60)}${c.notes.length>60?'…':''}</span>`
+      : '<span style="color:var(--text3)">—</span>';
+
+    return `<tr onclick="openContactModal('${c.id}')">
+      <td class="name">${esc(c.name)}</td>
+      <td class="phone"><a href="tel:${esc(c.phone||'')}" onclick="event.stopPropagation()">${esc(c.phone||'—')}</a></td>
+      <td class="addr">${addrCell}</td>
+      <td class="notes-cell col-notes">${notesPreview}</td>
+      <td onclick="event.stopPropagation()">${propCell}</td>
+      <td class="actions" onclick="event.stopPropagation()">
+        <button class="btn btn-outline btn-sm" onclick="openContactModal('${c.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteContact('${c.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  let showMoreHTML = '';
+  if (total > contactsShown) {
+    const next = Math.min(contactsShown + 5, total);
+    showMoreHTML = `<div class="show-more-bar">
+      <div class="contact-count">Showing ${contactsShown} of ${total}</div>
+      <button class="btn btn-outline btn-sm" onclick="showMoreContacts()">Show ${next - contactsShown} more</button>
+    </div>`;
+  }
+
+  wrap.innerHTML = `<div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Name</th><th>Phone</th><th>Address</th>
+        <th class="col-notes">Notes</th><th>Proposal</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${showMoreHTML}
+  </div>`;
 }
 
-function filterContacts() { renderContacts(); }
+function showMoreContacts() {
+  contactsShown = Math.min(contactsShown + 5, 9999);
+  renderContacts();
+}
 
-function setFilter(val, el) {
-  contactFilter = val;
-  document.querySelectorAll('#contact-pills .pill').forEach(p => p.classList.remove('active'));
+function setPropFilter(val, el) {
+  propFilter = val;
+  contactsShown = 5;
+  document.querySelectorAll('#lead-pills .pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   renderContacts();
 }
 
 function openContactModal(id) {
-  clearContactForm();
+  clearAddressField();
+  const inp = document.getElementById('c-id');
+  inp.value = '';
+  ['c-name','c-phone','c-email','c-address','c-notes'].forEach(x => document.getElementById(x).value = '');
+
   if (id) {
     const c = allContacts.find(x => x.id === id);
     if (!c) return;
-    document.getElementById('contact-modal-title').textContent = 'Edit Contact';
-    document.getElementById('c-id').value        = c.id;
-    document.getElementById('c-name').value      = c.name      || '';
-    document.getElementById('c-phone').value     = c.phone     || '';
-    document.getElementById('c-email').value     = c.email     || '';
-    document.getElementById('c-address').value   = c.address   || '';
-    document.getElementById('c-generator').value = c.generator || '';
-    document.getElementById('c-status').value    = c.status    || 'New Lead';
-    document.getElementById('c-notes').value     = c.notes     || '';
+    document.getElementById('contact-modal-title').textContent = 'Edit Lead';
+    document.getElementById('c-id').value    = c.id;
+    document.getElementById('c-name').value  = c.name  || '';
+    document.getElementById('c-phone').value = c.phone || '';
+    document.getElementById('c-email').value = c.email || '';
+    document.getElementById('c-notes').value = c.notes || '';
+    if (c.address) {
+      document.getElementById('c-address').value = c.address;
+      lockAddressField();
+    }
   } else {
-    document.getElementById('contact-modal-title').textContent = 'Add Contact';
+    document.getElementById('contact-modal-title').textContent = 'Add Lead';
   }
   document.getElementById('contact-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('c-name').focus(), 50);
-}
-
-function clearContactForm() {
-  ['c-id','c-name','c-phone','c-email','c-address','c-generator','c-notes'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('c-status').value = 'New Lead';
+  setTimeout(() => document.getElementById('c-name').focus(), 60);
 }
 
 async function saveContact() {
-  const id    = document.getElementById('c-id').value;
-  const name  = document.getElementById('c-name').value.trim();
-  const phone = document.getElementById('c-phone').value.trim();
+  const id   = document.getElementById('c-id').value;
+  const name = document.getElementById('c-name').value.trim();
   if (!name) { showToast('Name is required', 'error'); return; }
-
   const payload = {
     name,
-    phone,
-    email:     document.getElementById('c-email').value.trim(),
-    address:   document.getElementById('c-address').value.trim(),
-    generator: document.getElementById('c-generator').value.trim(),
-    status:    document.getElementById('c-status').value,
-    notes:     document.getElementById('c-notes').value.trim(),
+    phone:   document.getElementById('c-phone').value.trim(),
+    email:   document.getElementById('c-email').value.trim(),
+    address: document.getElementById('c-address').value.trim(),
+    notes:   document.getElementById('c-notes').value.trim(),
   };
-
   let error;
   if (id) {
     ({ error } = await db.from('contacts').update(payload).eq('id', id));
   } else {
     ({ error } = await db.from('contacts').insert([payload]));
   }
-
   if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
-  showToast(id ? 'Contact updated' : 'Contact added', 'success');
+  showToast(id ? 'Lead updated' : 'Lead added', 'success');
   closeModal('contact-overlay');
   loadContacts();
 }
 
-async function deleteContact(id) {
+function confirmDeleteContact(id) {
   const c = allContacts.find(x => x.id === id);
-  if (!confirm(`Delete ${c?.name || 'this contact'}? This cannot be undone.`)) return;
+  if (!confirm(`Delete ${c?.name || 'this lead'}? This cannot be undone.`)) return;
+  deleteContact(id);
+}
+
+async function deleteContact(id) {
   const { error } = await db.from('contacts').delete().eq('id', id);
   if (error) { showToast('Delete failed', 'error'); return; }
-  showToast('Contact deleted', 'success');
+  showToast('Lead deleted', 'success');
   loadContacts();
 }
 
+// ── GOOGLE MAPS ADDRESS AUTOCOMPLETE ─────────────────────
+
+function setupAddressAutocomplete() {
+  const input = document.getElementById('c-address');
+  if (!input || acInstance) return;
+  acInstance = new google.maps.places.Autocomplete(input, {
+    types: ['address'],
+    componentRestrictions: { country: 'us' },
+    fields: ['formatted_address']
+  });
+  acInstance.addListener('place_changed', () => {
+    const place = acInstance.getPlace();
+    if (place && place.formatted_address) {
+      input.value = place.formatted_address;
+      lockAddressField();
+    }
+  });
+}
+
+function lockAddressField() {
+  const input = document.getElementById('c-address');
+  input.readOnly = true;
+  input.classList.add('locked');
+  document.getElementById('addr-change-btn').style.display = 'block';
+  document.getElementById('addr-hint').textContent = 'Address confirmed. Click ✕ Change to update.';
+}
+
+function clearAddressField() {
+  const input = document.getElementById('c-address');
+  input.value = '';
+  input.readOnly = false;
+  input.classList.remove('locked');
+  document.getElementById('addr-change-btn').style.display = 'none';
+  document.getElementById('addr-hint').textContent = 'Type to search — select from the dropdown to lock in the address.';
+  // Re-attach autocomplete if maps is ready
+  if (window.mapsReady) {
+    setTimeout(() => { acInstance = null; setupAddressAutocomplete(); }, 50);
+  }
+}
+
 // ══════════════════════════════════════════════════════════
-// SCHEDULE
+// PROPOSALS
+// ══════════════════════════════════════════════════════════
+
+async function loadProposals() {
+  const { data, error } = await db.from('proposals').select('*').order('created_at', { ascending: false });
+  if (error) return;
+  allProposals = data || [];
+  // Build map: contact_id → most recent proposal
+  proposalMap = {};
+  allProposals.forEach(p => {
+    if (p.contact_id && !proposalMap[p.contact_id]) {
+      proposalMap[p.contact_id] = p;
+    }
+  });
+  renderContacts(); // re-render with proposal badges
+}
+
+function calcTotal() {
+  const base  = parseFloat(document.getElementById('p-base-price').value) || 0;
+  const cord  = document.getElementById('p-cord-check').checked ? 150 : 0;
+  const surge = document.getElementById('p-surge-check').checked ? 450 : 0;
+  const total = base + cord + surge;
+  document.getElementById('p-total').textContent = '$' + total.toLocaleString();
+}
+
+function openProposalModal(contactId) {
+  const c = allContacts.find(x => x.id === contactId);
+  if (!c) return;
+
+  // Reset form state
+  document.getElementById('p-form').style.display = '';
+  document.getElementById('p-created').style.display = 'none';
+  document.getElementById('p-create-btn').style.display = '';
+  document.getElementById('proposal-modal-foot').querySelector('.btn-outline').textContent = 'Cancel';
+
+  document.getElementById('p-contact-id').value  = contactId;
+  document.getElementById('proposal-modal-title').textContent = `Proposal — ${c.name}`;
+  document.getElementById('p-contact-name').textContent = c.name;
+  document.getElementById('p-contact-addr').textContent = c.address || '';
+  document.getElementById('p-base-price').value = '1295';
+  document.getElementById('p-cord-check').checked = true;
+  document.getElementById('p-surge-check').checked = false;
+  document.getElementById('p-notes').value = '';
+  calcTotal();
+
+  document.getElementById('proposal-overlay').classList.add('open');
+}
+
+async function saveProposal() {
+  const contactId = document.getElementById('p-contact-id').value;
+  const c = allContacts.find(x => x.id === contactId);
+  const base  = parseFloat(document.getElementById('p-base-price').value) || 0;
+  const cord  = document.getElementById('p-cord-check').checked;
+  const surge = document.getElementById('p-surge-check').checked;
+  const total = base + (cord ? 150 : 0) + (surge ? 450 : 0);
+
+  const payload = {
+    contact_id:      contactId,
+    contact_name:    c?.name    || '',
+    contact_email:   c?.email   || '',
+    contact_phone:   c?.phone   || '',
+    contact_address: c?.address || '',
+    price_base:      base,
+    include_cord:    cord,
+    price_cord:      cord ? 150 : 0,
+    include_surge:   surge,
+    price_surge:     surge ? 450 : 0,
+    total,
+    notes:           document.getElementById('p-notes').value.trim(),
+    status:          'Draft',
+  };
+
+  const { data, error } = await db.from('proposals').insert([payload]).select().single();
+  if (error) { showToast('Failed to create proposal: ' + error.message, 'error'); return; }
+
+  const link = `${PROPOSAL_BASE_URL}?token=${data.token}`;
+
+  // Show link UI
+  document.getElementById('p-form').style.display = 'none';
+  document.getElementById('p-created').style.display = '';
+  document.getElementById('p-create-btn').style.display = 'none';
+  document.getElementById('p-link-url').textContent = link;
+  document.getElementById('p-email-link').href =
+    `mailto:${encodeURIComponent(c?.email||'')}?subject=${encodeURIComponent('Your Backup Power Pro Proposal')}&body=${encodeURIComponent('Hi '+c?.name+',\n\nHere is your custom proposal:\n\n'+link+'\n\nLet me know if you have any questions!\n\nKey\nBackup Power Pro\n(864) 400-5302')}`;
+
+  // Update proposal map so badge updates
+  proposalMap[contactId] = data;
+  renderContacts();
+  showToast('Proposal created!', 'success');
+}
+
+function copyProposalLink() {
+  const link = document.getElementById('p-link-url').textContent;
+  navigator.clipboard.writeText(link).then(() => showToast('Link copied!', 'success'));
+}
+
+// ══════════════════════════════════════════════════════════
+// SCHEDULE & CALENDAR
 // ══════════════════════════════════════════════════════════
 
 async function loadJobs() {
-  const { data, error } = await db
-    .from('schedule')
-    .select('*')
-    .order('date', { ascending: true });
+  const { data, error } = await db.from('schedule').select('*').order('date', { ascending: true });
   if (error) { showToast('Failed to load schedule', 'error'); return; }
   allJobs = data || [];
-  renderSchedule();
+  renderCalendar();
 }
 
-function renderSchedule() {
-  const today = new Date().toISOString().split('T')[0];
-  let jobs = schedFilter === 'upcoming'
-    ? allJobs.filter(j => j.status !== 'Cancelled' && (!j.date || j.date >= today))
-    : allJobs;
+function getMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
-  jobs = [...jobs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  const wrap = document.getElementById('schedule-list');
-
-  if (jobs.length === 0) {
-    wrap.innerHTML = `<div class="empty">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <p>${schedFilter === 'upcoming' ? 'No upcoming events.' : 'No events scheduled yet.'}</p>
-    </div>`;
-    return;
+function navigateWeek(delta) {
+  if (delta === 0) {
+    weekStart = getMonday(new Date());
+  } else {
+    weekStart = new Date(weekStart);
+    weekStart.setDate(weekStart.getDate() + delta * 7);
   }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Week label
+  const ws = new Date(weekStart);
+  const we = new Date(ws); we.setDate(we.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  document.getElementById('week-label').textContent = `${fmt(ws)} – ${fmt(we)}`;
 
   let html = '';
-  let lastMonth = '';
-  jobs.forEach(j => {
-    const d = j.date ? new Date(j.date + 'T12:00:00') : null;
-    const month = d ? d.toLocaleString('en-US', { month: 'long', year: 'numeric' }) : 'No Date';
-    if (month !== lastMonth) {
-      html += `<div class="section-label">${month}</div>`;
-      lastMonth = month;
-    }
-    const day   = d ? d.getDate() : '–';
-    const mon   = d ? d.toLocaleString('en-US', { month: 'short' }).toUpperCase() : '';
-    const time  = j.time ? fmt12(j.time) : '';
-    const price = j.price ? `<span class="job-price">$${Number(j.price).toLocaleString()}</span>` : '';
-    // Display name: contact name first, then title, then fallback
-    const displayName = j.contact_name
-      ? esc(j.contact_name)
-      : (j.title ? esc(j.title) : '<span style="color:var(--text3)">Untitled Event</span>');
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(ws);
+    day.setDate(day.getDate() + i);
+    const dateStr = day.toISOString().split('T')[0];
+    const isToday = dateStr === todayStr;
+    const dayJobs = allJobs.filter(j => j.date === dateStr);
+
+    const events = dayJobs.map(j => {
+      const label = j.contact_name || j.title || 'Event';
+      const time  = j.time ? fmt12(j.time) + ' · ' : '';
+      return `<div class="cal-event ${j.status==='Complete'?'complete':''}" onclick="event.stopPropagation();openJobModal('${j.id}',null)">${time}${esc(label)}</div>`;
+    }).join('');
 
     html += `
-    <div class="job-card ${j.status === 'Complete' ? 'complete' : ''}">
-      <div class="job-date-block">
-        <div class="job-date-day">${day}</div>
-        <div class="job-date-month">${mon}</div>
-        <div class="job-date-time">${time}</div>
+    <div class="cal-day ${isToday ? 'today' : ''}">
+      <div class="cal-day-head">
+        <span class="cal-day-name">${days[i]}</span>
+        <span class="cal-day-num">${day.getDate()}</span>
       </div>
-      <div class="job-info">
-        <div class="job-contact">${displayName}</div>
-        <div class="job-meta">
-          ${typeBadge(j.type)}
-          ${statusJobBadge(j.status)}
-          ${price}
-        </div>
-        ${j.notes ? `<div class="job-notes">${esc(j.notes)}</div>` : ''}
-      </div>
-      <div class="job-actions">
-        <button class="btn btn-ghost btn-sm" onclick="openJobModal('${j.id}')">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteJob('${j.id}')">Delete</button>
+      <div class="cal-day-body" onclick="openJobModal(null,'${dateStr}')">
+        ${events}
+        <div class="cal-add-hint">+ Add event</div>
       </div>
     </div>`;
-  });
-
-  wrap.innerHTML = `<div class="job-list">${html}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = html;
 }
 
-function setSchedFilter(val, el) {
-  schedFilter = val;
-  document.querySelectorAll('#view-schedule .filter-pills .pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  renderSchedule();
+function onJobContactChange() {
+  const sel = document.getElementById('j-contact');
+  const titleRow = document.getElementById('j-title-row');
+  titleRow.style.display = sel.value ? 'none' : '';
 }
 
-function openJobModal(id) {
-  clearJobForm();
+function openJobModal(id, preDate) {
+  // Reset
+  ['j-id','j-title','j-notes'].forEach(x => document.getElementById(x).value = '');
+  document.getElementById('j-price').value = '';
+  document.getElementById('j-type').value = 'Install';
+  document.getElementById('j-status').value = 'Scheduled';
+  document.getElementById('j-delete-btn').style.display = 'none';
 
   // Populate contact dropdown
   const sel = document.getElementById('j-contact');
   sel.innerHTML = '<option value="">— No contact linked —</option>';
-  [...allContacts]
-    .filter(c => c.status !== 'Not a Fit')
-    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    .forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.name + (c.phone ? ' · ' + c.phone : '');
-      sel.appendChild(opt);
-    });
+  [...allContacts].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+  sel.value = '';
 
   if (id) {
     const j = allJobs.find(x => x.id === id);
     if (!j) return;
     document.getElementById('job-modal-title').textContent = 'Edit Event';
-    document.getElementById('j-id').value      = j.id;
-    document.getElementById('j-contact').value = j.contact_id || '';
-    document.getElementById('j-title').value   = j.title      || '';
-    document.getElementById('j-date').value    = j.date       || '';
-    document.getElementById('j-time').value    = j.time       || '';
-    document.getElementById('j-type').value    = j.type       || 'Install';
-    document.getElementById('j-status').value  = j.status     || 'Scheduled';
-    document.getElementById('j-price').value   = j.price      || '';
-    document.getElementById('j-notes').value   = j.notes      || '';
+    document.getElementById('j-id').value     = j.id;
+    document.getElementById('j-date').value   = j.date   || '';
+    document.getElementById('j-time').value   = j.time   || '';
+    document.getElementById('j-type').value   = j.type   || 'Install';
+    document.getElementById('j-status').value = j.status || 'Scheduled';
+    document.getElementById('j-price').value  = j.price  || '';
+    document.getElementById('j-notes').value  = j.notes  || '';
+    document.getElementById('j-title').value  = j.title  || '';
+    sel.value = j.contact_id || '';
+    document.getElementById('j-delete-btn').style.display = '';
   } else {
-    document.getElementById('job-modal-title').textContent = 'Schedule Event';
-    const tm = new Date(); tm.setDate(tm.getDate() + 1);
-    document.getElementById('j-date').value = tm.toISOString().split('T')[0];
+    document.getElementById('job-modal-title').textContent = 'Add Event';
+    if (preDate) document.getElementById('j-date').value = preDate;
   }
-
+  onJobContactChange();
   document.getElementById('job-overlay').classList.add('open');
 }
 
-function clearJobForm() {
-  ['j-id','j-date','j-time','j-price','j-notes','j-title'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('j-contact').value = '';
-  document.getElementById('j-type').value    = 'Install';
-  document.getElementById('j-status').value  = 'Scheduled';
-}
-
 async function saveJob() {
-  const id    = document.getElementById('j-id').value;
-  const date  = document.getElementById('j-date').value;
-  const contactId = document.getElementById('j-contact').value;
-  const title = document.getElementById('j-title').value.trim();
-
-  if (!date) { showToast('Date is required', 'error'); return; }
-  if (!contactId && !title) { showToast('Add a title when no contact is linked', 'error'); return; }
-
-  const contact = contactId ? allContacts.find(c => c.id === contactId) : null;
+  const id   = document.getElementById('j-id').value;
+  const date = document.getElementById('j-date').value;
+  const selContact = document.getElementById('j-contact').value;
+  const c = selContact ? allContacts.find(x => x.id === selContact) : null;
 
   const payload = {
-    date,
-    title:        title || null,
-    time:         document.getElementById('j-time').value || null,
-    contact_id:   contactId || null,
-    contact_name: contact?.name || '',
+    date:         date || null,
+    time:         document.getElementById('j-time').value   || null,
+    contact_id:   selContact || null,
+    contact_name: c?.name || null,
+    title:        document.getElementById('j-title').value.trim() || null,
     type:         document.getElementById('j-type').value,
     status:       document.getElementById('j-status').value,
-    price:        document.getElementById('j-price').value || null,
-    notes:        document.getElementById('j-notes').value.trim(),
+    price:        parseFloat(document.getElementById('j-price').value) || null,
+    notes:        document.getElementById('j-notes').value.trim() || null,
   };
 
   let error;
@@ -1112,288 +913,48 @@ async function saveJob() {
   } else {
     ({ error } = await db.from('schedule').insert([payload]));
   }
-
   if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
-
-  if (payload.status === 'Complete' && contact && contact.status !== 'Complete') {
-    if (confirm(`Mark ${contact.name} as Complete in contacts too?`)) {
-      await db.from('contacts').update({ status: 'Complete' }).eq('id', contactId);
-      loadContacts();
-    }
-  }
-
-  showToast(id ? 'Event updated' : 'Event scheduled', 'success');
+  showToast(id ? 'Event updated' : 'Event added', 'success');
   closeModal('job-overlay');
   loadJobs();
 }
 
-async function deleteJob(id) {
-  const j = allJobs.find(x => x.id === id);
-  const label = j?.contact_name || j?.title || 'this event';
-  if (!confirm(`Delete event for ${label}?`)) return;
+async function deleteJob() {
+  const id = document.getElementById('j-id').value;
+  if (!id) return;
+  if (!confirm('Delete this event?')) return;
   const { error } = await db.from('schedule').delete().eq('id', id);
   if (error) { showToast('Delete failed', 'error'); return; }
   showToast('Event deleted', 'success');
+  closeModal('job-overlay');
   loadJobs();
 }
 
-// ══════════════════════════════════════════════════════════
-// PROPOSALS
-// ══════════════════════════════════════════════════════════
+// ── HELPERS ───────────────────────────────────────────────
 
-async function loadProposals() {
-  const { data, error } = await db
-    .from('proposals')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { showToast('Failed to load proposals', 'error'); return; }
-  allProposals = data || [];
-  renderProposals();
+function fmt12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
 }
 
-function renderProposals() {
-  let list = allProposals.filter(p => propFilter === 'All' || p.status === propFilter);
-  const wrap = document.getElementById('proposals-list');
-
-  if (list.length === 0) {
-    wrap.innerHTML = `<div class="empty" style="background:var(--card);border:1px solid var(--border);border-radius:12px">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
-      <p>${allProposals.length === 0 ? 'No proposals yet. Click "New Proposal" to create one.' : 'No proposals match this filter.'}</p>
-    </div>`;
-    return;
-  }
-
-  wrap.innerHTML = `<div class="table-card"><div class="table-wrap"><table>
-    <thead><tr>
-      <th>Contact</th>
-      <th>Created</th>
-      <th>Includes</th>
-      <th>Total</th>
-      <th>Status</th>
-      <th></th>
-    </tr></thead>
-    <tbody>
-      ${list.map(p => {
-        const date = new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const includes = [
-          p.include_cord  ? 'Cord'  : null,
-          p.include_surge ? 'Surge' : null,
-        ].filter(Boolean).join(' + ') || '—';
-        const signedLine = p.signer_name
-          ? `<div style="font-size:11px;color:var(--green);margin-top:3px">✓ ${esc(p.signer_name)}</div>`
-          : '';
-        return `<tr style="cursor:default">
-          <td class="name">${esc(p.contact_name)}<div style="font-size:12px;color:var(--text3);font-weight:400">${esc(p.contact_phone||'')}</div></td>
-          <td class="muted">${date}</td>
-          <td class="muted" style="font-size:12px">${includes}</td>
-          <td style="font-weight:700;color:var(--green);font-size:15px">$${Number(p.total||0).toLocaleString()}</td>
-          <td>${proposalStatusBadge(p.status)}${signedLine}</td>
-          <td class="actions">
-            <a href="${PROPOSAL_BASE_URL}?token=${p.token}" target="_blank" class="btn btn-ghost btn-sm">View</a>
-            <button class="btn btn-sm" style="background:var(--navy);color:#fff" onclick="copyProposalLink('${p.token}','${p.id}')">Copy Link</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteProposal('${p.id}')">Delete</button>
-          </td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table></div></div>`;
-}
-
-function setPropFilter(val, el) {
-  propFilter = val;
-  document.querySelectorAll('#prop-pills .pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  renderProposals();
-}
-
-function openProposalModal() {
-  const eligible = allContacts.filter(c => c.status !== 'Not a Fit');
-
-  // Populate contact dropdown
-  const sel = document.getElementById('p-contact');
-  sel.innerHTML = eligible.length === 0
-    ? '<option value="">— No contacts yet — add one in Contacts tab —</option>'
-    : '<option value="">— Select a contact —</option>';
-
-  [...eligible]
-    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    .forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.name + (c.phone ? ' · ' + c.phone : '');
-      sel.appendChild(opt);
-    });
-
-  // Reset fields
-  document.getElementById('p-base').value           = '';
-  document.getElementById('p-cord').checked          = true;
-  document.getElementById('p-cord-price').value      = '150';
-  document.getElementById('p-cord-price').disabled   = false;
-  document.getElementById('p-surge').checked         = false;
-  document.getElementById('p-surge-price').value     = '450';
-  document.getElementById('p-surge-price').disabled  = true;
-  document.getElementById('p-notes').value           = '';
-  document.getElementById('p-preview').classList.remove('show');
-  document.getElementById('p-total').textContent     = '$0';
-
-  document.getElementById('proposal-overlay').classList.add('open');
-  setTimeout(() => sel.focus(), 50);
-}
-
-function onContactChange() {
-  const contactId = document.getElementById('p-contact').value;
-  const c = allContacts.find(x => x.id === contactId);
-  const preview = document.getElementById('p-preview');
-  if (c) {
-    document.getElementById('p-preview-name').textContent    = c.name    || '';
-    document.getElementById('p-preview-phone').textContent   = c.phone   || '';
-    document.getElementById('p-preview-address').textContent = c.address || '';
-    preview.classList.add('show');
-  } else {
-    preview.classList.remove('show');
-  }
-}
-
-function toggleCord() {
-  document.getElementById('p-cord-price').disabled = !document.getElementById('p-cord').checked;
-}
-function toggleSurge() {
-  document.getElementById('p-surge-price').disabled = !document.getElementById('p-surge').checked;
-}
-
-function calcTotal() {
-  const base  = parseFloat(document.getElementById('p-base').value) || 0;
-  const cord  = document.getElementById('p-cord').checked  ? (parseFloat(document.getElementById('p-cord-price').value)  || 0) : 0;
-  const surge = document.getElementById('p-surge').checked ? (parseFloat(document.getElementById('p-surge-price').value) || 0) : 0;
-  document.getElementById('p-total').textContent = '$' + (base + cord + surge).toLocaleString();
-}
-
-async function saveProposal() {
-  const contactId = document.getElementById('p-contact').value;
-  if (!contactId) { showToast('Select a contact — proposals require a contact', 'error'); return; }
-
-  const base      = parseFloat(document.getElementById('p-base').value) || 0;
-  const incCord   = document.getElementById('p-cord').checked;
-  const cordPrice = parseFloat(document.getElementById('p-cord-price').value) || 150;
-  const incSurge  = document.getElementById('p-surge').checked;
-  const surgePrice= parseFloat(document.getElementById('p-surge-price').value) || 450;
-  const total     = base + (incCord ? cordPrice : 0) + (incSurge ? surgePrice : 0);
-
-  if (base === 0) { showToast('Enter a base installation price', 'error'); return; }
-
-  const contact = allContacts.find(c => c.id === contactId);
-
-  const payload = {
-    contact_id:      contactId,
-    contact_name:    contact?.name    || '',
-    contact_email:   contact?.email   || '',
-    contact_phone:   contact?.phone   || '',
-    contact_address: contact?.address || '',
-    price_base:      base,
-    include_cord:    incCord,
-    price_cord:      cordPrice,
-    include_surge:   incSurge,
-    price_surge:     surgePrice,
-    total:           total,
-    notes:           document.getElementById('p-notes').value.trim(),
-    status:          'Draft',
-  };
-
-  const { data, error } = await db.from('proposals').insert([payload]).select().single();
-  if (error) { showToast('Failed to create proposal: ' + error.message, 'error'); return; }
-
-  // Auto-update contact status to Quoted if still New Lead
-  if (contact && contact.status === 'New Lead') {
-    await db.from('contacts').update({ status: 'Quoted' }).eq('id', contactId);
-    loadContacts();
-  }
-
-  // Copy link to clipboard
-  const link = `${PROPOSAL_BASE_URL}?token=${data.token}`;
-  try {
-    await navigator.clipboard.writeText(link);
-    showToast('Proposal created! Link copied — send via text', 'success');
-  } catch(e) {
-    showToast('Proposal created! Copy this link: ' + link, 'success');
-  }
-
-  closeModal('proposal-overlay');
-  loadProposals();
-}
-
-async function copyProposalLink(token, id) {
-  const link = `${PROPOSAL_BASE_URL}?token=${token}`;
-  try {
-    await navigator.clipboard.writeText(link);
-  } catch(e) {
-    prompt('Copy this link:', link);
-    return;
-  }
-  // Mark as Sent if still Draft
-  const p = allProposals.find(x => x.id === id);
-  if (p && p.status === 'Draft') {
-    await db.from('proposals').update({ status: 'Sent' }).eq('id', id);
-    loadProposals();
-  }
-  showToast('Link copied — send via text!', 'success');
-}
-
-async function deleteProposal(id) {
-  const p = allProposals.find(x => x.id === id);
-  if (!confirm(`Delete proposal for ${p?.contact_name || 'this contact'}? This cannot be undone.`)) return;
-  const { error } = await db.from('proposals').delete().eq('id', id);
-  if (error) { showToast('Delete failed', 'error'); return; }
-  showToast('Proposal deleted', 'success');
-  loadProposals();
-}
-
-// ── MODALS ─────────────────────────────────────────────────
-function closeModal(overlayId) {
-  document.getElementById(overlayId).classList.remove('open');
-}
-function closeOverlay(e, overlayId) {
-  if (e.target.id === overlayId) closeModal(overlayId);
-}
-
-// ── TOAST ──────────────────────────────────────────────────
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-// ── HELPERS ────────────────────────────────────────────────
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function fmt12(t) {
-  if (!t) return '';
-  const [h, m] = t.split(':');
-  const hr = parseInt(h);
-  return `${hr % 12 || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
 }
 
-function statusBadge(s) {
-  const map = { 'New Lead':'new','Quoted':'quoted','Scheduled':'scheduled','Complete':'complete','Not a Fit':'notafit' };
-  return `<span class="badge badge-${map[s]||'new'}">${esc(s)}</span>`;
-}
-
-function typeBadge(t) {
-  const map = { 'Install':'install','Estimate':'estimate','Follow-up':'followup','Other':'other' };
-  return `<span class="badge badge-${map[t]||'other'}">${esc(t||'Install')}</span>`;
-}
-
-function statusJobBadge(s) {
-  const map = { 'Scheduled':'new','Complete':'complete','Cancelled':'cancelled' };
-  return `<span class="badge badge-${map[s]||'new'}">${esc(s)}</span>`;
-}
-
-function proposalStatusBadge(s) {
-  const map = { 'Draft':'draft','Sent':'sent','Approved':'approved' };
-  return `<span class="badge badge-${map[s]||'draft'}">${esc(s||'Draft')}</span>`;
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
 </script>
