@@ -68,6 +68,26 @@ td.addr a{color:var(--text2);text-decoration:none;font-size:12.5px;display:flex;
 td.addr a:hover{color:var(--blue)}
 td.notes-cell{color:var(--text3);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 td.actions{white-space:nowrap}
+/* ── SIDE PANEL ─────────────────────────────────────────── */
+.panel-backdrop{position:fixed;inset:0;background:rgba(10,20,40,.35);z-index:300;display:none;backdrop-filter:blur(1px)}
+.panel-backdrop.open{display:block}
+.side-panel{position:fixed;top:0;right:-440px;width:420px;max-width:100vw;height:100%;background:#fff;z-index:301;box-shadow:-8px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1)}
+.side-panel.open{right:0}
+.panel-head{padding:18px 20px 14px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:10px;background:#fff;position:sticky;top:0;z-index:2}
+.panel-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:19px;color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.panel-close{width:32px;height:32px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;font-size:18px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.panel-close:hover{background:#e2e8f0}
+.panel-body{flex:1;overflow-y:auto;padding:18px 20px}
+.panel-foot{padding:14px 20px;border-top:1.5px solid var(--border);display:flex;gap:8px;align-items:center;background:#fff}
+.panel-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:18px 0 8px}
+.panel-section-label:first-child{margin-top:0}
+.prop-action-btn{width:100%;padding:11px 16px;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px;transition:all .15s}
+.prop-action-create{background:var(--navy);color:#fff}
+.prop-action-create:hover{background:var(--navy2)}
+.prop-action-view{background:#dbeafe;color:#1d4ed8;border:1.5px solid #bfdbfe}
+.prop-action-view:hover{background:#bfdbfe}
+.delete-btn-confirm{background:var(--red)!important;color:#fff!important}
+@media(max-width:500px){.side-panel{width:100vw}}
 
 /* PROPOSAL BADGES */
 .prop-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11.5px;font-weight:700;font-family:'Outfit',sans-serif;white-space:nowrap}
@@ -173,7 +193,6 @@ td.actions{white-space:nowrap}
 <!-- ── NAV ───────────────────────────────────────────────── -->
 <nav class="nav" id="main-nav" style="display:none">
   <img src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin-right:auto">
-  <button class="btn btn-ghost btn-sm" onclick="openJobModal(null,null)">+ Event</button>
   <button class="btn btn-primary btn-sm" onclick="openContactModal(null)">+ Lead</button>
 </nav>
 
@@ -193,6 +212,7 @@ td.actions{white-space:nowrap}
       <span class="pill" onclick="setPropFilter('none',this)">No Proposal</span>
       <span class="pill" onclick="setPropFilter('sent',this)">Proposal Sent</span>
       <span class="pill" onclick="setPropFilter('approved',this)">Approved ✓</span>
+      <span class="pill" onclick="setPropFilter('archived',this)" style="color:var(--text3)">Archived</span>
     </div>
   </div>
 
@@ -409,6 +429,53 @@ td.actions{white-space:nowrap}
   </div>
 </div>
 
+<!-- ── SIDE PANEL ────────────────────────────────────────── -->
+<div class="panel-backdrop" id="panel-backdrop" onclick="closePanel()"></div>
+<div class="side-panel" id="side-panel">
+  <div class="panel-head">
+    <div class="panel-name" id="panel-name">Lead</div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body">
+    <input type="hidden" id="panel-id">
+
+    <!-- Proposal action -->
+    <div id="panel-prop-section"></div>
+
+    <div class="panel-section-label">Details</div>
+    <div class="form-row">
+      <label>Name *</label>
+      <input class="form-input" id="panel-name-input" placeholder="Full name">
+    </div>
+    <div class="form-row">
+      <label>Phone</label>
+      <input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000">
+    </div>
+    <div class="form-row">
+      <label>Email</label>
+      <input class="form-input" id="panel-email" type="email" placeholder="email@example.com">
+    </div>
+    <div class="form-row">
+      <label>Address</label>
+      <div class="addr-wrap">
+        <input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off"
+          oninput="panelAddrInput(this.value)" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)">
+        <span class="addr-change" id="panel-addr-change" onclick="clearPanelAddress()">✕ Change</span>
+        <ul class="addr-dropdown" id="panel-addr-dropdown"></ul>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Notes</label>
+      <textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…"></textarea>
+    </div>
+  </div>
+  <div class="panel-foot">
+    <button class="btn btn-danger btn-sm" id="panel-delete-btn" onclick="panelDelete()" style="margin-right:auto">Delete</button>
+    <button class="btn btn-outline btn-sm" id="panel-archive-btn" onclick="panelArchive()">Archive</button>
+    <button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" onclick="panelSave()">Save</button>
+  </div>
+</div>
+
 <!-- ── TOAST ─────────────────────────────────────────────── -->
 <div class="toast" id="toast"></div>
 
@@ -485,6 +552,10 @@ function renderContacts() {
   searchTerm = (document.getElementById('search').value || '').toLowerCase();
 
   let list = allContacts.filter(c => {
+    const isArchived = c.status === 'Archived';
+    // Archived filter
+    if (propFilter === 'archived') return isArchived;
+    if (isArchived) return false; // hide archived in all other views
     // Proposal filter
     const p = proposalMap[c.id];
     if (propFilter === 'none'     && p) return false;
@@ -514,11 +585,11 @@ function renderContacts() {
 
   const rows = visible.map(c => {
     const p = proposalMap[c.id];
-    const propCell = p
+    const propBadge = p
       ? p.status === 'Approved'
-        ? `<a href="${PROPOSAL_BASE_URL}?token=${p.token}" target="_blank" class="prop-badge prop-approved">✓ Approved</a>`
-        : `<a href="${PROPOSAL_BASE_URL}?token=${p.token}" target="_blank" class="prop-badge prop-sent">Sent ↗</a>`
-      : `<button class="prop-badge prop-none" onclick="event.stopPropagation();openProposalModal('${c.id}')">+ Proposal</button>`;
+        ? `<span class="prop-badge prop-approved">✓ Approved</span>`
+        : `<span class="prop-badge prop-sent">Sent ↗</span>`
+      : `<span class="prop-badge prop-none">No Proposal</span>`;
 
     const addrCell = c.address
       ? `<a href="https://maps.google.com/?q=${encodeURIComponent(c.address)}" target="_blank" onclick="event.stopPropagation()" title="${esc(c.address)}">
@@ -527,20 +598,13 @@ function renderContacts() {
          </a>`
       : '<span style="color:var(--text3);font-size:12px">—</span>';
 
-    const notesPreview = c.notes
-      ? `<span title="${esc(c.notes)}">${esc(c.notes).slice(0,60)}${c.notes.length>60?'…':''}</span>`
-      : '<span style="color:var(--text3)">—</span>';
-
-    return `<tr onclick="openContactModal('${c.id}')">
-      <td class="name">${esc(c.name)}</td>
+    const isArchived = c.status === 'Archived';
+    return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
+      <td class="name">${esc(c.name)}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
       <td class="phone"><a href="tel:${esc(c.phone||'')}" onclick="event.stopPropagation()">${esc(c.phone||'—')}</a></td>
       <td class="addr">${addrCell}</td>
-      <td class="notes-cell col-notes">${notesPreview}</td>
-      <td onclick="event.stopPropagation()">${propCell}</td>
-      <td class="actions" onclick="event.stopPropagation()">
-        <button class="btn btn-outline btn-sm" onclick="openContactModal('${c.id}')">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDeleteContact('${c.id}')">✕</button>
-      </td>
+      <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
+      <td>${propBadge}</td>
     </tr>`;
   }).join('');
 
@@ -557,7 +621,7 @@ function renderContacts() {
     <table>
       <thead><tr>
         <th>Name</th><th>Phone</th><th>Address</th>
-        <th class="col-notes">Notes</th><th>Proposal</th><th></th>
+        <th class="col-notes">Notes</th><th>Proposal</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -629,6 +693,216 @@ async function saveContact() {
   showToast(id ? 'Lead updated' : 'Lead added', 'success');
   closeModal('contact-overlay');
   loadContacts();
+}
+
+// ══════════════════════════════════════════════════════════
+// SIDE PANEL
+// ══════════════════════════════════════════════════════════
+
+let panelDeletePending = false;
+let panelDeleteTimer;
+let panelArchivePending = false;
+let panelArchiveTimer;
+let panelAddrFocusedIdx = -1;
+let panelAddrDebounce;
+
+function openPanel(id) {
+  const c = allContacts.find(x => x.id === id);
+  if (!c) return;
+
+  // Reset two-step states
+  panelDeletePending = false;
+  panelArchivePending = false;
+  clearTimeout(panelDeleteTimer);
+  clearTimeout(panelArchiveTimer);
+  const delBtn = document.getElementById('panel-delete-btn');
+  const arcBtn = document.getElementById('panel-archive-btn');
+  delBtn.textContent = 'Delete';
+  delBtn.classList.remove('delete-btn-confirm');
+  const isArchived = c.status === 'Archived';
+  arcBtn.textContent = isArchived ? 'Unarchive' : 'Archive';
+  arcBtn.classList.remove('delete-btn-confirm');
+
+  // Fill fields
+  document.getElementById('panel-id').value          = c.id;
+  document.getElementById('panel-name').textContent  = c.name;
+  document.getElementById('panel-name-input').value  = c.name  || '';
+  document.getElementById('panel-phone').value       = c.phone || '';
+  document.getElementById('panel-email').value       = c.email || '';
+  document.getElementById('panel-notes').value       = c.notes || '';
+
+  // Address
+  clearPanelAddress();
+  if (c.address) {
+    const ai = document.getElementById('panel-address');
+    ai.value = c.address;
+    ai.readOnly = true;
+    ai.classList.add('locked');
+    document.getElementById('panel-addr-change').style.display = 'block';
+  }
+
+  // Proposal section
+  const p = proposalMap[c.id];
+  const propSection = document.getElementById('panel-prop-section');
+  if (p) {
+    const url = `${PROPOSAL_BASE_URL}?token=${p.token}`;
+    const statusLabel = p.status === 'Approved' ? '✓ Approved' : 'Sent';
+    propSection.innerHTML = `
+      <a href="${url}" target="_blank" class="prop-action-btn prop-action-view" style="text-decoration:none;margin-bottom:12px">
+        View Proposal — ${statusLabel} ↗
+      </a>`;
+  } else {
+    propSection.innerHTML = `
+      <button class="prop-action-btn prop-action-create" onclick="closePanel();openProposalModal('${c.id}')">
+        + Create Proposal
+      </button>`;
+  }
+
+  document.getElementById('panel-backdrop').classList.add('open');
+  document.getElementById('side-panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel-backdrop').classList.remove('open');
+  document.getElementById('side-panel').classList.remove('open');
+  panelAddrHide();
+}
+
+async function panelSave() {
+  const id   = document.getElementById('panel-id').value;
+  const name = document.getElementById('panel-name-input').value.trim();
+  if (!name) { showToast('Name is required', 'error'); return; }
+  const c = allContacts.find(x => x.id === id);
+  const payload = {
+    name,
+    phone:   document.getElementById('panel-phone').value.trim(),
+    email:   document.getElementById('panel-email').value.trim(),
+    address: document.getElementById('panel-address').value.trim(),
+    notes:   document.getElementById('panel-notes').value.trim(),
+    status:  c?.status || null,
+  };
+  const { error } = await db.from('contacts').update(payload).eq('id', id);
+  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  showToast('Lead saved', 'success');
+  closePanel();
+  loadContacts();
+}
+
+function panelDelete() {
+  if (!panelDeletePending) {
+    panelDeletePending = true;
+    const btn = document.getElementById('panel-delete-btn');
+    btn.textContent = 'Really delete? Click again';
+    btn.classList.add('delete-btn-confirm');
+    panelDeleteTimer = setTimeout(() => {
+      panelDeletePending = false;
+      btn.textContent = 'Delete';
+      btn.classList.remove('delete-btn-confirm');
+    }, 3500);
+  } else {
+    clearTimeout(panelDeleteTimer);
+    const id = document.getElementById('panel-id').value;
+    deleteContact(id);
+    closePanel();
+  }
+}
+
+function panelArchive() {
+  if (!panelArchivePending) {
+    panelArchivePending = true;
+    const btn = document.getElementById('panel-archive-btn');
+    const c = allContacts.find(x => x.id === document.getElementById('panel-id').value);
+    const isArchived = c?.status === 'Archived';
+    btn.textContent = isArchived ? 'Confirm Unarchive' : 'Confirm Archive';
+    btn.classList.add('delete-btn-confirm');
+    panelArchiveTimer = setTimeout(() => {
+      panelArchivePending = false;
+      btn.textContent = isArchived ? 'Unarchive' : 'Archive';
+      btn.classList.remove('delete-btn-confirm');
+    }, 3500);
+  } else {
+    clearTimeout(panelArchiveTimer);
+    const id = document.getElementById('panel-id').value;
+    const c = allContacts.find(x => x.id === id);
+    const newStatus = c?.status === 'Archived' ? null : 'Archived';
+    db.from('contacts').update({ status: newStatus }).eq('id', id).then(({ error }) => {
+      if (error) { showToast('Failed', 'error'); return; }
+      showToast(newStatus === 'Archived' ? 'Lead archived' : 'Lead restored', 'success');
+      closePanel();
+      loadContacts();
+    });
+  }
+}
+
+// Panel address autocomplete (mirrors main one)
+function panelAddrInput(val) {
+  clearTimeout(panelAddrDebounce);
+  if (val.length < 3) { panelAddrHide(); return; }
+  panelAddrDebounce = setTimeout(async () => {
+    try {
+      const url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'
+        + encodeURIComponent(val)
+        + '.json?access_token=' + MAPBOX_TOKEN
+        + '&country=us&types=address&autocomplete=true&limit=5'
+        + '&proximity=' + MAPBOX_PROXIMITY;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      const features = data.features || [];
+      const dd = document.getElementById('panel-addr-dropdown');
+      dd.innerHTML = '';
+      panelAddrFocusedIdx = -1;
+      if (!features.length) { panelAddrHide(); return; }
+      features.forEach(f => {
+        const label = f.place_name || '';
+        const li = document.createElement('li');
+        li.textContent = label;
+        li.addEventListener('mousedown', e => { e.preventDefault(); panelAddrSelect(label); });
+        dd.appendChild(li);
+      });
+      dd.style.display = 'block';
+    } catch(e) { panelAddrHide(); }
+  }, 250);
+}
+
+function panelAddrKeydown(e) {
+  const items = document.querySelectorAll('#panel-addr-dropdown li');
+  if (!items.length || document.getElementById('panel-addr-dropdown').style.display === 'none') return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); panelAddrSetFocus(Math.min(panelAddrFocusedIdx+1, items.length-1)); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); panelAddrSetFocus(Math.max(panelAddrFocusedIdx-1, 0)); }
+  else if (e.key === 'Enter' && panelAddrFocusedIdx >= 0) { e.preventDefault(); items[panelAddrFocusedIdx].dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); }
+  else if (e.key === 'Escape') panelAddrHide();
+}
+
+function panelAddrSetFocus(idx) {
+  const items = document.querySelectorAll('#panel-addr-dropdown li');
+  items.forEach(li => li.classList.remove('focused'));
+  if (idx >= 0 && idx < items.length) { items[idx].classList.add('focused'); panelAddrFocusedIdx = idx; }
+}
+
+function panelAddrSelect(label) {
+  const input = document.getElementById('panel-address');
+  input.value = label;
+  input.readOnly = true;
+  input.classList.add('locked');
+  document.getElementById('panel-addr-change').style.display = 'block';
+  panelAddrHide();
+}
+
+function panelAddrHide() {
+  const dd = document.getElementById('panel-addr-dropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function clearPanelAddress() {
+  const input = document.getElementById('panel-address');
+  if (!input) return;
+  input.value = '';
+  input.readOnly = false;
+  input.classList.remove('locked');
+  const changeBtn = document.getElementById('panel-addr-change');
+  if (changeBtn) changeBtn.style.display = 'none';
+  panelAddrHide();
+  input.focus();
 }
 
 function confirmDeleteContact(id) {
