@@ -370,6 +370,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <button class="btn btn-outline btn-sm" onclick="loadPermitAnalytics()" title="Refresh">↺</button>
   </div>
   <div id="permit-analytics"></div>
+  <div id="trend-analytics"></div>
 
   <hr class="section-divider">
 
@@ -396,13 +397,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   </div>
   <div id="jur-list" class="jur-list"></div>
 
-  <hr class="section-divider">
-
-  <!-- ── PROGRESS OVER TIME SECTION ───────────────────── -->
-  <div class="section-head" style="margin-bottom:10px">
-    <div class="section-title">Progress Over Time</div>
-  </div>
-  <div id="trend-analytics"></div>
 
 </main>
 </div><!-- /tab-leads -->
@@ -933,6 +927,8 @@ async function loadContacts() {
   renderContacts();
   loadPermitAnalytics();
   loadTrendAnalytics();
+  // Hide trend until analytics collapsed
+  setTimeout(() => { const t = document.getElementById('trend-analytics'); if (t) t.style.display = 'none'; }, 0);
 }
 
 function renderContacts() {
@@ -1032,6 +1028,8 @@ function toggleAnalyticsFilter(stageId) {
   if (stageId === 'all' && stageFilter === 'all') {
     analyticsCollapsed = !analyticsCollapsed;
     loadPermitAnalytics();
+    const trend = document.getElementById('trend-analytics');
+    if (trend) trend.style.display = analyticsCollapsed ? '' : 'none';
     return;
   }
   // Lock layout height to prevent page jump during filter swap
@@ -1043,6 +1041,8 @@ function toggleAnalyticsFilter(stageId) {
   contactsShown = 5;
   renderContacts();
   loadPermitAnalytics();
+  const trend = document.getElementById('trend-analytics');
+  if (trend) trend.style.display = 'none';
   requestAnimationFrame(() => { cv.style.minHeight = ''; });
 }
 
