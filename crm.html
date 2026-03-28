@@ -280,12 +280,42 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .qb-market-note strong{color:var(--text2)}
 @media(max-width:480px){.qb-wrap{padding:14px 12px 50px}.qb-toggle-grid{grid-template-columns:1fr}}
 
-/* ── PERMIT IFRAME ────────────────────────────────────── */
-.permit-wrap{display:flex;flex-direction:column;height:calc(100vh - 108px)}
-.permit-iframe{flex:1;border:none;width:100%;display:block}
-.permit-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--text3);text-align:center;padding:40px 20px}
-.permit-placeholder h3{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:var(--navy);margin:0}
-.permit-placeholder code{background:var(--card);border:1.5px solid var(--border);border-radius:6px;padding:6px 14px;font-size:13px;color:var(--text);display:inline-block}
+/* ── VIEW TOGGLE (Contacts / Pipeline) ───────────────── */
+.view-toggle{display:flex;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:2px;gap:0}
+.view-btn{padding:5px 14px;border-radius:6px;border:none;background:transparent;color:var(--text2);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.view-btn.active{background:var(--navy);color:#fff;box-shadow:0 1px 4px rgba(11,31,59,.2)}
+
+/* ── PIPELINE EMBED ──────────────────────────────────── */
+.pipeline-embed{height:calc(100vh - 160px);min-height:420px;border:1.5px solid var(--border);border-radius:10px;width:100%;display:block}
+
+/* ── JURISDICTION CARDS ──────────────────────────────── */
+.jur-list{display:flex;flex-direction:column;gap:8px}
+.jur-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s}
+.jur-card:hover{border-color:var(--navy)}
+.jur-logo{width:40px;height:40px;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden}
+.jur-logo img{width:100%;height:100%;object-fit:contain}
+.jur-info{flex:1;min-width:0}
+.jur-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--navy)}
+.jur-desc{font-size:12px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jur-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.jur-btn{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s;white-space:nowrap}
+.jur-btn:hover{border-color:var(--navy);color:var(--navy)}
+.jur-btn.portal{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe}
+.jur-btn.portal:hover{background:#bfdbfe}
+.jur-empty{padding:28px 20px;text-align:center;color:var(--text3);font-size:13px}
+
+/* ── PERMIT ANALYTICS ────────────────────────────────── */
+.pa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.pa-stat{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.pa-stat-num{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;color:var(--navy);line-height:1}
+.pa-stat-label{font-size:11px;color:var(--text3);margin-top:3px}
+.pa-stage-list{display:flex;flex-direction:column;gap:4px}
+.pa-stage-row{display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
+.pa-stage-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pa-stage-name{font-size:12px;color:var(--text2);flex:1}
+.pa-stage-bar-wrap{width:80px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.pa-stage-bar{height:100%;border-radius:3px;transition:width .4s}
+.pa-stage-count{font-size:12px;font-weight:700;color:var(--navy);min-width:16px;text-align:right}
 </style>
 </head>
 <body>
@@ -315,7 +345,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <div class="tab-bar" id="tab-bar" style="display:none">
   <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">Leads</button>
   <button class="tab-btn" id="tab-btn-quote" onclick="switchTab('quote')">Quote Builder</button>
-  <button class="tab-btn" id="tab-btn-permits" onclick="switchTab('permits')">Permits</button>
 </div>
 
 <!-- ── MAIN ──────────────────────────────────────────────── -->
@@ -326,20 +355,29 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   <div class="section-head">
     <div class="section-title">Leads</div>
     <span id="leads-count" style="font-size:12px;color:var(--text3)"></span>
-  </div>
-
-  <div class="toolbar">
-    <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
-    <div class="filter-pills" id="lead-pills">
-      <span class="pill active" onclick="setPropFilter('all',this)">All</span>
-      <span class="pill" onclick="setPropFilter('none',this)">No Proposal</span>
-      <span class="pill" onclick="setPropFilter('sent',this)">Proposal Sent</span>
-      <span class="pill" onclick="setPropFilter('approved',this)">Approved ✓</span>
-      <span class="pill" onclick="setPropFilter('archived',this)" style="color:var(--text3)">Archived</span>
+    <div class="view-toggle">
+      <button class="view-btn active" id="view-btn-contacts" onclick="setLeadsView('contacts')">Contacts</button>
+      <button class="view-btn" id="view-btn-pipeline" onclick="setLeadsView('pipeline')">Pipeline</button>
     </div>
   </div>
 
-  <div id="contacts-table"></div>
+  <div id="contacts-view">
+    <div class="toolbar">
+      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
+      <div class="filter-pills" id="lead-pills">
+        <span class="pill active" onclick="setPropFilter('all',this)">All</span>
+        <span class="pill" onclick="setPropFilter('none',this)">No Proposal</span>
+        <span class="pill" onclick="setPropFilter('sent',this)">Proposal Sent</span>
+        <span class="pill" onclick="setPropFilter('approved',this)">Approved ✓</span>
+        <span class="pill" onclick="setPropFilter('archived',this)" style="color:var(--text3)">Archived</span>
+      </div>
+    </div>
+    <div id="contacts-table"></div>
+  </div>
+
+  <div id="pipeline-view" style="display:none">
+    <iframe class="pipeline-embed" src="/permit-app/client/dist/" title="Permit Manager" allow="same-origin"></iframe>
+  </div>
 
   <hr class="section-divider">
 
@@ -356,6 +394,24 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   </div>
 
   <div class="cal-grid" id="cal-grid"></div>
+
+  <hr class="section-divider">
+
+  <!-- ── JURISDICTIONS SECTION ────────────────────────── -->
+  <div class="section-head" style="margin-bottom:10px">
+    <div class="section-title">Jurisdictions</div>
+    <button class="btn btn-outline btn-sm" onclick="openJurisdictionModal(null)">+ Add</button>
+  </div>
+  <div id="jur-list" class="jur-list"></div>
+
+  <hr class="section-divider">
+
+  <!-- ── PERMIT ANALYTICS SECTION ─────────────────────── -->
+  <div class="section-head" style="margin-bottom:10px">
+    <div class="section-title">Permit Analytics</div>
+    <button class="btn btn-outline btn-sm" onclick="loadPermitAnalytics()" title="Refresh">↺</button>
+  </div>
+  <div id="permit-analytics"></div>
 
 </main>
 </div><!-- /tab-leads -->
@@ -478,13 +534,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <button class="btn btn-outline btn-sm" onclick="qbResetAll()">↺ Reset</button>
     </div>
 
-  </div>
-</div>
-
-<!-- ── PERMITS TAB ───────────────────────────────────────── -->
-<div id="tab-permits" style="display:none">
-  <div class="permit-wrap">
-    <iframe id="permit-iframe" class="permit-iframe" src="/permit-app/client/dist/" title="Permit Manager" allow="same-origin"></iframe>
   </div>
 </div>
 
@@ -747,6 +796,40 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   </div>
 </div>
 
+<!-- ── JURISDICTION MODAL ────────────────────────────────── -->
+<div class="modal-overlay" id="jur-overlay" onclick="if(event.target===this)closeModal('jur-overlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="jur-modal-title">Add Jurisdiction</div>
+      <button class="modal-close" onclick="closeModal('jur-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="jur-id">
+      <div class="form-row">
+        <label>Name *</label>
+        <input class="form-input" id="jur-name" placeholder="e.g. Greenville County">
+      </div>
+      <div class="form-row">
+        <label>Portal URL</label>
+        <input class="form-input" id="jur-website" type="url" placeholder="https://…">
+      </div>
+      <div class="form-row">
+        <label>Phone</label>
+        <input class="form-input" id="jur-phone" type="tel" placeholder="(864) 000-0000">
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea class="form-textarea" id="jur-notes" placeholder="Processing time, fees, requirements…" style="min-height:80px"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="jur-delete-btn" onclick="deleteJurisdiction()" style="display:none;margin-right:auto">Delete</button>
+      <button class="btn btn-outline" onclick="closeModal('jur-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveJurisdiction()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── TOAST ─────────────────────────────────────────────── -->
 <div class="toast" id="toast"></div>
 
@@ -762,9 +845,10 @@ const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── STATE ─────────────────────────────────────────────────
-let allContacts  = [];
-let allJobs      = [];
-let allProposals = [];
+let allContacts      = [];
+let allJobs          = [];
+let allProposals     = [];
+let allJurisdictions = [];
 let proposalMap  = {};   // contact_id → latest proposal
 let propFilter   = 'all';
 let contactsShown = 5;
@@ -797,7 +881,7 @@ function showApp() {
 
 // ── TAB SWITCHING ─────────────────────────────────────────
 function switchTab(name) {
-  ['leads','quote','permits'].forEach(t => {
+  ['leads','quote'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.style.display = t === name ? 'block' : 'none';
     const btn = document.getElementById('tab-btn-' + t);
@@ -805,6 +889,16 @@ function switchTab(name) {
   });
   const addLeadBtn = document.getElementById('nav-add-lead');
   if (addLeadBtn) addLeadBtn.style.display = name === 'leads' ? '' : 'none';
+}
+
+// ── LEADS VIEW TOGGLE ─────────────────────────────────────
+function setLeadsView(view) {
+  document.getElementById('contacts-view').style.display  = view === 'contacts' ? '' : 'none';
+  document.getElementById('pipeline-view').style.display  = view === 'pipeline' ? '' : 'none';
+  document.getElementById('view-btn-contacts').classList.toggle('active', view === 'contacts');
+  document.getElementById('view-btn-pipeline').classList.toggle('active', view === 'pipeline');
+  const countEl = document.getElementById('leads-count');
+  if (countEl) countEl.style.visibility = view === 'contacts' ? 'visible' : 'hidden';
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -818,7 +912,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
   renderCalendar(); // render empty calendar immediately
-  await Promise.all([loadContacts(), loadJobs(), loadProposals()]);
+  await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions(), loadPermitAnalytics()]);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1559,6 +1653,141 @@ function showToast(msg, type) {
   t.className = 'toast show' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════════════════
+// JURISDICTIONS
+// ══════════════════════════════════════════════════════════
+
+async function loadJurisdictions() {
+  const { data, error } = await db.from('permit_jurisdictions').select('*').order('name');
+  if (error) { console.warn('Jurisdictions load failed:', error.message); return; }
+  allJurisdictions = data || [];
+  renderJurisdictions();
+}
+
+function renderJurisdictions() {
+  const el = document.getElementById('jur-list');
+  if (!el) return;
+  if (!allJurisdictions.length) {
+    el.innerHTML = '<div class="jur-empty">No jurisdictions yet — click + Add above</div>';
+    return;
+  }
+  el.innerHTML = allJurisdictions.map(j => `
+    <div class="jur-card">
+      <div class="jur-logo">${j.logo_url ? `<img src="${esc(j.logo_url)}" alt="">` : '🏛️'}</div>
+      <div class="jur-info">
+        <div class="jur-name">${esc(j.name)}</div>
+        <div class="jur-desc">${esc(j.notes || j.website || '')}</div>
+      </div>
+      <div class="jur-actions">
+        ${j.website ? `<a class="jur-btn portal" href="${esc(j.website)}" target="_blank" rel="noopener">Portal ↗</a>` : ''}
+        ${j.phone ? `<a class="jur-btn" href="tel:${esc(j.phone)}">${esc(j.phone)}</a>` : ''}
+        <button class="jur-btn" onclick="openJurisdictionModal(${JSON.stringify(j.id)})">Edit</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openJurisdictionModal(id) {
+  const j = id ? allJurisdictions.find(x => x.id === id) : null;
+  document.getElementById('jur-modal-title').textContent = j ? 'Edit Jurisdiction' : 'Add Jurisdiction';
+  document.getElementById('jur-id').value       = j ? j.id       : '';
+  document.getElementById('jur-name').value     = j ? j.name     : '';
+  document.getElementById('jur-website').value  = j ? (j.website || '') : '';
+  document.getElementById('jur-phone').value    = j ? (j.phone   || '') : '';
+  document.getElementById('jur-notes').value    = j ? (j.notes   || '') : '';
+  document.getElementById('jur-delete-btn').style.display = j ? '' : 'none';
+  document.getElementById('jur-overlay').classList.add('open');
+}
+
+async function saveJurisdiction() {
+  const id   = document.getElementById('jur-id').value;
+  const name = document.getElementById('jur-name').value.trim();
+  if (!name) { showToast('Name is required', 'error'); return; }
+  const payload = {
+    name,
+    website: document.getElementById('jur-website').value.trim() || null,
+    phone:   document.getElementById('jur-phone').value.trim()   || null,
+    notes:   document.getElementById('jur-notes').value.trim()   || null,
+  };
+  let error;
+  if (id) {
+    ({ error } = await db.from('permit_jurisdictions').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('permit_jurisdictions').insert([payload]));
+  }
+  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  showToast(id ? 'Jurisdiction updated' : 'Jurisdiction added', 'success');
+  closeModal('jur-overlay');
+  loadJurisdictions();
+}
+
+async function deleteJurisdiction() {
+  const id = document.getElementById('jur-id').value;
+  if (!id) return;
+  if (!confirm('Delete this jurisdiction? This cannot be undone.')) return;
+  const { error } = await db.from('permit_jurisdictions').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  showToast('Jurisdiction deleted', 'success');
+  closeModal('jur-overlay');
+  loadJurisdictions();
+}
+
+// ══════════════════════════════════════════════════════════
+// PERMIT ANALYTICS
+// ══════════════════════════════════════════════════════════
+
+const PERMIT_STAGES = [
+  { id:1, label:'Form Submitted',       color:'#64748b' },
+  { id:2, label:'Responded',            color:'#3b82f6' },
+  { id:3, label:'Quote Sent',           color:'#8b5cf6' },
+  { id:4, label:'Booked',               color:'#22c55e' },
+  { id:5, label:'Permit Submitted',     color:'#eab308' },
+  { id:6, label:'Permit Paid',          color:'#f97316' },
+  { id:7, label:'Permit Approved',      color:'#14b8a6' },
+  { id:8, label:'Inspection Scheduled', color:'#ec4899' },
+  { id:9, label:'Complete',             color:'#f59e0b' },
+];
+
+async function loadPermitAnalytics() {
+  const el = document.getElementById('permit-analytics');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0">Loading…</div>';
+  const { data, error } = await db.from('permit_people').select('stage,is_archived,archive_reason');
+  if (error) { el.innerHTML = '<div style="color:var(--red);font-size:13px;padding:8px 0">Failed to load permit data</div>'; return; }
+  renderPermitAnalytics(data || []);
+}
+
+function renderPermitAnalytics(people) {
+  const el = document.getElementById('permit-analytics');
+  if (!el) return;
+  const total     = people.length;
+  const active    = people.filter(p => !p.is_archived).length;
+  const completed = people.filter(p => p.is_archived && p.archive_reason === 'completed').length;
+  const stageCounts = {};
+  people.filter(p => !p.is_archived).forEach(p => {
+    stageCounts[p.stage] = (stageCounts[p.stage] || 0) + 1;
+  });
+  const maxCount = Math.max(1, ...Object.values(stageCounts).concat([0]));
+  const stageRows = PERMIT_STAGES.map(s => {
+    const count = stageCounts[s.id] || 0;
+    const pct   = Math.round((count / maxCount) * 100);
+    return `<div class="pa-stage-row">
+      <div class="pa-stage-dot" style="background:${s.color}"></div>
+      <span class="pa-stage-name">${esc(s.label)}</span>
+      <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:${pct}%;background:${s.color}"></div></div>
+      <span class="pa-stage-count">${count}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="pa-grid">
+      <div class="pa-stat"><div class="pa-stat-num">${total}</div><div class="pa-stat-label">Total</div></div>
+      <div class="pa-stat"><div class="pa-stat-num">${active}</div><div class="pa-stat-label">Active</div></div>
+      <div class="pa-stat"><div class="pa-stat-num">${completed}</div><div class="pa-stat-label">Completed</div></div>
+    </div>
+    <div class="pa-stage-list">${stageRows}</div>
+  `;
 }
 
 // ══════════════════════════════════════════════════════════
