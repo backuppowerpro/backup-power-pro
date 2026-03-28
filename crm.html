@@ -943,6 +943,10 @@ function renderContacts() {
     return true;
   });
 
+  if (stageFilter === 'all') {
+    list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
   const total = list.length;
   const visible = list.slice(0, contactsShown);
   document.getElementById('leads-count').textContent = total === 0 ? '' : `${Math.min(contactsShown, total)} of ${total}`;
