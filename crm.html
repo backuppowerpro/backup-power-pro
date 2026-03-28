@@ -1729,10 +1729,10 @@ function renderJurisdictions() {
       <div class="jur-logo">${j.logo_url ? `<img src="${esc(j.logo_url)}" alt="">` : '🏛️'}</div>
       <div class="jur-info">
         <div class="jur-name">${esc(j.name)}</div>
-        <div class="jur-desc">${esc(j.notes || j.website || '')}</div>
+        <div class="jur-desc">${esc(j.notes || j.portal_url || '')}</div>
       </div>
       <div class="jur-actions">
-        ${j.website ? `<a class="jur-btn portal" href="${esc(j.website)}" target="_blank" rel="noopener">Portal ↗</a>` : ''}
+        ${j.portal_url ? `<a class="jur-btn portal" href="${esc(j.portal_url)}" target="_blank" rel="noopener">Portal ↗</a>` : ''}
         ${j.phone ? `<a class="jur-btn" href="tel:${esc(j.phone)}">${esc(j.phone)}</a>` : ''}
         <button class="jur-btn" onclick="openJurisdictionModal(${JSON.stringify(j.id)})">Edit</button>
       </div>
@@ -1745,7 +1745,7 @@ function openJurisdictionModal(id) {
   document.getElementById('jur-modal-title').textContent = j ? 'Edit Jurisdiction' : 'Add Jurisdiction';
   document.getElementById('jur-id').value       = j ? j.id       : '';
   document.getElementById('jur-name').value     = j ? j.name     : '';
-  document.getElementById('jur-website').value  = j ? (j.website || '') : '';
+  document.getElementById('jur-website').value  = j ? (j.portal_url || '') : '';
   document.getElementById('jur-phone').value    = j ? (j.phone   || '') : '';
   document.getElementById('jur-notes').value    = j ? (j.notes   || '') : '';
   document.getElementById('jur-delete-btn').style.display = j ? '' : 'none';
@@ -1758,7 +1758,7 @@ async function saveJurisdiction() {
   if (!name) { showToast('Name is required', 'error'); return; }
   const payload = {
     name,
-    website: document.getElementById('jur-website').value.trim() || null,
+    portal_url: document.getElementById('jur-website').value.trim() || null,
     phone:   document.getElementById('jur-phone').value.trim()   || null,
     notes:   document.getElementById('jur-notes').value.trim()   || null,
   };
