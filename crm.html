@@ -285,9 +285,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .view-btn{padding:5px 14px;border-radius:6px;border:none;background:transparent;color:var(--text2);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
 .view-btn.active{background:var(--navy);color:#fff;box-shadow:0 1px 4px rgba(11,31,59,.2)}
 
-/* ── PIPELINE EMBED ──────────────────────────────────── */
-.pipeline-embed{height:calc(100vh - 160px);min-height:420px;border:1.5px solid var(--border);border-radius:10px;width:100%;display:block}
-
 /* ── JURISDICTION CARDS ──────────────────────────────── */
 .jur-list{display:flex;flex-direction:column;gap:8px}
 .jur-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s}
@@ -376,7 +373,16 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   </div>
 
   <div id="pipeline-view" style="display:none">
-    <iframe class="pipeline-embed" src="/permit-app/client/dist/" title="Permit Manager" allow="same-origin"></iframe>
+    <div class="toolbar">
+      <input type="text" id="pipeline-search" class="search-input" placeholder="Search by name or phone…" oninput="renderPipelinePeople()">
+      <div class="filter-pills" id="pipeline-pills">
+        <span class="pill active" onclick="setPipelineFilter('all',this)">All</span>
+        <span class="pill" onclick="setPipelineFilter('active',this)">Active</span>
+        <span class="pill" onclick="setPipelineFilter('completed',this)">Completed ✓</span>
+        <span class="pill" onclick="setPipelineFilter('cold',this)" style="color:var(--text3)">Cold Leads</span>
+      </div>
+    </div>
+    <div id="pipeline-table"></div>
   </div>
 
   <hr class="section-divider">
@@ -849,6 +855,8 @@ let allContacts      = [];
 let allJobs          = [];
 let allProposals     = [];
 let allJurisdictions = [];
+let allPermitPeople  = [];
+let pipelineFilter   = 'all';
 let proposalMap  = {};   // contact_id → latest proposal
 let propFilter   = 'all';
 let contactsShown = 5;
@@ -912,7 +920,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
   renderCalendar(); // render empty calendar immediately
-  await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions(), loadPermitAnalytics()]);
+  await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions(), loadPipelinePeople()]);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1656,6 +1664,80 @@ function showToast(msg, type) {
 }
 
 // ══════════════════════════════════════════════════════════
+// PIPELINE (permit people as native rows)
+// ══════════════════════════════════════════════════════════
+
+async function loadPipelinePeople() {
+  const { data, error } = await db.from('permit_people').select('*').order('created_at', { ascending: false });
+  if (error) { console.warn('Pipeline load failed:', error.message); return; }
+  allPermitPeople = data || [];
+  renderPipelinePeople();
+  renderPermitAnalytics(allPermitPeople); // sync analytics with same data
+}
+
+function setPipelineFilter(f, el) {
+  pipelineFilter = f;
+  document.querySelectorAll('#pipeline-pills .pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderPipelinePeople();
+}
+
+function renderPipelinePeople() {
+  const search = (document.getElementById('pipeline-search')?.value || '').toLowerCase();
+
+  let list = allPermitPeople.filter(p => {
+    if (pipelineFilter === 'active')    return !p.is_archived;
+    if (pipelineFilter === 'completed') return p.is_archived && p.archive_reason === 'completed';
+    if (pipelineFilter === 'cold')      return p.is_archived && (p.archive_reason === 'cold_lead' || p.archive_reason === 'manual');
+    return true;
+  });
+
+  if (search) {
+    list = list.filter(p =>
+      ((p.name||'')+(p.phone||'')+(p.email||'')+(p.notes||'')).toLowerCase().includes(search)
+    );
+  }
+
+  const wrap = document.getElementById('pipeline-table');
+  if (!wrap) return;
+
+  if (!list.length) {
+    wrap.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg>
+      <p>No permit leads found</p>
+    </div>`;
+    return;
+  }
+
+  const rows = list.map(p => {
+    const stage  = PERMIT_STAGES.find(s => s.id === p.stage) || PERMIT_STAGES[0];
+    const clr    = stage.color;
+    const badge  = `<span class="prop-badge" style="background:${clr}18;color:${clr};border-color:${clr}55">${esc(stage.label)}</span>`;
+    const archived = p.is_archived ? `<span class="prop-badge prop-none" style="margin-left:4px;font-size:10px">${p.archive_reason === 'completed' ? '✓ Done' : 'Archived'}</span>` : '';
+    return `<tr>
+      <td class="name">${esc(p.name)}${archived}</td>
+      <td class="phone">${p.phone ? `<a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>` : '<span style="color:var(--text3)">—</span>'}</td>
+      <td class="notes-cell">${esc(p.notes || '')}</td>
+      <td class="actions">${badge}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="contact-count">${list.length} permit lead${list.length !== 1 ? 's' : ''}</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>NAME</th>
+          <th class="col-phone">PHONE</th>
+          <th class="col-notes">NOTES</th>
+          <th>STAGE</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
 // JURISDICTIONS
 // ══════════════════════════════════════════════════════════
 
@@ -1751,6 +1833,7 @@ const PERMIT_STAGES = [
 ];
 
 async function loadPermitAnalytics() {
+  // Re-fetch and re-render (used by the ↺ refresh button)
   const el = document.getElementById('permit-analytics');
   if (!el) return;
   el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0">Loading…</div>';
