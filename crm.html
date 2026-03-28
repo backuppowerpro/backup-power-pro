@@ -1856,29 +1856,36 @@ function openMergeModal(keepId, removeId) {
 // ── SMART SEARCH ─────────────────────────────────────────
 function stripPhone(s) { return (s || '').replace(/\D/g, ''); }
 
-function fuzzyScore(needle, haystack) {
-  // Exact substring match = best
-  if (haystack.includes(needle)) return 1;
-  // Subsequence match with max 1 gap per word (typo tolerance)
-  let ni = 0, matched = 0;
-  for (let hi = 0; hi < haystack.length && ni < needle.length; hi++) {
-    if (haystack[hi] === needle[ni]) { ni++; matched++; }
-  }
-  if (matched >= needle.length) return 0.9;
-  // Allow 1 wrong char per 3 chars typed (fuzzy)
-  const maxErrors = Math.floor(needle.length / 3) + 1;
-  if (needle.length - matched <= maxErrors) return 0.6;
-  return 0;
-}
-
 function fuzzyMatch(c, term) {
   // Check phone with digits only
   const termDigits = stripPhone(term);
   if (termDigits.length >= 3 && stripPhone(c.phone).includes(termDigits)) return true;
-  // Check all text fields with fuzzy matching
+  // Check all text fields — must contain each search word as a substring (prefix or contains)
   const fields = [c.name, c.email, c.address, c.notes].map(f => (f || '').toLowerCase());
   const words = term.split(/\s+/);
-  return words.every(w => fields.some(f => fuzzyScore(w, f) >= 0.6));
+  return words.every(w => {
+    if (w.length < 2) return true;
+    // Exact substring match
+    if (fields.some(f => f.includes(w))) return true;
+    // Allow 1 typo for words 4+ chars — check each word in each field
+    if (w.length >= 4) {
+      return fields.some(f => f.split(/\s+/).some(fw => {
+        if (Math.abs(fw.length - w.length) > 1) return false;
+        let errors = 0, fi = 0, wi = 0;
+        while (fi < fw.length && wi < w.length) {
+          if (fw[fi] !== w[wi]) {
+            errors++;
+            if (errors > 1) return false;
+            if (fw.length > w.length) fi++;
+            else if (w.length > fw.length) wi++;
+            else { fi++; wi++; }
+          } else { fi++; wi++; }
+        }
+        return errors + (fw.length - fi) + (w.length - wi) <= 1;
+      }));
+    }
+    return false;
+  });
 }
 
 function capName(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
