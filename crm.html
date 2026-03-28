@@ -954,10 +954,9 @@ function renderContacts() {
     if (stageFilter === 'archived') return isArchived;
     if (isArchived) return false;
     if (stageFilter !== 'all' && (c.stage || 1) !== stageFilter) return false;
-    // Search filter
+    // Smart search — fuzzy match + phone normalization
     if (searchTerm) {
-      const hay = ((c.name||'')+(c.phone||'')+(c.address||'')+(c.email||'')+(c.notes||'')).toLowerCase();
-      if (!hay.includes(searchTerm)) return false;
+      if (!fuzzyMatch(c, searchTerm)) return false;
     }
     return true;
   });
@@ -1703,6 +1702,34 @@ function fmt12(t) {
   const [h, m] = t.split(':').map(Number);
   const ampm = h >= 12 ? 'pm' : 'am';
   return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+// ── SMART SEARCH ─────────────────────────────────────────
+function stripPhone(s) { return (s || '').replace(/\D/g, ''); }
+
+function fuzzyScore(needle, haystack) {
+  // Exact substring match = best
+  if (haystack.includes(needle)) return 1;
+  // Subsequence match with max 1 gap per word (typo tolerance)
+  let ni = 0, matched = 0;
+  for (let hi = 0; hi < haystack.length && ni < needle.length; hi++) {
+    if (haystack[hi] === needle[ni]) { ni++; matched++; }
+  }
+  if (matched >= needle.length) return 0.9;
+  // Allow 1 wrong char per 3 chars typed (fuzzy)
+  const maxErrors = Math.floor(needle.length / 3) + 1;
+  if (needle.length - matched <= maxErrors) return 0.6;
+  return 0;
+}
+
+function fuzzyMatch(c, term) {
+  // Check phone with digits only
+  const termDigits = stripPhone(term);
+  if (termDigits.length >= 3 && stripPhone(c.phone).includes(termDigits)) return true;
+  // Check all text fields with fuzzy matching
+  const fields = [c.name, c.email, c.address, c.notes].map(f => (f || '').toLowerCase());
+  const words = term.split(/\s+/);
+  return words.every(w => fields.some(f => fuzzyScore(w, f) >= 0.6));
 }
 
 function capName(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
