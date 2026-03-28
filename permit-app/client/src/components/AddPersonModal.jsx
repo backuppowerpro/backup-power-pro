@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Modal from './Modal'
 import { STAGES } from '../lib/stages'
+import { addPerson } from '../lib/api'
 
 export default function AddPersonModal({ onClose }) {
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '', stage: 1 })
@@ -9,15 +10,7 @@ export default function AddPersonModal({ onClose }) {
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data) => {
-      const res = await fetch('/api/people', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to add person')
-      return res.json()
-    },
+    mutationFn: (data) => addPerson(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['people'] })
       onClose()

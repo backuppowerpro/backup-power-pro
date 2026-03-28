@@ -5,12 +5,7 @@ import { STAGES } from '../lib/stages'
 import StageSection from '../components/StageSection'
 import ArchivedAccordion from '../components/ArchivedAccordion'
 import AddPersonModal from '../components/AddPersonModal'
-
-async function fetchPeople() {
-  const res = await fetch('/api/people')
-  if (!res.ok) throw new Error('Failed to fetch people')
-  return res.json()
-}
+import { fetchPeople } from '../lib/api'
 
 export default function Pipeline() {
   const [showAddModal, setShowAddModal] = useState(false)

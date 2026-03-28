@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { STAGES } from '../lib/stages'
+import { fetchAnalytics } from '../lib/api'
 
 const STAGE_COLORS = {
   'slate':  '#64748b',
@@ -31,13 +32,6 @@ const PRESET_RANGES = [
   }},
   { label: 'All Time', getValue: () => ({ from: '2000-01-01', to: '2099-12-31' }) },
 ]
-
-async function fetchAnalytics(from, to) {
-  const params = new URLSearchParams({ from, to })
-  const res = await fetch(`/api/analytics?${params}`)
-  if (!res.ok) throw new Error('Failed to fetch analytics')
-  return res.json()
-}
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null

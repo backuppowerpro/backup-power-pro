@@ -4,12 +4,7 @@ import { Plus } from 'lucide-react'
 import JurisdictionCard from '../components/JurisdictionCard'
 import JurisdictionModal from '../components/JurisdictionModal'
 import JurisdictionDetail from '../components/JurisdictionDetail'
-
-async function fetchJurisdictions() {
-  const res = await fetch('/api/jurisdictions')
-  if (!res.ok) throw new Error('Failed to fetch jurisdictions')
-  return res.json()
-}
+import { fetchJurisdictions, deleteJurisdiction } from '../lib/api'
 
 export default function Jurisdictions() {
   const [editTarget, setEditTarget] = useState(null)
@@ -24,10 +19,7 @@ export default function Jurisdictions() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const res = await fetch(`/api/jurisdictions/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed to delete')
-    },
+    mutationFn: (id) => deleteJurisdiction(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['jurisdictions'] })
       setDeleteTarget(null)

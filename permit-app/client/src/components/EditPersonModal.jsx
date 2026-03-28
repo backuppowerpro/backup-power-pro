@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Modal from './Modal'
+import { patchPerson } from '../lib/api'
 
 export default function EditPersonModal({ person, onClose }) {
   const [form, setForm] = useState({
@@ -13,15 +14,7 @@ export default function EditPersonModal({ person, onClose }) {
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data) => {
-      const res = await fetch(`/api/people/${person.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to update')
-      return res.json()
-    },
+    mutationFn: (data) => patchPerson(person.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['people'] })
       onClose()

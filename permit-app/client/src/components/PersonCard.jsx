@@ -4,16 +4,7 @@ import { getStage, STAGES } from '../lib/stages'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import EditPersonModal from './EditPersonModal'
 import { useToast } from './Toast'
-
-async function patchPerson(id, data) {
-  const res = await fetch(`/api/people/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) throw new Error('Failed to update person')
-  return res.json()
-}
+import { patchPerson } from '../lib/api'
 
 export default function PersonCard({ person, isArchived = false }) {
   const [showMoveMenu, setShowMoveMenu] = useState(false)

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Modal from './Modal'
+import { addJurisdiction, updateJurisdiction } from '../lib/api'
 
 export default function JurisdictionModal({ jurisdiction = null, onClose }) {
   const isEditing = !!jurisdiction
@@ -18,17 +19,9 @@ export default function JurisdictionModal({ jurisdiction = null, onClose }) {
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data) => {
-      const url = isEditing ? `/api/jurisdictions/${jurisdiction.id}` : '/api/jurisdictions'
-      const method = isEditing ? 'PATCH' : 'POST'
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to save jurisdiction')
-      return res.json()
-    },
+    mutationFn: (data) => isEditing
+      ? updateJurisdiction(jurisdiction.id, data)
+      : addJurisdiction(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['jurisdictions'] })
       onClose()
