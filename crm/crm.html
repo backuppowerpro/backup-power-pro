@@ -140,7 +140,12 @@ td.actions{white-space:nowrap}
 .form-textarea{resize:vertical;min-height:80px}
 .form-hint{font-size:11px;color:var(--text3);margin-top:4px}
 .addr-wrap{position:relative}
-.addr-change{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--blue);cursor:pointer;font-weight:600;display:none}
+.addr-change{display:none!important}
+.field-row{display:flex;gap:6px;align-items:flex-start}
+.field-row .form-input,.field-row .addr-wrap{flex:1;min-width:0}
+.field-row .addr-wrap .form-input{width:100%}
+.fld-btn{flex-shrink:0;width:34px;height:36px;border-radius:7px;border:1.5px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--text2);padding:0}
+.fld-btn:hover{border-color:var(--navy);background:#f0f4ff;color:var(--navy)}
 .addr-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--navy);border-top:none;border-radius:0 0 8px 8px;z-index:999;display:none;list-style:none;max-height:220px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.12)}
 .addr-dropdown li{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text2);line-height:1.3}
 .addr-dropdown li:last-child{border-bottom:none}
@@ -445,23 +450,42 @@ td.actions{white-space:nowrap}
     <div class="panel-section-label">Details</div>
     <div class="form-row">
       <label>Name *</label>
-      <input class="form-input" id="panel-name-input" placeholder="Full name">
+      <div class="field-row">
+        <input class="form-input" id="panel-name-input" placeholder="Full name">
+        <button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
     </div>
     <div class="form-row">
       <label>Phone</label>
-      <input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000">
+      <div class="field-row">
+        <input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000">
+        <button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
     </div>
     <div class="form-row">
       <label>Email</label>
-      <input class="form-input" id="panel-email" type="email" placeholder="email@example.com">
+      <div class="field-row">
+        <input class="form-input" id="panel-email" type="email" placeholder="email@example.com">
+        <button class="fld-btn" onclick="copyField('panel-email')" title="Copy email">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
     </div>
     <div class="form-row">
       <label>Address</label>
-      <div class="addr-wrap">
-        <input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off"
-          oninput="panelAddrInput(this.value)" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)">
-        <span class="addr-change" id="panel-addr-change" onclick="clearPanelAddress()">✕ Change</span>
-        <ul class="addr-dropdown" id="panel-addr-dropdown"></ul>
+      <div class="field-row">
+        <div class="addr-wrap" style="flex:1;min-width:0">
+          <input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off"
+            oninput="panelAddrInput(this.value)" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%">
+          <ul class="addr-dropdown" id="panel-addr-dropdown"></ul>
+        </div>
+        <button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </button>
       </div>
     </div>
     <div class="form-row">
@@ -731,15 +755,9 @@ function openPanel(id) {
   document.getElementById('panel-email').value       = c.email || '';
   document.getElementById('panel-notes').value       = c.notes || '';
 
-  // Address
-  clearPanelAddress();
-  if (c.address) {
-    const ai = document.getElementById('panel-address');
-    ai.value = c.address;
-    ai.readOnly = true;
-    ai.classList.add('locked');
-    document.getElementById('panel-addr-change').style.display = 'block';
-  }
+  // Address — plain, no locking
+  document.getElementById('panel-address').value = c.address || '';
+  panelAddrHide();
 
   // Proposal section
   const p = proposalMap[c.id];
@@ -880,11 +898,7 @@ function panelAddrSetFocus(idx) {
 }
 
 function panelAddrSelect(label) {
-  const input = document.getElementById('panel-address');
-  input.value = label;
-  input.readOnly = true;
-  input.classList.add('locked');
-  document.getElementById('panel-addr-change').style.display = 'block';
+  document.getElementById('panel-address').value = label;
   panelAddrHide();
 }
 
@@ -1246,6 +1260,18 @@ async function deleteJob() {
   showToast('Event deleted', 'success');
   closeModal('job-overlay');
   loadJobs();
+}
+
+function copyField(id) {
+  const val = (document.getElementById(id).value || '').trim();
+  if (!val) { showToast('Nothing to copy', 'error'); return; }
+  navigator.clipboard.writeText(val).then(() => showToast('Copied!', 'success'));
+}
+
+function openMapsFromPanel() {
+  const addr = (document.getElementById('panel-address').value || '').trim();
+  if (!addr) { showToast('No address entered', 'error'); return; }
+  window.open('https://maps.google.com/?q=' + encodeURIComponent(addr), '_blank');
 }
 
 // ── HELPERS ───────────────────────────────────────────────
