@@ -357,6 +357,13 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <span id="leads-count" style="font-size:12px;color:var(--text3)"></span>
   </div>
 
+  <div id="contacts-view">
+    <div class="toolbar">
+      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
+    </div>
+    <div id="contacts-table"></div>
+  </div>
+
   <!-- ── PERMIT ANALYTICS SECTION ─────────────────────── -->
   <div class="section-head" style="margin-bottom:10px">
     <div class="section-title">Permit Analytics</div>
@@ -368,13 +375,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <div class="section-title">Progress Over Time</div>
   </div>
   <div id="trend-analytics"></div>
-
-  <div id="contacts-view">
-    <div class="toolbar">
-      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
-    </div>
-    <div id="contacts-table"></div>
-  </div>
 
   <hr class="section-divider">
 
