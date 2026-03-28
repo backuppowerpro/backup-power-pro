@@ -607,76 +607,92 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
 <!-- ── PROPOSAL MODAL ────────────────────────────────────── -->
 <div class="modal-overlay" id="proposal-overlay" onclick="if(event.target===this)closeModal('proposal-overlay')">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:540px">
     <div class="modal-head">
       <div class="modal-title" id="proposal-modal-title">Create Proposal</div>
-      <button class="modal-close" onclick="closeModal('proposal-overlay')">✕</button>
+      <button class="modal-close" onclick="closeModal('proposal-overlay')">&#10005;</button>
     </div>
     <div class="modal-body" id="proposal-modal-body">
       <input type="hidden" id="p-contact-id">
 
-      <!-- Before creation: pricing form -->
+      <!-- Before creation: QB-integrated form -->
       <div id="p-form">
         <div style="background:#f0f4ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--navy)">
           <strong id="p-contact-name"></strong>
           <div id="p-contact-addr" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
         </div>
 
-        <div class="line-items">
-          <div class="line-item">
-            <input type="checkbox" id="p-base-check" checked disabled>
-            <label for="p-base-check">Base install — inlet box + interlock kit + permit + inspection</label>
-          </div>
-          <div class="line-item" style="margin-bottom:0;border:none">
-            <span style="font-size:12px;color:var(--text3);flex:1">Base price</span>
-            <div style="display:flex;align-items:center;gap:4px">
-              <span style="font-size:13px;color:var(--text3)">$</span>
-              <input id="p-base-price" type="number" min="0" value="1295"
-                style="width:80px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;text-align:right;outline:none;font-family:'Outfit',sans-serif"
-                onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
-                oninput="calcTotal()">
-            </div>
-          </div>
-
-          <div style="border-top:1px solid var(--border);margin:10px 0"></div>
-
-          <div class="line-item">
-            <input type="checkbox" id="p-cord-check" checked onchange="calcTotal()">
-            <label for="p-cord-check" style="cursor:pointer">30A compatible power cord</label>
-            <span class="line-price" id="p-cord-price-lbl">+$150</span>
-          </div>
-
-          <div class="line-item">
-            <input type="checkbox" id="p-surge-check" onchange="calcTotal()">
-            <label for="p-surge-check" style="cursor:pointer">Whole-house surge protector</label>
-            <span class="line-price" id="p-surge-price-lbl">+$450</span>
-          </div>
-
-          <div style="border-top:1.5px solid var(--border);margin:10px 0"></div>
-          <div class="line-item" style="border:none;padding-top:0;margin-bottom:0">
-            <span class="total-label">Total</span>
-            <span class="total-amount" id="p-total">$1,295</span>
+        <!-- Amp Type Toggle -->
+        <div class="form-row">
+          <label>Connection Type</label>
+          <div style="display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px">
+            <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-30" onclick="pSetAmp('30')" style="flex:1;border-radius:6px">30A</button>
+            <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-50" onclick="pSetAmp('50')" style="flex:1;border-radius:6px">50A</button>
+            <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-both" onclick="pSetAmp('both')" style="flex:1;border-radius:6px">Both</button>
           </div>
         </div>
 
+        <!-- Run Length -->
         <div class="form-row">
-          <label>Notes <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
-          <textarea class="form-textarea" id="p-notes" placeholder="Special instructions visible on the proposal…" style="min-height:64px"></textarea>
+          <label>Run Length <span id="p-run-display" style="font-weight:800;color:var(--navy);float:right"></span></label>
+          <input type="range" min="5" max="80" step="5" value="5" id="p-run-slider" class="qb-range" oninput="pOnRunChange(this.value)" style="width:100%">
+        </div>
+
+        <!-- Add-ons -->
+        <div class="form-row">
+          <label>Add-ons</label>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:6px">
+              <input type="checkbox" id="p-cord-check" checked onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
+              <span style="flex:1">Power transfer cord</span>
+              <span style="font-weight:600;color:var(--text2)" id="p-cord-price-lbl"></span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:6px">
+              <input type="checkbox" id="p-main-breaker" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
+              <span style="flex:1">Main breaker replacement</span>
+              <span style="font-weight:600;color:var(--text2)">+$225</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:6px">
+              <input type="checkbox" id="p-twin-quad" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
+              <span style="flex:1">Panel space (twin/quad)</span>
+              <span style="font-weight:600;color:var(--text2)">+$125</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Live Pricing Preview -->
+        <div style="background:var(--navy);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em">Customer sees</div>
+            <div id="p-total" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-top:2px">$1,197</div>
+            <div id="p-total-note" style="font-size:10px;color:rgba(255,255,255,.5)">+ surge offered on proposal page</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em">Your profit</div>
+            <div id="p-profit" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:20px;color:var(--green);margin-top:2px"></div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-row">
+          <label>Notes <span style="font-weight:400;color:var(--text3)">(visible to customer)</span></label>
+          <textarea class="form-textarea" id="p-notes" placeholder="Special instructions, access notes..." style="min-height:56px"></textarea>
         </div>
       </div>
 
       <!-- After creation: link ready -->
       <div id="p-created" style="display:none">
         <div style="text-align:center;padding:10px 0 16px">
-          <div style="font-size:28px;margin-bottom:6px">🔗</div>
+          <div style="font-size:28px;margin-bottom:6px">&#128279;</div>
           <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--navy)">Proposal link ready</div>
           <div style="font-size:12px;color:var(--text3);margin-top:4px">Send it via text or email</div>
         </div>
         <div class="link-box">
           <div class="link-url" id="p-link-url"></div>
           <div class="link-actions">
-            <button class="btn btn-outline btn-sm" style="flex:1" onclick="copyProposalLink()">📋 Copy Link</button>
-            <a id="p-email-link" class="btn btn-outline btn-sm" style="flex:1;text-decoration:none;justify-content:center" href="#">✉️ Email</a>
+            <button class="btn btn-outline btn-sm" style="flex:1" onclick="copyProposalLink()">Copy Link</button>
+            <a id="p-email-link" class="btn btn-outline btn-sm" style="flex:1;text-decoration:none;justify-content:center" href="#">Email</a>
+            <a id="p-sms-link" class="btn btn-primary btn-sm" style="flex:1;text-decoration:none;justify-content:center" href="#">Text</a>
           </div>
         </div>
       </div>
@@ -1275,12 +1291,28 @@ function openPanel(id) {
   const p = proposalMap[c.id];
   const propSection = document.getElementById('panel-prop-section');
   if (p) {
-    const url = `${PROPOSAL_BASE_URL}?token=${p.token}`;
-    const statusLabel = p.status === 'Approved' ? '✓ Approved' : 'Sent';
+    const url = PROPOSAL_BASE_URL + '?token=' + p.token;
+    let badge = '', badgeStyle = '';
+    if (p.status === 'Approved') { badge = 'Approved'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
+    else if (p.status === 'Viewed') { badge = 'Viewed'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
+    else { badge = 'Sent'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
+    const views = p.view_count ? ' · ' + p.view_count + ' view' + (p.view_count > 1 ? 's' : '') : '';
+    const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
+    const surgeLabel = p.selected_surge ? ' + Surge' : '';
     propSection.innerHTML = `
-      <a href="${url}" target="_blank" class="prop-action-btn prop-action-view" style="text-decoration:none;margin-bottom:12px">
-        View Proposal — ${statusLabel} ↗
-      </a>`;
+      <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <span class="prop-badge" style="${badgeStyle};padding:3px 8px;border-radius:100px;font-size:11px;font-weight:700">${badge}</span>
+          <span style="font-size:11px;color:var(--text3)">${ampLabel}${surgeLabel}${views}</span>
+          <span style="font-size:11px;color:var(--text3);margin-left:auto">$${(p.total||0).toLocaleString()}</span>
+        </div>
+        <a href="${esc(url)}" target="_blank" class="prop-action-btn prop-action-view" style="text-decoration:none;margin-bottom:4px;font-size:13px;padding:8px 12px">
+          View Proposal ↗
+        </a>
+      </div>
+      <button class="prop-action-btn prop-action-create" onclick="closePanel();openProposalModal('${c.id}')" style="font-size:13px;padding:8px 12px">
+        + New Proposal
+      </button>`;
   } else {
     propSection.innerHTML = `
       <button class="prop-action-btn prop-action-create" onclick="closePanel();openProposalModal('${c.id}')">
@@ -1523,58 +1555,112 @@ function clearAddressField() {
 // PROPOSALS
 // ══════════════════════════════════════════════════════════
 
+let pAmpType = '30';
+let pRunFt = 5;
+
 async function loadProposals() {
   const { data, error } = await db.from('proposals').select('*').order('created_at', { ascending: false });
   if (error) return;
   allProposals = data || [];
-  // Build map: contact_id → most recent proposal
   proposalMap = {};
   allProposals.forEach(p => {
-    if (p.contact_id && !proposalMap[p.contact_id]) {
-      proposalMap[p.contact_id] = p;
-    }
+    if (p.contact_id && !proposalMap[p.contact_id]) proposalMap[p.contact_id] = p;
   });
-  renderContacts(); // re-render with proposal badges
+  renderContacts();
 }
 
-function calcTotal() {
-  const base  = parseFloat(document.getElementById('p-base-price').value) || 0;
-  const cord  = document.getElementById('p-cord-check').checked ? 150 : 0;
-  const surge = document.getElementById('p-surge-check').checked ? 450 : 0;
-  const total = base + cord + surge;
-  document.getElementById('p-total').textContent = '$' + total.toLocaleString();
+function pBuildPricing(amp) {
+  const s = {
+    mode: qbState.mode, amp: parseInt(amp), runFt: pRunFt, extFt: 5,
+    mainBreaker: document.getElementById('p-main-breaker')?.checked || false,
+    twinQuad: document.getElementById('p-twin-quad')?.checked || false,
+    surge: false, cordType: null,
+    cordIncluded: document.getElementById('p-cord-check')?.checked ?? true,
+  };
+  const r = qbCalc(s);
+  const is50 = s.amp === 50;
+  const cordVal = s.cordIncluded ? (is50 ? QB_S.cordValue50 : QB_S.cordValue30) : 0;
+  return {
+    base: r.totalSell,
+    longRun: r.longRunSell,
+    mainBreaker: s.mainBreaker ? QB_S.mainBreaker : 0,
+    twinQuad: s.twinQuad ? QB_S.twinQuad : 0,
+    cord: cordVal,
+    cordIncluded: s.cordIncluded,
+    permitInspection: QB_C.permitCustomer,
+    total: r.totalSell,
+    profit: r.profit,
+    margin: r.margin,
+  };
+}
+
+function pRecalc() {
+  const amps = pAmpType === 'both' ? ['30', '50'] : [pAmpType];
+  const primary = pBuildPricing(amps[0]);
+  document.getElementById('p-total').textContent = '$' + primary.total.toLocaleString();
+  document.getElementById('p-profit').textContent = '$' + primary.profit.toLocaleString();
+  document.getElementById('p-profit').style.color = primary.profit >= 500 ? 'var(--green)' : '#d4980b';
+  if (pAmpType === 'both') {
+    const p50 = pBuildPricing('50');
+    document.getElementById('p-total-note').textContent = '30A: $' + primary.total.toLocaleString() + '  /  50A: $' + p50.total.toLocaleString();
+  } else {
+    document.getElementById('p-total-note').textContent = '+ surge offered on proposal page';
+  }
+  // Update cord label
+  const is50 = pAmpType === '50';
+  const cordLbl = document.getElementById('p-cord-price-lbl');
+  if (cordLbl) cordLbl.textContent = is50 ? '+$200' : '+$120';
+}
+
+function pSetAmp(type) {
+  pAmpType = type;
+  document.querySelectorAll('.p-amp-btn').forEach(b => {
+    const id = b.id.replace('p-amp-', '');
+    b.style.background = id === type ? 'var(--navy)' : 'transparent';
+    b.style.color = id === type ? '#fff' : 'var(--text2)';
+  });
+  pRecalc();
+}
+
+function pOnRunChange(v) {
+  pRunFt = parseInt(v);
+  document.getElementById('p-run-display').textContent = pRunFt + 'ft';
+  pRecalc();
 }
 
 function openProposalModal(contactId) {
   const c = allContacts.find(x => x.id === contactId);
   if (!c) return;
 
-  // Reset form state
   document.getElementById('p-form').style.display = '';
   document.getElementById('p-created').style.display = 'none';
   document.getElementById('p-create-btn').style.display = '';
   document.getElementById('proposal-modal-foot').querySelector('.btn-outline').textContent = 'Cancel';
 
-  document.getElementById('p-contact-id').value  = contactId;
-  document.getElementById('proposal-modal-title').textContent = `Proposal — ${c.name}`;
+  document.getElementById('p-contact-id').value = contactId;
+  document.getElementById('proposal-modal-title').textContent = 'Proposal — ' + c.name;
   document.getElementById('p-contact-name').textContent = c.name;
   document.getElementById('p-contact-addr').textContent = c.address || '';
-  document.getElementById('p-base-price').value = '1295';
   document.getElementById('p-cord-check').checked = true;
-  document.getElementById('p-surge-check').checked = false;
+  document.getElementById('p-main-breaker').checked = false;
+  document.getElementById('p-twin-quad').checked = false;
   document.getElementById('p-notes').value = '';
-  calcTotal();
+  document.getElementById('p-run-slider').value = 5;
+  pRunFt = 5;
+  pSetAmp('30');
 
   document.getElementById('proposal-overlay').classList.add('open');
+  document.body.classList.add('modal-open');
 }
 
 async function saveProposal() {
   const contactId = document.getElementById('p-contact-id').value;
   const c = allContacts.find(x => x.id === contactId);
-  const base  = parseFloat(document.getElementById('p-base-price').value) || 0;
-  const cord  = document.getElementById('p-cord-check').checked;
-  const surge = document.getElementById('p-surge-check').checked;
-  const total = base + (cord ? 150 : 0) + (surge ? 450 : 0);
+  const cordIncluded = document.getElementById('p-cord-check').checked;
+
+  const pricing30 = pBuildPricing('30');
+  const pricing50 = pBuildPricing('50');
+  const primary = pAmpType === '50' ? pricing50 : pricing30;
 
   const payload = {
     contact_id:      contactId,
@@ -1582,30 +1668,39 @@ async function saveProposal() {
     contact_email:   c?.email   || '',
     contact_phone:   c?.phone   || '',
     contact_address: c?.address || '',
-    price_base:      base,
-    include_cord:    cord,
-    price_cord:      cord ? 150 : 0,
-    include_surge:   surge,
-    price_surge:     surge ? 450 : 0,
-    total,
+    amp_type:        pAmpType,
+    run_ft:          pRunFt,
+    mode:            qbState.mode,
+    cord_included:   cordIncluded,
+    include_main_breaker: document.getElementById('p-main-breaker').checked,
+    include_twin_quad:    document.getElementById('p-twin-quad').checked,
+    pricing_30:      pricing30,
+    pricing_50:      pricing50,
+    surge_price:     QB_S.surge,
+    total:           primary.total,
+    price_base:      primary.total,
+    include_cord:    cordIncluded,
+    price_cord:      cordIncluded ? (pAmpType === '50' ? QB_S.cordValue50 : QB_S.cordValue30) : 0,
+    include_surge:   false,
+    price_surge:     QB_S.surge,
     notes:           document.getElementById('p-notes').value.trim(),
-    status:          'Draft',
+    status:          'Sent',
   };
 
   const { data, error } = await db.from('proposals').insert([payload]).select().single();
-  if (error) { showToast('Failed to create proposal: ' + error.message, 'error'); return; }
+  if (error) { showToast('Failed: ' + error.message, 'error'); return; }
 
-  const link = `${PROPOSAL_BASE_URL}?token=${data.token}`;
+  const link = PROPOSAL_BASE_URL + '?token=' + data.token;
 
-  // Show link UI
   document.getElementById('p-form').style.display = 'none';
   document.getElementById('p-created').style.display = '';
   document.getElementById('p-create-btn').style.display = 'none';
   document.getElementById('p-link-url').textContent = link;
-  document.getElementById('p-email-link').href =
-    `mailto:${encodeURIComponent(c?.email||'')}?subject=${encodeURIComponent('Your Backup Power Pro Proposal')}&body=${encodeURIComponent('Hi '+c?.name+',\n\nHere is your custom proposal:\n\n'+link+'\n\nLet me know if you have any questions!\n\nKey\nBackup Power Pro\n(864) 400-5302')}`;
 
-  // Update proposal map so badge updates
+  const msg = 'Hi ' + (c?.name || '') + ',\n\nHere is your custom proposal from Backup Power Pro:\n\n' + link + '\n\nLet me know if you have any questions!\n\nKey\nBackup Power Pro\n(864) 400-5302';
+  document.getElementById('p-email-link').href = 'mailto:' + encodeURIComponent(c?.email || '') + '?subject=' + encodeURIComponent('Your Backup Power Pro Proposal') + '&body=' + encodeURIComponent(msg);
+  document.getElementById('p-sms-link').href = 'sms:' + encodeURIComponent(c?.phone || '') + '?body=' + encodeURIComponent(msg);
+
   proposalMap[contactId] = data;
   renderContacts();
   showToast('Proposal created!', 'success');
