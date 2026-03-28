@@ -344,7 +344,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <!-- ── NAV ───────────────────────────────────────────────── -->
 <nav class="nav" id="main-nav" style="display:none">
   <img src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin-right:auto">
-  <button class="btn btn-primary btn-sm" id="nav-add-lead" onclick="openContactModal(null)">+ Lead</button>
 </nav>
 
 <!-- ── TAB BAR ──────────────────────────────────────────── -->
@@ -359,7 +358,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <!-- ── CONTACTS SECTION ─────────────────────────────── -->
   <div class="section-head">
-    <div class="section-title">Leads</div>
+    <div class="section-title" style="cursor:pointer" onclick="openContactModal(null)">+ Leads</div>
     <span id="leads-count" style="font-size:12px;color:var(--text3)"></span>
   </div>
 
@@ -915,8 +914,6 @@ function switchTab(name) {
     const btn = document.getElementById('tab-btn-' + t);
     if (btn) btn.classList.toggle('active', t === name);
   });
-  const addLeadBtn = document.getElementById('nav-add-lead');
-  if (addLeadBtn) addLeadBtn.style.display = name === 'leads' ? '' : 'none';
 }
 
 
