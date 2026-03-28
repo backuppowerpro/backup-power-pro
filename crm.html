@@ -382,12 +382,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   <img id="nav-logo" src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin-right:auto;cursor:pointer;-webkit-user-select:none;user-select:none">
 </nav>
 
-<!-- ── TAB BAR ──────────────────────────────────────────── -->
-<div class="tab-bar" id="tab-bar" style="display:none">
-  <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">Leads</button>
-  <button class="tab-btn" id="tab-btn-quote" onclick="switchTab('quote')">Quote Builder</button>
-</div>
-
 <!-- ── MAIN ──────────────────────────────────────────────── -->
 <div id="tab-leads" style="display:none">
 <main class="main" id="main-content">
@@ -424,8 +418,14 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div><!-- /tab-leads -->
 
 <!-- ── QUOTE BUILDER TAB ────────────────────────────────── -->
-<div id="tab-quote" style="display:none">
-  <div class="qb-wrap">
+<div class="modal-overlay" id="qb-overlay" onclick="if(event.target===this)closeModal('qb-overlay')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <div class="modal-title">Quote Builder</div>
+      <button class="modal-close" onclick="closeModal('qb-overlay')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div class="qb-wrap" style="padding:16px 20px 20px">
 
     <div class="qb-mode-bar">
       <button class="qb-mode-btn active" id="qb-mode-solo" onclick="qbSetMode('solo')">⚡ Solo</button>
@@ -541,6 +541,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <button class="btn btn-outline btn-sm" onclick="qbResetAll()">↺ Reset</button>
     </div>
 
+      </div>
+    </div>
   </div>
 </div>
 
@@ -933,19 +935,8 @@ function checkPass() {
 function showApp() {
   document.getElementById('gate').style.display = 'none';
   document.getElementById('main-nav').style.display = 'flex';
-  document.getElementById('tab-bar').style.display = 'flex';
   document.getElementById('tab-leads').style.display = 'block';
   init();
-}
-
-// ── TAB SWITCHING ─────────────────────────────────────────
-function switchTab(name) {
-  ['leads','quote'].forEach(t => {
-    const el = document.getElementById('tab-' + t);
-    if (el) el.style.display = t === name ? 'block' : 'none';
-    const btn = document.getElementById('tab-btn-' + t);
-    if (btn) btn.classList.toggle('active', t === name);
-  });
 }
 
 
@@ -964,22 +955,30 @@ window.addEventListener('DOMContentLoaded', () => {
 function initDarkMode() {
   if (localStorage.getItem('crm_dark') === '1') document.documentElement.classList.add('dark');
   let pressTimer;
+  let didLongPress = false;
   const logo = document.getElementById('nav-logo');
   if (!logo) return;
-  const start = () => { pressTimer = setTimeout(() => {
+  const longPress = () => {
+    didLongPress = true;
     document.documentElement.classList.toggle('dark');
     const isDark = document.documentElement.classList.contains('dark');
     localStorage.setItem('crm_dark', isDark ? '1' : '0');
     showToast(isDark ? 'Dark mode on' : 'Light mode on', 'success');
-  }, 600); };
-  const cancel = () => clearTimeout(pressTimer);
-  logo.addEventListener('mousedown', start);
-  logo.addEventListener('mouseup', cancel);
-  logo.addEventListener('mouseleave', cancel);
-  logo.addEventListener('touchstart', start, { passive: true });
-  logo.addEventListener('touchend', cancel);
-  logo.addEventListener('touchcancel', cancel);
-  logo.addEventListener('click', e => e.preventDefault());
+  };
+  const startPress = () => { didLongPress = false; pressTimer = setTimeout(longPress, 600); };
+  const cancelPress = () => clearTimeout(pressTimer);
+  logo.addEventListener('mousedown', startPress);
+  logo.addEventListener('mouseup', cancelPress);
+  logo.addEventListener('mouseleave', cancelPress);
+  logo.addEventListener('touchstart', startPress, { passive: true });
+  logo.addEventListener('touchend', cancelPress);
+  logo.addEventListener('touchcancel', cancelPress);
+  logo.addEventListener('click', e => { e.preventDefault(); if (!didLongPress) openQuoteBuilder(); });
+}
+
+function openQuoteBuilder() {
+  document.getElementById('qb-overlay').classList.add('open');
+  document.body.classList.add('modal-open');
 }
 
 // ── INIT ──────────────────────────────────────────────────
