@@ -867,6 +867,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   </div>
   <div class="panel-foot">
     <button class="btn btn-outline btn-sm" id="panel-archive-btn" onclick="panelArchive()" style="margin-right:auto">Archive</button>
+    <button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" onclick="panelSave()">Save</button>
   </div>
 </div>
 </div><!-- /side-panel-overlay -->
@@ -1261,7 +1262,10 @@ function openContactModal(id) {
   setTimeout(() => document.getElementById('c-fname').focus(), 60);
 }
 
+let saving = false;
 async function saveContact() {
+  if (saving) return;
+  saving = true;
   const id   = document.getElementById('c-id').value;
   const fname = document.getElementById('c-fname').value.trim();
   const lname = document.getElementById('c-lname').value.trim();
@@ -1282,7 +1286,8 @@ async function saveContact() {
   } else {
     ({ error } = await db.from('contacts').insert([payload]));
   }
-  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  if (error) { saving = false; showToast('Save failed: ' + error.message, 'error'); return; }
+  saving = false;
   showToast(id ? 'Lead updated' : 'Lead added', 'success');
   closeModal('contact-overlay');
   loadContacts();
@@ -1694,7 +1699,10 @@ function openProposalModal(contactId) {
   document.body.classList.add('modal-open');
 }
 
+let savingProposal = false;
 async function saveProposal() {
+  if (savingProposal) return;
+  savingProposal = true;
   const contactId = document.getElementById('p-contact-id').value;
   const c = allContacts.find(x => x.id === contactId);
   const cordIncluded = document.getElementById('p-cord-check').checked;
@@ -1729,7 +1737,8 @@ async function saveProposal() {
   };
 
   const { data, error } = await db.from('proposals').insert([payload]).select().single();
-  if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+  if (error) { savingProposal = false; showToast('Failed: ' + error.message, 'error'); return; }
+  savingProposal = false;
 
   const link = PROPOSAL_BASE_URL + '?token=' + data.token;
 
@@ -1869,13 +1878,16 @@ function openJobModal(id, preDate) {
   document.getElementById('job-overlay').classList.add('open');
 }
 
+let savingJob = false;
 async function saveJob() {
+  if (savingJob) return;
+  savingJob = true;
   const id   = document.getElementById('j-id').value;
   const date = document.getElementById('j-date').value;
-  if (!date) { showToast('Date is required', 'error'); return; }
+  if (!date) { savingJob = false; showToast('Date is required', 'error'); return; }
   const selContact = document.getElementById('j-contact').value;
   const c = selContact ? allContacts.find(x => x.id === selContact) : null;
-  if (!selContact && !document.getElementById('j-title').value.trim()) { showToast('Select a contact or enter a title', 'error'); return; }
+  if (!selContact && !document.getElementById('j-title').value.trim()) { savingJob = false; showToast('Select a contact or enter a title', 'error'); return; }
 
   const payload = {
     date:         date || null,
@@ -1895,7 +1907,8 @@ async function saveJob() {
   } else {
     ({ error } = await db.from('schedule').insert([payload]));
   }
-  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  if (error) { savingJob = false; showToast('Save failed: ' + error.message, 'error'); return; }
+  savingJob = false;
   showToast(id ? 'Event updated' : 'Event added', 'success');
   closeModal('job-overlay');
   loadJobs();
@@ -2079,7 +2092,7 @@ function esc(s) {
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
-  if (!document.querySelector('.modal-overlay.open')) document.body.classList.remove('modal-open');
+  if (!document.querySelector('.modal-overlay.open') && !document.querySelector('.side-panel-overlay.open')) document.body.classList.remove('modal-open');
 }
 
 let toastTimer;
