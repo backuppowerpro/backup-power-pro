@@ -123,6 +123,7 @@ td.actions{white-space:nowrap}
 .prop-none{background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb}
 .prop-sent{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
 .prop-approved{background:#d1fae5;color:var(--green);border:1px solid #a7f3d0}
+.prop-viewed{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
 
 /* SCROLLABLE CONTACTS */
 .table-scroll{max-height:240px;overflow-y:auto;border-top:1px solid var(--border)}
@@ -173,7 +174,7 @@ body.modal-open{overflow:hidden}
 .form-textarea{resize:vertical;min-height:80px}
 .form-hint{font-size:11px;color:var(--text3);margin-top:4px}
 .addr-wrap{position:relative}
-.addr-change{display:none!important}
+.addr-change{display:none}
 .field-row{display:flex;gap:6px;align-items:flex-start}
 .field-row .form-input,.field-row .addr-wrap{flex:1;min-width:0}
 .field-row .addr-wrap .form-input{width:100%}
@@ -224,7 +225,7 @@ html.dark .approval-notif-amount{color:var(--gold)}
 
 @media(max-width:700px){
   .cal-grid{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}
-  td.notes-cell,.col-notes,.col-phone{display:none}
+  td.notes-cell,.col-notes,.col-phone,.col-prop{display:none}
 }
 @media(max-width:480px){
   td.phone,.col-phone{display:none}
@@ -887,11 +888,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── JURISDICTION EDIT MODAL ────────────────────────────── -->
-<div class="modal-overlay" id="jur-overlay" onclick="if(event.target===this)saveJurisdiction()">
+<div class="modal-overlay" id="jur-overlay" onclick="if(event.target===this)closeModal('jur-overlay')">
   <div class="modal">
     <div class="modal-head">
       <div class="modal-title" id="jur-modal-title">Edit Jurisdiction</div>
-      <button class="panel-close" onclick="cancelJurisdiction()" style="font-size:12px;width:auto;padding:4px 12px;border-radius:6px;font-weight:600">Cancel</button>
+      <button class="modal-close" onclick="closeModal('jur-overlay')">&#10005;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="jur-id">
@@ -934,6 +935,10 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
           <input class="form-input" id="jur-link3-url" placeholder="https://…" style="flex:2;min-width:0">
         </div>
       </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('jur-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveJurisdiction()">Save Jurisdiction</button>
     </div>
   </div>
 </div>
@@ -1117,7 +1122,9 @@ function renderContacts() {
     const propBadge = p
       ? p.status === 'Approved'
         ? `<span class="prop-badge prop-approved">✓ Approved</span>`
-        : `<span class="prop-badge prop-sent">Sent ↗</span>`
+        : p.status === 'Viewed'
+          ? `<span class="prop-badge prop-viewed">👁 Viewed</span>`
+          : `<span class="prop-badge prop-sent">Sent ↗</span>`
       : `<span class="prop-badge prop-none">No Proposal</span>`;
 
     const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
@@ -1140,11 +1147,12 @@ function renderContacts() {
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
       <td class="col-jur" style="font-size:12px">${jurCell}</td>
+      <td class="col-prop">${propBadge}</td>
       <td>${stageBadge}</td>
     </tr>`;
   }).join('');
 
-  const thead = `<tr><th>Name</th><th class="col-phone">Phone</th><th>Address</th><th class="col-notes">Notes</th><th class="col-jur">Jurisdiction</th><th>Stage</th></tr>`;
+  const thead = `<tr><th>Name</th><th class="col-phone">Phone</th><th>Address</th><th class="col-notes">Notes</th><th class="col-jur">Jurisdiction</th><th class="col-prop">Proposal</th><th>Stage</th></tr>`;
 
   wrap.innerHTML = `<div class="table-wrap">
     <table>
@@ -1325,9 +1333,9 @@ function openPanel(id) {
   if (p) {
     const url = PROPOSAL_BASE_URL + '?token=' + p.token;
     let badge = '', badgeStyle = '';
-    if (p.status === 'Approved') { badge = 'Approved'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
-    else if (p.status === 'Viewed') { badge = 'Viewed'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
-    else { badge = 'Sent'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
+    if (p.status === 'Approved') { badge = '✓ Approved'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
+    else if (p.status === 'Viewed') { badge = '👁 Viewed'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
+    else { badge = 'Sent ↗'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
     const views = p.view_count ? ' · ' + p.view_count + ' view' + (p.view_count > 1 ? 's' : '') : '';
     const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
     const surgeLabel = p.selected_surge ? ' + Surge' : '';
@@ -1864,8 +1872,10 @@ function openJobModal(id, preDate) {
 async function saveJob() {
   const id   = document.getElementById('j-id').value;
   const date = document.getElementById('j-date').value;
+  if (!date) { showToast('Date is required', 'error'); return; }
   const selContact = document.getElementById('j-contact').value;
   const c = selContact ? allContacts.find(x => x.id === selContact) : null;
+  if (!selContact && !document.getElementById('j-title').value.trim()) { showToast('Select a contact or enter a title', 'error'); return; }
 
   const payload = {
     date:         date || null,
@@ -2055,7 +2065,7 @@ function fuzzyMatch(c, term) {
   });
 }
 
-function capName(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
+function capName(s) { return s ? s.toLowerCase().replace(/(^|[\s\-'])(\w)/g, (m, sep, c) => sep + c.toUpperCase()) : ''; }
 function autoCapName(el) {
   const pos = el.selectionStart;
   el.value = el.value.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -2064,7 +2074,7 @@ function autoCapName(el) {
 
 function esc(s) {
   if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function closeModal(id) {
