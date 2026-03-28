@@ -858,6 +858,7 @@ let allProposals     = [];
 let allJurisdictions = [];
 let proposalMap  = {};   // contact_id → latest proposal
 let stageFilter  = 'all'; // 'all' | 1..9 | 'archived'
+let analyticsCollapsed = false;
 let contactsShown = 5;
 let searchTerm   = '';
 let weekStart    = getMonday(new Date());
@@ -950,6 +951,10 @@ function renderContacts() {
   const visible = list.slice(0, contactsShown);
   document.getElementById('leads-count').textContent = total === 0 ? '' : `${Math.min(contactsShown, total)} of ${total}`;
 
+  // Hide search bar when filter has no leads
+  const toolbar = document.querySelector('#contacts-view .toolbar');
+  if (toolbar) toolbar.style.display = total === 0 && stageFilter !== 'all' ? 'none' : '';
+
   const wrap = document.getElementById('contacts-table');
 
   if (total === 0) {
@@ -1015,11 +1020,20 @@ function showMoreContacts() {
 }
 
 function toggleAnalyticsFilter(stageId) {
+  // Double-tap All to collapse/expand stage rows
+  if (stageId === 'all' && stageFilter === 'all') {
+    analyticsCollapsed = !analyticsCollapsed;
+    loadPermitAnalytics();
+    return;
+  }
+  // Lock scroll position during transition
+  const scrollY = window.scrollY;
   stageFilter = stageFilter === stageId ? 'all' : stageId;
+  analyticsCollapsed = false;
   contactsShown = 5;
   renderContacts();
   loadPermitAnalytics();
-  document.getElementById('contacts-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  requestAnimationFrame(() => window.scrollTo(0, scrollY));
 }
 
 function openContactModal(id) {
@@ -1802,7 +1816,12 @@ function loadPermitAnalytics() {
       <div class="pa-stat"><div class="pa-stat-num">${active}</div><div class="pa-stat-label">Active</div></div>
       <div class="pa-stat"><div class="pa-stat-num">${completed}</div><div class="pa-stat-label">Completed</div></div>
     </div>
-    <div class="pa-stage-list">${allRow}${stageRows}</div>
+    <div class="pa-stage-list">
+      ${allRow}
+      <div class="pa-stage-collapsible" style="${analyticsCollapsed ? 'max-height:0;opacity:0;overflow:hidden' : 'max-height:600px;opacity:1'};transition:max-height .3s ease,opacity .2s ease">
+        ${stageRows}
+      </div>
+    </div>
   `;
 }
 
