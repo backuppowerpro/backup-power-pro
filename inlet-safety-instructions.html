@@ -447,13 +447,17 @@ body {
 </head>
 <body>
 
-<!-- Back button — top -->
-<div class="back-bar" style="background:#0b1f3b;padding:10px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;print-color-adjust:exact;">
-  <button onclick="history.back()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;padding:7px 16px;border-radius:6px;cursor:pointer;letter-spacing:.02em;">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-    Back to Quote
+<!-- Toolbar — top -->
+<div class="back-bar" style="background:#0b1f3b;padding:10px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;">
+  <button onclick="window.print()" style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;padding:7px 16px;border-radius:6px;cursor:pointer;letter-spacing:.02em;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Print
   </button>
-  <span style="color:rgba(255,255,255,.5);font-size:12px;">Review complete? Return to your quote and check the acknowledgment box.</span>
+  <button onclick="window.close()" style="display:inline-flex;align-items:center;gap:7px;background:#ffba00;border:none;color:#0b1f3b;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;padding:7px 16px;border-radius:6px;cursor:pointer;letter-spacing:.02em;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Close &amp; Return to Quote
+  </button>
+  <span style="color:rgba(255,255,255,.5);font-size:12px;">Review complete? Close this window and check the acknowledgment box.</span>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -692,13 +696,17 @@ body {
 
 </div><!-- /page 3 -->
 
-<!-- Back button — bottom -->
-<div style="background:#0b1f3b;padding:16px 24px;display:flex;align-items:center;justify-content:center;gap:12px;print-color-adjust:exact;">
-  <button onclick="history.back()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;letter-spacing:.02em;">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-    Back to Quote
+<!-- Toolbar — bottom -->
+<div class="back-bar" style="background:#0b1f3b;padding:16px 24px;display:flex;align-items:center;justify-content:center;gap:12px;">
+  <button onclick="window.print()" style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;letter-spacing:.02em;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Print
   </button>
-  <span style="color:rgba(255,255,255,.55);font-size:12px;">Check the acknowledgment box to complete your proposal.</span>
+  <button onclick="window.close()" style="display:inline-flex;align-items:center;gap:7px;background:#ffba00;border:none;color:#0b1f3b;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;letter-spacing:.02em;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Close &amp; Return to Quote
+  </button>
+  <span style="color:rgba(255,255,255,.55);font-size:12px;">Then check the acknowledgment box on your quote.</span>
 </div>
 
 </body>
