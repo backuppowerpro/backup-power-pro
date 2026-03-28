@@ -48,20 +48,6 @@ html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:va
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .search-input{flex:1;min-width:180px;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;background:var(--card);color:var(--text);outline:none;transition:border .15s}
 .search-input:focus{border-color:var(--navy)}
-/* ── STAGE FILTER DROPDOWN ───────────────────────────── */
-.stage-filter-wrap{position:relative}
-.stage-filter-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text2);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
-.stage-filter-btn:hover{border-color:var(--navy);color:var(--navy)}
-.stage-filter-btn.active{border-color:var(--navy);background:var(--navy);color:#fff}
-.stage-filter-btn svg{transition:transform .15s}
-.stage-filter-btn.open svg{transform:rotate(180deg)}
-.stage-filter-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 20px rgba(11,31,59,.13);min-width:200px;z-index:100;overflow:hidden;display:none}
-.stage-filter-dropdown.open{display:block}
-.stage-filter-opt{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;color:var(--text2);transition:background .1s;white-space:nowrap}
-.stage-filter-opt:hover{background:var(--bg)}
-.stage-filter-opt.selected{background:#f0f4ff;color:var(--navy);font-weight:600}
-.stage-filter-opt .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.stage-filter-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
 
 /* CONTACTS TABLE */
 .table-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);background:var(--card)}
@@ -190,7 +176,6 @@ td.actions{white-space:nowrap}
   td.phone,.col-phone{display:none}
   .toolbar{flex-direction:column;align-items:stretch}
   .search-input{min-width:0}
-  .stage-filter-dropdown{right:auto;left:0}
 }
 
 /* ── HIDDEN UTILITY ──────────────────────────────────── */
@@ -310,7 +295,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stat-num{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;color:var(--navy);line-height:1}
 .pa-stat-label{font-size:11px;color:var(--text3);margin-top:3px}
 .pa-stage-list{display:flex;flex-direction:column;gap:4px}
-.pa-stage-row{display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
+.pa-stage-row{display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--card);border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.pa-stage-row:hover{border-color:var(--navy);background:#f8faff}
+.pa-stage-row.active{border-color:var(--navy);background:var(--navy);color:#fff}
+.pa-stage-row.active .pa-stage-name{color:#fff}
+.pa-stage-row.active .pa-stage-count{color:#fff}
 .pa-stage-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .pa-stage-name{font-size:12px;color:var(--text2);flex:1}
 .pa-stage-bar-wrap{width:80px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
@@ -371,13 +360,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   <div id="contacts-view">
     <div class="toolbar">
       <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
-      <div class="stage-filter-wrap" id="stage-filter-wrap">
-        <button class="stage-filter-btn" id="stage-filter-btn" onclick="toggleStageDropdown()">
-          <span id="stage-filter-label">All Stages</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="stage-filter-dropdown" id="stage-filter-dropdown"></div>
-      </div>
     </div>
     <div id="contacts-table"></div>
   </div>
@@ -1025,53 +1007,13 @@ function showMoreContacts() {
   renderContacts();
 }
 
-function buildStageDropdown() {
-  const dd = document.getElementById('stage-filter-dropdown');
-  if (!dd) return;
-  const opts = [
-    { val: 'all', label: 'All Stages', color: null },
-    ...PERMIT_STAGES.map(s => ({ val: s.id, label: s.label, color: s.color })),
-    null, // divider
-    { val: 'archived', label: 'Archived', color: '#94a3b8' },
-  ];
-  dd.innerHTML = opts.map(o => {
-    if (!o) return '<hr class="stage-filter-divider">';
-    const dot = o.color ? `<span class="dot" style="background:${o.color}"></span>` : `<span class="dot" style="background:var(--text3)"></span>`;
-    const sel = stageFilter === o.val ? ' selected' : '';
-    return `<div class="stage-filter-opt${sel}" onclick="setStageFilter(${typeof o.val==='number'?o.val:`'${o.val}'`})">${dot}${o.label}</div>`;
-  }).join('');
-}
-
-function setStageFilter(val) {
-  stageFilter = val;
+function toggleAnalyticsFilter(stageId) {
+  stageFilter = stageFilter === stageId ? 'all' : stageId;
   contactsShown = 5;
-  const stage = PERMIT_STAGES.find(s => s.id === val);
-  const label = val === 'all' ? 'All Stages' : val === 'archived' ? 'Archived' : stage ? stage.label : 'All Stages';
-  document.getElementById('stage-filter-label').textContent = label;
-  const btn = document.getElementById('stage-filter-btn');
-  btn.classList.toggle('active', val !== 'all');
-  closeStageDropdown();
-  buildStageDropdown();
   renderContacts();
+  loadPermitAnalytics();
+  document.getElementById('contacts-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-
-function toggleStageDropdown() {
-  const dd = document.getElementById('stage-filter-dropdown');
-  const btn = document.getElementById('stage-filter-btn');
-  const isOpen = dd.classList.contains('open');
-  if (!isOpen) buildStageDropdown();
-  dd.classList.toggle('open', !isOpen);
-  btn.classList.toggle('open', !isOpen);
-}
-
-function closeStageDropdown() {
-  document.getElementById('stage-filter-dropdown')?.classList.remove('open');
-  document.getElementById('stage-filter-btn')?.classList.remove('open');
-}
-
-document.addEventListener('click', e => {
-  if (!document.getElementById('stage-filter-wrap')?.contains(e.target)) closeStageDropdown();
-});
 
 function openContactModal(id) {
   clearAddressField();
@@ -1832,10 +1774,11 @@ function loadPermitAnalytics() {
   const stageRows = PERMIT_STAGES.map(s => {
     const count = stageCounts[s.id] || 0;
     const pct   = Math.round((count / maxCount) * 100);
-    return `<div class="pa-stage-row">
-      <div class="pa-stage-dot" style="background:${s.color}"></div>
+    const isActive = stageFilter === s.id;
+    return `<div class="pa-stage-row${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter(${s.id})">
+      <div class="pa-stage-dot" style="background:${isActive ? '#fff' : s.color}"></div>
       <span class="pa-stage-name">${esc(s.label)}</span>
-      <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:${pct}%;background:${s.color}"></div></div>
+      <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:${pct}%;background:${isActive ? '#fff' : s.color}"></div></div>
       <span class="pa-stage-count">${count}</span>
     </div>`;
   }).join('');
