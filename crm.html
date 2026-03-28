@@ -318,9 +318,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stage-count{font-size:12px;font-weight:700;color:var(--navy);min-width:16px;text-align:right}
 
 /* ── TREND ANALYTICS ─────────────────────────────────── */
-.trend-period-bar{display:flex;gap:5px;margin-bottom:12px}
-.trend-period-btn{padding:4px 12px;border-radius:6px;border:1.5px solid var(--border);background:var(--card);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .15s}
-.trend-period-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 .trend-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
 .trend-stat-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .trend-stat{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
@@ -421,10 +418,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <div class="section-head" style="margin-bottom:10px;margin-top:24px">
     <div class="section-title">Progress Over Time</div>
-    <div class="trend-period-bar">
-      <button class="trend-period-btn active" id="trend-week-btn" onclick="setTrendPeriod('week')">This Week</button>
-      <button class="trend-period-btn" id="trend-month-btn" onclick="setTrendPeriod('month')">This Month</button>
-    </div>
   </div>
   <div id="trend-analytics"></div>
 
@@ -1850,13 +1843,11 @@ function loadPermitAnalytics() {
 // TREND ANALYTICS
 // ══════════════════════════════════════════════════════════
 
-let trendPeriod = 'week';
 let stageHistoryCache = null;
+let trendPeriod = 'week';
 
-function setTrendPeriod(p) {
-  trendPeriod = p;
-  document.getElementById('trend-week-btn').classList.toggle('active', p === 'week');
-  document.getElementById('trend-month-btn').classList.toggle('active', p === 'month');
+function toggleTrendPeriod() {
+  trendPeriod = trendPeriod === 'week' ? 'month' : 'week';
   renderTrendAnalytics();
 }
 
@@ -1892,15 +1883,18 @@ function renderTrendAnalytics() {
   const { currStart, currEnd, prevStart, prevEnd } = getTrendPeriodBounds(trendPeriod);
   const lbl  = trendPeriod === 'week' ? 'week'  : 'month';
   const plbl = trendPeriod === 'week' ? 'last week' : 'last month';
-
-  const currLeads = allContacts.filter(c => { const d = new Date(c.created_at); return d >= currStart && d <= currEnd; }).length;
-  const prevLeads = allContacts.filter(c => { const d = new Date(c.created_at); return d >= prevStart && d <= prevEnd; }).length;
-
+  const switchLabel = trendPeriod === 'week' ? 'tap for monthly' : 'tap for weekly';
   const hist = stageHistoryCache || [];
-  const currMoves = hist.filter(h => { const d = new Date(h.changed_at); return d >= currStart && d <= currEnd; }).length;
-  const prevMoves = hist.filter(h => { const d = new Date(h.changed_at); return d >= prevStart && d <= prevEnd; }).length;
-  const currDone  = hist.filter(h => h.to_stage === 9 && new Date(h.changed_at) >= currStart && new Date(h.changed_at) <= currEnd).length;
-  const prevDone  = hist.filter(h => h.to_stage === 9 && new Date(h.changed_at) >= prevStart && new Date(h.changed_at) <= prevEnd).length;
+
+  function inRange(ts) { const d = new Date(ts); return d >= currStart && d <= currEnd; }
+  function inPrev(ts)  { const d = new Date(ts); return d >= prevStart && d <= prevEnd; }
+
+  const currLeads = allContacts.filter(c => inRange(c.created_at)).length;
+  const prevLeads = allContacts.filter(c => inPrev(c.created_at)).length;
+  const currMoves = hist.filter(h => inRange(h.changed_at)).length;
+  const prevMoves = hist.filter(h => inPrev(h.changed_at)).length;
+  const currDone  = hist.filter(h => h.to_stage === 9 && inRange(h.changed_at)).length;
+  const prevDone  = hist.filter(h => h.to_stage === 9 && inPrev(h.changed_at)).length;
 
   function delta(curr, prev) {
     const diff = curr - prev;
@@ -1909,37 +1903,29 @@ function renderTrendAnalytics() {
     return `<div class="trend-delta ${cls}">${diff > 0 ? '↑' : '↓'}${Math.abs(diff)} vs ${plbl}</div>`;
   }
 
-  // Conversion rate: % of all non-archived leads that reached stage 4+ (Booked)
+  // Conversion rate
   const active = allContacts.filter(c => c.status !== 'Archived');
   const totalLeads = active.length;
   const bookedLeads = active.filter(c => (c.stage || 1) >= 4).length;
   const convRate = totalLeads > 0 ? Math.round((bookedLeads / totalLeads) * 100) : 0;
 
-  // Average days to book: from stage_history, find time from first entry (stage 1→2) to reaching stage 4
-  // Use all contacts that have reached stage 4+ and have history
-  const allHist = stageHistoryCache || [];
-  const contactFirstMove = {};
+  // Average days to book
   const contactBookedAt = {};
-  allHist.forEach(h => {
-    const cid = h.contact_id;
-    const t = new Date(h.changed_at).getTime();
-    if (!contactFirstMove[cid] || t < contactFirstMove[cid]) contactFirstMove[cid] = t;
-    if (h.to_stage >= 4 && (!contactBookedAt[cid] || t < contactBookedAt[cid])) contactBookedAt[cid] = t;
+  hist.forEach(h => {
+    if (h.to_stage >= 4 && (!contactBookedAt[h.contact_id] || new Date(h.changed_at).getTime() < contactBookedAt[h.contact_id]))
+      contactBookedAt[h.contact_id] = new Date(h.changed_at).getTime();
   });
-  // For contacts with history, calc days from created_at to booked
   let daysSum = 0, daysCount = 0;
   allContacts.forEach(c => {
     if ((c.stage || 1) >= 4 && contactBookedAt[c.id] && c.created_at) {
-      const created = new Date(c.created_at).getTime();
-      const booked = contactBookedAt[c.id];
-      const days = Math.max(0, Math.round((booked - created) / 86400000));
+      const days = Math.max(0, Math.round((contactBookedAt[c.id] - new Date(c.created_at).getTime()) / 86400000));
       daysSum += days; daysCount++;
     }
   });
   const avgDays = daysCount > 0 ? Math.round(daysSum / daysCount) : '—';
   const avgDaysLabel = avgDays === '—' ? 'Need more data' : (avgDays === 0 ? 'Same day' : `${avgDays} day${avgDays===1?'':'s'} avg`);
 
-  el.innerHTML = `<div class="trend-stat-grid">
+  el.innerHTML = `<div class="trend-stat-grid" onclick="toggleTrendPeriod()" style="cursor:pointer">
     <div class="trend-stat">
       <div class="trend-num">${currLeads}</div>
       <div class="trend-label">New leads<br>this ${lbl}</div>
@@ -1956,6 +1942,7 @@ function renderTrendAnalytics() {
       ${delta(currDone, prevDone)}
     </div>
   </div>
+  <div style="text-align:center;font-size:10px;color:var(--text3);margin-top:4px;margin-bottom:10px;cursor:pointer" onclick="toggleTrendPeriod()">${switchLabel}</div>
   <div class="trend-stat-grid-2">
     <div class="trend-stat">
       <div class="trend-num">${convRate}%</div>
@@ -1964,7 +1951,7 @@ function renderTrendAnalytics() {
     </div>
     <div class="trend-stat">
       <div class="trend-num">${avgDays === '—' ? '—' : avgDays + 'd'}</div>
-      <div class="trend-label">Avg days<br>to book</div>
+      <div class="trend-label">Avg days to book</div>
       <div class="trend-delta flat">${avgDaysLabel}</div>
     </div>
   </div>`;
