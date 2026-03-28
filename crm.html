@@ -1026,14 +1026,16 @@ function toggleAnalyticsFilter(stageId) {
     loadPermitAnalytics();
     return;
   }
-  // Lock scroll position during transition
-  const scrollY = window.scrollY;
+  // Lock layout height to prevent page jump during filter swap
+  const cv = document.getElementById('contacts-view');
+  const prevH = cv.offsetHeight;
+  cv.style.minHeight = prevH + 'px';
   stageFilter = stageFilter === stageId ? 'all' : stageId;
   analyticsCollapsed = false;
   contactsShown = 5;
   renderContacts();
   loadPermitAnalytics();
-  requestAnimationFrame(() => window.scrollTo(0, scrollY));
+  requestAnimationFrame(() => { cv.style.minHeight = ''; });
 }
 
 function openContactModal(id) {
