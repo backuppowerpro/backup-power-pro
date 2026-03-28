@@ -357,6 +357,18 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <span id="leads-count" style="font-size:12px;color:var(--text3)"></span>
   </div>
 
+  <!-- ── PERMIT ANALYTICS SECTION ─────────────────────── -->
+  <div class="section-head" style="margin-bottom:10px">
+    <div class="section-title">Permit Analytics</div>
+    <button class="btn btn-outline btn-sm" onclick="loadPermitAnalytics()" title="Refresh">↺</button>
+  </div>
+  <div id="permit-analytics"></div>
+
+  <div class="section-head" style="margin-bottom:10px;margin-top:24px">
+    <div class="section-title">Progress Over Time</div>
+  </div>
+  <div id="trend-analytics"></div>
+
   <div id="contacts-view">
     <div class="toolbar">
       <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
@@ -389,19 +401,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   </div>
   <div id="jur-list" class="jur-list"></div>
 
-  <hr class="section-divider">
-
-  <!-- ── PERMIT ANALYTICS SECTION ─────────────────────── -->
-  <div class="section-head" style="margin-bottom:10px">
-    <div class="section-title">Permit Analytics</div>
-    <button class="btn btn-outline btn-sm" onclick="loadPermitAnalytics()" title="Refresh">↺</button>
-  </div>
-  <div id="permit-analytics"></div>
-
-  <div class="section-head" style="margin-bottom:10px;margin-top:24px">
-    <div class="section-title">Progress Over Time</div>
-  </div>
-  <div id="trend-analytics"></div>
 
 </main>
 </div><!-- /tab-leads -->
