@@ -965,16 +965,13 @@ function renderContacts() {
     const stageBadge = `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color};border-color:${stageInfo.color}55">${esc(stageInfo.label)}</span>`;
 
     const addrCell = c.address
-      ? `<a href="https://maps.google.com/?q=${encodeURIComponent(c.address)}" target="_blank" onclick="event.stopPropagation()" title="${esc(c.address)}">
-           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-           ${esc(c.address.split(',')[0])}
-         </a>`
+      ? `<span title="${esc(c.address)}">${esc(c.address.split(',')[0])}</span>`
       : '<span style="color:var(--text3);font-size:12px">—</span>';
 
     const isArchived = c.status === 'Archived';
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
       <td class="name">${esc(c.name)}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
-      <td class="phone"><a href="tel:${esc(c.phone||'')}" onclick="event.stopPropagation()">${esc(c.phone||'—')}</a></td>
+      <td class="phone">${esc(c.phone||'—')}</td>
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
       <td>${stageBadge}</td>
