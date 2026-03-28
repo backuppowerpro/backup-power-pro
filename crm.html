@@ -103,7 +103,7 @@ td.actions{white-space:nowrap}
 /* ── WEEKLY CALENDAR ──────────────────────────────── */
 .cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .week-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;text-align:center}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;min-height:220px}
+.cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;min-height:220px}
 .cal-day{background:var(--card);border-radius:8px;border:1.5px solid var(--border);min-height:180px;display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s}
 .cal-day.today{border-color:var(--navy);background:#f0f4ff}
 .cal-day-head{padding:7px 8px 5px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:5px;background:rgba(0,0,0,.02)}
@@ -169,7 +169,7 @@ td.actions{white-space:nowrap}
 .toast.error{background:var(--red)}
 
 @media(max-width:700px){
-  .cal-grid{grid-template-columns:repeat(7,minmax(90px,1fr));overflow-x:auto}
+  .cal-grid{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}
   td.notes-cell,.col-notes,.col-jur{display:none}
 }
 @media(max-width:480px){
@@ -1521,17 +1521,17 @@ function navigateWeek(delta) {
 }
 
 function renderCalendar() {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const todayStr = new Date().toISOString().split('T')[0];
 
   // Week label
   const ws = new Date(weekStart);
-  const we = new Date(ws); we.setDate(we.getDate() + 6);
+  const we = new Date(ws); we.setDate(we.getDate() + 4);
   const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   document.getElementById('week-label').textContent = `${fmt(ws)} – ${fmt(we)}`;
 
   let html = '';
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 5; i++) {
     const day = new Date(ws);
     day.setDate(day.getDate() + i);
     const dateStr = day.toISOString().split('T')[0];
