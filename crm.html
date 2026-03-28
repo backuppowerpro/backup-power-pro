@@ -2005,7 +2005,6 @@ function renderTrendAnalytics() {
   const { currStart, currEnd, prevStart, prevEnd } = getTrendPeriodBounds(trendPeriod);
   const lbl  = trendPeriod === 'week' ? 'week'  : 'month';
   const plbl = trendPeriod === 'week' ? 'last week' : 'last month';
-  const switchLabel = trendPeriod === 'week' ? 'tap for monthly' : 'tap for weekly';
   const hist = stageHistoryCache || [];
 
   function inRange(ts) { const d = new Date(ts); return d >= currStart && d <= currEnd; }
@@ -2064,7 +2063,6 @@ function renderTrendAnalytics() {
       ${delta(currDone, prevDone)}
     </div>
   </div>
-  <div style="text-align:center;font-size:10px;color:var(--text3);margin-top:4px;margin-bottom:10px;cursor:pointer" onclick="toggleTrendPeriod()">${switchLabel}</div>
   <div class="trend-stat-grid-2">
     <div class="trend-stat">
       <div class="trend-num">${convRate}%</div>
