@@ -205,6 +205,23 @@ body.modal-open{overflow:hidden}
 .toast.success{background:var(--green)}
 .toast.error{background:var(--red)}
 
+/* APPROVAL NOTIFICATION */
+.approval-notif{position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);opacity:0;transition:opacity .3s;pointer-events:none}
+.approval-notif.show{opacity:1;pointer-events:auto}
+.approval-notif-card{background:#fff;border-radius:20px;padding:40px 36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);transform:scale(.9);transition:transform .35s cubic-bezier(.175,.885,.32,1.275)}
+.approval-notif.show .approval-notif-card{transform:scale(1)}
+html.dark .approval-notif-card{background:var(--card)}
+.approval-notif-icon{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;animation:notifPulse 1.5s ease-in-out infinite}
+@keyframes notifPulse{0%,100%{box-shadow:0 0 0 0 rgba(5,150,105,.4)}50%{box-shadow:0 0 0 16px rgba(5,150,105,0)}}
+.approval-notif-title{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:6px}
+html.dark .approval-notif-title{color:var(--text)}
+.approval-notif-name{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;color:var(--green);margin-bottom:4px}
+.approval-notif-amount{font-family:'Outfit',sans-serif;font-size:32px;font-weight:800;color:var(--navy);margin-bottom:16px}
+html.dark .approval-notif-amount{color:var(--gold)}
+.approval-notif-sub{font-size:13px;color:var(--text3);margin-bottom:20px;line-height:1.5}
+.approval-notif-btn{padding:12px 28px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s}
+.approval-notif-btn:hover{background:var(--navy2)}
+
 @media(max-width:700px){
   .cal-grid{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}
   td.notes-cell,.col-notes,.col-phone{display:none}
@@ -923,6 +940,20 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
 <!-- ── TOAST ─────────────────────────────────────────────── -->
 <div class="toast" id="toast"></div>
+
+<!-- Approval Notification Overlay -->
+<div class="approval-notif" id="approval-notif">
+  <div class="approval-notif-card">
+    <div class="approval-notif-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="approval-notif-title">Proposal Approved!</div>
+    <div class="approval-notif-name" id="notif-name"></div>
+    <div class="approval-notif-amount" id="notif-amount"></div>
+    <div class="approval-notif-sub" id="notif-sub"></div>
+    <button class="approval-notif-btn" onclick="dismissApprovalNotif()">Got It</button>
+  </div>
+</div>
 
 <!-- ── SCRIPTS ────────────────────────────────────────────── -->
 <script>
@@ -2534,6 +2565,93 @@ function qbResetAll() {
 }
 
 qbRender();
+
+// ══════════════════════════════════════════════════════════
+// PROPOSAL APPROVAL NOTIFICATIONS (polls every 30s)
+// ══════════════════════════════════════════════════════════
+let lastApprovalCheck = null;
+let approvalPollTimer = null;
+let notifAudio = null;
+
+function startApprovalPolling() {
+  lastApprovalCheck = new Date().toISOString();
+  // Pre-create audio for notification sound
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    notifAudio = audioCtx;
+  } catch(e) {}
+  approvalPollTimer = setInterval(checkForApprovals, 30000);
+}
+
+async function checkForApprovals() {
+  if (!lastApprovalCheck) return;
+  try {
+    const { data, error } = await db.from('proposals')
+      .select('id,contact_name,total,selected_amp,selected_surge,signer_name,signed_at,contact_id')
+      .eq('status', 'Approved')
+      .gt('signed_at', lastApprovalCheck)
+      .order('signed_at', { ascending: false });
+
+    if (error || !data || data.length === 0) return;
+
+    // Update check time to now
+    lastApprovalCheck = new Date().toISOString();
+
+    // Show notification for the most recent approval
+    const p = data[0];
+    showApprovalNotif(p);
+
+    // Refresh proposals data in background
+    loadProposals();
+  } catch(e) {
+    console.warn('Approval poll error:', e);
+  }
+}
+
+function showApprovalNotif(p) {
+  const el = document.getElementById('approval-notif');
+  document.getElementById('notif-name').textContent = p.contact_name || p.signer_name || 'Customer';
+  document.getElementById('notif-amount').textContent = '$' + Number(p.total || 0).toLocaleString();
+  const ampLabel = p.selected_amp === '50' ? '50A' : '30A';
+  const surgeText = p.selected_surge ? ' + Surge' : '';
+  const signedTime = p.signed_at ? new Date(p.signed_at).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+  document.getElementById('notif-sub').textContent = ampLabel + surgeText + (signedTime ? ' \u00B7 Approved at ' + signedTime : '');
+  el.classList.add('show');
+
+  // Play notification sound
+  playNotifSound();
+}
+
+function playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Play a pleasant two-tone chime
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.15);
+      gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.15 + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.15 + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.5);
+    });
+  } catch(e) {}
+}
+
+function dismissApprovalNotif() {
+  document.getElementById('approval-notif').classList.remove('show');
+}
+
+// Start polling when app loads (hook into existing init)
+const origInit = init;
+init = async function() {
+  await origInit();
+  startApprovalPolling();
+};
 
 </script>
 </body>

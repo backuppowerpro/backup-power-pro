@@ -6,6 +6,7 @@
 <title>Backup Power Pro — Proposal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
@@ -101,11 +102,13 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .sign-card-head h2{font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;color:#fff}
 .sign-card-head p{font-size:13px;color:rgba(255,255,255,.6);margin-top:3px}
 .sign-card-body{padding:20px}
-.ack-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#f8f9fb;border:1.5px solid var(--border);border-radius:10px;margin-bottom:16px;cursor:pointer;transition:border-color .15s}
+.ack-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#f8f9fb;border:1.5px solid var(--border);border-radius:10px;margin-bottom:16px;cursor:pointer;transition:border-color .15s;user-select:none;-webkit-user-select:none}
 .ack-row:hover{border-color:var(--navy2)}
-.ack-row input[type="checkbox"]{width:18px;height:18px;accent-color:var(--navy);flex-shrink:0;margin-top:2px;cursor:pointer}
-.ack-row label{font-size:14px;color:var(--text);cursor:pointer;line-height:1.5}
-.ack-row label a{color:var(--navy);font-weight:600;text-decoration:underline}
+.ack-row.checked{border-color:var(--green);background:#f0fdf4}
+.ack-box{width:22px;height:22px;border-radius:6px;border:2px solid #cbd5e1;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s}
+.ack-row.checked .ack-box{background:var(--green);border-color:var(--green)}
+.ack-text{font-size:14px;color:var(--text);line-height:1.5}
+.ack-text a{color:var(--navy);font-weight:600;text-decoration:underline}
 .form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px;letter-spacing:.03em;display:block}
 .form-label .req{color:var(--red)}
 .name-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;font-family:'Inter',sans-serif;color:var(--text);outline:none;transition:border .15s}
@@ -115,18 +118,29 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .name-hint{font-size:12px;color:var(--text3);margin-top:6px}
 .approve-btn{width:100%;padding:16px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:10px}
 .approve-btn:hover{background:var(--navy2)}
-.approve-btn:disabled{opacity:.5;cursor:not-allowed}
+.approve-btn:disabled{opacity:.4;cursor:not-allowed;background:#94a3b8}
 
 /* APPROVED */
-.approved-banner{background:var(--green);border-radius:14px;padding:28px 24px;text-align:center;color:#fff;margin-bottom:16px}
-.approved-icon{width:56px;height:56px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
-.approved-banner h2{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;margin-bottom:6px}
+.approved-banner{background:var(--green);border-radius:14px;padding:32px 24px;text-align:center;color:#fff;margin-bottom:16px}
+.approved-icon{width:64px;height:64px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.approved-banner h2{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;margin-bottom:6px}
 .approved-banner p{font-size:14px;opacity:.85}
 .approved-receipt{background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px}
-.approved-receipt-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px}
+.approved-receipt-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px}
 .approved-receipt-row:not(:last-child){border-bottom:1px solid var(--border)}
 .approved-receipt-label{color:var(--text3)}
 .approved-receipt-value{font-weight:600;color:var(--text)}
+
+/* NEXT STEPS */
+.next-step-item{display:flex;gap:14px;align-items:flex-start;padding:14px 0}
+.next-step-item:not(:last-child){border-bottom:1px solid var(--border)}
+.next-step-num{width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--gold);font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.next-step-text strong{display:block;font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.next-step-text span{font-size:12px;color:var(--text3);line-height:1.4}
+
+/* DOWNLOAD BTN */
+.dl-btn{width:100%;padding:14px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
+.dl-btn:hover{background:var(--navy);color:#fff}
 
 /* LOADING / ERROR */
 .state-wrap{text-align:center;padding:60px 24px}
@@ -179,6 +193,8 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let P = null;           // proposal data
 let chosenAmp = null;    // '30' or '50'
 let surgeOn = false;
+let ackScope = false;
+let ackSafety = false;
 
 // ── INIT ────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
@@ -222,17 +238,13 @@ async function getIP() {
 
 // ── PRICING HELPERS ─────────────────────────────────────────
 function getPrice(amp) {
-  // New format (pricing JSON)
   if (amp === '50' && P.pricing_50) return P.pricing_50;
   if (amp === '30' && P.pricing_30) return P.pricing_30;
-  // Fallback: old format
   return {
     base: P.price_base || 0,
     cord: P.include_cord ? (P.price_cord || 150) : 0,
     cordIncluded: P.include_cord,
-    mainBreaker: 0,
-    twinQuad: 0,
-    longRun: 0,
+    mainBreaker: 0, twinQuad: 0, longRun: 0,
     permitInspection: 0,
     total: P.total || 0,
   };
@@ -258,7 +270,6 @@ function renderProposal() {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
   });
 
-  // Build includes
   const includes = [
     { name: 'Generator inlet box', desc: 'Installed on exterior of home, weather-rated' },
     { name: 'Interlock kit', desc: 'Code-compliant, UL-listed — prevents back-feed' },
@@ -353,19 +364,19 @@ function renderProposal() {
       </div>
       <div class="surge-risk-grid">
         <div class="surge-risk-item">
-          <div class="surge-risk-icon">❄️</div>
+          <div class="surge-risk-icon">&#10052;&#65039;</div>
           <div class="surge-risk-name">HVAC System</div>
           <div class="surge-risk-cost">$4,500</div>
           <div class="surge-risk-label">to replace</div>
         </div>
         <div class="surge-risk-item">
-          <div class="surge-risk-icon">📺</div>
+          <div class="surge-risk-icon">&#128250;</div>
           <div class="surge-risk-name">Electronics</div>
           <div class="surge-risk-cost">$3,200</div>
           <div class="surge-risk-label">to replace</div>
         </div>
         <div class="surge-risk-item">
-          <div class="surge-risk-icon">🍳</div>
+          <div class="surge-risk-icon">&#127859;</div>
           <div class="surge-risk-name">Appliances</div>
           <div class="surge-risk-cost">$2,800</div>
           <div class="surge-risk-label">to replace</div>
@@ -380,7 +391,7 @@ function renderProposal() {
           <div class="surge-toggle-price ${surgeOn?'on':''}" id="surge-price-label">+${fmt(P.surge_price || 375)} &middot; protects $10,500+ in appliances</div>
         </div>
       </div>
-      <div class="surge-stat">That's <strong>${((P.surge_price||375)/10500*100).toFixed(1)}% of what you're protecting</strong> — for the lifetime of the device.</div>
+      <div class="surge-stat">That's <strong>${((P.surge_price||375)/10500*100).toFixed(1)}% of what you're protecting</strong> &mdash; for the lifetime of the device.</div>
     </div>
 
     <!-- Approve & Sign -->
@@ -390,19 +401,19 @@ function renderProposal() {
         <p>Review the safety instructions, then type your name to approve.</p>
       </div>
       <div class="sign-card-body">
-        <div class="ack-row" onclick="document.getElementById('ack-scope').checked=!document.getElementById('ack-scope').checked;validateForm()">
-          <input type="checkbox" id="ack-scope" onchange="validateForm()">
-          <label for="ack-scope" onclick="event.stopPropagation()">
-            I have reviewed the scope of work and pricing above and agree to proceed.
-          </label>
+        <div class="ack-row" id="ack-row-scope">
+          <div class="ack-box" id="ack-box-scope">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="2,6 5,9 10,3"/></svg>
+          </div>
+          <span class="ack-text">I have reviewed the scope of work and pricing above and agree to proceed.</span>
         </div>
-        <div class="ack-row" onclick="document.getElementById('ack-safety').checked=!document.getElementById('ack-safety').checked;validateForm()">
-          <input type="checkbox" id="ack-safety" onchange="validateForm()">
-          <label for="ack-safety" onclick="event.stopPropagation()">
-            I have read and understood the
-            <a href="inlet-safety-instructions.html" target="_blank" onclick="event.stopPropagation()">Generator Safety Instructions</a>
-            for portable generator inlet installations.
-          </label>
+        <div class="ack-row" id="ack-row-safety">
+          <div class="ack-box" id="ack-box-safety">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="2,6 5,9 10,3"/></svg>
+          </div>
+          <span class="ack-text">I have read and understood the
+            <a href="javascript:void(0)" id="safety-link">Generator Safety Instructions</a>
+            for portable generator inlet installations.</span>
         </div>
         <div>
           <label class="form-label">Your Full Name <span class="req">*</span></label>
@@ -412,7 +423,7 @@ function renderProposal() {
         </div>
         <button class="approve-btn" id="approve-btn" onclick="approveProposal()" disabled>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Approve Proposal — <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
+          Approve Proposal &mdash; <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
         </button>
         <div id="approve-err" style="font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:center"></div>
       </div>
@@ -423,7 +434,43 @@ function renderProposal() {
     </div>
   `;
 
+  // Wire up acknowledgment rows with proper click handling
+  wireAckRow('ack-row-scope', 'ack-box-scope', 'scope');
+  wireAckRow('ack-row-safety', 'ack-box-safety', 'safety');
+
+  // Wire up safety link to open in new tab without toggling checkbox
+  document.getElementById('safety-link').addEventListener('click', function(e) {
+    e.stopPropagation();
+    window.open('inlet-safety-instructions.html', '_blank');
+  });
+
   renderPricing();
+}
+
+// ── ACK ROW WIRING (clean click handling) ───────────────────
+function wireAckRow(rowId, boxId, key) {
+  const row = document.getElementById(rowId);
+  row.addEventListener('click', function(e) {
+    // Don't toggle if clicking a link
+    if (e.target.tagName === 'A') return;
+    if (key === 'scope') ackScope = !ackScope;
+    else ackSafety = !ackSafety;
+    updateAckVisual(rowId, boxId, key === 'scope' ? ackScope : ackSafety);
+    validateForm();
+  });
+}
+
+function updateAckVisual(rowId, boxId, checked) {
+  const row = document.getElementById(rowId);
+  const box = document.getElementById(boxId);
+  const svg = box.querySelector('svg');
+  if (checked) {
+    row.classList.add('checked');
+    svg.style.display = '';
+  } else {
+    row.classList.remove('checked');
+    svg.style.display = 'none';
+  }
 }
 
 // ── RENDER PRICING ROWS ─────────────────────────────────────
@@ -434,7 +481,6 @@ function renderPricing() {
   let rows = '';
 
   if (isNew) {
-    // New format — detailed breakdown
     const base = pr.base || 0;
     const longRun = pr.longRun || 0;
     const mb = pr.mainBreaker || 0;
@@ -449,7 +495,6 @@ function renderPricing() {
     if (mb) rows += priceRow('Main breaker replacement', 'Upgraded to current code', fmt(mb));
     if (tq) rows += priceRow('Panel space optimization', 'Twin/quad breaker swap', fmt(tq));
   } else {
-    // Old format — simple
     rows += priceRow('Base installation', 'Inlet box, interlock kit, permit, inspection, walkthrough', fmt(pr.base || P.price_base));
     if (P.include_cord) rows += priceRow('Power transfer cord', 'Connects generator to inlet box', fmt(P.price_cord));
     if (P.include_surge) rows += priceRow('Whole-house surge protector', 'Installed on main panel', fmt(P.price_surge));
@@ -472,11 +517,10 @@ function renderPricing() {
       </tr>
     </table>
     <div class="compare-box">
-      Get backup power for your whole home — without the $15,000 standby generator.<br>
+      Get backup power for your whole home &mdash; without the $15,000 standby generator.<br>
       <span>You already own the generator. We connect it the right way.</span>
     </div>`;
 
-  // Update approve button total
   const approveTotal = document.getElementById('approve-total');
   if (approveTotal) approveTotal.textContent = fmt(total);
 }
@@ -519,21 +563,17 @@ function updateSigPreview() {
 // ── VALIDATION ──────────────────────────────────────────────
 function validateForm() {
   const name = (document.getElementById('signer-name')?.value || '').trim();
-  const ack1 = document.getElementById('ack-scope')?.checked;
-  const ack2 = document.getElementById('ack-safety')?.checked;
   const btn = document.getElementById('approve-btn');
-  if (btn) btn.disabled = !(name.length >= 2 && ack1 && ack2);
+  if (btn) btn.disabled = !(name.length >= 2 && ackScope && ackSafety);
 }
 
 // ── APPROVE ─────────────────────────────────────────────────
 async function approveProposal() {
   const name = document.getElementById('signer-name').value.trim();
-  const ack1 = document.getElementById('ack-scope').checked;
-  const ack2 = document.getElementById('ack-safety').checked;
   const err  = document.getElementById('approve-err');
   const btn  = document.getElementById('approve-btn');
 
-  if (!name || !ack1 || !ack2) { err.textContent = 'Please complete all fields above.'; return; }
+  if (!name || !ackScope || !ackSafety) { err.textContent = 'Please complete all fields above.'; return; }
 
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner-large" style="width:20px;height:20px;border-width:2.5px;margin:0"></div> Submitting...';
@@ -541,7 +581,6 @@ async function approveProposal() {
   const ip = await getIP();
   const total = calcTotal(chosenAmp);
 
-  // Build legal terms snapshot
   const termsSnapshot = JSON.stringify({
     proposal_id: P.id,
     proposal_token: P.token,
@@ -603,19 +642,58 @@ function renderApproved() {
   document.getElementById('main').innerHTML = `
     <div class="approved-banner">
       <div class="approved-icon">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <h2>Proposal Approved!</h2>
-      <p>Signed by <strong>${esc(P.signer_name)}</strong>${signedDate ? ' on ' + signedDate : ''}.</p>
+      <p>Signed by <strong>${esc(P.signer_name)}</strong>${signedDate ? ' on ' + signedDate : ''}</p>
     </div>
 
+    <!-- Next Steps -->
     <div class="card">
-      <div class="card-body" style="font-size:14px;color:var(--text2);line-height:1.7">
-        <p style="margin-bottom:12px"><strong style="color:var(--navy)">You're all set, ${esc(P.contact_name)}!</strong></p>
-        <p>We've received your approved proposal. Key will reach out shortly to schedule your installation.</p>
-        <p style="margin-top:12px">Questions? Call or text:</p>
-        <p style="margin-top:8px;font-size:18px;font-weight:700;color:var(--navy)">(864) 400-5302</p>
-        <div class="approved-receipt">
+      <div class="card-head">
+        <div class="card-icon" style="background:#eff6ff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <h2>What Happens Next</h2>
+      </div>
+      <div class="card-body">
+        <div class="next-step-item">
+          <div class="next-step-num">1</div>
+          <div class="next-step-text">
+            <strong>Key will reach out within 24 hours</strong>
+            <span>You'll get a call or text to confirm your installation date and answer any questions.</span>
+          </div>
+        </div>
+        <div class="next-step-item">
+          <div class="next-step-num">2</div>
+          <div class="next-step-text">
+            <strong>We pull your permit</strong>
+            <span>We handle all paperwork with your local jurisdiction. Nothing for you to do.</span>
+          </div>
+        </div>
+        <div class="next-step-item">
+          <div class="next-step-num">3</div>
+          <div class="next-step-text">
+            <strong>Installation day</strong>
+            <span>We arrive, install everything, clean up, and walk you through your new system. Most installs are done in a few hours.</span>
+          </div>
+        </div>
+        <div class="next-step-item">
+          <div class="next-step-num">4</div>
+          <div class="next-step-text">
+            <strong>State inspection</strong>
+            <span>We schedule and coordinate the electrical inspection. You're officially code-compliant and storm-ready.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receipt -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <h2>Approval Receipt</h2>
+      </div>
+      <div class="card-body">
+        <div class="approved-receipt" style="margin-top:0">
           <div class="approved-receipt-row">
             <span class="approved-receipt-label">Setup</span>
             <span class="approved-receipt-value">${ampLabel} Connection System</span>
@@ -626,11 +704,11 @@ function renderApproved() {
           </div>
           <div class="approved-receipt-row">
             <span class="approved-receipt-label">Total Approved</span>
-            <span class="approved-receipt-value" style="color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800">${fmt(total)}</span>
+            <span class="approved-receipt-value" style="color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:16px">${fmt(total)}</span>
           </div>
           <div class="approved-receipt-row">
             <span class="approved-receipt-label">Signed By</span>
-            <span class="approved-receipt-value">${esc(P.signer_name)}</span>
+            <span class="approved-receipt-value" style="font-family:'Dancing Script',cursive;font-size:18px;color:var(--navy)">${esc(P.signer_name)}</span>
           </div>
           <div class="approved-receipt-row">
             <span class="approved-receipt-label">Date</span>
@@ -640,18 +718,176 @@ function renderApproved() {
       </div>
     </div>
 
-    <div class="card" style="background:#f0fdf4;border-color:#bbf7d0">
-      <div class="card-body">
-        <div style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--green);margin-bottom:10px">What happens next</div>
-        <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13px;color:#065f46">
-          <li>&#10003; &nbsp;Key will reach out to confirm your installation date</li>
-          <li>&#10003; &nbsp;We'll pull the permit with your local jurisdiction</li>
-          <li>&#10003; &nbsp;Installation completed in one day</li>
-          <li>&#10003; &nbsp;State inspection scheduled and coordinated for you</li>
-        </ul>
+    <!-- Download PDF -->
+    <button class="dl-btn" onclick="downloadPDF()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download Proposal PDF
+    </button>
+
+    <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6;margin-top:8px">
+      Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
+    </div>
+  `;
+}
+
+// ── PDF DOWNLOAD ────────────────────────────────────────────
+function downloadPDF() {
+  const signedDate = P.signed_at
+    ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : '';
+  const createdDate = new Date(P.created_at).toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+  });
+  const total = P.total || 0;
+  const ampLabel = P.selected_amp === '50' ? '50 Amp' : '30 Amp';
+  const surgeLabel = P.selected_surge ? 'Included (+' + fmt(P.surge_price || 375) + ')' : 'Not included';
+  const pr = getPrice(P.selected_amp || P.amp_type || '30');
+
+  // Build pricing rows
+  let pricingRows = '';
+  if (P.pricing_30 || P.pricing_50) {
+    const base = pr.base || 0;
+    const longRun = pr.longRun || 0;
+    const mb = pr.mainBreaker || 0;
+    const tq = pr.twinQuad || 0;
+    const cord = pr.cord || 0;
+    const permit = pr.permitInspection || 125;
+    pricingRows += pdfRow('Installation', fmt(base - longRun - mb - tq - cord - permit));
+    if (longRun) pricingRows += pdfRow('Extended run (' + (P.run_ft - 20) + ' ft)', fmt(longRun));
+    pricingRows += pdfRow('Permit & inspection', fmt(permit));
+    if (cord) pricingRows += pdfRow('Power transfer cord', fmt(cord));
+    if (mb) pricingRows += pdfRow('Main breaker replacement', fmt(mb));
+    if (tq) pricingRows += pdfRow('Panel space optimization', fmt(tq));
+  } else {
+    pricingRows += pdfRow('Base installation', fmt(pr.base || P.price_base));
+    if (P.include_cord) pricingRows += pdfRow('Power transfer cord', fmt(P.price_cord));
+  }
+  if (P.selected_surge) {
+    pricingRows += pdfRow('Whole-home surge protector', fmt(P.surge_price || 375));
+  }
+
+  const html = `
+    <div style="font-family:Helvetica,Arial,sans-serif;color:#1a2a42;padding:10px;">
+      <!-- Header -->
+      <div style="background:#0b1f3b;border-radius:10px;padding:24px;color:#fff;margin-bottom:20px;text-align:center">
+        <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px">Backup Power <span style="color:#ffba00">Pro</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:3px">Licensed Electrical Contractor &middot; Upstate SC</div>
+      </div>
+
+      <!-- Title -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffba00;margin-bottom:4px">APPROVED PROPOSAL</div>
+        <div style="font-size:24px;font-weight:800;color:#0b1f3b">The Storm-Ready Connection System</div>
+      </div>
+
+      <!-- Customer Info -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px">
+        <tr>
+          <td style="padding:6px 0;color:#8a9ab5">Customer</td>
+          <td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.contact_name)}</td>
+        </tr>
+        ${P.contact_address ? `<tr>
+          <td style="padding:6px 0;color:#8a9ab5">Address</td>
+          <td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.contact_address)}</td>
+        </tr>` : ''}
+        <tr>
+          <td style="padding:6px 0;color:#8a9ab5">Proposal Date</td>
+          <td style="padding:6px 0;font-weight:600;text-align:right">${createdDate}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#8a9ab5">Setup Type</td>
+          <td style="padding:6px 0;font-weight:600;text-align:right">${ampLabel} Connection System</td>
+        </tr>
+      </table>
+
+      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+
+      <!-- Scope -->
+      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Everything Included</div>
+      <div style="font-size:12px;color:#4a5568;line-height:1.8;margin-bottom:16px">
+        &#10003; Generator inlet box (weather-rated, exterior mount)<br>
+        &#10003; Interlock kit (UL-listed, code-compliant)<br>
+        &#10003; Permit pulled &amp; filed with local jurisdiction<br>
+        &#10003; State electrical inspection coordinated<br>
+        &#10003; Complete site cleanup<br>
+        &#10003; Customer walkthrough &amp; training<br>
+        ${(pr.cordIncluded !== false) ? '&#10003; Power transfer cord<br>' : ''}
+      </div>
+
+      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+
+      <!-- Pricing -->
+      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Pricing</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
+        ${pricingRows}
+        <tr style="border-top:2px solid #0b1f3b">
+          <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b">Total</td>
+          <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b;text-align:right">${fmt(total)}</td>
+        </tr>
+      </table>
+      <div style="font-size:11px;color:#8a9ab5;margin-bottom:16px">Surge Protection: ${surgeLabel}</div>
+
+      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+
+      <!-- Approval -->
+      <div style="font-size:14px;font-weight:800;color:#059669;margin-bottom:10px">&#10003; Proposal Approved</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
+        <tr>
+          <td style="padding:6px 0;color:#8a9ab5">Signed By</td>
+          <td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.signer_name)}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#8a9ab5">Date</td>
+          <td style="padding:6px 0;font-weight:600;text-align:right">${signedDate}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#8a9ab5">IP Address</td>
+          <td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.approved_ip || 'N/A')}</td>
+        </tr>
+      </table>
+
+      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+
+      <!-- Safety Instructions -->
+      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Generator Safety Instructions</div>
+      <div style="font-size:11px;color:#4a5568;line-height:1.7;background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:14px;margin-bottom:16px">
+        <strong>IMPORTANT: Read and follow all safety guidelines.</strong><br><br>
+        1. <strong>Never operate a generator indoors</strong> &mdash; including garages, basements, or enclosed spaces. Carbon monoxide is deadly and odorless.<br><br>
+        2. <strong>Place generator at least 20 feet from your home</strong> with exhaust pointing away from windows, doors, and vents.<br><br>
+        3. <strong>Use only the installed inlet connection</strong> to connect your generator. Never use extension cords to back-feed your panel.<br><br>
+        4. <strong>Turn OFF the generator before refueling.</strong> Allow it to cool for at least 2 minutes before adding fuel.<br><br>
+        5. <strong>Follow the interlock procedure:</strong> Turn OFF the main breaker, then turn ON the generator breaker. Reverse this order when disconnecting.<br><br>
+        6. <strong>Never exceed your generator's rated capacity.</strong> Turn off high-draw appliances when starting the generator, then add loads gradually.<br><br>
+        7. <strong>Keep the generator dry.</strong> Use a canopy if operating in rain. Never touch the generator with wet hands.<br><br>
+        8. <strong>Inspect your cord before each use.</strong> Check for damage, cracks, or exposed wiring. Replace immediately if damaged.
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align:center;font-size:10px;color:#8a9ab5;border-top:1px solid #e4e8f0;padding-top:12px">
+        Backup Power Pro &middot; Licensed Electrical Contractor &middot; (864) 400-5302 &middot; backuppowerpro.com
       </div>
     </div>
   `;
+
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  document.body.appendChild(container);
+
+  const customerName = (P.contact_name || 'Proposal').replace(/[^a-zA-Z0-9]/g, '-');
+  html2pdf().set({
+    margin: [10, 12, 10, 12],
+    filename: 'BPP-Proposal-' + customerName + '.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all'] }
+  }).from(container).save().then(() => {
+    document.body.removeChild(container);
+  });
+}
+
+function pdfRow(name, price) {
+  return `<tr><td style="padding:6px 0;color:#4a5568">${name}</td><td style="padding:6px 0;font-weight:600;text-align:right">${price}</td></tr>`;
 }
 
 // ── ERROR ───────────────────────────────────────────────────
