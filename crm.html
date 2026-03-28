@@ -537,9 +537,15 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     </div>
     <div class="modal-body">
       <input type="hidden" id="c-id">
-      <div class="form-row">
-        <label>Name *</label>
-        <input class="form-input" id="c-name" placeholder="Full name" onkeydown="if(event.key==='Enter')document.getElementById('c-phone').focus()">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label>First Name *</label>
+          <input class="form-input" id="c-fname" placeholder="First" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-lname').focus()">
+        </div>
+        <div>
+          <label>Last Name *</label>
+          <input class="form-input" id="c-lname" placeholder="Last" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-phone').focus()">
+        </div>
       </div>
       <div class="form-row">
         <label>Phone</label>
@@ -1044,14 +1050,16 @@ function openContactModal(id) {
   clearAddressField();
   const inp = document.getElementById('c-id');
   inp.value = '';
-  ['c-name','c-phone','c-email','c-address','c-notes'].forEach(x => document.getElementById(x).value = '');
+  ['c-fname','c-lname','c-phone','c-email','c-address','c-notes'].forEach(x => document.getElementById(x).value = '');
 
   if (id) {
     const c = allContacts.find(x => x.id === id);
     if (!c) return;
     document.getElementById('contact-modal-title').textContent = 'Edit Lead';
     document.getElementById('c-id').value    = c.id;
-    document.getElementById('c-name').value  = c.name  || '';
+    const nameParts = (c.name || '').split(' ');
+    document.getElementById('c-fname').value = nameParts[0] || '';
+    document.getElementById('c-lname').value = nameParts.slice(1).join(' ') || '';
     document.getElementById('c-phone').value = c.phone || '';
     document.getElementById('c-email').value = c.email || '';
     document.getElementById('c-notes').value = c.notes || '';
@@ -1067,13 +1075,15 @@ function openContactModal(id) {
     document.getElementById('contact-modal-title').textContent = 'Add Lead';
   }
   document.getElementById('contact-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('c-name').focus(), 60);
+  setTimeout(() => document.getElementById('c-fname').focus(), 60);
 }
 
 async function saveContact() {
   const id   = document.getElementById('c-id').value;
-  const name = document.getElementById('c-name').value.trim();
-  if (!name) { showToast('Name is required', 'error'); return; }
+  const fname = document.getElementById('c-fname').value.trim();
+  const lname = document.getElementById('c-lname').value.trim();
+  if (!fname || !lname) { showToast('First and last name required', 'error'); return; }
+  const name = capName(fname) + ' ' + capName(lname);
   const payload = {
     name,
     phone:   document.getElementById('c-phone').value.trim(),
@@ -1669,6 +1679,13 @@ function fmt12(t) {
   const [h, m] = t.split(':').map(Number);
   const ampm = h >= 12 ? 'pm' : 'am';
   return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+function capName(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
+function autoCapName(el) {
+  const pos = el.selectionStart;
+  el.value = el.value.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  el.setSelectionRange(pos, pos);
 }
 
 function esc(s) {
