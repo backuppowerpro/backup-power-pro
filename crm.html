@@ -1813,11 +1813,6 @@ function loadPermitAnalytics() {
     <span class="pa-stage-count">${active}</span>
   </div>`;
   el.innerHTML = `
-    <div class="pa-grid">
-      <div class="pa-stat"><div class="pa-stat-num">${total}</div><div class="pa-stat-label">Total</div></div>
-      <div class="pa-stat"><div class="pa-stat-num">${active}</div><div class="pa-stat-label">Active</div></div>
-      <div class="pa-stat"><div class="pa-stat-num">${completed}</div><div class="pa-stat-label">Completed</div></div>
-    </div>
     <div class="pa-stage-list">
       ${allRow}
       <div class="pa-stage-collapsible" style="${analyticsCollapsed ? 'max-height:0;opacity:0;overflow:hidden' : 'max-height:600px;opacity:1'};transition:max-height .3s ease,opacity .2s ease">
