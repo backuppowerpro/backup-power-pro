@@ -1048,6 +1048,7 @@ async function init() {
   initDarkMode();
   renderCalendar(); // render empty calendar immediately
   await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions()]);
+  startApprovalPolling();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2624,8 +2625,11 @@ function showApprovalNotif(p) {
 
 function playNotifSound() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // Play a pleasant two-tone chime
+    if (!notifAudio || notifAudio.state === 'closed') {
+      notifAudio = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (notifAudio.state === 'suspended') notifAudio.resume();
+    const ctx = notifAudio;
     [523.25, 659.25, 783.99].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -2645,13 +2649,6 @@ function playNotifSound() {
 function dismissApprovalNotif() {
   document.getElementById('approval-notif').classList.remove('show');
 }
-
-// Start polling when app loads (hook into existing init)
-const origInit = init;
-init = async function() {
-  await origInit();
-  startApprovalPolling();
-};
 
 </script>
 </body>

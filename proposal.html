@@ -568,13 +568,16 @@ function validateForm() {
 }
 
 // ── APPROVE ─────────────────────────────────────────────────
+let approving = false;
 async function approveProposal() {
+  if (approving) return;
   const name = document.getElementById('signer-name').value.trim();
   const err  = document.getElementById('approve-err');
   const btn  = document.getElementById('approve-btn');
 
   if (!name || !ackScope || !ackSafety) { err.textContent = 'Please complete all fields above.'; return; }
 
+  approving = true;
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner-large" style="width:20px;height:20px;border-width:2.5px;margin:0"></div> Submitting...';
 
@@ -616,6 +619,7 @@ async function approveProposal() {
   if (error) {
     err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.';
     btn.disabled = false;
+    approving = false;
     btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve Proposal';
     return;
   }
@@ -753,14 +757,14 @@ function downloadPDF() {
     const cord = pr.cord || 0;
     const permit = pr.permitInspection || 125;
     pricingRows += pdfRow('Installation', fmt(base - longRun - mb - tq - cord - permit));
-    if (longRun) pricingRows += pdfRow('Extended run (' + (P.run_ft - 20) + ' ft)', fmt(longRun));
+    if (longRun) pricingRows += pdfRow('Extended run (' + ((P.run_ft || 20) - 20) + ' ft)', fmt(longRun));
     pricingRows += pdfRow('Permit & inspection', fmt(permit));
     if (cord) pricingRows += pdfRow('Power transfer cord', fmt(cord));
     if (mb) pricingRows += pdfRow('Main breaker replacement', fmt(mb));
     if (tq) pricingRows += pdfRow('Panel space optimization', fmt(tq));
   } else {
-    pricingRows += pdfRow('Base installation', fmt(pr.base || P.price_base));
-    if (P.include_cord) pricingRows += pdfRow('Power transfer cord', fmt(P.price_cord));
+    pricingRows += pdfRow('Base installation', fmt(pr.base || P.price_base || 0));
+    if (P.include_cord) pricingRows += pdfRow('Power transfer cord', fmt(P.price_cord || 0));
   }
   if (P.selected_surge) {
     pricingRows += pdfRow('Whole-home surge protector', fmt(P.surge_price || 375));
@@ -883,6 +887,8 @@ function downloadPDF() {
     pagebreak: { mode: ['avoid-all'] }
   }).from(container).save().then(() => {
     document.body.removeChild(container);
+  }).catch(() => {
+    if (container.parentNode) document.body.removeChild(container);
   });
 }
 
