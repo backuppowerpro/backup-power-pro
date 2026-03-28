@@ -65,10 +65,9 @@ td.addr a:hover{color:var(--blue)}
 td.notes-cell{color:var(--text3);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 td.actions{white-space:nowrap}
 /* ── SIDE PANEL ─────────────────────────────────────────── */
-.panel-backdrop{position:fixed;inset:0;background:rgba(10,20,40,.35);z-index:300;display:none;backdrop-filter:blur(1px)}
-.panel-backdrop.open{display:block}
-.side-panel{position:fixed;top:0;right:-440px;width:420px;max-width:100vw;height:100%;background:#fff;z-index:301;box-shadow:-8px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1)}
-.side-panel.open{right:0}
+.side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+.side-panel-overlay.open{display:flex}
+.side-panel{background:#fff;border-radius:14px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.2)}
 .panel-head{padding:18px 20px 14px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:10px;background:#fff;position:sticky;top:0;z-index:2}
 .panel-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:19px;color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel-close{width:32px;height:32px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;font-size:18px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -83,7 +82,6 @@ td.actions{white-space:nowrap}
 .prop-action-view{background:#dbeafe;color:#1d4ed8;border:1.5px solid #bfdbfe}
 .prop-action-view:hover{background:#bfdbfe}
 .delete-btn-confirm{background:var(--red)!important;color:#fff!important}
-@media(max-width:500px){.side-panel{width:100vw}}
 
 /* PROPOSAL BADGES */
 .prop-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11.5px;font-weight:700;font-family:'Outfit',sans-serif;white-space:nowrap}
@@ -552,6 +550,16 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         </div>
         <div class="form-hint" id="addr-hint">Start typing — pick from the list to confirm the address.</div>
       </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label>Stage</label>
+          <select class="form-select" id="c-stage"></select>
+        </div>
+        <div>
+          <label>Jurisdiction</label>
+          <select class="form-select" id="c-jurisdiction"></select>
+        </div>
+      </div>
       <div class="form-row">
         <label>Notes</label>
         <textarea class="form-textarea" id="c-notes" placeholder="Generator model, special instructions, anything useful…"></textarea>
@@ -715,11 +723,10 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── SIDE PANEL ────────────────────────────────────────── -->
-<div class="panel-backdrop" id="panel-backdrop" onclick="closePanel()"></div>
+<div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this)closePanel()">
 <div class="side-panel" id="side-panel">
   <div class="panel-head">
     <div class="panel-name" id="panel-name">Lead</div>
-    <button class="panel-close" onclick="closePanel()">✕</button>
   </div>
   <div class="panel-body">
     <input type="hidden" id="panel-id">
@@ -797,6 +804,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" onclick="panelSave()">Save</button>
   </div>
 </div>
+</div><!-- /side-panel-overlay -->
 
 <!-- ── JURISDICTION VIEW POPUP ──────────────────────────── -->
 <div class="modal-overlay" id="jur-view-overlay" onclick="if(event.target===this)closeModal('jur-view-overlay')">
@@ -1005,8 +1013,8 @@ function renderContacts() {
       <td class="name">${esc(c.name)}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
       <td class="phone col-phone">${esc(c.phone||'—')}</td>
       <td class="addr">${addrCell}</td>
-      <td class="col-jur" style="font-size:12px">${jurCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
+      <td class="col-jur" style="font-size:12px">${jurCell}</td>
       <td>${stageBadge}</td>
     </tr>`;
   }).join('');
@@ -1020,7 +1028,7 @@ function renderContacts() {
     </div>`;
   }
 
-  const thead = `<tr><th>Name</th><th class="col-phone">Phone</th><th>Address</th><th class="col-jur">Jurisdiction</th><th class="col-notes">Notes</th><th>Stage</th></tr>`;
+  const thead = `<tr><th>Name</th><th class="col-phone">Phone</th><th>Address</th><th class="col-notes">Notes</th><th class="col-jur">Jurisdiction</th><th>Stage</th></tr>`;
 
   wrap.innerHTML = `<div class="table-wrap">
     <table>
@@ -1076,6 +1084,15 @@ function openContactModal(id) {
   inp.value = '';
   ['c-fname','c-lname','c-phone','c-email','c-address','c-notes'].forEach(x => document.getElementById(x).value = '');
 
+  // Populate stage dropdown
+  const stageSelect = document.getElementById('c-stage');
+  stageSelect.innerHTML = PERMIT_STAGES.map(s => `<option value="${s.id}">${esc(s.label)}</option>`).join('');
+
+  // Populate jurisdiction dropdown
+  const jurSelect = document.getElementById('c-jurisdiction');
+  jurSelect.innerHTML = '<option value="">— None —</option>' +
+    allJurisdictions.map(j => `<option value="${j.id}">${esc(j.name)}</option>`).join('');
+
   if (id) {
     const c = allContacts.find(x => x.id === id);
     if (!c) return;
@@ -1087,6 +1104,8 @@ function openContactModal(id) {
     document.getElementById('c-phone').value = c.phone || '';
     document.getElementById('c-email').value = c.email || '';
     document.getElementById('c-notes').value = c.notes || '';
+    stageSelect.value = c.stage || 1;
+    jurSelect.value = c.jurisdiction_id || '';
     if (c.address) {
       const ai = document.getElementById('c-address');
       ai.value = c.address;
@@ -1097,6 +1116,7 @@ function openContactModal(id) {
     }
   } else {
     document.getElementById('contact-modal-title').textContent = 'Add Lead';
+    stageSelect.value = 1;
   }
   document.getElementById('contact-overlay').classList.add('open');
   setTimeout(() => document.getElementById('c-fname').focus(), 60);
@@ -1114,6 +1134,8 @@ async function saveContact() {
     email:   document.getElementById('c-email').value.trim(),
     address: document.getElementById('c-address').value.trim(),
     notes:   document.getElementById('c-notes').value.trim(),
+    stage:   parseInt(document.getElementById('c-stage').value) || 1,
+    jurisdiction_id: document.getElementById('c-jurisdiction').value || null,
   };
   let error;
   if (id) {
@@ -1190,13 +1212,13 @@ function openPanel(id) {
       </button>`;
   }
 
-  document.getElementById('panel-backdrop').classList.add('open');
-  document.getElementById('side-panel').classList.add('open');
+  document.getElementById('side-panel-overlay').classList.add('open');
+  document.body.classList.add('modal-open');
 }
 
 function closePanel() {
-  document.getElementById('panel-backdrop').classList.remove('open');
-  document.getElementById('side-panel').classList.remove('open');
+  document.getElementById('side-panel-overlay').classList.remove('open');
+  document.body.classList.remove('modal-open');
   panelAddrHide();
 }
 
