@@ -170,7 +170,7 @@ td.actions{white-space:nowrap}
 
 @media(max-width:700px){
   .cal-grid{grid-template-columns:repeat(7,minmax(90px,1fr));overflow-x:auto}
-  td.notes-cell,.col-notes{display:none}
+  td.notes-cell,.col-notes,.col-jur{display:none}
 }
 @media(max-width:480px){
   td.phone,.col-phone{display:none}
@@ -975,11 +975,15 @@ function renderContacts() {
       ? `<span title="${esc(c.address)}">${esc(c.address.split(',')[0])}</span>`
       : '<span style="color:var(--text3);font-size:12px">—</span>';
 
+    const jur = c.jurisdiction_id ? allJurisdictions.find(j => j.id === c.jurisdiction_id) : null;
+    const jurCell = jur ? `<span style="font-size:12px">${esc(jur.name)}</span>` : '<span style="color:var(--text3);font-size:12px">—</span>';
+
     const isArchived = c.status === 'Archived';
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
       <td class="name">${esc(c.name)}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
       <td class="phone">${esc(c.phone||'—')}</td>
       <td class="addr">${addrCell}</td>
+      <td class="col-jur" style="font-size:12px">${jurCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
       <td>${stageBadge}</td>
     </tr>`;
@@ -994,7 +998,7 @@ function renderContacts() {
     </div>`;
   }
 
-  const thead = `<tr><th>Name</th><th>Phone</th><th>Address</th><th class="col-notes">Notes</th><th>Stage</th></tr>`;
+  const thead = `<tr><th>Name</th><th>Phone</th><th>Address</th><th class="col-jur">Jurisdiction</th><th class="col-notes">Notes</th><th>Stage</th></tr>`;
 
   wrap.innerHTML = `<div class="table-wrap">
     <table>
