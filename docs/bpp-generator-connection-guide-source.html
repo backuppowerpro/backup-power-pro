@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  PRINT TO PDF INSTRUCTIONS:
+  1. Open this file in Chrome
+  2. Press Cmd+P (Mac) or Ctrl+P (Windows)
+  3. Destination: Save as PDF
+  4. Paper size: Letter
+  5. Margins: None
+  6. Check "Background graphics"
+  7. Click Save
+  8. Save as: bpp-generator-connection-guide.pdf
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Homeowner's Guide to Generator Connection in SC — Backup Power Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0b1f3b;
+  --navy-mid: #1a3a5c;
+  --gold: #f5b301;
+  --gold-dark: #d9a000;
+  --light-blue: #e8f1f8;
+  --white: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a5a;
+  --text-light: #7b7b8a;
+  --border: rgba(11,31,59,.07);
+  --green: #1a8d5f;
+  --green-bg: #edf7f1;
+  --red: #c0392b;
+  --red-bg: #fdf0ee;
+  --radius: 12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: normal;
+  word-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: var(--navy);
+}
+
+@page {
+  size: 8.5in 11in;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    width: 8.5in;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  .page { box-shadow: none !important; border-radius: 0 !important; }
+}
+
+@media screen {
+  body {
+    background: #d5d5d5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 24px 0;
+  }
+  .page {
+    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+    border-radius: 2px;
+  }
+}
+
+/* ===== PAGE LAYOUT ===== */
+.page {
+  width: 8.5in;
+  min-height: 11in;
+  max-height: 11in;
+  padding: 0.65in 0.75in;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  page-break-inside: avoid;
+  break-after: page;
+  break-inside: avoid;
+  background: var(--white);
+}
+.page:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+/* ===== PAGE HEADER (interior pages) ===== */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--gold);
+}
+.page-header-brand {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: normal;
+}
+.page-num {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: var(--text-light);
+}
+
+/* ===== TYPOGRAPHY ===== */
+.page h2 {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 6px;
+  color: var(--navy);
+}
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.page h3 {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 4px;
+  color: var(--navy);
+}
+.page p, .page li {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  letter-spacing: normal;
+}
+.page ul, .page ol {
+  padding-left: 18px;
+}
+.page li {
+  margin-bottom: 3px;
+}
+
+/* ===== CALLOUT BOX ===== */
+.callout {
+  background: var(--light-blue);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-top: 16px;
+}
+.callout p {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--navy);
+  line-height: 1.55;
+}
+.callout-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: normal;
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* ===== COMPARISON TABLE ===== */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 11px;
+}
+.data-table th {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--white);
+  background: var(--navy);
+  padding: 7px 10px;
+  text-align: left;
+}
+.data-table th:first-child { border-radius: 8px 0 0 0; }
+.data-table th:last-child { border-radius: 0 8px 0 0; }
+.data-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  vertical-align: top;
+}
+.data-table tr:nth-child(even) td {
+  background: #f8fafc;
+}
+.data-table .td-bold {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+/* Gold hero row for Inlet + Interlock */
+.data-table tr.hero-row td {
+  background: #fffbec;
+  border-top: 2px solid var(--gold);
+  border-bottom: 2px solid var(--gold);
+  font-weight: 600;
+  color: var(--navy);
+}
+.data-table tr.hero-row td:first-child {
+  border-left: 3px solid var(--gold);
+  border-radius: 0;
+}
+.hero-badge {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 9px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 100px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.check-yes { color: var(--green); font-weight: 700; }
+.check-no  { color: var(--red);   font-weight: 700; }
+
+/* ===== NUMBERED ITEMS ===== */
+.numbered-item {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.num-circle {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+.numbered-item h3 { margin-bottom: 3px; }
+.numbered-item p {
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+/* ===== STEP ITEMS ===== */
+.step-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  align-items: flex-start;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step-item h3 { margin-bottom: 2px; font-size: 12px; }
+.step-item p  { font-size: 11px; line-height: 1.5; }
+
+/* ===== SECTION LABEL ===== */
+.section-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* ===== TWO-COL LAYOUT ===== */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 14px;
+}
+
+/* ===== CHECKLIST ===== */
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.check-circle {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--gold);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+/* ===== CTA BUTTON ===== */
+.cta-button {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 40px;
+  border-radius: 100px;
+  text-decoration: none;
+  text-align: center;
+}
+
+/* ===== TRUST ROW ===== */
+.trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+  justify-content: center;
+}
+.trust-item {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--light-blue);
+  padding: 5px 12px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+/* ===== COVER PAGE ===== */
+.page-cover {
+  background: linear-gradient(160deg, var(--navy) 0%, var(--navy-mid) 55%, #2a5a7a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.8in 1in;
+}
+.cover-eyebrow {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: normal;
+  margin-bottom: 18px;
+}
+.cover-divider {
+  width: 60px;
+  height: 3px;
+  background: var(--gold);
+  border-radius: 2px;
+  margin: 0 auto 28px;
+}
+.page-cover h1 {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+.page-cover h1 span {
+  color: var(--gold);
+}
+.page-cover .cover-sub {
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(255,255,255,.85);
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.4;
+  margin-bottom: 28px;
+  max-width: 480px;
+}
+.page-cover .cover-tagline {
+  font-size: 13px;
+  color: rgba(255,255,255,.75);
+  line-height: 1.6;
+  max-width: 400px;
+  margin-bottom: 36px;
+}
+.cover-reading-time {
+  display: inline-block;
+  border: 1px solid rgba(245,179,1,.4);
+  color: var(--gold);
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 18px;
+  border-radius: 100px;
+  margin-bottom: 48px;
+}
+.cover-footer {
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+  line-height: 1.6;
+}
+.cover-footer strong {
+  color: rgba(255,255,255,.8);
+}
+
+/* ===== CTA PAGE ===== */
+.page-cta {
+  background: linear-gradient(160deg, var(--navy) 0%, var(--navy-mid) 55%, #2a5a7a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.75in 0.9in;
+}
+.page-cta h2 {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--white);
+  margin-bottom: 10px;
+}
+.page-cta h2 span { color: var(--gold); }
+.page-cta .cta-intro {
+  font-size: 13px;
+  color: rgba(255,255,255,.8);
+  line-height: 1.65;
+  max-width: 480px;
+  margin-bottom: 32px;
+}
+.cta-steps {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 34px;
+  text-align: center;
+  max-width: 540px;
+  width: 100%;
+}
+.cta-step {
+  flex: 1;
+  background: rgba(255,255,255,.08);
+  border-radius: var(--radius);
+  padding: 18px 14px;
+}
+.cta-step .step-num {
+  margin: 0 auto 10px;
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+}
+.cta-step h3 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+.cta-step p {
+  font-size: 10.5px;
+  color: rgba(255,255,255,.7);
+  line-height: 1.45;
+}
+.cta-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,.15);
+  text-align: center;
+  width: 100%;
+}
+.cta-footer-brand {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  color: rgba(255,255,255,.7);
+}
+.cta-footer-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,.45);
+  margin-top: 3px;
+}
+.trust-row-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+  justify-content: center;
+}
+.trust-item-cta {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255,255,255,.8);
+  background: rgba(255,255,255,.1);
+  padding: 5px 12px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+/* ===== OPTION BLOCK ===== */
+.option-block {
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.option-block-bad  { background: var(--red-bg);   border-left: 4px solid var(--red);  }
+.option-block-hero { background: #fffbec;          border-left: 4px solid var(--gold); }
+.option-block-good { background: #f0f7f0;          border-left: 4px solid #2e8b57;    }
+.option-block h3 {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.option-block-bad  h3 { color: var(--red);    }
+.option-block-hero h3 { color: #7a5800;       }
+.option-block-good h3 { color: #1a5c3a;       }
+.option-meta {
+  font-size: 10.5px;
+  color: var(--text-light);
+  margin-bottom: 5px;
+}
+.option-meta strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ===== INLINE HIGHLIGHT ===== */
+.highlight {
+  background: #fffbec;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: 600;
+  color: #7a5800;
+}
+
+/* ===== SMALL RULE ===== */
+.rule {
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0;
+}
+
+/* ===== INCLUDED LIST ===== */
+.include-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.include-dot {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--green-bg);
+  border: 1.5px solid var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--green);
+  font-weight: 700;
+  margin-top: 1px;
+}
+.warn-dot {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--red-bg);
+  border: 1.5px solid var(--red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--red);
+  font-weight: 700;
+  margin-top: 1px;
+}
+</style>
+</head>
+<body>
+
+<!-- ================================================ -->
+<!-- PAGE 1: COVER                                     -->
+<!-- ================================================ -->
+<div class="page page-cover">
+  <div class="cover-eyebrow">Free Guide from Backup Power Pro</div>
+
+  <h1>The Homeowner's<br>Guide to <span>Generator<br>Connection</span> in SC</h1>
+
+  <div class="cover-divider"></div>
+
+  <div class="cover-sub">What to Know, What to Ask,<br>and What It Really Costs Before You Call Anyone</div>
+
+  <div class="cover-reading-time">7-minute read &mdash; everything you need before getting a quote</div>
+
+  <div class="cover-tagline">
+    A practical guide from a licensed SC electrician.<br>
+    No filler. No sales pitch. Just what you actually need to know.
+  </div>
+
+  <div class="cover-footer">
+    <strong>Backup Power Pro &mdash; A division of Key Electric</strong><br>
+    backuppowerpro.com &nbsp;&bull;&nbsp; (864) 863-8009 &nbsp;&bull;&nbsp; SC Contractor LIC #2942
+  </div>
+</div>
+
+
+<!-- ================================================ -->
+<!-- PAGE 2: WHY MOST GENERATORS DON'T ACTUALLY HELP  -->
+<!-- ================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">Backup Power Pro &mdash; Generator Connection Guide</span>
+    <span class="page-num">Page 2</span>
+  </div>
+
+  <h2>Why Most Generators Don't Actually Help During an Outage</h2>
+  <p class="page-subtitle">The problem isn't the generator. It's the connection.</p>
+
+  <p>If you own a portable generator and it's sitting in your garage right now, you're not alone — and you're not as storm-ready as you think. Most generators in Upstate SC get used about twice a year: once when the homeowner fires it up to test it, and once when the power actually goes out and they scramble to figure out what to plug into it.</p>
+
+  <div class="rule"></div>
+
+  <h3>The Real Problem</h3>
+  <p style="margin-bottom:10px;">Without a proper inlet and interlock installed at your electrical panel, your generator can't power your home's essential circuits — the lights on the wall switches, the refrigerator that's been running for years, the furnace blower that needs a thermostat to kick on, the well pump or sump pump that are wired directly into the house.</p>
+
+  <p style="margin-bottom:14px;">Running extension cords from a generator outside to appliances inside is not a connection. It's a workaround — and a dangerous one.</p>
+
+  <div class="two-col">
+    <div>
+      <h3 style="margin-bottom:8px;">Extension cords create real risks:</h3>
+      <div class="include-row"><div class="warn-dot">✕</div><span><strong>Backfeed hazard:</strong> Without an interlock, generator power can travel back into the utility lines — creating a lethal hazard for linemen working to restore power.</span></div>
+      <div class="include-row"><div class="warn-dot">✕</div><span><strong>Undersized cords:</strong> Most household extension cords aren't rated for the load a generator puts out. Overheated cords are a house fire waiting to happen.</span></div>
+      <div class="include-row"><div class="warn-dot">✕</div><span><strong>Code violation:</strong> This method violates NEC electrical code and is excluded from most homeowner insurance policies.</span></div>
+      <div class="include-row"><div class="warn-dot">✕</div><span><strong>CO risk:</strong> Running the generator too close to any opening to the home can allow carbon monoxide inside.</span></div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:8px;">What you actually can't power:</h3>
+      <p style="margin-bottom:6px;">Even with a generator running at full output, extension cords can't power:</p>
+      <ul style="margin-top:6px;">
+        <li>Lights on wall switches</li>
+        <li>Refrigerator and freezer (wired circuits)</li>
+        <li>Well pump or sump pump</li>
+        <li>Furnace blower motor</li>
+        <li>HVAC systems</li>
+        <li>Garage door opener</li>
+        <li>Built-in appliances</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="callout-label">The Bottom Line</span>
+    <p>Most homeowners who buy a generator spend $800–$2,000 on the machine and never make the $1,200–$1,500 connection that makes it actually work. This guide explains exactly what that connection is, what it costs, and what to look for before you hire anyone to do it.</p>
+  </div>
+</div>
+
+
+<!-- ================================================ -->
+<!-- PAGE 3: THE THREE OPTIONS                         -->
+<!-- ================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">Backup Power Pro &mdash; Generator Connection Guide</span>
+    <span class="page-num">Page 3</span>
+  </div>
+
+  <h2>The 3 Ways to Connect a Generator to Your Home</h2>
+  <p class="page-subtitle">And what they actually cost — side by side.</p>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:18%">Option</th>
+        <th style="width:16%">All-In Cost</th>
+        <th style="width:22%">What It Powers</th>
+        <th style="width:12%">Code Legal</th>
+        <th style="width:15%">Time to Install</th>
+        <th style="width:17%">Best For</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="td-bold">Extension Cords</td>
+        <td>$0–$150</td>
+        <td>Only what's plugged directly into the cord</td>
+        <td class="check-no">✕ No</td>
+        <td>None</td>
+        <td>Emergencies only — not a real solution</td>
+      </tr>
+      <tr class="hero-row">
+        <td class="td-bold">Generator Inlet + Interlock Kit <span class="hero-badge">Smart Choice</span></td>
+        <td>$1,197–$1,497</td>
+        <td>Lights, fridge, well pump, sump pump, furnace, Wi-Fi, phone charging — your essential circuits</td>
+        <td class="check-yes">✓ Yes</td>
+        <td>1 day. Permitted. Inspected.</td>
+        <td>Homeowners who already own a portable generator</td>
+      </tr>
+      <tr>
+        <td class="td-bold">Whole-Home Standby</td>
+        <td>$12,000–$20,000+</td>
+        <td>Entire home, automatically, no manual start needed</td>
+        <td class="check-yes">✓ Yes</td>
+        <td>6–12 weeks</td>
+        <td>Medical equipment, home offices, or those who want seamless backup</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:16px;">
+    <div class="option-block option-block-bad">
+      <h3>Option 1: Extension Cords &mdash; How Most People Do It Now</h3>
+      <div class="option-meta"><strong>Cost:</strong> $0–$150 in cords &nbsp;&nbsp; <strong>Code compliant:</strong> No &nbsp;&nbsp; <strong>Insurance covered:</strong> Usually not</div>
+      <p>It's not a connection — it only powers what's plugged directly into the cord. Your lights, furnace, well pump, and fridge stay dark. Backfeed risk, fire risk from undersized cords, and NEC code violation. Most homeowner insurance policies exclude generator damage from this method.</p>
+    </div>
+    <div class="option-block option-block-hero">
+      <h3>Option 2: Generator Inlet + Interlock Kit &mdash; What BPP Installs</h3>
+      <div class="option-meta"><strong>Cost:</strong> $1,197–$1,497 all-in &nbsp;&nbsp; <strong>Includes:</strong> Inlet, interlock, power cord, permit, inspection &nbsp;&nbsp; <strong>Timeline:</strong> One day</div>
+      <p>A permanent outdoor inlet is mounted to your home and wired to your breaker panel. A mechanical interlock prevents backfeed — legally required. During an outage, you plug in your generator, flip the interlock, and choose which circuits to power. 80% of the protection of a full standby system at a fraction of the cost.</p>
+    </div>
+    <div class="option-block option-block-good">
+      <h3>Option 3: Whole-Home Standby Generator &mdash; The Premium Choice</h3>
+      <div class="option-meta"><strong>Cost:</strong> $12,000–$20,000+ &nbsp;&nbsp; <strong>Timeline:</strong> 6–12 weeks &nbsp;&nbsp; <strong>Fuel:</strong> Natural gas or propane (auto-start)</div>
+      <p>Turns on automatically within 10 seconds of an outage. Powers the entire home without load management. Runs on natural gas or propane. The gold standard — but at a price point that doesn't make sense for most homeowners who already own a portable generator.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================ -->
+<!-- PAGE 4: HOW IT ACTUALLY WORKS                    -->
+<!-- ================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">Backup Power Pro &mdash; Generator Connection Guide</span>
+    <span class="page-num">Page 4</span>
+  </div>
+
+  <h2>What Actually Gets Installed — In Plain Language</h2>
+  <p class="page-subtitle">Three components. One-day install. Code compliant from day one.</p>
+
+  <div class="numbered-item">
+    <div class="num-circle">1</div>
+    <div>
+      <h3>The Generator Inlet (Outdoor Receptacle)</h3>
+      <p>A heavy-duty outdoor outlet mounted on the side of your home — near where your generator will be parked. This is what you plug your power cord into when the power goes out. It's weather-rated, tamper-resistant, and sized to the amperage of your generator. Looks clean — about the size of a dryer outlet on the exterior wall. This is the connection point that makes everything else possible.</p>
+    </div>
+  </div>
+
+  <div class="numbered-item">
+    <div class="num-circle">2</div>
+    <div>
+      <h3>The Interlock Kit (Mechanical Breaker Safety)</h3>
+      <p>Installed directly inside your electrical panel. A metal slide mechanism that physically prevents your main utility breaker and your generator breaker from being on at the same time. This is what makes the whole system code-legal. Without an interlock — or a transfer switch — a generator can backfeed electricity into the utility lines and create a lethal hazard for the line workers trying to restore your power. The interlock is required by NEC code. It's not optional, and any electrician who skips it is cutting a dangerous corner.</p>
+    </div>
+  </div>
+
+  <div class="numbered-item">
+    <div class="num-circle">3</div>
+    <div>
+      <h3>The Power Cord</h3>
+      <p>A heavy-gauge cord (typically 25 or 50 feet) that connects your generator to the inlet. Your generator stays outside — at least 20 feet from any openings to the home. The power runs through the cord, into the inlet, through the panel wiring, and out to the circuits you select. The cord is sized to your generator's output.</p>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <h3 style="margin-bottom:10px;">How You Use It During an Outage (6 Steps)</h3>
+
+  <div class="step-item">
+    <div class="step-num">1</div>
+    <div><p>Move your generator outside — at least 20 feet from doors, windows, and vents</p></div>
+  </div>
+  <div class="step-item">
+    <div class="step-num">2</div>
+    <div><p>Add fuel if needed, start the generator, let it warm up for 30 seconds</p></div>
+  </div>
+  <div class="step-item">
+    <div class="step-num">3</div>
+    <div><p>Plug the power cord from the generator into the outdoor inlet on your home</p></div>
+  </div>
+  <div class="step-item">
+    <div class="step-num">4</div>
+    <div><p>Go to your breaker panel — slide the interlock to "generator mode" (this disconnects utility power)</p></div>
+  </div>
+  <div class="step-item">
+    <div class="step-num">5</div>
+    <div><p>Turn on the circuit breakers for the loads you want to power — refrigerator, lights, well pump, furnace, etc.</p></div>
+  </div>
+  <div class="step-item">
+    <div class="step-num">6</div>
+    <div><p>Your home runs on generator power through the circuits you selected</p></div>
+  </div>
+
+  <div class="callout">
+    <span class="callout-label">Worth Knowing</span>
+    <p>The whole process takes about 5 minutes once it's installed. There's nothing complicated about it — it's a panel connection you don't have yet. Once you have it, outages become an inconvenience instead of an emergency.</p>
+  </div>
+</div>
+
+
+<!-- ================================================ -->
+<!-- PAGE 5: WHAT'S INCLUDED                          -->
+<!-- ================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">Backup Power Pro &mdash; Generator Connection Guide</span>
+    <span class="page-num">Page 5</span>
+  </div>
+
+  <h2>What Should Be Included When You Hire a Licensed Electrician</h2>
+  <p class="page-subtitle">A complete installation should cover all of this — before you write a check.</p>
+
+  <div class="two-col">
+    <div>
+      <h3 style="margin-bottom:10px;">A Complete Installation Includes:</h3>
+      <div class="include-row"><div class="include-dot">✓</div><span>The inlet hardware — weatherproof, correct amperage for your generator</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>The interlock kit — sized for your specific panel model (not universal)</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>All wiring between the inlet and the panel</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>A panel safety assessment before and after the install</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>The power cord — sized to your generator's rated output</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>Permit application filed with the county building department</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>County inspection — scheduled, passed, and documented</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>A full functional test before the electrician leaves your driveway</span></div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:10px;">What a Quote Should Never Hide:</h3>
+      <div class="include-row"><div class="warn-dot">✕</div><span><strong>"Permit and inspection billed separately"</strong> — permits are legally required. They belong in the price from the start.</span></div>
+      <div class="include-row"><div class="warn-dot">✕</div><span><strong>"Additional charges for older panels"</strong> — a licensed electrician should assess your panel before quoting. Surprises on install day are a red flag.</span></div>
+      <div class="include-row"><div class="warn-dot">✕</div><span><strong>"We can skip the permit to save you money"</strong> — this is common. It saves the contractor paperwork and creates liability for you as the homeowner.</span></div>
+      <div class="include-row"><div class="warn-dot">✕</div><span><strong>No warranty on the installation work</strong> — hardware has manufacturer coverage. The install itself should be guaranteed by the contractor.</span></div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="callout-label">South Carolina Law</span>
+    <p>In South Carolina, generator connections require a permit and county inspection. This is not optional — it's state law under the NEC Article 702 (Optional Standby Systems) as adopted by SC. If a contractor quotes you a lower price and skips the permit, you're the one who owns a non-compliant installation. Your insurance may not cover generator-related damage or fire claims on an unpermitted system.</p>
+  </div>
+
+  <div class="rule"></div>
+
+  <div style="background:#f8fafc; border-radius:var(--radius); padding:14px 18px; border: 1px solid var(--border);">
+    <h3 style="margin-bottom:6px; font-size:12px;">A Note About How BPP Prices This</h3>
+    <p>Backup Power Pro includes the inlet, interlock kit, power cord, all wiring, permit filing, county inspection, and a panel safety check — in one flat price. No line items added after the fact. No surprises on install day. The price we quote is the price you pay.</p>
+  </div>
+</div>
+
+
+<!-- ================================================ -->
+<!-- PAGE 6: PERMITS & INSPECTIONS                    -->
+<!-- ================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">Backup Power Pro &mdash; Generator Connection Guide</span>
+    <span class="page-num">Page 6</span>
+  </div>
+
+  <h2>Permits, Inspections, and Why They Actually Protect You</h2>
+  <p class="page-subtitle">This is the part most contractors don't explain. Here's the full picture.</p>
+
+  <h3 style="margin-bottom:6px;">Why a Permit Is Required in SC</h3>
+  <p style="margin-bottom:12px;">In South Carolina, any electrical work involving new wiring, panel modifications, or the addition of a transfer switch or interlock must be permitted under NEC Article 702 (Optional Standby Systems). This applies across Greenville, Pickens, and Spartanburg counties. The permit triggers a county inspection, which verifies:</p>
+
+  <div class="two-col" style="margin-top:0; margin-bottom:14px;">
+    <div>
+      <div class="include-row"><div class="include-dot">✓</div><span>The interlock is properly installed and mechanically sound</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>The inlet is correctly rated for weather and amperage</span></div>
+    </div>
+    <div>
+      <div class="include-row"><div class="include-dot">✓</div><span>The wiring is correctly sized and properly terminated</span></div>
+      <div class="include-row"><div class="include-dot">✓</div><span>The installation is fully backfeed-protected</span></div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <h3 style="margin-bottom:6px;">What Happens If You Skip the Permit</h3>
+  <div class="include-row" style="margin-top:8px;"><div class="warn-dot">✕</div><span><strong>Insurance exposure:</strong> Your homeowner's insurance may deny a claim related to generator damage or an electrical fire if the installation wasn't permitted and inspected.</span></div>
+  <div class="include-row"><div class="warn-dot">✕</div><span><strong>Home sale complications:</strong> A permitted installation adds value and sails through a buyer's home inspection. An unpermitted one can be flagged and require remediation — at your expense — before closing.</span></div>
+  <div class="include-row"><div class="warn-dot">✕</div><span><strong>Backfeed liability:</strong> If a utility worker is injured because of backfeed from an unpermitted installation, the liability exposure for the homeowner is significant.</span></div>
+
+  <div class="rule"></div>
+
+  <h3 style="margin-bottom:6px;">What the Inspection Process Actually Looks Like</h3>
+  <p style="margin-bottom:10px;">Once the install is complete, the electrician files the inspection request with the county. A county inspector — not the electrician — visits the home, reviews the work, and either passes it or asks for a correction. A properly done installation passes on the first visit, typically within a few business days of the install. You don't have to be present, but you can be. The passed inspection paperwork is yours to keep — put it with your homeowner's insurance docs.</p>
+
+  <p style="margin-bottom:14px;">Permit fees in the three-county area typically run $60–$120. That's included in a complete quote. An electrician who asks you to pay permit fees separately, or who quotes you a suspiciously low number that doesn't account for permit costs, is either passing the cost to you after the sale or planning to skip it.</p>
+
+  <div class="callout">
+    <span class="callout-label">BPP Handles All of It</span>
+    <p>Backup Power Pro files the permit, schedules the inspection, and hands you a copy of the passed inspection report when the job is done. You never have to deal with the county building department. The install is compliant, documented, and covered — from day one.</p>
+  </div>
+</div>
+
+
+<!-- ================================================ -->
+<!-- PAGE 7: 5 QUESTIONS CHECKLIST                    -->
+<!-- ================================================ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">Backup Power Pro &mdash; Generator Connection Guide</span>
+    <span class="page-num">Page 7</span>
+  </div>
+
+  <h2>5 Questions to Ask Before You Hire Anyone</h2>
+  <p class="page-subtitle">Ask every electrician who quotes you. Any reputable contractor will answer yes to all five.</p>
+
+  <div class="numbered-item">
+    <div class="num-circle">1</div>
+    <div>
+      <h3>Are you a licensed SC Electrical Contractor?</h3>
+      <p>Not just "licensed" — specifically a licensed electrical contractor in South Carolina under the SC Contractors' Licensing Board. Panel work requires this license by state law. Ask for the license number and verify it at <span class="highlight">contractors.sc.gov</span>. Handyman licenses, general contractor licenses, and out-of-state licenses don't qualify for panel work.</p>
+    </div>
+  </div>
+
+  <div class="numbered-item">
+    <div class="num-circle">2</div>
+    <div>
+      <h3>Does your quote include the permit and county inspection?</h3>
+      <p>If it doesn't — ask why. In Greenville, Pickens, and Spartanburg counties, permits are required and run $60–$120. An electrician who excludes this is either adding it to the invoice later or planning to skip it entirely. Neither is acceptable.</p>
+    </div>
+  </div>
+
+  <div class="numbered-item">
+    <div class="num-circle">3</div>
+    <div>
+      <h3>Have you installed this in Greenville, Pickens, or Spartanburg county before?</h3>
+      <p>Each county's building department has slightly different inspection processes and inspector preferences. Experience in the local market matters — especially for first-pass inspection success. Ask how many installs they've done in the area.</p>
+    </div>
+  </div>
+
+  <div class="numbered-item">
+    <div class="num-circle">4</div>
+    <div>
+      <h3>Will you give me an all-in price before I commit?</h3>
+      <p>A reputable electrician can give you a firm, complete quote after reviewing your setup: panel location, generator specs, and the distance from the panel to the install point. "I'll give you the final number once I'm on-site" is a red flag. You should know the full price before anyone touches your panel.</p>
+    </div>
+  </div>
+
+  <div class="numbered-item">
+    <div class="num-circle">5</div>
+    <div>
+      <h3>What warranty do you offer on the installation?</h3>
+      <p>Hardware is covered by the manufacturer warranty. But the installation itself — the wiring quality, the mechanical fit of the interlock, the weatherproofing of the inlet — should be warranted by the contractor. If they won't stand behind their work, that tells you something about the work.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="callout-label">BPP answers yes to all five</span>
+    <p>SC Contractor LIC #2942 &nbsp;&bull;&nbsp; Permit and inspection included in every quote &nbsp;&bull;&nbsp; 100+ five-star Google reviews &nbsp;&bull;&nbsp; All-in price before you commit &nbsp;&bull;&nbsp; Install passes inspection or we fix it free</p>
+  </div>
+</div>
+
+
+<!-- ================================================ -->
+<!-- PAGE 8: CTA — WHAT HAPPENS NEXT                  -->
+<!-- ================================================ -->
+<div class="page page-cta">
+  <span class="section-label" style="color:var(--gold); margin-bottom:14px;">You've Done Your Homework.</span>
+
+  <h2>Here's <span>The Next Step.</span></h2>
+
+  <p class="cta-intro">Most homeowners who read this guide feel one of two things: relieved that this is simpler than they thought — or frustrated that they've had a generator sitting in the garage for years that could have been connected the right way. Either way, the next step is the same.</p>
+
+  <div class="cta-steps">
+    <div class="cta-step">
+      <div class="step-num">1</div>
+      <h3>Answer 3 Questions</h3>
+      <p>Fill out BPP's quick quote form at backuppowerpro.com. Three questions about your home. No technical knowledge required. Takes two minutes from your phone.</p>
+    </div>
+    <div class="cta-step">
+      <div class="step-num">2</div>
+      <h3>Get Your All-In Price</h3>
+      <p>BPP reviews your setup and sends your complete price — inlet, interlock, power cord, permit, inspection, and panel safety check. No add-ons. No surprises.</p>
+    </div>
+    <div class="cta-step">
+      <div class="step-num">3</div>
+      <h3>Done in One Day</h3>
+      <p>A licensed SC electrician arrives, completes the connection, and the install passes county inspection before leaving your driveway.</p>
+    </div>
+  </div>
+
+  <a href="https://backuppowerpro.com" class="cta-button">Get My All-In Price &rarr;</a>
+
+  <div class="trust-row-cta" style="margin-top:22px;">
+    <span class="trust-item-cta">SC Contractor LIC #2942</span>
+    <span class="trust-item-cta">100+ Five-Star Reviews</span>
+    <span class="trust-item-cta">Permit &amp; Inspection Included</span>
+    <span class="trust-item-cta">Greenville, Pickens &amp; Spartanburg</span>
+    <span class="trust-item-cta">Passes Inspection or We Fix It Free</span>
+  </div>
+
+  <div class="cta-footer">
+    <div class="cta-footer-brand">Backup Power Pro &mdash; A division of Key Electric</div>
+    <div class="cta-footer-sub">backuppowerpro.com &nbsp;&bull;&nbsp; (864) 863-8009 &nbsp;&bull;&nbsp; SC Contractor LIC #2942</div>
+  </div>
+</div>
+
+</body>
+</html>
