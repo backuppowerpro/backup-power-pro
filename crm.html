@@ -121,6 +121,7 @@ td.actions{white-space:nowrap}
 /* MODALS */
 .modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
 .modal-overlay.open{display:flex}
+body.modal-open{overflow:hidden}
 .modal{background:var(--card);border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.2)}
 .modal-head{padding:20px 24px 0;display:flex;align-items:center;gap:12px;margin-bottom:4px}
 .modal-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:var(--navy);flex:1}
@@ -812,11 +813,9 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         <div id="jur-view-logo" class="jur-logo" style="width:36px;height:36px"></div>
         <div class="modal-title" id="jur-view-title"></div>
       </div>
-      <button class="modal-close" onclick="closeModal('jur-view-overlay')">✕</button>
     </div>
     <div class="modal-body" id="jur-view-body" style="display:flex;flex-direction:column;gap:10px"></div>
     <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeModal('jur-view-overlay')">Close</button>
       <button class="btn btn-primary" style="background:var(--navy);color:#fff" id="jur-view-edit-btn">Edit</button>
     </div>
   </div>
@@ -1731,6 +1730,7 @@ function esc(s) {
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
+  if (!document.querySelector('.modal-overlay.open')) document.body.classList.remove('modal-open');
 }
 
 let toastTimer;
@@ -1777,7 +1777,7 @@ function viewJurisdiction(id) {
 
   let rows = '';
   if (j.portal_url) {
-    rows += `<div class="jur-detail"><div><div class="jur-detail-label">Portal</div><div class="jur-detail-value" style="font-size:12px">${esc(j.portal_url.replace(/https?:\/\//, '').slice(0,40))}…</div></div><div class="jur-detail-action"><a class="btn-portal" href="${esc(j.portal_url)}" target="_blank" rel="noopener">Open ↗</a></div></div>`;
+    rows += `<div class="jur-detail"><div><div class="jur-detail-label">Portal</div></div><div class="jur-detail-action"><a class="btn-portal" href="${esc(j.portal_url)}" target="_blank" rel="noopener">Open ↗</a></div></div>`;
   }
   if (j.phone) {
     rows += `<div class="jur-detail"><div><div class="jur-detail-label">Phone</div><div class="jur-detail-value">${esc(j.phone)}</div></div><div class="jur-detail-action"><a class="btn-call" href="tel:${esc(j.phone)}">Call</a></div></div>`;
@@ -1793,6 +1793,7 @@ function viewJurisdiction(id) {
   }
   document.getElementById('jur-view-body').innerHTML = rows;
   document.getElementById('jur-view-edit-btn').onclick = () => { closeModal('jur-view-overlay'); openJurisdictionModal(id); };
+  document.body.classList.add('modal-open');
   document.getElementById('jur-view-overlay').classList.add('open');
 }
 
