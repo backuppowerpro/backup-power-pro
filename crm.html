@@ -362,7 +362,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <div id="contacts-view">
     <div class="toolbar">
-      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
+      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()" autocomplete="off">
     </div>
     <div id="contacts-table"></div>
   </div>
@@ -525,20 +525,20 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
           <label>First Name *</label>
-          <input class="form-input" id="c-fname" placeholder="First" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-lname').focus()">
+          <input class="form-input" id="c-fname" placeholder="First" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-lname').focus()" autocomplete="off">
         </div>
         <div>
           <label>Last Name *</label>
-          <input class="form-input" id="c-lname" placeholder="Last" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-phone').focus()">
+          <input class="form-input" id="c-lname" placeholder="Last" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-phone').focus()" autocomplete="off">
         </div>
       </div>
       <div class="form-row">
         <label>Phone</label>
-        <input class="form-input" id="c-phone" type="tel" placeholder="(864) 000-0000">
+        <input class="form-input" id="c-phone" type="tel" placeholder="(864) 000-0000" autocomplete="off">
       </div>
       <div class="form-row">
         <label>Email</label>
-        <input class="form-input" id="c-email" type="email" placeholder="email@example.com">
+        <input class="form-input" id="c-email" type="email" placeholder="email@example.com" autocomplete="off">
       </div>
       <div class="form-row">
         <label>Address</label>
