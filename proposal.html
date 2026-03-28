@@ -6,7 +6,7 @@
 <title>Backup Power Pro — Proposal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <style>
 :root {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
@@ -256,10 +256,12 @@ function getPrice(amp) {
 function calcTotal(amp) {
   const pr = getPrice(amp);
   const base = pr.total || pr.base || 0;
-  return base + (surgeOn ? (P.surge_price || 375) : 0);
+  // Don't add surge if old-format proposal already includes it in total
+  const surgeAdder = (surgeOn && !P.include_surge) ? (P.surge_price || 375) : 0;
+  return base + surgeAdder;
 }
 
-function fmt(n) { return '$' + Number(n).toLocaleString(); }
+function fmt(n) { return '$' + Number(n).toLocaleString('en-US'); }
 
 // ── RENDER PROPOSAL ─────────────────────────────────────────
 function renderProposal() {
@@ -503,7 +505,7 @@ function renderPricing() {
     if (P.include_surge) rows += priceRow('Whole-house surge protector', 'Installed on main panel', fmt(P.price_surge));
   }
 
-  if (surgeOn) {
+  if (surgeOn && !P.include_surge) {
     rows += priceRow('Whole-home surge protector', 'Installed on main panel', fmt(surgePrice));
   }
 
@@ -639,6 +641,7 @@ async function approveProposal() {
 
 // ── APPROVED STATE ──────────────────────────────────────────
 function renderApproved() {
+  window.scrollTo(0, 0);
   const signedDate = P.signed_at
     ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : '';
