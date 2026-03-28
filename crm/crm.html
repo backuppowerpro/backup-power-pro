@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BPP CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:    #0b1f3b;
+  --navy2:   #1a3a5c;
+  --gold:    #ffba00;
+  --green:   #059669;
+  --red:     #dc2626;
+  --blue:    #3b82f6;
+  --purple:  #7c3aed;
+  --amber:   #d97706;
+  --gray:    #6b7280;
+  --border:  #e4e8f0;
+  --bg:      #f4f6fa;
+  --card:    #ffffff;
+  --text:    #1a2a42;
+  --text2:   #4a5568;
+  --text3:   #8a9ab5;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+/* ── NAV ─────────────────────────────────────────────────── */
+.nav {
+  background: var(--navy);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  height: 54px;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+.nav-brand {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  color: #fff;
+  margin-right: 28px;
+  white-space: nowrap;
+}
+.nav-brand span { color: var(--gold); }
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab {
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,.6);
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+  font-family: 'Outfit', sans-serif;
+}
+.nav-tab:hover { color: #fff; background: rgba(255,255,255,.08); }
+.nav-tab.active { color: #fff; background: rgba(255,255,255,.15); }
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.view { display: none; padding: 20px; max-width: 1100px; margin: 0 auto; }
+.view.active { display: block; }
+
+/* ── TOOLBAR ─────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 9px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+  transition: border .15s;
+}
+.search-input:focus { border-color: var(--navy); }
+.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill {
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--text2);
+  transition: all .15s;
+  font-family: 'Outfit', sans-serif;
+  white-space: nowrap;
+}
+.pill:hover { border-color: var(--navy); color: var(--navy); }
+.pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  font-family: 'Outfit', sans-serif;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy2); }
+.btn-sm {
+  padding: 5px 11px;
+  font-size: 12px;
+  border-radius: 6px;
+  gap: 4px;
+}
+.btn-ghost { background: transparent; color: var(--text2); border: 1.5px solid var(--border); }
+.btn-ghost:hover { border-color: var(--navy); color: var(--navy); }
+.btn-danger { background: transparent; color: var(--red); border: 1.5px solid rgba(220,38,38,.25); }
+.btn-danger:hover { background: #fef2f2; }
+
+/* ── STATUS BADGES ───────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+.badge-new    { background: #eff6ff; color: #1d4ed8; }
+.badge-quoted { background: #fffbeb; color: #b45309; }
+.badge-scheduled { background: #f5f3ff; color: #6d28d9; }
+.badge-complete  { background: #f0fdf4; color: #065f46; }
+.badge-notafit   { background: #f9fafb; color: #6b7280; }
+.badge-install   { background: #eff6ff; color: #1e40af; }
+.badge-estimate  { background: #fffbeb; color: #b45309; }
+.badge-followup  { background: #fdf4ff; color: #7e22ce; }
+.badge-other     { background: #f9fafb; color: #6b7280; }
+.badge-cancelled { background: #fef2f2; color: #b91c1c; }
+
+/* ── CONTACTS TABLE ──────────────────────────────────────── */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead th {
+  background: #f8f9fb;
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; cursor: pointer; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #f8f9fb; }
+td { padding: 12px 14px; vertical-align: middle; }
+td.name { font-weight: 600; color: var(--text); }
+td.muted { color: var(--text2); font-size: 13px; }
+td.actions { text-align: right; white-space: nowrap; }
+td.actions .btn { display: inline-flex; }
+.td-phone a { color: var(--text2); text-decoration: none; font-size: 13px; }
+.td-phone a:hover { color: var(--navy); text-decoration: underline; }
+
+/* ── SCHEDULE CARDS ──────────────────────────────────────── */
+.job-list { display: flex; flex-direction: column; gap: 10px; }
+.job-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 12px 16px;
+  align-items: center;
+  transition: box-shadow .15s;
+}
+.job-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.job-card.complete { opacity: .6; }
+.job-date-block { text-align: center; }
+.job-date-day { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1; }
+.job-date-month { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+.job-date-time { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.job-info { min-width: 0; }
+.job-contact { font-weight: 600; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+.job-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.job-price { font-size: 13px; color: var(--green); font-weight: 600; }
+.job-notes { font-size: 12px; color: var(--text3); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+.job-actions { display: flex; gap: 6px; flex-direction: column; align-items: flex-end; }
+
+/* ── SECTION HEADER ──────────────────────────────────────── */
+.section-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin: 20px 0 10px;
+}
+.section-label:first-child { margin-top: 0; }
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.empty {
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--text3);
+}
+.empty svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: .35; }
+.empty p { font-size: 14px; }
+
+/* ── MODAL ───────────────────────────────────────────────── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.modal-head {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-head h2 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: var(--navy); }
+.modal-close {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 18px;
+  border: none;
+  background: transparent;
+  transition: all .15s;
+}
+.modal-close:hover { background: var(--bg); color: var(--text); }
+.modal-body { padding: 20px 22px; }
+.modal-foot {
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.form-row { margin-bottom: 16px; }
+.form-row label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 6px;
+  letter-spacing: .03em;
+}
+.form-row label .req { color: var(--red); margin-left: 2px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  background: #fff;
+  outline: none;
+  transition: border .15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--navy); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 200;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all .25s;
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: var(--green); color: #fff; }
+.toast.error   { background: var(--red); color: #fff; }
+
+/* ── LOADING ─────────────────────────────────────────────── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text3);
+  font-size: 14px;
+  gap: 10px;
+}
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .view { padding: 14px; }
+  .job-card { grid-template-columns: 70px 1fr; }
+  .job-actions { flex-direction: row; grid-column: 1 / -1; }
+  .form-row-2 { grid-template-columns: 1fr; }
+  thead th:nth-child(4), td:nth-child(4),
+  thead th:nth-child(5), td:nth-child(5) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ───────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-brand">BPP <span>CRM</span></div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="switchTab('contacts')">Contacts</div>
+    <div class="nav-tab" onclick="switchTab('schedule')">Schedule</div>
+  </div>
+</nav>
+
+<!-- ── CONTACTS VIEW ──────────────────────────────────────── -->
+<div id="view-contacts" class="view active">
+  <div class="toolbar">
+    <input class="search-input" id="search" placeholder="Search contacts…" oninput="filterContacts()">
+    <div class="filter-pills">
+      <div class="pill active" onclick="setFilter('All', this)">All</div>
+      <div class="pill" onclick="setFilter('New Lead', this)">New Lead</div>
+      <div class="pill" onclick="setFilter('Quoted', this)">Quoted</div>
+      <div class="pill" onclick="setFilter('Scheduled', this)">Scheduled</div>
+      <div class="pill" onclick="setFilter('Complete', this)">Complete</div>
+      <div class="pill" onclick="setFilter('Not a Fit', this)">Not a Fit</div>
+    </div>
+    <button class="btn btn-primary" onclick="openContactModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Contact
+    </button>
+  </div>
+  <div id="contacts-table" class="table-card">
+    <div class="loading"><div class="spinner"></div> Loading…</div>
+  </div>
+</div>
+
+<!-- ── SCHEDULE VIEW ──────────────────────────────────────── -->
+<div id="view-schedule" class="view">
+  <div class="toolbar">
+    <div class="filter-pills">
+      <div class="pill active" id="sched-filter-upcoming" onclick="setSchedFilter('upcoming', this)">Upcoming</div>
+      <div class="pill" id="sched-filter-all" onclick="setSchedFilter('all', this)">All Jobs</div>
+    </div>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary" onclick="openJobModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Schedule Job
+    </button>
+  </div>
+  <div id="schedule-list"><div class="loading"><div class="spinner"></div> Loading…</div></div>
+</div>
+
+<!-- ── CONTACT MODAL ──────────────────────────────────────── -->
+<div class="overlay" id="contact-overlay" onclick="closeOverlay(event, 'contact-overlay')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <h2 id="contact-modal-title">Add Contact</h2>
+      <button class="modal-close" onclick="closeModal('contact-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="c-id">
+      <div class="form-row">
+        <label>Name <span class="req">*</span></label>
+        <input class="form-input" id="c-name" placeholder="Full name" autocomplete="off">
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin-bottom:0">
+          <label>Phone <span class="req">*</span></label>
+          <input class="form-input" id="c-phone" type="tel" placeholder="(864) 555-0100">
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Email</label>
+          <input class="form-input" id="c-email" type="email" placeholder="email@example.com">
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:16px">
+        <label>Address</label>
+        <input class="form-input" id="c-address" placeholder="123 Main St, Greenville, SC">
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin-bottom:0">
+          <label>Generator</label>
+          <input class="form-input" id="c-generator" placeholder="e.g. Honda 7500W">
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Status</label>
+          <select class="form-select" id="c-status">
+            <option>New Lead</option>
+            <option>Quoted</option>
+            <option>Scheduled</option>
+            <option>Complete</option>
+            <option>Not a Fit</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:16px">
+        <label>Notes</label>
+        <textarea class="form-textarea" id="c-notes" placeholder="Any details about the job, access, panel location…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('contact-overlay')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveContact()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── JOB MODAL ─────────────────────────────────────────── -->
+<div class="overlay" id="job-overlay" onclick="closeOverlay(event, 'job-overlay')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <h2 id="job-modal-title">Schedule Job</h2>
+      <button class="modal-close" onclick="closeModal('job-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="j-id">
+      <div class="form-row">
+        <label>Contact</label>
+        <select class="form-select" id="j-contact">
+          <option value="">— No contact linked —</option>
+        </select>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin-bottom:0">
+          <label>Date <span class="req">*</span></label>
+          <input class="form-input" id="j-date" type="date">
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Time</label>
+          <input class="form-input" id="j-time" type="time">
+        </div>
+      </div>
+      <div class="form-row-2" style="margin-top:16px">
+        <div class="form-row" style="margin-bottom:0">
+          <label>Type</label>
+          <select class="form-select" id="j-type">
+            <option>Install</option>
+            <option>Estimate</option>
+            <option>Follow-up</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Status</label>
+          <select class="form-select" id="j-status">
+            <option>Scheduled</option>
+            <option>Complete</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:16px">
+        <label>Price ($)</label>
+        <input class="form-input" id="j-price" type="number" placeholder="1300">
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea class="form-textarea" id="j-notes" placeholder="Anything to remember about this appointment…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('job-overlay')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ──────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+
+// ── CONFIG — paste your Supabase values here ───────────────
+const SUPABASE_URL  = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY  = 'YOUR_SUPABASE_ANON_KEY';
+// ──────────────────────────────────────────────────────────
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── STATE ──────────────────────────────────────────────────
+let allContacts = [];
+let allJobs     = [];
+let contactFilter = 'All';
+let schedFilter   = 'upcoming';
+
+// ── INIT ───────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadContacts();
+  loadJobs();
+});
+
+// ── TABS ───────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── CONTACTS: LOAD ─────────────────────────────────────────
+async function loadContacts() {
+  const { data, error } = await db
+    .from('contacts')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { showToast('Failed to load contacts', 'error'); return; }
+  allContacts = data || [];
+  renderContacts();
+}
+
+// ── CONTACTS: RENDER ───────────────────────────────────────
+function renderContacts() {
+  const search = document.getElementById('search').value.toLowerCase();
+  let list = allContacts.filter(c => {
+    const matchFilter = contactFilter === 'All' || c.status === contactFilter;
+    const matchSearch = !search ||
+      (c.name || '').toLowerCase().includes(search) ||
+      (c.phone || '').toLowerCase().includes(search) ||
+      (c.email || '').toLowerCase().includes(search) ||
+      (c.address || '').toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+
+  const wrap = document.getElementById('contacts-table');
+
+  if (list.length === 0) {
+    wrap.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <p>${allContacts.length === 0 ? 'No contacts yet — add your first one.' : 'No contacts match your search.'}</p>
+    </div>`;
+    return;
+  }
+
+  wrap.innerHTML = `<div class="table-wrap"><table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Status</th>
+        <th>Generator</th>
+        <th>Address</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      ${list.map(c => `
+        <tr onclick="openContactModal('${c.id}')">
+          <td class="name">${esc(c.name)}</td>
+          <td class="td-phone"><a href="tel:${esc(c.phone)}" onclick="event.stopPropagation()">${esc(c.phone)}</a></td>
+          <td>${statusBadge(c.status)}</td>
+          <td class="muted">${esc(c.generator)}</td>
+          <td class="muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.address)}</td>
+          <td class="actions" onclick="event.stopPropagation()">
+            <button class="btn btn-ghost btn-sm" onclick="openContactModal('${c.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteContact('${c.id}')">Delete</button>
+          </td>
+        </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+function filterContacts() { renderContacts(); }
+
+function setFilter(val, el) {
+  contactFilter = val;
+  document.querySelectorAll('.filter-pills .pill').forEach(p => {
+    if (p.closest('#view-contacts')) p.classList.remove('active');
+  });
+  el.classList.add('active');
+  renderContacts();
+}
+
+// ── CONTACTS: MODAL ────────────────────────────────────────
+function openContactModal(id) {
+  clearContactForm();
+  if (id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('contact-modal-title').textContent = 'Edit Contact';
+    document.getElementById('c-id').value      = c.id;
+    document.getElementById('c-name').value    = c.name || '';
+    document.getElementById('c-phone').value   = c.phone || '';
+    document.getElementById('c-email').value   = c.email || '';
+    document.getElementById('c-address').value = c.address || '';
+    document.getElementById('c-generator').value = c.generator || '';
+    document.getElementById('c-status').value  = c.status || 'New Lead';
+    document.getElementById('c-notes').value   = c.notes || '';
+  } else {
+    document.getElementById('contact-modal-title').textContent = 'Add Contact';
+  }
+  document.getElementById('contact-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('c-name').focus(), 50);
+}
+
+function clearContactForm() {
+  ['c-id','c-name','c-phone','c-email','c-address','c-generator','c-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('c-status').value = 'New Lead';
+}
+
+async function saveContact() {
+  const id    = document.getElementById('c-id').value;
+  const name  = document.getElementById('c-name').value.trim();
+  const phone = document.getElementById('c-phone').value.trim();
+  if (!name)  { showToast('Name is required', 'error'); return; }
+
+  const payload = {
+    name,
+    phone,
+    email:     document.getElementById('c-email').value.trim(),
+    address:   document.getElementById('c-address').value.trim(),
+    generator: document.getElementById('c-generator').value.trim(),
+    status:    document.getElementById('c-status').value,
+    notes:     document.getElementById('c-notes').value.trim(),
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await db.from('contacts').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('contacts').insert([payload]));
+  }
+
+  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  showToast(id ? 'Contact updated' : 'Contact added', 'success');
+  closeModal('contact-overlay');
+  loadContacts();
+}
+
+async function deleteContact(id) {
+  const c = allContacts.find(x => x.id === id);
+  if (!confirm(`Delete ${c?.name || 'this contact'}? This cannot be undone.`)) return;
+  const { error } = await db.from('contacts').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  showToast('Contact deleted', 'success');
+  loadContacts();
+}
+
+// ── SCHEDULE: LOAD ─────────────────────────────────────────
+async function loadJobs() {
+  const { data, error } = await db
+    .from('schedule')
+    .select('*')
+    .order('date', { ascending: true });
+  if (error) { showToast('Failed to load schedule', 'error'); return; }
+  allJobs = data || [];
+  renderSchedule();
+}
+
+// ── SCHEDULE: RENDER ───────────────────────────────────────
+function renderSchedule() {
+  const today = new Date().toISOString().split('T')[0];
+  let jobs = schedFilter === 'upcoming'
+    ? allJobs.filter(j => j.status !== 'Cancelled' && (!j.date || j.date >= today))
+    : allJobs;
+
+  jobs = [...jobs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+  const wrap = document.getElementById('schedule-list');
+
+  if (jobs.length === 0) {
+    wrap.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <p>${schedFilter === 'upcoming' ? 'No upcoming jobs.' : 'No jobs scheduled yet.'}</p>
+    </div>`;
+    return;
+  }
+
+  // Group by month
+  let html = '';
+  let lastMonth = '';
+  jobs.forEach(j => {
+    const d = j.date ? new Date(j.date + 'T12:00:00') : null;
+    const month = d ? d.toLocaleString('en-US', { month: 'long', year: 'numeric' }) : 'No Date';
+    if (month !== lastMonth) {
+      html += `<div class="section-label">${month}</div>`;
+      lastMonth = month;
+    }
+    const day   = d ? d.getDate() : '–';
+    const mon   = d ? d.toLocaleString('en-US', { month: 'short' }).toUpperCase() : '';
+    const time  = j.time ? fmt12(j.time) : '';
+    const price = j.price ? `<span class="job-price">$${Number(j.price).toLocaleString()}</span>` : '';
+    html += `
+    <div class="job-card ${j.status === 'Complete' ? 'complete' : ''}">
+      <div class="job-date-block">
+        <div class="job-date-day">${day}</div>
+        <div class="job-date-month">${mon}</div>
+        <div class="job-date-time">${time}</div>
+      </div>
+      <div class="job-info">
+        <div class="job-contact">${esc(j.contact_name) || '<span style="color:var(--text3)">No contact</span>'}</div>
+        <div class="job-meta">
+          ${typeBadge(j.type)}
+          ${statusJobBadge(j.status)}
+          ${price}
+        </div>
+        ${j.notes ? `<div class="job-notes">${esc(j.notes)}</div>` : ''}
+      </div>
+      <div class="job-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openJobModal('${j.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteJob('${j.id}')">Delete</button>
+      </div>
+    </div>`;
+  });
+
+  wrap.innerHTML = `<div class="job-list">${html}</div>`;
+}
+
+function setSchedFilter(val, el) {
+  schedFilter = val;
+  document.querySelectorAll('#view-schedule .filter-pills .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderSchedule();
+}
+
+// ── SCHEDULE: MODAL ────────────────────────────────────────
+function openJobModal(id) {
+  clearJobForm();
+
+  // Populate contact dropdown
+  const sel = document.getElementById('j-contact');
+  sel.innerHTML = '<option value="">— No contact linked —</option>';
+  allContacts
+    .filter(c => c.status !== 'Not a Fit')
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    .forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name + (c.phone ? ' · ' + c.phone : '');
+      sel.appendChild(opt);
+    });
+
+  if (id) {
+    const j = allJobs.find(x => x.id === id);
+    if (!j) return;
+    document.getElementById('job-modal-title').textContent = 'Edit Job';
+    document.getElementById('j-id').value       = j.id;
+    document.getElementById('j-contact').value  = j.contact_id || '';
+    document.getElementById('j-date').value     = j.date || '';
+    document.getElementById('j-time').value     = j.time || '';
+    document.getElementById('j-type').value     = j.type || 'Install';
+    document.getElementById('j-status').value   = j.status || 'Scheduled';
+    document.getElementById('j-price').value    = j.price || '';
+    document.getElementById('j-notes').value    = j.notes || '';
+  } else {
+    document.getElementById('job-modal-title').textContent = 'Schedule Job';
+    // Default date to tomorrow
+    const tm = new Date(); tm.setDate(tm.getDate() + 1);
+    document.getElementById('j-date').value = tm.toISOString().split('T')[0];
+  }
+
+  document.getElementById('job-overlay').classList.add('open');
+}
+
+function clearJobForm() {
+  ['j-id','j-date','j-time','j-price','j-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('j-type').value   = 'Install';
+  document.getElementById('j-status').value = 'Scheduled';
+}
+
+async function saveJob() {
+  const id   = document.getElementById('j-id').value;
+  const date = document.getElementById('j-date').value;
+  if (!date) { showToast('Date is required', 'error'); return; }
+
+  const contactId = document.getElementById('j-contact').value;
+  const contact   = contactId ? allContacts.find(c => c.id === contactId) : null;
+
+  const payload = {
+    date,
+    time:         document.getElementById('j-time').value || null,
+    contact_id:   contactId || null,
+    contact_name: contact?.name || '',
+    type:         document.getElementById('j-type').value,
+    status:       document.getElementById('j-status').value,
+    price:        document.getElementById('j-price').value || null,
+    notes:        document.getElementById('j-notes').value.trim(),
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await db.from('schedule').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('schedule').insert([payload]));
+  }
+
+  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+
+  // If job marked complete, offer to update contact status
+  if (payload.status === 'Complete' && contact && contact.status !== 'Complete') {
+    if (confirm(`Mark ${contact.name} as Complete in contacts too?`)) {
+      await db.from('contacts').update({ status: 'Complete' }).eq('id', contactId);
+      loadContacts();
+    }
+  }
+
+  showToast(id ? 'Job updated' : 'Job scheduled', 'success');
+  closeModal('job-overlay');
+  loadJobs();
+}
+
+async function deleteJob(id) {
+  const j = allJobs.find(x => x.id === id);
+  if (!confirm(`Delete this job for ${j?.contact_name || 'unknown'}?`)) return;
+  const { error } = await db.from('schedule').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  showToast('Job deleted', 'success');
+  loadJobs();
+}
+
+// ── MODALS ─────────────────────────────────────────────────
+function closeModal(overlayId) {
+  document.getElementById(overlayId).classList.remove('open');
+}
+function closeOverlay(e, overlayId) {
+  if (e.target.id === overlayId) closeModal(overlayId);
+}
+
+// ── TOAST ──────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── HELPERS ────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmt12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h);
+  return `${hr % 12 || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
+}
+
+function statusBadge(s) {
+  const map = {
+    'New Lead':   'new',
+    'Quoted':     'quoted',
+    'Scheduled':  'scheduled',
+    'Complete':   'complete',
+    'Not a Fit':  'notafit',
+  };
+  return `<span class="badge badge-${map[s] || 'new'}">${esc(s)}</span>`;
+}
+
+function typeBadge(t) {
+  const map = { 'Install':'install','Estimate':'estimate','Follow-up':'followup','Other':'other' };
+  return `<span class="badge badge-${map[t] || 'other'}">${esc(t || 'Install')}</span>`;
+}
+
+function statusJobBadge(s) {
+  const map = { 'Scheduled':'new','Complete':'complete','Cancelled':'cancelled' };
+  return `<span class="badge badge-${map[s] || 'new'}">${esc(s)}</span>`;
+}
+
+</script>
+</body>
+</html>
