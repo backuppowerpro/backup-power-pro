@@ -525,6 +525,30 @@ td.actions .btn { display: inline-flex; }
 <!-- ── TOAST ──────────────────────────────────────────────── -->
 <div class="toast" id="toast"></div>
 
+<!-- ── PASSWORD GATE ──────────────────────────────────────── -->
+<div id="gate" style="
+  display:flex;position:fixed;inset:0;z-index:999;
+  background:var(--navy);align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
+    <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px">BPP <span style="color:var(--gold)">CRM</span></div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:24px">Backup Power Pro</div>
+    <input id="gate-input" type="password" placeholder="Password"
+      style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:'Inter',sans-serif;outline:none;text-align:center;letter-spacing:.1em;margin-bottom:12px;transition:border .15s"
+      onkeydown="if(event.key==='Enter')checkPass()"
+      onfocus="this.style.borderColor='var(--navy)'"
+      onblur="this.style.borderColor='var(--border)'">
+    <div id="gate-err" style="font-size:12px;color:var(--red);min-height:18px;margin-bottom:8px"></div>
+    <button onclick="checkPass()" style="
+      width:100%;padding:12px;background:var(--navy);color:#fff;
+      border:none;border-radius:8px;font-family:'Outfit',sans-serif;
+      font-size:15px;font-weight:700;cursor:pointer;transition:background .15s"
+      onmouseover="this.style.background='#1a3a5c'"
+      onmouseout="this.style.background='var(--navy)'">
+      Enter
+    </button>
+  </div>
+</div>
+
 <!-- ── SCRIPTS ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -532,6 +556,7 @@ td.actions .btn { display: inline-flex; }
 // ── CONFIG — paste your Supabase values here ───────────────
 const SUPABASE_URL  = 'YOUR_SUPABASE_URL';
 const SUPABASE_KEY  = 'YOUR_SUPABASE_ANON_KEY';
+const CRM_PASSWORD  = 'bpp2026'; // ← change this to whatever you want
 // ──────────────────────────────────────────────────────────
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -542,10 +567,33 @@ let allJobs     = [];
 let contactFilter = 'All';
 let schedFilter   = 'upcoming';
 
+// ── PASSWORD GATE ──────────────────────────────────────────
+function checkPass() {
+  const val = document.getElementById('gate-input').value;
+  if (val === CRM_PASSWORD) {
+    sessionStorage.setItem('crm_auth', '1');
+    document.getElementById('gate').style.display = 'none';
+    loadContacts();
+    loadJobs();
+  } else {
+    const err = document.getElementById('gate-err');
+    const inp = document.getElementById('gate-input');
+    err.textContent = 'Incorrect password';
+    inp.style.borderColor = 'var(--red)';
+    inp.value = '';
+    setTimeout(() => { err.textContent = ''; inp.style.borderColor = 'var(--border)'; }, 2500);
+  }
+}
+
 // ── INIT ───────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  loadContacts();
-  loadJobs();
+  if (sessionStorage.getItem('crm_auth') === '1') {
+    document.getElementById('gate').style.display = 'none';
+    loadContacts();
+    loadJobs();
+  } else {
+    setTimeout(() => document.getElementById('gate-input').focus(), 100);
+  }
 });
 
 // ── TABS ───────────────────────────────────────────────────
