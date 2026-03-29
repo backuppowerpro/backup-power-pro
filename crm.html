@@ -2015,7 +2015,7 @@ function renderCalendar() {
 
     html += `
     <div class="cal-day ${isToday ? 'today' : ''}">
-      <div class="cal-day-head">
+      <div class="cal-day-head" ${atLimit ? '' : `onclick="openJobModal(null,'${dateStr}')" style="cursor:pointer"`}>
         <span class="cal-day-name">${days[i]}</span>
         <span class="cal-day-num">${day.getDate()}</span>
         ${holidayBadge}
