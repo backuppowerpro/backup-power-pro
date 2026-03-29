@@ -1144,19 +1144,20 @@ function renderContacts() {
   const wrap = document.getElementById('contacts-table');
 
   if (total === 0) {
-    const emptyH = 'height:calc(214px + 32px)';
-    if (searchTerm) {
-      wrap.innerHTML = `<div class="table-wrap"><div class="table-scroll" style="display:flex;align-items:center;justify-content:center;${emptyH}">
-        <button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff;padding:10px 20px;font-size:14px" onclick="addFromSearch()">+ Add New Lead</button>
-      </div></div>`;
-    } else {
-      wrap.innerHTML = `<div class="table-wrap"><div class="table-scroll" style="display:flex;align-items:center;justify-content:center;${emptyH}">
-        <div class="empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads match your filter.'}</p>
-        </div>
-      </div></div>`;
-    }
+    const cols = `<colgroup><col style="width:14%"><col class="col-phone" style="width:12%"><col style="width:15%"><col class="col-notes" style="width:21%"><col class="col-jur" style="width:15%"><col style="width:15%"></colgroup>`;
+    const thead = `<tr><th style="width:14%">Name</th><th class="col-phone" style="width:12%">Phone</th><th style="width:15%">Address</th><th class="col-notes" style="width:21%">Notes</th><th class="col-jur" style="width:15%">Jurisdiction</th><th style="width:15%">Stage</th></tr>`;
+    const emptyContent = searchTerm
+      ? `<button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff;padding:10px 20px;font-size:14px" onclick="addFromSearch()">+ Add New Lead</button>`
+      : `<div class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads match your filter.'}</p>
+        </div>`;
+    wrap.innerHTML = `<div class="table-wrap">
+      <table style="visibility:hidden"><${cols}<thead>${thead}</thead></table>
+      <div class="table-scroll" style="display:flex;align-items:center;justify-content:center">
+        ${emptyContent}
+      </div>
+    </div>`;
     return;
   }
 
