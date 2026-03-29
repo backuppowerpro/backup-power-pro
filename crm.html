@@ -994,6 +994,15 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…"></textarea>
     </div>
     <div class="form-row">
+      <label>Jurisdiction</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select class="form-select" id="panel-jurisdiction" style="flex:1"></select>
+        <button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="form-row">
       <label>Pipeline Stage</label>
       <select class="form-select" id="panel-stage">
         <option value="1">Form Submitted</option>
@@ -1006,10 +1015,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         <option value="8">Inspection Scheduled</option>
         <option value="9">Complete</option>
       </select>
-    </div>
-    <div class="form-row">
-      <label>Jurisdiction</label>
-      <select class="form-select" id="panel-jurisdiction"></select>
     </div>
   </div>
 </div>
@@ -2209,6 +2214,12 @@ function copyField(id) {
   const val = (document.getElementById(id).value || '').trim();
   if (!val) { showToast('Nothing to copy', 'error'); return; }
   navigator.clipboard.writeText(val).then(() => showToast('Copied!', 'success'));
+}
+
+function openPanelJurisdiction() {
+  const jurId = document.getElementById('panel-jurisdiction').value;
+  if (!jurId) { showToast('No jurisdiction selected', 'error'); return; }
+  viewJurisdiction(parseInt(jurId));
 }
 
 function openMapsFromPanel() {
