@@ -794,7 +794,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <div class="side-panel" id="side-panel">
   <div class="panel-head" style="flex-direction:column;align-items:stretch;gap:0">
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="panel-name" id="panel-name" onclick="panelNameArchive()" style="cursor:pointer;user-select:none;transition:all .15s" title="Tap twice to archive">Lead</div>
+      <div class="panel-name" id="panel-name" onclick="panelNameArchive()" style="cursor:pointer;user-select:none;transition:all .15s;padding:4px 10px;border-radius:6px;width:fit-content" title="Tap twice to archive">Lead</div>
       <button class="panel-close" onclick="cancelPanel()" style="font-size:12px;width:auto;padding:4px 12px;border-radius:6px;font-weight:600">Cancel</button>
     </div>
   </div>
@@ -1468,13 +1468,15 @@ function panelNameArchive() {
     nameArchivePending = true;
     el.dataset.origText = el.textContent;
     el.textContent = isArchived ? 'Tap again to unarchive' : 'Tap again to archive';
-    el.style.color = isArchived ? 'var(--green)' : 'var(--red)';
+    el.style.color = isArchived ? 'var(--green)' : 'var(--gold)';
     el.style.fontSize = '13px';
+    el.style.background = isArchived ? '#dcfce720' : '#ffba0018';
     nameArchiveTimer = setTimeout(() => {
       nameArchivePending = false;
       el.textContent = el.dataset.origText;
       el.style.color = '';
       el.style.fontSize = '';
+      el.style.background = '';
     }, 3000);
   } else {
     // Second tap — confirm and archive/unarchive
@@ -1496,7 +1498,7 @@ function resetNameArchive() {
   nameArchivePending = false;
   clearTimeout(nameArchiveTimer);
   const el = document.getElementById('panel-name');
-  if (el) { el.style.color = ''; el.style.fontSize = ''; }
+  if (el) { el.style.color = ''; el.style.fontSize = ''; el.style.background = ''; }
 }
 
 // Panel address autocomplete (mirrors main one)
