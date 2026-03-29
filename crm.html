@@ -403,18 +403,23 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </head>
 <body>
 
-<!-- ── PASSWORD GATE ──────────────────────────────────── -->
+<!-- ── LOGIN GATE ─────────────────────────────────────── -->
 <div id="gate" style="display:flex;position:fixed;inset:0;z-index:999;background:var(--navy);align-items:center;justify-content:center;padding:24px">
   <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
     <img src="assets/images/logo-main.png" alt="Backup Power Pro" style="height:36px;margin-bottom:6px;">
     <div style="font-size:13px;color:var(--text3);margin-bottom:24px">CRM</div>
+    <input id="gate-email" type="email" placeholder="Email"
+      style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:'Inter',sans-serif;outline:none;text-align:center;margin-bottom:10px;transition:border .15s"
+      onkeydown="if(event.key==='Enter')document.getElementById('gate-input').focus()"
+      onfocus="this.style.borderColor='var(--navy)'"
+      onblur="this.style.borderColor='var(--border)'">
     <input id="gate-input" type="password" placeholder="Password"
       style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:'Inter',sans-serif;outline:none;text-align:center;letter-spacing:.1em;margin-bottom:12px;transition:border .15s"
       onkeydown="if(event.key==='Enter')checkPass()"
       onfocus="this.style.borderColor='var(--navy)'"
       onblur="this.style.borderColor='var(--border)'">
     <div id="gate-err" style="font-size:12px;color:var(--red);min-height:18px;margin-bottom:8px"></div>
-    <button onclick="checkPass()" style="width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
+    <button id="gate-btn" onclick="checkPass()" style="width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer">Sign In</button>
   </div>
 </div>
 
@@ -980,7 +985,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 // ── CONFIG ────────────────────────────────────────────────
 const SUPABASE_URL      = 'https://reowtzedjflwmlptupbk.supabase.co';
 const SUPABASE_KEY      = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
-const CRM_PASSWORD      = 'bpp2026';
 const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -997,20 +1001,31 @@ let contactsShown = 5;
 let searchTerm   = '';
 let weekStart    = getMonday(new Date());
 
-// ── PASSWORD GATE ─────────────────────────────────────────
-function checkPass() {
-  const val = document.getElementById('gate-input').value;
-  if (val === CRM_PASSWORD) {
-    sessionStorage.setItem('crm_auth', '1');
-    showApp();
-  } else {
-    const err = document.getElementById('gate-err');
-    const inp = document.getElementById('gate-input');
-    err.textContent = 'Incorrect password';
-    inp.style.borderColor = 'var(--red)';
-    inp.value = '';
-    setTimeout(() => { err.textContent = ''; inp.style.borderColor = 'var(--border)'; }, 2500);
+// ── AUTH GATE ─────────────────────────────────────────────
+async function checkPass() {
+  const email = document.getElementById('gate-email').value.trim();
+  const pass  = document.getElementById('gate-input').value;
+  const err   = document.getElementById('gate-err');
+  const btn   = document.getElementById('gate-btn');
+
+  if (!email || !pass) { err.textContent = 'Enter email and password'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+
+  if (error) {
+    err.textContent = 'Invalid email or password';
+    document.getElementById('gate-input').style.borderColor = 'var(--red)';
+    document.getElementById('gate-input').value = '';
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+    setTimeout(() => { err.textContent = ''; document.getElementById('gate-input').style.borderColor = 'var(--border)'; }, 2500);
+    return;
   }
+
+  showApp();
 }
 
 function showApp() {
@@ -1024,11 +1039,13 @@ function showApp() {
 // Apply dark mode immediately to prevent flash
 if (localStorage.getItem('crm_dark') === '1') document.documentElement.classList.add('dark');
 
-window.addEventListener('DOMContentLoaded', () => {
-  if (sessionStorage.getItem('crm_auth') === '1') {
+window.addEventListener('DOMContentLoaded', async () => {
+  // Check for existing session
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
     showApp();
   } else {
-    setTimeout(() => document.getElementById('gate-input').focus(), 100);
+    setTimeout(() => document.getElementById('gate-email').focus(), 100);
   }
 });
 
