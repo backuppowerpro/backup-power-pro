@@ -267,7 +267,7 @@ function fmt(n) { return '$' + Number(n).toLocaleString('en-US'); }
 function renderProposal() {
   const isNew = !!P.pricing_30 || !!P.pricing_50;
   const hasBothPricing = !!P.pricing_30 && !!P.pricing_50;
-  chosenAmp = P.selected_amp || P.default_amp || (P.amp_type === 'both' ? '30' : P.amp_type) || '30';
+  chosenAmp = P.selected_amp || P.amp_type || '30';
   surgeOn = P.selected_surge || false;
 
   const createdDate = new Date(P.created_at).toLocaleDateString('en-US', {
