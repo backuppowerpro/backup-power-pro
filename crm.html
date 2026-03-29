@@ -1410,10 +1410,26 @@ async function autoProgressStage(contactId, targetStage) {
   if (currentStage >= targetStage) return; // already at or past this stage
   const { error } = await db.from('contacts').update({ stage: targetStage }).eq('id', contactId);
   if (error) return;
-  // Log stage change
   db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: targetStage }]);
-  // Update local data
   c.stage = targetStage;
+  renderContacts();
+  loadPermitAnalytics();
+}
+
+// Set stage based on the MOST RECENT proposal's status.
+// Unlike autoProgressStage, this can move a contact backward
+// (e.g., if a new proposal is sent after an old one was approved).
+async function setStageFromLatestProposal(contactId, proposalStage) {
+  const c = allContacts.find(x => x.id === contactId);
+  if (!c) return;
+  const currentStage = c.stage || 1;
+  // Don't touch contacts already past stage 4 (permit/install workflow)
+  if (currentStage > 4) return;
+  if (currentStage === proposalStage) return;
+  const { error } = await db.from('contacts').update({ stage: proposalStage }).eq('id', contactId);
+  if (error) return;
+  db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: proposalStage }]);
+  c.stage = proposalStage;
   renderContacts();
   loadPermitAnalytics();
 }
@@ -1758,9 +1774,10 @@ async function saveProposal() {
   document.getElementById('p-sms-link').href = 'sms:' + encodeURIComponent(c?.phone || '') + '?body=' + encodeURIComponent(msg);
 
   proposalMap[contactId] = data;
+  allProposals.unshift(data);
 
-  // Auto-progress to "Quote Sent" (stage 3) if currently before that
-  autoProgressStage(contactId, 3);
+  // New proposal is now the most recent — set stage to "Quote Sent" (3)
+  setStageFromLatestProposal(contactId, 3);
 
   renderContacts();
   showToast('Proposal created!', 'success');
@@ -2635,8 +2652,14 @@ async function checkForApprovals() {
     const p = data[0];
     showApprovalNotif(p);
 
-    // Auto-progress all approved contacts to "Booked" (stage 4)
-    data.forEach(ap => { if (ap.contact_id) autoProgressStage(ap.contact_id, 4); });
+    // Set stage to "Booked" (4) only if the approved proposal is the most recent for that contact
+    data.forEach(ap => {
+      if (!ap.contact_id) return;
+      const latest = proposalMap[ap.contact_id];
+      if (latest && latest.id === ap.id) {
+        setStageFromLatestProposal(ap.contact_id, 4);
+      }
+    });
 
     // Refresh proposals data in background
     loadProposals();
