@@ -2282,7 +2282,7 @@ function esc(s) {
 
 function lockBody() {
   document.body.style.setProperty('--scrollbar-w', (window.innerWidth - document.documentElement.clientWidth) + 'px');
-  lockBody();
+  document.body.classList.add('modal-open');
 }
 function unlockBody() {
   document.body.classList.remove('modal-open');
