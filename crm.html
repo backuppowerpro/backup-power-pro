@@ -268,7 +268,7 @@ td.actions{white-space:nowrap}
 .cal-day.today .cal-day-num{color:var(--navy)}
 .cal-day-body{flex:1;padding:4px 4px 2px;display:flex;flex-direction:column;gap:3px;cursor:pointer}
 .cal-day-body:hover{background:rgba(59,130,246,.04)}
-.cal-event{border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4;flex:0 0 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-event{border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4;flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cal-event.evt-contact{background:#fef3c7;color:#92400e;border:none}
 .cal-event.evt-contact:hover{background:#fde68a}
 .cal-event.evt-nocontact{background:#dbeafe;color:#1e40af;border:none}
@@ -277,7 +277,8 @@ td.actions{white-space:nowrap}
 .cal-event.complete:hover{background:#bbf7d0}
 .cal-event.cancelled{background:#fee2e2;color:#991b1b;border:none}
 .cal-event.cancelled:hover{background:#fecaca}
-.cal-add-hint{font-size:10px;color:var(--text3);text-align:center;padding:4px;opacity:0;transition:opacity .15s;flex:1 1 0!important;display:flex;align-items:center;justify-content:center}
+.cal-add-hint{font-size:10px;color:var(--text3);text-align:center;opacity:0;transition:opacity .15s}
+.cal-slot{flex:1 1 0;min-height:0;padding:8px 10px;border-radius:var(--r-sm)}
 .cal-day-body:hover .cal-add-hint{opacity:1}
 .cal-holiday{font-size:9px;font-weight:700;color:#9333ea;background:#f3e8ff;padding:1px 6px;border-radius:var(--r-pill);margin-left:auto;white-space:nowrap}
 html.dark .cal-holiday{background:#2d1f4e;color:#c084fc}
@@ -2014,7 +2015,7 @@ function renderCalendar() {
       </div>
       <div class="cal-day-body" ${atLimit ? '' : `onclick="openJobModal(null,'${dateStr}')"`}>
         ${events}
-        <div class="cal-add-hint">${atLimit ? '' : '+ Add event'}</div>
+        ${Array(Math.max(0, 4 - dayJobs.length)).fill('').map((_, i) => `<div class="cal-slot">${i === 0 && !atLimit ? '<span class="cal-add-hint">+ Add event</span>' : ''}</div>`).join('')}
       </div>
     </div>`;
   }
