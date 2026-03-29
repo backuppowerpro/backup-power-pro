@@ -1170,13 +1170,13 @@ function renderContacts() {
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : '—'}</td>
       <td class="col-jur" style="font-size:12px">${jurCell}</td>
-      <td>${stageBadge}</td>
+      <td style="overflow:visible">${stageBadge}</td>
     </tr>`;
   }).join('');
 
-  const thead = `<tr><th style="width:15%">Name</th><th class="col-phone" style="width:13%">Phone</th><th style="width:16%">Address</th><th class="col-notes" style="width:22%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:12%">Stage</th></tr>`;
+  const thead = `<tr><th style="width:14%">Name</th><th class="col-phone" style="width:12%">Phone</th><th style="width:15%">Address</th><th class="col-notes" style="width:21%">Notes</th><th class="col-jur" style="width:15%">Jurisdiction</th><th style="width:15%">Stage</th></tr>`;
 
-  const cols = `<colgroup><col style="width:15%"><col class="col-phone" style="width:13%"><col style="width:16%"><col class="col-notes" style="width:22%"><col class="col-jur" style="width:16%"><col style="width:12%"></colgroup>`;
+  const cols = `<colgroup><col style="width:14%"><col class="col-phone" style="width:12%"><col style="width:15%"><col class="col-notes" style="width:21%"><col class="col-jur" style="width:15%"><col style="width:15%"></colgroup>`;
   wrap.innerHTML = `<div class="table-wrap">
     <table>
       ${cols}
