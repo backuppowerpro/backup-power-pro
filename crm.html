@@ -585,7 +585,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       </div>
       <div class="form-row">
         <label>Phone</label>
-        <input class="form-input" id="c-phone" type="tel" placeholder="(864) 000-0000" autocomplete="off">
+        <input class="form-input" id="c-phone" type="tel" placeholder="(864) 000-0000" autocomplete="off" oninput="formatPanelPhone(this)">
       </div>
       <div class="form-row">
         <label>Email</label>
@@ -816,7 +816,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <div class="form-row">
       <label>Phone</label>
       <div class="field-row">
-        <input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000">
+        <input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this)">
         <button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
@@ -851,15 +851,15 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <div class="form-row">
       <label>Pipeline Stage</label>
       <select class="form-select" id="panel-stage">
-        <option value="1">1 · Form Submitted</option>
-        <option value="2">2 · Responded</option>
-        <option value="3">3 · Quote Sent</option>
-        <option value="4">4 · Booked</option>
-        <option value="5">5 · Permit Submitted</option>
-        <option value="6">6 · Permit Paid</option>
-        <option value="7">7 · Permit Approved</option>
-        <option value="8">8 · Inspection Scheduled</option>
-        <option value="9">9 · Complete</option>
+        <option value="1">Form Submitted</option>
+        <option value="2">Responded</option>
+        <option value="3">Quote Sent</option>
+        <option value="4">Booked</option>
+        <option value="5">Permit Submitted</option>
+        <option value="6">Permit Paid</option>
+        <option value="7">Permit Approved</option>
+        <option value="8">Inspection Scheduled</option>
+        <option value="9">Complete</option>
       </select>
     </div>
     <div class="form-row">
@@ -1259,7 +1259,11 @@ async function saveContact() {
   const id   = document.getElementById('c-id').value;
   const fname = document.getElementById('c-fname').value.trim();
   const lname = document.getElementById('c-lname').value.trim();
-  if (!fname || !lname) { showToast('First and last name required', 'error'); return; }
+  if (!fname || !lname) { saving = false; showToast('First and last name required', 'error'); return; }
+  const cPhoneRaw = document.getElementById('c-phone').value.replace(/\D/g, '');
+  if (cPhoneRaw && cPhoneRaw.length !== 10) { saving = false; showToast('Phone must be 10 digits', 'error'); return; }
+  const cEmailVal = document.getElementById('c-email').value.trim();
+  if (cEmailVal && !isValidEmail(cEmailVal)) { saving = false; showToast('Invalid email format', 'error'); return; }
   const name = capName(fname) + ' ' + capName(lname);
   const payload = {
     name,
@@ -1301,7 +1305,9 @@ function openPanel(id) {
   document.getElementById('panel-id').value          = c.id;
   document.getElementById('panel-name').textContent  = c.name;
   document.getElementById('panel-name-input').value  = c.name  || '';
-  document.getElementById('panel-phone').value       = c.phone || '';
+  const phoneEl = document.getElementById('panel-phone');
+  phoneEl.value = c.phone || '';
+  formatPanelPhone(phoneEl);
   document.getElementById('panel-email').value       = c.email || '';
   document.getElementById('panel-notes').value       = c.notes || '';
   document.getElementById('panel-stage').value       = c.stage || 1;
@@ -1363,10 +1369,30 @@ function cancelPanel() {
   loadContacts();
 }
 
+function formatPanelPhone(el) {
+  let v = el.value.replace(/\D/g, '');
+  if (v.startsWith('1') && v.length > 10) v = v.slice(1);
+  if (v.length > 10) v = v.slice(0, 10);
+  if (v.length >= 7) v = '(' + v.slice(0, 3) + ') ' + v.slice(3, 6) + '-' + v.slice(6);
+  else if (v.length >= 4) v = '(' + v.slice(0, 3) + ') ' + v.slice(3);
+  else if (v.length >= 1) v = '(' + v;
+  el.value = v;
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 async function panelSave() {
   const id   = document.getElementById('panel-id').value;
   const name = document.getElementById('panel-name-input').value.trim();
   if (!name) { showToast('Name is required', 'error'); return; }
+  // Validate phone — must be 10 digits if provided
+  const phoneRaw = document.getElementById('panel-phone').value.replace(/\D/g, '');
+  if (phoneRaw && phoneRaw.length !== 10) { showToast('Phone must be 10 digits', 'error'); return; }
+  // Validate email format if provided
+  const emailVal = document.getElementById('panel-email').value.trim();
+  if (emailVal && !isValidEmail(emailVal)) { showToast('Invalid email format', 'error'); return; }
   const c = allContacts.find(x => x.id === id);
   const payload = {
     name,
