@@ -49,6 +49,18 @@ html.dark .pa-stage-row.active .pa-stage-name,.dark .pa-stage-row.active .pa-sta
 html.dark .prop-action-create{background:var(--gold);color:#1e1b17}
 html.dark .jur-tile{background:var(--card);border-color:var(--border)}
 html.dark .jur-tile:hover{border-color:var(--gold)}
+html.dark .jur-card{background:var(--card);border-color:var(--border)}
+html.dark .jur-card:hover{border-color:var(--gold);background:#302b25}
+html.dark .jur-name{color:var(--text)}
+html.dark .jur-logo{background:#38332d;border-color:var(--border)}
+html.dark .cal-event.evt-contact{background:#3d3520;color:#e6a800;border-color:#4d4228}
+html.dark .cal-event.evt-contact:hover{background:#4d4228}
+html.dark .cal-event.evt-nocontact{background:#1e2a3d;color:#7cb3f0;border-color:#2a3a52}
+html.dark .cal-event.evt-nocontact:hover{background:#2a3a52}
+html.dark .cal-event.complete{background:#1a3328;color:#4ade80;border-color:#254d38}
+html.dark .cal-event.complete:hover{background:#254d38}
+html.dark .cal-event.cancelled{background:#3d1e1e;color:#f87171;border-color:#4d2828}
+html.dark .cal-event.cancelled:hover{background:#4d2828}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 
@@ -86,18 +98,18 @@ html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:va
 
 /* CONTACTS TABLE */
 .table-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);background:var(--card)}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;table-layout:fixed}
 thead th{background:#f8fafc;padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1.5px solid var(--border);white-space:nowrap}
 tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:#f8faff}
-td{padding:10px 14px;vertical-align:middle}
+td{padding:10px 14px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 td.name{font-weight:600;color:var(--navy)}
 td.phone a{color:var(--blue);text-decoration:none;font-weight:500}
 td.phone a:hover{text-decoration:underline}
 td.addr a{color:var(--text2);text-decoration:none;font-size:12.5px;display:flex;align-items:center;gap:4px}
 td.addr a:hover{color:var(--blue)}
-td.notes-cell{color:var(--text3);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.notes-cell{color:var(--text3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 td.actions{white-space:nowrap}
 /* ── SIDE PANEL ─────────────────────────────────────────── */
 .side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
@@ -138,7 +150,7 @@ td.actions{white-space:nowrap}
 .cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .week-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;text-align:center}
 .cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;min-height:220px}
-.cal-day{background:var(--card);border-radius:8px;border:1.5px solid var(--border);min-height:180px;display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s}
+.cal-day{background:var(--card);border-radius:8px;border:1.5px solid var(--border);min-height:200px;display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s}
 .cal-day.today{border-color:var(--navy);background:#f0f4ff}
 .cal-day-head{padding:7px 8px 5px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:5px;background:rgba(0,0,0,.02)}
 .cal-day-name{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
@@ -151,14 +163,17 @@ td.actions{white-space:nowrap}
 .cal-event.evt-contact:hover{background:#fde68a}
 .cal-event.evt-nocontact{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
 .cal-event.evt-nocontact:hover{background:#bfdbfe}
-.cal-event.complete{background:#e5e7eb;color:#6b7280;border:1px solid #d1d5db}
+.cal-event.complete{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.cal-event.complete:hover{background:#bbf7d0}
+.cal-event.cancelled{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.cal-event.cancelled:hover{background:#fecaca}
 .cal-add-hint{font-size:10px;color:var(--text3);text-align:center;padding:4px;opacity:0;transition:opacity .15s;margin-top:auto}
 .cal-day-body:hover .cal-add-hint{opacity:1}
 
 /* MODALS */
 .modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
 .modal-overlay.open{display:flex}
-body.modal-open{overflow:hidden}
+body.modal-open{overflow:hidden;padding-right:var(--scrollbar-w,0px)}
 .modal{background:var(--card);border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.2)}
 .modal-head{padding:20px 24px 0;display:flex;align-items:center;gap:12px;margin-bottom:4px}
 .modal-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:var(--navy);flex:1}
@@ -224,10 +239,18 @@ html.dark .approval-notif-amount{color:var(--gold)}
 .approval-notif-btn:hover{background:var(--navy2)}
 
 @media(max-width:700px){
-  .cal-grid{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}
+  .cal-grid{grid-template-columns:repeat(5,1fr);gap:4px}
+  .cal-day{min-height:160px}
+  .cal-event{font-size:10px;padding:2px 5px}
+  .cal-day-head{padding:5px 6px 3px}
+  .cal-day-num{font-size:15px}
   td.notes-cell,.col-notes,.col-phone{display:none}
 }
 @media(max-width:480px){
+  .cal-grid{grid-template-columns:1fr;gap:6px}
+  .cal-day{min-height:auto}
+  .cal-day-body{padding:6px}
+  .cal-event{font-size:12px;padding:4px 8px}
   td.phone,.col-phone{display:none}
   .toolbar{flex-direction:column;align-items:stretch}
   .search-input{min-width:0}
@@ -329,8 +352,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 @media(max-width:480px){.qb-wrap{padding:14px 12px 50px}.qb-toggle-grid{grid-template-columns:1fr}}
 
 /* ── JURISDICTION CARDS ──────────────────────────────── */
-.jur-list{display:flex;flex-wrap:wrap;gap:10px}
-.jur-card{flex:1 1 0;min-width:80px}
+.jur-list{display:flex;flex-wrap:wrap-reverse;gap:10px}
+.jur-card{flex:1 1 calc(25% - 10px);min-width:80px;max-width:calc(50% - 5px)}
 .jur-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:border-color .15s}
 .jur-card:hover{border-color:var(--navy);background:#f8faff}
 .jur-card[draggable]{-webkit-user-drag:element;touch-action:none}
@@ -795,7 +818,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   <div class="panel-head" style="flex-direction:column;align-items:stretch;gap:0">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div class="panel-name" id="panel-name" onclick="panelNameArchive()" style="cursor:pointer;user-select:none;transition:all .15s;padding:4px 10px;border-radius:6px;width:fit-content" title="Tap twice to archive">Lead</div>
-      <button class="panel-close" onclick="cancelPanel()" style="font-size:12px;width:auto;padding:4px 12px;border-radius:6px;font-weight:600">Cancel</button>
+      <button class="modal-close" onclick="cancelPanel()">&#10005;</button>
     </div>
   </div>
   <div class="panel-body">
@@ -1036,7 +1059,7 @@ function initDarkMode() {
 
 function openQuoteBuilder() {
   document.getElementById('qb-overlay').classList.add('open');
-  document.body.classList.add('modal-open');
+  lockBody();
 }
 
 // ── INIT ──────────────────────────────────────────────────
@@ -1128,20 +1151,23 @@ function renderContacts() {
       <td class="name">${esc(c.name)}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
       <td class="phone col-phone">${esc(c.phone||'—')}</td>
       <td class="addr">${addrCell}</td>
-      <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
+      <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : '—'}</td>
       <td class="col-jur" style="font-size:12px">${jurCell}</td>
       <td>${stageBadge}</td>
     </tr>`;
   }).join('');
 
-  const thead = `<tr><th>Name</th><th class="col-phone">Phone</th><th>Address</th><th class="col-notes">Notes</th><th class="col-jur">Jurisdiction</th><th>Stage</th></tr>`;
+  const thead = `<tr><th style="width:15%">Name</th><th class="col-phone" style="width:13%">Phone</th><th style="width:16%">Address</th><th class="col-notes" style="width:22%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:12%">Stage</th></tr>`;
 
+  const cols = `<colgroup><col style="width:15%"><col class="col-phone" style="width:13%"><col style="width:16%"><col class="col-notes" style="width:22%"><col class="col-jur" style="width:16%"><col style="width:12%"></colgroup>`;
   wrap.innerHTML = `<div class="table-wrap">
     <table>
+      ${cols}
       <thead>${thead}</thead>
     </table>
     <div class="table-scroll">
       <table>
+        ${cols}
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -1346,12 +1372,12 @@ function openPanel(id) {
   }
 
   document.getElementById('side-panel-overlay').classList.add('open');
-  document.body.classList.add('modal-open');
+  lockBody();
 }
 
 function closePanel() {
   document.getElementById('side-panel-overlay').classList.remove('open');
-  document.body.classList.remove('modal-open');
+  unlockBody();
   panelAddrHide();
 }
 
@@ -1758,7 +1784,7 @@ function openProposalModal(contactId) {
   pSetAmp('30');
 
   document.getElementById('proposal-overlay').classList.add('open');
-  document.body.classList.add('modal-open');
+  lockBody();
 }
 
 let savingProposal = false;
@@ -1874,14 +1900,16 @@ function renderCalendar() {
     day.setDate(day.getDate() + i);
     const dateStr = day.toISOString().split('T')[0];
     const isToday = dateStr === todayStr;
-    const dayJobs = allJobs.filter(j => j.date === dateStr);
+    const dayJobs = allJobs.filter(j => j.date === dateStr)
+      .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
     const atLimit = dayJobs.length >= 4;
 
     const events = dayJobs.map(j => {
       const label = j.contact_name || j.title || 'Event';
       const time  = j.time ? fmt12(j.time) + ' · ' : '';
-      const cls = j.status === 'Complete' || j.status === 'Completed' ? 'complete' : j.contact_id ? 'evt-contact' : 'evt-nocontact';
-      return `<div class="cal-event ${cls}" style="flex:1;display:flex;align-items:center;overflow:hidden" onclick="event.stopPropagation();openJobModal('${j.id}',null)">${time}${esc(label)}</div>`;
+      const st = (j.status || '').toLowerCase();
+      const cls = st === 'complete' || st === 'completed' ? 'complete' : st === 'cancelled' || st === 'canceled' ? 'cancelled' : j.contact_id ? 'evt-contact' : 'evt-nocontact';
+      return `<div class="cal-event ${cls}" onclick="event.stopPropagation();openJobModal('${j.id}',null)">${time}${esc(label)}</div>`;
     }).join('');
 
     html += `
@@ -2106,7 +2134,7 @@ function openMergeModal(keepId, removeId) {
     closeModal('jur-view-overlay');
     loadContacts();
   };
-  document.body.classList.add('modal-open');
+  lockBody();
   document.getElementById('jur-view-overlay').classList.add('open');
 }
 
@@ -2157,9 +2185,17 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+function lockBody() {
+  document.body.style.setProperty('--scrollbar-w', (window.innerWidth - document.documentElement.clientWidth) + 'px');
+  lockBody();
+}
+function unlockBody() {
+  document.body.classList.remove('modal-open');
+  document.body.style.setProperty('--scrollbar-w', '0px');
+}
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
-  if (!document.querySelector('.modal-overlay.open') && !document.querySelector('.side-panel-overlay.open')) document.body.classList.remove('modal-open');
+  if (!document.querySelector('.modal-overlay.open') && !document.querySelector('.side-panel-overlay.open')) unlockBody();
 }
 
 let toastTimer;
@@ -2179,6 +2215,25 @@ async function loadJurisdictions() {
   const { data, error } = await db.from('permit_jurisdictions').select('*').order('name');
   if (error) { console.warn('Jurisdictions load failed:', error.message); return; }
   allJurisdictions = data || [];
+  // One-time migration: move portal_url into link1 (shift existing links down)
+  for (const j of allJurisdictions) {
+    if (j.portal_url && !j.link1_url) {
+      const patch = { link1_title: 'Portal', link1_url: j.portal_url, portal_url: null };
+      await db.from('permit_jurisdictions').update(patch).eq('id', j.id);
+      j.link1_title = 'Portal'; j.link1_url = j.portal_url; j.portal_url = null;
+    } else if (j.portal_url && j.link1_url) {
+      // Shift links down to make room
+      const patch = {
+        link3_title: j.link2_title, link3_url: j.link2_url,
+        link2_title: j.link1_title, link2_url: j.link1_url,
+        link1_title: 'Portal', link1_url: j.portal_url, portal_url: null
+      };
+      await db.from('permit_jurisdictions').update(patch).eq('id', j.id);
+      j.link3_title = j.link2_title; j.link3_url = j.link2_url;
+      j.link2_title = j.link1_title; j.link2_url = j.link1_url;
+      j.link1_title = 'Portal'; j.link1_url = j.portal_url; j.portal_url = null;
+    }
+  }
   renderJurisdictions();
 }
 
@@ -2270,7 +2325,7 @@ function viewJurisdiction(id) {
   }
   document.getElementById('jur-view-body').innerHTML = rows;
   document.getElementById('jur-view-head-btn').onclick = () => { closeModal('jur-view-overlay'); openJurisdictionModal(id); };
-  document.body.classList.add('modal-open');
+  lockBody();
   document.getElementById('jur-view-overlay').classList.add('open');
 }
 
@@ -2327,7 +2382,7 @@ async function saveJurisdiction() {
       link3_title: payload.link3_title || '', link3_url: payload.link3_url || '',
     };
     const changed = Object.keys(jurOriginal).some(k => jurOriginal[k] !== cur[k]);
-    if (!changed) { closeModal('jur-overlay'); return; }
+    if (!changed) { closeModal('jur-overlay'); viewJurisdiction(id); return; }
   }
   let error;
   if (id) {
@@ -2338,11 +2393,14 @@ async function saveJurisdiction() {
   if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
   showToast(id ? 'Jurisdiction updated' : 'Jurisdiction added', 'success');
   closeModal('jur-overlay');
-  loadJurisdictions();
+  await loadJurisdictions();
+  if (id) viewJurisdiction(id);
 }
 
 function cancelJurisdiction() {
+  const id = document.getElementById('jur-id').value;
   closeModal('jur-overlay');
+  if (id) viewJurisdiction(id);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2373,22 +2431,25 @@ function loadPermitAnalytics() {
     stageCounts[s] = (stageCounts[s] || 0) + 1;
   });
   const maxCount = Math.max(1, ...Object.values(stageCounts).concat([0]));
+  const isDark = document.documentElement.classList.contains('dark');
+  const activeAccent = isDark ? '#1e1b17' : '#fff';
+  const inactiveAll = isDark ? 'var(--gold)' : 'var(--navy)';
   const stageRows = PERMIT_STAGES.map(s => {
     const count = stageCounts[s.id] || 0;
     const pct   = Math.round((count / maxCount) * 100);
     const isActive = stageFilter === s.id;
     return `<div class="pa-stage-row${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter(${s.id})">
-      <div class="pa-stage-dot" style="background:${isActive ? '#fff' : s.color}"></div>
+      <div class="pa-stage-dot" style="background:${isActive ? activeAccent : s.color}"></div>
       <span class="pa-stage-name">${esc(s.label)}</span>
-      <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:${pct}%;background:${isActive ? '#fff' : s.color}"></div></div>
+      <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:${pct}%;background:${isActive ? activeAccent : s.color}"></div></div>
       <span class="pa-stage-count">${count}</span>
     </div>`;
   }).join('');
   const allActive = stageFilter === 'all';
   const allRow = `<div class="pa-stage-row${allActive ? ' active' : ''}" onclick="toggleAnalyticsFilter('all')">
-    <div class="pa-stage-dot" style="background:${allActive ? '#fff' : 'var(--navy)'}"></div>
+    <div class="pa-stage-dot" style="background:${allActive ? activeAccent : inactiveAll}"></div>
     <span class="pa-stage-name">All</span>
-    <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:100%;background:${allActive ? '#fff' : 'var(--navy)'}"></div></div>
+    <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:100%;background:${allActive ? activeAccent : inactiveAll}"></div></div>
     <span class="pa-stage-count">${active}</span>
   </div>`;
   el.innerHTML = `
