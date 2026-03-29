@@ -2272,10 +2272,9 @@ function viewJurisdiction(id) {
     { title: j.link2_title, url: j.link2_url },
     { title: j.link3_title, url: j.link3_url },
   ].filter(l => l.url);
-  if (links.length) {
-    const linkBtns = links.map(l => `<a class="btn-map" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.title || 'Link')} ↗</a>`).join(' ');
-    rows += `<div class="jur-detail" style="flex-direction:column;align-items:flex-start"><div class="jur-detail-label">Links</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${linkBtns}</div></div>`;
-  }
+  links.forEach(l => {
+    rows += `<div class="jur-detail"><div><div class="jur-detail-label">${esc(l.title || 'Link')}</div></div><div class="jur-detail-action"><a class="btn-portal" href="${esc(l.url)}" target="_blank" rel="noopener">Open ↗</a></div></div>`;
+  });
   if (j.notes) {
     rows += `<div class="jur-detail" style="flex-direction:column;align-items:flex-start"><div class="jur-detail-label">Notes</div><div class="jur-detail-value" style="margin-top:4px;word-break:normal;white-space:pre-wrap">${esc(j.notes)}</div></div>`;
   }
