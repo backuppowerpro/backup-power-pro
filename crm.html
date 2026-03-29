@@ -1153,9 +1153,8 @@ function renderContacts() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads match your filter.'}</p>
         </div>`;
-    wrap.innerHTML = `<div class="table-wrap">
-      <table style="visibility:hidden">${cols}<thead>${thead}</thead></table>
-      <div class="table-scroll" style="display:flex;align-items:center;justify-content:center">
+    wrap.innerHTML = `<div class="table-wrap" style="background:var(--bg)">
+      <div class="table-scroll" style="display:flex;align-items:center;justify-content:center;height:246px">
         ${emptyContent}
       </div>
     </div>`;
