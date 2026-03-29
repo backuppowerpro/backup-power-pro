@@ -792,9 +792,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <!-- ── SIDE PANEL ────────────────────────────────────────── -->
 <div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this)panelSave()">
 <div class="side-panel" id="side-panel">
-  <div class="panel-head">
-    <div class="panel-name" id="panel-name">Lead</div>
-    <button class="panel-close" onclick="cancelPanel()" style="font-size:12px;width:auto;padding:4px 12px;border-radius:6px;font-weight:600">Cancel</button>
+  <div class="panel-head" style="flex-direction:column;align-items:stretch;gap:0">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="panel-name" id="panel-name" onclick="panelNameArchive()" style="cursor:pointer;user-select:none;transition:all .15s" title="Tap twice to archive">Lead</div>
+      <button class="panel-close" onclick="cancelPanel()" style="font-size:12px;width:auto;padding:4px 12px;border-radius:6px;font-weight:600">Cancel</button>
+    </div>
   </div>
   <div class="panel-body">
     <input type="hidden" id="panel-id">
@@ -865,9 +867,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <select class="form-select" id="panel-jurisdiction"></select>
     </div>
   </div>
-  <div class="panel-foot">
-    <button class="btn btn-outline btn-sm" id="panel-archive-btn" onclick="panelArchive()" style="margin-right:auto">Archive</button>
-  </div>
+  <div class="panel-foot"></div>
 </div>
 </div><!-- /side-panel-overlay -->
 
@@ -1287,8 +1287,6 @@ async function saveContact() {
 // SIDE PANEL
 // ══════════════════════════════════════════════════════════
 
-let panelArchivePending = false;
-let panelArchiveTimer;
 let panelAddrFocusedIdx = -1;
 let panelAddrDebounce;
 
@@ -1296,13 +1294,8 @@ function openPanel(id) {
   const c = allContacts.find(x => x.id === id);
   if (!c) return;
 
-  // Reset two-step states
-  panelArchivePending = false;
-  clearTimeout(panelArchiveTimer);
-  const arcBtn = document.getElementById('panel-archive-btn');
-  const isArchived = c.status === 'Archived';
-  arcBtn.textContent = isArchived ? 'Unarchive' : 'Archive';
-  arcBtn.classList.remove('delete-btn-confirm');
+  // Reset archive state
+  resetNameArchive();
 
   // Fill fields
   document.getElementById('panel-id').value          = c.id;
@@ -1434,24 +1427,33 @@ async function setStageFromLatestProposal(contactId, proposalStage) {
   loadPermitAnalytics();
 }
 
-function panelArchive() {
-  if (!panelArchivePending) {
-    panelArchivePending = true;
-    const btn = document.getElementById('panel-archive-btn');
-    const c = allContacts.find(x => x.id === document.getElementById('panel-id').value);
-    const isArchived = c?.status === 'Archived';
-    btn.textContent = isArchived ? 'Confirm Unarchive' : 'Confirm Archive';
-    btn.classList.add('delete-btn-confirm');
-    panelArchiveTimer = setTimeout(() => {
-      panelArchivePending = false;
-      btn.textContent = isArchived ? 'Unarchive' : 'Archive';
-      btn.classList.remove('delete-btn-confirm');
-    }, 3500);
+let nameArchivePending = false;
+let nameArchiveTimer = null;
+
+function panelNameArchive() {
+  const el = document.getElementById('panel-name');
+  const c = allContacts.find(x => x.id === document.getElementById('panel-id').value);
+  const isArchived = c?.status === 'Archived';
+
+  if (!nameArchivePending) {
+    // First tap — show confirmation state
+    nameArchivePending = true;
+    el.dataset.origText = el.textContent;
+    el.textContent = isArchived ? 'Tap again to unarchive' : 'Tap again to archive';
+    el.style.color = isArchived ? 'var(--green)' : 'var(--red)';
+    el.style.fontSize = '13px';
+    nameArchiveTimer = setTimeout(() => {
+      nameArchivePending = false;
+      el.textContent = el.dataset.origText;
+      el.style.color = '';
+      el.style.fontSize = '';
+    }, 3000);
   } else {
-    clearTimeout(panelArchiveTimer);
+    // Second tap — confirm and archive/unarchive
+    clearTimeout(nameArchiveTimer);
+    nameArchivePending = false;
     const id = document.getElementById('panel-id').value;
-    const c = allContacts.find(x => x.id === id);
-    const newStatus = c?.status === 'Archived' ? null : 'Archived';
+    const newStatus = isArchived ? null : 'Archived';
     db.from('contacts').update({ status: newStatus }).eq('id', id).then(({ error }) => {
       if (error) { showToast('Failed', 'error'); return; }
       showToast(newStatus === 'Archived' ? 'Lead archived' : 'Lead restored', 'success');
@@ -1459,6 +1461,14 @@ function panelArchive() {
       loadContacts();
     });
   }
+}
+
+// Reset archive state when panel opens
+function resetNameArchive() {
+  nameArchivePending = false;
+  clearTimeout(nameArchiveTimer);
+  const el = document.getElementById('panel-name');
+  if (el) { el.style.color = ''; el.style.fontSize = ''; }
 }
 
 // Panel address autocomplete (mirrors main one)
