@@ -899,10 +899,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         <input class="form-input" id="jur-name" placeholder="e.g. Greenville County">
       </div>
       <div class="form-row">
-        <label>Portal URL</label>
-        <input class="form-input" id="jur-website" type="url" placeholder="https://…">
-      </div>
-      <div class="form-row">
         <label>Phone</label>
         <input class="form-input" id="jur-phone" type="tel" placeholder="(864) 000-0000">
       </div>
@@ -2253,9 +2249,6 @@ function viewJurisdiction(id) {
   logo.innerHTML = j.logo_url ? `<img src="${esc(j.logo_url)}" alt="">` : '🏛️';
 
   let rows = '';
-  if (j.portal_url) {
-    rows += `<div class="jur-detail"><div><div class="jur-detail-label">Portal</div></div><div class="jur-detail-action"><a class="btn-portal" href="${esc(j.portal_url)}" target="_blank" rel="noopener">Open ↗</a></div></div>`;
-  }
   if (j.phone) {
     rows += `<div class="jur-detail"><div><div class="jur-detail-label">Phone</div><div class="jur-detail-value">${esc(j.phone)}</div></div><div class="jur-detail-action"><a class="btn-call" href="tel:${esc(j.phone)}">Call</a></div></div>`;
   }
@@ -2287,7 +2280,6 @@ function openJurisdictionModal(id) {
   document.getElementById('jur-modal-title').textContent = j ? 'Edit Jurisdiction' : 'Add Jurisdiction';
   document.getElementById('jur-id').value       = j ? j.id       : '';
   document.getElementById('jur-name').value     = j ? j.name     : '';
-  document.getElementById('jur-website').value  = j ? (j.portal_url || '') : '';
   document.getElementById('jur-phone').value    = j ? (j.phone   || '') : '';
   document.getElementById('jur-username').value = j ? (j.username || '') : '';
   document.getElementById('jur-password').value = j ? (j.password || '') : '';
@@ -2307,7 +2299,6 @@ async function saveJurisdiction() {
   if (!name) { showToast('Name is required', 'error'); return; }
   const payload = {
     name,
-    portal_url:  document.getElementById('jur-website').value.trim()     || null,
     phone:       document.getElementById('jur-phone').value.trim()       || null,
     username:    document.getElementById('jur-username').value.trim()    || null,
     password:    document.getElementById('jur-password').value.trim()    || null,
