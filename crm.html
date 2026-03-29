@@ -225,7 +225,7 @@ html.dark .approval-notif-amount{color:var(--gold)}
 
 @media(max-width:700px){
   .cal-grid{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}
-  td.notes-cell,.col-notes,.col-phone,.col-prop{display:none}
+  td.notes-cell,.col-notes,.col-phone{display:none}
 }
 @media(max-width:480px){
   td.phone,.col-phone{display:none}
@@ -1120,14 +1120,6 @@ function renderContacts() {
 
   const rows = visible.map(c => {
     const p = proposalMap[c.id];
-    const propBadge = p
-      ? p.status === 'Approved'
-        ? `<span class="prop-badge prop-approved">✓ Approved</span>`
-        : p.status === 'Viewed'
-          ? `<span class="prop-badge prop-viewed">👁 Viewed</span>`
-          : `<span class="prop-badge prop-sent">Sent ↗</span>`
-      : `<span class="prop-badge prop-none">No Proposal</span>`;
-
     const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
     const stageBadge = `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color};border-color:${stageInfo.color}55">${esc(stageInfo.label)}</span>`;
 
@@ -1148,12 +1140,11 @@ function renderContacts() {
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
       <td class="col-jur" style="font-size:12px">${jurCell}</td>
-      <td class="col-prop">${propBadge}</td>
       <td>${stageBadge}</td>
     </tr>`;
   }).join('');
 
-  const thead = `<tr><th>Name</th><th class="col-phone">Phone</th><th>Address</th><th class="col-notes">Notes</th><th class="col-jur">Jurisdiction</th><th class="col-prop">Proposal</th><th>Stage</th></tr>`;
+  const thead = `<tr><th>Name</th><th class="col-phone">Phone</th><th>Address</th><th class="col-notes">Notes</th><th class="col-jur">Jurisdiction</th><th>Stage</th></tr>`;
 
   wrap.innerHTML = `<div class="table-wrap">
     <table>
@@ -1408,6 +1399,22 @@ async function panelSave() {
   buildDuplicateMap();
   showToast('Lead saved', 'success');
   closePanel();
+  renderContacts();
+  loadPermitAnalytics();
+}
+
+// Auto-progress a contact to a stage (only if currently at an earlier stage)
+async function autoProgressStage(contactId, targetStage) {
+  const c = allContacts.find(x => x.id === contactId);
+  if (!c) return;
+  const currentStage = c.stage || 1;
+  if (currentStage >= targetStage) return; // already at or past this stage
+  const { error } = await db.from('contacts').update({ stage: targetStage }).eq('id', contactId);
+  if (error) return;
+  // Log stage change
+  db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: targetStage }]);
+  // Update local data
+  c.stage = targetStage;
   renderContacts();
   loadPermitAnalytics();
 }
@@ -1752,6 +1759,10 @@ async function saveProposal() {
   document.getElementById('p-sms-link').href = 'sms:' + encodeURIComponent(c?.phone || '') + '?body=' + encodeURIComponent(msg);
 
   proposalMap[contactId] = data;
+
+  // Auto-progress to "Quote Sent" (stage 3) if currently before that
+  autoProgressStage(contactId, 3);
+
   renderContacts();
   showToast('Proposal created!', 'success');
 }
@@ -2624,6 +2635,9 @@ async function checkForApprovals() {
     // Show notification for the most recent approval
     const p = data[0];
     showApprovalNotif(p);
+
+    // Auto-progress all approved contacts to "Booked" (stage 4)
+    data.forEach(ap => { if (ap.contact_id) autoProgressStage(ap.contact_id, 4); });
 
     // Refresh proposals data in background
     loadProposals();
