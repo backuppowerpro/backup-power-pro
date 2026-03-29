@@ -1212,11 +1212,14 @@ function toggleAnalyticsFilter(stageId) {
   body.style.top = `-${scrollY}px`;
   body.style.left = '0';
   body.style.right = '0';
+  // Save scroll position before re-render destroys the DOM
+  const oldList = document.querySelector('.pa-stage-list');
+  const prevScroll = oldList ? oldList.scrollLeft : 0;
   stageFilter = stageFilter === stageId ? 'all' : stageId;
   contactsShown = 5;
   renderContacts();
   loadPermitAnalytics();
-  // Scroll the active chip to center
+  // Restore old scroll instantly, then smooth-scroll to active chip
   requestAnimationFrame(() => {
     body.style.overflow = '';
     body.style.position = '';
@@ -1225,12 +1228,19 @@ function toggleAnalyticsFilter(stageId) {
     body.style.right = '';
     window.scrollTo(0, scrollY);
     const list = document.querySelector('.pa-stage-list');
-    const active = list && list.querySelector('.pa-stage-chip.active');
-    if (list && active) {
-      const listRect = list.getBoundingClientRect();
-      const chipRect = active.getBoundingClientRect();
-      const scrollLeft = list.scrollLeft + (chipRect.left - listRect.left) - (listRect.width / 2) + (chipRect.width / 2);
-      list.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    if (list) {
+      list.style.scrollBehavior = 'auto';
+      list.scrollLeft = prevScroll;
+      list.style.scrollBehavior = '';
+      const active = list.querySelector('.pa-stage-chip.active');
+      if (active) {
+        requestAnimationFrame(() => {
+          const listRect = list.getBoundingClientRect();
+          const chipRect = active.getBoundingClientRect();
+          const target = list.scrollLeft + (chipRect.left - listRect.left) - (listRect.width / 2) + (chipRect.width / 2);
+          list.scrollTo({ left: target, behavior: 'smooth' });
+        });
+      }
     }
   });
 }
