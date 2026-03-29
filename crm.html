@@ -1081,13 +1081,14 @@ function initDarkMode() {
     localStorage.setItem('crm_dark', isDark ? '1' : '0');
     showToast(isDark ? 'Dark mode on' : 'Light mode on', 'success');
   };
-  const startPress = () => { didLongPress = false; pressTimer = setTimeout(longPress, 600); };
+  let usedTouch = false;
+  const startPress = (isTouch) => { if (isTouch) usedTouch = true; else if (usedTouch) return; didLongPress = false; pressTimer = setTimeout(longPress, 600); };
   const cancelPress = () => clearTimeout(pressTimer);
-  logo.addEventListener('mousedown', startPress);
+  logo.addEventListener('mousedown', () => startPress(false));
   logo.addEventListener('mouseup', cancelPress);
   logo.addEventListener('mouseleave', cancelPress);
-  logo.addEventListener('touchstart', startPress, { passive: true });
-  logo.addEventListener('touchend', cancelPress);
+  logo.addEventListener('touchstart', () => startPress(true), { passive: true });
+  logo.addEventListener('touchend', () => { cancelPress(); setTimeout(() => usedTouch = false, 300); });
   logo.addEventListener('touchcancel', cancelPress);
   logo.addEventListener('click', e => { e.preventDefault(); if (!didLongPress) openQuoteBuilder(); });
 }
