@@ -507,6 +507,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stage-list::-webkit-scrollbar-track{background:transparent}
 .pa-stage-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .pa-stage-list::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+@media(max-width:768px){.pa-stage-list{scrollbar-width:none}.pa-stage-list::-webkit-scrollbar{display:none}}
 .pa-stage-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card);border-radius:100px;border:1.5px solid var(--border);cursor:pointer;transition:all .15s;white-space:nowrap}
 .pa-stage-chip:hover{border-color:var(--navy);background:#f0f4ff}
 .pa-stage-chip.active{border-color:var(--navy);background:var(--navy)}
