@@ -258,7 +258,7 @@ td.actions{white-space:nowrap}
 .cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-sm);flex-wrap:wrap}
 .week-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;text-align:center}
 .cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-sm);min-height:220px}
-.cal-day{background:var(--card);border-radius:var(--r-md);border:none;min-height:200px;display:flex;flex-direction:column;overflow:hidden;transition:background .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.cal-day{background:var(--card);border-radius:var(--r-md);border:none;min-height:120px;display:flex;flex-direction:column;overflow:hidden;transition:background .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .cal-day.today{background:#f0f4ff}
 .cal-day-head{padding:7px 8px 5px;border-bottom:none;display:flex;align-items:baseline;gap:5px;background:rgba(0,0,0,.02)}
 .cal-day-name{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
@@ -266,7 +266,7 @@ td.actions{white-space:nowrap}
 .cal-day.today .cal-day-num{color:var(--navy)}
 .cal-day-body{flex:1;padding:4px 4px 2px;display:flex;flex-direction:column;gap:3px;cursor:pointer}
 .cal-day-body:hover{background:rgba(59,130,246,.04)}
-.cal-event{border-radius:var(--r-xs);padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4;flex:0 0 calc(25% - 3px);display:flex;align-items:center}
+.cal-event{border-radius:var(--r-xs);padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4;flex:0 0 auto;display:flex;align-items:center}
 .cal-event.evt-contact{background:#fef3c7;color:#92400e;border:none}
 .cal-event.evt-contact:hover{background:#fde68a}
 .cal-event.evt-nocontact{background:#dbeafe;color:#1e40af;border:none}
