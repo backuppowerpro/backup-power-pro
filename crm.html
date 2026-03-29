@@ -452,7 +452,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stat{background:var(--card);border:none;border-radius:var(--r-md);padding:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .pa-stat-num{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;color:var(--navy);line-height:1}
 .pa-stat-label{font-size:11px;color:var(--text3);margin-top:3px}
-.pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px;scroll-behavior:smooth}
+.pa-stage-wrap{position:relative;-webkit-mask-image:linear-gradient(to right,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(to right,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
+.pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0 20px 4px;scroll-behavior:smooth}
 .pa-stage-list::-webkit-scrollbar{display:none}
 .pa-stage-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card);border-radius:var(--r-pill);border:none;cursor:pointer;transition:all .15s;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .pa-stage-chip:hover{background:#e8ecf4}
@@ -2598,8 +2599,10 @@ function loadPermitAnalytics() {
     <span class="pa-stage-count">${active}</span>
   </div>`;
   el.innerHTML = `
-    <div class="pa-stage-list">
-      ${allChip}${stageChips}
+    <div class="pa-stage-wrap">
+      <div class="pa-stage-list">
+        ${allChip}${stageChips}
+      </div>
     </div>
   `;
 }
