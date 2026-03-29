@@ -280,7 +280,7 @@ td.actions{white-space:nowrap}
 .cal-event.cancelled:hover{background:#fecaca}
 .cal-add-hint{font-size:10px;color:var(--text3);text-align:center;opacity:0;transition:opacity .15s}
 .cal-slot{flex:1 1 0;min-height:0;padding:8px 10px;border-radius:var(--r-sm)}
-.cal-day-body:hover .cal-add-hint{opacity:1}
+.cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{opacity:1}
 .cal-holiday{font-size:9px;font-weight:700;color:#9333ea;background:#f3e8ff;padding:1px 6px;border-radius:var(--r-pill);margin-left:auto;white-space:nowrap}
 html.dark .cal-holiday{background:#2d1f4e;color:#c084fc}
 
