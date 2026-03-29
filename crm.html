@@ -126,11 +126,11 @@ html.dark .jur-detail-action .btn-call{background:#1a3328;color:#4ade80;border-c
 /* Permit analytics */
 html.dark .pa-stat{background:var(--card);border-color:var(--border)}
 html.dark .pa-stat-num{color:var(--text)}
-html.dark .pa-stage-count{color:var(--text)}
+html.dark .pa-stage-count{color:var(--text3)}
 html.dark .pa-stage-name{color:var(--text2)}
-html.dark .pa-stage-row:hover{border-color:var(--gold);background:#302b25}
-html.dark .pa-stage-row.active{background:var(--gold);border-color:var(--gold);color:#1e1b17}
-html.dark .pa-stage-row.active .pa-stage-name,html.dark .pa-stage-row.active .pa-stage-count{color:#1e1b17}
+html.dark .pa-stage-chip:hover{border-color:var(--gold);background:#302b25}
+html.dark .pa-stage-chip.active{background:var(--gold);border-color:var(--gold)}
+html.dark .pa-stage-chip.active .pa-stage-name,html.dark .pa-stage-chip.active .pa-stage-count{color:#1e1b17}
 /* Trend analytics */
 html.dark .trend-num{color:var(--text)}
 html.dark .trend-stat{background:var(--card);border-color:var(--border)}
@@ -500,17 +500,15 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stat{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px;text-align:center}
 .pa-stat-num{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;color:var(--navy);line-height:1}
 .pa-stat-label{font-size:11px;color:var(--text3);margin-top:3px}
-.pa-stage-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
-.pa-stage-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all .15s}
-.pa-stage-row:hover{border-color:var(--navy);background:#f8faff}
-.pa-stage-row.active{border-color:var(--navy);background:var(--navy);color:#fff}
-.pa-stage-row.active .pa-stage-name{color:#fff}
-.pa-stage-row.active .pa-stage-count{color:#fff}
-.pa-stage-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.pa-stage-name{font-size:12px;color:var(--text2);flex:1}
-.pa-stage-bar-wrap{width:80px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
-.pa-stage-bar{height:100%;border-radius:3px;transition:width .4s}
-.pa-stage-count{font-size:12px;font-weight:700;color:var(--navy);min-width:16px;text-align:right}
+.pa-stage-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.pa-stage-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card);border-radius:100px;border:1.5px solid var(--border);cursor:pointer;transition:all .15s;white-space:nowrap}
+.pa-stage-chip:hover{border-color:var(--navy);background:#f0f4ff}
+.pa-stage-chip.active{border-color:var(--navy);background:var(--navy)}
+.pa-stage-chip.active .pa-stage-name{color:#fff}
+.pa-stage-chip.active .pa-stage-count{color:rgba(255,255,255,.7)}
+.pa-stage-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pa-stage-name{font-size:12px;font-weight:600;color:var(--text2)}
+.pa-stage-count{font-size:11px;font-weight:700;color:var(--text3)}
 
 /* ── TREND ANALYTICS ─────────────────────────────────── */
 .trend-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
@@ -1311,12 +1309,10 @@ function renderContacts() {
 
 
 function toggleAnalyticsFilter(stageId) {
-  // Double-tap All to collapse/expand stage rows
+  // Double-tap All to toggle trend analytics
   if (stageId === 'all' && stageFilter === 'all') {
-    analyticsCollapsed = !analyticsCollapsed;
-    loadPermitAnalytics();
     const trend = document.getElementById('trend-analytics');
-    if (trend) trend.style.display = analyticsCollapsed ? '' : 'none';
+    if (trend) trend.style.display = trend.style.display === 'none' ? '' : 'none';
     return;
   }
   // Lock scroll to prevent page jump during filter swap
@@ -2623,30 +2619,24 @@ function loadPermitAnalytics() {
   const isDark = document.documentElement.classList.contains('dark');
   const activeAccent = isDark ? '#1e1b17' : '#fff';
   const inactiveAll = isDark ? 'var(--gold)' : 'var(--navy)';
-  const stageRows = PERMIT_STAGES.map(s => {
+  const stageChips = PERMIT_STAGES.map(s => {
     const count = stageCounts[s.id] || 0;
-    const pct   = Math.round((count / maxCount) * 100);
     const isActive = stageFilter === s.id;
-    return `<div class="pa-stage-row${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter(${s.id})">
+    return `<div class="pa-stage-chip${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter(${s.id})">
       <div class="pa-stage-dot" style="background:${isActive ? activeAccent : s.color}"></div>
       <span class="pa-stage-name">${esc(s.label)}</span>
-      <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:${pct}%;background:${isActive ? activeAccent : s.color}"></div></div>
       <span class="pa-stage-count">${count}</span>
     </div>`;
   }).join('');
   const allActive = stageFilter === 'all';
-  const allRow = `<div class="pa-stage-row${allActive ? ' active' : ''}" onclick="toggleAnalyticsFilter('all')">
+  const allChip = `<div class="pa-stage-chip${allActive ? ' active' : ''}" onclick="toggleAnalyticsFilter('all')">
     <div class="pa-stage-dot" style="background:${allActive ? activeAccent : inactiveAll}"></div>
     <span class="pa-stage-name">All</span>
-    <div class="pa-stage-bar-wrap"><div class="pa-stage-bar" style="width:100%;background:${allActive ? activeAccent : inactiveAll}"></div></div>
     <span class="pa-stage-count">${active}</span>
   </div>`;
   el.innerHTML = `
     <div class="pa-stage-list">
-      ${allRow}
-      <div class="pa-stage-collapsible" style="${analyticsCollapsed ? 'max-height:0;opacity:0;overflow:hidden' : 'max-height:600px;opacity:1'};transition:max-height .3s ease,opacity .2s ease">
-        ${stageRows}
-      </div>
+      ${allChip}${stageChips}
     </div>
   `;
 }
