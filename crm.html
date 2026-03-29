@@ -167,8 +167,9 @@ html.dark .qb-summary{background:linear-gradient(135deg,rgba(230,168,0,.06) 0%,v
 html.dark .qb-summary-total-val{color:var(--gold)}
 html.dark .qb-summary-total{border:none}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none}
-.form-input,.form-select,.form-textarea,.search-input,td.notes-cell,td.phone,td.addr,.jur-detail-value,.link-url,.panel-body input,.panel-body textarea{-webkit-user-select:text;user-select:text}
+html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+*{-webkit-user-select:none;user-select:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text}
 
 /* NAV */
 .nav{background:var(--navy);display:flex;align-items:center;padding:0 20px;height:54px;gap:10px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.25)}
