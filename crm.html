@@ -1118,7 +1118,7 @@ let allProposals     = [];
 let allJurisdictions = [];
 let proposalMap  = {};   // contact_id → latest proposal
 let stageFilter  = 'all'; // 'all' | 1..9 | 'archived'
-let analyticsCollapsed = true;
+let analyticsCollapsed = false;
 let contactsShown = 5;
 let searchTerm   = '';
 let weekStart    = getMonday(new Date());
@@ -1223,7 +1223,7 @@ async function loadContacts() {
   loadTrendAnalytics();
   // Hide trend until analytics collapsed
   // Trend visible when analytics collapsed (default)
-  setTimeout(() => { const t = document.getElementById('trend-analytics'); if (t) t.style.display = analyticsCollapsed ? '' : 'none'; }, 0);
+  setTimeout(() => { const t = document.getElementById('trend-analytics'); if (t) t.style.display = ''; }, 0);
 }
 
 function renderContacts() {
@@ -1315,12 +1315,7 @@ function renderContacts() {
 
 
 function toggleAnalyticsFilter(stageId) {
-  // Double-tap All to toggle trend analytics
-  if (stageId === 'all' && stageFilter === 'all') {
-    const trend = document.getElementById('trend-analytics');
-    if (trend) trend.style.display = trend.style.display === 'none' ? '' : 'none';
-    return;
-  }
+  if (stageId === 'all' && stageFilter === 'all') return;
   // Lock scroll to prevent page jump during filter swap
   const scrollY = window.scrollY;
   const body = document.body;
@@ -1330,12 +1325,9 @@ function toggleAnalyticsFilter(stageId) {
   body.style.left = '0';
   body.style.right = '0';
   stageFilter = stageFilter === stageId ? 'all' : stageId;
-  analyticsCollapsed = false;
   contactsShown = 5;
   renderContacts();
   loadPermitAnalytics();
-  const trend = document.getElementById('trend-analytics');
-  if (trend) trend.style.display = 'none';
   requestAnimationFrame(() => {
     body.style.overflow = '';
     body.style.position = '';
