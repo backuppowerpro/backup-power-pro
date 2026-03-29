@@ -2826,7 +2826,7 @@ function qbRender() {
   document.getElementById('qb-tog-cord').classList.toggle('on', qbState.cordIncluded);
   document.getElementById('qb-cord-label').textContent = (is50 ? '50' : '30') + 'A Cord';
   document.getElementById('qb-cord-sub').textContent = qbState.cordIncluded ? 'Included' : 'Removed · -' + qbFmt(is50 ? QB_S.cordValue50 : QB_S.cordValue30);
-  document.getElementById('qb-cord-right').textContent = qbState.cordIncluded ? '✓' : '';
+  document.getElementById('qb-cord-right').textContent = qbState.cordIncluded ? '+' + qbFmt(is50 ? QB_S.cordValue50 : QB_S.cordValue30) : '';
 }
 function qbSetAmp(a) { qbState.amp = a; qbRender(); }
 function qbOnRunChange(v) { qbState.runFt = parseInt(v); qbRender(); }
