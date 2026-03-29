@@ -711,7 +711,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── CONTACT MODAL ────────────────────────────────────── -->
-<div class="modal-overlay" id="contact-overlay" onclick="if(event.target===this)closeModal('contact-overlay')">
+<div class="modal-overlay" id="contact-overlay" onclick="if(event.target===this)saveContact()">
   <div class="modal">
     <div class="modal-head">
       <div class="modal-title" id="contact-modal-title">Add Lead</div>
@@ -761,10 +761,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         <label>Notes</label>
         <textarea class="form-textarea" id="c-notes" placeholder="Generator model, special instructions, anything useful…"></textarea>
       </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeModal('contact-overlay')">Cancel</button>
-      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveContact()">Save</button>
     </div>
   </div>
 </div>
@@ -1401,6 +1397,8 @@ async function saveContact() {
   const id   = document.getElementById('c-id').value;
   const fname = document.getElementById('c-fname').value.trim();
   const lname = document.getElementById('c-lname').value.trim();
+  // If adding new and form is empty, just close quietly
+  if (!id && !fname && !lname) { saving = false; closeModal('contact-overlay'); return; }
   if (!fname || !lname) { saving = false; showToast('First and last name required', 'error'); return; }
   const cPhoneRaw = document.getElementById('c-phone').value.replace(/\D/g, '');
   if (cPhoneRaw && cPhoneRaw.length !== 10) { saving = false; showToast('Phone must be 10 digits', 'error'); return; }
