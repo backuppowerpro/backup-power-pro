@@ -68,7 +68,7 @@ html.dark .modal-close{background:#3d3830;color:var(--text2)}
 html.dark .modal-close:hover{background:#4d4338}
 html.dark .modal-foot{border-color:var(--border)}
 /* Forms */
-html.dark .form-input,html.dark .form-select,html.dark .form-textarea{background:#1e1b17;color:var(--text);border-color:var(--border)}
+html.dark .form-input,html.dark .form-select,html.dark .form-textarea{background:#1e1b17;color:var(--text);border-color:var(--border);color-scheme:dark}
 html.dark .form-input:focus,html.dark .form-select:focus,html.dark .form-textarea:focus{border-color:var(--gold)}
 html.dark .form-input.locked{background:#2e2a24;color:var(--text2)}
 html.dark .search-input{background:var(--card);color:var(--text);border-color:var(--border)}
@@ -875,11 +875,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── JOB / EVENT MODAL ─────────────────────────────────── -->
-<div class="modal-overlay" id="job-overlay" onclick="if(event.target===this)closeModal('job-overlay')">
+<div class="modal-overlay" id="job-overlay" onclick="if(event.target===this)saveJob()">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-title" id="job-modal-title">Add Event</div>
-      <button class="modal-close" onclick="closeModal('job-overlay')">✕</button>
+      <div class="modal-title" id="job-modal-title" style="cursor:default;user-select:none">Add Event</div>
+      <button class="modal-close" onclick="cancelJob()">&#10005;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="j-id">
@@ -932,11 +932,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         <textarea class="form-textarea" id="j-notes" style="min-height:64px" placeholder="Notes for this event…"></textarea>
       </div>
     </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" id="j-delete-btn" onclick="deleteJob()" style="display:none;margin-right:auto;color:var(--red);border-color:#fecaca">Delete</button>
-      <button class="btn btn-outline" onclick="closeModal('job-overlay')">Cancel</button>
-      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveJob()">Save</button>
-    </div>
+    <div class="modal-foot" style="display:none"></div>
   </div>
 </div>
 
@@ -2072,13 +2068,15 @@ function onJobContactChange() {
   titleRow.style.display = sel.value ? 'none' : '';
 }
 
+let jobOriginal = null;
+let jobDeleteTimer = null;
+
 function openJobModal(id, preDate) {
   // Reset
   ['j-id','j-title','j-notes'].forEach(x => document.getElementById(x).value = '');
   document.getElementById('j-price').value = '';
   document.getElementById('j-type').value = 'Install';
   document.getElementById('j-status').value = 'Scheduled';
-  document.getElementById('j-delete-btn').style.display = 'none';
 
   // Populate contact dropdown
   const sel = document.getElementById('j-contact');
@@ -2090,10 +2088,13 @@ function openJobModal(id, preDate) {
   });
   sel.value = '';
 
+  const titleEl = document.getElementById('job-modal-title');
   if (id) {
     const j = allJobs.find(x => x.id === id);
     if (!j) return;
-    document.getElementById('job-modal-title').textContent = 'Edit Event';
+    titleEl.textContent = 'Edit Event';
+    titleEl.style.cursor = 'pointer';
+    titleEl.onclick = () => jobTitleDelete(id);
     document.getElementById('j-id').value     = j.id;
     document.getElementById('j-date').value   = j.date   || '';
     document.getElementById('j-time').value   = j.time   || '';
@@ -2103,19 +2104,56 @@ function openJobModal(id, preDate) {
     document.getElementById('j-notes').value  = j.notes  || '';
     document.getElementById('j-title').value  = j.title  || '';
     sel.value = j.contact_id || '';
-    document.getElementById('j-delete-btn').style.display = '';
+    jobOriginal = {
+      date: j.date || '', time: j.time || '', contact_id: j.contact_id || '',
+      title: j.title || '', type: j.type || 'Install', status: j.status || 'Scheduled',
+      price: String(j.price || ''), notes: j.notes || ''
+    };
   } else {
-    document.getElementById('job-modal-title').textContent = 'Add Event';
+    titleEl.textContent = 'Add Event';
+    titleEl.style.cursor = 'default';
+    titleEl.onclick = null;
+    jobOriginal = null;
     if (preDate) document.getElementById('j-date').value = preDate;
   }
   onJobContactChange();
+  lockBody();
   document.getElementById('job-overlay').classList.add('open');
+}
+
+function jobTitleDelete(id) {
+  const el = document.getElementById('job-modal-title');
+  if (jobDeleteTimer) {
+    clearTimeout(jobDeleteTimer);
+    jobDeleteTimer = null;
+    deleteJob();
+    return;
+  }
+  el.textContent = 'Tap again to delete';
+  el.style.color = 'var(--red)';
+  jobDeleteTimer = setTimeout(() => {
+    el.textContent = 'Edit Event';
+    el.style.color = '';
+    jobDeleteTimer = null;
+  }, 2500);
+}
+
+function cancelJob() {
+  jobOriginal = null;
+  if (jobDeleteTimer) { clearTimeout(jobDeleteTimer); jobDeleteTimer = null; }
+  const el = document.getElementById('job-modal-title');
+  el.style.color = '';
+  closeModal('job-overlay');
 }
 
 let savingJob = false;
 async function saveJob() {
   if (savingJob) return;
   savingJob = true;
+  if (jobDeleteTimer) { clearTimeout(jobDeleteTimer); jobDeleteTimer = null; }
+  const el = document.getElementById('job-modal-title');
+  el.style.color = '';
+
   const id   = document.getElementById('j-id').value;
   const date = document.getElementById('j-date').value;
   if (!date) { savingJob = false; showToast('Date is required', 'error'); return; }
@@ -2135,6 +2173,17 @@ async function saveJob() {
     notes:        document.getElementById('j-notes').value.trim() || null,
   };
 
+  // Check if anything changed (for existing events)
+  if (id && jobOriginal) {
+    const cur = {
+      date: payload.date || '', time: payload.time || '', contact_id: payload.contact_id || '',
+      title: payload.title || '', type: payload.type, status: payload.status,
+      price: String(payload.price || ''), notes: payload.notes || ''
+    };
+    const changed = Object.keys(jobOriginal).some(k => jobOriginal[k] !== cur[k]);
+    if (!changed) { savingJob = false; jobOriginal = null; closeModal('job-overlay'); return; }
+  }
+
   let error;
   if (id) {
     ({ error } = await db.from('schedule').update(payload).eq('id', id));
@@ -2143,6 +2192,7 @@ async function saveJob() {
   }
   if (error) { savingJob = false; showToast('Save failed: ' + error.message, 'error'); return; }
   savingJob = false;
+  jobOriginal = null;
   showToast(id ? 'Event updated' : 'Event added', 'success');
   closeModal('job-overlay');
   loadJobs();
