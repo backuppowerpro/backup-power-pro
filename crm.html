@@ -19,6 +19,11 @@ html.dark {
   --border:#3d3830; --bg:#1e1b17; --card:#28241f;
   --text:#e8e0d4; --text2:#bbb3a6; --text3:#8a8275;
 }
+html.dark{scrollbar-color:#3d3830 #1e1b17}
+html.dark ::-webkit-scrollbar{width:8px;height:8px}
+html.dark ::-webkit-scrollbar-track{background:#1e1b17}
+html.dark ::-webkit-scrollbar-thumb{background:#3d3830;border-radius:4px}
+html.dark ::-webkit-scrollbar-thumb:hover{background:#4d4338}
 html.dark .nav{background:#2a2520}
 html.dark thead th{background:#2e2a24}
 html.dark tbody tr:hover{background:#302b25}
@@ -138,7 +143,11 @@ td.actions{white-space:nowrap}
 .prop-viewed{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
 
 /* SCROLLABLE CONTACTS */
-.table-scroll{max-height:240px;overflow-y:auto;border-top:1px solid var(--border)}
+.table-scroll{max-height:240px;overflow-y:auto;border-top:1px solid var(--border);scrollbar-color:var(--border) transparent}
+.table-scroll::-webkit-scrollbar{width:8px}
+.table-scroll::-webkit-scrollbar-track{background:transparent}
+.table-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.table-scroll::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 .table-scroll table{border-top:none}
 
 /* EMPTY STATE */
