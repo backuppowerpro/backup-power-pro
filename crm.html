@@ -886,11 +886,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── JURISDICTION EDIT MODAL ────────────────────────────── -->
-<div class="modal-overlay" id="jur-overlay" onclick="if(event.target===this)closeModal('jur-overlay')">
+<div class="modal-overlay" id="jur-overlay" onclick="if(event.target===this)saveJurisdiction()">
   <div class="modal">
     <div class="modal-head">
       <div class="modal-title" id="jur-modal-title">Edit Jurisdiction</div>
-      <button class="modal-close" onclick="closeModal('jur-overlay')">&#10005;</button>
+      <button class="modal-close" onclick="cancelJurisdiction()">&#10005;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="jur-id">
@@ -930,10 +930,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         </div>
       </div>
     </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeModal('jur-overlay')">Cancel</button>
-      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveJurisdiction()">Save Jurisdiction</button>
-    </div>
+    <div class="modal-foot"></div>
   </div>
 </div>
 
@@ -2275,8 +2272,16 @@ function viewJurisdiction(id) {
   document.getElementById('jur-view-overlay').classList.add('open');
 }
 
+let jurOriginal = null;
+
 function openJurisdictionModal(id) {
   const j = id ? allJurisdictions.find(x => x.id === id) : null;
+  jurOriginal = j ? {
+    name: j.name || '', phone: j.phone || '', username: j.username || '', password: j.password || '',
+    notes: j.notes || '', link1_title: j.link1_title || '', link1_url: j.link1_url || '',
+    link2_title: j.link2_title || '', link2_url: j.link2_url || '',
+    link3_title: j.link3_title || '', link3_url: j.link3_url || '',
+  } : null;
   document.getElementById('jur-modal-title').textContent = j ? 'Edit Jurisdiction' : 'Add Jurisdiction';
   document.getElementById('jur-id').value       = j ? j.id       : '';
   document.getElementById('jur-name').value     = j ? j.name     : '';
@@ -2310,6 +2315,18 @@ async function saveJurisdiction() {
     link3_title: document.getElementById('jur-link3-title').value.trim() || null,
     link3_url:   document.getElementById('jur-link3-url').value.trim()   || null,
   };
+  // Check if anything changed (for existing jurisdictions)
+  if (id && jurOriginal) {
+    const cur = {
+      name: payload.name || '', phone: payload.phone || '', username: payload.username || '',
+      password: payload.password || '', notes: payload.notes || '',
+      link1_title: payload.link1_title || '', link1_url: payload.link1_url || '',
+      link2_title: payload.link2_title || '', link2_url: payload.link2_url || '',
+      link3_title: payload.link3_title || '', link3_url: payload.link3_url || '',
+    };
+    const changed = Object.keys(jurOriginal).some(k => jurOriginal[k] !== cur[k]);
+    if (!changed) { closeModal('jur-overlay'); return; }
+  }
   let error;
   if (id) {
     ({ error } = await db.from('permit_jurisdictions').update(payload).eq('id', id));
