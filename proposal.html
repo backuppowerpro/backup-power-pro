@@ -885,26 +885,28 @@ function downloadPDF() {
   `;
 
   const container = document.createElement('div');
-  container.style.cssText = 'position:absolute;left:-9999px;top:0';
+  container.style.cssText = 'position:fixed;left:0;top:0;width:680px;z-index:-9999';
   container.innerHTML = html;
   document.body.appendChild(container);
 
   const customerName = (P.contact_name || 'Proposal').replace(/[^a-zA-Z0-9]/g, '-');
+  const restoreBtn = () => {
+    downloading = false;
+    if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Proposal PDF'; }
+  };
   html2pdf().set({
     margin: [10, 12, 10, 12],
     filename: 'BPP-Proposal-' + customerName + '.pdf',
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
     jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all'] }
   }).from(container).save().then(() => {
     document.body.removeChild(container);
-    downloading = false;
-    if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Proposal PDF'; }
+    restoreBtn();
   }).catch(() => {
     if (container.parentNode) document.body.removeChild(container);
-    downloading = false;
-    if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Proposal PDF'; }
+    restoreBtn();
   });
 }
 
