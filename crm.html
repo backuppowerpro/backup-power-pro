@@ -151,37 +151,20 @@ html.dark .approval-notif-title{color:var(--text)}
 html.dark .approval-notif-amount{color:var(--gold)}
 html.dark .approval-notif-btn{background:var(--gold);color:#1e1b17}
 /* Quote builder */
-html.dark .qb-mode-bar{background:var(--card);border-color:var(--border)}
-html.dark .qb-mode-btn{color:var(--text2)}
-html.dark .qb-mode-btn.active{background:var(--gold);color:#1e1b17}
-html.dark .qb-card{background:var(--card)}
-html.dark .qb-price-big{color:var(--gold)}
-html.dark .qb-profit-box{background:#1e1b17;border-color:var(--border)}
-html.dark .qb-profit-num{color:var(--gold)}
-html.dark .qb-pip{background:#1e1b17;border-color:var(--border)}
-html.dark .qb-pip.accent{border-color:rgba(230,168,0,.5)}
-html.dark .qb-pip.accent .qb-pip-val{color:var(--gold)}
-html.dark .qb-amp-btn{background:var(--card);border-color:var(--border);color:var(--text2)}
-html.dark .qb-amp-btn.active{border-color:var(--gold);background:#302b25}
-html.dark .qb-amp-num{color:var(--text3)}
-html.dark .qb-amp-btn.active .qb-amp-num{color:var(--gold)}
-html.dark .qb-amp-btn.active .qb-amp-sub{color:var(--text2)}
+html.dark .qb-big{color:var(--gold)}
+html.dark .qb-hero-right .qb-profit{color:var(--gold)}
+html.dark .qb-seg{background:var(--card);border-color:var(--border)}
+html.dark .qb-seg-btn.active{background:var(--gold);color:#1e1b17}
+html.dark .qb-row.active .qb-row-name{color:var(--gold)}
+html.dark .qb-row.active .qb-row-right{color:var(--gold)}
+html.dark .qb-row-toggle.on{background:var(--gold)}
 html.dark .qb-slider-val{color:var(--gold)}
+html.dark .qb-slider-note.highlight{color:var(--gold)}
 html.dark input[type=range].qb-range{background:var(--border)}
-html.dark input[type=range].qb-range::-webkit-slider-thumb{background:var(--gold);box-shadow:0 0 0 4px rgba(230,168,0,.15),0 2px 6px rgba(0,0,0,.3)}
-html.dark .qb-toggle{background:var(--card);border-color:var(--border)}
-html.dark .qb-toggle.active{border-color:var(--gold);background:#302b25}
-html.dark .qb-toggle.active .qb-toggle-label{color:var(--gold)}
-html.dark .qb-toggle.active .qb-toggle-right{color:var(--gold)}
-html.dark .qb-chip{background:var(--card);border-color:var(--border);color:var(--text2)}
-html.dark .qb-chip.active{border-color:var(--gold);background:#302b25;color:var(--gold)}
-html.dark .qb-template-box{background:var(--card);border-color:var(--border)}
-html.dark .qb-template-num{color:var(--gold);background:rgba(230,168,0,.12);border-color:rgba(230,168,0,.4)}
-html.dark .qb-tell-box{background:linear-gradient(135deg,rgba(230,168,0,.06) 0%,var(--card) 100%);border-color:rgba(230,168,0,.4)}
-html.dark .qb-tell-total{color:var(--gold)}
-html.dark .qb-tell-divider{border-color:rgba(230,168,0,.4)}
-html.dark .qb-tell-divider-val{color:var(--gold)}
-html.dark .qb-breakdown-total-val{color:var(--gold)}
+html.dark input[type=range].qb-range::-webkit-slider-thumb{background:var(--gold);box-shadow:0 0 0 3px rgba(230,168,0,.15),0 2px 4px rgba(0,0,0,.3)}
+html.dark .qb-summary{background:linear-gradient(135deg,rgba(230,168,0,.06) 0%,var(--card) 100%);border-color:rgba(230,168,0,.35)}
+html.dark .qb-summary-total-val{color:var(--gold)}
+html.dark .qb-summary-total{border-color:rgba(230,168,0,.35)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 
@@ -393,88 +376,53 @@ html.dark .approval-notif-amount{color:var(--gold)}
 @media(max-width:480px){.tab-btn{padding:12px 14px;font-size:13px}}
 
 /* ── QUOTE BUILDER ────────────────────────────────────── */
-.qb-wrap{max-width:540px;margin:0 auto;padding:20px 20px 60px}
-.qb-mode-bar{display:flex;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:3px;margin-bottom:20px}
-.qb-mode-btn{flex:1;padding:9px 0;border-radius:8px;border:none;background:transparent;color:var(--text2);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s}
-.qb-mode-btn.active{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,31,59,.2)}
-.qb-card{background:var(--card);border:1.5px solid rgba(255,186,0,.5);border-radius:16px;padding:22px;margin-bottom:20px;box-shadow:0 2px 16px rgba(255,186,0,.07)}
-.qb-price-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.qb-price-label{color:var(--text3);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
-.qb-price-big{font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(30px,8vw,46px);line-height:1;color:var(--navy);letter-spacing:-1px}
-.qb-price-note{color:var(--gold);font-size:10px;font-weight:600;margin-top:4px}
-.qb-profit-box{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;text-align:right;flex-shrink:0}
-.qb-profit-label{color:var(--text3);font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
-.qb-profit-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;line-height:1}
-.qb-profit-pct{color:var(--text3);font-size:10px;font-weight:600;margin-top:3px}
-.qb-pips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
-.qb-pip{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px}
-.qb-pip.accent{border-color:rgba(255,186,0,.5)}
-.qb-pip-label{color:var(--text3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-.qb-pip-val{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--text2)}
-.qb-pip.accent .qb-pip-val{color:var(--navy)}
-.qb-breakdown-toggle{background:none;border:none;color:var(--text3);font-size:11px;font-weight:600;margin-top:12px;padding:0;display:flex;align-items:center;gap:5px;cursor:pointer;font-family:'Inter',sans-serif}
-.qb-breakdown-arrow{font-size:8px;display:inline-block;transition:transform .15s}
-.qb-breakdown-body{margin-top:10px;padding-top:10px;border-top:1.5px solid var(--border)}
-.qb-breakdown-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
-.qb-breakdown-key{color:var(--text3);font-size:11px}
-.qb-breakdown-val{color:var(--text2);font-size:11px;font-weight:600;margin-left:8px;flex-shrink:0}
-.qb-breakdown-total{display:flex;justify-content:space-between;padding-top:8px;margin-top:4px}
-.qb-breakdown-total-key{color:var(--text2);font-size:12px;font-weight:700}
-.qb-breakdown-total-val{color:var(--navy);font-size:12px;font-weight:800;font-family:'Outfit',sans-serif}
-.qb-section{margin-bottom:20px}
-.qb-section-title{color:var(--text3);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
-.qb-amp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.qb-amp-btn{padding:14px 0;border-radius:12px;border:1.5px solid var(--border);background:var(--card);transition:all .12s;text-align:center;cursor:pointer;width:100%}
-.qb-amp-btn:active{transform:scale(.97)}
-.qb-amp-btn.active{border-color:var(--navy);background:#eef2ff}
-.qb-amp-num{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:var(--text3)}
-.qb-amp-btn.active .qb-amp-num{color:var(--navy)}
-.qb-amp-sub{font-size:10px;color:var(--text3);margin-top:2px;font-weight:500}
-.qb-amp-btn.active .qb-amp-sub{color:var(--text2)}
-.qb-slider-wrap{margin-bottom:16px}
-.qb-slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.qb-wrap{max-width:480px;margin:0 auto;padding:16px 18px 20px}
+.qb-hero{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.qb-hero-left .qb-label{color:var(--text3);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.qb-hero-left .qb-big{font-family:'Outfit',sans-serif;font-weight:800;font-size:38px;line-height:1;color:var(--navy);letter-spacing:-1px}
+.qb-hero-left .qb-note{color:var(--gold);font-size:10px;font-weight:600;margin-top:3px;min-height:14px}
+.qb-hero-right{text-align:right}
+.qb-hero-right .qb-profit{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;line-height:1}
+.qb-hero-right .qb-pct{color:var(--text3);font-size:10px;font-weight:600;margin-top:2px}
+.qb-hero-right .qb-cost{color:var(--text3);font-size:10px;font-weight:500;margin-top:1px}
+.qb-divider{height:1px;background:var(--border);margin:0 0 14px}
+.qb-seg{display:flex;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:2px;margin-bottom:14px}
+.qb-seg-btn{flex:1;padding:7px 0;border-radius:6px;border:none;background:transparent;color:var(--text3);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .12s}
+.qb-seg-btn.active{background:var(--navy);color:#fff;box-shadow:0 1px 4px rgba(11,31,59,.15)}
+.qb-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.qb-row:last-child{border-bottom:none}
+.qb-row-left{display:flex;flex-direction:column;gap:1px}
+.qb-row-name{font-size:13px;font-weight:600;color:var(--text)}
+.qb-row-sub{font-size:10px;color:var(--text3);font-weight:500}
+.qb-row-right{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text3);flex-shrink:0;margin-left:12px}
+.qb-row.active .qb-row-name{color:var(--navy)}
+.qb-row.active .qb-row-right{color:var(--navy)}
+.qb-row-toggle{width:36px;height:20px;border-radius:10px;background:var(--border);position:relative;cursor:pointer;transition:background .15s;flex-shrink:0;margin-left:10px;border:none}
+.qb-row-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.qb-row-toggle.on{background:var(--navy)}
+.qb-row-toggle.on::after{transform:translateX(16px)}
+.qb-section{margin-bottom:14px}
+.qb-section-title{color:var(--text3);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.qb-slider-row{margin-bottom:12px}
+.qb-slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
 .qb-slider-label{color:var(--text2);font-size:12px;font-weight:600}
-.qb-slider-val{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:var(--navy)}
-.qb-slider-val span{font-size:11px;color:var(--text3);margin-left:2px;font-weight:600}
-.qb-slider-note{font-size:10px;margin-top:5px;color:var(--text2);font-weight:500}
+.qb-slider-val{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
+.qb-slider-val span{font-size:10px;color:var(--text3);margin-left:1px;font-weight:600}
+.qb-slider-note{font-size:10px;margin-top:3px;color:var(--text3);font-weight:500}
 .qb-slider-note.highlight{color:var(--navy);font-weight:700}
 input[type=range].qb-range{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;display:block}
-input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--navy);cursor:pointer;box-shadow:0 0 0 4px rgba(11,31,59,.12),0 2px 6px rgba(0,0,0,.15)}
-.qb-toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.qb-toggle{padding:12px;border-radius:12px;width:100%;border:1.5px solid var(--border);background:var(--card);transition:all .12s;display:flex;justify-content:space-between;align-items:center;text-align:left;cursor:pointer}
-.qb-toggle:active{transform:scale(.97)}
-.qb-toggle.active{border-color:var(--navy);background:#eef2ff}
-.qb-toggle-label{font-size:12px;font-weight:700;color:var(--text2)}
-.qb-toggle.active .qb-toggle-label{color:var(--navy)}
-.qb-toggle-sub{font-size:10px;color:var(--text3);margin-top:2px}
-.qb-toggle.active .qb-toggle-sub{color:var(--text2)}
-.qb-toggle-right{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text3);margin-left:8px;flex-shrink:0}
-.qb-toggle.active .qb-toggle-right{color:var(--navy)}
-.qb-chips{display:flex;flex-wrap:wrap;gap:6px}
-.qb-chip{padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text2);font-size:11px;font-weight:600;transition:all .12s;white-space:nowrap;font-family:'Inter',sans-serif;cursor:pointer}
-.qb-chip:active{transform:scale(.96)}
-.qb-chip.active{border-color:var(--navy);background:#eef2ff;color:var(--navy)}
-.qb-cord-sub-label{color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
-.qb-adapter-note{color:var(--text2);font-size:10px;margin-top:8px;line-height:1.5}
-.qb-template-box{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
-.qb-template-title{color:var(--text3);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
-.qb-template-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.qb-template-key{color:var(--text2);font-size:12px}
-.qb-template-num{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:var(--navy);background:rgba(255,186,0,.12);border:1px solid rgba(255,186,0,.4);border-radius:8px;padding:4px 12px}
-.qb-template-note{color:var(--text3);font-size:10px;line-height:1.6}
-.qb-tell-box{background:linear-gradient(135deg,rgba(255,186,0,.06) 0%,var(--card) 100%);border:1.5px solid rgba(255,186,0,.4);border-radius:14px;padding:16px 18px}
-.qb-tell-title{color:var(--navy);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
-.qb-tell-total{font-family:'Outfit',sans-serif;font-size:32px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:14px;letter-spacing:-.5px}
-.qb-tell-items{display:flex;flex-direction:column;gap:6px}
-.qb-tell-item{display:flex;justify-content:space-between;align-items:center}
-.qb-tell-item-key{color:var(--text2);font-size:12px}
-.qb-tell-item-val{color:var(--text);font-size:12px;font-weight:700;margin-left:10px;flex-shrink:0}
-.qb-tell-divider{border-top:1.5px solid rgba(255,186,0,.4);margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center}
-.qb-tell-divider-key{color:var(--text2);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700}
-.qb-tell-divider-val{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--navy)}
-.qb-market-note{font-size:10px;color:var(--text3);text-align:center;padding:8px 16px;line-height:1.5;margin-top:20px}
-.qb-market-note strong{color:var(--text2)}
-@media(max-width:480px){.qb-wrap{padding:14px 12px 50px}.qb-toggle-grid{grid-template-columns:1fr}}
+input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--navy);cursor:pointer;box-shadow:0 0 0 3px rgba(11,31,59,.1),0 2px 4px rgba(0,0,0,.12)}
+.qb-summary{background:linear-gradient(135deg,rgba(255,186,0,.05) 0%,var(--card) 100%);border:1.5px solid rgba(255,186,0,.35);border-radius:12px;padding:14px 16px;margin-top:14px}
+.qb-summary-title{color:var(--text3);font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.qb-summary-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
+.qb-summary-key{color:var(--text2);font-size:12px}
+.qb-summary-val{color:var(--text);font-size:12px;font-weight:700;margin-left:10px;flex-shrink:0}
+.qb-summary-total{display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid rgba(255,186,0,.35);margin-top:6px;padding-top:8px}
+.qb-summary-total-key{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
+.qb-summary-total-val{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
+.qb-reset{background:none;border:none;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;padding:0;margin-top:12px;display:flex;align-items:center;gap:4px;font-family:'Inter',sans-serif}
+.qb-reset:hover{color:var(--text2)}
+@media(max-width:480px){.qb-wrap{padding:12px 14px 16px}}
 
 /* ── JURISDICTION CARDS ──────────────────────────────── */
 .jur-list{display:flex;flex-wrap:wrap-reverse;gap:10px}
@@ -589,124 +537,80 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
 <!-- ── QUOTE BUILDER TAB ────────────────────────────────── -->
 <div class="modal-overlay" id="qb-overlay" onclick="if(event.target===this)closeModal('qb-overlay')">
-  <div class="modal" style="max-width:560px;overflow:hidden">
+  <div class="modal" style="max-width:500px;overflow:hidden">
     <div class="modal-head">
       <div class="modal-title">Quote Builder</div>
       <button class="modal-close" onclick="closeModal('qb-overlay')">✕</button>
     </div>
     <div class="modal-body" style="padding:0">
-      <div class="qb-wrap" style="padding:16px 20px 20px">
+      <div class="qb-wrap">
 
-    <div class="qb-mode-bar">
-      <button class="qb-mode-btn active" id="qb-mode-solo" onclick="qbSetMode('solo')">⚡ Solo</button>
-      <button class="qb-mode-btn" id="qb-mode-sub" onclick="qbSetMode('sub')">👥 With Sub</button>
-    </div>
-
-    <div class="qb-card">
-      <div class="qb-price-row">
-        <div>
-          <div class="qb-price-label">Customer Quote</div>
-          <div class="qb-price-big" id="qb-total-sell">$1,197</div>
-          <div class="qb-price-note hidden" id="qb-long-run-note"></div>
-        </div>
-        <div class="qb-profit-box">
-          <div class="qb-profit-label">Your Profit</div>
-          <div class="qb-profit-num" id="qb-profit-num">$807</div>
-          <div class="qb-profit-pct" id="qb-profit-pct">67%</div>
-        </div>
+    <!-- Hero: price + profit -->
+    <div class="qb-hero">
+      <div class="qb-hero-left">
+        <div class="qb-label">Customer Price</div>
+        <div class="qb-big" id="qb-total-sell">$1,197</div>
+        <div class="qb-note" id="qb-long-run-note"></div>
       </div>
-      <div class="qb-pips">
-        <div class="qb-pip"><div class="qb-pip-label">Your Cost</div><div class="qb-pip-val" id="qb-pip-cost">$390</div></div>
-        <div class="qb-pip accent"><div class="qb-pip-label" id="qb-pip-sub-label">Labor</div><div class="qb-pip-val" id="qb-pip-sub">You</div></div>
-        <div class="qb-pip"><div class="qb-pip-label">Est. Time</div><div class="qb-pip-val" id="qb-pip-time">2.5h</div></div>
-      </div>
-      <button class="qb-breakdown-toggle" onclick="qbToggleBreakdown()">
-        <span class="qb-breakdown-arrow" id="qb-breakdown-arrow">▶</span>
-        <span id="qb-breakdown-label">Show cost breakdown</span>
-      </button>
-      <div id="qb-breakdown-body" class="qb-breakdown-body hidden">
-        <div class="qb-breakdown-row"><span class="qb-breakdown-key">Supplies (inlet, interlock, cord, permit)</span><span class="qb-breakdown-val" id="qb-bd-supplies">$0</span></div>
-        <div class="qb-breakdown-row"><span class="qb-breakdown-key">Adapter (if added)</span><span class="qb-breakdown-val" id="qb-bd-cords">$0</span></div>
-        <div class="qb-breakdown-row hidden" id="qb-bd-sub-row"><span class="qb-breakdown-key" id="qb-bd-sub-label">Sub payout</span><span class="qb-breakdown-val" id="qb-bd-sub">$0</span></div>
-        <div class="qb-breakdown-row"><span class="qb-breakdown-key">Ad cost allocation</span><span class="qb-breakdown-val" id="qb-bd-ad">$150</span></div>
-        <div class="qb-breakdown-total"><span class="qb-breakdown-total-key">Total cost</span><span class="qb-breakdown-total-val" id="qb-bd-total">$390</span></div>
+      <div class="qb-hero-right">
+        <div class="qb-label" style="text-align:right">Profit</div>
+        <div class="qb-profit" id="qb-profit-num">$807</div>
+        <div class="qb-pct" id="qb-profit-pct">67% · $390 cost</div>
       </div>
     </div>
+    <div class="qb-divider"></div>
 
+    <!-- Amperage -->
     <div class="qb-section">
       <div class="qb-section-title">Amperage</div>
-      <div class="qb-amp-grid">
-        <button class="qb-amp-btn active" id="qb-btn-30" onclick="qbSetAmp(30)"><div class="qb-amp-num">30A</div><div class="qb-amp-sub">Most generators</div></button>
-        <button class="qb-amp-btn" id="qb-btn-50" onclick="qbSetAmp(50)"><div class="qb-amp-num">50A</div><div class="qb-amp-sub">Large / future-proof</div></button>
+      <div class="qb-seg">
+        <button class="qb-seg-btn active" id="qb-btn-30" onclick="qbSetAmp(30)">30A</button>
+        <button class="qb-seg-btn" id="qb-btn-50" onclick="qbSetAmp(50)">50A</button>
       </div>
     </div>
 
+    <!-- Run Length -->
     <div class="qb-section">
       <div class="qb-section-title">Run Length</div>
-      <div class="qb-slider-wrap">
-        <div class="qb-slider-header"><span class="qb-slider-label">Total run</span><span class="qb-slider-val" id="qb-run-display">5<span>ft</span></span></div>
+      <div class="qb-slider-row">
+        <div class="qb-slider-head"><span class="qb-slider-label">Total run</span><span class="qb-slider-val" id="qb-run-display">5<span>ft</span></span></div>
         <input type="range" class="qb-range" min="1" max="120" value="5" id="qb-run-slider" oninput="qbOnRunChange(this.value)">
         <div class="qb-slider-note" id="qb-run-note">No long-run adder</div>
       </div>
-      <div class="qb-slider-wrap">
-        <div class="qb-slider-header"><span class="qb-slider-label">Exterior portion</span><span class="qb-slider-val" id="qb-ext-display">5<span>ft</span></span></div>
-        <input type="range" class="qb-range" min="0" max="5" value="5" id="qb-ext-slider" oninput="qbOnExtChange(this.value)">
-        <div class="qb-slider-note" id="qb-ext-note">First 5ft exterior included</div>
-      </div>
     </div>
 
+    <!-- Options (toggle rows) -->
     <div class="qb-section">
-      <div class="qb-section-title">Panel Work</div>
-      <div class="qb-toggle-grid">
-        <button class="qb-toggle" id="qb-btn-main" onclick="qbToggle('mainBreaker')">
-          <div><div class="qb-toggle-label">Main Breaker</div><div class="qb-toggle-sub">Needs replacement</div></div>
-          <span class="qb-toggle-right">+$225</span>
-        </button>
-        <button class="qb-toggle" id="qb-btn-twin" onclick="qbToggle('twinQuad')">
-          <div><div class="qb-toggle-label">Twin / Quad</div><div class="qb-toggle-sub">Making panel space</div></div>
-          <span class="qb-toggle-right">+$125</span>
-        </button>
+      <div class="qb-section-title">Options</div>
+      <div class="qb-row" id="qb-row-main" onclick="qbToggle('mainBreaker')">
+        <div class="qb-row-left"><span class="qb-row-name">Main Breaker</span><span class="qb-row-sub">Needs replacement</span></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right">+$225</span><button class="qb-row-toggle" id="qb-tog-main"></button></div>
+      </div>
+      <div class="qb-row" id="qb-row-twin" onclick="qbToggle('twinQuad')">
+        <div class="qb-row-left"><span class="qb-row-name">Twin / Quad</span><span class="qb-row-sub">Making panel space</span></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right">+$125</span><button class="qb-row-toggle" id="qb-tog-twin"></button></div>
+      </div>
+      <div class="qb-row" id="qb-row-surge" onclick="qbToggle('surge')">
+        <div class="qb-row-left"><span class="qb-row-name">Surge Protector</span><span class="qb-row-sub">$75K device warranty</span></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right">+$375</span><button class="qb-row-toggle" id="qb-tog-surge"></button></div>
+      </div>
+      <div class="qb-row active" id="qb-row-cord" onclick="qbToggle('cordIncluded')">
+        <div class="qb-row-left"><span class="qb-row-name" id="qb-cord-label">30A Cord</span><span class="qb-row-sub" id="qb-cord-sub">Included</span></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right" id="qb-cord-right">✓</span><button class="qb-row-toggle on" id="qb-tog-cord"></button></div>
       </div>
     </div>
 
-    <div class="qb-section">
-      <div class="qb-section-title">Add-Ons</div>
-      <button class="qb-toggle" id="qb-btn-surge" onclick="qbToggle('surge')" style="width:100%;margin-bottom:10px">
-        <div><div class="qb-toggle-label">Whole Home Surge Protector</div><div class="qb-toggle-sub">$75K device warranty · same visit</div></div>
-        <span class="qb-toggle-right">+$375</span>
-      </button>
-      <div class="qb-cord-sub-label">Generator Cord</div>
-      <button class="qb-toggle active" id="qb-btn-cord" onclick="qbToggle('cordIncluded')" style="width:100%;margin-bottom:8px">
-        <div><div class="qb-toggle-label" id="qb-cord-toggle-label">30A Generator Cord</div><div class="qb-toggle-sub" id="qb-cord-toggle-sub">Included · tap to remove</div></div>
-        <span class="qb-toggle-right" id="qb-cord-toggle-right">✓</span>
-      </button>
-      <div class="qb-chips" id="qb-cord-chips"></div>
-      <div class="qb-adapter-note hidden" id="qb-adapter-note">50A cord included · Adapter lets their 30A generator plug into the 50A inlet</div>
-    </div>
-
-    <div class="qb-template-box">
-      <div class="qb-template-title">Invoice Line Item</div>
-      <div class="qb-template-row">
-        <span class="qb-template-key">Inlet installation</span>
-        <span class="qb-template-num" id="qb-inlet-line-item">$1,072</span>
-      </div>
-      <div class="qb-template-note">Cord bundled in base · Permit ($125) separate line item</div>
-    </div>
-
-    <div class="qb-tell-box">
-      <div class="qb-tell-title">Tell the Customer</div>
-      <div class="qb-tell-total" id="qb-tell-total">$1,197</div>
-      <div class="qb-tell-items" id="qb-tell-items"></div>
-      <div class="qb-tell-divider">
-        <span class="qb-tell-divider-key">Total</span>
-        <span class="qb-tell-divider-val" id="qb-tell-divider-val">$1,197</span>
+    <!-- Summary: what to tell the customer -->
+    <div class="qb-summary">
+      <div class="qb-summary-title">Tell the Customer</div>
+      <div id="qb-tell-items"></div>
+      <div class="qb-summary-total">
+        <span class="qb-summary-total-key">Total</span>
+        <span class="qb-summary-total-val" id="qb-tell-total">$1,197</span>
       </div>
     </div>
 
-    <div class="qb-market-note">
-      Market range: <strong>$700–$1,400</strong> for interlock install in Upstate SC<br>
-      Your price includes cord, permit, inspection &amp; guarantees
-    </div>
+    <button class="qb-reset" onclick="qbResetAll()">↺ Reset</button>
     <div style="text-align:right;margin-top:10px">
       <button class="btn btn-outline btn-sm" onclick="qbResetAll()">↺ Reset</button>
     </div>
@@ -2769,58 +2673,41 @@ const QB_C = {
   inlet30: 55, inlet50: 85, interlock: 25,
   permitActual: 75, permitCustomer: 125, licenseAmortized: 25,
   mainBreaker: 125, twinQuad: 35, surgeProtector: 85,
-  cord30Cost: 60, cord50Cost: 125, adapterCost: 65,
-  sub30: 350, sub50: 400,
-  subLongRun30per30ft: 100, subLongRun50per30ft: 120, subExtAdderPer5ft: 25,
-  adCost: 150, minProfitSolo: 500, minProfitSub: 350,
+  cord30Cost: 60, cord50Cost: 125,
+  adCost: 150, minProfit: 500,
 };
 const QB_S = {
   base30: 1197, base50: 1497,
   longRun30perFt: 12, longRun50perFt: 14,
-  mainBreaker: 225, twinQuad: 125, surge: 375, adapter: 150,
+  mainBreaker: 225, twinQuad: 125, surge: 375,
   cordValue30: 120, cordValue50: 200,
 };
-let qbState = { mode:'solo', amp:30, runFt:5, extFt:5, mainBreaker:false, twinQuad:false, surge:false, cordType:null, cordIncluded:true };
-let qbBreakdownOpen = false;
+let qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, surge:false, cordIncluded:true };
 
 function qbCalc(s) {
-  const is50 = s.amp === 50, isSub = s.mode === 'sub';
+  const is50 = s.amp === 50;
   const extraFt = Math.max(0, s.runFt - 20);
-  const extraInc = Math.ceil(extraFt / 30);
-  const hours = 2.5 + extraInc * 1.25;
   const baseCordCost = is50 ? QB_C.cord50Cost : QB_C.cord30Cost;
   const cordValue = is50 ? QB_S.cordValue50 : QB_S.cordValue30;
   const yourSupplies =
     (is50 ? QB_C.inlet50 : QB_C.inlet30) + QB_C.interlock + QB_C.permitActual + QB_C.licenseAmortized +
     (s.cordIncluded ? baseCordCost : 0) +
     (s.mainBreaker ? QB_C.mainBreaker : 0) + (s.twinQuad ? QB_C.twinQuad : 0) + (s.surge ? QB_C.surgeProtector : 0);
-  let cordAdapterCost = s.cordType === 'adapterOnly' ? QB_C.adapterCost : 0;
-  let subTotal = 0;
-  if (isSub) {
-    const subBase = is50 ? QB_C.sub50 : QB_C.sub30;
-    const subLR = extraInc * (is50 ? QB_C.subLongRun50per30ft : QB_C.subLongRun30per30ft);
-    const subExt = Math.floor(Math.max(0, s.extFt - 5) / 5) * QB_C.subExtAdderPer5ft;
-    subTotal = subBase + subLR + subExt;
-  }
-  const subExt = isSub ? Math.floor(Math.max(0, s.extFt - 5) / 5) * QB_C.subExtAdderPer5ft : 0;
-  const totalCost = yourSupplies + cordAdapterCost + subTotal + QB_C.adCost;
+  const totalCost = yourSupplies + QB_C.adCost;
   const longRunSell = extraFt * (is50 ? QB_S.longRun50perFt : QB_S.longRun30perFt);
-  const cordSell = s.cordType === 'adapterOnly' ? QB_S.adapter : 0;
   const cordDiscount = s.cordIncluded ? 0 : cordValue;
   const addonSell = (s.mainBreaker ? QB_S.mainBreaker : 0) + (s.twinQuad ? QB_S.twinQuad : 0) + (s.surge ? QB_S.surge : 0);
-  const standardSell = (is50 ? QB_S.base50 : QB_S.base30) + longRunSell + addonSell + cordSell - cordDiscount;
-  const minProfit = isSub ? QB_C.minProfitSub : QB_C.minProfitSolo;
-  let totalSell = Math.round(Math.max(standardSell, totalCost + minProfit));
+  const standardSell = (is50 ? QB_S.base50 : QB_S.base30) + longRunSell + addonSell - cordDiscount;
+  let totalSell = Math.round(Math.max(standardSell, totalCost + QB_C.minProfit));
   if (totalSell % 2 === 0) totalSell += 1;
   const profit = Math.round(totalSell - totalCost);
   const margin = Math.round(profit / totalSell * 100);
   return {
     totalSell: Math.round(totalSell), totalCost: Math.round(totalCost),
-    profit, margin, subTotal: Math.round(subTotal), subExt: Math.round(subExt),
-    yourSupplies: Math.round(yourSupplies), cordAdapterCost: Math.round(cordAdapterCost),
-    cordSell: Math.round(cordSell), longRunSell: Math.round(longRunSell),
-    inletLineItem: Math.round(totalSell - QB_C.permitCustomer - cordSell),
-    extraFt, hours,
+    profit, margin, yourSupplies: Math.round(yourSupplies),
+    longRunSell: Math.round(longRunSell),
+    inletLineItem: Math.round(totalSell - QB_C.permitCustomer),
+    extraFt,
   };
 }
 
@@ -2828,88 +2715,55 @@ function qbFmt(n) { return '$' + n.toLocaleString(); }
 
 function qbRender() {
   const r = qbCalc(qbState);
-  const is50 = qbState.amp === 50, isSub = qbState.mode === 'sub';
+  const is50 = qbState.amp === 50;
+  // Hero
   document.getElementById('qb-total-sell').textContent = qbFmt(r.totalSell);
-  document.getElementById('qb-tell-total').textContent = qbFmt(r.totalSell);
-  document.getElementById('qb-tell-divider-val').textContent = qbFmt(r.totalSell);
   const lrNote = document.getElementById('qb-long-run-note');
-  if (r.extraFt > 0) { lrNote.classList.remove('hidden'); lrNote.textContent = 'incl. +' + qbFmt(r.longRunSell) + ' long-run (' + r.extraFt + 'ft)'; }
-  else { lrNote.classList.add('hidden'); }
+  lrNote.textContent = r.extraFt > 0 ? 'incl. +' + qbFmt(r.longRunSell) + ' long-run (' + r.extraFt + 'ft)' : '';
   const profitEl = document.getElementById('qb-profit-num');
   profitEl.textContent = qbFmt(r.profit);
-  profitEl.style.color = r.profit >= 700 ? 'var(--green)' : r.profit >= (isSub ? QB_C.minProfitSub : QB_C.minProfitSolo) ? '#d4980b' : 'var(--red)';
-  document.getElementById('qb-profit-pct').textContent = r.margin + '%';
-  document.getElementById('qb-pip-cost').textContent = qbFmt(r.totalCost);
-  document.getElementById('qb-pip-sub-label').textContent = isSub ? 'Sub Payout' : 'Labor';
-  document.getElementById('qb-pip-sub').textContent = isSub ? qbFmt(r.subTotal) : 'You';
-  document.getElementById('qb-pip-time').textContent = r.hours.toFixed(1) + 'h';
-  document.getElementById('qb-bd-supplies').textContent = qbFmt(r.yourSupplies);
-  document.getElementById('qb-bd-cords').textContent = qbFmt(r.cordAdapterCost);
-  document.getElementById('qb-bd-ad').textContent = qbFmt(QB_C.adCost);
-  const subRow = document.getElementById('qb-bd-sub-row');
-  if (isSub) {
-    subRow.classList.remove('hidden');
-    document.getElementById('qb-bd-sub-label').textContent = r.subExt > 0 ? 'Sub payout (incl. ' + qbFmt(r.subExt) + ' ext.)' : 'Sub payout';
-    document.getElementById('qb-bd-sub').textContent = qbFmt(r.subTotal);
-  } else { subRow.classList.add('hidden'); }
-  document.getElementById('qb-bd-total').textContent = qbFmt(r.totalCost);
+  profitEl.style.color = r.profit >= 700 ? 'var(--green)' : r.profit >= QB_C.minProfit ? '#d4980b' : 'var(--red)';
+  document.getElementById('qb-profit-pct').textContent = r.margin + '% · ' + qbFmt(r.totalCost) + ' cost';
+  // Amp buttons
+  document.getElementById('qb-btn-30').classList.toggle('active', qbState.amp === 30);
+  document.getElementById('qb-btn-50').classList.toggle('active', qbState.amp === 50);
+  // Run slider
   document.getElementById('qb-run-display').innerHTML = qbState.runFt + '<span>ft</span>';
-  document.getElementById('qb-ext-display').innerHTML = qbState.extFt + '<span>ft</span>';
-  document.getElementById('qb-ext-slider').max = qbState.runFt;
   const runNote = document.getElementById('qb-run-note');
   const lrRate = is50 ? QB_S.longRun50perFt : QB_S.longRun30perFt;
   if (qbState.runFt > 20) { runNote.textContent = '+' + (qbState.runFt - 20) + 'ft @ $' + lrRate + '/ft = +' + qbFmt(r.longRunSell); runNote.classList.add('highlight'); }
   else { runNote.textContent = 'No long-run adder'; runNote.classList.remove('highlight'); }
-  const extNote = document.getElementById('qb-ext-note');
-  if (qbState.extFt > 5 && isSub) { extNote.textContent = (qbState.extFt - 5) + 'ft over first 5ft → +' + qbFmt(r.subExt) + ' sub adder'; extNote.classList.add('highlight'); }
-  else { extNote.textContent = 'First 5ft exterior included'; extNote.classList.remove('highlight'); }
-  document.getElementById('qb-btn-30').classList.toggle('active', qbState.amp === 30);
-  document.getElementById('qb-btn-50').classList.toggle('active', qbState.amp === 50);
-  document.getElementById('qb-btn-main').classList.toggle('active', qbState.mainBreaker);
-  document.getElementById('qb-btn-twin').classList.toggle('active', qbState.twinQuad);
-  document.getElementById('qb-btn-surge').classList.toggle('active', qbState.surge);
-  const cordBtn = document.getElementById('qb-btn-cord');
-  cordBtn.classList.toggle('active', qbState.cordIncluded);
-  document.getElementById('qb-cord-toggle-label').textContent = (is50 ? '50' : '30') + 'A Generator Cord';
-  document.getElementById('qb-cord-toggle-sub').textContent = qbState.cordIncluded ? 'Included · tap to remove' : 'Customer has their own';
-  document.getElementById('qb-cord-toggle-right').textContent = qbState.cordIncluded ? '✓' : '-' + qbFmt(is50 ? QB_S.cordValue50 : QB_S.cordValue30);
-  if (is50) {
-    let h = '<button class="qb-chip' + (qbState.cordType === 'adapterOnly' ? ' active' : '') + '" onclick="qbSetCord(\'adapterOnly\')">30→50A Adapter +$' + QB_S.adapter + '</button>';
-    if (qbState.cordType) h += '<button class="qb-chip" onclick="qbSetCord(null)">✕ Remove</button>';
-    document.getElementById('qb-cord-chips').innerHTML = h;
-  } else { document.getElementById('qb-cord-chips').innerHTML = ''; }
-  document.getElementById('qb-adapter-note').classList.toggle('hidden', !(is50 && qbState.cordType === 'adapterOnly'));
-  document.getElementById('qb-inlet-line-item').textContent = qbFmt(r.inletLineItem);
-  const cordLabel = qbState.cordIncluded ? '(' + (is50 ? '50' : '30') + 'A cord included)' : '(no cord)';
+  // Toggle rows
+  document.getElementById('qb-row-main').classList.toggle('active', qbState.mainBreaker);
+  document.getElementById('qb-tog-main').classList.toggle('on', qbState.mainBreaker);
+  document.getElementById('qb-row-twin').classList.toggle('active', qbState.twinQuad);
+  document.getElementById('qb-tog-twin').classList.toggle('on', qbState.twinQuad);
+  document.getElementById('qb-row-surge').classList.toggle('active', qbState.surge);
+  document.getElementById('qb-tog-surge').classList.toggle('on', qbState.surge);
+  document.getElementById('qb-row-cord').classList.toggle('active', qbState.cordIncluded);
+  document.getElementById('qb-tog-cord').classList.toggle('on', qbState.cordIncluded);
+  document.getElementById('qb-cord-label').textContent = (is50 ? '50' : '30') + 'A Cord';
+  document.getElementById('qb-cord-sub').textContent = qbState.cordIncluded ? 'Included' : 'Removed · -' + qbFmt(is50 ? QB_S.cordValue50 : QB_S.cordValue30);
+  document.getElementById('qb-cord-right').textContent = qbState.cordIncluded ? '✓' : '';
+  // Summary
   const items = [
-    ['Inlet installation ' + cordLabel, qbFmt(r.inletLineItem)],
+    ['Installation' + (qbState.cordIncluded ? ' + cord' : ''), qbFmt(r.inletLineItem)],
     ['Permit & inspection', qbFmt(QB_C.permitCustomer)],
-    qbState.mainBreaker && ['Main breaker replacement', qbFmt(QB_S.mainBreaker)],
+    qbState.mainBreaker && ['Main breaker', qbFmt(QB_S.mainBreaker)],
     qbState.twinQuad && ['Panel space (twin/quad)', qbFmt(QB_S.twinQuad)],
-    qbState.surge && ['Whole home surge protector', qbFmt(QB_S.surge)],
-    qbState.cordType === 'adapterOnly' && ['30→50A adapter', qbFmt(QB_S.adapter)],
+    qbState.surge && ['Surge protector', qbFmt(QB_S.surge)],
   ].filter(Boolean);
   document.getElementById('qb-tell-items').innerHTML = items.map(i =>
-    '<div class="qb-tell-item"><span class="qb-tell-item-key">' + i[0] + '</span><span class="qb-tell-item-val">' + i[1] + '</span></div>'
+    '<div class="qb-summary-row"><span class="qb-summary-key">' + i[0] + '</span><span class="qb-summary-val">' + i[1] + '</span></div>'
   ).join('');
+  document.getElementById('qb-tell-total').textContent = qbFmt(r.totalSell);
 }
-function qbSetMode(m) { qbState.mode = m; document.getElementById('qb-mode-solo').classList.toggle('active', m==='solo'); document.getElementById('qb-mode-sub').classList.toggle('active', m==='sub'); qbRender(); }
-function qbSetAmp(a) { qbState.amp = a; qbState.cordType = null; qbRender(); }
-function qbOnRunChange(v) { qbState.runFt = parseInt(v); if (qbState.extFt > qbState.runFt) { qbState.extFt = qbState.runFt; document.getElementById('qb-ext-slider').value = qbState.runFt; } qbRender(); }
-function qbOnExtChange(v) { qbState.extFt = parseInt(v); qbRender(); }
+function qbSetAmp(a) { qbState.amp = a; qbRender(); }
+function qbOnRunChange(v) { qbState.runFt = parseInt(v); qbRender(); }
 function qbToggle(key) { qbState[key] = !qbState[key]; qbRender(); }
-function qbSetCord(id) { qbState.cordType = qbState.cordType === id ? null : id; qbRender(); }
-function qbToggleBreakdown() {
-  qbBreakdownOpen = !qbBreakdownOpen;
-  document.getElementById('qb-breakdown-body').classList.toggle('hidden', !qbBreakdownOpen);
-  document.getElementById('qb-breakdown-arrow').style.transform = qbBreakdownOpen ? 'rotate(90deg)' : 'none';
-  document.getElementById('qb-breakdown-label').textContent = qbBreakdownOpen ? 'Hide cost breakdown' : 'Show cost breakdown';
-}
 function qbResetAll() {
-  qbState = { mode:qbState.mode, amp:30, runFt:5, extFt:5, mainBreaker:false, twinQuad:false, surge:false, cordType:null, cordIncluded:true };
+  qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, surge:false, cordIncluded:true };
   document.getElementById('qb-run-slider').value = 5;
-  document.getElementById('qb-ext-slider').value = 5;
-  if (qbBreakdownOpen) qbToggleBreakdown();
   qbRender();
 }
 
