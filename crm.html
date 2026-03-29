@@ -640,14 +640,14 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
           <div id="p-contact-addr" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
         </div>
 
-        <!-- Amp Type Toggle -->
+        <!-- Pre-select Amp Type (customer always sees both options) -->
         <div class="form-row">
-          <label>Connection Type</label>
+          <label>Pre-select for Customer</label>
           <div style="display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px">
             <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-30" onclick="pSetAmp('30')" style="flex:1;border-radius:6px">30A</button>
             <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-50" onclick="pSetAmp('50')" style="flex:1;border-radius:6px">50A</button>
-            <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-both" onclick="pSetAmp('both')" style="flex:1;border-radius:6px">Both</button>
           </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">Customer can switch between 30A and 50A on their proposal</div>
         </div>
 
         <!-- Run Length -->
@@ -1724,7 +1724,8 @@ async function saveProposal() {
     contact_email:   c?.email   || '',
     contact_phone:   c?.phone   || '',
     contact_address: c?.address || '',
-    amp_type:        pAmpType,
+    amp_type:        'both',
+    default_amp:     pAmpType,
     run_ft:          pRunFt,
     mode:            qbState.mode,
     cord_included:   cordIncluded,
