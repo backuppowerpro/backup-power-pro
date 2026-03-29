@@ -683,7 +683,7 @@ function renderApproved() {
           <div class="next-step-num">3</div>
           <div class="next-step-text">
             <strong>Installation day</strong>
-            <span>We arrive, install everything, clean up, and walk you through your new system. Most installs are done in a few hours.</span>
+            <span>We arrive, install everything, clean up, and walk you through your new system. Most installs are done in a few hours. Payment is due upon completion.</span>
           </div>
         </div>
         <div class="next-step-item">
@@ -877,6 +877,11 @@ function downloadPDF() {
         8. <strong>Inspect your cord before each use.</strong> Check for damage, cracks, or exposed wiring. Replace immediately if damaged.
       </div>
 
+      <!-- Payment Terms -->
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11px;color:#92400e;line-height:1.6">
+        <strong>Payment Terms:</strong> Full payment is due upon completion of installation. An invoice will be provided on-site once the work is finished and your walkthrough is complete.
+      </div>
+
       <!-- Footer -->
       <div style="text-align:center;font-size:10px;color:#8a9ab5;border-top:1px solid #e4e8f0;padding-top:12px">
         Backup Power Pro &middot; Licensed Electrical Contractor &middot; (864) 400-5302 &middot; backuppowerpro.com
@@ -885,7 +890,6 @@ function downloadPDF() {
   `;
 
   const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:0;top:0;width:680px;z-index:-9999';
   container.innerHTML = html;
   document.body.appendChild(container);
 
