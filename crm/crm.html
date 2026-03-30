@@ -265,8 +265,8 @@ td.actions{white-space:nowrap}
 /* SCROLLABLE CONTACTS */
 .table-scroll{height:265px;overflow-y:auto;border-top:none;scrollbar-color:var(--border) transparent;background:var(--bg);position:relative}
 .table-wrap{position:relative}
-.table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(200,205,215,.35));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:1;transition:opacity .25s}
-.table-wrap.at-bottom::after{opacity:0}
+.table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(200,205,215,.35));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:var(--grad-opacity,1)}
+/* gradient opacity controlled by JS based on scroll distance from bottom */
 .table-scroll::-webkit-scrollbar{width:8px}
 .table-scroll::-webkit-scrollbar-track{background:transparent}
 .table-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--r-xs)}
@@ -1284,9 +1284,14 @@ function renderContacts() {
   const wrapEl = wrap.querySelector('.table-wrap');
   if (scrollEl && wrapEl) {
     const checkScroll = () => {
-      const atBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 4;
-      wrapEl.classList.toggle('at-bottom', atBottom);
+      const remaining = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+      const fadeZone = 80; // start fading 80px from bottom
+      const opacity = Math.min(1, Math.max(0, remaining / fadeZone));
+      wrapEl.style.setProperty('--grad-opacity', opacity);
+      const after = wrapEl.querySelector(':scope')?.parentElement; // can't style pseudo directly, use CSS var
     };
+    // Use CSS custom property for the pseudo-element opacity
+    wrapEl.style.setProperty('--grad-opacity', '1');
     scrollEl.addEventListener('scroll', checkScroll);
     checkScroll();
   }
