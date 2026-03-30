@@ -1558,7 +1558,10 @@ function renderProposalDrill() {
     ? '<button id="cancel-proposal-btn" class="btn btn-outline" style="width:100%;margin-top:16px;color:var(--green);border-color:var(--green);font-size:12px" onclick="reviveProposal(\'' + p.id + '\')">Revive Proposal</button>'
     : '<button id="cancel-proposal-btn" class="btn btn-outline" style="width:100%;margin-top:16px;color:var(--text3);border-color:var(--border);font-size:12px" onclick="cancelProposal(\'' + p.id + '\')">Cancel Proposal</button>';
   const frozenHtml = isCancelled ? '<div style="background:#fee2e2;border-radius:var(--r-sm);padding:12px;margin-bottom:12px;font-size:13px;color:var(--red);text-align:center;font-weight:600">This proposal is cancelled. The customer can no longer view or sign it.</div>' : '';
-  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div>' + frozenHtml + '<div class="pay-summary">' + items + '</div>' + (isCancelled ? '' : '<div style="margin-bottom:16px"><button class="btn btn-outline" style="width:100%" onclick="navigator.clipboard.writeText(\'' + esc(url) + '\');showToast(\'Proposal link copied!\',\'success\')">Copy Proposal Link</button></div>' + addons + inspBtn + payBtn) + cancelBtn;
+  const lockedHtml = isApproved ? '<div style="background:#d1fae5;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--green);text-align:center;font-weight:600">Approved — this proposal is locked and can no longer be edited.</div>' : '';
+  const canEdit = !isApproved && !isCancelled;
+  const editBtn = canEdit ? '<button class="btn btn-outline" style="width:100%;margin-bottom:8px" onclick="editProposal(\'' + p.id + '\')">Edit Proposal</button>' : '';
+  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div>' + frozenHtml + lockedHtml + '<div class="pay-summary">' + items + '</div>' + (isCancelled ? '' : '<div style="margin-bottom:16px">' + editBtn + '<button class="btn btn-outline" style="width:100%" onclick="navigator.clipboard.writeText(\'' + esc(url) + '\');showToast(\'Proposal link copied!\',\'success\')">Copy Proposal Link</button></div>' + addons + inspBtn + payBtn) + cancelBtn;
 }
 
 let _cancelProposalPending = null;
@@ -2456,7 +2459,36 @@ function discardProposal() {
   backToContactFromProposal();
 }
 
+let _editingProposalId = null; // If set, save updates instead of inserts
+
+function editProposal(proposalId) {
+  const contactId = currentPanelContactId;
+  const proposals = proposalMap[contactId] || [];
+  const p = proposals.find(x => x.id === proposalId);
+  if (!p) { showToast('Proposal not found', 'error'); return; }
+  _editingProposalId = proposalId;
+  closePanel();
+  openProposalModal(contactId);
+  // Pre-fill from existing proposal
+  setTimeout(function() {
+    pSetAmp(p.amp_type === '50' ? '50' : '30');
+    document.getElementById('p-run-slider').value = p.run_ft || 5;
+    pRunFt = p.run_ft || 5;
+    document.getElementById('p-run-display').textContent = pRunFt + 'ft';
+    document.getElementById('p-cord-check').checked = p.cord_included !== false;
+    document.getElementById('p-main-breaker').checked = !!p.include_main_breaker;
+    document.getElementById('p-twin-quad').checked = !!p.include_twin_quad;
+    if (document.getElementById('p-surge-check')) document.getElementById('p-surge-check').checked = !!p.include_surge;
+    if (document.getElementById('p-pom-check')) document.getElementById('p-pom-check').checked = !!p.include_pom;
+    document.getElementById('p-notes').value = p.notes || '';
+    document.getElementById('proposal-modal-title').textContent = 'Edit Proposal';
+    document.getElementById('p-create-btn').textContent = 'Save Changes';
+    pRecalc();
+  }, 100);
+}
+
 function openProposalModal(contactId) {
+  _editingProposalId = null; // Reset — new proposal mode
   _proposalReturnContactId = contactId;
   const c = allContacts.find(x => x.id === contactId);
   if (!c) return;
@@ -2525,16 +2557,33 @@ async function saveProposal() {
     status:          'Sent',
   };
 
-  const { data, error } = await db.from('proposals').insert([payload]).select().single();
+  let data, error;
+  if (_editingProposalId) {
+    // Update existing proposal
+    delete payload.status; // Don't reset status on edit
+    ({ data, error } = await db.from('proposals').update(payload).eq('id', _editingProposalId).select().single());
+  } else {
+    // Create new proposal
+    ({ data, error } = await db.from('proposals').insert([payload]).select().single());
+  }
   if (error) { savingProposal = false; showToast('Failed: ' + error.message, 'error'); return; }
   savingProposal = false;
 
   const link = PROPOSAL_BASE_URL + '?token=' + data.token;
 
-  document.getElementById('p-form').style.display = 'none';
-  document.getElementById('p-created').style.display = '';
-  document.getElementById('p-create-btn').style.display = 'none';
-  document.getElementById('p-link-url').textContent = link;
+  if (_editingProposalId) {
+    // Update in local state
+    const arr = proposalMap[contactId] || [];
+    const idx = arr.findIndex(x => x.id === _editingProposalId);
+    if (idx >= 0) arr[idx] = data;
+    const aIdx = allProposals.findIndex(x => x.id === _editingProposalId);
+    if (aIdx >= 0) allProposals[aIdx] = data;
+    _editingProposalId = null;
+    showToast('Proposal updated!', 'success');
+    closeModal('proposal-overlay');
+    openPanel(contactId);
+    return;
+  }
 
   proposalMap[contactId] = [data, ...(proposalMap[contactId]||[])];
   allProposals.unshift(data);
@@ -2552,9 +2601,15 @@ async function saveProposal() {
 
   // New proposal is now the most recent — set stage to "Quote Sent" (3)
   setStageFromLatestProposal(contactId, 3);
-
   renderContacts();
-  showToast('Proposal created!', 'success');
+
+  // Auto-copy link and go straight to proposal drill-down
+  navigator.clipboard.writeText(link).catch(function(){});
+  closeModal('proposal-overlay');
+  currentProposalIdx = 0; // New proposal is first in array
+  openPanel(contactId);
+  setTimeout(function() { drillTo('proposal'); }, 100);
+  showToast('Proposal created — link copied!', 'success');
 }
 
 function copyProposalLink() {
