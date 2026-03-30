@@ -2793,41 +2793,52 @@ function toggleDayLock(dateStr) {
   setLockedDays(locked);
   renderCalendar();
 }
+let _lockNoteDate = null;
 function openLockNote(dateStr, e) {
   e.stopPropagation();
+  e.preventDefault();
+  calDayUp(); // cancel any long-press
   const locked = getLockedDays();
   const entry = locked[dateStr];
   if (!entry) return;
+  _lockNoteDate = dateStr;
   const currentNote = entry.note || '';
   const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  // Build modal
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay open';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
-  overlay.innerHTML = '<div class="modal" style="max-width:380px"><div class="modal-head"><div class="modal-title">🔒 ' + dateLabel + '</div><button class="modal-close" onclick="closeLockNote()">✕</button></div><div class="modal-body"><div class="form-row"><label>Note</label><textarea class="form-textarea" id="lock-note-input" placeholder="Why is this day blocked?" style="min-height:80px">' + esc(currentNote) + '</textarea></div></div><div class="modal-foot" style="display:flex;gap:8px;justify-content:flex-end">' + (currentNote ? '<button class="btn btn-danger btn-sm" onclick="clearLockNote(\'' + dateStr + '\')" style="margin-right:auto">Clear Note</button>' : '') + '<button class="btn btn-outline btn-sm" onclick="closeLockNote()">Cancel</button><button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" onclick="saveLockNote(\'' + dateStr + '\')">Save</button></div></div>';
-  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) closeLockNote(); });
-  document.body.appendChild(overlay);
+  const el = document.createElement('div');
+  el.id = 'lock-note-overlay';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
+  const hasNote = currentNote.length > 0;
+  el.innerHTML = '<div class="modal" style="max-width:380px" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">\uD83D\uDD12 ' + esc(dateLabel) + '</div><button class="modal-close" id="lock-note-close">\u2715</button></div><div class="modal-body"><div class="form-row"><label>Note</label><textarea class="form-textarea" id="lock-note-input" placeholder="Why is this day blocked?" style="min-height:80px">' + esc(currentNote) + '</textarea></div></div><div class="modal-foot" style="display:flex;gap:8px;justify-content:flex-end">' + (hasNote ? '<button class="btn btn-danger btn-sm" id="lock-note-clear" style="margin-right:auto">Clear Note</button>' : '') + '<button class="btn btn-outline btn-sm" id="lock-note-cancel">Cancel</button><button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" id="lock-note-save">Save</button></div></div>';
+  document.body.appendChild(el);
   lockBody();
+  // Attach events via JS (not inline onclick)
+  el.addEventListener('click', function(ev) { if (ev.target === el) closeLockNote(); });
+  document.getElementById('lock-note-close').addEventListener('click', closeLockNote);
+  document.getElementById('lock-note-cancel').addEventListener('click', closeLockNote);
+  document.getElementById('lock-note-save').addEventListener('click', function() { saveLockNote(_lockNoteDate); });
+  var clearBtn = document.getElementById('lock-note-clear');
+  if (clearBtn) clearBtn.addEventListener('click', function() { clearLockNote(_lockNoteDate); });
   setTimeout(function() { document.getElementById('lock-note-input').focus(); }, 50);
 }
 function saveLockNote(dateStr) {
-  const note = document.getElementById('lock-note-input').value.trim();
-  const locked = getLockedDays();
+  var note = document.getElementById('lock-note-input').value.trim();
+  var locked = getLockedDays();
   if (locked[dateStr]) locked[dateStr].note = note;
   setLockedDays(locked);
   closeLockNote();
   renderCalendar();
 }
 function clearLockNote(dateStr) {
-  const locked = getLockedDays();
+  var locked = getLockedDays();
   if (locked[dateStr]) locked[dateStr].note = '';
   setLockedDays(locked);
   closeLockNote();
   renderCalendar();
 }
 function closeLockNote() {
-  const overlay = document.querySelector('.modal-overlay[style*="z-index:400"]');
-  if (overlay) { overlay.remove(); unlockBody(); }
+  var el = document.getElementById('lock-note-overlay');
+  if (el) { el.remove(); unlockBody(); }
+  _lockNoteDate = null;
 }
 
 let _calLongPressTimer = null;
