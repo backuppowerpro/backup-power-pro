@@ -295,7 +295,7 @@ td.actions{white-space:nowrap}
 .cal-day.today .cal-day-num{color:var(--navy)}
 .cal-day-body{flex:1;padding:4px;display:flex;flex-direction:column;gap:3px;cursor:pointer}
 .cal-day-body.cal-full{cursor:default}
-.cal-day-body:hover:not(.cal-full):not(:has(.cal-event:hover)){background:rgba(59,130,246,.04)}
+.cal-day:not(.locked) .cal-day-body:hover:not(.cal-full):not(:has(.cal-event:hover)){background:rgba(59,130,246,.04)}
 .cal-event{border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4;flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cal-event.evt-contact{background:#fef3c7;color:#92400e;border:none}
 .cal-event.evt-contact:hover{background:#fde68a}
@@ -579,7 +579,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   </div>
 
   <div id="permit-analytics" style="margin-top:var(--sp-md)"></div>
-  <div id="trend-analytics" style="margin-top:var(--sp-lg)"></div>
+  <div id="trend-analytics" style="margin-top:var(--sp-lg);cursor:pointer" onclick="toggleTrendPeriod()"></div>
 
   <div class="cal-nav" style="margin-top:var(--sp-lg)">
     <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(-1)">←</button>
@@ -1519,9 +1519,11 @@ function openPanel(id) {
     proposals.forEach((p, idx) => {
       let badge = '', badgeStyle = '';
       if (p.status === 'Cancelled') { badge = 'Cancelled'; badgeStyle = 'background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb'; }
-      else if (p.status === 'Approved') { badge = '&#10003; Approved'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
-      else if (p.status === 'Viewed') { badge = '&#128065; Viewed'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
-      else { badge = 'Sent &#8599;'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
+      else if (p.status === 'Approved') { badge = '&#10003; Invoice'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
+      else if (p.status === 'Viewed') { badge = 'Viewed'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
+      else if (p.status === 'Copied') { badge = 'Copied'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
+      else if (p.status === 'Created') { badge = 'Created'; badgeStyle = 'background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe'; }
+      else { badge = esc(p.status); badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
       const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
       const surgeLabel = p.selected_surge ? ' + Surge' : (p.include_surge ? ' + Surge' : '');
       const pomLabel = p.include_pom ? ' + POM' : '';
@@ -1560,10 +1562,13 @@ function renderProposalDrill() {
   if (!p) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px 0">No proposal yet</div>'; return; }
   const url = PROPOSAL_BASE_URL + '?token=' + p.token;
   let statusBadge = '';
+  const fmtTS = function(d) { return d ? new Date(d).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : ''; };
   if (p.status === 'Cancelled') statusBadge = '<span class="prop-badge" style="background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb">Cancelled</span>';
-  else if (p.status === 'Approved') statusBadge = '<span class="prop-badge prop-approved">&check; Approved</span>';
-  else if (p.status === 'Viewed') statusBadge = '<span class="prop-badge prop-viewed">Viewed</span>';
-  else statusBadge = '<span class="prop-badge prop-sent">Sent</span>';
+  else if (p.status === 'Approved') statusBadge = '<span class="prop-badge prop-approved">&check; Invoice</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Approved ' + fmtTS(p.signed_at) + '</div>';
+  else if (p.status === 'Viewed') statusBadge = '<span class="prop-badge prop-viewed">Viewed</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Viewed ' + fmtTS(p.viewed_at) + '</div>';
+  else if (p.status === 'Copied') statusBadge = '<span class="prop-badge prop-sent">Copied</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Copied ' + fmtTS(p.copied_at) + '</div>';
+  else if (p.status === 'Created') statusBadge = '<span class="prop-badge" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe">Created</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Created ' + fmtTS(p.created_at) + '</div>';
+  else statusBadge = '<span class="prop-badge prop-sent">' + esc(p.status) + '</span>';
   const hasPOM = p.include_pom || false;
   const hasSurge = p.include_surge || p.selected_surge || false;
   const isApproved = p.status === 'Approved';
@@ -1595,7 +1600,7 @@ function renderProposalDrill() {
   const editBtn = canEdit ? '<button class="btn btn-outline" style="width:100%;margin-bottom:8px" onclick="editProposal(\'' + p.id + '\')">Edit Proposal</button>' : '';
   const viewedInfo = p.viewed_at ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Client last viewed: ' + new Date(p.viewed_at).toLocaleString() + (p.view_count > 1 ? ' (' + p.view_count + ' views)' : '') + '</div>' : '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Not yet viewed by client</div>';
   const previewUrl = url + '&preview=1';
-  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div>' + viewedInfo + frozenHtml + lockedHtml + '<div class="pay-summary">' + items + '</div>' + (isCancelled ? '' : '<div style="margin-bottom:16px">' + editBtn + '<div style="display:flex;gap:8px"><button class="btn btn-outline" style="flex:1" onclick="navigator.clipboard.writeText(\'' + esc(url) + '\');showToast(\'Proposal link copied!\',\'success\')">Copy Link</button><a class="btn btn-outline" style="flex:1;text-decoration:none;text-align:center" href="' + esc(previewUrl) + '" target="_blank">Preview</a></div></div>' + addons + inspBtn + payBtn) + cancelBtn;
+  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div>' + viewedInfo + frozenHtml + lockedHtml + '<div class="pay-summary">' + items + '</div>' + (isCancelled ? '' : '<div style="margin-bottom:16px">' + editBtn + '<div style="display:flex;gap:8px"><button class="btn btn-outline" style="flex:1" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')">Copy Link</button><a class="btn btn-outline" style="flex:1;text-decoration:none;text-align:center" href="' + esc(previewUrl) + '" target="_blank">Preview</a></div></div>' + addons + inspBtn + payBtn) + cancelBtn;
 }
 
 let _cancelProposalPending = null;
@@ -1637,13 +1642,13 @@ async function doCancelProposal(proposalId) {
 }
 
 async function reviveProposal(proposalId) {
-  const { error } = await db.from('proposals').update({ status: 'Sent' }).eq('id', proposalId);
+  const { error } = await db.from('proposals').update({ status: 'Created' }).eq('id', proposalId);
   if (error) { showToast('Failed: ' + error.message, 'error'); return; }
   const contactId = currentPanelContactId;
   const arr = proposalMap[contactId];
   if (arr) {
     const p = arr.find(x => x.id === proposalId);
-    if (p) p.status = 'Sent';
+    if (p) p.status = 'Created';
   }
   showToast('Proposal revived', 'success');
   drillTo('contact');
@@ -2620,7 +2625,7 @@ async function saveProposal() {
     price_cord:      cordIncluded ? (pAmpType === '50' ? QB_S.cordValue50 : QB_S.cordValue30) : 0,
     price_surge:     QB_S.surge,
     notes:           document.getElementById('p-notes').value.trim(),
-    status:          'Sent',
+    status:          'Created',
   };
 
   let data, error;
@@ -2676,6 +2681,20 @@ async function saveProposal() {
   openPanel(contactId);
   setTimeout(function() { drillTo('proposal'); }, 100);
   showToast('Proposal created — link copied!', 'success');
+}
+
+async function copyProposalAndUpdateStatus(url, proposalId) {
+  navigator.clipboard.writeText(url);
+  showToast('Proposal link copied!', 'success');
+  // Only upgrade to Copied if currently Created
+  const contactId = currentPanelContactId;
+  const p = (proposalMap[contactId] || []).find(x => x.id === proposalId);
+  if (p && p.status === 'Created') {
+    p.status = 'Copied';
+    p.copied_at = new Date().toISOString();
+    await db.from('proposals').update({ status: 'Copied', copied_at: new Date().toISOString() }).eq('id', proposalId);
+    renderProposalDrill();
+  }
 }
 
 function copyProposalLink() {
@@ -3688,22 +3707,27 @@ async function loadTrendAnalytics() {
   renderTrendAnalytics();
 }
 
+let trendDays = 7;
+function toggleTrendPeriod() {
+  trendDays = trendDays === 7 ? 30 : 7;
+  renderTrendAnalytics();
+}
+
 function renderTrendAnalytics() {
   const el = document.getElementById('trend-analytics');
   if (!el) return;
 
-  // Trailing 7-day window from today
+  const days = trendDays;
   const now = new Date();
   now.setHours(23, 59, 59, 999);
   const currStart = new Date(now);
-  currStart.setDate(currStart.getDate() - 6);
+  currStart.setDate(currStart.getDate() - (days - 1));
   currStart.setHours(0, 0, 0, 0);
   const currEnd = new Date(now);
-  // Prior 7-day window
   const prevEnd = new Date(currStart);
   prevEnd.setMilliseconds(-1);
   const prevStart = new Date(prevEnd);
-  prevStart.setDate(prevStart.getDate() - 6);
+  prevStart.setDate(prevStart.getDate() - (days - 1));
   prevStart.setHours(0, 0, 0, 0);
 
   const hist = stageHistoryCache || [];
@@ -3720,9 +3744,9 @@ function renderTrendAnalytics() {
 
   function delta(curr, prev) {
     const diff = curr - prev;
-    if (diff === 0) return '<div class="trend-delta flat">same as prior 7 days</div>';
+    if (diff === 0) return '<div class="trend-delta flat">same as prior ${days} days</div>';
     const cls = diff > 0 ? 'up' : 'down';
-    return '<div class="trend-delta ' + cls + '">' + (diff > 0 ? '&uarr;' : '&darr;') + Math.abs(diff) + ' vs prior 7 days</div>';
+    return '<div class="trend-delta ' + cls + '">' + (diff > 0 ? '&uarr;' : '&darr;') + Math.abs(diff) + ' vs prior ${days} days</div>';
   }
 
   // Conversion rate
@@ -3750,17 +3774,17 @@ function renderTrendAnalytics() {
   el.innerHTML = `<div class="trend-stat-grid">
     <div class="trend-stat">
       <div class="trend-num">${currLeads}</div>
-      <div class="trend-label">New leads<br>last 7 days</div>
+      <div class="trend-label">New leads<br>last ${days} days</div>
       ${delta(currLeads, prevLeads)}
     </div>
     <div class="trend-stat">
       <div class="trend-num">${currMoves}</div>
-      <div class="trend-label">Stages advanced<br>last 7 days</div>
+      <div class="trend-label">Stages advanced<br>last ${days} days</div>
       ${delta(currMoves, prevMoves)}
     </div>
     <div class="trend-stat">
       <div class="trend-num">${currDone}</div>
-      <div class="trend-label">Jobs completed<br>last 7 days</div>
+      <div class="trend-label">Jobs completed<br>last ${days} days</div>
       ${delta(currDone, prevDone)}
     </div>
   </div>
