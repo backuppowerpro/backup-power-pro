@@ -830,15 +830,17 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <div class="form-row">
         <label>Linked Lead</label>
         <div style="position:relative">
-          <div style="display:flex;gap:6px;align-items:center">
+          <input type="hidden" id="j-contact" value="">
+          <div id="j-contact-search-wrap" style="display:flex;gap:6px;align-items:center">
             <input class="form-input" id="j-contact-search" placeholder="Search contacts..." autocomplete="off"
               oninput="jobContactSearch(this.value)" onkeydown="jobContactKeydown(event)" onblur="setTimeout(jobContactHideResults,200)" onfocus="if(this.value)jobContactSearch(this.value)" style="flex:1">
-            <input type="hidden" id="j-contact" value="">
-            <button class="fld-btn" id="j-contact-jump" onclick="jumpToContactFromJob()" title="View contact" style="display:none;flex-shrink:0">&rarr;</button>
           </div>
-          <div id="j-contact-selected" style="display:none;margin-top:6px;background:var(--bg);border-radius:var(--r-sm);padding:8px 12px;display:none;align-items:center;justify-content:space-between">
-            <span id="j-contact-selected-name" style="font-size:13px;font-weight:600;color:var(--navy)"></span>
-            <button onclick="clearJobContact()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">✕</button>
+          <div id="j-contact-selected" style="display:none;gap:6px;align-items:center">
+            <div style="flex:1;background:var(--bg);border-radius:var(--r-sm);padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
+              <span id="j-contact-selected-name" style="font-size:13px;font-weight:600;color:var(--navy)"></span>
+              <button onclick="clearJobContact()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">✕</button>
+            </div>
+            <button class="fld-btn" id="j-contact-jump" onclick="jumpToContactFromJob()" title="View contact" style="flex-shrink:0">&rarr;</button>
           </div>
           <ul id="j-contact-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1.5px solid var(--navy);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);z-index:999;list-style:none;max-height:200px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.12);margin:0;padding:0"></ul>
         </div>
@@ -2848,9 +2850,8 @@ function selectJobContact(contactId) {
   const c = allContacts.find(x => x.id === contactId);
   if (!c) return;
   document.getElementById('j-contact').value = contactId;
-  document.getElementById('j-contact-search').style.display = 'none';
-  const selEl = document.getElementById('j-contact-selected');
-  selEl.style.display = 'flex';
+  document.getElementById('j-contact-search-wrap').style.display = 'none';
+  document.getElementById('j-contact-selected').style.display = 'flex';
   document.getElementById('j-contact-selected-name').textContent = c.name;
   jobContactHideResults();
   onJobContactChange();
@@ -2859,9 +2860,10 @@ function selectJobContact(contactId) {
 function clearJobContact() {
   document.getElementById('j-contact').value = '';
   document.getElementById('j-contact-search').value = '';
-  document.getElementById('j-contact-search').style.display = '';
+  document.getElementById('j-contact-search-wrap').style.display = 'flex';
   document.getElementById('j-contact-selected').style.display = 'none';
   onJobContactChange();
+  document.getElementById('j-contact-search').focus();
 }
 
 async function createContactFromEvent(name) {
@@ -2911,7 +2913,7 @@ function openJobModal(id, preDate) {
   // Reset contact search
   document.getElementById('j-contact').value = '';
   document.getElementById('j-contact-search').value = '';
-  document.getElementById('j-contact-search').style.display = '';
+  document.getElementById('j-contact-search-wrap').style.display = 'flex';
   document.getElementById('j-contact-selected').style.display = 'none';
   jobContactHideResults();
 
