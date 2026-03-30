@@ -3737,12 +3737,13 @@ function renderTrendAnalytics() {
   function inRange(ts) { const d = new Date(ts); return d >= currStart && d <= currEnd; }
   function inPrev(ts)  { const d = new Date(ts); return d >= prevStart && d <= prevEnd; }
 
-  const currLeads = allContacts.filter(c => inRange(c.created_at)).length;
-  const prevLeads = allContacts.filter(c => inPrev(c.created_at)).length;
-  const currMoves = hist.filter(h => inRange(h.changed_at)).length;
-  const prevMoves = hist.filter(h => inPrev(h.changed_at)).length;
-  const currDone  = hist.filter(h => h.to_stage === 9 && inRange(h.changed_at)).length;
-  const prevDone  = hist.filter(h => h.to_stage === 9 && inPrev(h.changed_at)).length;
+  const nonArchived = new Set(allContacts.filter(c => c.status !== 'Archived').map(c => c.id));
+  const currLeads = allContacts.filter(c => c.status !== 'Archived' && inRange(c.created_at)).length;
+  const prevLeads = allContacts.filter(c => c.status !== 'Archived' && inPrev(c.created_at)).length;
+  const currMoves = hist.filter(h => nonArchived.has(h.contact_id) && inRange(h.changed_at)).length;
+  const prevMoves = hist.filter(h => nonArchived.has(h.contact_id) && inPrev(h.changed_at)).length;
+  const currDone  = hist.filter(h => nonArchived.has(h.contact_id) && h.to_stage === 9 && inRange(h.changed_at)).length;
+  const prevDone  = hist.filter(h => nonArchived.has(h.contact_id) && h.to_stage === 9 && inPrev(h.changed_at)).length;
 
   function delta(curr, prev) {
     const diff = curr - prev;
