@@ -833,9 +833,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
           <button class="fld-btn" id="j-contact-jump" onclick="jumpToContactFromJob()" title="View contact" style="display:none;flex-shrink:0">&rarr;</button>
         </div>
       </div>
-      <div class="form-row" id="j-title-row">
-        <label>Event Title</label>
-        <input class="form-input" id="j-title" placeholder="e.g. Site visit, Call, Block time…">
+      <div class="form-row" id="j-title-row" style="display:none">
+        <input class="form-input" id="j-title" type="hidden">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="form-row">
@@ -867,10 +866,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
           </select>
         </div>
       </div>
-      <div class="form-row">
-        <label>Price <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
-        <input class="form-input" id="j-price" type="number" min="0" placeholder="0">
-      </div>
+      <input id="j-price" type="hidden" value="0">
       <div class="form-row">
         <label>Notes</label>
         <textarea class="form-textarea" id="j-notes" style="min-height:64px" placeholder="Notes for this event…"></textarea>
@@ -900,7 +896,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value)" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
       <div class="form-row"><label>Notes</label><textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…"></textarea></div>
       <div class="form-row"><label>Jurisdiction</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-jurisdiction" style="flex:1"></select><button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div></div>
-      <div class="form-row"><label>Pipeline Stage</label><select class="form-select" id="panel-stage"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select></div>
+      <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
     </div>
     <!-- LEVEL 2: Proposal View -->
     <div class="drill-level right" id="drill-proposal">
@@ -2928,6 +2924,17 @@ function copyField(id) {
 }
 
 let _panelReturnContactId = null;
+
+function bookEventFromPanel() {
+  const contactId = document.getElementById('panel-id').value;
+  _panelReturnContactId = contactId;
+  document.getElementById('side-panel-overlay').classList.remove('open');
+  openJobModal(null, null);
+  setTimeout(function() {
+    document.getElementById('j-contact').value = contactId;
+    onJobContactChange();
+  }, 50);
+}
 
 function openPanelJurisdiction() {
   const jurId = document.getElementById('panel-jurisdiction').value;
