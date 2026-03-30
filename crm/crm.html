@@ -714,12 +714,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── PROPOSAL MODAL ────────────────────────────────────── -->
-<div class="modal-overlay" id="proposal-overlay" onclick="if(event.target===this)closeModal('proposal-overlay')">
+<div class="modal-overlay" id="proposal-overlay" onclick="if(event.target===this)backToContactFromProposal()">
   <div class="modal" style="max-width:540px">
     <div class="modal-head">
-      <button style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:14px;font-weight:600;padding:4px 8px;margin-right:4px;font-family:'Inter',sans-serif" onclick="backToContactFromProposal()">← Back</button>
       <div class="modal-title" id="proposal-modal-title" style="flex:1">Create Proposal</div>
-      <button class="modal-close" onclick="closeModal('proposal-overlay')">&#10005;</button>
+      <button class="modal-close" onclick="discardProposal()">&#10005;</button>
     </div>
     <div class="modal-body" id="proposal-modal-body">
       <input type="hidden" id="p-contact-id">
@@ -806,8 +805,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
           <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--navy)">Proposal link ready</div>
         </div>
         <div id="p-link-url" style="display:none"></div>
-        <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="copyProposalLink()">Copy Link</button>
-        <button class="btn btn-outline" style="width:100%" onclick="backToContactFromProposal()">← Back to Contact</button>
+        <button class="btn btn-primary" style="width:100%" onclick="copyProposalLink()">Copy Link</button>
       </div>
 
     </div>
@@ -927,8 +925,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <!-- ── JURISDICTION VIEW POPUP ──────────────────────────── -->
 <div class="modal-overlay" id="jur-view-overlay" onclick="if(event.target===this)closeJurView()">
   <div class="modal" style="max-width:420px">
-    <div class="modal-head" style="flex-wrap:wrap;gap:6px">
-      <button id="jur-view-back-btn" style="display:none;background:none;border:none;cursor:pointer;color:var(--text2);font-size:14px;font-weight:600;padding:4px 8px;font-family:'Inter',sans-serif" onclick="closeJurView()">← Back</button>
+    <div class="modal-head">
       <div id="jur-view-head-btn" style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;padding:4px;border-radius:var(--r-sm);transition:background .15s" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
         <div id="jur-view-logo" class="jur-logo" style="width:36px;height:36px"></div>
         <div class="modal-title" id="jur-view-title"></div>
@@ -2425,6 +2422,11 @@ function backToContactFromProposal() {
   const contactId = _proposalReturnContactId || document.getElementById('p-contact-id').value;
   closeModal('proposal-overlay');
   if (contactId) openPanel(contactId);
+}
+
+function discardProposal() {
+  // ✕ = discard without saving, go back to contact
+  backToContactFromProposal();
 }
 
 function openProposalModal(contactId) {
