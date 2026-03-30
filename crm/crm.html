@@ -3751,8 +3751,11 @@ function renderTrendAnalytics() {
 
   // Conversion rate
   const active = allContacts.filter(c => c.status !== 'Archived');
-  const totalLeads = active.length;
-  const bookedLeads = active.filter(c => (c.stage || 1) >= 4).length;
+  // Conversion rate: last 30 days only (leads created in past 30 days that reached Booked+)
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30); thirtyDaysAgo.setHours(0,0,0,0);
+  const last30Leads = active.filter(c => new Date(c.created_at) >= thirtyDaysAgo);
+  const totalLeads = last30Leads.length;
+  const bookedLeads = last30Leads.filter(c => (c.stage || 1) >= 4).length;
   const convRate = totalLeads > 0 ? Math.round((bookedLeads / totalLeads) * 100) : 0;
 
   // Average days to book
@@ -3791,7 +3794,7 @@ function renderTrendAnalytics() {
   <div class="trend-stat-grid-2">
     <div class="trend-stat">
       <div class="trend-num">${convRate}%</div>
-      <div class="trend-label">Lead &rarr; Booked<br>conversion rate</div>
+      <div class="trend-label">Lead &rarr; Booked<br>last 30 days</div>
       <div class="trend-delta flat">${bookedLeads} of ${totalLeads} leads</div>
     </div>
     <div class="trend-stat">
