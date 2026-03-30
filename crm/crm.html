@@ -263,7 +263,9 @@ td.actions{white-space:nowrap}
 .prop-viewed{background:#fef3c7;color:#92400e;border:none}
 
 /* SCROLLABLE CONTACTS */
-.table-scroll{height:265px;overflow-y:auto;border-top:none;scrollbar-color:var(--border) transparent;background:var(--bg)}
+.table-scroll{height:265px;overflow-y:auto;border-top:none;scrollbar-color:var(--border) transparent;background:var(--bg);position:relative}
+.table-wrap{position:relative}
+.table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,var(--bg));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1}
 .table-scroll::-webkit-scrollbar{width:8px}
 .table-scroll::-webkit-scrollbar-track{background:transparent}
 .table-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--r-xs)}
@@ -565,7 +567,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <div id="contacts-view">
     <div class="toolbar">
-      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts();searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
+      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()" autocomplete="off">
     </div>
     <div id="contacts-table"></div>
   </div>
