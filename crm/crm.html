@@ -2759,8 +2759,14 @@ function getLockedDays() {
 function setLockedDays(obj) { localStorage.setItem('cal_locked_days', JSON.stringify(obj)); }
 function toggleDayLock(dateStr) {
   const locked = getLockedDays();
-  if (locked[dateStr]) delete locked[dateStr];
-  else locked[dateStr] = true;
+  if (locked[dateStr]) {
+    delete locked[dateStr];
+  } else {
+    // Don't lock a day that's already full
+    const dayJobs = allJobs.filter(j => j.date === dateStr && j.status !== 'Archived');
+    if (dayJobs.length >= 4) return;
+    locked[dateStr] = true;
+  }
   setLockedDays(locked);
   renderCalendar();
 }
@@ -2794,7 +2800,7 @@ function renderCalendar() {
     day.setDate(day.getDate() + i);
     const dateStr = day.toISOString().split('T')[0];
     const isToday = dateStr === todayStr;
-    const dayJobs = allJobs.filter(j => j.date === dateStr)
+    const dayJobs = allJobs.filter(j => j.date === dateStr && j.status !== 'Archived')
       .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
     const atLimit = dayJobs.length >= 4;
 
@@ -2998,10 +3004,10 @@ function jobTitleDelete(id) {
   if (jobDeleteTimer) {
     clearTimeout(jobDeleteTimer);
     jobDeleteTimer = null;
-    deleteJob();
+    archiveJob();
     return;
   }
-  el.textContent = 'Tap again to delete';
+  el.textContent = 'Tap again to archive';
   el.style.color = 'var(--red)';
   jobDeleteTimer = setTimeout(() => {
     el.textContent = 'Edit Event';
@@ -3051,7 +3057,7 @@ async function saveJob() {
   if (!selContact && !document.getElementById('j-title').value.trim()) { savingJob = false; showToast('Select a contact or enter a title', 'error'); return; }
   // Check for time conflict on the same day
   if (time) {
-    const conflict = allJobs.find(j => j.date === date && j.time === time && j.id !== id && j.status !== 'Cancelled');
+    const conflict = allJobs.find(j => j.date === date && j.time === time && j.id !== id && j.status !== 'Cancelled' && j.status !== 'Archived');
     if (conflict) {
       savingJob = false;
       const who = conflict.contact_name || conflict.title || 'another event';
@@ -3103,13 +3109,12 @@ async function saveJob() {
   loadJobs();
 }
 
-async function deleteJob() {
+async function archiveJob() {
   const id = document.getElementById('j-id').value;
   if (!id) return;
-  if (!confirm('Delete this event?')) return;
-  const { error } = await db.from('schedule').delete().eq('id', id);
-  if (error) { showToast('Delete failed', 'error'); return; }
-  showToast('Event deleted', 'success');
+  const { error } = await db.from('schedule').update({ status: 'Archived' }).eq('id', id);
+  if (error) { showToast('Archive failed', 'error'); return; }
+  showToast('Event archived', 'success');
   closeModal('job-overlay');
   loadJobs();
 }
