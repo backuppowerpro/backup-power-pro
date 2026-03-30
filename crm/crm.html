@@ -2821,7 +2821,9 @@ function jobContactSearch(term) {
     html += '<li style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text2)" onmousedown="event.preventDefault();selectJobContact(\'' + c.id + '\')">' + esc(c.name) + (c.phone ? '<span style="color:var(--text3);margin-left:8px;font-size:11px">' + esc(c.phone) + '</span>' : '') + '</li>';
   });
   if (!matches.length) {
-    html = '<li style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--navy);font-weight:600" onmousedown="event.preventDefault();createContactFromEvent(\'' + esc(term).replace(/'/g, "\\'") + '\')">+ Create "' + esc(term) + '" as new lead</li>';
+    const safeTerm = esc(term).replace(/'/g, "\\'");
+    html = '<li style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--navy);font-weight:600" onmousedown="event.preventDefault();createContactFromEvent(\'' + safeTerm + '\')">+ Create "' + esc(term) + '" as new lead</li>'
+      + '<li style="padding:10px 14px;font-size:13px;cursor:pointer;color:var(--text3)" onmousedown="event.preventDefault();useAsEventTitle(\'' + safeTerm + '\')">Use "' + esc(term) + '" as event title</li>';
   }
   resultsEl.innerHTML = html;
   resultsEl.style.display = 'block';
@@ -2864,6 +2866,19 @@ function clearJobContact() {
   document.getElementById('j-contact-selected').style.display = 'none';
   onJobContactChange();
   document.getElementById('j-contact-search').focus();
+}
+
+function useAsEventTitle(title) {
+  jobContactHideResults();
+  document.getElementById('j-title').value = title;
+  // Show the title as a chip without a contact
+  document.getElementById('j-contact').value = '';
+  document.getElementById('j-contact-search-wrap').style.display = 'none';
+  const selEl = document.getElementById('j-contact-selected');
+  selEl.style.display = 'flex';
+  document.getElementById('j-contact-selected-name').textContent = title;
+  // Hide the arrow jump button since there's no contact
+  document.getElementById('j-contact-jump').style.display = 'none';
 }
 
 async function createContactFromEvent(name) {
