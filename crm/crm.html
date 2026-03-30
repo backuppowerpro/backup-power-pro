@@ -3746,9 +3746,9 @@ function renderTrendAnalytics() {
 
   function delta(curr, prev) {
     const diff = curr - prev;
-    if (diff === 0) return '<div class="trend-delta flat">same as ${prevLabel}</div>';
+    if (diff === 0) return '<div class="trend-delta flat">same as ' + prevLabel + '</div>';
     const cls = diff > 0 ? 'up' : 'down';
-    return '<div class="trend-delta ' + cls + '">' + (diff > 0 ? '&uarr;' : '&darr;') + Math.abs(diff) + ' vs ${prevLabel}</div>';
+    return '<div class="trend-delta ' + cls + '">' + (diff > 0 ? '&uarr;' : '&darr;') + Math.abs(diff) + ' vs ' + prevLabel + '</div>';
   }
 
   // Conversion rate
