@@ -1480,7 +1480,8 @@ function openPanel(id) {
     let cardsHtml = '';
     proposals.forEach((p, idx) => {
       let badge = '', badgeStyle = '';
-      if (p.status === 'Approved') { badge = '&#10003; Approved'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
+      if (p.status === 'Cancelled') { badge = 'Cancelled'; badgeStyle = 'background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb'; }
+      else if (p.status === 'Approved') { badge = '&#10003; Approved'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
       else if (p.status === 'Viewed') { badge = '&#128065; Viewed'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
       else { badge = 'Sent &#8599;'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
       const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
@@ -1521,7 +1522,8 @@ function renderProposalDrill() {
   if (!p) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px 0">No proposal yet</div>'; return; }
   const url = PROPOSAL_BASE_URL + '?token=' + p.token;
   let statusBadge = '';
-  if (p.status === 'Approved') statusBadge = '<span class="prop-badge prop-approved">&check; Approved</span>';
+  if (p.status === 'Cancelled') statusBadge = '<span class="prop-badge" style="background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb">Cancelled</span>';
+  else if (p.status === 'Approved') statusBadge = '<span class="prop-badge prop-approved">&check; Approved</span>';
   else if (p.status === 'Viewed') statusBadge = '<span class="prop-badge prop-viewed">Viewed</span>';
   else statusBadge = '<span class="prop-badge prop-sent">Sent</span>';
   const hasPOM = p.include_pom || false;
@@ -1545,7 +1547,47 @@ function renderProposalDrill() {
     if (hasSurge) addons += '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8">&amp;#9889; Surge Protector</span>';
     addons += '</div>';
   }
-  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div><div class="pay-summary">' + items + '</div><div style="margin-bottom:16px"><button class="btn btn-outline" style="width:100%" onclick="navigator.clipboard.writeText(\'' + esc(url) + '\');showToast(\'Proposal link copied!\',\'success\')">Copy Proposal Link</button></div>' + addons + inspBtn + payBtn;
+  const cancelBtn = '<button id="cancel-proposal-btn" class="btn btn-outline" style="width:100%;margin-top:16px;color:var(--text3);border-color:var(--border);font-size:12px" onclick="cancelProposal(\'' + p.id + '\')">Cancel Proposal</button>';
+  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div><div class="pay-summary">' + items + '</div><div style="margin-bottom:16px"><button class="btn btn-outline" style="width:100%" onclick="navigator.clipboard.writeText(\'' + esc(url) + '\');showToast(\'Proposal link copied!\',\'success\')">Copy Proposal Link</button></div>' + addons + inspBtn + payBtn + cancelBtn;
+}
+
+let _cancelProposalPending = null;
+let _cancelProposalTimer = null;
+
+function cancelProposal(proposalId) {
+  if (_cancelProposalPending === proposalId) {
+    // Second tap — actually cancel
+    clearTimeout(_cancelProposalTimer);
+    _cancelProposalPending = null;
+    doCancelProposal(proposalId);
+  } else {
+    // First tap — show confirmation
+    clearTimeout(_cancelProposalTimer);
+    _cancelProposalPending = proposalId;
+    var btn = document.getElementById('cancel-proposal-btn');
+    if (btn) { btn.textContent = 'Tap again to confirm cancel'; btn.style.color = 'var(--red)'; btn.style.borderColor = 'var(--red)'; }
+    _cancelProposalTimer = setTimeout(function() {
+      _cancelProposalPending = null;
+      var btn2 = document.getElementById('cancel-proposal-btn');
+      if (btn2) { btn2.textContent = 'Cancel Proposal'; btn2.style.color = 'var(--text3)'; btn2.style.borderColor = 'var(--border)'; }
+    }, 3000);
+  }
+}
+
+async function doCancelProposal(proposalId) {
+  const { error } = await db.from('proposals').update({ status: 'Cancelled' }).eq('id', proposalId);
+  if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+  // Update local state
+  const contactId = currentPanelContactId;
+  const arr = proposalMap[contactId];
+  if (arr) {
+    const p = arr.find(x => x.id === proposalId);
+    if (p) p.status = 'Cancelled';
+  }
+  showToast('Proposal cancelled', 'success');
+  drillTo('contact');
+  // Refresh the panel proposal section
+  if (contactId) openPanel(contactId);
 }
 
 // ── INSPECTION DRILL (Level 3a) ─────────────────────────
