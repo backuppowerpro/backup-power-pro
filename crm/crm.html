@@ -2076,12 +2076,15 @@ async function panelSave() {
     status:  c?.status || null,
   };
   // Check if anything actually changed — skip save if nothing changed
+  // Compare phone by digits only (formatting may differ)
+  const oldDigits = (c?.phone || '').replace(/\D/g, '');
+  const newDigits = (payload.phone || '').replace(/\D/g, '');
   const changed = c && (
     (c.name || '') !== payload.name ||
-    (c.phone || '') !== payload.phone ||
-    (c.email || '') !== payload.email ||
-    (c.address || '') !== payload.address ||
-    (c.notes || '') !== payload.notes ||
+    oldDigits !== newDigits ||
+    (c.email || '').trim() !== payload.email ||
+    (c.address || '').trim() !== payload.address ||
+    (c.notes || '').trim() !== payload.notes ||
     (c.stage || 1) !== payload.stage ||
     String(c.jurisdiction_id || '') !== String(payload.jurisdiction_id || '')
   );
