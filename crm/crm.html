@@ -565,7 +565,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <div id="contacts-view">
     <div class="toolbar">
-      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()" autocomplete="off">
+      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts();searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
     </div>
     <div id="contacts-table"></div>
   </div>
@@ -816,7 +816,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── JOB / EVENT MODAL ─────────────────────────────────── -->
-<div class="modal-overlay" id="job-overlay" onclick="if(event.target===this)saveJob()">
+<div class="modal-overlay" id="job-overlay" onclick="if(event.target===this)saveOrCancelJob()">
   <div class="modal">
     <div class="modal-head">
       <div class="modal-title" id="job-modal-title" style="cursor:default;user-select:none">Add Event</div>
@@ -1033,6 +1033,21 @@ let stageFilter  = 'all'; // 'all' | 1..9 | 'archived'
 let analyticsCollapsed = false;
 let contactsShown = 5;
 let searchTerm   = '';
+let searchHighlightIdx = -1;
+
+function searchKeyNav(e) {
+  const rows = document.querySelectorAll('.table-scroll tbody tr');
+  if (!rows.length) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); searchHighlightIdx = Math.min(searchHighlightIdx + 1, rows.length - 1); searchHighlightRows(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); searchHighlightIdx = Math.max(searchHighlightIdx - 1, 0); searchHighlightRows(); }
+  else if (e.key === 'Enter' && searchHighlightIdx >= 0) { e.preventDefault(); rows[searchHighlightIdx].click(); }
+}
+
+function searchHighlightRows() {
+  const rows = document.querySelectorAll('.table-scroll tbody tr');
+  rows.forEach((r, i) => { r.style.background = i === searchHighlightIdx ? 'var(--bg)' : ''; });
+  if (searchHighlightIdx >= 0 && rows[searchHighlightIdx]) rows[searchHighlightIdx].scrollIntoView({ block: 'nearest' });
+}
 let weekStart    = getMonday(new Date());
 let currentDrillLevel = 'contact';
 let currentPanelContactId = null;
@@ -2923,6 +2938,22 @@ function cancelJob() {
 }
 
 let savingJob = false;
+function saveOrCancelJob() {
+  // If nothing filled in, silently cancel
+  const hasContact = !!document.getElementById('j-contact').value;
+  const hasDate = !!document.getElementById('j-date').value;
+  const hasNotes = !!document.getElementById('j-notes').value.trim();
+  const hasTime = !!document.getElementById('j-time').value;
+  const isEdit = !!document.getElementById('j-id').value;
+  if (!isEdit && !hasContact && !hasNotes && !hasTime) {
+    // Nothing entered — just close quietly
+    closeModal('job-overlay');
+    if (_panelReturnContactId) { const cid = _panelReturnContactId; _panelReturnContactId = null; openPanel(cid); }
+    return;
+  }
+  saveJob();
+}
+
 async function saveJob() {
   if (savingJob) return;
   savingJob = true;
