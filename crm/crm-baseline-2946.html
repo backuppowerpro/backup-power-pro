@@ -6,12 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BPP CRM">
-<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.jpg">
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.jpg">
 <title>BPP CRM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
@@ -172,19 +171,6 @@ html.dark input[type=range].qb-range::-webkit-slider-thumb{background:var(--gold
 html.dark .qb-summary{background:linear-gradient(135deg,rgba(230,168,0,.06) 0%,var(--card) 100%)}
 html.dark .qb-summary-total-val{color:var(--gold)}
 html.dark .qb-summary-total{border:none}
-/* Drill-down panel */
-html.dark .drill-back{color:var(--text2)}
-html.dark .drill-back:hover{color:var(--gold);background:rgba(230,168,0,.08)}
-html.dark .insp-item{background:var(--card)}
-html.dark .insp-label{color:var(--text)}
-html.dark .pill-btn{background:#1e1b17;color:var(--text3)}
-html.dark .pill-btn.yes{background:#1a3328;color:#4ade80}
-html.dark .pill-btn.no{background:#3d1e1e;color:#f87171}
-html.dark .pill-btn.na{background:#3d3830;color:var(--text3)}
-html.dark .pay-summary{background:var(--card)}
-html.dark .pay-row{border-color:var(--border)}
-html.dark .pay-total{color:var(--gold)}
-html.dark .pay-history-item{background:var(--card)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 *{-webkit-user-select:none;user-select:none}
@@ -371,36 +357,6 @@ html.dark .approval-notif-amount{color:var(--gold)}
 .approval-notif-btn{padding:12px 28px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-md);font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s}
 .approval-notif-btn:hover{background:var(--navy2)}
 
-/* ── DRILL-DOWN PANEL ────────────────────────────────────── */
-.drill-container{position:relative;overflow:hidden;flex:1;display:flex;flex-direction:column}
-.drill-level{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .2s ease;will-change:transform;overflow-y:auto;padding:18px 20px}
-.drill-level.active{position:relative;transform:translateX(0)}
-.drill-level.left{transform:translateX(-100%)}
-.drill-level.right{transform:translateX(100%)}
-.drill-back{display:inline-flex;align-items:center;gap:6px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;padding:6px 10px;border-radius:var(--r-sm);transition:all .15s;margin-bottom:12px;min-height:44px}
-.drill-back:hover{color:var(--navy);background:var(--bg)}
-/* Inspection checklist */
-.insp-progress{height:6px;background:var(--bg);border-radius:var(--r-pill);overflow:hidden;margin-bottom:14px}
-.insp-progress-bar{height:100%;background:var(--green);border-radius:var(--r-pill);transition:width .3s}
-.insp-status{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--r-pill);font-size:12px;font-weight:700;font-family:'Outfit',sans-serif;margin-bottom:14px}
-.insp-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);margin-bottom:6px;min-height:48px}
-.insp-num{font-size:11px;font-weight:700;color:var(--text3);min-width:20px;text-align:center;flex-shrink:0}
-.insp-label{font-size:13px;font-weight:500;color:var(--text);flex:1;line-height:1.3}
-.pill-group{display:flex;gap:4px;flex-shrink:0}
-.pill-btn{padding:6px 12px;border-radius:var(--r-pill);font-size:11px;font-weight:700;border:none;cursor:pointer;transition:all .15s;font-family:'Outfit',sans-serif;min-height:32px;min-width:44px;text-align:center;background:var(--bg);color:var(--text3)}
-.pill-btn:hover{opacity:.85}
-.pill-btn.yes{background:#d1fae5;color:#059669}
-.pill-btn.no{background:#fee2e2;color:#dc2626}
-.pill-btn.na{background:#e5e7eb;color:#6b7280}
-/* Payment panel */
-.pay-summary{background:var(--bg);border-radius:var(--r-md);padding:16px;margin-bottom:16px}
-.pay-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
-.pay-row:last-child{border-bottom:none}
-.pay-row-label{color:var(--text2)}
-.pay-row-val{font-weight:700;color:var(--text)}
-.pay-total{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;color:var(--navy);text-align:center;margin-top:8px}
-.pay-history-item{background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
-
 @media(max-width:700px){
   .cal-grid{grid-template-columns:repeat(5,1fr);gap:4px}
   .cal-day{min-height:160px}
@@ -534,7 +490,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <!-- ── LOGIN GATE ─────────────────────────────────────── -->
 <div id="gate" style="display:flex;position:fixed;inset:0;z-index:999;background:var(--navy);align-items:center;justify-content:center;padding:24px">
   <div style="background:#fff;border-radius:var(--r-lg);padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
-    <img src="/assets/images/logo-main.png" alt="Backup Power Pro" style="height:36px;margin-bottom:6px;">
+    <img src="assets/images/logo-main.png" alt="Backup Power Pro" style="height:36px;margin-bottom:6px;">
     <div style="font-size:13px;color:var(--text3);margin-bottom:24px">CRM</div>
     <input id="gate-email" type="email" placeholder="Email"
       style="width:100%;padding:11px 14px;border:none;border-radius:var(--r-sm);font-size:15px;font-family:'Inter',sans-serif;outline:none;text-align:center;margin-bottom:10px;transition:box-shadow .15s;background:var(--bg)"
@@ -553,7 +509,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
 <!-- ── NAV ───────────────────────────────────────────────── -->
 <nav class="nav" id="main-nav" style="display:none">
-  <img id="nav-logo" src="/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin:0 auto;cursor:pointer;-webkit-user-select:none;user-select:none">
+  <img id="nav-logo" src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin:0 auto;cursor:pointer;-webkit-user-select:none;user-select:none">
 </nav>
 
 <!-- ── MAIN ──────────────────────────────────────────────── -->
@@ -765,16 +721,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
               <span style="flex:1">Panel space (twin/quad)</span>
               <span style="font-weight:600;color:var(--text2)">+$125</span>
             </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
-              <input type="checkbox" id="p-surge-check" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
-              <span style="flex:1">Whole-home surge protector</span>
-              <span style="font-weight:600;color:var(--text2)">+$375</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:10px 12px;background:linear-gradient(135deg,rgba(255,186,0,.08),rgba(255,186,0,.02));border:1.5px solid var(--gold);border-radius:var(--r-sm)">
-              <input type="checkbox" id="p-pom-check" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--gold)">
-              <span style="flex:1;font-weight:600;color:var(--gold)">Peace of Mind Package</span>
-              <span style="font-weight:700;color:var(--gold)">+$97</span>
-            </label>
           </div>
         </div>
 
@@ -834,12 +780,9 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <input type="hidden" id="j-id">
       <div class="form-row">
         <label>Linked Lead <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
-        <div style="display:flex;gap:6px;align-items:center">
-          <select class="form-select" id="j-contact" onchange="onJobContactChange()" style="flex:1">
-            <option value="">— No contact —</option>
-          </select>
-          <button class="fld-btn" id="j-contact-jump" onclick="jumpToContactFromJob()" title="View contact" style="display:none;flex-shrink:0">&rarr;</button>
-        </div>
+        <select class="form-select" id="j-contact" onchange="onJobContactChange()">
+          <option value="">— No contact —</option>
+        </select>
       </div>
       <div class="form-row" id="j-title-row">
         <label>Event Title</label>
@@ -897,33 +840,78 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <button class="modal-close" onclick="cancelPanel()">&#10005;</button>
     </div>
   </div>
-  <div class="drill-container">
-    <!-- LEVEL 1: Contact Details -->
-    <div class="drill-level active" id="drill-contact">
-      <input type="hidden" id="panel-id">
-      <div id="panel-prop-section" style="margin-bottom:var(--sp-md)"></div>
-      <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name"><button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-      <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this)"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-      <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com"><button class="fld-btn" onclick="copyField('panel-email')" title="Copy email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-      <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value)" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
-      <div class="form-row"><label>Notes</label><textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…"></textarea></div>
-      <div class="form-row"><label>Jurisdiction</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-jurisdiction" style="flex:1"></select><button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div></div>
-      <div class="form-row"><label>Pipeline Stage</label><select class="form-select" id="panel-stage"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select></div>
+  <div class="panel-body">
+    <input type="hidden" id="panel-id">
+
+    <!-- Proposal action -->
+    <div id="panel-prop-section" style="margin-bottom:var(--sp-md)"></div>
+
+    <div class="form-row">
+      <label>Name *</label>
+      <div class="field-row">
+        <input class="form-input" id="panel-name-input" placeholder="Full name">
+        <button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
     </div>
-    <!-- LEVEL 2: Proposal View -->
-    <div class="drill-level right" id="drill-proposal">
-      <button class="drill-back" onclick="drillTo('contact')">&larr; Contact</button>
-      <div id="drill-proposal-content"></div>
+    <div class="form-row">
+      <label>Phone</label>
+      <div class="field-row">
+        <input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this)">
+        <button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
     </div>
-    <!-- LEVEL 3a: Inspection -->
-    <div class="drill-level right" id="drill-inspection">
-      <button class="drill-back" onclick="drillTo('proposal')">&larr; Proposal</button>
-      <div id="drill-inspection-content"></div>
+    <div class="form-row">
+      <label>Email</label>
+      <div class="field-row">
+        <input class="form-input" id="panel-email" type="email" placeholder="email@example.com">
+        <button class="fld-btn" onclick="copyField('panel-email')" title="Copy email">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
     </div>
-    <!-- LEVEL 3b: Payment -->
-    <div class="drill-level right" id="drill-payment">
-      <button class="drill-back" onclick="drillTo('proposal')">&larr; Proposal</button>
-      <div id="drill-payment-content"></div>
+    <div class="form-row">
+      <label>Address</label>
+      <div class="field-row">
+        <div class="addr-wrap" style="flex:1;min-width:0">
+          <input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off"
+            oninput="panelAddrInput(this.value)" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%">
+          <ul class="addr-dropdown" id="panel-addr-dropdown"></ul>
+        </div>
+        <button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Notes</label>
+      <textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…"></textarea>
+    </div>
+    <div class="form-row">
+      <label>Jurisdiction</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select class="form-select" id="panel-jurisdiction" style="flex:1"></select>
+        <button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Pipeline Stage</label>
+      <select class="form-select" id="panel-stage">
+        <option value="1">Form Submitted</option>
+        <option value="2">Responded</option>
+        <option value="3">Quote Sent</option>
+        <option value="4">Booked</option>
+        <option value="5">Permit Submitted</option>
+        <option value="6">Permit Paid</option>
+        <option value="7">Permit Approved</option>
+        <option value="8">Inspection Scheduled</option>
+        <option value="9">Complete</option>
+      </select>
     </div>
   </div>
 </div>
@@ -1019,14 +1007,6 @@ const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Stripe publishable key (for future M2 reader integration)
-const STRIPE_PK = 'pk_live_51TGXWMGRrrWRVQEdk3Huz3nEHfTx0Kr9nj2gLfpEVjaDsKL5dQbFg7f92qac6ylXsmCxaEGJLWwWMIajFL3yLDqA00FCvkgGNI';
-
-// Meta CAPI config
-// NOTE: In production, proxy these calls through a backend to avoid exposing the access token
-const META_PIXEL_ID = '974241553654862';
-const META_CAPI_TOKEN = 'EAAUE7r3N3ZBMBRFi8ABmUg3TM5YFlJzEuYOXFNFEk54kiJ0Buj68pwvtESsUqM2wCZA5xFfnQRRzNKQOwhmZCWpASZAxjASmXZChtLRz9o6CIkNGjALsDoLnhXVvF5ggTMLN4UVBciTeKQ5iCgRQuOjL4djqxMcKDTcDzUtZABzVV3o4FYB995ZARnEzXPquwZDZD';
-
 // ── STATE ─────────────────────────────────────────────────
 let allContacts      = [];
 let allJobs          = [];
@@ -1038,8 +1018,6 @@ let analyticsCollapsed = false;
 let contactsShown = 5;
 let searchTerm   = '';
 let weekStart    = getMonday(new Date());
-let currentDrillLevel = 'contact';
-let currentPanelContactId = null;
 
 // ── AUTH GATE ─────────────────────────────────────────────
 async function checkPass() {
@@ -1129,39 +1107,6 @@ async function init() {
 }
 
 // ══════════════════════════════════════════════════════════
-// META CAPI
-// NOTE: In production, proxy through backend to keep access token secret
-// ══════════════════════════════════════════════════════════
-
-async function sha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function fireMetaEvent(eventName, userData, customData) {
-  try {
-    const hashedUser = {};
-    if (userData.email) hashedUser.em = [await sha256(userData.email.toLowerCase().trim())];
-    if (userData.phone) hashedUser.ph = [await sha256(userData.phone.replace(/\D/g, ''))];
-    if (userData.fn) hashedUser.fn = [await sha256(userData.fn.toLowerCase().trim())];
-    if (userData.ln) hashedUser.ln = [await sha256(userData.ln.toLowerCase().trim())];
-    hashedUser.client_user_agent = navigator.userAgent;
-    const event = {
-      event_name: eventName,
-      event_time: Math.floor(Date.now() / 1000),
-      action_source: 'system_generated',
-      user_data: hashedUser,
-    };
-    if (customData) event.custom_data = customData;
-    await fetch('https://graph.facebook.com/v21.0/' + META_PIXEL_ID + '/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: [event], access_token: META_CAPI_TOKEN }),
-    });
-  } catch (e) { console.warn('Meta CAPI error:', e); }
-}
-
-// ══════════════════════════════════════════════════════════
 // CONTACTS
 // ══════════════════════════════════════════════════════════
 
@@ -1226,7 +1171,7 @@ function renderContacts() {
   }
 
   const rows = visible.map(c => {
-    const p = proposalMap[c.id]?.[0];
+    const p = proposalMap[c.id];
     const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
     const stageBadge = `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}">${esc(stageInfo.label)}</span>`;
 
@@ -1394,18 +1339,12 @@ async function saveContact() {
     jurisdiction_id: document.getElementById('c-jurisdiction').value || null,
   };
   let error;
-  const isNew = !id;
   if (id) {
     ({ error } = await db.from('contacts').update(payload).eq('id', id));
   } else {
     ({ error } = await db.from('contacts').insert([payload]));
   }
   if (error) { saving = false; showToast('Save failed: ' + error.message, 'error'); return; }
-  // Fire Meta CAPI Lead event for new contacts
-  if (isNew) {
-    const np = name.split(' ');
-    fireMetaEvent('Lead', { email: payload.email, phone: payload.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' });
-  }
   saving = false;
   showToast(id ? 'Lead updated' : 'Lead added', 'success');
   closeModal('contact-overlay');
@@ -1419,41 +1358,10 @@ async function saveContact() {
 let panelAddrFocusedIdx = -1;
 let panelAddrDebounce;
 
-// ── DRILL-DOWN NAVIGATION ──────────────────────────────
-function drillTo(level) {
-  const levels = ['contact', 'proposal', 'inspection', 'payment'];
-  const targetIdx = levels.indexOf(level);
-  levels.forEach(l => {
-    const el = document.getElementById('drill-' + l);
-    if (!el) return;
-    el.classList.remove('active', 'left', 'right');
-    if (l === level) el.classList.add('active');
-    else if (levels.indexOf(l) < targetIdx) el.classList.add('left');
-    else el.classList.add('right');
-  });
-  currentDrillLevel = level;
-  if (level === 'proposal') renderProposalDrill();
-  else if (level === 'inspection') renderInspectionDrill();
-  else if (level === 'payment') renderPaymentDrill();
-}
-
-function resetDrill() {
-  currentDrillLevel = 'contact';
-  ['contact', 'proposal', 'inspection', 'payment'].forEach(l => {
-    const el = document.getElementById('drill-' + l);
-    if (!el) return;
-    el.classList.remove('active', 'left', 'right');
-    if (l === 'contact') el.classList.add('active');
-    else el.classList.add('right');
-  });
-}
-
 function openPanel(id) {
   const c = allContacts.find(x => x.id === id);
   if (!c) return;
 
-  currentPanelContactId = id;
-  resetDrill();
   // Reset archive state
   resetNameArchive();
 
@@ -1477,32 +1385,29 @@ function openPanel(id) {
   document.getElementById('panel-address').value = c.address || '';
   panelAddrHide();
 
-  // Proposal section — show ALL proposals as tappable cards
-  const proposals = proposalMap[c.id] || [];
+  // Proposal section
+  const p = proposalMap[c.id];
   const propSection = document.getElementById('panel-prop-section');
-  if (proposals.length > 0) {
-    let cardsHtml = '';
-    proposals.forEach((p, idx) => {
-      let badge = '', badgeStyle = '';
-      if (p.status === 'Approved') { badge = '&#10003; Approved'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
-      else if (p.status === 'Viewed') { badge = '&#128065; Viewed'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
-      else { badge = 'Sent &#8599;'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
-      const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
-      const surgeLabel = p.selected_surge ? ' + Surge' : (p.include_surge ? ' + Surge' : '');
-      const pomLabel = p.include_pom ? ' + POM' : '';
-      const displayTotal = (p.total || 0) + (p.include_pom ? 97 : 0) + ((p.include_surge && !p.selected_surge) ? 375 : 0);
-      const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
-      cardsHtml += `
-        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer" onclick="drillTo('proposal')">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span class="prop-badge" style="${badgeStyle};padding:3px 8px;border-radius:var(--r-pill);font-size:11px;font-weight:700">${badge}</span>
-            <span style="font-size:11px;color:var(--text3)">${ampLabel}${surgeLabel}${pomLabel}</span>
-            <span style="font-size:13px;font-weight:700;color:var(--text);margin-left:auto">$${displayTotal.toLocaleString()}</span>
-          </div>
-          <div style="font-size:11px;color:var(--text3)">${dateStr}</div>
-        </div>`;
-    });
-    propSection.innerHTML = cardsHtml + `
+  if (p) {
+    const url = PROPOSAL_BASE_URL + '?token=' + p.token;
+    let badge = '', badgeStyle = '';
+    if (p.status === 'Approved') { badge = '✓ Approved'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
+    else if (p.status === 'Viewed') { badge = '👁 Viewed'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
+    else { badge = 'Sent ↗'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
+    const views = p.view_count ? ' · ' + p.view_count + ' view' + (p.view_count > 1 ? 's' : '') : '';
+    const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
+    const surgeLabel = p.selected_surge ? ' + Surge' : '';
+    propSection.innerHTML = `
+      <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <span class="prop-badge" style="${badgeStyle};padding:3px 8px;border-radius:var(--r-pill);font-size:11px;font-weight:700">${badge}</span>
+          <span style="font-size:11px;color:var(--text3)">${ampLabel}${surgeLabel}${views}</span>
+          <span style="font-size:11px;color:var(--text3);margin-left:auto">$${(p.total||0).toLocaleString()}</span>
+        </div>
+        <a href="${esc(url)}" target="_blank" class="prop-action-btn prop-action-view" style="text-decoration:none;margin-bottom:4px;font-size:13px;padding:8px 12px">
+          View Proposal ↗
+        </a>
+      </div>
       <button class="prop-action-btn prop-action-create" onclick="closePanel();openProposalModal('${c.id}')" style="font-size:13px;padding:8px 12px">
         + New Proposal
       </button>`;
@@ -1517,256 +1422,10 @@ function openPanel(id) {
   lockBody();
 }
 
-// ── PROPOSAL DRILL (Level 2) ────────────────────────────
-function renderProposalDrill() {
-  const contactId = currentPanelContactId;
-  const p = proposalMap[contactId]?.[0];
-  const el = document.getElementById('drill-proposal-content');
-  if (!p) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px 0">No proposal yet</div>'; return; }
-  const url = PROPOSAL_BASE_URL + '?token=' + p.token;
-  let statusBadge = '';
-  if (p.status === 'Approved') statusBadge = '<span class="prop-badge prop-approved">&check; Approved</span>';
-  else if (p.status === 'Viewed') statusBadge = '<span class="prop-badge prop-viewed">Viewed</span>';
-  else statusBadge = '<span class="prop-badge prop-sent">Sent</span>';
-  const hasPOM = p.include_pom || false;
-  const hasSurge = p.include_surge || p.selected_surge || false;
-  const isApproved = p.status === 'Approved';
-  let items = '<div class="pay-row"><span class="pay-row-label">Base install (' + (p.amp_type||'30') + 'A)</span><span class="pay-row-val">$' + (p.total||0).toLocaleString() + '</span></div>';
-  if (hasSurge) items += '<div class="pay-row"><span class="pay-row-label">Surge protector</span><span class="pay-row-val">+$375</span></div>';
-  if (hasPOM) items += '<div class="pay-row"><span class="pay-row-label">Peace of Mind Package</span><span class="pay-row-val">+$97</span></div>';
-  const totalWithAddons = (p.total || 0) + (hasSurge && !p.selected_surge ? 375 : 0) + (hasPOM ? 97 : 0);
-  let inspBtn = '';
-  if (hasPOM) {
-    const inspLocked = !isApproved;
-    inspBtn = '<button class="prop-action-btn" onclick="' + (inspLocked ? '' : "drillTo('inspection')") + '" style="background:' + (inspLocked ? 'var(--bg)' : '#dbeafe') + ';color:' + (inspLocked ? 'var(--text3)' : '#1d4ed8') + ';cursor:' + (inspLocked ? 'not-allowed' : 'pointer') + ';margin-bottom:8px" ' + (inspLocked ? 'disabled' : '') + '>' + (inspLocked ? '&#128274; ' : '') + 'Inspection &rarr;</button>' + (inspLocked ? '<div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-align:center">Unlock after proposal is approved</div>' : '');
-  }
-  const payLocked = !isApproved;
-  const payBtn = '<button class="prop-action-btn" onclick="' + (payLocked ? '' : "drillTo('payment')") + '" style="background:' + (payLocked ? 'var(--bg)' : 'var(--green)') + ';color:' + (payLocked ? 'var(--text3)' : '#fff') + ';cursor:' + (payLocked ? 'not-allowed' : 'pointer') + '" ' + (payLocked ? 'disabled' : '') + '>' + (payLocked ? '&#128274; ' : '') + 'Payment &rarr;</button>' + (payLocked ? '<div style="font-size:11px;color:var(--text3);margin-top:4px;text-align:center">Unlock after proposal is approved</div>' : '');
-  let addons = '';
-  if (hasPOM || hasSurge) {
-    addons = '<div class="panel-section-label">Add-ons</div><div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">';
-    if (hasPOM) addons += '<span class="prop-badge" style="background:linear-gradient(135deg,rgba(255,186,0,.15),rgba(255,186,0,.05));color:var(--gold);border:1px solid var(--gold)">&starf; Peace of Mind</span>';
-    if (hasSurge) addons += '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8">&amp;#9889; Surge Protector</span>';
-    addons += '</div>';
-  }
-  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div><div class="pay-summary">' + items + '</div><div style="margin-bottom:16px"><div class="link-box"><div class="link-url" style="font-size:11px;margin-bottom:6px">' + esc(url) + '</div><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" style="flex:1" onclick="navigator.clipboard.writeText(\'' + esc(url) + '\');showToast(\'Link copied!\',\'success\')">Copy Link</button><a href="' + esc(url) + '" target="_blank" class="btn btn-outline btn-sm" style="flex:1;text-decoration:none;text-align:center">Open &nearr;</a></div></div></div>' + addons + inspBtn + payBtn;
-}
-
-// ── INSPECTION DRILL (Level 3a) ─────────────────────────
-const INSPECTION_ITEMS = [
-  'Main breaker rating verified','Panel amperage matches service','All breakers properly labeled',
-  'No double-tapped breakers','No signs of overheating or scorching','Proper wire gauge for breaker size',
-  'Ground bus and neutral bus separated (sub-panels)','Grounding electrode conductor present',
-  'Panel cover fits properly','No exposed/damaged wiring','AFCI breakers where required',
-  'GFCI protection verified','Working space clearance adequate (30" wide, 36" deep)',
-  'Panel accessible (not blocked)','Weatherproof enclosure if outdoor','Bonding jumper present',
-  'Wire connections tight','No aluminum wiring concerns','Correct breaker types for panel',
-  'Overall panel condition acceptable',
-];
-let inspectionState = {};
-
-async function renderInspectionDrill() {
-  const contactId = currentPanelContactId;
-  const el = document.getElementById('drill-inspection-content');
-  const { data } = await db.from('inspections').select('*').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
-  const existing = data && data[0];
-  inspectionState = existing?.checklist || {};
-  renderInspectionUI(el, existing?.id || '');
-}
-
-function renderInspectionUI(el, inspId) {
-  const answered = Object.keys(inspectionState).length;
-  const total = INSPECTION_ITEMS.length;
-  const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
-  let status = 'Not Started', statusColor = 'var(--text3)', statusBg = 'var(--bg)';
-  if (answered === total) {
-    const hasNo = Object.values(inspectionState).includes('no');
-    if (hasNo) { status = 'Failed'; statusColor = '#dc2626'; statusBg = '#fee2e2'; }
-    else { status = 'Passed'; statusColor = '#059669'; statusBg = '#d1fae5'; }
-  } else if (answered > 0) { status = 'In Progress'; statusColor = '#92400e'; statusBg = '#fef3c7'; }
-  const items = INSPECTION_ITEMS.map((item, i) => {
-    const val = inspectionState[i] || '';
-    return '<div class="insp-item"><span class="insp-num">' + (i+1) + '</span><span class="insp-label">' + esc(item) + '</span><div class="pill-group"><button class="pill-btn ' + (val==='yes'?'yes':'') + '" onclick="setInspItem(' + i + ',\'yes\')">Yes</button><button class="pill-btn ' + (val==='no'?'no':'') + '" onclick="setInspItem(' + i + ',\'no\')">No</button><button class="pill-btn ' + (val==='na'?'na':'') + '" onclick="setInspItem(' + i + ',\'na\')">N/A</button></div></div>';
-  }).join('');
-  el.innerHTML = '<div class="insp-status" style="background:' + statusBg + ';color:' + statusColor + '">' + status + '</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="insp-progress" style="flex:1"><div class="insp-progress-bar" style="width:' + pct + '%"></div></div><span style="font-size:12px;font-weight:700;color:var(--text3)">' + answered + '/' + total + '</span></div>' + items + '<button class="btn btn-primary" style="width:100%;margin-top:14px;background:var(--navy);color:#fff;min-height:48px" onclick="saveInspection(\'' + (inspId||'') + '\')">Save Inspection</button>';
-}
-
-function setInspItem(idx, val) {
-  if (inspectionState[idx] === val) delete inspectionState[idx];
-  else inspectionState[idx] = val;
-  const el = document.getElementById('drill-inspection-content');
-  // Extract inspId from save button
-  const btn = el.querySelector('button[onclick*="saveInspection"]');
-  const m = btn ? btn.getAttribute('onclick').match(/'([^']*)'/): null;
-  renderInspectionUI(el, m ? m[1] : '');
-}
-
-async function saveInspection(existingId) {
-  const contactId = currentPanelContactId;
-  const answered = Object.keys(inspectionState).length;
-  const total = INSPECTION_ITEMS.length;
-  let status = 'not_started';
-  if (answered === total) { status = Object.values(inspectionState).includes('no') ? 'failed' : 'passed'; }
-  else if (answered > 0) { status = 'in_progress'; }
-  const payload = { contact_id: contactId, checklist: inspectionState, status, items_total: total, items_completed: answered };
-  let error;
-  if (existingId) { ({ error } = await db.from('inspections').update(payload).eq('id', existingId)); }
-  else { ({ error } = await db.from('inspections').insert([payload])); }
-  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
-  showToast('Inspection saved', 'success');
-}
-
-// ── PAYMENT DRILL (Level 3b) ────────────────────────────
-async function renderPaymentDrill() {
-  const contactId = currentPanelContactId;
-  const p = proposalMap[contactId]?.[0];
-  const el = document.getElementById('drill-payment-content');
-  if (!p) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px 0">No proposal</div>'; return; }
-  const hasPOM = p.include_pom || false;
-  const hasSurge = p.include_surge || p.selected_surge || false;
-  const baseAmount = p.total || 0;
-  const surgeAmount = hasSurge ? 375 : 0;
-  const pomAmount = hasPOM ? 97 : 0;
-  const totalAmount = baseAmount + surgeAmount + pomAmount;
-  let inspPassed = true;
-  if (hasPOM) {
-    const { data } = await db.from('inspections').select('status').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
-    inspPassed = data && data[0] && data[0].status === 'passed';
-  }
-  const { data: payments } = await db.from('payments').select('*').eq('contact_id', contactId).order('created_at', { ascending: false });
-  const payHistory = payments || [];
-  const totalPaid = payHistory.reduce(function(sum, pay) { return sum + (pay.amount || 0); }, 0);
-  const hasPaid = totalPaid >= totalAmount;
-  let historyHtml = '';
-  if (payHistory.length) {
-    historyHtml = '<div class="panel-section-label">Payment History</div>';
-    payHistory.forEach(function(pay) {
-      historyHtml += '<div class="pay-history-item"><div><div style="font-size:13px;font-weight:600">$' + (pay.amount||0).toLocaleString() + '</div><div style="font-size:11px;color:var(--text3)">' + new Date(pay.created_at).toLocaleDateString() + '</div></div><span class="prop-badge" style="background:#d1fae5;color:var(--green)">' + esc(pay.method || 'Card') + '</span></div>';
-    });
-  }
-  const collectDisabled = hasPOM && !inspPassed;
-  let payItems = '<div class="pay-row"><span class="pay-row-label">Install (' + (p.amp_type||'30') + 'A)</span><span class="pay-row-val">$' + baseAmount.toLocaleString() + '</span></div>';
-  if (hasSurge) payItems += '<div class="pay-row"><span class="pay-row-label">Surge protector</span><span class="pay-row-val">+$375</span></div>';
-  if (hasPOM) payItems += '<div class="pay-row"><span class="pay-row-label">Peace of Mind</span><span class="pay-row-val">+$97</span></div>';
-  el.innerHTML = '<div class="pay-summary">' + payItems + '<div class="pay-total">$' + totalAmount.toLocaleString() + '</div>' + (totalPaid > 0 ? '<div style="text-align:center;font-size:12px;color:var(--green);font-weight:700;margin-top:4px">Paid: $' + totalPaid.toLocaleString() + '</div>' : '') + '</div>' + (collectDisabled ? '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">&#128274; Complete panel inspection before collecting payment</div>' : '') + '<button class="btn btn-primary" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--green)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPayment(\'' + contactId + '\',' + totalAmount + ')"') + '>' + (hasPaid ? '&check; Paid' : (collectDisabled ? '&#128274; Collect Payment' : 'Collect Payment &mdash; $' + totalAmount.toLocaleString())) + '</button><button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="sendPaymentLink(\'' + contactId + '\',' + totalAmount + ')">Send Payment Link</button><div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);text-align:center">Stripe M2 Reader: requires backend for connection tokens</div><button class="btn btn-outline" style="width:100%;margin-top:12px;min-height:44px" onclick="generateInvoicePDF()">Generate Invoice PDF</button>' + (hasPaid ? '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="showToast(\'Manual coming soon\',\'success\')">Storm-Ready System Manual</button>' : '') + historyHtml;
-}
-
-async function collectPayment(contactId, amount) {
-  const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: 'Manual', status: 'completed' }]);
-  if (error) { showToast('Payment failed: ' + error.message, 'error'); return; }
-  await db.from('contacts').update({ quote_amount: amount }).eq('id', contactId);
-  const c = allContacts.find(function(x) { return x.id === contactId; });
-  if (c) {
-    c.quote_amount = amount;
-    const np = (c.name || '').split(' ');
-    fireMetaEvent('Purchase', { email: c.email, phone: c.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' }, { currency: 'USD', value: amount });
-  }
-  showToast('Payment recorded!', 'success');
-  renderPaymentDrill();
-}
-
-async function sendPaymentLink(contactId, amount) {
-  const c = allContacts.find(x => x.id === contactId);
-  if (!c) return;
-  const msg = 'Hi ' + (c.name||'').split(' ')[0] + ', your Backup Power Pro invoice is ready. Total: $' + amount.toLocaleString() + '. Please reply to arrange payment. — Key, Backup Power Pro';
-  navigator.clipboard.writeText(msg);
-  showToast('Payment message copied! Send via text or email.', 'success');
-}
-
-function generateInvoicePDF() {
-  const contactId = currentPanelContactId;
-  const c = allContacts.find(function(x) { return x.id === contactId; });
-  const p = proposalMap[contactId]?.[0];
-  if (!c || !p) { showToast('No data', 'error'); return; }
-  var jsPDF = window.jspdf.jsPDF;
-  var doc = new jsPDF();
-  var navy = [11, 31, 59];
-  var gold = [255, 186, 0];
-  doc.setFillColor(navy[0],navy[1],navy[2]);
-  doc.rect(0, 0, 210, 40, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.text('INVOICE', 20, 22);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Key Electric LLC', 20, 30);
-  doc.text('22 Kimbell CT, Greenville SC 29617', 20, 35);
-  doc.setTextColor(gold[0],gold[1],gold[2]);
-  doc.text('(864) 400-5302', 150, 30);
-  doc.setTextColor(navy[0],navy[1],navy[2]);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Bill To:', 20, 52);
-  doc.setFont('helvetica', 'normal');
-  doc.text(c.name || '', 20, 58);
-  if (c.address) doc.text(c.address, 20, 64);
-  if (c.phone) doc.text(c.phone, 20, c.address ? 70 : 64);
-  if (c.email) doc.text(c.email, 20, c.address ? 76 : 70);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Date:', 150, 52);
-  doc.setFont('helvetica', 'normal');
-  doc.text(new Date().toLocaleDateString(), 150, 58);
-  var y = 90;
-  doc.setFillColor(240, 244, 250);
-  doc.rect(20, y - 6, 170, 10, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('Description', 22, y);
-  doc.text('Amount', 170, y, { align: 'right' });
-  y += 10;
-  doc.setFont('helvetica', 'normal');
-  var baseAmount = p.total || 0;
-  doc.text('Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', 22, y);
-  doc.text('$' + baseAmount.toLocaleString(), 170, y, { align: 'right' });
-  y += 8;
-  var hasSurge = p.include_surge || p.selected_surge;
-  var hasPOM = p.include_pom;
-  if (hasSurge) { doc.text('Whole-Home Surge Protector', 22, y); doc.text('$375', 170, y, { align: 'right' }); y += 8; }
-  if (hasPOM) { doc.text('Peace of Mind Package', 22, y); doc.text('$97', 170, y, { align: 'right' }); y += 8; }
-  y += 4;
-  doc.setDrawColor(navy[0],navy[1],navy[2]);
-  doc.line(20, y, 190, y);
-  y += 8;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  var total = baseAmount + (hasSurge ? 375 : 0) + (hasPOM ? 97 : 0);
-  doc.text('Total: $' + total.toLocaleString(), 170, y, { align: 'right' });
-  y += 16;
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text('Payment due upon completion. Price includes all materials, permit, and inspection.', 20, y);
-  doc.setFillColor(navy[0],navy[1],navy[2]);
-  doc.rect(0, 280, 210, 17, 'F');
-  doc.setTextColor(gold[0],gold[1],gold[2]);
-  doc.setFontSize(9);
-  doc.text('Backup Power Pro \u2014 backuppowerpro.com', 105, 290, { align: 'center' });
-  doc.save('Invoice-' + (c.name||'Customer').replace(/\s+/g, '-') + '.pdf');
-  showToast('Invoice downloaded', 'success');
-}
-
 function closePanel() {
   document.getElementById('side-panel-overlay').classList.remove('open');
   unlockBody();
   panelAddrHide();
-  if (_jobModalReturnState) {
-    const s = _jobModalReturnState;
-    _jobModalReturnState = null;
-    openJobModal(s.id || null, null);
-    setTimeout(() => {
-      document.getElementById('j-id').value = s.id;
-      document.getElementById('j-date').value = s.date;
-      document.getElementById('j-time').value = s.time;
-      document.getElementById('j-contact').value = s.contact;
-      document.getElementById('j-title').value = s.title;
-      document.getElementById('j-type').value = s.type;
-      document.getElementById('j-status').value = s.status;
-      document.getElementById('j-price').value = s.price;
-      document.getElementById('j-notes').value = s.notes;
-      onJobContactChange();
-    }, 50);
-  }
 }
 
 function cancelPanel() {
@@ -2085,10 +1744,7 @@ async function loadProposals() {
   allProposals = data || [];
   proposalMap = {};
   allProposals.forEach(p => {
-    if (p.contact_id) {
-      if (!proposalMap[p.contact_id]) proposalMap[p.contact_id] = [];
-      proposalMap[p.contact_id].push(p);
-    }
+    if (p.contact_id && !proposalMap[p.contact_id]) proposalMap[p.contact_id] = p;
   });
   renderContacts();
 }
@@ -2098,8 +1754,7 @@ function pBuildPricing(amp) {
     mode: qbState.mode, amp: parseInt(amp), runFt: pRunFt, extFt: 5,
     mainBreaker: document.getElementById('p-main-breaker')?.checked || false,
     twinQuad: document.getElementById('p-twin-quad')?.checked || false,
-    surge: document.getElementById('p-surge-check')?.checked || false,
-    cordType: null,
+    surge: false, cordType: null,
     cordIncluded: document.getElementById('p-cord-check')?.checked ?? true,
   };
   const r = qbCalc(s);
@@ -2122,19 +1777,14 @@ function pBuildPricing(amp) {
 function pRecalc() {
   const amps = pAmpType === 'both' ? ['30', '50'] : [pAmpType];
   const primary = pBuildPricing(amps[0]);
-  const pomChecked = document.getElementById('p-pom-check')?.checked || false;
-  const surgeChecked = document.getElementById('p-surge-check')?.checked || false;
-  const displayTotal = primary.total + (pomChecked ? 97 : 0);
-  document.getElementById('p-total').textContent = '$' + displayTotal.toLocaleString();
+  document.getElementById('p-total').textContent = '$' + primary.total.toLocaleString();
   document.getElementById('p-profit').textContent = '$' + primary.profit.toLocaleString();
   document.getElementById('p-profit').style.color = primary.profit >= 500 ? 'var(--green)' : '#d4980b';
   if (pAmpType === 'both') {
     const p50 = pBuildPricing('50');
     document.getElementById('p-total-note').textContent = '30A: $' + primary.total.toLocaleString() + '  /  50A: $' + p50.total.toLocaleString();
   } else {
-    const extras = [];
-    if (!surgeChecked) extras.push('surge');
-    document.getElementById('p-total-note').textContent = extras.length ? '+ ' + extras.join(', ') + ' offered on proposal page' : '';
+    document.getElementById('p-total-note').textContent = '+ surge offered on proposal page';
   }
   // Update cord label
   const is50 = pAmpType === '50';
@@ -2174,8 +1824,6 @@ function openProposalModal(contactId) {
   document.getElementById('p-cord-check').checked = true;
   document.getElementById('p-main-breaker').checked = false;
   document.getElementById('p-twin-quad').checked = false;
-  document.getElementById('p-surge-check').checked = false;
-  document.getElementById('p-pom-check').checked = false;
   document.getElementById('p-notes').value = '';
   document.getElementById('p-run-slider').value = 5;
   pRunFt = 5;
@@ -2193,8 +1841,6 @@ async function saveProposal() {
   const contactId = document.getElementById('p-contact-id').value;
   const c = allContacts.find(x => x.id === contactId);
   const cordIncluded = document.getElementById('p-cord-check').checked;
-  const surgeIncluded = document.getElementById('p-surge-check')?.checked || false;
-  const pomIncluded = document.getElementById('p-pom-check')?.checked || false;
 
   const pricing30 = pBuildPricing('30');
   const pricing50 = pBuildPricing('50');
@@ -2212,8 +1858,6 @@ async function saveProposal() {
     cord_included:   cordIncluded,
     include_main_breaker: document.getElementById('p-main-breaker').checked,
     include_twin_quad:    document.getElementById('p-twin-quad').checked,
-    include_surge:   surgeIncluded,
-    include_pom:     pomIncluded,
     pricing_30:      pricing30,
     pricing_50:      pricing50,
     surge_price:     QB_S.surge,
@@ -2221,6 +1865,7 @@ async function saveProposal() {
     price_base:      primary.total,
     include_cord:    cordIncluded,
     price_cord:      cordIncluded ? (pAmpType === '50' ? QB_S.cordValue50 : QB_S.cordValue30) : 0,
+    include_surge:   false,
     price_surge:     QB_S.surge,
     notes:           document.getElementById('p-notes').value.trim(),
     status:          'Sent',
@@ -2241,19 +1886,8 @@ async function saveProposal() {
   document.getElementById('p-email-link').href = 'mailto:' + encodeURIComponent(c?.email || '') + '?subject=' + encodeURIComponent('Your Backup Power Pro Proposal') + '&body=' + encodeURIComponent(msg);
   document.getElementById('p-sms-link').href = 'sms:' + encodeURIComponent(c?.phone || '') + '?body=' + encodeURIComponent(msg);
 
-  proposalMap[contactId] = [data, ...(proposalMap[contactId]||[])];
+  proposalMap[contactId] = data;
   allProposals.unshift(data);
-
-  // Update contact's POM, surge, and quote_amount columns
-  const contactUpdate = { quote_amount: primary.total };
-  if (pomIncluded) contactUpdate.peace_of_mind = true;
-  if (surgeIncluded) contactUpdate.surge_protector = true;
-  await db.from('contacts').update(contactUpdate).eq('id', contactId);
-  if (c) {
-    c.quote_amount = primary.total;
-    if (pomIncluded) c.peace_of_mind = true;
-    if (surgeIncluded) c.surge_protector = true;
-  }
 
   // New proposal is now the most recent — set stage to "Quote Sent" (3)
   setStageFromLatestProposal(contactId, 3);
@@ -2400,28 +2034,6 @@ function onJobContactChange() {
   const sel = document.getElementById('j-contact');
   const titleRow = document.getElementById('j-title-row');
   titleRow.style.display = sel.value ? 'none' : '';
-  const jumpBtn = document.getElementById('j-contact-jump');
-  if (jumpBtn) jumpBtn.style.display = sel.value ? '' : 'none';
-}
-
-let _jobModalReturnState = null;
-
-function jumpToContactFromJob() {
-  const contactId = document.getElementById('j-contact').value;
-  if (!contactId) return;
-  _jobModalReturnState = {
-    id: document.getElementById('j-id').value,
-    date: document.getElementById('j-date').value,
-    time: document.getElementById('j-time').value,
-    contact: contactId,
-    title: document.getElementById('j-title').value,
-    type: document.getElementById('j-type').value,
-    status: document.getElementById('j-status').value,
-    price: document.getElementById('j-price').value,
-    notes: document.getElementById('j-notes').value,
-  };
-  closeModal('job-overlay');
-  openPanel(contactId);
 }
 
 let jobOriginal = null;
@@ -2540,7 +2152,6 @@ async function saveJob() {
     if (!changed) { savingJob = false; jobOriginal = null; closeModal('job-overlay'); return; }
   }
 
-  const isNewInstall = !id && payload.type === 'Install';
   let error;
   if (id) {
     ({ error } = await db.from('schedule').update(payload).eq('id', id));
@@ -2548,11 +2159,6 @@ async function saveJob() {
     ({ error } = await db.from('schedule').insert([payload]));
   }
   if (error) { savingJob = false; showToast('Save failed: ' + error.message, 'error'); return; }
-  // Fire Meta CAPI Schedule event for new Install events
-  if (isNewInstall && c) {
-    const np = (c.name || '').split(' ');
-    fireMetaEvent('Schedule', { email: c.email, phone: c.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' });
-  }
   savingJob = false;
   jobOriginal = null;
   showToast(id ? 'Event updated' : 'Event added', 'success');
@@ -3039,6 +2645,12 @@ function loadPermitAnalytics() {
 // ══════════════════════════════════════════════════════════
 
 let stageHistoryCache = null;
+let trendPeriod = 'week';
+
+function toggleTrendPeriod() {
+  trendPeriod = trendPeriod === 'week' ? 'month' : 'week';
+  renderTrendAnalytics();
+}
 
 async function loadTrendAnalytics() {
   const since = new Date();
@@ -3049,24 +2661,29 @@ async function loadTrendAnalytics() {
   renderTrendAnalytics();
 }
 
+function getTrendPeriodBounds(period) {
+  const now = new Date();
+  let currStart, prevStart, prevEnd;
+  if (period === 'week') {
+    const diff = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    currStart = new Date(now); currStart.setDate(now.getDate() - diff); currStart.setHours(0,0,0,0);
+    prevStart = new Date(currStart); prevStart.setDate(currStart.getDate() - 7);
+    prevEnd   = new Date(currStart); prevEnd.setMilliseconds(-1);
+  } else {
+    currStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    prevEnd   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+  }
+  const currEnd = new Date(); currEnd.setHours(23,59,59,999);
+  return { currStart, currEnd, prevStart, prevEnd };
+}
+
 function renderTrendAnalytics() {
   const el = document.getElementById('trend-analytics');
   if (!el) return;
-
-  // Trailing 7-day window from today
-  const now = new Date();
-  now.setHours(23, 59, 59, 999);
-  const currStart = new Date(now);
-  currStart.setDate(currStart.getDate() - 6);
-  currStart.setHours(0, 0, 0, 0);
-  const currEnd = new Date(now);
-  // Prior 7-day window
-  const prevEnd = new Date(currStart);
-  prevEnd.setMilliseconds(-1);
-  const prevStart = new Date(prevEnd);
-  prevStart.setDate(prevStart.getDate() - 6);
-  prevStart.setHours(0, 0, 0, 0);
-
+  const { currStart, currEnd, prevStart, prevEnd } = getTrendPeriodBounds(trendPeriod);
+  const lbl  = trendPeriod === 'week' ? 'week'  : 'month';
+  const plbl = trendPeriod === 'week' ? 'last week' : 'last month';
   const hist = stageHistoryCache || [];
 
   function inRange(ts) { const d = new Date(ts); return d >= currStart && d <= currEnd; }
@@ -3081,9 +2698,9 @@ function renderTrendAnalytics() {
 
   function delta(curr, prev) {
     const diff = curr - prev;
-    if (diff === 0) return '<div class="trend-delta flat">same as prior 7 days</div>';
+    if (diff === 0) return `<div class="trend-delta flat">same as ${plbl}</div>`;
     const cls = diff > 0 ? 'up' : 'down';
-    return '<div class="trend-delta ' + cls + '">' + (diff > 0 ? '&uarr;' : '&darr;') + Math.abs(diff) + ' vs prior 7 days</div>';
+    return `<div class="trend-delta ${cls}">${diff > 0 ? '↑' : '↓'}${Math.abs(diff)} vs ${plbl}</div>`;
   }
 
   // Conversion rate
@@ -3108,27 +2725,27 @@ function renderTrendAnalytics() {
   const avgDays = daysCount > 0 ? Math.round(daysSum / daysCount) : '—';
   const avgDaysLabel = avgDays === '—' ? 'Need more data' : (avgDays === 0 ? 'Same day' : `${avgDays} day${avgDays===1?'':'s'} avg`);
 
-  el.innerHTML = `<div class="trend-stat-grid">
+  el.innerHTML = `<div class="trend-stat-grid" onclick="toggleTrendPeriod()" style="cursor:pointer">
     <div class="trend-stat">
       <div class="trend-num">${currLeads}</div>
-      <div class="trend-label">New leads<br>last 7 days</div>
+      <div class="trend-label">New leads<br>this ${lbl}</div>
       ${delta(currLeads, prevLeads)}
     </div>
     <div class="trend-stat">
       <div class="trend-num">${currMoves}</div>
-      <div class="trend-label">Stages advanced<br>last 7 days</div>
+      <div class="trend-label">Stages advanced<br>this ${lbl}</div>
       ${delta(currMoves, prevMoves)}
     </div>
     <div class="trend-stat">
       <div class="trend-num">${currDone}</div>
-      <div class="trend-label">Jobs completed<br>last 7 days</div>
+      <div class="trend-label">Jobs completed<br>this ${lbl}</div>
       ${delta(currDone, prevDone)}
     </div>
   </div>
   <div class="trend-stat-grid-2">
     <div class="trend-stat">
       <div class="trend-num">${convRate}%</div>
-      <div class="trend-label">Lead &rarr; Booked<br>conversion rate</div>
+      <div class="trend-label">Lead → Booked<br>conversion rate</div>
       <div class="trend-delta flat">${bookedLeads} of ${totalLeads} leads</div>
     </div>
     <div class="trend-stat">
@@ -3270,7 +2887,7 @@ async function checkForApprovals() {
     // Set stage to "Booked" (4) only if the approved proposal is the most recent for that contact
     data.forEach(ap => {
       if (!ap.contact_id) return;
-      const latest = proposalMap[ap.contact_id]?.[0];
+      const latest = proposalMap[ap.contact_id];
       if (latest && latest.id === ap.id) {
         setStageFromLatestProposal(ap.contact_id, 4);
       }
