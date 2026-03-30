@@ -918,7 +918,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     </div>
     <!-- LEVEL 3b: Payment -->
     <div class="drill-level right" id="drill-payment">
-      <button class="drill-back" onclick="drillTo('proposal')">&larr; Proposal</button>
+      <button class="drill-back" id="payment-back-btn" onclick="drillTo('proposal')">&larr; Proposal</button>
       <div id="drill-payment-content"></div>
     </div>
   </div>
@@ -1450,12 +1450,17 @@ let panelAddrDebounce;
 function selectProposalAndDrill(idx) {
   currentProposalIdx = idx;
   invoiceLineItems = []; // Reset so payment drill reloads from this proposal
-  // If approved, skip proposal view and go straight to payment
   const contactId = currentPanelContactId;
   const p = proposalMap[contactId]?.[idx];
   if (p && p.status === 'Approved') {
+    // Skip proposal view, go straight to payment. Back goes to contact.
+    const backBtn = document.getElementById('payment-back-btn');
+    if (backBtn) { backBtn.textContent = '← Contact'; backBtn.setAttribute('onclick', "drillTo('contact')"); }
     drillTo('payment');
   } else {
+    // Normal flow through proposal. Payment back goes to proposal.
+    const backBtn = document.getElementById('payment-back-btn');
+    if (backBtn) { backBtn.textContent = '← Proposal'; backBtn.setAttribute('onclick', "drillTo('proposal')"); }
     drillTo('proposal');
   }
 }
