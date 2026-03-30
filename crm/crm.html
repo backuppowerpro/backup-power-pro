@@ -1450,7 +1450,14 @@ let panelAddrDebounce;
 function selectProposalAndDrill(idx) {
   currentProposalIdx = idx;
   invoiceLineItems = []; // Reset so payment drill reloads from this proposal
-  drillTo('proposal');
+  // If approved, skip proposal view and go straight to payment
+  const contactId = currentPanelContactId;
+  const p = proposalMap[contactId]?.[idx];
+  if (p && p.status === 'Approved') {
+    drillTo('payment');
+  } else {
+    drillTo('proposal');
+  }
 }
 
 function drillTo(level) {

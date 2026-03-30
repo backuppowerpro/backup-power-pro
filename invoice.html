@@ -493,6 +493,7 @@ function renderPaidInvoice() {
 
 // ── PAY ONLINE ──────────────────────────────────────────────
 function payOnline() {
+  if (new URLSearchParams(window.location.search).get('preview') === '1') { alert('Preview mode — payment is disabled.'); return; }
   // Stripe Checkout requires a server-side session creation.
   // When a backend endpoint is set up, this will redirect to Stripe Checkout.
   // Stripe publishable key: pk_live_51TGXWMGRrrWRVQEdk3Huz3nEHfTx0Kr9nj2gLfpEVjaDsKL5dQbFg7f92qac6ylXsmCxaEGJLWwWMIajFL3yLDqA00FCvkgGNI

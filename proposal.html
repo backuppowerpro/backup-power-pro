@@ -217,6 +217,7 @@ let chosenAmp = null;    // '30' or '50'
 let surgeOn = false;
 let ackScope = false;
 let ackSafety = false;
+let isPreview = false;
 
 // ── INIT ────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
@@ -229,7 +230,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   P = data;
 
   // Track view (skip if preview mode)
-  const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
+  isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
   if (!isPreview) trackView(token);
 
   if (P.status === 'Cancelled') {
@@ -604,6 +605,7 @@ function validateForm() {
 // ── APPROVE ─────────────────────────────────────────────────
 let approving = false;
 async function approveProposal() {
+  if (isPreview) { alert('Preview mode — approval is disabled.'); return; }
   if (approving) return;
   const name = document.getElementById('signer-name').value.trim();
   const err  = document.getElementById('approve-err');
