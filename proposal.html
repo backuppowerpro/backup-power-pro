@@ -144,6 +144,16 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .dl-btn:hover{background:var(--navy);color:#fff}
 .dl-btn:disabled{opacity:.6;pointer-events:none}
 
+/* LEGAL / AGREEMENT */
+.legal-section{background:#f8f9fb;border:1.5px solid var(--border);border-radius:10px;padding:16px 18px;margin-top:12px}
+.legal-section-title{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.legal-row{display:flex;justify-content:space-between;padding:7px 0;font-size:12px;border-bottom:1px solid var(--border)}
+.legal-row:last-child{border-bottom:none}
+.legal-label{color:var(--text3)}
+.legal-value{font-weight:600;color:var(--text);text-align:right;max-width:60%;word-break:break-word}
+.legal-terms{font-size:12px;color:var(--text2);line-height:1.6;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:10px;max-height:200px;overflow-y:auto}
+.legal-footer{font-size:11px;color:var(--text3);text-align:center;margin-top:14px;line-height:1.5;font-style:italic}
+
 /* LOADING / ERROR */
 .state-wrap{text-align:center;padding:60px 24px}
 .state-wrap svg{width:48px;height:48px;opacity:.25;margin-bottom:14px}
@@ -153,9 +163,13 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* FOOTER */
-.site-footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px}
+.site-footer{text-align:center;padding:28px 24px 24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px}
 .site-footer a{color:var(--text3);text-decoration:none}
 .site-footer a:hover{color:var(--navy)}
+.site-footer .cred-company{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--navy);margin-bottom:4px}
+.site-footer .cred-address{margin-bottom:2px}
+.site-footer .cred-license{font-weight:600;color:var(--text2);margin-top:6px}
+.site-footer .cred-dba{font-size:11px;margin-top:2px}
 
 @media(max-width:480px){
   .hero-title{font-size:22px}
@@ -184,7 +198,11 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 </main>
 
 <footer class="site-footer">
-  <a href="https://backuppowerpro.com">backuppowerpro.com</a> &nbsp;·&nbsp; (864) 400-5302
+  <div class="cred-company">Key Electric LLC</div>
+  <div class="cred-address">22 Kimbell CT, Greenville SC 29617</div>
+  <div class="cred-address"><a href="tel:8644005302">(864) 400-5302</a> &nbsp;&middot;&nbsp; <a href="https://backuppowerpro.com">backuppowerpro.com</a></div>
+  <div class="cred-license">SC Electrical Contractor License #2942 &nbsp;&middot;&nbsp; Fully Licensed &amp; Insured</div>
+  <div class="cred-dba">DBA: Backup Power Pro</div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -439,6 +457,12 @@ function renderProposal() {
       </div>
     </div>
 
+    <!-- Download Draft PDF -->
+    <button class="dl-btn" onclick="downloadDraftPDF()" style="margin-top:16px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download Proposal PDF
+    </button>
+
     <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6">
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
     </div>
@@ -650,9 +674,54 @@ function renderApproved() {
   const signedDate = P.signed_at
     ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : '';
+  const signedTime = P.signed_at
+    ? new Date(P.signed_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+    : '';
   const total = P.total || 0;
   const ampLabel = P.selected_amp === '50' ? '50 Amp' : '30 Amp';
   const surgeLabel = P.selected_surge ? 'Included' : 'Not included';
+  const pr = getPrice(P.selected_amp || P.amp_type || '30');
+
+  // Build pricing rows for display
+  let pricingRowsHtml = '';
+  if (P.pricing_30 || P.pricing_50) {
+    const base = pr.base || 0;
+    const longRun = pr.longRun || 0;
+    const mb = pr.mainBreaker || 0;
+    const tq = pr.twinQuad || 0;
+    const cord = pr.cord || 0;
+    const permit = pr.permitInspection || 125;
+    pricingRowsHtml += `<tr><td class="price-item-name">Installation</td><td>${fmt(Math.max(0, base - longRun - mb - tq - cord - permit))}</td></tr>`;
+    if (longRun) pricingRowsHtml += `<tr><td class="price-item-name">Extended run</td><td>${fmt(longRun)}</td></tr>`;
+    pricingRowsHtml += `<tr><td class="price-item-name">Permit & inspection</td><td>${fmt(permit)}</td></tr>`;
+    if (cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(cord)}</td></tr>`;
+    if (mb) pricingRowsHtml += `<tr><td class="price-item-name">Main breaker replacement</td><td>${fmt(mb)}</td></tr>`;
+    if (tq) pricingRowsHtml += `<tr><td class="price-item-name">Panel space optimization</td><td>${fmt(tq)}</td></tr>`;
+  } else {
+    pricingRowsHtml += `<tr><td class="price-item-name">Base installation</td><td>${fmt(pr.base || P.price_base || 0)}</td></tr>`;
+    if (P.include_cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(P.price_cord || 0)}</td></tr>`;
+  }
+  if (P.selected_surge) {
+    pricingRowsHtml += `<tr><td class="price-item-name">Whole-home surge protector</td><td>${fmt(P.surge_price || 375)}</td></tr>`;
+  }
+
+  // Parse terms snapshot for display
+  let termsDisplay = '';
+  if (P.approved_terms_snapshot) {
+    try {
+      const terms = typeof P.approved_terms_snapshot === 'string' ? JSON.parse(P.approved_terms_snapshot) : P.approved_terms_snapshot;
+      termsDisplay = `
+        <div class="legal-terms">
+          <strong>Scope & Pricing Acknowledged:</strong> ${esc(terms.contact_name)} approved a ${terms.selected_amp || '30'} Amp Connection System
+          ${terms.selected_surge ? 'with whole-home surge protection' : 'without surge protection'} for a total of ${fmt(terms.total)}.
+          <br><br><strong>Acknowledgments:</strong><br>
+          ${terms.scope_acknowledged ? '&#10003; Reviewed and agreed to the scope of work and pricing.' : ''}<br>
+          ${terms.safety_acknowledged ? '&#10003; Read and understood the Generator Safety Instructions for portable generator inlet installations.' : ''}
+        </div>`;
+    } catch(e) {
+      termsDisplay = `<div class="legal-terms">${esc(P.approved_terms_snapshot)}</div>`;
+    }
+  }
 
   document.getElementById('main').innerHTML = `
     <div class="approved-banner">
@@ -701,34 +770,58 @@ function renderApproved() {
       </div>
     </div>
 
-    <!-- Receipt -->
+    <!-- Line Items -->
     <div class="card">
       <div class="card-head">
-        <div class="card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-        <h2>Approval Receipt</h2>
+        <div class="card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <h2>Approved Pricing</h2>
       </div>
       <div class="card-body">
-        <div class="approved-receipt" style="margin-top:0">
-          <div class="approved-receipt-row">
-            <span class="approved-receipt-label">Setup</span>
-            <span class="approved-receipt-value">${ampLabel} Connection System</span>
+        <table class="price-table">
+          ${pricingRowsHtml}
+          <tr class="price-total-row">
+            <td>Total Approved</td>
+            <td><span class="total-badge">${fmt(total)}</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Agreement & Authorization -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon" style="background:#f0fdf4"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h2>Agreement & Authorization</h2>
+      </div>
+      <div class="card-body">
+        ${termsDisplay}
+
+        <div class="legal-section" style="margin-top:14px">
+          <div class="legal-section-title">Electronic Signature</div>
+          <div class="legal-row">
+            <span class="legal-label">Signed By</span>
+            <span class="legal-value" style="font-family:'Dancing Script',cursive;font-size:18px;color:var(--navy)">${esc(P.signer_name)}</span>
           </div>
-          <div class="approved-receipt-row">
-            <span class="approved-receipt-label">Surge Protection</span>
-            <span class="approved-receipt-value">${surgeLabel}</span>
+          <div class="legal-row">
+            <span class="legal-label">Date & Time</span>
+            <span class="legal-value">${signedTime}</span>
           </div>
-          <div class="approved-receipt-row">
-            <span class="approved-receipt-label">Total Approved</span>
-            <span class="approved-receipt-value" style="color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:16px">${fmt(total)}</span>
+          <div class="legal-row">
+            <span class="legal-label">IP Address</span>
+            <span class="legal-value">${esc(P.approved_ip || 'N/A')}</span>
           </div>
-          <div class="approved-receipt-row">
-            <span class="approved-receipt-label">Signed By</span>
-            <span class="approved-receipt-value" style="font-family:'Dancing Script',cursive;font-size:18px;color:var(--navy)">${esc(P.signer_name)}</span>
+          <div class="legal-row">
+            <span class="legal-label">Browser</span>
+            <span class="legal-value" style="font-size:10px">${esc(P.approved_user_agent || 'N/A')}</span>
           </div>
-          <div class="approved-receipt-row">
-            <span class="approved-receipt-label">Date</span>
-            <span class="approved-receipt-value">${signedDate}</span>
+          <div class="legal-row">
+            <span class="legal-label">Safety Instructions</span>
+            <span class="legal-value">${P.safety_ack ? '&#10003; Acknowledged' : 'Not acknowledged'}</span>
           </div>
+        </div>
+
+        <div class="legal-footer">
+          This document constitutes a binding agreement between the parties under the Electronic Signatures in Global and National Commerce Act (ESIGN Act).
         </div>
       </div>
     </div>
@@ -855,29 +948,73 @@ async function downloadPDF() {
         <strong>Payment Terms:</strong> Full payment is due upon completion of installation. An invoice will be provided on-site once the work is finished and your walkthrough is complete.
       </div>
 
-      <!-- Footer -->
-      <div style="text-align:center;font-size:10px;color:#8a9ab5;border-top:1px solid #e4e8f0;padding-top:12px;margin-top:auto">
-        Backup Power Pro &middot; SC LIC #2942 &middot; (864) 400-5302 &middot; backuppowerpro.com
+      <!-- Footer / Credentials -->
+      <div style="border-top:1px solid #e4e8f0;padding-top:12px;margin-top:auto;text-align:center">
+        <div style="font-size:11px;font-weight:700;color:#0b1f3b;margin-bottom:2px">Key Electric LLC</div>
+        <div style="font-size:9px;color:#8a9ab5;line-height:1.5">
+          22 Kimbell CT, Greenville SC 29617 &middot; (864) 400-5302 &middot; backuppowerpro.com<br>
+          SC Electrical Contractor License #2942 &middot; Fully Licensed &amp; Insured &middot; DBA: Backup Power Pro
+        </div>
       </div>
     </div>
   `;
 
+  const signedTime = P.signed_at
+    ? new Date(P.signed_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+    : '';
+
+  // Parse terms for PDF
+  let termsText = '';
+  if (P.approved_terms_snapshot) {
+    try {
+      const terms = typeof P.approved_terms_snapshot === 'string' ? JSON.parse(P.approved_terms_snapshot) : P.approved_terms_snapshot;
+      termsText = `${esc(terms.contact_name)} approved a ${terms.selected_amp || '30'} Amp Connection System ${terms.selected_surge ? 'with whole-home surge protection' : 'without surge protection'} for a total of ${fmt(terms.total)}. Scope of work and pricing were reviewed and agreed to. Generator Safety Instructions for portable generator inlet installations were read and understood.`;
+    } catch(e) {
+      termsText = esc(P.approved_terms_snapshot);
+    }
+  }
+
   const page2 = `
     <div style="${sty}">
-      <!-- Approval -->
-      <div style="font-size:14px;font-weight:800;color:#059669;margin-bottom:10px">&#10003; Proposal Approved</div>
+      <!-- Header -->
+      <div style="background:#0b1f3b;border-radius:10px;padding:18px 24px;color:#fff;margin-bottom:20px;text-align:center">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffba00">AGREEMENT & AUTHORIZATION</div>
+      </div>
+
+      <!-- Terms Agreed To -->
+      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Terms of Agreement</div>
+      <div style="font-size:11px;color:#4a5568;line-height:1.7;background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:14px;margin-bottom:16px">
+        ${termsText}
+      </div>
+
+      <!-- Safety Acknowledgment -->
+      <div style="font-size:12px;color:#4a5568;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:${P.safety_ack ? '#059669' : '#dc2626'};border-radius:4px;flex-shrink:0">
+          <span style="color:#fff;font-size:12px;font-weight:bold">${P.safety_ack ? '&#10003;' : '&#10007;'}</span>
+        </span>
+        Generator Safety Instructions: <strong>${P.safety_ack ? 'Acknowledged' : 'Not acknowledged'}</strong>
+      </div>
+
+      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+
+      <!-- Electronic Signature -->
+      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Electronic Signature</div>
       <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
         <tr>
-          <td style="padding:6px 0;color:#8a9ab5">Signed By</td>
-          <td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.signer_name)}</td>
+          <td style="padding:8px 0;color:#8a9ab5;width:120px">Electronically signed by</td>
+          <td style="padding:8px 0;font-weight:600;text-align:right;font-size:18px;font-family:cursive">${esc(P.signer_name)}</td>
         </tr>
         <tr>
-          <td style="padding:6px 0;color:#8a9ab5">Date</td>
-          <td style="padding:6px 0;font-weight:600;text-align:right">${signedDate}</td>
+          <td style="padding:8px 0;color:#8a9ab5">Date &amp; Time</td>
+          <td style="padding:8px 0;font-weight:600;text-align:right">${signedTime}</td>
         </tr>
         <tr>
-          <td style="padding:6px 0;color:#8a9ab5">IP Address</td>
-          <td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.approved_ip || 'N/A')}</td>
+          <td style="padding:8px 0;color:#8a9ab5">IP Address</td>
+          <td style="padding:8px 0;font-weight:600;text-align:right">${esc(P.approved_ip || 'N/A')}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#8a9ab5;vertical-align:top">Browser</td>
+          <td style="padding:8px 0;font-weight:500;text-align:right;font-size:9px;color:#4a5568;word-break:break-all">${esc(P.approved_user_agent || 'N/A')}</td>
         </tr>
       </table>
 
@@ -885,21 +1022,29 @@ async function downloadPDF() {
 
       <!-- Safety Instructions -->
       <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Generator Safety Instructions</div>
-      <div style="font-size:11px;color:#4a5568;line-height:1.7;background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:14px;margin-bottom:16px">
-        <strong>IMPORTANT: Read and follow all safety guidelines.</strong><br><br>
-        1. <strong>Never operate a generator indoors</strong> &mdash; including garages, basements, or enclosed spaces. Carbon monoxide is deadly and odorless.<br><br>
-        2. <strong>Place generator at least 20 feet from your home</strong> with exhaust pointing away from windows, doors, and vents.<br><br>
-        3. <strong>Use only the installed inlet connection</strong> to connect your generator. Never use extension cords to back-feed your panel.<br><br>
-        4. <strong>Turn OFF the generator before refueling.</strong> Allow it to cool for at least 2 minutes before adding fuel.<br><br>
-        5. <strong>Follow the interlock procedure:</strong> Turn OFF the main breaker, then turn ON the generator breaker. Reverse this order when disconnecting.<br><br>
-        6. <strong>Never exceed your generator's rated capacity.</strong> Turn off high-draw appliances when starting the generator, then add loads gradually.<br><br>
-        7. <strong>Keep the generator dry.</strong> Use a canopy if operating in rain. Never touch the generator with wet hands.<br><br>
-        8. <strong>Inspect your cord before each use.</strong> Check for damage, cracks, or exposed wiring. Replace immediately if damaged.
+      <div style="font-size:10px;color:#4a5568;line-height:1.6;background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:12px;margin-bottom:16px">
+        1. Never operate a generator indoors. Carbon monoxide is deadly and odorless.<br>
+        2. Place generator at least 20 feet from your home with exhaust away from openings.<br>
+        3. Use only the installed inlet connection. Never back-feed your panel with extension cords.<br>
+        4. Turn OFF the generator before refueling. Allow it to cool before adding fuel.<br>
+        5. Follow the interlock procedure: Main OFF, then generator ON. Reverse when disconnecting.<br>
+        6. Never exceed your generator's rated capacity. Add loads gradually.<br>
+        7. Keep the generator dry. Use a canopy in rain. Never touch with wet hands.<br>
+        8. Inspect your cord before each use. Replace immediately if damaged.
       </div>
 
-      <!-- Footer -->
-      <div style="text-align:center;font-size:10px;color:#8a9ab5;border-top:1px solid #e4e8f0;padding-top:12px">
-        Backup Power Pro &middot; SC LIC #2942 &middot; (864) 400-5302 &middot; backuppowerpro.com
+      <!-- Legal Footer -->
+      <div style="background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:12px;font-size:10px;color:#6b7280;text-align:center;line-height:1.6;margin-bottom:16px">
+        This document constitutes a binding agreement between the parties under the Electronic Signatures in Global and National Commerce Act (ESIGN Act). The electronic signature above carries the same legal weight as a handwritten signature.
+      </div>
+
+      <!-- Footer / Credentials -->
+      <div style="border-top:1px solid #e4e8f0;padding-top:12px;text-align:center">
+        <div style="font-size:11px;font-weight:700;color:#0b1f3b;margin-bottom:2px">Key Electric LLC</div>
+        <div style="font-size:9px;color:#8a9ab5;line-height:1.5">
+          22 Kimbell CT, Greenville SC 29617 &middot; (864) 400-5302 &middot; backuppowerpro.com<br>
+          SC Electrical Contractor License #2942 &middot; Fully Licensed &amp; Insured &middot; DBA: Backup Power Pro
+        </div>
       </div>
     </div>
   `;
@@ -957,6 +1102,99 @@ async function downloadPDF() {
 
 function pdfRow(name, price) {
   return `<tr><td style="padding:6px 0;color:#4a5568">${name}</td><td style="padding:6px 0;font-weight:600;text-align:right">${price}</td></tr>`;
+}
+
+// ── DRAFT PDF (unapproved proposals) ───────────────────────
+async function downloadDraftPDF() {
+  const btn = document.querySelector('.dl-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner-large" style="width:18px;height:18px;border-width:2px;margin:0"></div> Generating PDF...'; }
+
+  const createdDate = new Date(P.created_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const total = calcTotal(chosenAmp);
+  const ampLabel = (chosenAmp || P.selected_amp || P.amp_type || '30') === '50' ? '50 Amp' : '30 Amp';
+  const pr = getPrice(chosenAmp);
+
+  let pricingRows = '';
+  if (P.pricing_30 || P.pricing_50) {
+    const base = pr.base || 0, longRun = pr.longRun || 0, mb = pr.mainBreaker || 0, tq = pr.twinQuad || 0, cord = pr.cord || 0, permit = pr.permitInspection || 125;
+    pricingRows += pdfRow('Installation', fmt(Math.max(0, base - longRun - mb - tq - cord - permit)));
+    if (longRun) pricingRows += pdfRow('Extended run', fmt(longRun));
+    pricingRows += pdfRow('Permit & inspection', fmt(permit));
+    if (cord) pricingRows += pdfRow('Power transfer cord', fmt(cord));
+    if (mb) pricingRows += pdfRow('Main breaker replacement', fmt(mb));
+    if (tq) pricingRows += pdfRow('Panel space optimization', fmt(tq));
+  } else {
+    pricingRows += pdfRow('Base installation', fmt(pr.base || P.price_base || 0));
+    if (P.include_cord) pricingRows += pdfRow('Power transfer cord', fmt(P.price_cord || 0));
+  }
+  if (surgeOn && !P.include_surge) {
+    pricingRows += pdfRow('Whole-home surge protector', fmt(P.surge_price || 375));
+  }
+
+  const sty = 'font-family:Helvetica,Arial,sans-serif;color:#1a2a42;padding:20px 24px;width:632px;background:#fff;';
+  const pageHtml = `
+    <div style="${sty}">
+      <div style="background:#0b1f3b;border-radius:10px;padding:24px;color:#fff;margin-bottom:20px;text-align:center">
+        <img src="https://backuppowerpro.com/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:32px;margin-bottom:6px;" crossorigin="anonymous">
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:3px">Licensed Electrical Contractor &middot; SC LIC #2942 &middot; Upstate SC</div>
+      </div>
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffba00;margin-bottom:4px">PROPOSAL</div>
+        <div style="font-size:24px;font-weight:800;color:#0b1f3b">The Storm-Ready Connection System</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px">
+        <tr><td style="padding:6px 0;color:#8a9ab5">Customer</td><td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.contact_name)}</td></tr>
+        ${P.contact_address ? '<tr><td style="padding:6px 0;color:#8a9ab5">Address</td><td style="padding:6px 0;font-weight:600;text-align:right">' + esc(P.contact_address) + '</td></tr>' : ''}
+        <tr><td style="padding:6px 0;color:#8a9ab5">Proposal Date</td><td style="padding:6px 0;font-weight:600;text-align:right">${createdDate}</td></tr>
+        <tr><td style="padding:6px 0;color:#8a9ab5">Setup Type</td><td style="padding:6px 0;font-weight:600;text-align:right">${ampLabel} Connection System</td></tr>
+      </table>
+      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Everything Included</div>
+      <div style="font-size:12px;color:#4a5568;line-height:1.8;margin-bottom:16px">
+        &#10003; Generator inlet box (weather-rated, exterior mount)<br>
+        &#10003; Interlock kit (UL-listed, code-compliant)<br>
+        &#10003; Permit pulled &amp; filed with local jurisdiction<br>
+        &#10003; State electrical inspection coordinated<br>
+        &#10003; Complete site cleanup<br>
+        &#10003; Customer walkthrough &amp; training<br>
+        ${(pr.cordIncluded !== false) ? '&#10003; Power transfer cord<br>' : ''}
+      </div>
+      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Pricing</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
+        ${pricingRows}
+        <tr style="border-top:2px solid #0b1f3b">
+          <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b">Total</td>
+          <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b;text-align:right">${fmt(total)}</td>
+        </tr>
+      </table>
+      ${P.notes ? '<div style="border-top:2px solid #e4e8f0;margin:12px 0"></div><div style="font-size:12px;font-weight:700;color:#0b1f3b;margin-bottom:6px">Notes from Key</div><div style="font-size:11px;color:#4a5568;line-height:1.6">' + esc(P.notes) + '</div>' : ''}
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:16px;font-size:11px;color:#92400e;line-height:1.6">
+        <strong>Payment Terms:</strong> Full payment is due upon completion of installation.
+      </div>
+      <div style="text-align:center;font-size:10px;color:#8a9ab5;border-top:1px solid #e4e8f0;padding-top:12px;margin-top:16px">
+        Backup Power Pro &middot; SC LIC #2942 &middot; (864) 400-5302 &middot; backuppowerpro.com
+      </div>
+    </div>`;
+
+  const el = document.createElement('div');
+  el.style.cssText = 'width:680px;';
+  el.innerHTML = pageHtml;
+  document.body.appendChild(el);
+
+  try {
+    const canvasOpts = { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' };
+    const canvas = await html2canvas(el, canvasOpts);
+    const pdf = new jspdf.jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
+    const pageW = 215.9, marginX = 12, marginY = 10, contentW = pageW - (marginX * 2);
+    const img = canvas.toDataURL('image/jpeg', 0.98);
+    const h = (canvas.height * contentW) / canvas.width;
+    pdf.addImage(img, 'JPEG', marginX, marginY, contentW, h);
+    pdf.save('BPP-Proposal-' + (P.contact_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '-') + '.pdf');
+  } catch(e) { console.error('PDF generation failed:', e); }
+
+  if (el.parentNode) document.body.removeChild(el);
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Proposal PDF'; }
 }
 
 // ── ERROR ───────────────────────────────────────────────────

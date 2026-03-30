@@ -104,15 +104,29 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* FOOTER */
-.site-footer{text-align:center;padding:24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px}
+.site-footer{text-align:center;padding:28px 24px 24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px}
 .site-footer a{color:var(--text3);text-decoration:none}
 .site-footer a:hover{color:var(--navy)}
+.site-footer .cred-company{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--navy);margin-bottom:4px}
+.site-footer .cred-address{margin-bottom:2px}
+.site-footer .cred-license{font-weight:600;color:var(--text2);margin-top:6px}
+.site-footer .cred-dba{font-size:11px;margin-top:2px}
 
 /* RECEIPT INFO */
 .receipt-row{display:flex;justify-content:space-between;padding:10px 0;font-size:13px}
 .receipt-row:not(:last-child){border-bottom:1px solid var(--border)}
 .receipt-label{color:var(--text3)}
 .receipt-value{font-weight:600;color:var(--text)}
+
+/* LEGAL / AGREEMENT */
+.legal-section{background:#f8f9fb;border:1.5px solid var(--border);border-radius:10px;padding:16px 18px;margin-top:12px}
+.legal-section-title{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.legal-row{display:flex;justify-content:space-between;padding:7px 0;font-size:12px;border-bottom:1px solid var(--border)}
+.legal-row:last-child{border-bottom:none}
+.legal-label{color:var(--text3)}
+.legal-value{font-weight:600;color:var(--text);text-align:right;max-width:60%;word-break:break-word}
+.legal-terms{font-size:12px;color:var(--text2);line-height:1.6;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:10px;max-height:200px;overflow-y:auto}
+.legal-footer{font-size:11px;color:var(--text3);text-align:center;margin-top:14px;line-height:1.5;font-style:italic}
 
 @media(max-width:480px){
   .hero-title{font-size:22px}
@@ -137,7 +151,11 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 </main>
 
 <footer class="site-footer">
-  <a href="https://backuppowerpro.com">backuppowerpro.com</a> &nbsp;&middot;&nbsp; (864) 400-5302
+  <div class="cred-company">Key Electric LLC</div>
+  <div class="cred-address">22 Kimbell CT, Greenville SC 29617</div>
+  <div class="cred-address"><a href="tel:8644005302">(864) 400-5302</a> &nbsp;&middot;&nbsp; <a href="https://backuppowerpro.com">backuppowerpro.com</a></div>
+  <div class="cred-license">SC Electrical Contractor License #2942 &nbsp;&middot;&nbsp; Fully Licensed &amp; Insured</div>
+  <div class="cred-dba">DBA: Backup Power Pro</div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -148,6 +166,7 @@ const SUPABASE_KEY = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let INV = null; // invoice data
+let LINKED_PROPOSAL = null; // linked proposal data (if any)
 
 // ── INIT ────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
@@ -158,6 +177,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (error || !data) { showError('Invoice not found.', 'This link may be invalid or has been removed.'); return; }
 
   INV = data;
+
+  // Load linked proposal if available
+  if (INV.proposal_id) {
+    try {
+      const { data: propData } = await db.from('proposals').select('*').eq('id', INV.proposal_id).single();
+      if (propData) LINKED_PROPOSAL = propData;
+    } catch(e) {}
+  }
 
   // Track view (skip if preview mode)
   const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
@@ -187,6 +214,68 @@ function showError(title, msg) {
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8a9ab5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <h2>${title}</h2>
       <p>${msg}</p>
+    </div>`;
+}
+
+// ── BUILD AGREEMENT HTML (from linked proposal) ────────────
+function buildAgreementHtml() {
+  if (!LINKED_PROPOSAL || LINKED_PROPOSAL.status !== 'Approved') return '';
+
+  const LP = LINKED_PROPOSAL;
+  const signedTime = LP.signed_at
+    ? new Date(LP.signed_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+    : '';
+
+  let termsDisplay = '';
+  if (LP.approved_terms_snapshot) {
+    try {
+      const terms = typeof LP.approved_terms_snapshot === 'string' ? JSON.parse(LP.approved_terms_snapshot) : LP.approved_terms_snapshot;
+      termsDisplay = `
+        <div class="legal-terms">
+          <strong>Scope & Pricing Acknowledged:</strong> ${esc(terms.contact_name)} approved a ${terms.selected_amp || '30'} Amp Connection System
+          ${terms.selected_surge ? 'with whole-home surge protection' : 'without surge protection'} for a total of ${fmt(terms.total)}.
+          <br><br><strong>Acknowledgments:</strong><br>
+          ${terms.scope_acknowledged ? '&#10003; Reviewed and agreed to the scope of work and pricing.' : ''}<br>
+          ${terms.safety_acknowledged ? '&#10003; Read and understood the Generator Safety Instructions.' : ''}
+        </div>`;
+    } catch(e) {
+      termsDisplay = `<div class="legal-terms">${esc(LP.approved_terms_snapshot)}</div>`;
+    }
+  }
+
+  return `
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon" style="background:#f0fdf4"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h2>Original Agreement</h2>
+      </div>
+      <div class="card-body">
+        ${termsDisplay}
+
+        <div class="legal-section" style="margin-top:14px">
+          <div class="legal-section-title">Electronic Signature</div>
+          <div class="legal-row">
+            <span class="legal-label">Signed By</span>
+            <span class="legal-value" style="font-size:16px;color:var(--navy)">${esc(LP.signer_name)}</span>
+          </div>
+          <div class="legal-row">
+            <span class="legal-label">Date & Time</span>
+            <span class="legal-value">${signedTime}</span>
+          </div>
+          <div class="legal-row">
+            <span class="legal-label">IP Address</span>
+            <span class="legal-value">${esc(LP.approved_ip || 'N/A')}</span>
+          </div>
+          <div class="legal-row">
+            <span class="legal-label">Safety Instructions</span>
+            <span class="legal-value">${LP.safety_ack ? '&#10003; Acknowledged' : 'Not acknowledged'}</span>
+          </div>
+        </div>
+
+        <div class="legal-footer">
+          This agreement was electronically signed under the ESIGN Act and constitutes a binding agreement between the parties.
+        </div>
+      </div>
     </div>`;
 }
 
@@ -271,6 +360,8 @@ function renderInvoice() {
     </div>
 
     ${notesHtml}
+
+    ${buildAgreementHtml()}
 
     <!-- Pay Online Button -->
     <button class="btn-pay" onclick="payOnline()">
@@ -380,6 +471,8 @@ function renderPaidInvoice() {
       </div>
     </div>
 
+    ${buildAgreementHtml()}
+
     <!-- Download Receipt -->
     <button class="dl-btn" onclick="downloadReceiptPDF()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -454,23 +547,30 @@ function buildPDF(docTitle, isPaid) {
   const lineItems = INV.line_items || [];
   const total = INV.total || lineItems.reduce((s, li) => s + (li.amount || 0), 0);
 
+  // Determine title
+  let headerTitle = docTitle;
+  if (isPaid) headerTitle = 'RECEIPT \u2014 PAID IN FULL';
+
   // Navy header bar
   doc.setFillColor(navy[0], navy[1], navy[2]);
   doc.rect(0, 0, 210, 40, 'F');
 
   // Title
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
+  doc.setFontSize(isPaid ? 18 : 22);
   doc.setFont('helvetica', 'bold');
-  doc.text(docTitle, 20, 22);
+  doc.text(headerTitle, 20, 22);
 
   // Company info
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Key Electric LLC', 20, 30);
+  doc.text('Key Electric LLC  \u2014  DBA: Backup Power Pro', 20, 30);
   doc.text('22 Kimbell CT, Greenville SC 29617', 20, 35);
   doc.setTextColor(gold[0], gold[1], gold[2]);
   doc.text('(864) 400-5302', 150, 30);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.text('SC Electrical Contractor License #2942 \u2014 Fully Licensed & Insured', 150, 35);
 
   // PAID watermark (for receipts)
   if (isPaid) {
@@ -505,16 +605,23 @@ function buildPDF(docTitle, isPaid) {
     doc.text('Paid:', 150, 64);
     doc.setFont('helvetica', 'normal');
     doc.text(new Date(INV.paid_at).toLocaleDateString(), 150, 70);
+    if (INV.payment_method) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Method:', 150, 76);
+      doc.setFont('helvetica', 'normal');
+      doc.text(INV.payment_method, 150, 82);
+    }
   }
 
   // Status badge
   if (isPaid) {
+    const badgeY = INV.payment_method ? 88 : 74;
     doc.setFillColor(green[0], green[1], green[2]);
-    doc.roundedRect(150, 74, 30, 10, 2, 2, 'F');
+    doc.roundedRect(150, badgeY, 30, 10, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('PAID', 165, 81, { align: 'center' });
+    doc.text('PAID', 165, badgeY + 7, { align: 'center' });
   }
 
   // Line items table header
@@ -553,7 +660,7 @@ function buildPDF(docTitle, isPaid) {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
   if (isPaid) {
-    doc.text('Payment received. Thank you for choosing Backup Power Pro!', 20, y);
+    doc.text('This receipt confirms payment has been received for the services described above.', 20, y);
   } else {
     doc.text('Payment due upon completion. Price includes all materials, permit, and inspection.', 20, y);
   }
@@ -571,17 +678,119 @@ function buildPDF(docTitle, isPaid) {
     doc.setTextColor(100, 100, 100);
     const noteLines = doc.splitTextToSize(INV.notes, 170);
     doc.text(noteLines, 20, y);
+    y += noteLines.length * 5;
+  }
+
+  // ── ORIGINAL AGREEMENT (from linked proposal) ──────────────
+  if (LINKED_PROPOSAL && LINKED_PROPOSAL.status === 'Approved') {
+    const LP = LINKED_PROPOSAL;
+
+    // Check if we have room on current page, otherwise add new page
+    if (y > 200) {
+      // Add footer to current page
+      addFooterBar(doc, navy, gold);
+      doc.addPage();
+      y = 20;
+    }
+
+    y += 10;
+    doc.setFillColor(240, 244, 250);
+    doc.rect(20, y - 6, 170, 10, 'F');
+    doc.setTextColor(navy[0], navy[1], navy[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('ORIGINAL AGREEMENT', 22, y);
+    y += 12;
+
+    // Terms summary
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+
+    let termsText = '';
+    if (LP.approved_terms_snapshot) {
+      try {
+        const terms = typeof LP.approved_terms_snapshot === 'string' ? JSON.parse(LP.approved_terms_snapshot) : LP.approved_terms_snapshot;
+        termsText = (terms.contact_name || LP.contact_name || '') + ' approved a ' + (terms.selected_amp || '30') + ' Amp Connection System ' +
+          (terms.selected_surge ? 'with whole-home surge protection' : 'without surge protection') +
+          ' for a total of $' + Number(terms.total || LP.total || 0).toLocaleString() + '. ' +
+          'Scope of work and pricing were reviewed and agreed to. Generator Safety Instructions were acknowledged.';
+      } catch(e) {
+        termsText = String(LP.approved_terms_snapshot).substring(0, 300);
+      }
+    }
+
+    if (termsText) {
+      const tLines = doc.splitTextToSize(termsText, 170);
+      doc.text(tLines, 22, y);
+      y += tLines.length * 4.5 + 6;
+    }
+
+    // Signature details
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(navy[0], navy[1], navy[2]);
+    doc.setFontSize(9);
+    doc.text('Electronically signed by:', 22, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(LP.signer_name || 'N/A', 80, y);
+    y += 6;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date:', 22, y);
+    doc.setFont('helvetica', 'normal');
+    const sigDate = LP.signed_at ? new Date(LP.signed_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : 'N/A';
+    doc.text(sigDate, 80, y);
+    y += 6;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('IP Address:', 22, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(LP.approved_ip || 'N/A', 80, y);
+    y += 6;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Browser:', 22, y);
+    doc.setFont('helvetica', 'normal');
+    const uaText = LP.approved_user_agent ? LP.approved_user_agent.substring(0, 80) : 'N/A';
+    const uaLines = doc.splitTextToSize(uaText, 110);
+    doc.setFontSize(7);
+    doc.text(uaLines, 80, y);
+    doc.setFontSize(9);
+    y += uaLines.length * 4 + 6;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Safety Instructions:', 22, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(LP.safety_ack ? 'Acknowledged' : 'Not acknowledged', 80, y);
+    y += 10;
+
+    // Legal note
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.setFont('helvetica', 'italic');
+    const legalText = 'This document constitutes a binding agreement between the parties under the Electronic Signatures in Global and National Commerce Act (ESIGN Act).';
+    const legalLines = doc.splitTextToSize(legalText, 170);
+    doc.text(legalLines, 22, y);
   }
 
   // Navy footer bar
-  doc.setFillColor(navy[0], navy[1], navy[2]);
-  doc.rect(0, 280, 210, 17, 'F');
-  doc.setTextColor(gold[0], gold[1], gold[2]);
-  doc.setFontSize(9);
-  doc.text('Backup Power Pro \u2014 backuppowerpro.com', 105, 290, { align: 'center' });
+  addFooterBar(doc, navy, gold);
 
   const prefix = isPaid ? 'Receipt' : 'Invoice';
   doc.save(prefix + '-' + (INV.contact_name || 'Customer').replace(/\s+/g, '-') + '.pdf');
+}
+
+function addFooterBar(doc, navy, gold) {
+  doc.setFillColor(navy[0], navy[1], navy[2]);
+  doc.rect(0, 277, 210, 20, 'F');
+  doc.setTextColor(gold[0], gold[1], gold[2]);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Key Electric LLC  \u2014  backuppowerpro.com  \u2014  (864) 400-5302', 105, 286, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(255, 255, 255);
+  doc.text('22 Kimbell CT, Greenville SC 29617  |  SC Electrical Contractor License #2942  |  Fully Licensed & Insured  |  DBA: Backup Power Pro', 105, 292, { align: 'center' });
 }
 
 </script>
