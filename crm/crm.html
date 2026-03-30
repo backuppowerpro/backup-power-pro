@@ -1015,10 +1015,10 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // Stripe publishable key (for future M2 reader integration)
 const STRIPE_PK = 'pk_live_51TGXWMGRrrWRVQEdk3Huz3nEHfTx0Kr9nj2gLfpEVjaDsKL5dQbFg7f92qac6ylXsmCxaEGJLWwWMIajFL3yLDqA00FCvkgGNI';
 
-// Meta CAPI config
-// NOTE: In production, proxy these calls through a backend to avoid exposing the access token
+// Meta CAPI — DISABLED: access token removed for security
+// To re-enable, proxy calls through a backend server (e.g. OpenClaw on Hetzner VPS)
 const META_PIXEL_ID = '974241553654862';
-const META_CAPI_TOKEN = 'EAAUE7r3N3ZBMBRFi8ABmUg3TM5YFlJzEuYOXFNFEk54kiJ0Buj68pwvtESsUqM2wCZA5xFfnQRRzNKQOwhmZCWpASZAxjASmXZChtLRz9o6CIkNGjALsDoLnhXVvF5ggTMLN4UVBciTeKQ5iCgRQuOjL4djqxMcKDTcDzUtZABzVV3o4FYB995ZARnEzXPquwZDZD';
+const META_CAPI_TOKEN = null; // Token removed — must not be in client-side code
 
 // ── STATE ─────────────────────────────────────────────────
 let allContacts      = [];
@@ -1132,6 +1132,7 @@ async function sha256(str) {
 }
 
 async function fireMetaEvent(eventName, userData, customData) {
+  if (!META_CAPI_TOKEN) { console.log('[Meta CAPI] Skipped — no token (needs backend proxy)'); return; }
   try {
     const hashedUser = {};
     if (userData.email) hashedUser.em = [await sha256(userData.email.toLowerCase().trim())];
