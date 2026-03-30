@@ -2753,8 +2753,18 @@ function getHolidayForDate(dateStr) {
 }
 
 // ── LOCKED DAYS ──────────────────────────────────────────
+// Locked days: { "2026-03-30": { locked: true, note: "dentist" }, ... }
 function getLockedDays() {
-  try { return JSON.parse(localStorage.getItem('cal_locked_days') || '{}'); } catch { return {}; }
+  try {
+    const raw = JSON.parse(localStorage.getItem('cal_locked_days') || '{}');
+    // Migrate old boolean format
+    const out = {};
+    Object.keys(raw).forEach(k => {
+      if (raw[k] === true) out[k] = { locked: true, note: '' };
+      else if (raw[k] && typeof raw[k] === 'object') out[k] = raw[k];
+    });
+    return out;
+  } catch { return {}; }
 }
 function setLockedDays(obj) { localStorage.setItem('cal_locked_days', JSON.stringify(obj)); }
 function toggleDayLock(dateStr) {
@@ -2762,11 +2772,22 @@ function toggleDayLock(dateStr) {
   if (locked[dateStr]) {
     delete locked[dateStr];
   } else {
-    // Don't lock a day that's already full
     const dayJobs = allJobs.filter(j => j.date === dateStr && j.status !== 'Archived');
     if (dayJobs.length >= 4) return;
-    locked[dateStr] = true;
+    locked[dateStr] = { locked: true, note: '' };
   }
+  setLockedDays(locked);
+  renderCalendar();
+}
+function openLockNote(dateStr, e) {
+  e.stopPropagation();
+  const locked = getLockedDays();
+  const entry = locked[dateStr];
+  if (!entry) return;
+  const currentNote = entry.note || '';
+  const note = prompt('Lock note for ' + dateStr + ':', currentNote);
+  if (note === null) return; // cancelled
+  entry.note = note;
   setLockedDays(locked);
   renderCalendar();
 }
@@ -2815,7 +2836,9 @@ function renderCalendar() {
     const holiday = getHolidayForDate(dateStr);
     const holidayBadge = holiday ? `<span class="cal-holiday">${esc(holiday.name)}</span>` : '';
 
-    const isLocked = getLockedDays()[dateStr];
+    const lockEntry = getLockedDays()[dateStr];
+    const isLocked = lockEntry && lockEntry.locked;
+    const lockNote = lockEntry ? lockEntry.note || '' : '';
     const canAdd = !atLimit && !isLocked;
     html += `
     <div class="cal-day ${isToday ? 'today' : ''} ${isLocked ? 'locked' : ''}"
@@ -2825,7 +2848,7 @@ function renderCalendar() {
         <span class="cal-day-name">${days[i]}</span>
         <span class="cal-day-num">${day.getDate()}</span>
         ${holidayBadge}
-        ${isLocked ? '<span class="cal-lock-icon">&#128274;</span>' : ''}
+        ${isLocked ? '<span class="cal-lock-icon" onclick="event.stopPropagation();openLockNote(\'' + dateStr + '\',event)" style="cursor:pointer" title="' + esc(lockNote || 'Click to add note') + '">' + (lockNote ? '<span style="display:inline-block;width:5px;height:5px;background:var(--gold);border-radius:50%;margin-right:3px;vertical-align:middle"></span>' : '') + '&#128274;</span>' : ''}
       </div>
       <div class="cal-day-body${atLimit ? ' cal-full' : ''}" ${canAdd ? `onclick="openJobModal(null,'${dateStr}')"` : ''}>
         ${events}
