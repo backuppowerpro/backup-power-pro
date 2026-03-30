@@ -825,12 +825,19 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <div class="modal-body">
       <input type="hidden" id="j-id">
       <div class="form-row">
-        <label>Linked Lead <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
-        <div style="display:flex;gap:6px;align-items:center">
-          <select class="form-select" id="j-contact" onchange="onJobContactChange()" style="flex:1">
-            <option value="">— No contact —</option>
-          </select>
-          <button class="fld-btn" id="j-contact-jump" onclick="jumpToContactFromJob()" title="View contact" style="display:none;flex-shrink:0">&rarr;</button>
+        <label>Linked Lead</label>
+        <div style="position:relative">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="form-input" id="j-contact-search" placeholder="Search contacts..." autocomplete="off"
+              oninput="jobContactSearch(this.value)" onkeydown="jobContactKeydown(event)" onblur="setTimeout(jobContactHideResults,200)" onfocus="if(this.value)jobContactSearch(this.value)" style="flex:1">
+            <input type="hidden" id="j-contact" value="">
+            <button class="fld-btn" id="j-contact-jump" onclick="jumpToContactFromJob()" title="View contact" style="display:none;flex-shrink:0">&rarr;</button>
+          </div>
+          <div id="j-contact-selected" style="display:none;margin-top:6px;background:var(--bg);border-radius:var(--r-sm);padding:8px 12px;display:none;align-items:center;justify-content:space-between">
+            <span id="j-contact-selected-name" style="font-size:13px;font-weight:600;color:var(--navy)"></span>
+            <button onclick="clearJobContact()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">✕</button>
+          </div>
+          <ul id="j-contact-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1.5px solid var(--navy);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);z-index:999;list-style:none;max-height:200px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.12);margin:0;padding:0"></ul>
         </div>
       </div>
       <div class="form-row" id="j-title-row" style="display:none">
@@ -2039,7 +2046,7 @@ function closePanel() {
       document.getElementById('j-id').value = s.id;
       document.getElementById('j-date').value = s.date;
       document.getElementById('j-time').value = s.time;
-      document.getElementById('j-contact').value = s.contact;
+      if (s.contact) selectJobContact(s.contact);
       document.getElementById('j-title').value = s.title;
       document.getElementById('j-type').value = s.type;
       document.getElementById('j-status').value = s.status;
@@ -2743,11 +2750,81 @@ function renderCalendar() {
 }
 
 function onJobContactChange() {
-  const sel = document.getElementById('j-contact');
-  const titleRow = document.getElementById('j-title-row');
-  titleRow.style.display = sel.value ? 'none' : '';
+  const val = document.getElementById('j-contact').value;
   const jumpBtn = document.getElementById('j-contact-jump');
-  if (jumpBtn) jumpBtn.style.display = sel.value ? '' : 'none';
+  if (jumpBtn) jumpBtn.style.display = val ? '' : 'none';
+}
+
+let _jobContactFocusedIdx = -1;
+
+function jobContactSearch(term) {
+  const resultsEl = document.getElementById('j-contact-results');
+  if (!term || term.length < 1) { resultsEl.style.display = 'none'; return; }
+  const lower = term.toLowerCase();
+  const matches = allContacts.filter(c => c.status !== 'Archived' && (c.name || '').toLowerCase().includes(lower)).slice(0, 8);
+  _jobContactFocusedIdx = -1;
+  let html = '';
+  matches.forEach(c => {
+    html += '<li style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text2)" onmousedown="event.preventDefault();selectJobContact(\'' + c.id + '\')">' + esc(c.name) + (c.phone ? '<span style="color:var(--text3);margin-left:8px;font-size:11px">' + esc(c.phone) + '</span>' : '') + '</li>';
+  });
+  if (!matches.length) {
+    html = '<li style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--navy);font-weight:600" onmousedown="event.preventDefault();createContactFromEvent(\'' + esc(term).replace(/'/g, "\\'") + '\')">+ Create "' + esc(term) + '" as new lead</li>';
+  }
+  resultsEl.innerHTML = html;
+  resultsEl.style.display = 'block';
+}
+
+function jobContactKeydown(e) {
+  const items = document.querySelectorAll('#j-contact-results li');
+  if (!items.length || document.getElementById('j-contact-results').style.display === 'none') return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); _jobContactFocusedIdx = Math.min(_jobContactFocusedIdx + 1, items.length - 1); jobContactSetFocus(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); _jobContactFocusedIdx = Math.max(_jobContactFocusedIdx - 1, 0); jobContactSetFocus(); }
+  else if (e.key === 'Enter' && _jobContactFocusedIdx >= 0) { e.preventDefault(); items[_jobContactFocusedIdx].dispatchEvent(new MouseEvent('mousedown', {bubbles:true})); }
+  else if (e.key === 'Escape') jobContactHideResults();
+}
+
+function jobContactSetFocus() {
+  const items = document.querySelectorAll('#j-contact-results li');
+  items.forEach(li => li.style.background = '');
+  if (_jobContactFocusedIdx >= 0 && _jobContactFocusedIdx < items.length) items[_jobContactFocusedIdx].style.background = 'var(--bg)';
+}
+
+function jobContactHideResults() {
+  document.getElementById('j-contact-results').style.display = 'none';
+}
+
+function selectJobContact(contactId) {
+  const c = allContacts.find(x => x.id === contactId);
+  if (!c) return;
+  document.getElementById('j-contact').value = contactId;
+  document.getElementById('j-contact-search').style.display = 'none';
+  const selEl = document.getElementById('j-contact-selected');
+  selEl.style.display = 'flex';
+  document.getElementById('j-contact-selected-name').textContent = c.name;
+  jobContactHideResults();
+  onJobContactChange();
+}
+
+function clearJobContact() {
+  document.getElementById('j-contact').value = '';
+  document.getElementById('j-contact-search').value = '';
+  document.getElementById('j-contact-search').style.display = '';
+  document.getElementById('j-contact-selected').style.display = 'none';
+  onJobContactChange();
+}
+
+async function createContactFromEvent(name) {
+  jobContactHideResults();
+  // Create a new contact with just the name
+  const parts = name.trim().split(/\s+/);
+  const capParts = parts.map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+  const fullName = capParts.join(' ');
+  const { data, error } = await db.from('contacts').insert([{ name: fullName, stage: 1 }]).select().single();
+  if (error) { showToast('Failed to create contact: ' + error.message, 'error'); return; }
+  allContacts.unshift(data);
+  renderContacts();
+  selectJobContact(data.id);
+  showToast(fullName + ' added as new lead', 'success');
 }
 
 let _jobModalReturnState = null;
@@ -2780,15 +2857,12 @@ function openJobModal(id, preDate) {
   document.getElementById('j-type').value = 'Install';
   document.getElementById('j-status').value = 'Scheduled';
 
-  // Populate contact dropdown
-  const sel = document.getElementById('j-contact');
-  sel.innerHTML = '<option value="">— No contact linked —</option>';
-  [...allContacts].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id; opt.textContent = c.name;
-    sel.appendChild(opt);
-  });
-  sel.value = '';
+  // Reset contact search
+  document.getElementById('j-contact').value = '';
+  document.getElementById('j-contact-search').value = '';
+  document.getElementById('j-contact-search').style.display = '';
+  document.getElementById('j-contact-selected').style.display = 'none';
+  jobContactHideResults();
 
   const titleEl = document.getElementById('job-modal-title');
   if (id) {
@@ -2805,7 +2879,7 @@ function openJobModal(id, preDate) {
     document.getElementById('j-price').value  = j.price  || '';
     document.getElementById('j-notes').value  = j.notes  || '';
     document.getElementById('j-title').value  = j.title  || '';
-    sel.value = j.contact_id || '';
+    if (j.contact_id) selectJobContact(j.contact_id);
     jobOriginal = {
       date: j.date || '', time: j.time || '', contact_id: j.contact_id || '',
       title: j.title || '', type: j.type || 'Install', status: j.status || 'Scheduled',
@@ -2931,8 +3005,7 @@ function bookEventFromPanel() {
   document.getElementById('side-panel-overlay').classList.remove('open');
   openJobModal(null, null);
   setTimeout(function() {
-    document.getElementById('j-contact').value = contactId;
-    onJobContactChange();
+    selectJobContact(contactId);
   }, 50);
 }
 
