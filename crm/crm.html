@@ -265,7 +265,7 @@ td.actions{white-space:nowrap}
 /* SCROLLABLE CONTACTS */
 .table-scroll{height:265px;overflow-y:auto;border-top:none;scrollbar-color:var(--border) transparent;background:var(--bg);position:relative}
 .table-wrap{position:relative}
-.table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,var(--bg));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:1;transition:opacity .25s}
+.table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(200,205,215,.45));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:1;transition:opacity .25s}
 .table-wrap.at-bottom::after{opacity:0}
 .table-scroll::-webkit-scrollbar{width:8px}
 .table-scroll::-webkit-scrollbar-track{background:transparent}
@@ -1593,7 +1593,9 @@ function renderProposalDrill() {
   const lockedHtml = isApproved ? '<div style="background:#d1fae5;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--green);text-align:center;font-weight:600">Approved — this proposal is locked and can no longer be edited.</div>' : '';
   const canEdit = !isApproved && !isCancelled;
   const editBtn = canEdit ? '<button class="btn btn-outline" style="width:100%;margin-bottom:8px" onclick="editProposal(\'' + p.id + '\')">Edit Proposal</button>' : '';
-  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div>' + frozenHtml + lockedHtml + '<div class="pay-summary">' + items + '</div>' + (isCancelled ? '' : '<div style="margin-bottom:16px">' + editBtn + '<button class="btn btn-outline" style="width:100%" onclick="navigator.clipboard.writeText(\'' + esc(url) + '\');showToast(\'Proposal link copied!\',\'success\')">Copy Proposal Link</button></div>' + addons + inspBtn + payBtn) + cancelBtn;
+  const viewedInfo = p.viewed_at ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Client last viewed: ' + new Date(p.viewed_at).toLocaleString() + (p.view_count > 1 ? ' (' + p.view_count + ' views)' : '') + '</div>' : '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Not yet viewed by client</div>';
+  const previewUrl = url + '&preview=1';
+  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div>' + viewedInfo + frozenHtml + lockedHtml + '<div class="pay-summary">' + items + '</div>' + (isCancelled ? '' : '<div style="margin-bottom:16px">' + editBtn + '<div style="display:flex;gap:8px"><button class="btn btn-outline" style="flex:1" onclick="navigator.clipboard.writeText(\'' + esc(url) + '\');showToast(\'Proposal link copied!\',\'success\')">Copy Link</button><a class="btn btn-outline" style="flex:1;text-decoration:none;text-align:center" href="' + esc(previewUrl) + '" target="_blank">Preview</a></div></div>' + addons + inspBtn + payBtn) + cancelBtn;
 }
 
 let _cancelProposalPending = null;
@@ -1771,12 +1773,30 @@ async function renderPaymentDrill() {
     + '<div class="pay-total" id="pay-total-display" style="padding:12px">$' + totalAmount.toLocaleString() + '</div>'
     + (totalPaid > 0 ? '<div style="text-align:center;padding:0 12px 10px;display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span style="color:var(--green)">Paid: $' + totalPaid.toLocaleString() + '</span>' + (totalAmount - totalPaid > 0 ? '<span style="color:var(--red)">Balance: $' + (totalAmount - totalPaid).toLocaleString() + '</span>' : '<span style="color:var(--green)">Paid in full</span>') + '</div>' : '')
     + '</div>'
-    + '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px" onclick="copyInvoiceLink(\'' + contactId + '\')">Copy Invoice Link</button>'
+    + '<div id="pay-invoice-section"></div>'
     + (collectDisabled ? '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">&#128274; Complete panel inspection before collecting payment</div>' : '')
     + '<button class="btn btn-primary" id="pay-collect-btn" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--navy)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPaymentFromLines(\'' + contactId + '\')"') + '>' + (hasPaid ? '&check; Paid' : (collectDisabled ? '&#128274; Record Offline Payment' : 'Record Offline Payment &mdash; $' + totalAmount.toLocaleString())) + '</button>'
     + '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);text-align:center">Stripe M2 Reader: requires backend for connection tokens</div>'
     + (hasPaid ? '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="showToast(\'Manual coming soon\',\'success\')">Storm-Ready System Manual</button>' : '')
     + historyHtml;
+
+  // Load invoice info for this contact and render Copy/Preview/Viewed
+  loadInvoiceSection(contactId);
+}
+
+async function loadInvoiceSection(contactId) {
+  const el = document.getElementById('pay-invoice-section');
+  if (!el) return;
+  const { data } = await db.from('invoices').select('token,viewed_at,view_count').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
+  const inv = data && data[0];
+  if (inv) {
+    const invUrl = 'https://backuppowerpro.com/invoice.html?token=' + inv.token;
+    const previewUrl = invUrl + '&preview=1';
+    const viewedText = inv.viewed_at ? 'Client last viewed: ' + new Date(inv.viewed_at).toLocaleString() + (inv.view_count > 1 ? ' (' + inv.view_count + ' views)' : '') : 'Not yet viewed by client';
+    el.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:4px"><button class="btn btn-outline" style="flex:1;min-height:44px" onclick="navigator.clipboard.writeText(\'' + invUrl + '\');showToast(\'Invoice link copied!\',\'success\')">Copy Invoice Link</button><a class="btn btn-outline" style="flex:1;min-height:44px;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center" href="' + previewUrl + '" target="_blank">Preview Invoice</a></div><div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">' + viewedText + '</div>';
+  } else {
+    el.innerHTML = '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px" onclick="copyInvoiceLink(\'' + contactId + '\')">Create &amp; Copy Invoice Link</button>';
+  }
 }
 
 function getInvoiceTotal() {

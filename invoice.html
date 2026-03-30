@@ -159,6 +159,15 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   INV = data;
 
+  // Track view (skip if preview mode)
+  const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
+  if (!isPreview && INV.status !== 'cancelled' && INV.status !== 'paid') {
+    db.from('invoices').update({
+      viewed_at: new Date().toISOString(),
+      view_count: (INV.view_count || 0) + 1,
+    }).eq('token', token).then(() => {});
+  }
+
   if (INV.status === 'cancelled') {
     document.getElementById('app').innerHTML = '<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">🚫</div><div style="font-family:Outfit,sans-serif;font-size:22px;font-weight:800;color:#0b1f3b;margin-bottom:8px">Invoice Cancelled</div><div style="font-size:14px;color:#8a9ab5;max-width:360px;margin:0 auto">This invoice has been cancelled and is no longer available for payment. Please contact Backup Power Pro at <a href="tel:8644005302" style="color:#3b82f6;font-weight:600">(864) 400-5302</a> if you have questions.</div></div>';
   } else if (INV.status === 'paid') {

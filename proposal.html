@@ -210,8 +210,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   P = data;
 
-  // Track view (fire & forget)
-  trackView(token);
+  // Track view (skip if preview mode)
+  const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
+  if (!isPreview) trackView(token);
 
   if (P.status === 'Cancelled') {
     document.getElementById('app').innerHTML = '<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">🚫</div><div style="font-family:Outfit,sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:8px">Proposal Cancelled</div><div style="font-size:14px;color:var(--text3);max-width:360px;margin:0 auto">This proposal has been cancelled and is no longer available. Please contact Backup Power Pro at <a href="tel:8644005302" style="color:var(--blue);font-weight:600">(864) 400-5302</a> if you have questions.</div></div>';
