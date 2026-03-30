@@ -1285,13 +1285,8 @@ function renderContacts() {
   if (scrollEl && wrapEl) {
     const checkScroll = () => {
       const remaining = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
-      const rowHeight = 42.5;
-      const fadeZone = rowHeight * 5; // last 5 rows
-      if (remaining >= fadeZone) {
-        wrapEl.style.setProperty('--grad-opacity', '1');
-      } else {
-        wrapEl.style.setProperty('--grad-opacity', Math.max(0, remaining / fadeZone));
-      }
+      const fadeZone = 80;
+      wrapEl.style.setProperty('--grad-opacity', Math.min(1, Math.max(0, remaining / fadeZone)));
     };
     wrapEl.style.setProperty('--grad-opacity', '1');
     scrollEl.addEventListener('scroll', checkScroll);
