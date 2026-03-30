@@ -3756,10 +3756,15 @@ function renderTrendAnalytics() {
   const active = allContacts.filter(c => c.status !== 'Archived');
   // Conversion rate: last 30 days only (leads created in past 30 days that reached Booked+)
   const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30); thirtyDaysAgo.setHours(0,0,0,0);
+  const sixtyDaysAgo = new Date(); sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60); sixtyDaysAgo.setHours(0,0,0,0);
   const last30Leads = active.filter(c => new Date(c.created_at) >= thirtyDaysAgo);
+  const prev30Leads = active.filter(c => { const d = new Date(c.created_at); return d >= sixtyDaysAgo && d < thirtyDaysAgo; });
   const totalLeads = last30Leads.length;
   const bookedLeads = last30Leads.filter(c => (c.stage || 1) >= 4).length;
   const convRate = totalLeads > 0 ? Math.round((bookedLeads / totalLeads) * 100) : 0;
+  const prevTotalLeads = prev30Leads.length;
+  const prevBookedLeads = prev30Leads.filter(c => (c.stage || 1) >= 4).length;
+  const prevConvRate = prevTotalLeads > 0 ? Math.round((prevBookedLeads / prevTotalLeads) * 100) : 0;
 
   // Average days to book
   const contactBookedAt = {};
@@ -3799,6 +3804,7 @@ function renderTrendAnalytics() {
       <div class="trend-num">${convRate}%</div>
       <div class="trend-label">Lead &rarr; Booked<br>last 30 days</div>
       <div class="trend-delta flat">${bookedLeads} of ${totalLeads} leads</div>
+      ${convRate !== prevConvRate ? '<div class="trend-delta ' + (convRate > prevConvRate ? 'up' : 'down') + '">' + (convRate > prevConvRate ? '&uarr;' : '&darr;') + Math.abs(convRate - prevConvRate) + '% vs prior 30 days</div>' : '<div class="trend-delta flat">same as prior 30 days</div>'}
     </div>
     <div class="trend-stat">
       <div class="trend-num">${avgDays === '—' ? '—' : avgDays + 'd'}</div>
