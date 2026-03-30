@@ -717,7 +717,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <div class="modal-overlay" id="proposal-overlay" onclick="if(event.target===this)closeModal('proposal-overlay')">
   <div class="modal" style="max-width:540px">
     <div class="modal-head">
-      <div class="modal-title" id="proposal-modal-title">Create Proposal</div>
+      <button style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:14px;font-weight:600;padding:4px 8px;margin-right:4px;font-family:'Inter',sans-serif" onclick="backToContactFromProposal()">← Back</button>
+      <div class="modal-title" id="proposal-modal-title" style="flex:1">Create Proposal</div>
       <button class="modal-close" onclick="closeModal('proposal-overlay')">&#10005;</button>
     </div>
     <div class="modal-body" id="proposal-modal-body">
@@ -805,7 +806,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
           <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--navy)">Proposal link ready</div>
         </div>
         <div id="p-link-url" style="display:none"></div>
-        <button class="btn btn-primary" style="width:100%" onclick="copyProposalLink()">Copy Link</button>
+        <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="copyProposalLink()">Copy Link</button>
+        <button class="btn btn-outline" style="width:100%" onclick="backToContactFromProposal()">← Back to Contact</button>
       </div>
 
     </div>
@@ -1646,7 +1648,8 @@ async function renderPaymentDrill() {
   if (payHistory.length) {
     historyHtml = '<div class="panel-section-label">Payment History</div>';
     payHistory.forEach(function(pay) {
-      historyHtml += '<div class="pay-history-item"><div><div style="font-size:13px;font-weight:600">$' + (pay.amount||0).toLocaleString() + '</div><div style="font-size:11px;color:var(--text3)">' + new Date(pay.created_at).toLocaleDateString() + '</div></div><span class="prop-badge" style="background:#d1fae5;color:var(--green)">' + esc(pay.method || 'Card') + '</span></div>';
+      var isOffline = pay.method === 'Cash' || pay.method === 'Check';
+      historyHtml += '<div class="pay-history-item"><div><div style="font-size:13px;font-weight:600">$' + (pay.amount||0).toLocaleString() + '</div><div style="font-size:11px;color:var(--text3)">' + new Date(pay.created_at).toLocaleDateString() + '</div></div><div style="display:flex;align-items:center;gap:6px"><span class="prop-badge" style="background:#d1fae5;color:var(--green)">' + esc(pay.method || 'Card') + '</span>' + (isOffline ? '<button onclick="undoPayment(\'' + pay.id + '\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:4px" title="Undo payment">✕</button>' : '') + '</div></div>';
     });
   }
   const collectDisabled = hasPOM && !inspPassed;
@@ -1670,7 +1673,7 @@ async function renderPaymentDrill() {
     + '</div>'
     + '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px" onclick="copyInvoiceLink(\'' + contactId + '\')">Copy Invoice Link</button>'
     + (collectDisabled ? '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">&#128274; Complete panel inspection before collecting payment</div>' : '')
-    + '<button class="btn btn-primary" id="pay-collect-btn" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--green)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPaymentFromLines(\'' + contactId + '\')"') + '>' + (hasPaid ? '&check; Paid' : (collectDisabled ? '&#128274; Collect Payment' : 'Collect Payment &mdash; $' + totalAmount.toLocaleString())) + '</button>'
+    + '<button class="btn btn-primary" id="pay-collect-btn" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--navy)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPaymentFromLines(\'' + contactId + '\')"') + '>' + (hasPaid ? '&check; Paid' : (collectDisabled ? '&#128274; Record Offline Payment' : 'Record Offline Payment &mdash; $' + totalAmount.toLocaleString())) + '</button>'
     + '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);text-align:center">Stripe M2 Reader: requires backend for connection tokens</div>'
     + (hasPaid ? '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="showToast(\'Manual coming soon\',\'success\')">Storm-Ready System Manual</button>' : '')
     + historyHtml;
@@ -1686,7 +1689,7 @@ function updatePayTotal() {
   if (el) el.textContent = '$' + total.toLocaleString();
   const btn = document.getElementById('pay-collect-btn');
   if (btn && !btn.disabled) {
-    btn.textContent = 'Collect Payment — $' + total.toLocaleString();
+    btn.textContent = 'Record Offline Payment — $' + total.toLocaleString();
     btn.setAttribute('onclick', "collectPaymentFromLines('" + currentPanelContactId + "')");
   }
 }
@@ -1701,10 +1704,28 @@ function removeInvoiceLine(idx) {
   renderPaymentDrill();
 }
 
-async function collectPaymentFromLines(contactId) {
+let _payConfirmState = null; // { contactId, amount, step: 'method'|null }
+
+function collectPaymentFromLines(contactId) {
   const amount = getInvoiceTotal();
   if (amount <= 0) { showToast('Total must be greater than $0', 'error'); return; }
-  const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: 'Manual', status: 'completed' }]);
+  // Show method selection
+  _payConfirmState = { contactId, amount };
+  const btn = document.getElementById('pay-collect-btn');
+  btn.innerHTML = '<div style="display:flex;gap:8px;justify-content:center;width:100%">'
+    + '<button onclick="event.stopPropagation();confirmPayment(\'Cash\')" style="flex:1;padding:12px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:var(--r-sm);font-family:Outfit,sans-serif;font-weight:700;font-size:14px;cursor:pointer">Cash</button>'
+    + '<button onclick="event.stopPropagation();confirmPayment(\'Check\')" style="flex:1;padding:12px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:var(--r-sm);font-family:Outfit,sans-serif;font-weight:700;font-size:14px;cursor:pointer">Check</button>'
+    + '</div>';
+  btn.style.background = 'var(--bg)';
+  btn.style.padding = '8px';
+  btn.removeAttribute('onclick');
+}
+
+async function confirmPayment(method) {
+  if (!_payConfirmState) return;
+  const { contactId, amount } = _payConfirmState;
+  _payConfirmState = null;
+  const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: method, status: 'completed' }]);
   if (error) { showToast('Payment failed: ' + error.message, 'error'); return; }
   await db.from('contacts').update({ quote_amount: amount }).eq('id', contactId);
   const c = allContacts.find(function(x) { return x.id === contactId; });
@@ -1713,7 +1734,15 @@ async function collectPaymentFromLines(contactId) {
     const np = (c.name || '').split(' ');
     fireMetaEvent('Purchase', { email: c.email, phone: c.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' }, { currency: 'USD', value: amount });
   }
-  showToast('Payment recorded!', 'success');
+  showToast(method + ' payment of $' + amount.toLocaleString() + ' recorded!', 'success');
+  renderPaymentDrill();
+}
+
+async function undoPayment(paymentId) {
+  if (!confirm('Undo this payment?')) return;
+  const { error } = await db.from('payments').delete().eq('id', paymentId);
+  if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+  showToast('Payment removed', 'success');
   renderPaymentDrill();
 }
 
@@ -2303,7 +2332,16 @@ function pOnRunChange(v) {
   pRecalc();
 }
 
+let _proposalReturnContactId = null;
+
+function backToContactFromProposal() {
+  const contactId = _proposalReturnContactId || document.getElementById('p-contact-id').value;
+  closeModal('proposal-overlay');
+  if (contactId) openPanel(contactId);
+}
+
 function openProposalModal(contactId) {
+  _proposalReturnContactId = contactId;
   const c = allContacts.find(x => x.id === contactId);
   if (!c) return;
 
@@ -2381,10 +2419,6 @@ async function saveProposal() {
   document.getElementById('p-created').style.display = '';
   document.getElementById('p-create-btn').style.display = 'none';
   document.getElementById('p-link-url').textContent = link;
-
-  const msg = 'Hi ' + (c?.name || '') + ',\n\nHere is your custom proposal from Backup Power Pro:\n\n' + link + '\n\nLet me know if you have any questions!\n\nKey\nBackup Power Pro\n(864) 400-5302';
-  document.getElementById('p-email-link').href = 'mailto:' + encodeURIComponent(c?.email || '') + '?subject=' + encodeURIComponent('Your Backup Power Pro Proposal') + '&body=' + encodeURIComponent(msg);
-  document.getElementById('p-sms-link').href = 'sms:' + encodeURIComponent(c?.phone || '') + '?body=' + encodeURIComponent(msg);
 
   proposalMap[contactId] = [data, ...(proposalMap[contactId]||[])];
   allProposals.unshift(data);
