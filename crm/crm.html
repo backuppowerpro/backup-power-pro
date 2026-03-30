@@ -210,7 +210,7 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
 .btn-map:hover{background:#cde8f8}
 
 /* LAYOUT */
-.main{max-width:1140px;margin:0 auto;padding:var(--sp-md)}
+.main{max-width:1140px;margin:0 auto;padding:var(--sp-lg) var(--sp-md)}
 
 /* SECTION HEADERS */
 .section-head{display:flex;align-items:center;gap:12px;margin-bottom:var(--sp-md)}
@@ -1034,6 +1034,7 @@ let searchTerm   = '';
 let weekStart    = getMonday(new Date());
 let currentDrillLevel = 'contact';
 let currentPanelContactId = null;
+let currentProposalIdx = 0;
 
 // ── AUTH GATE ─────────────────────────────────────────────
 async function checkPass() {
@@ -1415,6 +1416,12 @@ let panelAddrFocusedIdx = -1;
 let panelAddrDebounce;
 
 // ── DRILL-DOWN NAVIGATION ──────────────────────────────
+function selectProposalAndDrill(idx) {
+  currentProposalIdx = idx;
+  invoiceLineItems = []; // Reset so payment drill reloads from this proposal
+  drillTo('proposal');
+}
+
 function drillTo(level) {
   const levels = ['contact', 'proposal', 'inspection', 'payment'];
   const targetIdx = levels.indexOf(level);
@@ -1434,6 +1441,7 @@ function drillTo(level) {
 
 function resetDrill() {
   currentDrillLevel = 'contact';
+  currentProposalIdx = 0;
   ['contact', 'proposal', 'inspection', 'payment'].forEach(l => {
     const el = document.getElementById('drill-' + l);
     if (!el) return;
@@ -1489,7 +1497,7 @@ function openPanel(id) {
       const displayTotal = (p.total || 0) + (p.include_pom ? 97 : 0) + ((p.include_surge && !p.selected_surge) ? 375 : 0);
       const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
       cardsHtml += `
-        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer" onclick="drillTo('proposal')">
+        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer${p.status === 'Cancelled' ? ';opacity:.5' : ''}" onclick="selectProposalAndDrill(${idx})">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
             <span class="prop-badge" style="${badgeStyle};padding:3px 8px;border-radius:var(--r-pill);font-size:11px;font-weight:700">${badge}</span>
             <span style="font-size:11px;color:var(--text3)">${ampLabel}${surgeLabel}${pomLabel}</span>
@@ -1516,7 +1524,7 @@ function openPanel(id) {
 // ── PROPOSAL DRILL (Level 2) ────────────────────────────
 function renderProposalDrill() {
   const contactId = currentPanelContactId;
-  const p = proposalMap[contactId]?.[0];
+  const p = proposalMap[contactId]?.[currentProposalIdx];
   const el = document.getElementById('drill-proposal-content');
   if (!p) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px 0">No proposal yet</div>'; return; }
   const url = PROPOSAL_BASE_URL + '?token=' + p.token;
@@ -1658,7 +1666,7 @@ let invoiceLineItems = []; // { name: string, amount: number }
 
 async function renderPaymentDrill() {
   const contactId = currentPanelContactId;
-  const p = proposalMap[contactId]?.[0];
+  const p = proposalMap[contactId]?.[currentProposalIdx];
   const el = document.getElementById('drill-payment-content');
   if (!p) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px 0">No proposal</div>'; return; }
   const hasPOM = p.include_pom || false;
@@ -1878,7 +1886,7 @@ async function copyInvoiceLink(contactId) {
 function generateInvoicePDF() {
   const contactId = currentPanelContactId;
   const c = allContacts.find(function(x) { return x.id === contactId; });
-  const p = proposalMap[contactId]?.[0];
+  const p = proposalMap[contactId]?.[currentProposalIdx];
   if (!c || !p) { showToast('No data', 'error'); return; }
   var jsPDF = window.jspdf.jsPDF;
   var doc = new jsPDF();
@@ -2067,7 +2075,7 @@ async function panelSave() {
     jurisdiction_id: document.getElementById('panel-jurisdiction').value || null,
     status:  c?.status || null,
   };
-  // Check if anything actually changed
+  // Check if anything actually changed — skip save if nothing changed
   const changed = c && (
     (c.name || '') !== payload.name ||
     (c.phone || '') !== payload.phone ||
@@ -2075,9 +2083,9 @@ async function panelSave() {
     (c.address || '') !== payload.address ||
     (c.notes || '') !== payload.notes ||
     (c.stage || 1) !== payload.stage ||
-    (c.jurisdiction_id || null) !== (payload.jurisdiction_id || null)
+    String(c.jurisdiction_id || '') !== String(payload.jurisdiction_id || '')
   );
-  if (!changed) { closePanel(); return; }
+  if (!changed) { closePanel(); loadContacts(); return; }
   const { error } = await db.from('contacts').update(payload).eq('id', id);
   if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
   // Log stage change if it changed
