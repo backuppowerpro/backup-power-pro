@@ -1668,12 +1668,10 @@ async function renderPaymentDrill() {
     + '<div class="pay-total" id="pay-total-display" style="padding:12px">$' + totalAmount.toLocaleString() + '</div>'
     + (totalPaid > 0 ? '<div style="text-align:center;font-size:12px;color:var(--green);font-weight:700;padding-bottom:10px">Paid: $' + totalPaid.toLocaleString() + '</div>' : '')
     + '</div>'
-    + '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px;border-color:var(--gold);color:var(--navy);font-weight:700" onclick="sendInvoiceLink(\'' + contactId + '\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Send Invoice Link</button>'
+    + '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px" onclick="copyInvoiceLink(\'' + contactId + '\')">Copy Invoice Link</button>'
     + (collectDisabled ? '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">&#128274; Complete panel inspection before collecting payment</div>' : '')
     + '<button class="btn btn-primary" id="pay-collect-btn" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--green)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPaymentFromLines(\'' + contactId + '\')"') + '>' + (hasPaid ? '&check; Paid' : (collectDisabled ? '&#128274; Collect Payment' : 'Collect Payment &mdash; $' + totalAmount.toLocaleString())) + '</button>'
-    + '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="sendPaymentLink(\'' + contactId + '\',getInvoiceTotal())">Send Payment Link</button>'
     + '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);text-align:center">Stripe M2 Reader: requires backend for connection tokens</div>'
-    + '<button class="btn btn-outline" style="width:100%;margin-top:12px;min-height:44px" onclick="generateInvoicePDF()">Generate Invoice PDF</button>'
     + (hasPaid ? '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="showToast(\'Manual coming soon\',\'success\')">Storm-Ready System Manual</button>' : '')
     + historyHtml;
 }
@@ -1733,12 +1731,35 @@ async function collectPayment(contactId, amount) {
   renderPaymentDrill();
 }
 
-async function sendPaymentLink(contactId, amount) {
+async function copyInvoiceLink(contactId) {
   const c = allContacts.find(x => x.id === contactId);
+  const p = proposalMap[contactId]?.[0];
   if (!c) return;
-  const msg = 'Hi ' + (c.name||'').split(' ')[0] + ', your Backup Power Pro invoice is ready. Total: $' + amount.toLocaleString() + '. Please reply to arrange payment. — Key, Backup Power Pro';
-  navigator.clipboard.writeText(msg);
-  showToast('Payment message copied! Send via text or email.', 'success');
+  const total = getInvoiceTotal();
+  // Check if invoice already exists for this contact
+  const { data: existing } = await db.from('invoices').select('token').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
+  let token;
+  if (existing && existing.length > 0) {
+    token = existing[0].token;
+  } else {
+    // Create new invoice
+    const { data, error } = await db.from('invoices').insert([{
+      contact_id: contactId,
+      proposal_id: p?.id || null,
+      contact_name: c.name || '',
+      contact_email: c.email || '',
+      contact_phone: c.phone || '',
+      contact_address: c.address || '',
+      line_items: invoiceLineItems,
+      total: total,
+      status: 'unpaid'
+    }]).select().single();
+    if (error) { showToast('Failed to create invoice: ' + error.message, 'error'); return; }
+    token = data.token;
+  }
+  const url = 'https://backuppowerpro.com/invoice.html?token=' + token;
+  navigator.clipboard.writeText(url);
+  showToast('Invoice link copied!', 'success');
 }
 
 function generateInvoicePDF() {
