@@ -1617,6 +1617,8 @@ async function saveInspection(existingId) {
 }
 
 // ── PAYMENT DRILL (Level 3b) ────────────────────────────
+let invoiceLineItems = []; // { name: string, amount: number }
+
 async function renderPaymentDrill() {
   const contactId = currentPanelContactId;
   const p = proposalMap[contactId]?.[0];
@@ -1625,9 +1627,18 @@ async function renderPaymentDrill() {
   const hasPOM = p.include_pom || false;
   const hasSurge = p.include_surge || p.selected_surge || false;
   const baseAmount = p.total || 0;
-  const surgeAmount = hasSurge ? 375 : 0;
-  const pomAmount = hasPOM ? 97 : 0;
-  const totalAmount = baseAmount + surgeAmount + pomAmount;
+
+  // Build editable line items from proposal (only on first load)
+  if (!invoiceLineItems.length || invoiceLineItems._contactId !== contactId) {
+    invoiceLineItems = [];
+    invoiceLineItems._contactId = contactId;
+    invoiceLineItems.push({ name: 'Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', amount: baseAmount });
+    if (hasSurge) invoiceLineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
+    if (hasPOM) invoiceLineItems.push({ name: 'Peace of Mind Package', amount: 97 });
+  }
+
+  const totalAmount = invoiceLineItems.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
+
   let inspPassed = true;
   if (hasPOM) {
     const { data } = await db.from('inspections').select('status').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
@@ -1645,10 +1656,73 @@ async function renderPaymentDrill() {
     });
   }
   const collectDisabled = hasPOM && !inspPassed;
-  let payItems = '<div class="pay-row"><span class="pay-row-label">Install (' + (p.amp_type||'30') + 'A)</span><span class="pay-row-val">$' + baseAmount.toLocaleString() + '</span></div>';
-  if (hasSurge) payItems += '<div class="pay-row"><span class="pay-row-label">Surge protector</span><span class="pay-row-val">+$375</span></div>';
-  if (hasPOM) payItems += '<div class="pay-row"><span class="pay-row-label">Peace of Mind</span><span class="pay-row-val">+$97</span></div>';
-  el.innerHTML = '<div class="pay-summary">' + payItems + '<div class="pay-total">$' + totalAmount.toLocaleString() + '</div>' + (totalPaid > 0 ? '<div style="text-align:center;font-size:12px;color:var(--green);font-weight:700;margin-top:4px">Paid: $' + totalPaid.toLocaleString() + '</div>' : '') + '</div>' + (collectDisabled ? '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">&#128274; Complete panel inspection before collecting payment</div>' : '') + '<button class="btn btn-primary" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--green)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPayment(\'' + contactId + '\',' + totalAmount + ')"') + '>' + (hasPaid ? '&check; Paid' : (collectDisabled ? '&#128274; Collect Payment' : 'Collect Payment &mdash; $' + totalAmount.toLocaleString())) + '</button><button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="sendPaymentLink(\'' + contactId + '\',' + totalAmount + ')">Send Payment Link</button><div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);text-align:center">Stripe M2 Reader: requires backend for connection tokens</div><button class="btn btn-outline" style="width:100%;margin-top:12px;min-height:44px" onclick="generateInvoicePDF()">Generate Invoice PDF</button>' + (hasPaid ? '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="showToast(\'Manual coming soon\',\'success\')">Storm-Ready System Manual</button>' : '') + historyHtml;
+
+  // Editable line items
+  let lineItemsHtml = '';
+  invoiceLineItems.forEach(function(li, i) {
+    lineItemsHtml += '<div class="pay-row" style="display:flex;align-items:center;gap:6px;padding:8px 12px">'
+      + '<input class="form-input" value="' + esc(li.name) + '" oninput="invoiceLineItems[' + i + '].name=this.value" style="flex:1;padding:6px 8px;font-size:13px;min-width:0">'
+      + '<div style="display:flex;align-items:center;gap:2px;flex-shrink:0"><span style="color:var(--text3);font-size:13px;font-weight:700">$</span><input type="number" class="form-input" value="' + li.amount + '" oninput="invoiceLineItems[' + i + '].amount=parseFloat(this.value)||0;updatePayTotal()" style="width:80px;padding:6px 8px;font-size:13px;text-align:right;font-weight:700"></div>'
+      + '<button onclick="removeInvoiceLine(' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px 6px;min-width:28px" title="Remove line">✕</button>'
+      + '</div>';
+  });
+  lineItemsHtml += '<button onclick="addInvoiceLine()" style="width:100%;padding:8px;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;margin-top:4px">+ Add Line Item</button>';
+
+  el.innerHTML = '<div class="pay-summary" style="padding:0;overflow:hidden">'
+    + '<div style="padding:10px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between"><span>Invoice Line Items</span><span style="font-weight:400;font-size:10px;color:var(--text3)">tap to edit</span></div>'
+    + lineItemsHtml
+    + '<div class="pay-total" id="pay-total-display" style="padding:12px">$' + totalAmount.toLocaleString() + '</div>'
+    + (totalPaid > 0 ? '<div style="text-align:center;font-size:12px;color:var(--green);font-weight:700;padding-bottom:10px">Paid: $' + totalPaid.toLocaleString() + '</div>' : '')
+    + '</div>'
+    + '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px;border-color:var(--gold);color:var(--navy);font-weight:700" onclick="sendInvoiceLink(\'' + contactId + '\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Send Invoice Link</button>'
+    + (collectDisabled ? '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">&#128274; Complete panel inspection before collecting payment</div>' : '')
+    + '<button class="btn btn-primary" id="pay-collect-btn" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--green)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPaymentFromLines(\'' + contactId + '\')"') + '>' + (hasPaid ? '&check; Paid' : (collectDisabled ? '&#128274; Collect Payment' : 'Collect Payment &mdash; $' + totalAmount.toLocaleString())) + '</button>'
+    + '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="sendPaymentLink(\'' + contactId + '\',getInvoiceTotal())">Send Payment Link</button>'
+    + '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);text-align:center">Stripe M2 Reader: requires backend for connection tokens</div>'
+    + '<button class="btn btn-outline" style="width:100%;margin-top:12px;min-height:44px" onclick="generateInvoicePDF()">Generate Invoice PDF</button>'
+    + (hasPaid ? '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="showToast(\'Manual coming soon\',\'success\')">Storm-Ready System Manual</button>' : '')
+    + historyHtml;
+}
+
+function getInvoiceTotal() {
+  return invoiceLineItems.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
+}
+
+function updatePayTotal() {
+  const total = getInvoiceTotal();
+  const el = document.getElementById('pay-total-display');
+  if (el) el.textContent = '$' + total.toLocaleString();
+  const btn = document.getElementById('pay-collect-btn');
+  if (btn && !btn.disabled) {
+    btn.textContent = 'Collect Payment — $' + total.toLocaleString();
+    btn.setAttribute('onclick', "collectPaymentFromLines('" + currentPanelContactId + "')");
+  }
+}
+
+function addInvoiceLine() {
+  invoiceLineItems.push({ name: '', amount: 0 });
+  renderPaymentDrill();
+}
+
+function removeInvoiceLine(idx) {
+  invoiceLineItems.splice(idx, 1);
+  renderPaymentDrill();
+}
+
+async function collectPaymentFromLines(contactId) {
+  const amount = getInvoiceTotal();
+  if (amount <= 0) { showToast('Total must be greater than $0', 'error'); return; }
+  const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: 'Manual', status: 'completed' }]);
+  if (error) { showToast('Payment failed: ' + error.message, 'error'); return; }
+  await db.from('contacts').update({ quote_amount: amount }).eq('id', contactId);
+  const c = allContacts.find(function(x) { return x.id === contactId; });
+  if (c) {
+    c.quote_amount = amount;
+    const np = (c.name || '').split(' ');
+    fireMetaEvent('Purchase', { email: c.email, phone: c.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' }, { currency: 'USD', value: amount });
+  }
+  showToast('Payment recorded!', 'success');
+  renderPaymentDrill();
 }
 
 async function collectPayment(contactId, amount) {
@@ -1716,21 +1790,29 @@ function generateInvoicePDF() {
   doc.text('Amount', 170, y, { align: 'right' });
   y += 10;
   doc.setFont('helvetica', 'normal');
-  var baseAmount = p.total || 0;
-  doc.text('Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', 22, y);
-  doc.text('$' + baseAmount.toLocaleString(), 170, y, { align: 'right' });
-  y += 8;
-  var hasSurge = p.include_surge || p.selected_surge;
-  var hasPOM = p.include_pom;
-  if (hasSurge) { doc.text('Whole-Home Surge Protector', 22, y); doc.text('$375', 170, y, { align: 'right' }); y += 8; }
-  if (hasPOM) { doc.text('Peace of Mind Package', 22, y); doc.text('$97', 170, y, { align: 'right' }); y += 8; }
+  // Use editable line items if available, otherwise fall back to proposal data
+  var lines = invoiceLineItems.length ? invoiceLineItems : [
+    { name: 'Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', amount: p.total || 0 }
+  ];
+  if (!invoiceLineItems.length) {
+    if (p.include_surge || p.selected_surge) lines.push({ name: 'Whole-Home Surge Protector', amount: 375 });
+    if (p.include_pom) lines.push({ name: 'Peace of Mind Package', amount: 97 });
+  }
+  var total = 0;
+  lines.forEach(function(li) {
+    if (li.name && li.amount) {
+      doc.text(li.name, 22, y);
+      doc.text('$' + li.amount.toLocaleString(), 170, y, { align: 'right' });
+      y += 8;
+      total += li.amount;
+    }
+  });
   y += 4;
   doc.setDrawColor(navy[0],navy[1],navy[2]);
   doc.line(20, y, 190, y);
   y += 8;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  var total = baseAmount + (hasSurge ? 375 : 0) + (hasPOM ? 97 : 0);
   doc.text('Total: $' + total.toLocaleString(), 170, y, { align: 'right' });
   y += 16;
   doc.setFontSize(9);
@@ -1744,6 +1826,57 @@ function generateInvoicePDF() {
   doc.text('Backup Power Pro \u2014 backuppowerpro.com', 105, 290, { align: 'center' });
   doc.save('Invoice-' + (c.name||'Customer').replace(/\s+/g, '-') + '.pdf');
   showToast('Invoice downloaded', 'success');
+}
+
+// ── SEND INVOICE LINK ─────────────────────────────────────────
+async function sendInvoiceLink(contactId) {
+  var c = allContacts.find(function(x) { return x.id === contactId; });
+  var p = proposalMap[contactId] && proposalMap[contactId][0];
+  if (!c) { showToast('No contact data', 'error'); return; }
+
+  var lines = invoiceLineItems.length ? invoiceLineItems : [
+    { name: 'Storm-Ready Connection System (' + ((p && p.amp_type) || '30') + 'A)', amount: (p && p.total) || 0 }
+  ];
+  var total = lines.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
+
+  // Create invoice record in Supabase
+  var invoiceData = {
+    contact_id: contactId,
+    proposal_id: p ? p.id : null,
+    contact_name: c.name || '',
+    contact_email: c.email || '',
+    contact_phone: c.phone || '',
+    contact_address: c.address || '',
+    line_items: lines,
+    total: total,
+    status: 'unpaid'
+  };
+
+  var result = await db.from('invoices').insert([invoiceData]).select().single();
+  if (result.error) { showToast('Failed to create invoice: ' + result.error.message, 'error'); return; }
+
+  var token = result.data.token;
+  var invoiceUrl = 'https://backuppowerpro.com/invoice.html?token=' + token;
+
+  // Show the link-ready screen (similar to proposal link screen)
+  var el = document.getElementById('drill-payment-content');
+  var firstName = (c.name || '').split(' ')[0] || 'there';
+  var smsMsg = 'Hi ' + firstName + ', your Backup Power Pro invoice is ready: ' + invoiceUrl + ' — Key, Backup Power Pro';
+  var emailSubject = 'Your Backup Power Pro Invoice — $' + total.toLocaleString();
+  var emailBody = 'Hi ' + firstName + ',%0D%0A%0D%0AYour invoice for $' + total.toLocaleString() + ' is ready. You can view it here:%0D%0A%0D%0A' + invoiceUrl + '%0D%0A%0D%0AThanks,%0D%0AKey — Backup Power Pro%0D%0A(864) 400-5302';
+
+  el.innerHTML = '<div style="text-align:center;padding:20px 0">'
+    + '<div style="width:56px;height:56px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+    + '<div style="font-family:Outfit,sans-serif;font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px">Invoice Created!</div>'
+    + '<div style="font-size:13px;color:var(--text3);margin-bottom:16px">$' + total.toLocaleString() + ' — ' + esc(c.name || '') + '</div>'
+    + '<div style="background:var(--bg);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;word-break:break-all;font-size:12px;color:var(--text2);font-family:monospace;user-select:all">' + esc(invoiceUrl) + '</div>'
+    + '<button class="btn btn-primary" style="width:100%;margin-bottom:8px;min-height:44px" onclick="navigator.clipboard.writeText(\'' + invoiceUrl + '\');showToast(\'Link copied!\',\'success\')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Link</button>'
+    + '<a class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px;display:flex;align-items:center;justify-content:center;text-decoration:none" href="sms:' + encodeURIComponent(c.phone || '') + '&body=' + encodeURIComponent(smsMsg) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Text to Customer</a>'
+    + '<a class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px;display:flex;align-items:center;justify-content:center;text-decoration:none" href="mailto:' + encodeURIComponent(c.email || '') + '?subject=' + emailSubject + '&body=' + emailBody + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email to Customer</a>'
+    + '<button class="btn btn-outline" style="width:100%;min-height:44px;color:var(--text3)" onclick="renderPaymentDrill()">Back to Payment</button>'
+    + '</div>';
+
+  showToast('Invoice created!', 'success');
 }
 
 function closePanel() {
