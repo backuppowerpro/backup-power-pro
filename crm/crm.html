@@ -50,6 +50,7 @@ html.dark .cal-day.today{background:#2e2920}
 html.dark .cal-day-head{background:rgba(255,255,255,.03)}
 html.dark .cal-day-num{color:var(--text)}
 html.dark .cal-day.today .cal-day-num{color:var(--gold)}
+html.dark .cal-day.locked .cal-day-body{background:rgba(255,255,255,.03)}
 html.dark .week-label{color:var(--text)}
 html.dark .cal-event.evt-contact{background:#3d3520;color:#e6a800}
 html.dark .cal-event.evt-contact:hover{background:#4d4228}
@@ -284,7 +285,11 @@ td.actions{white-space:nowrap}
 .cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-sm);min-height:220px}
 .cal-day{background:var(--card);border-radius:var(--r-md);border:none;min-height:120px;display:flex;flex-direction:column;overflow:hidden;transition:background .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .cal-day.today{background:#f0f4ff}
-.cal-day-head{padding:7px 8px 5px;border-bottom:none;display:flex;align-items:baseline;gap:5px;background:rgba(0,0,0,.02)}
+.cal-day-head{padding:7px 8px 5px;border-bottom:none;display:flex;align-items:baseline;gap:5px;background:rgba(0,0,0,.02);position:relative}
+.cal-lock-icon{position:absolute;top:6px;right:6px;font-size:11px;color:var(--text3);opacity:.6}
+.cal-day.locked .cal-day-body{background:rgba(0,0,0,.03)}
+.cal-day.locked .cal-slot{opacity:.3}
+.cal-day.locked .cal-add-hint{display:none}
 .cal-day-name{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
 .cal-day-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:var(--text);line-height:1}
 .cal-day.today .cal-day-num{color:var(--navy)}
@@ -2747,6 +2752,33 @@ function getHolidayForDate(dateStr) {
   return holidays.find(h => h.date === dateStr);
 }
 
+// ── LOCKED DAYS ──────────────────────────────────────────
+function getLockedDays() {
+  try { return JSON.parse(localStorage.getItem('cal_locked_days') || '{}'); } catch { return {}; }
+}
+function setLockedDays(obj) { localStorage.setItem('cal_locked_days', JSON.stringify(obj)); }
+function toggleDayLock(dateStr) {
+  const locked = getLockedDays();
+  if (locked[dateStr]) delete locked[dateStr];
+  else locked[dateStr] = true;
+  setLockedDays(locked);
+  renderCalendar();
+}
+
+let _calLongPressTimer = null;
+let _calLongPressDate = null;
+function calDayDown(dateStr, e) {
+  _calLongPressDate = dateStr;
+  _calLongPressTimer = setTimeout(function() {
+    toggleDayLock(dateStr);
+    _calLongPressDate = null;
+  }, 500);
+}
+function calDayUp() {
+  clearTimeout(_calLongPressTimer);
+  _calLongPressTimer = null;
+}
+
 function renderCalendar() {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const todayStr = new Date().toISOString().split('T')[0];
@@ -2777,16 +2809,21 @@ function renderCalendar() {
     const holiday = getHolidayForDate(dateStr);
     const holidayBadge = holiday ? `<span class="cal-holiday">${esc(holiday.name)}</span>` : '';
 
+    const isLocked = getLockedDays()[dateStr];
+    const canAdd = !atLimit && !isLocked;
     html += `
-    <div class="cal-day ${isToday ? 'today' : ''}">
-      <div class="cal-day-head" ${atLimit ? '' : `onclick="openJobModal(null,'${dateStr}')" style="cursor:pointer"`}>
+    <div class="cal-day ${isToday ? 'today' : ''} ${isLocked ? 'locked' : ''}"
+      onmousedown="calDayDown('${dateStr}',event)" onmouseup="calDayUp()" onmouseleave="calDayUp()"
+      ontouchstart="calDayDown('${dateStr}',event)" ontouchend="calDayUp()" ontouchcancel="calDayUp()">
+      <div class="cal-day-head" ${canAdd ? `onclick="openJobModal(null,'${dateStr}')" style="cursor:pointer"` : ''}>
         <span class="cal-day-name">${days[i]}</span>
         <span class="cal-day-num">${day.getDate()}</span>
         ${holidayBadge}
+        ${isLocked ? '<span class="cal-lock-icon">&#128274;</span>' : ''}
       </div>
-      <div class="cal-day-body${atLimit ? ' cal-full' : ''}" ${atLimit ? '' : `onclick="openJobModal(null,'${dateStr}')"`}>
+      <div class="cal-day-body${atLimit ? ' cal-full' : ''}" ${canAdd ? `onclick="openJobModal(null,'${dateStr}')"` : ''}>
         ${events}
-        ${Array(Math.max(0, 4 - dayJobs.length)).fill('').map((_, i) => `<div class="cal-slot">${i === 0 && !atLimit ? '<span class="cal-add-hint">+ Add event</span>' : ''}</div>`).join('')}
+        ${Array(Math.max(0, 4 - dayJobs.length)).fill('').map((_, i) => `<div class="cal-slot">${i === 0 && canAdd ? '<span class="cal-add-hint">+ Add event</span>' : ''}</div>`).join('')}
       </div>
     </div>`;
   }
