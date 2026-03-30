@@ -3718,6 +3718,8 @@ function renderTrendAnalytics() {
   if (!el) return;
 
   const days = trendDays;
+  const label = 'last ' + days + ' days';
+  const prevLabel = 'prior ' + days + ' days';
   const now = new Date();
   now.setHours(23, 59, 59, 999);
   const currStart = new Date(now);
@@ -3744,9 +3746,9 @@ function renderTrendAnalytics() {
 
   function delta(curr, prev) {
     const diff = curr - prev;
-    if (diff === 0) return '<div class="trend-delta flat">same as prior ${days} days</div>';
+    if (diff === 0) return '<div class="trend-delta flat">same as ${prevLabel}</div>';
     const cls = diff > 0 ? 'up' : 'down';
-    return '<div class="trend-delta ' + cls + '">' + (diff > 0 ? '&uarr;' : '&darr;') + Math.abs(diff) + ' vs prior ${days} days</div>';
+    return '<div class="trend-delta ' + cls + '">' + (diff > 0 ? '&uarr;' : '&darr;') + Math.abs(diff) + ' vs ${prevLabel}</div>';
   }
 
   // Conversion rate
@@ -3777,17 +3779,17 @@ function renderTrendAnalytics() {
   el.innerHTML = `<div class="trend-stat-grid">
     <div class="trend-stat">
       <div class="trend-num">${currLeads}</div>
-      <div class="trend-label">New leads<br>last ${days} days</div>
+      <div class="trend-label">New leads<br>${label}</div>
       ${delta(currLeads, prevLeads)}
     </div>
     <div class="trend-stat">
       <div class="trend-num">${currMoves}</div>
-      <div class="trend-label">Stages advanced<br>last ${days} days</div>
+      <div class="trend-label">Stages advanced<br>${label}</div>
       ${delta(currMoves, prevMoves)}
     </div>
     <div class="trend-stat">
       <div class="trend-num">${currDone}</div>
-      <div class="trend-label">Jobs completed<br>last ${days} days</div>
+      <div class="trend-label">Jobs completed<br>${label}</div>
       ${delta(currDone, prevDone)}
     </div>
   </div>
