@@ -859,16 +859,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="form-row">
-          <label>Type</label>
-          <select class="form-select" id="j-type">
-            <option value="Install">Install</option>
-            <option value="Assessment">Assessment</option>
-            <option value="Follow-up">Follow-up</option>
-            <option value="Block">Block Time</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
+        <input type="hidden" id="j-type" value="Install">
         <div class="form-row">
           <label>Status</label>
           <select class="form-select" id="j-status">
