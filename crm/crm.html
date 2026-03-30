@@ -3008,13 +3008,24 @@ async function saveJob() {
   const id   = document.getElementById('j-id').value;
   const date = document.getElementById('j-date').value;
   if (!date) { savingJob = false; showToast('Date is required', 'error'); return; }
+  const time = document.getElementById('j-time').value || null;
   const selContact = document.getElementById('j-contact').value;
   const c = selContact ? allContacts.find(x => x.id === selContact) : null;
   if (!selContact && !document.getElementById('j-title').value.trim()) { savingJob = false; showToast('Select a contact or enter a title', 'error'); return; }
+  // Check for time conflict on the same day
+  if (time) {
+    const conflict = allJobs.find(j => j.date === date && j.time === time && j.id !== id && j.status !== 'Cancelled');
+    if (conflict) {
+      savingJob = false;
+      const who = conflict.contact_name || conflict.title || 'another event';
+      showToast('Time conflict — ' + who + ' is already at ' + fmt12(time), 'error');
+      return;
+    }
+  }
 
   const payload = {
     date:         date || null,
-    time:         document.getElementById('j-time').value   || null,
+    time:         time,
     contact_id:   selContact || null,
     contact_name: c?.name || null,
     title:        document.getElementById('j-title').value.trim() || null,
