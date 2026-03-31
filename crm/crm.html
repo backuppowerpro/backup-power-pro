@@ -440,7 +440,7 @@ html.dark .fab{background:var(--gold);color:#1e1b17}
 /* ── GEAR MENU ──────────────────────────────────────── */
 .nav-icon-btn{background:none;border:none;cursor:pointer;padding:8px;color:rgba(255,255,255,.6);transition:color .15s;display:flex;align-items:center;justify-content:center}
 .nav-icon-btn:hover{color:#fff}
-.gear-btn{background:none;border:none;cursor:pointer;padding:6px;color:rgba(255,255,255,.7);font-size:18px;position:absolute;right:16px;top:50%;transform:translateY(-50%);transition:color .15s}
+/* gear-btn replaced by nav-icon-btn */
 .gear-btn:hover{color:#fff}
 .gear-menu{position:absolute;top:54px;right:8px;background:var(--card);border-radius:var(--r-md);box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:100;min-width:200px;overflow:hidden;display:none;animation:gearSlide .15s ease}
 .gear-menu.open{display:block}
@@ -607,12 +607,12 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   <button class="nav-icon-btn" onclick="openStatsModal()" title="Stats">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
   </button>
-  <img id="nav-logo" src="/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin:0 auto;cursor:pointer;-webkit-user-select:none;user-select:none">
-  <button class="nav-icon-btn" onclick="openJurisdictionModal()" title="Jurisdictions" id="nav-jur-btn">
+  <img id="nav-logo" src="/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;flex:1;object-fit:contain;cursor:pointer;-webkit-user-select:none;user-select:none">
+  <button class="nav-icon-btn" onclick="openJurisdictionsPopup()" title="Jurisdictions">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
   </button>
-  <button class="gear-btn" onclick="toggleGearMenu(event)" title="Settings">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+  <button class="nav-icon-btn" onclick="toggleGearMenu(event)" title="Settings" style="position:relative">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
   </button>
   <div class="gear-menu" id="gear-menu">
     <button class="gear-menu-item" id="gear-dark-toggle" onclick="toggleGearMenu();toggleDarkMode()">
@@ -4048,6 +4048,27 @@ function openStatsModal() {
 
 function closeStatsModal() {
   const el = document.getElementById('stats-modal-overlay');
+  if (el) { el.remove(); unlockBody(); }
+}
+
+function openJurisdictionsPopup() {
+  const overlay = document.createElement('div');
+  overlay.id = 'jur-popup-overlay';
+  overlay.className = 'modal-overlay open';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
+  const sorted = sortedJurisdictions ? sortedJurisdictions() : allJurisdictions;
+  let cards = sorted.map(j => '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s" onclick="closeJurPopup();viewJurisdiction(' + j.id + ')">'
+    + '<div class="jur-logo" style="width:36px;height:36px">' + (j.logo_url ? '<img src="' + esc(j.logo_url) + '" alt="">' : '\uD83C\uDFDB\uFE0F') + '</div>'
+    + '<div style="font-size:13px;font-weight:600;color:var(--text)">' + esc(j.name) + '</div></div>').join('');
+  if (!cards) cards = '<div style="text-align:center;color:var(--text3);padding:20px">No jurisdictions yet</div>';
+  overlay.innerHTML = '<div class="modal" style="max-width:420px;max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">Jurisdictions</div><button class="modal-close" onclick="closeJurPopup()">\u2715</button></div><div class="modal-body" style="display:flex;flex-direction:column;gap:8px">' + cards + '<button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="closeJurPopup();openJurisdictionModal()">+ Add Jurisdiction</button></div></div>';
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) closeJurPopup(); });
+  document.body.appendChild(overlay);
+  lockBody();
+}
+
+function closeJurPopup() {
+  const el = document.getElementById('jur-popup-overlay');
   if (el) { el.remove(); unlockBody(); }
 }
 
