@@ -379,14 +379,11 @@ function renderInvoice() {
       Pay Online &mdash; ${fmt(total)}
     </button>
 
-    <!-- Download Invoice PDF -->
-    <button class="dl-btn" onclick="downloadInvoicePDF()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download Invoice PDF
-    </button>
+    <!-- Invoice PDF only available as receipt after payment -->
 
     <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6;margin-top:8px">
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
+      <div style="margin-top:12px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:#3b82f6;font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
     </div>
   `;
 }
@@ -491,14 +488,11 @@ function renderPaidInvoice() {
       Download Receipt PDF
     </button>
 
-    <!-- Download Invoice PDF -->
-    <button class="dl-btn" onclick="downloadInvoicePDF()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download Invoice PDF
-    </button>
+    <!-- Invoice PDF only available as receipt after payment -->
 
     <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6;margin-top:8px">
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
+      <div style="margin-top:12px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:#3b82f6;font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
     </div>
   `;
 }

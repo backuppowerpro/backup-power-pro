@@ -89,7 +89,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .surge-toggle-track{width:52px;height:32px;border-radius:16px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.2);cursor:pointer;position:relative;transition:all .25s;flex-shrink:0}
 .surge-toggle-track.on{background:var(--gold);border-color:var(--gold)}
 .surge-toggle-knob{width:24px;height:24px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
-.surge-toggle-track.on .surge-toggle-knob{transform:translateX(24px)}
+.surge-toggle-track.on .surge-toggle-knob{transform:translateX(20px)}
 .surge-toggle-text{flex:1}
 .surge-toggle-label{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#fff}
 .surge-toggle-price{font-size:12px;color:rgba(255,255,255,.5);margin-top:1px}
@@ -464,14 +464,11 @@ function renderProposal() {
       </div>
     </div>
 
-    <!-- Download Draft PDF -->
-    <button class="dl-btn" onclick="downloadDraftPDF()" style="margin-top:16px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download Proposal PDF
-    </button>
+    <!-- PDF only available after signing -->
 
     <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6">
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
+      <div style="margin-top:12px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
     </div>
   `;
 
@@ -846,6 +843,7 @@ function renderApproved() {
 
     <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6;margin-top:8px">
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
+      <div style="margin-top:12px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
     </div>
   `;
 }
