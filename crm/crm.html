@@ -1817,6 +1817,7 @@ const INSPECTION_ITEMS = [
   'Overall panel condition acceptable',
 ];
 let inspectionState = {};
+let inspectionNotes = '';
 
 async function renderInspectionDrill() {
   const contactId = currentPanelContactId;
@@ -1824,6 +1825,7 @@ async function renderInspectionDrill() {
   const { data } = await db.from('inspections').select('*').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
   const existing = data && data[0];
   inspectionState = existing?.checklist || {};
+  inspectionNotes = existing?.notes || '';
   renderInspectionUI(el, existing?.id || '');
 }
 
@@ -1841,7 +1843,8 @@ function renderInspectionUI(el, inspId) {
     const val = inspectionState[i] || '';
     return '<div class="insp-item"><span class="insp-num">' + (i+1) + '</span><span class="insp-label">' + esc(item) + '</span><div class="pill-group"><button class="pill-btn ' + (val==='yes'?'yes':'') + '" onclick="setInspItem(' + i + ',\'yes\')">Yes</button><button class="pill-btn ' + (val==='no'?'no':'') + '" onclick="setInspItem(' + i + ',\'no\')">No</button><button class="pill-btn ' + (val==='na'?'na':'') + '" onclick="setInspItem(' + i + ',\'na\')">N/A</button></div></div>';
   }).join('');
-  el.innerHTML = '<div class="insp-status" style="background:' + statusBg + ';color:' + statusColor + '">' + status + '</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="insp-progress" style="flex:1"><div class="insp-progress-bar" style="width:' + pct + '%"></div></div><span style="font-size:12px;font-weight:700;color:var(--text3)">' + answered + '/' + total + '</span></div>' + items + '<button class="btn btn-primary" style="width:100%;margin-top:14px;background:var(--navy);color:#fff;min-height:48px" onclick="saveInspection(\'' + (inspId||'') + '\')">Save Inspection</button>';
+  const notesVal = inspectionNotes || '';
+  el.innerHTML = '<div class="insp-status" style="background:' + statusBg + ';color:' + statusColor + '">' + status + '</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="insp-progress" style="flex:1"><div class="insp-progress-bar" style="width:' + pct + '%"></div></div><span style="font-size:12px;font-weight:700;color:var(--text3)">' + answered + '/' + total + '</span></div>' + items + '<div style="margin-top:14px"><label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Notes &amp; Recommendations</label><textarea class="form-textarea" id="insp-notes" placeholder="Panel condition notes, recommendations, follow-up items..." style="min-height:80px" oninput="inspectionNotes=this.value">' + esc(notesVal) + '</textarea></div><button class="btn btn-primary" style="width:100%;margin-top:10px;background:var(--navy);color:#fff;min-height:48px" onclick="saveInspection(\'' + (inspId||'') + '\')">Save Inspection</button>';
 }
 
 function setInspItem(idx, val) {
@@ -1861,7 +1864,7 @@ async function saveInspection(existingId) {
   let status = 'not_started';
   if (answered === total) { status = Object.values(inspectionState).includes('no') ? 'failed' : 'passed'; }
   else if (answered > 0) { status = 'in_progress'; }
-  const payload = { contact_id: contactId, checklist: inspectionState, status, items_total: total, items_completed: answered };
+  const payload = { contact_id: contactId, checklist: inspectionState, status, items_total: total, items_completed: answered, notes: inspectionNotes || null };
   let error;
   if (existingId) { ({ error } = await db.from('inspections').update(payload).eq('id', existingId)); }
   else { ({ error } = await db.from('inspections').insert([payload])); }
