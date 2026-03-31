@@ -1668,8 +1668,8 @@ function openPanel(id) {
       if (p.status === 'Cancelled') { badge = 'Cancelled'; badgeStyle = 'background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb'; }
       else if (p.status === 'Approved') { badge = '&#10003; Invoice'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
       else if (p.status === 'Viewed') { badge = 'Viewed'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
-      else if (p.status === 'Copied') { badge = 'Copied'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
-      else if (p.status === 'Created') { badge = 'Created'; badgeStyle = 'background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe'; }
+      else if (p.status === 'Copied') { badge = 'Proposal'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
+      else if (p.status === 'Created') { badge = 'Proposal'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
       else { badge = esc(p.status); badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
       const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
       const surgeLabel = p.selected_surge ? ' + Surge' : (p.include_surge ? ' + Surge' : '');
@@ -1713,8 +1713,7 @@ function renderProposalDrill() {
   if (p.status === 'Cancelled') statusBadge = '<span class="prop-badge" style="background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb">Cancelled</span>';
   else if (p.status === 'Approved') statusBadge = '<span class="prop-badge prop-approved">&check; Invoice</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Approved ' + fmtTS(p.signed_at) + '</div>';
   else if (p.status === 'Viewed') statusBadge = '<span class="prop-badge prop-viewed">Viewed</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Viewed ' + fmtTS(p.viewed_at) + '</div>';
-  else if (p.status === 'Copied') statusBadge = '<span class="prop-badge prop-sent">Copied</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Copied ' + fmtTS(p.copied_at) + '</div>';
-  else if (p.status === 'Created') statusBadge = '<span class="prop-badge" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe">Created</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Created ' + fmtTS(p.created_at) + '</div>';
+  else if (p.status === 'Copied' || p.status === 'Created') statusBadge = '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe">Proposal</span><div style="font-size:10px;color:var(--text3);margin-top:4px">' + fmtTS(p.created_at) + '</div>';
   else statusBadge = '<span class="prop-badge prop-sent">' + esc(p.status) + '</span>';
   const hasPOM = p.include_pom || false;
   const hasSurge = p.include_surge || p.selected_surge || false;
