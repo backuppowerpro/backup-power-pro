@@ -1248,6 +1248,7 @@ async function init() {
   initDarkMode();
   renderCalendar(); // render empty calendar immediately
   await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions()]);
+  await loadRecentPaidInvoices();
   startApprovalPolling();
   // Update last_checked_at after rendering so activity dots show on this load, clear on next
   setTimeout(updateLastCheckedAt, 2000);
@@ -1374,7 +1375,10 @@ function renderContacts() {
     const dupBadge = dupIds.length ? `<span style="font-size:9px;background:#fef2f2;color:#dc2626;padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;cursor:pointer" onclick="event.stopPropagation();openMergeModal('${c.id}','${dupIds[0]}')">DUP</span>` : '';
 
     const isArchived = c.status === 'Archived';
-    const activityDot = !isArchived && contactHasNewActivity(c.id) ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);margin-left:6px;vertical-align:middle;flex-shrink:0" title="New activity"></span>' : '';
+    const actType = !isArchived ? contactActivityType(c.id) : null;
+    const actColors = { approved: 'var(--gold)', paid: 'var(--green)', viewed: '#3b82f6' };
+    const actTitles = { approved: 'Proposal approved', paid: 'Invoice paid', viewed: 'Proposal viewed' };
+    const activityDot = actType ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + actColors[actType] + ';margin-left:6px;vertical-align:middle;flex-shrink:0" title="' + actTitles[actType] + '"></span>' : '';
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
       <td class="name">${esc(c.name)}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
       <td class="phone col-phone">${esc(c.phone||'—')}</td>
@@ -4307,14 +4311,29 @@ function getLastCheckedAt() {
 function updateLastCheckedAt() {
   localStorage.setItem('bpp_crm_last_checked_at', new Date().toISOString());
 }
-function contactHasNewActivity(contactId) {
+async function loadRecentPaidInvoices() {
+  const lastChecked = getLastCheckedAt();
+  const { data } = await db.from('invoices').select('contact_id').eq('status', 'paid').gt('paid_at', lastChecked);
+  if (data) {
+    data.forEach(inv => {
+      const c = allContacts.find(x => x.id === inv.contact_id);
+      if (c) c._hasPaidInvoice = true;
+    });
+    renderContacts();
+  }
+}
+
+function contactActivityType(contactId) {
   const lastChecked = getLastCheckedAt();
   const proposals = proposalMap[contactId] || [];
-  return proposals.some(p => {
-    if (p.status === 'Approved' && p.signed_at && p.signed_at > lastChecked) return true;
-    if ((p.status === 'Viewed' || p.viewed_at) && p.viewed_at && p.viewed_at > lastChecked) return true;
-    return false;
-  });
+  // Check for paid invoice (green)
+  const c = allContacts.find(x => x.id === contactId);
+  if (c && c._hasPaidInvoice) return 'paid';
+  // Check for approved proposal (yellow)
+  if (proposals.some(p => p.status === 'Approved' && p.signed_at && p.signed_at > lastChecked)) return 'approved';
+  // Check for any other activity like viewed (blue)
+  if (proposals.some(p => p.viewed_at && p.viewed_at > lastChecked)) return 'viewed';
+  return null;
 }
 let notifAudio = null;
 
