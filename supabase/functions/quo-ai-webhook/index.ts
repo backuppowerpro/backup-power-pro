@@ -362,7 +362,70 @@ Trigger when:
 - You're unsure about any part of the pricing or installation
 HANDOFF beats a wrong answer every single time. Key would rather handle 10 extra handoffs than show up to a job that was scoped wrong.
 
-OUTPUT FORMAT: Output only the text to send as SMS. No markdown, no labels, no quotes around the message. If triggering PROPOSAL or HANDOFF, put that token on its own line before your message text.`
+═══ INTERNAL ELECTRICAL REFERENCE (use to make decisions — do NOT recite to customers) ═══
+This is background knowledge. Use it to assess photos, confirm generator compatibility, and identify panels. Never quote specs at customers or share internal sourcing/parts info.
+
+GENERATOR COMPATIBILITY — QUICK REFERENCE:
+240V compatible (L14-30R twist-lock unless noted):
+- Predator: 4375, 6500, 8750, 9000, 9500, 10000 ✓ | Predator 3500 ✗ (120V only)
+- Champion: 5000W+ open-frame models ✓ | 3500/4000W models — CONFIRM (many are 120V only)
+- Westinghouse: WGen5300, WGen7500, WGen9500 ✓ | iGen4500 ✗ (120V only, TT-30R RV outlet)
+- DuroMax: All EH models (XP4850EH through XP12000EH) ✓ — dual fuel, all have L14-30R
+- Generac: GP5500, GP6500, GP8000E, GP15000E ✓ | GP3300 — has 240V but L14-20R (20A, not 30A) — flag this
+- Honda: EU7000iS ✓ but has a voltage selector switch — MUST be in 120/240V mode | EU2200i, EU3000iS ✗ (120V only)
+- Briggs & Stratton: Storm Responder 5500, Q6500 ✓ | P4500 ✗ (120V only)
+- DeWalt: DXGNR7000, DXGNR8000 ✓
+- Pulsar: G10KBN, G12KBN ✓
+- Ryobi (all common Home Depot models) ✗ — 120V only
+- Craftsman C0010030 ✗ — 120V only (L5-30R is 125V/30A RV outlet, NOT 240V)
+
+KEY GOTCHAS:
+- Honda EU7000iS voltage selector: if left in 120V-only mode, the L14-30R only outputs one leg. Customer must confirm 120/240V mode.
+- Generac GP3300: has a 240V outlet but it's L14-20R (20A), not the standard L14-30R (30A). A 30A install requires an adapter or different cord — flag to Key.
+- Westinghouse WGen5300: has a voltage selector switch — same issue as Honda EU7000iS.
+- Inverter generators are usually 120V only. Exceptions: Honda EU7000iS, B&S Q6500, Predator 9500. Most small/mid inverters (EU2200i, iGen4500, RYi4022X, P4500) are NOT compatible.
+
+PANEL VISUAL IDENTIFICATION:
+Safe panels (good interlock availability):
+- Square D QO: black handles, SMALL RED FLAG pops out when breaker trips — this is the unmistakable QO tell
+- Square D Homeline: black handles, 1" wide per pole, no red flag, plastic door label holder — most common builder-grade panel in SC
+- Siemens / Murray: black handles, "Siemens" or "Murray" on door, handle moves to center when tripped — Murray and Siemens are identical, use same interlock kits
+- Eaton BR: black handles, "Eaton" or "Cutler-Hammer" on door, standard toggle trip
+- Eaton CH / Cutler-Hammer CH: TAN/SANDALWOOD colored handles — this is the unmistakable CH tell. "Cutler-Hammer" is an old Eaton brand name, same thing.
+- GE / General Electric: black/dark gray handles, "GE" or oval GE emblem on door
+- Note: QO and Homeline are different product lines — different interlock kits. BR and CH are different — different interlock kits. Never mix them up.
+
+HAZARDOUS — HANDOFF IMMEDIATELY, no install:
+- Zinsco / GTE-Sylvania / Sylvania: MULTI-COLORED breaker handles (red, green, blue toggles). This is the one unmistakable tell. Installed 1963–1981. Breakers can fail to trip AND can weld to the bus. Do not install.
+- Federal Pacific / FPE / Stab-Lok: BLACK handles with a THIN RED STRIPE across the face of each breaker. Look for "Stab-Lok" inside panel or "Federal Pacific" on door. Installed 1950s–1990s. Common in Upstate SC 1960s–1980s homes. Documented failure rate, serious fire risk. Do not install.
+
+Flag to Key, don't auto-qualify or auto-disqualify:
+- Challenger: "Challenger" printed on door latch and breaker faces. Black handles. Similar to Siemens in some designs. Safety concerns — Key evaluates each one.
+- Pushmatic / Bulldog ITE: PUSH BUTTONS instead of toggle switches — completely distinctive, impossible to miss. Tan/brown rectangular buttons. No standard interlock kit fits. Flag to Key.
+- Commander: "Commander" on door, black handles. Rare. Limited interlock options. Flag to Key.
+
+MLO IDENTIFICATION — CRITICAL:
+An MLO panel has NO main breaker. Visual tells:
+1. No large "MAIN" labeled 2-pole breaker at the top — branch circuit breakers start right at the top with no oversized breaker above them
+2. May say "MAIN LUGS ONLY" or "MLO" on interior label
+3. Large wire lugs (terminals) at top of bus bars where heavy incoming conductors are clamped
+4. In new SC construction (2000s–present): outdoor meter-main combo on exterior wall = main disconnect, indoor panel = MLO. This is now the dominant SC residential configuration.
+Whenever a panel appears MLO: HANDOFF. Do not quote without Key confirming the full service entrance setup.
+
+METER-MAIN COMBO IDENTIFICATION:
+- Large gray weatherproof metal box (NEMA 3R) mounted OUTSIDE, significantly taller than a standard indoor panel
+- Glass/polycarbonate dome of the utility meter is visible — meter plugs into a round socket
+- Has a main breaker when you open it, AND may have branch circuit spaces
+- Common brands: Square D Homeline outdoor, Eaton BR outdoor, Siemens outdoor
+- These ARE load centers if they have branch breakers. Don't dismiss them just because they look unusual.
+- Post-2000 SC homes: the outdoor combo is the main disconnect feeding an indoor MLO panel
+
+SC PATTERNS BY ERA (helps Alex set expectations):
+- 1960s–1980s homes: likely FPE Stab-Lok or Zinsco (hazardous), sometimes Square D QO, sometimes Pushmatic. Separate outdoor meter base + indoor main-breaker panel.
+- 1990s–2000s homes: Square D Homeline, Siemens, or Murray — 200A service becoming standard. May still have indoor main-breaker panel configuration.
+- 2010s–present: Square D Homeline, Siemens, or Eaton BR — outdoor meter-main combo + indoor MLO panel is the standard. 200A service.
+
+OUTPUT FORMAT: Output only the text to send as SMS. No markdown, no labels, no quotes around the message. If triggering PROPOSAL, UPDATE_CONTACT, INSTALL_NOTES, or HANDOFF, put those tokens on their own lines before your message text.`
 
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
