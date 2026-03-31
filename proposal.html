@@ -467,10 +467,27 @@ function renderProposal() {
     </div>
     ` : ''}
 
+    <!-- Social Proof -->
+    <div style="margin-bottom:16px">
+      <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:10px">What Upstate SC Homeowners Are Saying</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
+          <div style="font-size:14px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:8px">"Key had our generator hooked up in about 3 hours. Everything was permitted and passed inspection first try."</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3)">Mike R. &mdash; Greenville, SC</div>
+        </div>
+        <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
+          <div style="font-size:14px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:8px">"I was nervous about permits but they handled everything. Day of install was fast and our family finally feels prepared."</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3)">Jennifer S. &mdash; Spartanburg, SC</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Reassurance -->
     <div style="text-align:center;padding:12px 16px;font-size:14px;color:var(--green);font-weight:600;margin-bottom:4px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Your price is locked for 30 days &mdash; no hidden fees, no surprises.
+      Your price is locked for 30 days &mdash; no surprises. <span style="color:var(--text3);font-size:12px;font-weight:500">&nbsp;·&nbsp; We schedule approved proposals in order &mdash; slots fill fast.</span>
     </div>
 
     <!-- Approve & Sign -->
@@ -502,8 +519,11 @@ function renderProposal() {
         </div>
         <button class="approve-btn" id="approve-btn" onclick="approveProposal()" disabled>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Approve &amp; Get Started &mdash; <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
+          Approve &amp; Secure My Install Date &mdash; <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
         </button>
+        <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">
+          Payment is due on completion day only &mdash; after you see everything working.
+        </div>
         <div id="approve-err" style="font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:center"></div>
       </div>
     </div>
@@ -604,6 +624,9 @@ function renderPricing() {
     <div class="compare-box">
       Get backup power for your whole home &mdash; without the $15,000 standby generator.<br>
       <span>You already own the generator. We connect it the right way.</span>
+    </div>
+    <div style="text-align:center;padding:10px 0 2px;font-size:13px;color:var(--text3);line-height:1.5">
+      That's just <strong style="color:var(--navy)">$${(total/3650).toFixed(2)}/day</strong> for 10 years of whole-home storm protection.
     </div>`;
 
   const approveTotal = document.getElementById('approve-total');
@@ -633,7 +656,7 @@ function togglePom() {
     card.style.transform = pomOn ? 'scale(1.01)' : 'scale(1)';
   }
   if (track) track.classList.toggle('on', pomOn);
-  buildPriceBreakdown(chosenAmp);
+  renderPricing();
   updateApproveBtn();
 }
 
@@ -838,6 +861,31 @@ function renderApproved() {
         <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
           <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Questions? Call or text anytime</div>
           <a href="tel:8644005302" style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:var(--navy);text-decoration:none">(864) 400-5302</a>
+        </div>
+      </div>
+    </div>
+
+    ${!P.selected_surge ? `
+    <!-- Post-approval surge upsell -->
+    <div style="background:linear-gradient(135deg,#0b1f3b,#1a3a5c);border-radius:14px;padding:18px 20px;margin-bottom:16px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;right:0;width:160px;height:160px;background:radial-gradient(circle,rgba(255,186,0,.08),transparent 70%)"></div>
+      <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">One More Thing Before We Schedule</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">Want to Add Surge Protection?</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.65);margin-bottom:12px;line-height:1.5">Most customers add it once they realize — a single voltage spike after an outage can destroy your HVAC, refrigerator, and electronics. One device on your panel stops it.</div>
+      <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.8);margin-bottom:12px">
+        <span style="color:var(--gold);font-weight:700">+$${P.surge_price||375}</span> &nbsp;&middot;&nbsp; Installed on your panel &nbsp;&middot;&nbsp; Protects $10,500+ in appliances
+      </div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7)">Just text Key at <a href="sms:8644005302?body=I'd like to add surge protection to my proposal" style="color:var(--gold);font-weight:700;text-decoration:none">(864) 400-5302</a> and say "add surge" — he'll update your invoice before install day.</div>
+    </div>` : ''}
+
+    <!-- Referral Card -->
+    <div style="background:linear-gradient(135deg,#fffbe6,#fff8d0);border:2px solid var(--gold);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="font-size:28px;flex-shrink:0">🏡</div>
+        <div>
+          <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px">Know a Neighbor With a Generator?</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:10px">Send them our way and <strong>you both win</strong> — they get <strong>$75 off</strong> their install, and we'll send you a <strong>$75 Visa gift card</strong> when they complete theirs.</div>
+          <a href="sms:8644005302?body=Hey Key, I want to refer a neighbor — my name is ${esc(P.contact_name)}" style="display:inline-block;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;padding:9px 18px;border-radius:8px;text-decoration:none">Text Key to Claim Your Referral &rarr;</a>
         </div>
       </div>
     </div>

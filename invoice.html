@@ -329,9 +329,9 @@ function renderInvoice() {
   document.getElementById('main').innerHTML = `
     <!-- Hero -->
     <div class="hero-card">
-      <div class="hero-eyebrow">Invoice</div>
-      <div class="hero-title">Backup Power Pro</div>
-      <div class="hero-sub">Key Electric LLC &middot; 22 Kimbell CT, Greenville SC 29617</div>
+      <div class="hero-eyebrow">Your System is Ready to Schedule</div>
+      <div class="hero-title">The Storm-Ready<br>Connection System</div>
+      <div class="hero-sub">One cord. Full power. Done in a day.</div>
       <div class="hero-meta">
         <div class="hero-meta-item">
           <div class="hero-meta-label">Bill To</div>
@@ -392,21 +392,40 @@ function renderInvoice() {
 
     ${buildAgreementHtml()}
 
-    <!-- Payment Info -->
-    <div style="text-align:center;padding:16px 20px;font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:8px">
-      Payment is collected on completion day after your system is installed and you're 100% satisfied.
-      <div style="margin-top:8px;font-size:13px;color:var(--text3)">Questions? Call or text Key at <a href="tel:8644005302" style="color:var(--navy);font-weight:600;text-decoration:none">(864) 400-5302</a></div>
+    <!-- What You're Getting -->
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px">
+      <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Here's What's Included in Your Install</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+        ${[
+          ['⚡','Generator inlet box','Exterior, weather-rated'],
+          ['🔒','Interlock kit','UL-listed, code-compliant'],
+          ['📋','Permit & inspection','We file everything'],
+          ['🧹','Site cleanup','We leave it spotless'],
+          ['🔌','Power transfer cord','Connects gen to panel'],
+          ['📖','Walkthrough','Step-by-step before we leave'],
+        ].map(([icon,name,desc]) => `
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span style="font-size:15px;flex-shrink:0">${icon}</span>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--text)">${name}</div>
+              <div style="font-size:11px;color:var(--text3)">${desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
     </div>
 
     <!-- Pay Online Button -->
     <button class="btn-pay" onclick="payOnline()" data-amount="${fmt(total)}">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Pay Online &mdash; ${fmt(total)}
+      Pay ${fmt(total)} &mdash; Secure Your Install Date
     </button>
 
-    <!-- Invoice PDF only available as receipt after payment -->
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+      🔒 Payment is due on completion day &mdash; after your system is installed and working.<br>
+      Need to split it up? Text Key at <a href="sms:8644005302?body=Hi, I'd like to ask about payment plans for my invoice" style="color:var(--navy);font-weight:600;text-decoration:none">(864) 400-5302</a> about payment plans.
+    </div>
 
-    <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6;margin-top:8px">
+    <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6">
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
       <div style="margin-top:12px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:#3b82f6;font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
     </div>
@@ -513,7 +532,20 @@ function renderPaidInvoice() {
       Download Receipt PDF
     </button>
 
-    <!-- Invoice PDF only available as receipt after payment -->
+    <!-- Referral Card -->
+    <div style="background:linear-gradient(135deg,#fffbe6,#fff8d0);border:2px solid var(--gold);border-radius:14px;padding:18px 20px;margin-bottom:14px">
+      <div style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:var(--navy);margin-bottom:6px">🏡 Know a Neighbor With a Generator?</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:12px">They get <strong>$75 off</strong> their install. You get a <strong>$75 Visa gift card</strong>. Zero effort — just send them our way.</div>
+      <a href="sms:?body=Hey! I just had Backup Power Pro connect my generator to my panel — licensed, permitted, everything. Super easy. Call or text Key at (864) 400-5302 or check out backuppowerpro.com" style="display:block;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;padding:12px;border-radius:8px;text-decoration:none;text-align:center">Share With a Neighbor &rarr;</a>
+    </div>
+
+    <!-- Review Ask -->
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px;text-align:center">
+      <div style="font-size:22px;margin-bottom:8px">⭐⭐⭐⭐⭐</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:var(--navy);margin-bottom:6px">Enjoying Your New System?</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:12px">A quick Google review helps other Upstate SC homeowners find us — and means the world to a small business.</div>
+      <a href="https://g.page/r/CdMLoIpnmrneEAE/review" target="_blank" style="display:block;background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;padding:12px;border-radius:8px;text-decoration:none">Leave a Google Review &rarr;</a>
+    </div>
 
     <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6;margin-top:8px">
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
