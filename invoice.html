@@ -138,11 +138,12 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 /* EMBEDDED CHECKOUT MODAL */
 .checkout-overlay{position:fixed;inset:0;background:rgba(11,31,59,.75);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s}
 .checkout-overlay.active{opacity:1;pointer-events:auto}
-.checkout-modal{background:#fff;border-radius:16px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:24px 24px 28px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
-.checkout-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.checkout-modal{background:#fff;border-radius:16px;width:100%;max-width:500px;max-height:90vh;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.3);display:flex;flex-direction:column}
+.checkout-modal-header{display:flex;align-items:center;justify-content:space-between;padding:24px 24px 20px;flex-shrink:0}
 .checkout-modal-title{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:var(--navy)}
 .checkout-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:22px;line-height:1;padding:4px 6px;border-radius:6px}
 .checkout-close:hover{background:#f0f0f0;color:var(--navy)}
+.checkout-modal-scroll{overflow-y:auto;flex:1;padding:0 24px 28px}
 #checkout-container{min-height:120px}
 </style>
 </head>
@@ -167,7 +168,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
       <div class="checkout-modal-title">Secure Payment</div>
       <button class="checkout-close" onclick="closeCheckout()">&#x2715;</button>
     </div>
-    <div id="checkout-container"></div>
+    <div class="checkout-modal-scroll">
+      <div id="checkout-container"></div>
+    </div>
   </div>
 </div>
 
