@@ -1927,31 +1927,28 @@ async function renderPaymentDrill() {
     + '</div>'
     + '<div id="pay-invoice-section"></div>'
     + (collectDisabled ? '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">&#128274; Complete panel inspection before collecting payment</div>' : '')
-    + '<button class="btn btn-primary" id="pay-collect-btn" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--navy)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPaymentFromLines(\'' + contactId + '\')"') + '>' + (hasPaid ? '&check; Paid' : (collectDisabled ? '&#128274; Record Offline Payment' : 'Record Offline Payment &mdash; $' + totalAmount.toLocaleString())) + '</button>'
-    + (hasPaid ? '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="copyReceiptLink(\'' + contactId + '\')">Copy Receipt Link</button>' : '')
-    + (hasPaid && hasPOM ? '<button class="btn btn-outline" style="width:100%;margin-top:8px;min-height:44px" onclick="showToast(\'Manual coming soon\',\'success\')">Storm-Ready System Manual</button>' : '')
+    + (hasPaid ? '' : '<button class="btn btn-primary" id="pay-collect-btn" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--navy)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPaymentFromLines(\'' + contactId + '\')"') + '>' + (collectDisabled ? '&#128274; Record Payment' : 'Record Payment &mdash; $' + totalAmount.toLocaleString()) + '</button>')
     + historyHtml;
 
-  // Load invoice info for this contact and render Copy/Preview/Viewed
   loadInvoiceSection(contactId);
 }
 
 async function loadInvoiceSection(contactId) {
   const el = document.getElementById('pay-invoice-section');
   if (!el) return;
-  const { data } = await db.from('invoices').select('token,viewed_at,view_count').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
+  const { data } = await db.from('invoices').select('token,viewed_at,view_count,status').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
   const inv = data && data[0];
   if (inv) {
     const invUrl = 'https://backuppowerpro.com/invoice.html?token=' + inv.token;
     const previewUrl = invUrl + '&preview=1';
     const isPaid = inv.status === 'paid';
-    const viewedText = inv.viewed_at ? 'Client last viewed: ' + new Date(inv.viewed_at).toLocaleString() + (inv.view_count > 1 ? ' (' + inv.view_count + ' views)' : '') : 'Not yet viewed by client';
+    const viewedText = inv.viewed_at ? 'Client viewed: ' + new Date(inv.viewed_at).toLocaleString() : '';
     const copyLabel = isPaid ? 'Copy Receipt Link' : 'Copy Invoice Link';
     const copyToast = isPaid ? 'Receipt link copied!' : 'Invoice link copied!';
-    const previewLabel = isPaid ? 'Preview Receipt' : 'Preview Invoice';
-    el.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:4px"><button class="btn btn-outline" style="flex:1;min-height:44px" onclick="navigator.clipboard.writeText(\'' + invUrl + '\');showToast(\'' + copyToast + '\',\'success\')">' + copyLabel + '</button><a class="btn btn-outline" style="flex:1;min-height:44px;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center" href="' + previewUrl + '" target="_blank">' + previewLabel + '</a></div><div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">' + viewedText + '</div>';
+    el.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:4px"><button class="btn btn-outline" style="flex:1;min-height:44px" onclick="navigator.clipboard.writeText(\'' + invUrl + '\');showToast(\'' + copyToast + '\',\'success\')">' + copyLabel + '</button><a class="btn btn-outline" style="flex:1;min-height:44px;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center" href="' + previewUrl + '" target="_blank">Preview</a></div>' + (viewedText ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">' + viewedText + '</div>' : '');
   } else {
-    el.innerHTML = '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px" onclick="copyInvoiceLink(\'' + contactId + '\')">Create &amp; Copy Invoice Link</button>';
+    // No invoice yet — create one on the fly
+    el.innerHTML = '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px" onclick="copyInvoiceLink(\'' + contactId + '\')">Copy Invoice Link</button>';
   }
 }
 
@@ -2682,7 +2679,7 @@ async function loadProposals() {
       proposalMap[p.contact_id].push(p);
     }
   });
-  // Auto-advance contacts with approved proposals to at least stage 4
+  // Auto-advance contacts with approved proposals and auto-create invoices
   Object.keys(proposalMap).forEach(contactId => {
     const latest = proposalMap[contactId][0];
     if (latest && latest.status === 'Approved') {
@@ -2690,6 +2687,7 @@ async function loadProposals() {
       if (c && (c.stage || 1) < 4) {
         autoProgressStage(contactId, 4);
       }
+      autoCreateInvoiceForProposal(latest);
     }
   });
   renderContacts();
@@ -4050,6 +4048,30 @@ function refreshStatsModal() {
   if (btn) btn.textContent = trendDays === 7 ? 'Last 7 Days' : 'Last 30 Days';
 }
 
+async function autoCreateInvoiceForProposal(proposal) {
+  // Check if invoice already exists for this proposal
+  const { data: existing } = await db.from('invoices').select('id').eq('proposal_id', proposal.id).limit(1);
+  if (existing && existing.length > 0) return; // Already has an invoice
+  // Build line items from proposal
+  const lineItems = [{ name: 'Storm-Ready Connection System (' + (proposal.selected_amp || '30') + 'A)', amount: proposal.total || 0 }];
+  if (proposal.selected_surge || proposal.include_surge) lineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
+  if (proposal.include_pom) lineItems.push({ name: 'Peace of Mind Package', amount: 97 });
+  const total = lineItems.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
+  // Find contact info
+  const c = allContacts.find(x => x.id === proposal.contact_id);
+  await db.from('invoices').insert([{
+    contact_id: proposal.contact_id,
+    proposal_id: proposal.id,
+    contact_name: c?.name || proposal.contact_name || '',
+    contact_email: c?.email || '',
+    contact_phone: c?.phone || '',
+    contact_address: c?.address || '',
+    line_items: lineItems,
+    total: total,
+    status: 'unpaid'
+  }]);
+}
+
 function closeStatsModal() {
   const el = document.getElementById('stats-modal-overlay');
   if (el) { el.remove(); unlockBody(); }
@@ -4325,14 +4347,15 @@ async function checkForApprovals() {
     const p = data[0];
     showApprovalNotif(p);
 
-    // Set stage to "Booked" (4) only if the approved proposal is the most recent for that contact
-    data.forEach(ap => {
-      if (!ap.contact_id) return;
+    // Set stage and auto-create invoice for each approved proposal
+    for (const ap of data) {
+      if (!ap.contact_id) continue;
       const latest = proposalMap[ap.contact_id]?.[0];
       if (latest && latest.id === ap.id) {
         setStageFromLatestProposal(ap.contact_id, 4);
       }
-    });
+      await autoCreateInvoiceForProposal(ap);
+    }
 
     // Refresh proposals data in background
     loadProposals();
