@@ -4018,14 +4018,9 @@ function openStatsModal() {
 function refreshStatsModal() {
   const body = document.getElementById('stats-modal-body');
   if (!body) return;
-  // Temporarily render into the hidden trend-analytics div, then copy
   renderTrendAnalytics();
   const src = document.getElementById('trend-analytics');
   if (src) body.innerHTML = src.innerHTML;
-  // Also render permit analytics
-  const pa = document.getElementById('permit-analytics');
-  if (pa && pa.innerHTML) body.innerHTML += pa.innerHTML;
-  // Update toggle button label
   const btn = document.getElementById('stats-period-btn');
   if (btn) btn.textContent = trendDays === 7 ? 'Last 7 Days' : 'Last 30 Days';
 }
@@ -4125,9 +4120,9 @@ function renderTrendAnalytics() {
   const avgDays = daysCount > 0 ? Math.round(daysSum / daysCount) : '—';
   const avgDaysLabel = avgDays === '—' ? 'Need more data' : (avgDays === 0 ? 'Same day' : `${avgDays} day${avgDays===1?'':'s'} avg`);
 
-  const avgDaysCard = avgDays === '—' ? '' : `
+  const avgDaysCard = `
     <div class="trend-stat">
-      <div class="trend-num">${avgDays + 'd'}</div>
+      <div class="trend-num">${avgDays === '—' ? '—' : avgDays + 'd'}</div>
       <div class="trend-label">Avg days to book</div>
       <div class="trend-delta flat">${avgDaysLabel}</div>
     </div>`;
