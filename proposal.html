@@ -423,6 +423,12 @@ function renderProposal() {
       <div class="surge-stat">That's <strong>${((P.surge_price||375)/10500*100).toFixed(1)}% of what you're protecting</strong> &mdash; for the lifetime of the device.</div>
     </div>
 
+    <!-- Reassurance -->
+    <div style="text-align:center;padding:12px 16px;font-size:14px;color:var(--green);font-weight:600;margin-bottom:4px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Your price is locked &mdash; no hidden fees, no surprises.
+    </div>
+
     <!-- Approve & Sign -->
     <div class="sign-card" id="sign-section">
       <div class="sign-card-head">
@@ -452,7 +458,7 @@ function renderProposal() {
         </div>
         <button class="approve-btn" id="approve-btn" onclick="approveProposal()" disabled>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Approve Proposal &mdash; <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
+          Approve &amp; Get Started &mdash; <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
         </button>
         <div id="approve-err" style="font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:center"></div>
       </div>
@@ -656,7 +662,7 @@ async function approveProposal() {
     err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.';
     btn.disabled = false;
     approving = false;
-    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve Proposal &mdash; <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>';
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve &amp; Get Started &mdash; <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>';
     return;
   }
 
@@ -730,8 +736,8 @@ function renderApproved() {
       <div class="approved-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <h2>Proposal Approved!</h2>
-      <p>Signed by <strong>${esc(P.signer_name)}</strong>${signedDate ? ' on ' + signedDate : ''}</p>
+      <h2>You're All Set!</h2>
+      <p>Your home will have reliable backup power &mdash; done in a day.</p>
     </div>
 
     <!-- Next Steps -->
@@ -744,8 +750,8 @@ function renderApproved() {
         <div class="next-step-item">
           <div class="next-step-num">1</div>
           <div class="next-step-text">
-            <strong>Key will reach out within 24 hours</strong>
-            <span>You'll get a call or text to confirm your installation date and answer any questions.</span>
+            <strong>Key will reach out to schedule your installation within 48 hours</strong>
+            <span>You'll get a call or text to confirm your date and answer any questions.</span>
           </div>
         </div>
         <div class="next-step-item">
@@ -768,6 +774,10 @@ function renderApproved() {
             <strong>State inspection</strong>
             <span>We schedule and coordinate the electrical inspection. You're officially code-compliant and storm-ready.</span>
           </div>
+        </div>
+        <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Questions? Call or text anytime</div>
+          <a href="tel:8644005302" style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:var(--navy);text-decoration:none">(864) 400-5302</a>
         </div>
       </div>
     </div>

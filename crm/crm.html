@@ -305,9 +305,10 @@ td.actions{white-space:nowrap}
 .cal-event.complete:hover{background:#bbf7d0}
 .cal-event.cancelled{background:#fee2e2;color:#991b1b;border:none}
 .cal-event.cancelled:hover{background:#fecaca}
-.cal-add-hint{font-size:10px;color:var(--text3);text-align:center;opacity:0;transition:opacity .15s}
+.cal-add-hint{font-size:16px;color:var(--border);text-align:center;opacity:.4;transition:opacity .15s;line-height:1;font-weight:300}
 .cal-slot{flex:1 1 0;min-height:0;padding:8px 10px;border-radius:var(--r-sm)}
-.cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{opacity:1}
+.cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{opacity:.7}
+@media(hover:none){.cal-add-hint{opacity:.4}}
 .cal-holiday{font-size:9px;font-weight:700;color:#9333ea;background:#f3e8ff;padding:1px 6px;border-radius:var(--r-pill);margin-left:auto;white-space:nowrap}
 html.dark .cal-holiday{background:#2d1f4e;color:#c084fc}
 
@@ -426,7 +427,47 @@ html.dark .approval-notif-amount{color:var(--gold)}
   td.phone,.col-phone{display:none}
   .toolbar{flex-direction:column;align-items:stretch}
   .search-input{min-width:0}
+  .modal{max-height:95vh}
+  .modal-body{-webkit-overflow-scrolling:touch}
 }
+
+/* ── FAB (Floating Action Button) ────────────────────── */
+.fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--navy);border:none;font-size:28px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:60;display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s;font-family:'Outfit',sans-serif;line-height:1}
+.fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.fab:active{transform:scale(.95)}
+html.dark .fab{background:var(--gold);color:#1e1b17}
+
+/* ── GEAR MENU ──────────────────────────────────────── */
+.gear-btn{background:none;border:none;cursor:pointer;padding:6px;color:rgba(255,255,255,.7);font-size:18px;position:absolute;right:16px;top:50%;transform:translateY(-50%);transition:color .15s}
+.gear-btn:hover{color:#fff}
+.gear-menu{position:absolute;top:54px;right:8px;background:var(--card);border-radius:var(--r-md);box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:100;min-width:200px;overflow:hidden;display:none;animation:gearSlide .15s ease}
+.gear-menu.open{display:block}
+@keyframes gearSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.gear-menu-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:background .1s;border:none;background:none;width:100%;text-align:left;font-family:'Outfit',sans-serif}
+.gear-menu-item:hover{background:var(--bg)}
+.gear-menu-item svg{width:16px;height:16px;flex-shrink:0}
+html.dark .gear-menu{background:var(--card);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+
+/* ── CONTACT INFO SUMMARY (compact one-line) ────────── */
+.contact-info-summary{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s;margin-bottom:var(--sp-md);font-size:12.5px;color:var(--text2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.contact-info-summary:hover{background:var(--border)}
+.contact-info-summary .info-sep{color:var(--text3);margin:0 2px}
+.contact-info-expanded{display:none}
+.contact-info-expanded.open{display:block}
+html.dark .contact-info-summary{background:#1e1b17}
+html.dark .contact-info-summary:hover{background:#302b25}
+
+/* ── DETAILS SECTION (collapsed by default) ─────────── */
+.panel-details-toggle{display:flex;align-items:center;gap:6px;padding:8px 0;cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;width:100%;transition:color .15s}
+.panel-details-toggle:hover{color:var(--text2)}
+.panel-details-toggle svg{transition:transform .2s}
+.panel-details-content{display:none}
+.panel-details-content.open{display:block}
+
+/* ── STATS TOGGLE ──────────────────────────────────── */
+.stats-toggle{display:flex;align-items:center;gap:6px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;transition:color .15s}
+.stats-toggle:hover{color:var(--text2)}
+.stats-toggle svg{transition:transform .2s}
 
 /* ── HIDDEN UTILITY ──────────────────────────────────── */
 .hidden{display:none!important}
@@ -562,7 +603,27 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <!-- ── NAV ───────────────────────────────────────────────── -->
 <nav class="nav" id="main-nav" style="display:none">
   <img id="nav-logo" src="/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin:0 auto;cursor:pointer;-webkit-user-select:none;user-select:none">
+  <button class="gear-btn" onclick="toggleGearMenu(event)" title="Settings">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+  </button>
+  <div class="gear-menu" id="gear-menu">
+    <button class="gear-menu-item" onclick="toggleGearMenu();toggleJurisdictions();window.scrollTo({top:document.getElementById('jur-toggle').offsetTop-60,behavior:'smooth'})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Manage Jurisdictions
+    </button>
+    <button class="gear-menu-item" id="gear-dark-toggle" onclick="toggleGearMenu();toggleDarkMode()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span id="gear-dark-label">Dark Mode</span>
+    </button>
+    <button class="gear-menu-item" onclick="toggleGearMenu();signOut()" style="color:var(--red)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
 </nav>
+
+<!-- ── FAB (+ Lead) ──────────────────────────────────────── -->
+<button class="fab" id="fab-add-lead" style="display:none" onclick="openContactModal(null)" title="Add Lead">+</button>
 
 <!-- ── MAIN ──────────────────────────────────────────────── -->
 <div id="tab-leads" style="display:none">
@@ -573,13 +634,18 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <div id="contacts-view">
     <div class="toolbar">
-      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()" autocomplete="off">
+      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts()" autocomplete="off">
     </div>
     <div id="contacts-table"></div>
   </div>
 
   <div id="permit-analytics" style="margin-top:var(--sp-md)"></div>
-  <div id="trend-analytics" style="margin-top:var(--sp-lg);cursor:pointer" onclick="toggleTrendPeriod()"></div>
+
+  <button class="stats-toggle" id="stats-toggle" onclick="toggleStatsPanel()" style="margin-top:var(--sp-md)">
+    <svg id="stats-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    Stats
+  </button>
+  <div id="trend-analytics" style="display:none;margin-top:var(--sp-sm);cursor:pointer" onclick="toggleTrendPeriod()"></div>
 
   <div class="cal-nav" style="margin-top:var(--sp-lg)">
     <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(-1)">←</button>
@@ -589,7 +655,13 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <div class="cal-grid" id="cal-grid"></div>
 
-  <div id="jur-list" class="jur-list" style="margin-top:var(--sp-lg)"></div>
+  <div style="margin-top:var(--sp-lg)">
+    <div id="jur-toggle" onclick="toggleJurisdictions()" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;user-select:none">
+      <svg id="jur-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Jurisdictions</span>
+    </div>
+    <div id="jur-list" class="jur-list" style="display:none"></div>
+  </div>
 
 
 </main>
@@ -816,9 +888,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       </div>
 
     </div>
-    <div class="modal-foot" id="proposal-modal-foot">
-      <button class="btn btn-outline" onclick="closeModal('proposal-overlay')">Cancel</button>
-      <button class="btn btn-primary" id="p-create-btn" style="background:var(--navy);color:#fff" onclick="saveProposal()">Create &amp; Get Link</button>
+    <div class="modal-foot" id="proposal-modal-foot" style="justify-content:center">
+      <button class="btn btn-primary" id="p-create-btn" style="background:var(--navy);color:#fff;flex:1;max-width:300px" onclick="saveProposal()">Create &amp; Get Link</button>
     </div>
   </div>
 </div>
@@ -863,17 +934,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
           <input class="form-input" id="j-time" type="time">
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <input type="hidden" id="j-type" value="Install">
-        <div class="form-row">
-          <label>Status</label>
-          <select class="form-select" id="j-status">
-            <option value="Scheduled">Scheduled</option>
-            <option value="Complete">Complete</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-        </div>
-      </div>
+      <input type="hidden" id="j-type" value="Install">
+      <input type="hidden" id="j-status" value="Scheduled">
       <input id="j-price" type="hidden" value="0">
       <div class="form-row">
         <label>Notes</label>
@@ -889,22 +951,46 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <div class="side-panel" id="side-panel">
   <div class="panel-head" style="flex-direction:column;align-items:stretch;gap:0">
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="panel-name" id="panel-name" onclick="panelNameArchive()" style="cursor:pointer;user-select:none;transition:all .15s;padding:4px 10px;border-radius:var(--r-xs);width:fit-content" title="Tap twice to archive">Lead</div>
+      <div class="panel-name" id="panel-name" style="user-select:none;padding:4px 10px;border-radius:var(--r-xs);width:fit-content">Lead</div>
       <button class="modal-close" onclick="cancelPanel()">&#10005;</button>
     </div>
   </div>
   <div class="drill-container">
-    <!-- LEVEL 1: Contact Details -->
+    <!-- LEVEL 1: Contact Details (Progressive Disclosure) -->
     <div class="drill-level active" id="drill-contact">
       <input type="hidden" id="panel-id">
+
+      <!-- 1. PROPOSALS (always visible, prominent) -->
       <div id="panel-prop-section" style="margin-bottom:var(--sp-md)"></div>
-      <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name"><button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-      <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this)"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-      <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com"><button class="fld-btn" onclick="copyField('panel-email')" title="Copy email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-      <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value)" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
-      <div class="form-row"><label>Notes</label><textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…"></textarea></div>
-      <div class="form-row"><label>Jurisdiction</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-jurisdiction" style="flex:1"></select><button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div></div>
-      <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
+
+      <!-- 2. CONTACT INFO (compact summary, expandable) -->
+      <div class="contact-info-summary" id="contact-info-summary" onclick="toggleContactInfo()">
+        <span id="contact-info-preview">No contact info</span>
+      </div>
+      <div class="contact-info-expanded" id="contact-info-expanded">
+        <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+        <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-email')" title="Copy email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+        <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value);panelMarkDirty()" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
+      </div>
+
+      <!-- 3. DETAILS (collapsed by default) -->
+      <button class="panel-details-toggle" id="panel-details-toggle" onclick="togglePanelDetails()">
+        <svg id="panel-details-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <span>Details</span>
+        <span id="panel-notes-preview" style="font-weight:400;font-size:11px;color:var(--text3);text-transform:none;letter-spacing:normal;margin-left:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px"></span>
+      </button>
+      <div class="panel-details-content" id="panel-details-content">
+        <div class="form-row"><label>Notes</label><textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…" oninput="panelMarkDirty()"></textarea></div>
+        <div class="form-row"><label>Jurisdiction</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-jurisdiction" style="flex:1" onchange="panelMarkDirty()"></select><button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div></div>
+        <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1" onchange="panelMarkDirty()"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
+        <div style="display:flex;gap:8px;margin-top:var(--sp-md)">
+          <button class="btn btn-danger btn-sm" style="flex:1" onclick="panelNameArchive()">Archive</button>
+        </div>
+      </div>
+
+      <!-- Save button (hidden until dirty) -->
+      <button class="btn btn-primary" id="panel-save-btn" style="width:100%;margin-top:var(--sp-md);display:none;background:var(--navy);color:#fff" onclick="panelSave()">Save Changes</button>
     </div>
     <!-- LEVEL 2: Proposal View -->
     <div class="drill-level right" id="drill-proposal">
@@ -936,6 +1022,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       </div>
       <button class="modal-close" onclick="closeJurView()">✕</button>
     </div>
+    <div id="jur-view-back-btn" style="display:none;padding:0 24px 8px"><button class="drill-back" onclick="closeJurView()">&larr; Back to Contact</button></div>
     <div class="modal-body" id="jur-view-body" style="display:flex;flex-direction:column;gap:10px"></div>
   </div>
 </div>
@@ -1085,6 +1172,7 @@ function showApp() {
   document.getElementById('gate').style.display = 'none';
   document.getElementById('main-nav').style.display = 'flex';
   document.getElementById('tab-leads').style.display = 'block';
+  document.getElementById('fab-add-lead').style.display = 'flex';
   init();
 }
 
@@ -1105,6 +1193,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ── DARK MODE (long-press logo) ──────────────────────────
 function initDarkMode() {
   if (localStorage.getItem('crm_dark') === '1') document.documentElement.classList.add('dark');
+  updateDarkToggleIcon();
   let pressTimer;
   let didLongPress = false;
   const logo = document.getElementById('nav-logo');
@@ -1128,6 +1217,41 @@ function initDarkMode() {
   logo.addEventListener('click', e => { e.preventDefault(); if (!didLongPress) openQuoteBuilder(); });
 }
 
+function toggleDarkMode() {
+  document.documentElement.classList.toggle('dark');
+  const isDark = document.documentElement.classList.contains('dark');
+  localStorage.setItem('crm_dark', isDark ? '1' : '0');
+  updateDarkToggleIcon();
+  showToast(isDark ? 'Dark mode on' : 'Light mode on', 'success');
+}
+
+function updateDarkToggleIcon() {
+  const label = document.getElementById('gear-dark-label');
+  if (label) {
+    label.textContent = document.documentElement.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
+  }
+}
+
+function toggleGearMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('gear-menu');
+  menu.classList.toggle('open');
+  updateDarkToggleIcon();
+  // Close on outside click
+  if (menu.classList.contains('open')) {
+    setTimeout(() => document.addEventListener('click', closeGearOnOutside, { once: true }), 0);
+  }
+}
+function closeGearOnOutside() {
+  const menu = document.getElementById('gear-menu');
+  if (menu) menu.classList.remove('open');
+}
+
+async function signOut() {
+  await db.auth.signOut();
+  location.reload();
+}
+
 function openQuoteBuilder() {
   document.getElementById('qb-overlay').classList.add('open');
   lockBody();
@@ -1139,6 +1263,8 @@ async function init() {
   renderCalendar(); // render empty calendar immediately
   await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions()]);
   startApprovalPolling();
+  // Update last_checked_at after rendering so activity dots show on this load, clear on next
+  setTimeout(updateLastCheckedAt, 2000);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1187,9 +1313,14 @@ async function loadContacts() {
   renderContacts();
   loadPermitAnalytics();
   loadTrendAnalytics();
-  // Hide trend until analytics collapsed
-  // Trend visible when analytics collapsed (default)
-  setTimeout(() => { const t = document.getElementById('trend-analytics'); if (t) t.style.display = ''; }, 0);
+  // Restore stats panel visibility from localStorage
+  if (localStorage.getItem('crm_stats_visible') === '1') {
+    statsVisible = true;
+    const t = document.getElementById('trend-analytics');
+    const icon = document.getElementById('stats-toggle-icon');
+    if (t) t.style.display = '';
+    if (icon) icon.style.transform = 'rotate(180deg)';
+  }
 }
 
 function renderContacts() {
@@ -1242,7 +1373,9 @@ function renderContacts() {
   const rows = visible.map(c => {
     const p = proposalMap[c.id]?.[0];
     const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
-    const stageBadge = `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}">${esc(stageInfo.label)}</span>`;
+    const stageBadge = (c.stage || 1) === 9
+      ? `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>${esc(stageInfo.label)}</span>`
+      : `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}">${esc(stageInfo.label)}</span>`;
 
     const addrCell = c.address
       ? `<span title="${esc(c.address)}">${esc(c.address.split(',')[0])}</span>`
@@ -1255,8 +1388,9 @@ function renderContacts() {
     const dupBadge = dupIds.length ? `<span style="font-size:9px;background:#fef2f2;color:#dc2626;padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;cursor:pointer" onclick="event.stopPropagation();openMergeModal('${c.id}','${dupIds[0]}')">DUP</span>` : '';
 
     const isArchived = c.status === 'Archived';
+    const activityDot = !isArchived && contactHasNewActivity(c.id) ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);margin-left:6px;vertical-align:middle;flex-shrink:0" title="New activity"></span>' : '';
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
-      <td class="name">${esc(c.name)}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
+      <td class="name">${esc(c.name)}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
       <td class="phone col-phone">${esc(c.phone||'—')}</td>
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : '—'}</td>
@@ -1522,6 +1656,21 @@ function openPanel(id) {
   // Address — plain, no locking
   document.getElementById('panel-address').value = c.address || '';
   panelAddrHide();
+
+  // Reset progressive disclosure state
+  panelResetDirty();
+  document.getElementById('contact-info-expanded').classList.remove('open');
+  document.getElementById('contact-info-summary').style.display = '';
+  document.getElementById('panel-details-content').classList.remove('open');
+  const detailsIcon = document.getElementById('panel-details-icon');
+  if (detailsIcon) detailsIcon.style.transform = '';
+  updateContactInfoPreview();
+  // Notes preview in collapsed details toggle
+  const notesPreview = document.getElementById('panel-notes-preview');
+  if (notesPreview) {
+    const notesVal = (c.notes || '').trim();
+    notesPreview.textContent = notesVal ? '— ' + notesVal.split('\n')[0].slice(0, 50) : '';
+  }
 
   // Proposal section — show ALL proposals as tappable cards
   const proposals = proposalMap[c.id] || [];
@@ -1899,7 +2048,11 @@ async function confirmPayment() {
   }
   // Mark invoice as paid if one exists
   await db.from('invoices').update({ status: 'paid', paid_at: new Date().toISOString(), payment_method: method }).eq('contact_id', contactId).eq('status', 'unpaid');
-  showToast(method + ' payment of $' + amount.toLocaleString() + ' recorded!', 'success');
+  // Auto-advance to Complete (9) and archive
+  await autoProgressStage(contactId, 9);
+  await db.from('contacts').update({ status: 'Archived' }).eq('id', contactId);
+  if (c) c.status = 'Archived';
+  showToast(method + ' payment of $' + amount.toLocaleString() + ' recorded — job complete!', 'success');
   renderPaymentDrill();
 }
 
@@ -2190,9 +2343,10 @@ async function panelSave() {
     (c.stage || 1) !== payload.stage ||
     String(c.jurisdiction_id || '') !== String(payload.jurisdiction_id || '')
   );
-  if (!changed) { closePanel(); loadContacts(); return; }
+  if (!changed) { panelResetDirty(); closePanel(); loadContacts(); return; }
   const { error } = await db.from('contacts').update(payload).eq('id', id);
   if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  panelResetDirty();
   // Log stage change if it changed
   const oldStage = c?.stage || 1;
   const newStage = payload.stage;
@@ -2284,6 +2438,62 @@ function resetNameArchive() {
   clearTimeout(nameArchiveTimer);
   const el = document.getElementById('panel-name');
   if (el) { el.style.color = ''; el.style.fontSize = ''; el.style.background = ''; }
+}
+
+// ── PROGRESSIVE DISCLOSURE PANEL FUNCTIONS ──────────────
+let panelDirty = false;
+
+function panelMarkDirty() {
+  panelDirty = true;
+  const btn = document.getElementById('panel-save-btn');
+  if (btn) btn.style.display = '';
+}
+
+function panelResetDirty() {
+  panelDirty = false;
+  const btn = document.getElementById('panel-save-btn');
+  if (btn) btn.style.display = 'none';
+}
+
+function toggleContactInfo() {
+  const expanded = document.getElementById('contact-info-expanded');
+  const summary = document.getElementById('contact-info-summary');
+  if (expanded.classList.contains('open')) {
+    expanded.classList.remove('open');
+    summary.style.display = '';
+    updateContactInfoPreview();
+  } else {
+    expanded.classList.add('open');
+    summary.style.display = 'none';
+  }
+}
+
+function updateContactInfoPreview() {
+  const phone = (document.getElementById('panel-phone').value || '').trim();
+  const email = (document.getElementById('panel-email').value || '').trim();
+  const addr = (document.getElementById('panel-address').value || '').trim();
+  const parts = [];
+  if (phone) parts.push('<span style="color:var(--blue)">' + esc(phone) + '</span>');
+  if (email) parts.push('<span style="color:var(--blue)">' + esc(email) + '</span>');
+  if (addr) {
+    const shortAddr = addr.split(',')[0];
+    parts.push('<span style="color:var(--blue)">' + esc(shortAddr) + '</span>');
+  }
+  const preview = document.getElementById('contact-info-preview');
+  if (parts.length === 0) preview.innerHTML = '<span style="color:var(--text3)">No contact info — tap to add</span>';
+  else preview.innerHTML = parts.join('<span class="info-sep"> · </span>');
+}
+
+function togglePanelDetails() {
+  const content = document.getElementById('panel-details-content');
+  const icon = document.getElementById('panel-details-icon');
+  if (content.classList.contains('open')) {
+    content.classList.remove('open');
+    if (icon) icon.style.transform = '';
+  } else {
+    content.classList.add('open');
+    if (icon) icon.style.transform = 'rotate(180deg)';
+  }
 }
 
 // Panel address autocomplete (mirrors main one)
@@ -2459,6 +2669,16 @@ async function loadProposals() {
     if (p.contact_id) {
       if (!proposalMap[p.contact_id]) proposalMap[p.contact_id] = [];
       proposalMap[p.contact_id].push(p);
+    }
+  });
+  // Auto-advance contacts with approved proposals to at least stage 4
+  Object.keys(proposalMap).forEach(contactId => {
+    const latest = proposalMap[contactId][0];
+    if (latest && latest.status === 'Approved') {
+      const c = allContacts.find(x => x.id === contactId);
+      if (c && (c.stage || 1) < 4) {
+        autoProgressStage(contactId, 4);
+      }
     }
   });
   renderContacts();
@@ -2686,8 +2906,11 @@ async function saveProposal() {
   setStageFromLatestProposal(contactId, 3);
   renderContacts();
 
-  // Auto-copy link and go straight to proposal drill-down
+  // Auto-copy link and set status to Copied immediately
   navigator.clipboard.writeText(link).catch(function(){});
+  data.status = 'Copied';
+  data.copied_at = new Date().toISOString();
+  db.from('proposals').update({ status: 'Copied', copied_at: new Date().toISOString() }).eq('id', data.id);
   closeModal('proposal-overlay');
   currentProposalIdx = 0; // New proposal is first in array
   openPanel(contactId);
@@ -2932,7 +3155,7 @@ function renderCalendar() {
       </div>
       <div class="cal-day-body${atLimit ? ' cal-full' : ''}" ${canAdd ? `onclick="openJobModal(null,'${dateStr}')"` : ''}>
         ${events}
-        ${Array(Math.max(0, 4 - dayJobs.length)).fill('').map((_, i) => `<div class="cal-slot">${i === 0 && canAdd ? '<span class="cal-add-hint">+ Add event</span>' : ''}</div>`).join('')}
+        ${Array(Math.max(0, 4 - dayJobs.length)).fill('').map((_, i) => `<div class="cal-slot">${i === 0 && canAdd ? '<span class="cal-add-hint">+</span>' : ''}</div>`).join('')}
       </div>
     </div>`;
   }
@@ -3058,6 +3281,8 @@ let jobDeleteTimer = null;
 function openJobModal(id, preDate) {
   // Reset
   ['j-id','j-title','j-notes'].forEach(x => document.getElementById(x).value = '');
+  document.getElementById('j-date').value = '';
+  document.getElementById('j-time').value = '';
   document.getElementById('j-price').value = '';
   document.getElementById('j-type').value = 'Install';
   document.getElementById('j-status').value = 'Scheduled';
@@ -3078,13 +3303,25 @@ function openJobModal(id, preDate) {
     titleEl.onclick = () => jobTitleDelete(id);
     document.getElementById('j-id').value     = j.id;
     document.getElementById('j-date').value   = j.date   || '';
+    document.getElementById('j-date').readOnly = false;
+    document.getElementById('j-date').classList.remove('locked');
     document.getElementById('j-time').value   = j.time   || '';
     document.getElementById('j-type').value   = j.type   || 'Install';
     document.getElementById('j-status').value = j.status || 'Scheduled';
     document.getElementById('j-price').value  = j.price  || '';
     document.getElementById('j-notes').value  = j.notes  || '';
     document.getElementById('j-title').value  = j.title  || '';
-    if (j.contact_id) selectJobContact(j.contact_id);
+    if (j.contact_id) {
+      // Set selected state BEFORE modal is visible to prevent flash
+      const jc = allContacts.find(x => x.id === j.contact_id);
+      if (jc) {
+        document.getElementById('j-contact').value = j.contact_id;
+        document.getElementById('j-contact-search-wrap').style.display = 'none';
+        document.getElementById('j-contact-selected').style.display = 'flex';
+        document.getElementById('j-contact-selected-name').textContent = jc.name;
+        jobContactHideResults();
+      }
+    }
     jobOriginal = {
       date: j.date || '', time: j.time || '', contact_id: j.contact_id || '',
       title: j.title || '', type: j.type || 'Install', status: j.status || 'Scheduled',
@@ -3095,7 +3332,14 @@ function openJobModal(id, preDate) {
     titleEl.style.cursor = 'default';
     titleEl.onclick = null;
     jobOriginal = null;
-    if (preDate) document.getElementById('j-date').value = preDate;
+    if (preDate) {
+      document.getElementById('j-date').value = preDate;
+      document.getElementById('j-date').readOnly = true;
+      document.getElementById('j-date').classList.add('locked');
+    } else {
+      document.getElementById('j-date').readOnly = false;
+      document.getElementById('j-date').classList.remove('locked');
+    }
   }
   onJobContactChange();
   lockBody();
@@ -3204,6 +3448,10 @@ async function saveJob() {
   if (isNewInstall && c) {
     const np = (c.name || '').split(' ');
     fireMetaEvent('Schedule', { email: c.email, phone: c.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' });
+  }
+  // Auto-advance stage to "Booked" (4) when an Install event is booked for a contact
+  if (payload.type === 'Install' && payload.contact_id && payload.status !== 'Cancelled' && payload.status !== 'Archived') {
+    autoProgressStage(payload.contact_id, 4);
   }
   savingJob = false;
   jobOriginal = null;
@@ -3369,8 +3617,10 @@ function fuzzyMatch(c, term) {
   // Check phone with digits only
   const termDigits = stripPhone(term);
   if (termDigits.length >= 3 && stripPhone(c.phone).includes(termDigits)) return true;
-  // Check all text fields — must contain each search word as a substring (prefix or contains)
-  const fields = [c.name, c.email, c.address, c.notes].map(f => (f || '').toLowerCase());
+  // Check all text fields + stage name — must contain each search word as a substring
+  const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
+  const stageName = stageInfo ? stageInfo.label : '';
+  const fields = [c.name, c.email, c.address, c.notes, stageName].map(f => (f || '').toLowerCase());
   const words = term.split(/\s+/);
   return words.every(w => {
     if (w.length < 2) return true;
@@ -3493,9 +3743,25 @@ function sortedJurisdictions() {
 
 let jurDragId = null;
 
+function toggleJurisdictions() {
+  const el = document.getElementById('jur-list');
+  const icon = document.getElementById('jur-toggle-icon');
+  if (!el) return;
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? '' : 'none';
+  if (icon) icon.style.transform = hidden ? 'rotate(90deg)' : '';
+  localStorage.setItem('jur_visible', hidden ? '1' : '0');
+}
+
 function renderJurisdictions() {
   const el = document.getElementById('jur-list');
   if (!el) return;
+  // Restore visibility preference
+  if (localStorage.getItem('jur_visible') === '1') {
+    el.style.display = '';
+    const icon = document.getElementById('jur-toggle-icon');
+    if (icon) icon.style.transform = 'rotate(90deg)';
+  }
   if (!allJurisdictions.length) {
     el.innerHTML = '<div class="jur-empty">No jurisdictions yet — click + Add above</div>';
     return;
@@ -3682,6 +3948,8 @@ function loadPermitAnalytics() {
   const inactiveAll = isDark ? 'var(--gold)' : 'var(--navy)';
   const stageChips = PERMIT_STAGES.map(s => {
     const count = stageCounts[s.id] || 0;
+    // Only show stages with at least 1 contact, or the currently active filter
+    if (count === 0 && stageFilter !== s.id) return '';
     const isActive = stageFilter === s.id;
     return `<div class="pa-stage-chip${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter(${s.id})">
       <div class="pa-stage-dot" style="background:${isActive ? activeAccent : s.color}"></div>
@@ -3723,6 +3991,16 @@ let trendDays = 7;
 function toggleTrendPeriod() {
   trendDays = trendDays === 7 ? 30 : 7;
   renderTrendAnalytics();
+}
+
+let statsVisible = false;
+function toggleStatsPanel() {
+  statsVisible = !statsVisible;
+  const el = document.getElementById('trend-analytics');
+  const icon = document.getElementById('stats-toggle-icon');
+  if (el) el.style.display = statsVisible ? '' : 'none';
+  if (icon) icon.style.transform = statsVisible ? 'rotate(180deg)' : '';
+  localStorage.setItem('crm_stats_visible', statsVisible ? '1' : '0');
 }
 
 function renderTrendAnalytics() {
@@ -3794,6 +4072,13 @@ function renderTrendAnalytics() {
   const avgDays = daysCount > 0 ? Math.round(daysSum / daysCount) : '—';
   const avgDaysLabel = avgDays === '—' ? 'Need more data' : (avgDays === 0 ? 'Same day' : `${avgDays} day${avgDays===1?'':'s'} avg`);
 
+  const avgDaysCard = avgDays === '—' ? '' : `
+    <div class="trend-stat">
+      <div class="trend-num">${avgDays + 'd'}</div>
+      <div class="trend-label">Avg days to book</div>
+      <div class="trend-delta flat">${avgDaysLabel}</div>
+    </div>`;
+
   el.innerHTML = `<div class="trend-stat-grid">
     <div class="trend-stat">
       <div class="trend-num">${currLeads}</div>
@@ -3818,11 +4103,7 @@ function renderTrendAnalytics() {
       <div class="trend-delta flat">${bookedLeads} of ${totalLeads} leads</div>
       ${convRate !== prevConvRate ? '<div class="trend-delta ' + (convRate > prevConvRate ? 'up' : 'down') + '">' + (convRate > prevConvRate ? '&uarr;' : '&darr;') + Math.abs(convRate - prevConvRate) + '% vs prior 30 days</div>' : '<div class="trend-delta flat">same as prior 30 days</div>'}
     </div>
-    <div class="trend-stat">
-      <div class="trend-num">${avgDays === '—' ? '—' : avgDays + 'd'}</div>
-      <div class="trend-label">Avg days to book</div>
-      <div class="trend-delta flat">${avgDaysLabel}</div>
-    </div>
+    ${avgDaysCard}
   </div>`;
 }
 
@@ -3924,6 +4205,23 @@ qbRender();
 // ══════════════════════════════════════════════════════════
 let lastApprovalCheck = null;
 let approvalPollTimer = null;
+
+// ── NEW ACTIVITY INDICATOR ────────────────────────────────
+function getLastCheckedAt() {
+  return localStorage.getItem('bpp_crm_last_checked_at') || new Date(0).toISOString();
+}
+function updateLastCheckedAt() {
+  localStorage.setItem('bpp_crm_last_checked_at', new Date().toISOString());
+}
+function contactHasNewActivity(contactId) {
+  const lastChecked = getLastCheckedAt();
+  const proposals = proposalMap[contactId] || [];
+  return proposals.some(p => {
+    if (p.status === 'Approved' && p.signed_at && p.signed_at > lastChecked) return true;
+    if ((p.status === 'Viewed' || p.viewed_at) && p.viewed_at && p.viewed_at > lastChecked) return true;
+    return false;
+  });
+}
 let notifAudio = null;
 
 function startApprovalPolling() {
