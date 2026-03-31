@@ -438,6 +438,8 @@ html.dark .approval-notif-amount{color:var(--gold)}
 html.dark .fab{background:var(--gold);color:#1e1b17}
 
 /* ── GEAR MENU ──────────────────────────────────────── */
+.nav-icon-btn{background:none;border:none;cursor:pointer;padding:8px;color:rgba(255,255,255,.6);transition:color .15s;display:flex;align-items:center;justify-content:center}
+.nav-icon-btn:hover{color:#fff}
 .gear-btn{background:none;border:none;cursor:pointer;padding:6px;color:rgba(255,255,255,.7);font-size:18px;position:absolute;right:16px;top:50%;transform:translateY(-50%);transition:color .15s}
 .gear-btn:hover{color:#fff}
 .gear-menu{position:absolute;top:54px;right:8px;background:var(--card);border-radius:var(--r-md);box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:100;min-width:200px;overflow:hidden;display:none;animation:gearSlide .15s ease}
@@ -602,15 +604,17 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
 <!-- ── NAV ───────────────────────────────────────────────── -->
 <nav class="nav" id="main-nav" style="display:none">
+  <button class="nav-icon-btn" onclick="openStatsModal()" title="Stats">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+  </button>
   <img id="nav-logo" src="/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin:0 auto;cursor:pointer;-webkit-user-select:none;user-select:none">
+  <button class="nav-icon-btn" onclick="openJurisdictionModal()" title="Jurisdictions" id="nav-jur-btn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+  </button>
   <button class="gear-btn" onclick="toggleGearMenu(event)" title="Settings">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
   </button>
   <div class="gear-menu" id="gear-menu">
-    <button class="gear-menu-item" onclick="toggleGearMenu();toggleJurisdictions();window.scrollTo({top:document.getElementById('jur-toggle').offsetTop-60,behavior:'smooth'})">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-      Manage Jurisdictions
-    </button>
     <button class="gear-menu-item" id="gear-dark-toggle" onclick="toggleGearMenu();toggleDarkMode()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <span id="gear-dark-label">Dark Mode</span>
@@ -940,6 +944,10 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <div class="form-row">
         <label>Notes</label>
         <textarea class="form-textarea" id="j-notes" style="min-height:64px" placeholder="Notes for this event…"></textarea>
+      </div>
+      <div id="j-actions" style="display:none;gap:8px;margin-top:8px">
+        <button class="btn btn-outline btn-sm" style="flex:1;color:var(--green);border-color:var(--green)" onclick="setEventStatus('Complete')">✓ Complete</button>
+        <button class="btn btn-outline btn-sm" style="flex:1;color:var(--red);border-color:#fecaca" onclick="setEventStatus('Cancelled')">Cancel Event</button>
       </div>
     </div>
     <div class="modal-foot" style="display:none"></div>
@@ -2799,7 +2807,7 @@ function openProposalModal(contactId) {
   document.getElementById('p-form').style.display = '';
   document.getElementById('p-created').style.display = 'none';
   document.getElementById('p-create-btn').style.display = '';
-  document.getElementById('proposal-modal-foot').querySelector('.btn-outline').textContent = 'Cancel';
+  document.getElementById('p-create-btn').textContent = 'Create & Get Link';
 
   document.getElementById('p-contact-id').value = contactId;
   document.getElementById('proposal-modal-title').textContent = 'Proposal — ' + c.name;
@@ -3299,6 +3307,7 @@ function openJobModal(id, preDate) {
     const j = allJobs.find(x => x.id === id);
     if (!j) return;
     titleEl.textContent = 'Edit Event';
+    document.getElementById('j-actions').style.display = 'flex';
     titleEl.style.cursor = 'pointer';
     titleEl.onclick = () => jobTitleDelete(id);
     document.getElementById('j-id').value     = j.id;
@@ -3332,6 +3341,7 @@ function openJobModal(id, preDate) {
     titleEl.style.cursor = 'default';
     titleEl.onclick = null;
     jobOriginal = null;
+    document.getElementById('j-actions').style.display = 'none';
     if (preDate) {
       document.getElementById('j-date').value = preDate;
       document.getElementById('j-date').readOnly = true;
@@ -3456,6 +3466,17 @@ async function saveJob() {
   savingJob = false;
   jobOriginal = null;
   showToast(id ? 'Event updated' : 'Event added', 'success');
+  closeModal('job-overlay');
+  loadJobs();
+}
+
+async function setEventStatus(status) {
+  const id = document.getElementById('j-id').value;
+  if (!id) return;
+  document.getElementById('j-status').value = status;
+  const { error } = await db.from('schedule').update({ status: status }).eq('id', id);
+  if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+  showToast('Event ' + status.toLowerCase(), 'success');
   closeModal('job-overlay');
   loadJobs();
 }
@@ -4001,6 +4022,33 @@ function toggleStatsPanel() {
   if (el) el.style.display = statsVisible ? '' : 'none';
   if (icon) icon.style.transform = statsVisible ? 'rotate(180deg)' : '';
   localStorage.setItem('crm_stats_visible', statsVisible ? '1' : '0');
+}
+
+function openStatsModal() {
+  // Render stats into a modal popup
+  const overlay = document.createElement('div');
+  overlay.id = 'stats-modal-overlay';
+  overlay.className = 'modal-overlay open';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
+  overlay.innerHTML = '<div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">Stats</div><button class="modal-close" onclick="closeStatsModal()">✕</button></div><div class="modal-body" id="stats-modal-body"><div style="text-align:center;color:var(--text3);padding:20px">Loading...</div></div></div>';
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) closeStatsModal(); });
+  document.body.appendChild(overlay);
+  lockBody();
+  // Copy the trend analytics content into the modal
+  const src = document.getElementById('trend-analytics');
+  if (src) {
+    document.getElementById('stats-modal-body').innerHTML = src.innerHTML;
+  } else {
+    // Render fresh
+    const tempEl = document.createElement('div');
+    tempEl.id = 'trend-analytics-temp';
+    document.getElementById('stats-modal-body').appendChild(tempEl);
+  }
+}
+
+function closeStatsModal() {
+  const el = document.getElementById('stats-modal-overlay');
+  if (el) { el.remove(); unlockBody(); }
 }
 
 function renderTrendAnalytics() {
