@@ -2118,9 +2118,33 @@ async function copyInvoiceLink(contactId) {
 }
 
 async function copyReceiptLink(contactId) {
+  const c = allContacts.find(x => x.id === contactId);
+  const p = proposalMap[contactId]?.[currentProposalIdx];
+  // Check if invoice already exists
   const { data } = await db.from('invoices').select('token').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
-  if (!data || !data.length) { showToast('No invoice found — create one first', 'error'); return; }
-  const url = 'https://backuppowerpro.com/invoice.html?token=' + data[0].token;
+  let token;
+  if (data && data.length) {
+    token = data[0].token;
+  } else {
+    // Auto-create a paid invoice
+    const total = getInvoiceTotal();
+    const { data: inv, error } = await db.from('invoices').insert([{
+      contact_id: contactId,
+      proposal_id: p?.id || null,
+      contact_name: c?.name || '',
+      contact_email: c?.email || '',
+      contact_phone: c?.phone || '',
+      contact_address: c?.address || '',
+      line_items: invoiceLineItems.length ? invoiceLineItems : [{ name: 'Storm-Ready Connection System', amount: total }],
+      total: total,
+      status: 'paid',
+      paid_at: new Date().toISOString(),
+      payment_method: 'Offline'
+    }]).select().single();
+    if (error) { showToast('Failed to create receipt: ' + error.message, 'error'); return; }
+    token = inv.token;
+  }
+  const url = 'https://backuppowerpro.com/invoice.html?token=' + token;
   navigator.clipboard.writeText(url);
   showToast('Receipt link copied!', 'success');
 }
