@@ -215,6 +215,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let P = null;           // proposal data
 let chosenAmp = null;    // '30' or '50'
 let surgeOn = false;
+let pomOn = false;
 let ackScope = false;
 let ackSafety = false;
 let isPreview = false;
@@ -283,7 +284,8 @@ function calcTotal(amp) {
   const base = pr.total || pr.base || 0;
   // Don't add surge if old-format proposal already includes it in total
   const surgeAdder = (surgeOn && !P.include_surge) ? (P.surge_price || 375) : 0;
-  return base + surgeAdder;
+  const pomAdder = pomOn ? (P.pom_price || 97) : 0;
+  return base + surgeAdder + pomAdder;
 }
 
 function fmt(n) { return '$' + Number(n).toLocaleString('en-US'); }
@@ -294,6 +296,7 @@ function renderProposal() {
   const hasBothPricing = !!P.pricing_30 && !!P.pricing_50;
   chosenAmp = P.selected_amp || P.amp_type || '30';
   surgeOn = P.selected_surge || false;
+  pomOn = P.selected_pom || false;
 
   const createdDate = new Date(P.created_at).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
@@ -423,10 +426,27 @@ function renderProposal() {
       <div class="surge-stat">That's <strong>${((P.surge_price||375)/10500*100).toFixed(1)}% of what you're protecting</strong> &mdash; for the lifetime of the device.</div>
     </div>
 
+    <!-- Peace of Mind Package -->
+    ${P.include_pom ? `
+    <div style="background:#fff;border:2px solid ${pomOn?'var(--gold)':'var(--border)'};border-radius:14px;padding:16px 20px;margin-bottom:16px;cursor:pointer;transition:border-color .2s" id="pom-card" onclick="togglePom()">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="flex:1">
+          <div style="font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Optional Add-On</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)">Peace of Mind Package</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4">Annual maintenance visit + priority scheduling + lifetime phone support</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:${pomOn?'var(--gold)':'var(--text2)'}">+$${P.pom_price||97}</div>
+          <div class="surge-toggle-track ${pomOn?'on':''}" id="pom-toggle" style="margin:6px 0 0 auto;width:44px;height:26px;border-radius:13px"><div class="surge-toggle-knob" style="width:20px;height:20px;top:1px;left:${pomOn?'auto':'2px'};${pomOn?'right:1px':''}"></div></div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
     <!-- Reassurance -->
     <div style="text-align:center;padding:12px 16px;font-size:14px;color:var(--green);font-weight:600;margin-bottom:4px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Your price is locked &mdash; no hidden fees, no surprises.
+      Your price is locked for 30 days &mdash; no hidden fees, no surprises.
     </div>
 
     <!-- Approve & Sign -->
@@ -541,6 +561,9 @@ function renderPricing() {
   if (surgeOn && !P.include_surge) {
     rows += priceRow('Whole-home surge protector', 'Installed on main panel', fmt(surgePrice));
   }
+  if (pomOn) {
+    rows += priceRow('Peace of Mind Package', 'Annual maintenance + priority service', fmt(P.pom_price || 97));
+  }
 
   const total = calcTotal(chosenAmp);
 
@@ -574,6 +597,17 @@ function switchAmp(amp) {
     b.classList.toggle('active', b.textContent.trim().startsWith(amp === '30' ? '30' : '50'));
   });
   renderPricing();
+}
+
+// ── POM TOGGLE ──────────────────────────────────────────────
+function togglePom() {
+  pomOn = !pomOn;
+  const card = document.getElementById('pom-card');
+  const track = document.getElementById('pom-toggle');
+  if (card) card.style.borderColor = pomOn ? 'var(--gold)' : 'var(--border)';
+  if (track) track.classList.toggle('on', pomOn);
+  buildPriceBreakdown(chosenAmp);
+  updateApproveBtn();
 }
 
 // ── SURGE TOGGLE ────────────────────────────────────────────
@@ -648,6 +682,7 @@ async function approveProposal() {
     safety_ack: true,
     selected_amp: chosenAmp,
     selected_surge: surgeOn,
+    selected_pom: pomOn,
     total: total,
     approved_ip: ip,
     approved_user_agent: navigator.userAgent,
@@ -668,6 +703,7 @@ async function approveProposal() {
   P.signed_at = new Date().toISOString();
   P.selected_amp = chosenAmp;
   P.selected_surge = surgeOn;
+  P.selected_pom = pomOn;
   P.total = total;
   P.approved_ip = ip;
   renderApproved();

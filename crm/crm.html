@@ -451,10 +451,10 @@ html.dark .fab{background:var(--gold);color:#1e1b17}
 html.dark .gear-menu{background:var(--card);box-shadow:0 8px 32px rgba(0,0,0,.4)}
 
 /* ── CONTACT INFO SUMMARY (compact one-line) ────────── */
-.contact-info-summary{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s;margin-bottom:var(--sp-md);font-size:12.5px;color:var(--text2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.contact-info-summary{display:none;align-items:center;gap:6px;padding:8px 10px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s;margin-bottom:var(--sp-md);font-size:12.5px;color:var(--text2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .contact-info-summary:hover{background:var(--border)}
 .contact-info-summary .info-sep{color:var(--text3);margin:0 2px}
-.contact-info-expanded{display:none}
+.contact-info-expanded{display:block}
 .contact-info-expanded.open{display:block}
 html.dark .contact-info-summary{background:#1e1b17}
 html.dark .contact-info-summary:hover{background:#302b25}
@@ -514,7 +514,7 @@ html.dark .contact-info-summary:hover{background:#302b25}
 .qb-slider-label{color:var(--text2);font-size:12px;font-weight:600}
 .qb-slider-val{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
 .qb-slider-val span{font-size:10px;color:var(--text3);margin-left:1px;font-weight:600}
-.qb-slider-note{font-size:10px;margin-top:3px;color:var(--text3);font-weight:500}
+.qb-slider-note{font-size:10px;margin-top:10px;color:var(--text3);font-weight:500}
 .qb-slider-note.highlight{color:var(--navy);font-weight:700}
 input[type=range].qb-range{-webkit-appearance:none;width:100%;height:4px;border-radius:var(--r-xs);background:var(--border);outline:none;cursor:pointer;display:block}
 input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--navy);cursor:pointer;box-shadow:0 0 0 3px rgba(11,31,59,.1),0 2px 4px rgba(0,0,0,.12)}
@@ -675,7 +675,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
     <!-- Amperage -->
     <div class="qb-section">
-      <div class="qb-section-title">Amperage</div>
+      <div class="qb-section-title">Amperage Recommendation</div>
       <div class="qb-seg">
         <button class="qb-seg-btn active" id="qb-btn-30" onclick="qbSetAmp(30)">30A</button>
         <button class="qb-seg-btn" id="qb-btn-50" onclick="qbSetAmp(50)">50A</button>
@@ -695,21 +695,17 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <!-- Options (toggle rows) -->
     <div class="qb-section">
       <div class="qb-section-title">Options</div>
+      <div class="qb-row active" id="qb-row-cord" onclick="qbToggle('cordIncluded')">
+        <div class="qb-row-left"><span class="qb-row-name" id="qb-cord-label">30A Cord</span><span class="qb-row-sub" id="qb-cord-sub">Included</span></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right" id="qb-cord-right">+$146</span><button class="qb-row-toggle on" id="qb-tog-cord"></button></div>
+      </div>
       <div class="qb-row" id="qb-row-main" onclick="qbToggle('mainBreaker')">
         <div class="qb-row-left"><span class="qb-row-name">Main Breaker</span><span class="qb-row-sub">Needs replacement</span></div>
-        <div style="display:flex;align-items:center"><span class="qb-row-right">+$225</span><button class="qb-row-toggle" id="qb-tog-main"></button></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right">+$126</span><button class="qb-row-toggle" id="qb-tog-main"></button></div>
       </div>
       <div class="qb-row" id="qb-row-twin" onclick="qbToggle('twinQuad')">
         <div class="qb-row-left"><span class="qb-row-name">Twin / Quad</span><span class="qb-row-sub">Making panel space</span></div>
-        <div style="display:flex;align-items:center"><span class="qb-row-right">+$125</span><button class="qb-row-toggle" id="qb-tog-twin"></button></div>
-      </div>
-      <div class="qb-row" id="qb-row-surge" onclick="qbToggle('surge')">
-        <div class="qb-row-left"><span class="qb-row-name">Surge Protector</span><span class="qb-row-sub">$75K device warranty</span></div>
-        <div style="display:flex;align-items:center"><span class="qb-row-right">+$375</span><button class="qb-row-toggle" id="qb-tog-surge"></button></div>
-      </div>
-      <div class="qb-row active" id="qb-row-cord" onclick="qbToggle('cordIncluded')">
-        <div class="qb-row-left"><span class="qb-row-name" id="qb-cord-label">30A Cord</span><span class="qb-row-sub" id="qb-cord-sub">Included</span></div>
-        <div style="display:flex;align-items:center"><span class="qb-row-right" id="qb-cord-right">✓</span><button class="qb-row-toggle on" id="qb-tog-cord"></button></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right">+$129</span><button class="qb-row-toggle" id="qb-tog-twin"></button></div>
       </div>
     </div>
 
@@ -721,10 +717,10 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 </div>
 
 <!-- ── CONTACT MODAL ────────────────────────────────────── -->
-<div class="modal-overlay" id="contact-overlay" onclick="if(event.target===this)saveContact()">
+<div class="modal-overlay" id="contact-overlay" onclick="if(event.target===this)closeModal('contact-overlay')">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-title" id="contact-modal-title">Add Lead</div>
+      <div class="modal-title">Add Lead</div>
       <button class="modal-close" onclick="closeModal('contact-overlay')">✕</button>
     </div>
     <div class="modal-body">
@@ -757,20 +753,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         </div>
         <div class="form-hint" id="addr-hint">Start typing — pick from the list to confirm the address.</div>
       </div>
-      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div>
-          <label>Stage</label>
-          <select class="form-select" id="c-stage"></select>
-        </div>
-        <div>
-          <label>Jurisdiction</label>
-          <select class="form-select" id="c-jurisdiction"></select>
-        </div>
-      </div>
-      <div class="form-row">
-        <label>Notes</label>
-        <textarea class="form-textarea" id="c-notes" placeholder="Generator model, special instructions, anything useful…"></textarea>
-      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px;background:var(--navy);color:#fff" onclick="saveContact()">Add Lead</button>
     </div>
   </div>
 </div>
@@ -791,14 +774,12 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
           <div id="p-contact-addr" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
         </div>
 
-        <!-- Pre-select Amp Type (customer always sees both options) -->
         <div class="form-row">
-          <label>Pre-select for Customer</label>
+          <label>Amperage Recommendation</label>
           <div style="display:flex;gap:4px;background:var(--bg);border-radius:var(--r-sm);padding:3px">
             <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-30" onclick="pSetAmp('30')" style="flex:1;border-radius:calc(var(--r-sm) - 2px)">30A</button>
             <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-50" onclick="pSetAmp('50')" style="flex:1;border-radius:calc(var(--r-sm) - 2px)">50A</button>
           </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px">Customer can switch between 30A and 50A on their proposal</div>
         </div>
 
         <!-- Run Length -->
@@ -819,22 +800,12 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
               <input type="checkbox" id="p-main-breaker" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
               <span style="flex:1">Main breaker replacement</span>
-              <span style="font-weight:600;color:var(--text2)">+$225</span>
+              <span style="font-weight:600;color:var(--text2)">+$126</span>
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
               <input type="checkbox" id="p-twin-quad" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
               <span style="flex:1">Panel space (twin/quad)</span>
-              <span style="font-weight:600;color:var(--text2)">+$125</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
-              <input type="checkbox" id="p-surge-check" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
-              <span style="flex:1">Whole-home surge protector</span>
-              <span style="font-weight:600;color:var(--text2)">+$375</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:10px 12px;background:linear-gradient(135deg,rgba(255,186,0,.08),rgba(255,186,0,.02));border:1.5px solid var(--gold);border-radius:var(--r-sm)">
-              <input type="checkbox" id="p-pom-check" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--gold)">
-              <span style="flex:1;font-weight:600;color:var(--gold)">Peace of Mind Package</span>
-              <span style="font-weight:700;color:var(--gold)">+$97</span>
+              <span style="font-weight:600;color:var(--text2)">+$129</span>
             </label>
           </div>
         </div>
@@ -1317,7 +1288,10 @@ function renderContacts() {
     const isArchived = c.status === 'Archived';
     if (stageFilter === 'archived') return isArchived;
     if (isArchived) return false;
-    if (stageFilter !== 'all' && (c.stage || 1) !== stageFilter) return false;
+    if (stageFilter !== 'all') {
+      const pf = PIPELINE_FILTERS.find(f => f.id === stageFilter);
+      if (pf && !pf.stages.includes(c.stage || 1)) return false;
+    }
     // Smart search — fuzzy match + phone normalization
     if (searchTerm) {
       if (!fuzzyMatch(c, searchTerm)) return false;
@@ -1478,44 +1452,8 @@ function addFromSearch() {
 
 function openContactModal(id) {
   clearAddressField();
-  const inp = document.getElementById('c-id');
-  inp.value = '';
-  ['c-fname','c-lname','c-phone','c-email','c-address','c-notes'].forEach(x => document.getElementById(x).value = '');
-
-  // Populate stage dropdown
-  const stageSelect = document.getElementById('c-stage');
-  stageSelect.innerHTML = PERMIT_STAGES.map(s => `<option value="${s.id}">${esc(s.label)}</option>`).join('');
-
-  // Populate jurisdiction dropdown
-  const jurSelect = document.getElementById('c-jurisdiction');
-  jurSelect.innerHTML = '<option value="">— None —</option>' +
-    allJurisdictions.map(j => `<option value="${j.id}">${esc(j.name)}</option>`).join('');
-
-  if (id) {
-    const c = allContacts.find(x => x.id === id);
-    if (!c) return;
-    document.getElementById('contact-modal-title').textContent = 'Edit Lead';
-    document.getElementById('c-id').value    = c.id;
-    const nameParts = (c.name || '').split(' ');
-    document.getElementById('c-fname').value = nameParts[0] || '';
-    document.getElementById('c-lname').value = nameParts.slice(1).join(' ') || '';
-    document.getElementById('c-phone').value = c.phone || '';
-    document.getElementById('c-email').value = c.email || '';
-    document.getElementById('c-notes').value = c.notes || '';
-    stageSelect.value = c.stage || 1;
-    jurSelect.value = c.jurisdiction_id || '';
-    if (c.address) {
-      const ai = document.getElementById('c-address');
-      ai.value = c.address;
-      ai.readOnly = true;
-      ai.classList.add('locked');
-      document.getElementById('addr-change-btn').style.display = 'block';
-      document.getElementById('addr-hint').textContent = 'Address confirmed. Click ✕ Change to update.';
-    }
-  } else {
-    document.getElementById('contact-modal-title').textContent = 'Add Lead';
-    stageSelect.value = 1;
-  }
+  document.getElementById('c-id').value = '';
+  ['c-fname','c-lname','c-phone','c-email','c-address'].forEach(x => document.getElementById(x).value = '');
   document.getElementById('contact-overlay').classList.add('open');
   setTimeout(() => document.getElementById('c-fname').focus(), 60);
 }
@@ -1540,9 +1478,8 @@ async function saveContact() {
     phone:   fmtPhone(document.getElementById('c-phone').value),
     email:   document.getElementById('c-email').value.trim(),
     address: document.getElementById('c-address').value.trim(),
-    notes:   document.getElementById('c-notes').value.trim(),
-    stage:   parseInt(document.getElementById('c-stage').value) || 1,
-    jurisdiction_id: document.getElementById('c-jurisdiction').value || null,
+    stage:   1,
+    jurisdiction_id: null,
   };
   let error;
   const isNew = !id;
@@ -1649,8 +1586,7 @@ function openPanel(id) {
 
   // Reset progressive disclosure state
   panelResetDirty();
-  document.getElementById('contact-info-expanded').classList.remove('open');
-  document.getElementById('contact-info-summary').style.display = '';
+  // contact info always expanded
   document.getElementById('panel-details-content').classList.remove('open');
   const detailsIcon = document.getElementById('panel-details-icon');
   if (detailsIcon) detailsIcon.style.transform = '';
@@ -1726,31 +1662,61 @@ function renderProposalDrill() {
   if (hasSurge) items += '<div class="pay-row"><span class="pay-row-label">Surge protector</span><span class="pay-row-val">+$375</span></div>';
   if (hasPOM) items += '<div class="pay-row"><span class="pay-row-label">Peace of Mind Package</span><span class="pay-row-val">+$97</span></div>';
   const totalWithAddons = (p.total || 0) + (hasSurge && !p.selected_surge ? 375 : 0) + (hasPOM ? 97 : 0);
-  let inspBtn = '';
-  if (hasPOM) {
-    const inspLocked = !isApproved;
-    inspBtn = '<button class="prop-action-btn" onclick="' + (inspLocked ? '' : "drillTo('inspection')") + '" style="background:' + (inspLocked ? 'var(--bg)' : '#dbeafe') + ';color:' + (inspLocked ? 'var(--text3)' : '#1d4ed8') + ';cursor:' + (inspLocked ? 'not-allowed' : 'pointer') + ';margin-bottom:8px" ' + (inspLocked ? 'disabled' : '') + '>' + (inspLocked ? '&#128274; ' : '') + 'Inspection &rarr;</button>' + (inspLocked ? '<div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-align:center">Unlock after proposal is approved</div>' : '');
+  const isCancelled = p.status === 'Cancelled';
+  const canEdit = !isApproved && !isCancelled;
+  const previewUrl = url + '&preview=1';
+  const viewedInfo = p.viewed_at
+    ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Viewed ' + new Date(p.viewed_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) + (p.view_count > 1 ? ' · ' + p.view_count + 'x' : '') + '</div>'
+    : '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:8px">Not yet viewed</div>';
+
+  // ── Primary action ──────────────────────────────────────
+  let primaryBtn = '';
+  if (isApproved) {
+    primaryBtn = '<button class="prop-action-btn" onclick="drillTo(\'payment\')" style="background:var(--green);color:#fff;font-size:16px;padding:14px">Collect Payment  →</button>';
+  } else if (!isCancelled) {
+    primaryBtn = '<button class="prop-action-btn prop-action-create" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')" style="font-size:15px;padding:13px">Copy Link</button>';
   }
-  const payLocked = !isApproved;
-  const payBtn = '<button class="prop-action-btn" onclick="' + (payLocked ? '' : "drillTo('payment')") + '" style="background:' + (payLocked ? 'var(--bg)' : 'var(--green)') + ';color:' + (payLocked ? 'var(--text3)' : '#fff') + ';cursor:' + (payLocked ? 'not-allowed' : 'pointer') + '" ' + (payLocked ? 'disabled' : '') + '>' + (payLocked ? '&#128274; ' : '') + 'Payment &rarr;</button>' + (payLocked ? '<div style="font-size:11px;color:var(--text3);margin-top:4px;text-align:center">Unlock after proposal is approved</div>' : '');
+
+  // ── Secondary row (edit + preview) ─────────────────────
+  let secondaryRow = '';
+  if (!isCancelled) {
+    const editLink = canEdit ? '<button onclick="editProposal(\'' + p.id + '\')" style="background:none;border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Edit</button>' : '';
+    secondaryRow = '<div style="display:flex;justify-content:center;gap:4px;margin-top:6px;margin-bottom:4px">'
+      + editLink
+      + '<a href="' + esc(previewUrl) + '" target="_blank" style="color:var(--text2);font-size:13px;font-weight:600;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Preview</a>'
+      + '</div>';
+  }
+
+  // ── Inspection (POM only, approved only) ───────────────
+  const inspSection = (hasPOM && isApproved) ? '<button class="prop-action-btn" onclick="drillTo(\'inspection\')" style="background:#dbeafe;color:#1d4ed8;margin-top:8px">Inspection →</button>' : '';
+
+  // ── Add-ons summary ────────────────────────────────────
   let addons = '';
   if (hasPOM || hasSurge) {
-    addons = '<div class="panel-section-label">Add-ons</div><div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">';
-    if (hasPOM) addons += '<span class="prop-badge" style="background:linear-gradient(135deg,rgba(255,186,0,.15),rgba(255,186,0,.05));color:var(--gold);border:1px solid var(--gold)">&starf; Peace of Mind</span>';
-    if (hasSurge) addons += '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8">&amp;#9889; Surge Protector</span>';
+    addons = '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">';
+    if (hasSurge) addons += '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8">Surge</span>';
+    if (hasPOM) addons += '<span class="prop-badge" style="background:rgba(255,186,0,.15);color:var(--gold);border:1px solid var(--gold)">Peace of Mind</span>';
     addons += '</div>';
   }
-  const isCancelled = p.status === 'Cancelled';
-  const cancelBtn = isCancelled
-    ? '<button id="cancel-proposal-btn" class="btn btn-outline" style="width:100%;margin-top:16px;color:var(--green);border-color:var(--green);font-size:12px" onclick="reviveProposal(\'' + p.id + '\')">Revive Proposal</button>'
-    : '<button id="cancel-proposal-btn" class="btn btn-outline" style="width:100%;margin-top:16px;color:var(--text3);border-color:var(--border);font-size:12px" onclick="cancelProposal(\'' + p.id + '\')">Cancel Proposal</button>';
-  const frozenHtml = isCancelled ? '<div style="background:#fee2e2;border-radius:var(--r-sm);padding:12px;margin-bottom:12px;font-size:13px;color:var(--red);text-align:center;font-weight:600">This proposal is cancelled. The customer can no longer view or sign it.</div>' : '';
-  const lockedHtml = isApproved ? '<div style="background:#d1fae5;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--green);text-align:center;font-weight:600">Approved — this proposal is locked and can no longer be edited.</div>' : '';
-  const canEdit = !isApproved && !isCancelled;
-  const editBtn = canEdit ? '<button class="btn btn-outline" style="width:100%;margin-bottom:8px" onclick="editProposal(\'' + p.id + '\')">Edit Proposal</button>' : '';
-  const viewedInfo = p.viewed_at ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Client last viewed: ' + new Date(p.viewed_at).toLocaleString() + (p.view_count > 1 ? ' (' + p.view_count + ' views)' : '') + '</div>' : '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Not yet viewed by client</div>';
-  const previewUrl = url + '&preview=1';
-  el.innerHTML = '<div style="text-align:center;margin-bottom:16px">' + statusBadge + '<div class="pay-total" style="margin-top:10px">$' + totalWithAddons.toLocaleString() + '</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Total proposal amount</div></div>' + viewedInfo + frozenHtml + lockedHtml + '<div class="pay-summary">' + items + '</div>' + (isCancelled ? '' : '<div style="margin-bottom:16px">' + editBtn + '<div style="display:flex;gap:8px"><button class="btn btn-outline" style="flex:1" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')">Copy Link</button><a class="btn btn-outline" style="flex:1;text-decoration:none;text-align:center" href="' + esc(previewUrl) + '" target="_blank">Preview</a></div></div>' + addons + inspBtn + payBtn) + cancelBtn;
+
+  // ── Cancel / revive (subtle) ───────────────────────────
+  const cancelLink = isCancelled
+    ? '<button id="cancel-proposal-btn" style="background:none;border:none;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;margin-top:16px;text-decoration:underline" onclick="reviveProposal(\'' + p.id + '\')">Revive Proposal</button>'
+    : '<button id="cancel-proposal-btn" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;margin-top:16px;text-decoration:underline" onclick="cancelProposal(\'' + p.id + '\')">Cancel Proposal</button>';
+  const frozenNote = isCancelled ? '<div style="background:#fee2e2;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--red);text-align:center;font-weight:600">Cancelled — customer can no longer view or sign</div>' : '';
+
+  el.innerHTML = '<div style="text-align:center;margin-bottom:12px">'
+    + statusBadge
+    + '<div class="pay-total" style="margin-top:8px">$' + totalWithAddons.toLocaleString() + '</div>'
+    + '</div>'
+    + viewedInfo
+    + frozenNote
+    + addons
+    + '<div class="pay-summary" style="margin-bottom:12px">' + items + '</div>'
+    + primaryBtn
+    + secondaryRow
+    + inspSection
+    + '<div style="text-align:center">' + cancelLink + '</div>';
 }
 
 let _cancelProposalPending = null;
@@ -1889,7 +1855,7 @@ async function renderPaymentDrill() {
     invoiceLineItems = [];
     invoiceLineItems._contactId = contactId;
     invoiceLineItems.push({ name: 'Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', amount: baseAmount });
-    if (hasSurge) invoiceLineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
+    if (hasSurge && !p.selected_surge) invoiceLineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
     if (hasPOM) invoiceLineItems.push({ name: 'Peace of Mind Package', amount: 97 });
   }
 
@@ -1925,18 +1891,57 @@ async function renderPaymentDrill() {
   });
   lineItemsHtml += '<button onclick="addInvoiceLine()" style="width:100%;padding:8px;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;margin-top:4px">+ Add Line Item</button>';
 
+  // ── Record payment section ──────────────────────────────
+  let collectSection = '';
+  if (!hasPaid) {
+    if (collectDisabled) {
+      collectSection = '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">Complete panel inspection before collecting payment</div>';
+    } else {
+      collectSection = '<div id="offline-pay-section">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Record Offline Payment</div>'
+        + '<div style="display:flex;gap:6px;margin-bottom:10px">'
+        + '<button id="pay-method-cash" onclick="selectPayMethod(\'Cash\')" style="flex:1;padding:9px 4px;border:2px solid var(--border);background:var(--bg);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">Cash</button>'
+        + '<button id="pay-method-check" onclick="selectPayMethod(\'Check\')" style="flex:1;padding:9px 4px;border:2px solid var(--border);background:var(--bg);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">Check</button>'
+        + '<button id="pay-method-tap" onclick="selectPayMethod(\'Tap to Pay\')" style="flex:1;padding:9px 4px;border:2px solid var(--border);background:var(--bg);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">Tap to Pay</button>'
+        + '</div>'
+        + '<div id="pay-amount-row" style="display:none;margin-bottom:10px">'
+        + '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:18px;font-weight:800;color:var(--navy)">$</span><input type="number" id="pay-amount-input" value="' + totalAmount + '" min="1" style="flex:1;padding:10px 12px;border:2px solid var(--navy);border-radius:var(--r-sm);font-size:18px;font-weight:800;text-align:center;font-family:Outfit,sans-serif;outline:none" onfocus="this.select()"></div>'
+        + '</div>'
+        + '<button id="pay-confirm-btn" onclick="confirmPayment()" style="display:none;width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);font-family:Outfit,sans-serif;font-weight:700;font-size:15px;cursor:pointer">Confirm Payment</button>'
+        + '</div>';
+    }
+  }
+
   el.innerHTML = '<div class="pay-summary" style="padding:0;overflow:hidden">'
-    + '<div style="padding:10px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between"><span>Invoice Line Items</span><span style="font-weight:400;font-size:10px;color:var(--text3)">tap to edit</span></div>'
+    + '<div style="padding:10px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between"><span>Line Items</span><span style="font-weight:400;font-size:10px;color:var(--text3)">tap to edit</span></div>'
     + lineItemsHtml
     + '<div class="pay-total" id="pay-total-display" style="padding:12px">$' + totalAmount.toLocaleString() + '</div>'
     + (totalPaid > 0 ? '<div style="text-align:center;padding:0 12px 10px;display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span style="color:var(--green)">Paid: $' + totalPaid.toLocaleString() + '</span>' + (totalAmount - totalPaid > 0 ? '<span style="color:var(--red)">Balance: $' + (totalAmount - totalPaid).toLocaleString() + '</span>' : '<span style="color:var(--green)">Paid in full</span>') + '</div>' : '')
     + '</div>'
-    + '<div id="pay-invoice-section"></div>'
-    + (collectDisabled ? '<div style="background:#fef3c7;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;text-align:center">&#128274; Complete panel inspection before collecting payment</div>' : '')
-    + (hasPaid ? '' : '<button class="btn btn-primary" id="pay-collect-btn" style="width:100%;min-height:48px;background:' + (collectDisabled ? 'var(--bg)' : 'var(--navy)') + ';color:' + (collectDisabled ? 'var(--text3)' : '#fff') + '" ' + (collectDisabled ? 'disabled' : 'onclick="collectPaymentFromLines(\'' + contactId + '\')"') + '>' + (collectDisabled ? '&#128274; Record Payment' : 'Record Payment &mdash; $' + totalAmount.toLocaleString()) + '</button>')
+    + '<div id="pay-invoice-section" style="margin-bottom:12px"></div>'
+    + collectSection
     + historyHtml;
 
   loadInvoiceSection(contactId);
+}
+
+let _selectedPayMethod = null;
+
+function selectPayMethod(method) {
+  _selectedPayMethod = method;
+  ['Cash','Check','Tap to Pay'].forEach(function(m) {
+    const btn = document.getElementById('pay-method-' + m.toLowerCase().replace(/ /g,'-').replace('tap-to-pay','tap'));
+    if (!btn) return;
+    const isActive = m === method;
+    btn.style.borderColor = isActive ? 'var(--navy)' : 'var(--border)';
+    btn.style.background = isActive ? 'var(--navy)' : 'var(--bg)';
+    btn.style.color = isActive ? '#fff' : '';
+  });
+  const amountRow = document.getElementById('pay-amount-row');
+  const confirmBtn = document.getElementById('pay-confirm-btn');
+  if (amountRow) amountRow.style.display = '';
+  if (confirmBtn) { confirmBtn.style.display = ''; confirmBtn.textContent = 'Confirm ' + method + ' Payment'; }
+  setTimeout(function() { var inp = document.getElementById('pay-amount-input'); if(inp) inp.focus(); }, 50);
 }
 
 async function loadInvoiceSection(contactId) {
@@ -1966,11 +1971,8 @@ function updatePayTotal() {
   const total = getInvoiceTotal();
   const el = document.getElementById('pay-total-display');
   if (el) el.textContent = '$' + total.toLocaleString();
-  const btn = document.getElementById('pay-collect-btn');
-  if (btn && !btn.disabled) {
-    btn.textContent = 'Record Offline Payment — $' + total.toLocaleString();
-    btn.setAttribute('onclick', "collectPaymentFromLines('" + currentPanelContactId + "')");
-  }
+  const inp = document.getElementById('pay-amount-input');
+  if (inp) inp.value = total;
 }
 
 function addInvoiceLine() {
@@ -1983,50 +1985,14 @@ function removeInvoiceLine(idx) {
   renderPaymentDrill();
 }
 
-let _payConfirmState = null;
-
-function collectPaymentFromLines(contactId) {
-  const total = getInvoiceTotal();
-  if (total <= 0) { showToast('Total must be greater than $0', 'error'); return; }
-  _payConfirmState = { contactId };
-  const btn = document.getElementById('pay-collect-btn');
-  btn.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;width:100%">'
-    + '<div style="display:flex;gap:8px">'
-    + '<button onclick="event.stopPropagation();showPayAmountInput(\'Cash\')" style="flex:1;padding:12px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:var(--r-sm);font-family:Outfit,sans-serif;font-weight:700;font-size:14px;cursor:pointer">Cash</button>'
-    + '<button onclick="event.stopPropagation();showPayAmountInput(\'Check\')" style="flex:1;padding:12px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:var(--r-sm);font-family:Outfit,sans-serif;font-weight:700;font-size:14px;cursor:pointer">Check</button>'
-    + '<button onclick="event.stopPropagation();showPayAmountInput(\'Tap to Pay\')" style="flex:1;padding:12px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:var(--r-sm);font-family:Outfit,sans-serif;font-weight:700;font-size:14px;cursor:pointer">Tap to Pay</button>'
-    + '</div>'
-    + '<button onclick="event.stopPropagation();cancelOfflinePayment()" style="padding:8px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px">Cancel</button>'
-    + '</div>';
-  btn.style.background = 'var(--bg)';
-  btn.style.padding = '8px';
-  btn.removeAttribute('onclick');
-}
-
-function showPayAmountInput(method) {
-  const total = getInvoiceTotal();
-  _payConfirmState.method = method;
-  const btn = document.getElementById('pay-collect-btn');
-  btn.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;width:100%">'
-    + '<div style="font-size:12px;font-weight:700;color:var(--text3);text-align:center">' + method + ' amount received</div>'
-    + '<div style="display:flex;align-items:center;gap:6px;justify-content:center"><span style="font-size:18px;font-weight:800;color:var(--navy)">$</span><input type="number" id="pay-amount-input" value="' + total + '" min="1" style="width:120px;padding:10px 12px;border:2px solid var(--navy);border-radius:var(--r-sm);font-size:18px;font-weight:800;text-align:center;font-family:Outfit,sans-serif;outline:none" onfocus="this.select()"></div>'
-    + '<button onclick="event.stopPropagation();confirmPayment()" style="padding:12px;background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);font-family:Outfit,sans-serif;font-weight:700;font-size:14px;cursor:pointer">Confirm ' + method + ' Payment</button>'
-    + '<button onclick="event.stopPropagation();cancelOfflinePayment()" style="padding:8px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px">Cancel</button>'
-    + '</div>';
-  setTimeout(function() { var inp = document.getElementById('pay-amount-input'); if(inp) inp.focus(); }, 50);
-}
-
-function cancelOfflinePayment() {
-  _payConfirmState = null;
-  renderPaymentDrill();
-}
 
 async function confirmPayment() {
-  if (!_payConfirmState) return;
-  const { contactId, method } = _payConfirmState;
+  const method = _selectedPayMethod;
+  if (!method) { showToast('Select a payment method', 'error'); return; }
+  const contactId = currentPanelContactId;
   const amount = parseFloat(document.getElementById('pay-amount-input')?.value) || 0;
   if (amount <= 0) { showToast('Enter an amount', 'error'); return; }
-  _payConfirmState = null;
+  _selectedPayMethod = null;
   const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: method, status: 'completed' }]);
   if (error) { showToast('Payment failed: ' + error.message, 'error'); return; }
   await db.from('contacts').update({ quote_amount: amount }).eq('id', contactId);
@@ -2038,10 +2004,8 @@ async function confirmPayment() {
   }
   // Mark invoice as paid if one exists
   await db.from('invoices').update({ status: 'paid', paid_at: new Date().toISOString(), payment_method: method }).eq('contact_id', contactId).eq('status', 'unpaid');
-  // Auto-advance to Complete (9) and archive
+  // Auto-advance to Complete (9)
   await autoProgressStage(contactId, 9);
-  await db.from('contacts').update({ status: 'Archived' }).eq('id', contactId);
-  if (c) c.status = 'Archived';
   showToast(method + ' payment of $' + amount.toLocaleString() + ' recorded — job complete!', 'success');
   renderPaymentDrill();
 }
@@ -2704,7 +2668,7 @@ function pBuildPricing(amp) {
     mode: qbState.mode, amp: parseInt(amp), runFt: pRunFt, extFt: 5,
     mainBreaker: document.getElementById('p-main-breaker')?.checked || false,
     twinQuad: document.getElementById('p-twin-quad')?.checked || false,
-    surge: document.getElementById('p-surge-check')?.checked || false,
+    surge: false,
     cordType: null,
     cordIncluded: document.getElementById('p-cord-check')?.checked ?? true,
   };
@@ -2745,7 +2709,7 @@ function pRecalc() {
   // Update cord label
   const is50 = pAmpType === '50';
   const cordLbl = document.getElementById('p-cord-price-lbl');
-  if (cordLbl) cordLbl.textContent = is50 ? '+$200' : '+$120';
+  if (cordLbl) cordLbl.textContent = is50 ? '+$' + QB_S.cordValue50 : '+$' + QB_S.cordValue30;
 }
 
 function pSetAmp(type) {
@@ -2823,8 +2787,6 @@ function openProposalModal(contactId) {
   document.getElementById('p-cord-check').checked = true;
   document.getElementById('p-main-breaker').checked = false;
   document.getElementById('p-twin-quad').checked = false;
-  document.getElementById('p-surge-check').checked = false;
-  document.getElementById('p-pom-check').checked = false;
   document.getElementById('p-notes').value = '';
   document.getElementById('p-run-slider').value = 5;
   pRunFt = 5;
@@ -2842,8 +2804,8 @@ async function saveProposal() {
   const contactId = document.getElementById('p-contact-id').value;
   const c = allContacts.find(x => x.id === contactId);
   const cordIncluded = document.getElementById('p-cord-check').checked;
-  const surgeIncluded = document.getElementById('p-surge-check')?.checked || false;
-  const pomIncluded = document.getElementById('p-pom-check')?.checked || false;
+  const surgeIncluded = false; // surge is always offered as customer-facing toggle on proposal
+  const pomIncluded = true; // always included on every proposal
 
   const pricing30 = pBuildPricing('30');
   const pricing50 = pBuildPricing('50');
@@ -2866,6 +2828,7 @@ async function saveProposal() {
     pricing_30:      pricing30,
     pricing_50:      pricing50,
     surge_price:     QB_S.surge,
+    pom_price:       QB_S.pom,
     total:           primary.total,
     price_base:      primary.total,
     include_cord:    cordIncluded,
@@ -3959,6 +3922,17 @@ const PERMIT_STAGES = [
   { id:9, label:'Complete',             color:'#f59e0b' },
 ];
 
+const PIPELINE_FILTERS = [
+  { id:'all',              label:'All',              stages:[1,2,3,4,5,6,7,8,9], color:'var(--navy)'  },
+  { id:'warm_lead',        label:'Warm Lead',        stages:[1,2],               color:'#64748b'      },
+  { id:'3day_lead',        label:'3-Day Lead',       stages:[3],                 color:'#8b5cf6'      },
+  { id:'pending_approval', label:'Pending Approval', stages:[4],                 color:'#22c55e'      },
+  { id:'prepare_job',      label:'Prepare Job',      stages:[7,8],               color:'#14b8a6'      },
+  { id:'permit_pending',   label:'Permit Pending',   stages:[5],                 color:'#eab308'      },
+  { id:'permit_paid',      label:'Permit Paid',      stages:[6],                 color:'#f97316'      },
+  { id:'completed',        label:'Completed',        stages:[9],                 color:'#f59e0b'      },
+];
+
 function loadPermitAnalytics() {
   const el = document.getElementById('permit-analytics');
   if (!el) return;
@@ -3974,27 +3948,21 @@ function loadPermitAnalytics() {
   const isDark = document.documentElement.classList.contains('dark');
   const activeAccent = isDark ? '#1e1b17' : '#fff';
   const inactiveAll = isDark ? 'var(--gold)' : 'var(--navy)';
-  const stageChips = PERMIT_STAGES.map(s => {
-    const count = stageCounts[s.id] || 0;
-    // Only show stages with at least 1 contact, or the currently active filter
-    if (count === 0 && stageFilter !== s.id) return '';
-    const isActive = stageFilter === s.id;
-    return `<div class="pa-stage-chip${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter(${s.id})">
-      <div class="pa-stage-dot" style="background:${isActive ? activeAccent : s.color}"></div>
-      <span class="pa-stage-name">${esc(s.label)}</span>
+  const filterChips = PIPELINE_FILTERS.map(f => {
+    const count = f.id === 'all'
+      ? active
+      : allContacts.filter(c => c.status !== 'Archived' && f.stages.includes(c.stage || 1)).length;
+    const isActive = stageFilter === f.id;
+    return `<div class="pa-stage-chip${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter('${f.id}')">
+      <div class="pa-stage-dot" style="background:${isActive ? activeAccent : f.color}"></div>
+      <span class="pa-stage-name">${esc(f.label)}</span>
       <span class="pa-stage-count">${count}</span>
     </div>`;
   }).join('');
-  const allActive = stageFilter === 'all';
-  const allChip = `<div class="pa-stage-chip${allActive ? ' active' : ''}" onclick="toggleAnalyticsFilter('all')">
-    <div class="pa-stage-dot" style="background:${allActive ? activeAccent : inactiveAll}"></div>
-    <span class="pa-stage-name">All</span>
-    <span class="pa-stage-count">${active}</span>
-  </div>`;
   el.innerHTML = `
     <div class="pa-stage-wrap">
       <div class="pa-stage-list">
-        ${allChip}${stageChips}
+        ${filterChips}
       </div>
     </div>
   `;
@@ -4060,8 +4028,8 @@ async function autoCreateInvoiceForProposal(proposal) {
   if (existing && existing.length > 0) return; // Already has an invoice
   // Build line items from proposal
   const lineItems = [{ name: 'Storm-Ready Connection System (' + (proposal.selected_amp || '30') + 'A)', amount: proposal.total || 0 }];
-  if (proposal.selected_surge || proposal.include_surge) lineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
-  if (proposal.include_pom) lineItems.push({ name: 'Peace of Mind Package', amount: 97 });
+  if (proposal.include_surge && !proposal.selected_surge) lineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
+  if (proposal.selected_pom) lineItems.push({ name: 'Peace of Mind Package', amount: proposal.pom_price || 97 });
   const total = lineItems.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
   // Find contact info
   const c = allContacts.find(x => x.id === proposal.contact_id);
@@ -4222,14 +4190,14 @@ const QB_C = {
 const QB_S = {
   base30: 1197, base50: 1497,
   longRun30perFt: 12, longRun50perFt: 14,
-  mainBreaker: 225, twinQuad: 125, surge: 375,
-  cordValue30: 120, cordValue50: 200,
+  mainBreaker: 126, twinQuad: 129, surge: 375, pom: 97,
+  cordValue30: 146, cordValue50: 194,
 };
-let qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, surge:false, cordIncluded:true };
+let qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true };
 
 function qbCalc(s) {
   const is50 = s.amp === 50;
-  const extraFt = Math.max(0, s.runFt - 20);
+  const extraFt = Math.max(0, s.runFt - 5);
   const baseCordCost = is50 ? QB_C.cord50Cost : QB_C.cord30Cost;
   const cordValue = is50 ? QB_S.cordValue50 : QB_S.cordValue30;
   const yourSupplies =
@@ -4274,26 +4242,24 @@ function qbRender() {
   document.getElementById('qb-run-display').innerHTML = qbState.runFt + '<span>ft</span>';
   const runNote = document.getElementById('qb-run-note');
   const lrRate = is50 ? QB_S.longRun50perFt : QB_S.longRun30perFt;
-  if (qbState.runFt > 20) { runNote.textContent = '+' + (qbState.runFt - 20) + 'ft @ $' + lrRate + '/ft = +' + qbFmt(r.longRunSell); runNote.classList.add('highlight'); }
+  if (qbState.runFt > 5) { runNote.textContent = '+' + (qbState.runFt - 5) + 'ft @ $' + lrRate + '/ft = +' + qbFmt(r.longRunSell); runNote.classList.add('highlight'); }
   else { runNote.textContent = 'No long-run adder'; runNote.classList.remove('highlight'); }
   // Toggle rows
-  document.getElementById('qb-row-main').classList.toggle('active', qbState.mainBreaker);
-  document.getElementById('qb-tog-main').classList.toggle('on', qbState.mainBreaker);
-  document.getElementById('qb-row-twin').classList.toggle('active', qbState.twinQuad);
-  document.getElementById('qb-tog-twin').classList.toggle('on', qbState.twinQuad);
-  document.getElementById('qb-row-surge').classList.toggle('active', qbState.surge);
-  document.getElementById('qb-tog-surge').classList.toggle('on', qbState.surge);
   document.getElementById('qb-row-cord').classList.toggle('active', qbState.cordIncluded);
   document.getElementById('qb-tog-cord').classList.toggle('on', qbState.cordIncluded);
   document.getElementById('qb-cord-label').textContent = (is50 ? '50' : '30') + 'A Cord';
   document.getElementById('qb-cord-sub').textContent = qbState.cordIncluded ? 'Included' : 'Removed · -' + qbFmt(is50 ? QB_S.cordValue50 : QB_S.cordValue30);
   document.getElementById('qb-cord-right').textContent = qbState.cordIncluded ? '+' + qbFmt(is50 ? QB_S.cordValue50 : QB_S.cordValue30) : '';
+  document.getElementById('qb-row-main').classList.toggle('active', qbState.mainBreaker);
+  document.getElementById('qb-tog-main').classList.toggle('on', qbState.mainBreaker);
+  document.getElementById('qb-row-twin').classList.toggle('active', qbState.twinQuad);
+  document.getElementById('qb-tog-twin').classList.toggle('on', qbState.twinQuad);
 }
 function qbSetAmp(a) { qbState.amp = a; qbRender(); }
 function qbOnRunChange(v) { qbState.runFt = parseInt(v); qbRender(); }
 function qbToggle(key) { qbState[key] = !qbState[key]; qbRender(); }
 function qbResetAll() {
-  qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, surge:false, cordIncluded:true };
+  qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true };
   document.getElementById('qb-run-slider').value = 5;
   qbRender();
   showToast('Quote reset', 'success');
