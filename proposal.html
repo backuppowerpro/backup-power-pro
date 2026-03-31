@@ -428,17 +428,41 @@ function renderProposal() {
 
     <!-- Peace of Mind Package -->
     ${P.include_pom ? `
-    <div style="background:linear-gradient(135deg,rgba(255,186,0,.1),rgba(255,186,0,.04));border:2px solid var(--gold);border-radius:14px;padding:16px 20px;margin-bottom:16px;cursor:pointer;transition:all .2s" id="pom-card" onclick="togglePom()">
-      <div style="font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Optional Add-On</div>
-      <div style="display:flex;align-items:center;gap:14px">
-        <div class="surge-toggle-track ${pomOn?'on':''}" id="pom-toggle" style="flex-shrink:0">
-          <div class="surge-toggle-knob"></div>
+    <div id="pom-card" onclick="togglePom()" style="position:relative;background:linear-gradient(135deg,#fffbe6 0%,#fff8d0 60%,#fff3a0 100%);border:2.5px solid var(--gold);border-radius:16px;padding:0;margin-bottom:16px;cursor:pointer;transition:all .2s;overflow:hidden;box-shadow:0 4px 18px rgba(255,186,0,.18)">
+      <!-- top badge bar -->
+      <div style="background:var(--gold);padding:7px 18px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7a4a00">⭐ Most Popular Add-On</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:#7a4a00;opacity:.8">Less than $9/month</div>
+      </div>
+      <!-- body -->
+      <div style="padding:16px 18px 18px">
+        <div style="display:flex;align-items:flex-start;gap:14px">
+          <!-- toggle -->
+          <div style="padding-top:3px;flex-shrink:0">
+            <div class="surge-toggle-track ${pomOn?'on':''}" id="pom-toggle">
+              <div class="surge-toggle-knob"></div>
+            </div>
+          </div>
+          <!-- content -->
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:20px">🛡️</span>
+              <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:900;color:var(--navy)">Peace of Mind Package</div>
+            </div>
+            <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#7a4a00;margin-bottom:10px;line-height:1.4">Your system stays protected long after install day.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 10px">
+              <div style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">✓</span> Annual tune-up visit</div>
+              <div style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">✓</span> Priority scheduling</div>
+              <div style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">✓</span> Lifetime phone support</div>
+              <div style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">✓</span> Jump the service queue</div>
+            </div>
+          </div>
+          <!-- price -->
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:var(--navy)">+$${P.pom_price||97}</div>
+            <div style="font-size:10px;color:#888;font-weight:600;margin-top:1px">one-time</div>
+          </div>
         </div>
-        <div style="flex:1">
-          <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--navy)">Peace of Mind Package</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px;line-height:1.4">Annual maintenance + priority scheduling + lifetime phone support</div>
-        </div>
-        <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--gold);flex-shrink:0">+$${P.pom_price||97}</div>
       </div>
     </div>
     ` : ''}
@@ -604,7 +628,10 @@ function togglePom() {
   pomOn = !pomOn;
   const card = document.getElementById('pom-card');
   const track = document.getElementById('pom-toggle');
-  if (card) card.style.borderColor = pomOn ? 'var(--gold)' : 'var(--border)';
+  if (card) {
+    card.style.boxShadow = pomOn ? '0 4px 24px rgba(255,186,0,.38)' : '0 4px 18px rgba(255,186,0,.18)';
+    card.style.transform = pomOn ? 'scale(1.01)' : 'scale(1)';
+  }
   if (track) track.classList.toggle('on', pomOn);
   buildPriceBreakdown(chosenAmp);
   updateApproveBtn();
