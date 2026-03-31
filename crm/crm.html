@@ -611,19 +611,6 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
   <button class="nav-icon-btn" onclick="openJurisdictionsPopup()" title="Jurisdictions">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
   </button>
-  <button class="nav-icon-btn" onclick="toggleGearMenu(event)" title="Settings" style="position:relative">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-  </button>
-  <div class="gear-menu" id="gear-menu">
-    <button class="gear-menu-item" id="gear-dark-toggle" onclick="toggleGearMenu();toggleDarkMode()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <span id="gear-dark-label">Dark Mode</span>
-    </button>
-    <button class="gear-menu-item" onclick="toggleGearMenu();signOut()" style="color:var(--red)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Sign Out
-    </button>
-  </div>
 </nav>
 
 <!-- ── FAB (+ Lead) ──────────────────────────────────────── -->
@@ -645,11 +632,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <div id="permit-analytics" style="margin-top:var(--sp-md)"></div>
 
-  <button class="stats-toggle" id="stats-toggle" onclick="toggleStatsPanel()" style="margin-top:var(--sp-md)">
-    <svg id="stats-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-    Stats
-  </button>
-  <div id="trend-analytics" style="display:none;margin-top:var(--sp-sm);cursor:pointer" onclick="toggleTrendPeriod()"></div>
+  <!-- Stats accessed via nav bar icon -->
+  <div id="trend-analytics" style="display:none"></div>
 
   <div class="cal-nav" style="margin-top:var(--sp-lg)">
     <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(-1)">←</button>
@@ -659,13 +643,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
   <div class="cal-grid" id="cal-grid"></div>
 
-  <div style="margin-top:var(--sp-lg)">
-    <div id="jur-toggle" onclick="toggleJurisdictions()" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;user-select:none">
-      <svg id="jur-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-      <span style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Jurisdictions</span>
-    </div>
-    <div id="jur-list" class="jur-list" style="display:none"></div>
-  </div>
+  <!-- Jurisdictions accessed via nav bar icon -->
 
 
 </main>
@@ -2799,7 +2777,7 @@ function editProposal(proposalId) {
 }
 
 function openProposalModal(contactId) {
-  _editingProposalId = null; // Reset — new proposal mode
+  if (!_editingProposalId) _editingProposalId = null; // Only reset if not already set by editProposal
   _proposalReturnContactId = contactId;
   const c = allContacts.find(x => x.id === contactId);
   if (!c) return;
@@ -4025,25 +4003,31 @@ function toggleStatsPanel() {
 }
 
 function openStatsModal() {
-  // Render stats into a modal popup
   const overlay = document.createElement('div');
   overlay.id = 'stats-modal-overlay';
   overlay.className = 'modal-overlay open';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
-  overlay.innerHTML = '<div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">Stats</div><button class="modal-close" onclick="closeStatsModal()">✕</button></div><div class="modal-body" id="stats-modal-body"><div style="text-align:center;color:var(--text3);padding:20px">Loading...</div></div></div>';
+  const periodLabel = trendDays === 7 ? 'Last 7 Days' : 'Last 30 Days';
+  overlay.innerHTML = '<div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">Stats</div><button class="btn btn-outline btn-sm" onclick="toggleTrendPeriod();refreshStatsModal()" id="stats-period-btn">' + periodLabel + '</button><button class="modal-close" onclick="closeStatsModal()">\u2715</button></div><div class="modal-body" id="stats-modal-body"></div></div>';
   overlay.addEventListener('click', function(ev) { if (ev.target === overlay) closeStatsModal(); });
   document.body.appendChild(overlay);
   lockBody();
-  // Copy the trend analytics content into the modal
+  refreshStatsModal();
+}
+
+function refreshStatsModal() {
+  const body = document.getElementById('stats-modal-body');
+  if (!body) return;
+  // Temporarily render into the hidden trend-analytics div, then copy
+  renderTrendAnalytics();
   const src = document.getElementById('trend-analytics');
-  if (src) {
-    document.getElementById('stats-modal-body').innerHTML = src.innerHTML;
-  } else {
-    // Render fresh
-    const tempEl = document.createElement('div');
-    tempEl.id = 'trend-analytics-temp';
-    document.getElementById('stats-modal-body').appendChild(tempEl);
-  }
+  if (src) body.innerHTML = src.innerHTML;
+  // Also render permit analytics
+  const pa = document.getElementById('permit-analytics');
+  if (pa && pa.innerHTML) body.innerHTML += pa.innerHTML;
+  // Update toggle button label
+  const btn = document.getElementById('stats-period-btn');
+  if (btn) btn.textContent = trendDays === 7 ? 'Last 7 Days' : 'Last 30 Days';
 }
 
 function closeStatsModal() {
