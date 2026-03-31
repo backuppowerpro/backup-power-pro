@@ -659,7 +659,8 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 
 <script>
 // ─── ZAPIER WEBHOOK URL ───────────────────────────────────────────────
-const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
+const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/'; // kept as backup
+const BPP_NEW_LEAD_URL = 'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/quo-ai-new-lead';
 const META_PIXEL_ID  = '1389648775800936';
 // ─────────────────────────────────────────────────────────────────────
 
@@ -958,11 +959,14 @@ async function submitForm() {
   }
 
   try {
-    await fetch(ZAPIER_WEBHOOK, {
+    // Primary: send to BPP AI agent (creates contact, sends first text, queues follow-ups)
+    fetch(BPP_NEW_LEAD_URL, {
       method: 'POST',
-      mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
+    }).catch(() => {
+      // Fallback to Zapier if our function fails
+      fetch(ZAPIER_WEBHOOK, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     });
     firePixelLead();
     showSuccess(firstName);
