@@ -465,6 +465,8 @@ html.dark .contact-info-summary:hover{background:#302b25}
 .panel-details-toggle svg{transition:transform .2s}
 .panel-details-content{display:none}
 .panel-details-content.open{display:block}
+/* Photo grid */
+#panel-photos-grid a:hover img{opacity:.85}
 
 /* ── STATS TOGGLE ──────────────────────────────────── */
 .stats-toggle{display:flex;align-items:center;gap:6px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;transition:color .15s}
@@ -931,7 +933,13 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
         <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value);panelMarkDirty()" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
       </div>
 
-      <!-- 3. DETAILS (collapsed by default) -->
+      <!-- 3. PHOTOS (shown when photos exist) -->
+      <div id="panel-photos-section" style="display:none;margin-bottom:var(--sp-md)">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Photos</div>
+        <div id="panel-photos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
+      </div>
+
+      <!-- 4. DETAILS (collapsed by default) -->
       <button class="panel-details-toggle" id="panel-details-toggle" onclick="togglePanelDetails()">
         <svg id="panel-details-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         <span>Details</span>
@@ -939,6 +947,13 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       </button>
       <div class="panel-details-content" id="panel-details-content">
         <div class="form-row"><label>Notes</label><textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…" oninput="panelMarkDirty()"></textarea></div>
+        <div class="form-row" id="panel-install-notes-row" style="display:none">
+          <label style="display:flex;align-items:center;gap:4px">
+            Install Notes
+            <span style="font-size:10px;font-weight:400;color:var(--text3);text-transform:none;letter-spacing:normal">(from Alex)</span>
+          </label>
+          <textarea class="form-textarea" id="panel-install-notes" placeholder="AI assessment notes…" oninput="panelMarkDirty()" style="font-size:12px;color:var(--text2);background:var(--bg)"></textarea>
+        </div>
         <div class="form-row"><label>Jurisdiction</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-jurisdiction" style="flex:1" onchange="panelMarkDirty()"></select><button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div></div>
         <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1" onchange="panelMarkDirty()"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
         <div style="display:flex;gap:8px;margin-top:var(--sp-md)">
@@ -1574,6 +1589,15 @@ function openPanel(id) {
   document.getElementById('panel-email').value       = c.email || '';
   document.getElementById('panel-notes').value       = c.notes || '';
   document.getElementById('panel-stage').value       = c.stage || 1;
+  // Install notes
+  const installNotesEl = document.getElementById('panel-install-notes');
+  const installNotesRow = document.getElementById('panel-install-notes-row');
+  if (installNotesEl && installNotesRow) {
+    installNotesEl.value = c.install_notes || '';
+    installNotesRow.style.display = c.install_notes ? 'block' : 'none';
+  }
+  // Load photos async
+  loadContactPhotos(c.id);
   // Populate jurisdiction dropdown from allJurisdictions
   const jurSelect = document.getElementById('panel-jurisdiction');
   jurSelect.innerHTML = '<option value="">— None —</option>' +
@@ -2245,6 +2269,28 @@ async function sendInvoiceLink(contactId) {
   showToast('Invoice created!', 'success');
 }
 
+// ── CONTACT PHOTOS ─────────────────────────────────────────────────────────
+async function loadContactPhotos(contactId) {
+  const section = document.getElementById('panel-photos-section');
+  const grid    = document.getElementById('panel-photos-grid');
+  if (!section || !grid) return;
+  section.style.display = 'none';
+  grid.innerHTML = '';
+  const { data: photos } = await db.from('contact_photos')
+    .select('id, url, caption, created_at')
+    .eq('contact_id', contactId)
+    .order('created_at', { ascending: true });
+  if (!photos || photos.length === 0) return;
+  section.style.display = 'block';
+  grid.innerHTML = photos.map(p => `
+    <a href="${esc(p.url)}" target="_blank" style="display:block;aspect-ratio:1;overflow:hidden;border-radius:var(--r-xs);background:var(--bg)">
+      <img src="${esc(p.url)}" alt="${esc(p.caption || 'Photo')}"
+           style="width:100%;height:100%;object-fit:cover;transition:opacity .15s"
+           onerror="this.closest('a').style.display='none'"
+           loading="lazy">
+    </a>`).join('');
+}
+
 function closePanel() {
   document.getElementById('side-panel-overlay').classList.remove('open');
   unlockBody();
@@ -2298,15 +2344,17 @@ async function panelSave() {
   const emailVal = document.getElementById('panel-email').value.trim();
   if (emailVal && !isValidEmail(emailVal)) { showToast('Invalid email format', 'error'); return; }
   const c = allContacts.find(x => x.id === id);
+  const installNotesVal = (document.getElementById('panel-install-notes')?.value || '').trim();
   const payload = {
     name,
-    phone:   fmtPhone(document.getElementById('panel-phone').value),
-    email:   document.getElementById('panel-email').value.trim(),
-    address: document.getElementById('panel-address').value.trim(),
-    notes:   document.getElementById('panel-notes').value.trim(),
-    stage:   parseInt(document.getElementById('panel-stage').value) || 1,
+    phone:         fmtPhone(document.getElementById('panel-phone').value),
+    email:         document.getElementById('panel-email').value.trim(),
+    address:       document.getElementById('panel-address').value.trim(),
+    notes:         document.getElementById('panel-notes').value.trim(),
+    install_notes: installNotesVal || null,
+    stage:         parseInt(document.getElementById('panel-stage').value) || 1,
     jurisdiction_id: document.getElementById('panel-jurisdiction').value || null,
-    status:  c?.status || null,
+    status:        c?.status || null,
   };
   // Check if anything actually changed — skip save if nothing changed
   // Compare phone by digits only (formatting may differ)
@@ -2318,6 +2366,7 @@ async function panelSave() {
     (c.email || '').trim() !== payload.email ||
     (c.address || '').trim() !== payload.address ||
     (c.notes || '').trim() !== payload.notes ||
+    (c.install_notes || '') !== (installNotesVal || '') ||
     (c.stage || 1) !== payload.stage ||
     String(c.jurisdiction_id || '') !== String(payload.jurisdiction_id || '')
   );
