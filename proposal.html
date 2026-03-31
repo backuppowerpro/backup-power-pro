@@ -591,7 +591,7 @@ function renderPricing() {
     const permit = pr.permitInspection || 125;
 
     rows += priceRow('Installation', 'Inlet box, interlock kit, panel work, walkthrough', fmt(Math.max(0, base - longRun - mb - tq - cord - permit)));
-    if (longRun) rows += priceRow('Extended run', ((P.run_ft || 20) - 20) + ' extra feet', fmt(longRun));
+    if (longRun) rows += priceRow('Extended run', ((P.run_ft || 5) - 5) + ' extra feet', fmt(longRun));
     rows += priceRow('Permit & inspection', 'Filed with your local jurisdiction', fmt(permit));
     if (cord) rows += priceRow('Power transfer cord', (chosenAmp === '50' ? '50' : '30') + 'A compatible', fmt(cord));
     if (mb) rows += priceRow('Main breaker replacement', 'Upgraded to current code', fmt(mb));
