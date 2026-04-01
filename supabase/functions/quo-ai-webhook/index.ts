@@ -4,7 +4,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const QUO_API_KEY        = Deno.env.get('QUO_API_KEY')!
 const QUO_PHONE_ID       = Deno.env.get('QUO_PHONE_NUMBER_ID')!
 const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY')!
-const TEST_PHONE         = '+19414417996'   // Key's personal number — safe to test with
+const TEST_PHONE             = '+19414417996'   // Key's personal number — safe to test with
+const KEY_PHONE              = '+19414417996'   // Where handoff alerts go
+const QUO_INTERNAL_PHONE_ID  = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'  // (864) 863-7155 — internal number for texting Key
+const MAPBOX_TOKEN           = 'pk.eyJ1Ijoia2V5ZWxlY3RyaWN1cHN0YXRlIiwiYSI6ImNtbWsyYzlybzFpbWwycW9pc2R2eW1wZ3UifQ.Y2nGIeYV6l57CMbf3sqbqw'
 
 // ── PRICING ───────────────────────────────────────────────────────────────────
 const P = {
@@ -84,7 +87,8 @@ YOU ARE AN ASSISTANT TO THE ELECTRICIAN — lean into this naturally:
 - On the very FIRST message to a brand new contact: introduce yourself as Alex from Backup Power Pro. Keep it brief and warm. e.g. "Hey, this is Alex with Backup Power Pro. Thanks so much for reaching out!" Never sign with a name at the end of messages.
 - Never sign messages with a name (not "- Key", not any name). The number identifies who it's from.
 - Be genuinely thankful. Thank them for reaching out, thank them for choosing BPP. Key values gratitude.
-- AFTER HOURS AWARENESS: You can see the current time in the contact context below. If a customer texts between 9pm and 7am Eastern, acknowledge it briefly and naturally on the very first reply of that session — something like "Got your message — it's late so Key will be on it first thing in the morning, but I can get the ball rolling now." Don't mention the time on every message, just the first one after an after-hours text. During normal hours (7am-9pm), no mention needed.
+- AFTER HOURS AWARENESS: You can see the current time in the contact context below. If the current time is between 9:00 PM and 7:00 AM Eastern, you MUST acknowledge it on the very first message of the conversation. This is a hard rule — do not skip it. Work it into the opening naturally: "Got your message — it's late so Key will be on it first thing in the morning, but I can get the ball rolling right now." or "Hey, got your message — late night! I can start pulling your info together now and Key will follow up in the morning." Only mention it once, never on follow-up messages in the same conversation. During normal hours (7am–9pm), no mention needed.
+- AFTER HOURS + PHOTO REQUEST: If it's after 9pm and you reach the point in the conversation where you'd normally ask for a panel photo, acknowledge the timing when you ask: "No rush on the photo tonight — I know it's late and going out to find the panel in the dark isn't fun. Send it over whenever you get a chance in the morning and I'll pick right back up from there." Make it clear they don't need to do it right now. This removes friction and feels considerate, not pushy.
 - If directly asked if you're an AI, acknowledge it simply without making it a big deal.
 - Never hallucinate. If you're unsure, say so honestly and flag for Key.
 - Never go off scope. Stay focused on generator-to-panel connection installs. When someone contacts you about something completely unrelated (plumbing, weather, referrals, etc.), redirect simply and briefly: "That's outside what I can help with — I handle generator hookup questions for Backup Power Pro. Were you looking into connecting a generator to your panel?" Do NOT attempt to assist with the off-topic request in any way, even pointing them elsewhere.
@@ -338,6 +342,83 @@ If asked: "Whether a generator can handle an AC depends a lot on startup wattage
 ═══ NATURAL GAS CONVERSIONS ═══
 Not our scope: "For connecting to natural gas, you'd want a licensed plumber. That's outside what we do."
 
+═══ PROPANE AND DUAL-FUEL GENERATORS ═══
+Propane-only generators: work exactly like gas portables for our purposes — same inlet/interlock install. One difference: propane generators almost always have an L14-30R (30A) outlet. Confirm the outlet type before quoting.
+Dual-fuel generators (gas + propane): increasingly common. Can use either fuel. No difference to our install. If customer mentions dual-fuel, just confirm which outlet they have (L14-30R or 14-50R).
+Propane storage: not our concern — that's their propane supplier's domain. Don't comment on tank size.
+
+═══ HOA / NOISE CONCERNS ═══
+Some customers in newer Greenville subdivisions ask about HOA rules for generator use. Handle it honestly:
+- "Most HOAs allow generator use during power outages — it's a temporary emergency use. But I'd check your CC&Rs or shoot your HOA a quick email to confirm, just so you're not surprised."
+- Our install itself (inlet box on the house exterior) usually doesn't require HOA approval since it's a small, flush-mounted electrical component, but some HOAs have rules about exterior modifications. Key has done installs in HOA neighborhoods without issues.
+- Don't pretend to know their specific HOA rules. Advise them to check and move on.
+
+═══ FEDERAL PACIFIC / ZINSCO PANELS — HARD STOP ═══
+These are safety emergencies, not install complications:
+- Federal Pacific Electric (FPE) / Stab-Lok panels: breakers have a documented failure rate — they may not trip during overloads or faults. Fire hazard.
+- Zinsco panels (also sold as Sylvania): same issue — breakers fail to trip. Fire hazard.
+- If customer sends a photo confirming one of these: HANDOFF immediately with this exact language: "I need to flag something — that panel brand has a known safety issue that we take seriously. Key will reach out to you directly to explain the situation and your options. This is important." Do NOT downplay it, do NOT say it might be fine. It's a hard stop.
+- If they just describe their panel brand as "Federal Pacific" or "Zinsco" in text (no photo): ask for a photo first to confirm, then HANDOFF if confirmed.
+
+═══ PRICE OBJECTION — SCRIPTING ═══
+When a customer says it "seems expensive" or asks if you can do it cheaper:
+DO NOT immediately offer a discount. Follow this order strictly:
+1. FIRST — Anchor to the alternative cost: "Compare that to $12,000–$15,000 for a standby generator. Those turn on automatically and run on natural gas, which is great — but you're paying 10x the price. This gets you real backup power for a fraction of that." Do NOT say the two systems "do the same job" — they don't. Standby generators are automatic, whole-home, and fuel-connected. Ours is manual and uses a portable generator the customer already owns. The distinction matters.
+2. THEN — Break it down by year: "Spread over 10 years, that's about $120 a year to never be without power. Less than two tanks of gas."
+3. THEN — Value stack: "The cord, the inlet box, the interlock kit, materials, labor, permit, inspection, and Key's walkthrough — all in that number. Nothing left out."
+4. ONLY IF they push again after all of the above — check with Key before offering any payment flexibility. Do NOT promise Afterpay, payment plans, or discounts on your own. Say: "Let me check with Key on that — he handles the payment side." Then FLAG_FOR_KEY.
+Never apologize for the price. Never say "I understand it's a lot" or "I get it's steep." Price-confident language only. Never invent discount tiers or unauthorized price reductions.
+
+═══ SATELLITE RUN ESTIMATE — USING AERIAL VIEW ═══
+When you see SATELLITE NOTE in the contact context: a cross-house run scenario was detected but no address is on file. Your next question should be asking for the address so you can pull up the aerial view. Natural phrasing: "What's your address? I can pull up the satellite view and get you a rough idea of how far the wire needs to run."
+
+When you see SATELLITE ESTIMATE in the contact context: the system already pulled the aerial view and estimated the run. Use it naturally:
+- "I pulled up the satellite view of your address — based on the house footprint, I'm estimating around [X] feet of wire. Does that sound about right to you?"
+- Always ask the customer to confirm. They know their house better than a satellite photo.
+- If they say it's off, trust their number. The satellite estimate is a starting point, not gospel.
+- If confidence is "low," be looser: "It's hard to tell exactly from the aerial view but I'm thinking somewhere around [X–Y] feet. Does that match what you'd expect?"
+- Round to the nearest 5 feet when talking to the customer.
+- Never say "satellite" in a way that sounds corporate or weird. "I pulled up the aerial view of your address" or "I looked it up on maps" both work fine.
+
+═══ TWO TYPES OF ESCALATION — USE THE RIGHT ONE ═══
+
+TYPE 1: FLAG_FOR_KEY (soft flag — you keep going)
+Use when: a single question or detail is uncertain, but the overall conversation can continue. You don't need to stop — just flag the specific thing for Key and keep helping.
+Output the token FLAG_FOR_KEY on its own line, then continue your response naturally.
+Customer-facing: don't make it a big deal. Weave it in: "I want to make sure Key confirms that specific piece — I'll shoot him a note. In the meantime let me keep moving..." or "That's a detail I want Key to verify — flagging it for him now."
+Key gets a short internal text with what to confirm, then you keep the conversation going.
+Use for: one-off technical questions you're unsure about, minor panel details you can't confirm from a photo, anything that needs a quick confirmation but doesn't block everything.
+
+TYPE 2: HANDOFF (full handoff — Key takes over)
+Use only when: the situation is too complex or unknown to continue safely — Federal Pacific/Zinsco panels, MLO panels with no clear disconnect, double panels where you can't tell what's what, installs that may be outside scope, anything that requires Key to assess before ANY further quoting.
+Output the token HANDOFF on its own line before your message.
+Customer-facing message must ALWAYS:
+1. Be warm and reassuring — not a dead end
+2. Acknowledge Alex is the AI assistant (if not established): "Just so you know, I'm the AI assistant that helps Key manage his quotes."
+3. Tell them Key will reach out personally: "I've flagged this for him and he'll reach out directly — usually within a few hours."
+Example: "Just so you know, I'm the AI assistant for Backup Power Pro. I've flagged your setup for Key and he'll reach out to you directly — usually within a few hours. You're in good hands."
+After a HANDOFF, do NOT keep asking intake questions. The conversation is handing off.
+NEVER use HANDOFF just because you're slightly uncertain. FLAG_FOR_KEY first unless it truly blocks the install assessment.
+
+═══ GAS APPLIANCES — UPSTATE SC CONTEXT ═══
+Many homes in Greenville and Upstate SC have gas appliances — gas stoves, gas water heaters, gas dryers, and gas furnaces. This is important for load calculations and is actually GOOD NEWS for the customer.
+
+KEY FACTS ALEX MUST KNOW:
+- Gas appliances still require electricity for ignition, control boards, displays, and (for furnaces) blower motors — but they draw much less wattage than their electric equivalents
+- A gas furnace uses ~600-800W (just the blower) vs. an electric heat strip at 10,000-15,000W
+- A gas water heater uses ~3W (just the thermostat) vs. electric at 4,500W
+- A gas dryer uses ~300-400W (just the motor and controls) vs. electric at 5,000W
+- A gas stove/range uses ~60W (just the clock and igniter) vs. electric at 3,000-5,000W
+- This means a customer with mostly gas appliances can power significantly more of their home from a given generator size
+
+HOW TO USE THIS IN CONVERSATION:
+- If a customer mentions they have gas appliances, acknowledge it as a GOOD thing: "That's actually great news — gas appliances use a fraction of the wattage compared to electric, so your generator goes a lot further."
+- If they're worried their generator isn't big enough, ask if they have gas appliances before saying it's underpowered
+- NEVER promise it will run the AC (separate rule) but you can be positive about gas appliances reducing their overall load
+- Common scenario: "We have a gas stove and water heater." → "With gas appliances, your generator's doing a lot less heavy lifting. You'll be in good shape for lights, outlets, the fridge, and keeping those gas appliances running too."
+
+IMPORTANT: Gas appliances still need to be on the generator connection to function during an outage — the gas flows, but the electronic controls, igniters, and blower motors need power. Our install connects them through the panel, so they're covered.
+
 ═══ PRICING GUIDE ═══
 Standard 30A: $1,197 | Standard 50A: $1,497
 Run over 5ft: +$8/ft (30A) or +$10/ft (50A). Use estimated run after applying vertical buffer.
@@ -373,7 +454,7 @@ Good transition flow:
 3. Then ease into the price — anchor against standby cost if you haven't already
 4. Then send the link
 
-Example: "Okay, so based on everything — [generator], [panel situation], [run estimate] — you're in great shape for a standard connection. Everything's included: the cord, inlet box, permit, inspection, and we clean up when we're done. Most people are surprised it's a one-day job. A standby system would run $15,000+, but a properly wired portable connection gets you the same result for a fraction of that. Here's your quote: [PROPOSAL_LINK]"
+Example: "Okay, so based on everything — [generator], [panel situation], [run estimate] — you're in great shape for a standard connection. Everything's included: the cord, inlet box, permit, inspection, and we clean up when we're done. Most people are surprised it's a one-day job. A standby system starts at $12,000–$15,000 and goes up from there — this gets you real backup power for a fraction of that cost. Here's your quote: [PROPOSAL_LINK]"
 
 The exact words don't matter — what matters is it feels like a natural human handoff, not a form output. Read the conversation energy. If they've been chatty, be a little warmer. If they've been short and direct, keep it tighter. But always build into it — never just drop the link.
 
@@ -598,6 +679,70 @@ If asked about running central AC: "It depends on your generator size and AC siz
 Never promise AC will work without a soft start. But don't say it won't work either — it depends.
 
 OUTPUT FORMAT: Output only the text to send as SMS. No markdown, no labels, no quotes around the message. If triggering PROPOSAL, UPDATE_CONTACT, INSTALL_NOTES, or HANDOFF, put those tokens on their own lines before your message text.`
+
+// ── SATELLITE RUN ESTIMATOR ──────────────────────────────────────────────────
+// Uses MapBox geocoding + satellite imagery + Claude vision to estimate
+// the wire run distance when panel and generator are at opposite ends of the house.
+async function estimateRunFromSatellite(
+  address: string,
+  openrouterKey: string
+): Promise<{ feet: number; confidence: 'low' | 'medium' | 'high' } | null> {
+  try {
+    // 1. Geocode address → lat/lng via MapBox
+    const geoRes = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&limit=1&country=US`
+    )
+    const geoData = await geoRes.json()
+    const feature = geoData?.features?.[0]
+    if (!feature) return null
+    const [lng, lat] = feature.center
+
+    // 2. Fetch satellite image at zoom 19 (very close — ~0.3 ft/pixel at this latitude)
+    const imgUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lng},${lat},19,0/600x400?access_token=${MAPBOX_TOKEN}`
+
+    // 3. Ask Claude to estimate house depth from satellite view
+    const visionRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${openrouterKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'anthropic/claude-sonnet-4-5',
+        max_tokens: 60,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: { url: imgUrl },
+              },
+              {
+                type: 'text',
+                text: `This is a satellite aerial view of a residential property in Upstate SC. The zoom level is 19 (roughly 0.25–0.35 feet per pixel at this latitude).
+
+Estimate the depth of the main house structure in feet — measuring from the FRONT of the house (street side) straight back to the REAR of the house. Do NOT include detached structures, decks, or yard space. Just the main building footprint depth.
+
+Round to the nearest 5 feet. Reply with ONLY a number and a confidence level like this:
+45 medium
+
+Confidence levels: low (unclear image/structure), medium (can see the house footprint reasonably well), high (very clear footprint visible).`,
+              },
+            ],
+          },
+        ],
+      }),
+    })
+    const visionData = await visionRes.json()
+    const raw = visionData?.choices?.[0]?.message?.content?.trim() || ''
+    const match = raw.match(/(\d+)\s*(low|medium|high)?/i)
+    if (!match) return null
+    const feet = parseInt(match[1])
+    const confidence = (match[2]?.toLowerCase() as 'low' | 'medium' | 'high') || 'medium'
+    if (feet < 15 || feet > 120) return null // sanity check
+    return { feet, confidence }
+  } catch (_) {
+    return null
+  }
+}
 
 const RETEST_TOKEN = 'bpp-retest-2026'
 
@@ -998,7 +1143,50 @@ Notes: ${contact.notes || 'None'}${handoffContext}`
     }
   }
 
-  const fullSystemPrompt = BASE_SYSTEM_PROMPT + botNotesSection + outcomesSection + contactContext + generatorSearchSection
+  // ── SATELLITE RUN ESTIMATE (panel and inlet on different sides of the house) ──
+  // Triggers any time the conversation suggests the panel and generator/inlet are
+  // on different sides of the house — not just the specific deck/garage combo.
+  let satelliteNote = ''
+  const recentTexts = (history || []).slice(-8).map((m: any) => (m.body || '').toLowerCase()).join(' ')
+
+  // Locations where the PANEL might be mentioned
+  const panelSideWords = /panel\s*(is\s*)?(in|on|at|inside)?\s*(the\s*)?(front|back|rear|side|left|right|north|south|east|west|garage|basement|utility|laundry|carport|breezeway)/i
+  // Locations where the GENERATOR / INLET might go
+  const genSideWords   = /(generator|inlet|plug|cord|hookup)\s*(goes?|go|on|at|by|near|behind|beside|in|to)?\s*(the\s*)?(front|back|rear|side|left|right|north|south|east|west|deck|porch|yard|patio|driveway|carport|garage|basement|shed|corner)/i
+  // Explicit "other side" / "opposite side" language
+  const oppositeSide   = /other\s*side|opposite\s*side|across\s*(the\s*)?(house|building|from)|far\s*(side|end)|different\s*side|runs?\s*(all\s*the\s*way\s*)?(across|around|through|over|under)/i
+  // Two different cardinal/location directions mentioned together (e.g. "front ... back", "garage ... backyard")
+  const crossHouse     = /(front|garage|driveway).{1,80}(back|rear|deck|porch|yard|patio)|(back|rear|deck|porch|yard).{1,80}(front|garage|driveway)|(north|east).{1,80}(south|west)|(south|west).{1,80}(north|east)/i
+
+  const looksLikeLongCrossRun = (
+    panelSideWords.test(recentTexts) ||
+    genSideWords.test(recentTexts) ||
+    oppositeSide.test(recentTexts) ||
+    crossHouse.test(recentTexts)
+  )
+
+  // Try to use address from contact — or extract from the current inbound message
+  // (customer may have just replied with their address this very message)
+  const streetAddressPattern = /\d+\s+\w[\w\s]+(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|ct|court|way|pl|place|cir|circle|hwy|highway)[\w\s,]*/i
+  const addressFromMessage = streetAddressPattern.exec(messageText)?.[0]?.trim()
+  const effectiveAddress = (contact.address || '').trim() || addressFromMessage || ''
+
+  if (looksLikeLongCrossRun) {
+    if (effectiveAddress) {
+      // We have an address — pull the satellite estimate
+      const sat = await estimateRunFromSatellite(effectiveAddress, OPENROUTER_API_KEY)
+      if (sat) {
+        // Add vertical buffer (up/over the roofline or down through a wall) — typically 8–12 ft
+        const totalEst = sat.feet + 10
+        satelliteNote = `\n\nSATELLITE ESTIMATE: Aerial view of ${effectiveAddress} shows the house is approximately ${sat.feet} ft deep. Estimated total wire run (including vertical routing) is ~${totalEst} ft (confidence: ${sat.confidence}). Tell the customer the estimate and ask them to confirm — they know their house better than a satellite photo.`
+      }
+    } else {
+      // No address yet — flag it so Alex knows to ask
+      satelliteNote = `\n\nSATELLITE NOTE: Cross-house run detected but no address on file. Ask for the customer's address so you can pull up the satellite view and estimate the run distance. Natural phrasing: "What's your address? I can pull up the aerial view of your property and get you a rough estimate of the wire run." Ask for the address as your next question.`
+    }
+  }
+
+  const fullSystemPrompt = BASE_SYSTEM_PROMPT + botNotesSection + outcomesSection + contactContext + satelliteNote + generatorSearchSection
 
   // ── CALL CLAUDE VIA OPENROUTER ────────────────────────────────────────────
   const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -1078,6 +1266,31 @@ Notes: ${contact.notes || 'None'}${handoffContext}`
     } catch (_) { /* non-fatal */ }
   }
 
+  // ── FLAG_FOR_KEY token — soft flag, Alex keeps talking ─────────────────────
+  if (rawResponse.includes('FLAG_FOR_KEY')) {
+    smsText = smsText.replace(/FLAG_FOR_KEY\n?/g, '').trim()
+    const ts = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
+    // Log to contact notes
+    await supabase.from('contacts').update({
+      notes: (contact.notes || '') + `\n[🚩 FLAG ${ts}]`,
+    }).eq('id', contact.id)
+    // Text Key a quick heads-up from the internal number — Alex keeps going
+    try {
+      const flagSnippet = (history || []).slice(-3)
+        .map((m: any) => `${m.direction === 'inbound' ? 'Customer' : 'Alex'}: ${(m.body || '').slice(0, 100)}`)
+        .join('\n')
+      await fetch('https://api.openphone.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+        body: JSON.stringify({
+          from: QUO_INTERNAL_PHONE_ID,
+          to: [KEY_PHONE],
+          content: `🚩 FLAG — ${contact.name || fromPhone}\nAlex flagged a detail that needs your confirmation. Alex is still talking to them.\nPhone: ${fromPhone}\n\nRecent context:\n${flagSnippet}`,
+        }),
+      })
+    } catch (_) { /* non-fatal */ }
+  }
+
   if (rawResponse.includes('HANDOFF')) {
     doHandoff = true
     smsText = rawResponse.replace(/HANDOFF\n?/g, '').trim()
@@ -1108,13 +1321,14 @@ Notes: ${contact.notes || 'None'}${handoffContext}`
       const summaryData = await summaryRes.json()
       const summaryText = summaryData.choices?.[0]?.message?.content?.trim()
       if (summaryText) {
+        // Text Key from the internal number (864-863-7155) so it's clearly an internal notification
         await fetch('https://api.openphone.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
           body: JSON.stringify({
-            from: QUO_PHONE_ID,
-            to: ['+19414417996'],
-            content: `⚠️ HANDOFF — ${contact.name || fromPhone}\n${summaryText}\nPhone: ${fromPhone}`,
+            from: QUO_INTERNAL_PHONE_ID,
+            to: [KEY_PHONE],
+            content: `⚠️ HANDOFF — ${contact.name || fromPhone}\n${summaryText}\nPhone: ${fromPhone}\nReply from your BPP number (864-400-5302).`,
           }),
         })
       }
