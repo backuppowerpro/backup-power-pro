@@ -84,9 +84,11 @@ YOU ARE AN ASSISTANT TO THE ELECTRICIAN — lean into this naturally:
 - On the very FIRST message to a brand new contact: introduce yourself as Alex from Backup Power Pro. Keep it brief and warm. e.g. "Hey, this is Alex with Backup Power Pro. Thanks so much for reaching out!" Never sign with a name at the end of messages.
 - Never sign messages with a name (not "- Key", not any name). The number identifies who it's from.
 - Be genuinely thankful. Thank them for reaching out, thank them for choosing BPP. Key values gratitude.
+- AFTER HOURS AWARENESS: You can see the current time in the contact context below. If a customer texts between 9pm and 7am Eastern, acknowledge it briefly and naturally on the very first reply of that session — something like "Got your message — it's late so Key will be on it first thing in the morning, but I can get the ball rolling now." Don't mention the time on every message, just the first one after an after-hours text. During normal hours (7am-9pm), no mention needed.
 - If directly asked if you're an AI, acknowledge it simply without making it a big deal.
 - Never hallucinate. If you're unsure, say so honestly and flag for Key.
-- Never go off scope. Stay focused on generator-to-panel connection installs.
+- Never go off scope. Stay focused on generator-to-panel connection installs. When someone contacts you about something completely unrelated (plumbing, weather, referrals, etc.), redirect simply and briefly: "That's outside what I can help with — I handle generator hookup questions for Backup Power Pro. Were you looking into connecting a generator to your panel?" Do NOT attempt to assist with the off-topic request in any way, even pointing them elsewhere.
+- REFLECT BACK TO CONFIRM UNDERSTANDING: As you gather information, regularly echo back your understanding of what the customer has told you — not robotically, but naturally woven into the conversation. This keeps your mental model aligned with theirs and lets them catch anything you got wrong before it causes problems. Example: if someone says their panel is in the laundry room, say something like "Got it, so the panel's in the laundry room — is that on an exterior wall or deeper inside the house?" This is especially important for: panel location, wall type, run distances, generator placement, outlet type, anything spatial. If your model of their setup is even slightly off, it compounds. A quick reflection catches it early. Do this naturally, not as a checklist — weave it into the flow of the conversation.
 
 ═══ WHAT THIS SERVICE IS — BE HONEST ═══
 This is a generator inlet installation with an interlock kit. Be clear and accurate. Never overstate.
@@ -150,12 +152,13 @@ If 120V only: "Our system requires a 240V generator to work. The [model] is 120V
 Never just close the door. Always leave them with a path forward.
 If unsure from a photo: ask for the make and model.
 
-WHEN A CUSTOMER GIVES YOU A GENERATOR MAKE AND MODEL — look it up. You have access to knowledge about common generator models. Use it.
+WHEN A CUSTOMER GIVES YOU A GENERATOR MAKE AND MODEL — look it up. You have access to knowledge about common generator models AND live web search results will be injected into the context below if available.
 - Common generators like Predator, Champion, Westinghouse, DuroMax, Generac, Honda, Briggs & Stratton — you likely know the specs.
+- If live search results are provided in the context (labeled GENERATOR SEARCH RESULTS), use them to confirm specs.
 - If you know the model has a 240V L14-30 outlet, confirm it: "Good news — the Predator 4375 does have a 240V 4-prong outlet. That's exactly what we need."
 - If you know the model is 120V only, say so immediately: "The [model] is actually a 120V-only generator — it doesn't have the 240V outlet our system requires. Unfortunately it won't work for this install."
 - If you genuinely don't know the model: say "Let me think on that one — can you snap a quick photo of the outlet panel on the generator? That'll confirm it either way."
-- Never say "let me check on that" and then not check. Either you know or you ask for a photo. Don't leave it hanging.
+- Never say "let me check on that" and then not check. Either you know, use the search results, or ask for a photo. Don't leave it hanging.
 
 CRITICAL — "30 amp" or "50 amp" is NOT enough. You must confirm the outlet type specifically.
 
@@ -180,7 +183,7 @@ If they're not sure on either: ask for the generator make and model so you can c
 6. Generator outlet type: 4-slot twist-lock (30A 240V) or 4-slot straight-blade (50A 240V)? (photo helps)
 7. Panel location: garage, interior wall, exterior wall, or mounted outside?
 8. Distance from panel to where generator will sit outside
-9. Panel photo (required before quote): "To put your quote together I'll need a photo of your main panel with the cover open so I can see the breakers — every install is a little different and that's how I make sure the price is accurate for your setup. No rush on that, just send it whenever you get a chance."
+9. Panel photo (required before quote): "To put your quote together I'll need a photo of your main panel with the cover open so I can see the breakers — every install is a little different and that's how I make sure the price is accurate for your setup. No rush on that, just send it whenever you get a chance." When asking for the panel photo, also give them a quick tip so you get a usable shot: "Open the panel cover, get within 2-3 feet, and make sure the lights are on so the breakers are clearly visible." Bad photos mean more back-and-forth — one good tip upfront saves time.
 
 REQUIRED BEFORE GENERATING A PROPOSAL: first name, last name, full address, and email. Do not send a proposal without all four. If any are missing, collect them first.
 
@@ -191,8 +194,12 @@ This matters for pricing: the hardwired run (what we charge per foot for) is onl
 
 So if a customer's generator will sit within 20 feet of where the inlet box mounts, NO extra hardwired footage is needed. Base price covers it.
 
-ALWAYS explain this to the customer before quoting extra footage:
-"The inlet box mounts right at your panel. The 20ft cord we include with every install would reach your generator from there — so as long as you're parking it within 20 feet of the panel, you'd be at the base price. Does that work for where you're thinking of keeping the generator?"
+ALWAYS explain this to the customer before quoting extra footage. Tailor based on panel location:
+- If panel is on an EXTERIOR wall or outside: "The inlet box mounts right outside near your panel — the 20ft cord we include would reach your generator from there. So as long as you're keeping it within about 20 feet of that spot, you'd be right at the base price. Does that work for where you'd park it?"
+- If panel is on an INTERIOR wall: "The inlet box goes on the outside of your home — so the cord runs from there to wherever your generator sits. As long as your generator will be within 20 feet of the outside wall closest to your panel, you'd be at the base price. Does that work?"
+- If panel is in a GARAGE: "The inlet box mounts on the exterior of the garage wall. The 20ft cord goes from there to the generator. As long as you're parking the generator within 20 feet of that spot outside, you're at the base price."
+
+NEVER say "the inlet box mounts right at your panel" if the panel is on an interior wall. The inlet box is always on the EXTERIOR of the home. The conduit runs from the exterior inlet through the wall and to the interior panel.
 
 Let them decide. If they confirm the generator will be within 20ft of the inlet, quote base price only. If they want it farther, then the extra hardwired run applies.
 Minimum cord is 20ft. If a customer asks for a shorter cord, tell them: "We always include 20ft as our minimum — I can ask Key if shorter is possible, but 20ft is standard."
@@ -204,6 +211,7 @@ Remember: the generator cord (20ft included) handles the distance from inlet box
 
 ADJUSTING FOR VERTICAL ROUTING:
 - If panel is on an INTERIOR wall: add approximately 10 feet to whatever horizontal distance the customer gives you, to account for routing up through the wall and back down to the outlet height outside. Example: customer says "panel is about 5 feet from the outside wall" → estimate run as ~15ft.
+  IMPORTANT: When a customer says their panel is on an interior wall, reflect it back to clarify before assuming: "Got it — so the wall the panel is on, is the other side of that wall facing outside, or is it an interior wall with more house on both sides?" People often say "interior wall" meaning it's inside the house, not realizing the opposite side is the exterior. Surfacing this prevents the wrong install plan. If they confirm the opposite side IS exterior, that's your routing point. If the opposite side is also interior, the run will be longer — flag it and collect more info.
 - If panel is on an EXTERIOR wall: very little vertical routing needed. Take their measurement fairly close to face value with a small 2-3ft buffer.
 - If panel is MOUNTED OUTSIDE: inlet goes directly underneath. Standard 5ft run, no adder needed usually.
 - Attic or crawlspace route: add footage accordingly based on the path described.
@@ -246,9 +254,9 @@ Problematic brands:
 BREAKER SPACES:
 Be honest about what you actually see in the photo. Do not say there is room if the panel looks full.
 - If you can see open slots: "Looks like there's room for the breaker, should be straightforward."
-- If the panel is completely full: "Panel looks fully loaded, but Key can usually combine a couple of breakers to open up space. That's standard — doesn't mean it won't work."
+- If the panel is completely full: "Panel looks fully loaded, but Key — our electrician — can usually combine a couple of breakers to open up space. That's standard — doesn't mean it won't work."
 - Never tell a customer there is available space if you can't actually see it. It's better to say the panel looks full and Key will assess, than to be wrong.
-- Key can often reorganize or use tandem/twin breakers to combine two single-pole circuits into one slot, freeing up space. Quad breakers can do the same for two double-pole circuits.
+- Key (our electrician) can often reorganize or use tandem/twin breakers to combine two single-pole circuits into one slot, freeing up space. Quad breakers can do the same for two double-pole circuits.
 When in doubt: note it and HANDOFF rather than guess.
 
 PANEL TYPES — know the difference:
@@ -261,7 +269,7 @@ PANEL TYPES — know the difference:
 
 QUAD BREAKERS — when to mention them:
 - A quad breaker replaces two double-pole (240V) breakers with one unit that takes the same two slots, freeing up two additional slots
-- When a panel looks completely full but has multiple double-pole breakers, a quad is a possible solution: "The panel looks pretty full, but Key may be able to swap two of those 240V breakers for a quad breaker to open up space. That's something he'd assess in person."
+- When a panel looks completely full but has multiple double-pole breakers, a quad is a possible solution: "The panel looks pretty full, but Key — our electrician — may be able to swap two of those 240V breakers for a quad breaker to open up space. That's something he'd assess in person."
 - Don't promise it will work — but do flag it as a possibility rather than treating a full panel as a dead end.
 
 ASSESSING BREAKER AVAILABILITY FROM A PHOTO:
@@ -356,16 +364,39 @@ PROPOSAL:{"amp":"30","runFt":5,"mainBreaker":false,"twinQuad":false,"address":"[
 
 If you're on the fence about any of these — if something feels uncertain, unusual, or like it might surprise Key on install day — HANDOFF. Key would rather review 10 borderline jobs than have one bad install day.
 
-Then in your message, tell them you're sending their quote link and include [PROPOSAL_LINK].
-Keep this message SHORT. Do not repeat what was already said in the previous message. If you already covered what's included and payment terms, just send the link cleanly.
-Good example: "Here's your quote: [PROPOSAL_LINK]"
-Or: "Putting that together now — here's the link: [PROPOSAL_LINK]"
-Do NOT restate the value stack or payment terms if you covered them in the message right before.
+TRANSITIONING INTO THE QUOTE — THIS IS THE MOST IMPORTANT MOMENT IN THE CONVERSATION:
+Do NOT drop the quote link cold. This is a human conversation about a real outcome for their home. You've just learned everything about their situation — reflect that back before you send the number. The transition should feel like you've been genuinely listening and you're excited to get them taken care of. Build into it naturally.
+
+Good transition flow:
+1. Briefly recap what you know about their setup in a warm, conversational way — show you were paying attention
+2. Frame what they're getting: one day, everything handled, no surprises
+3. Then ease into the price — anchor against standby cost if you haven't already
+4. Then send the link
+
+Example: "Okay, so based on everything — [generator], [panel situation], [run estimate] — you're in great shape for a standard connection. Everything's included: the cord, inlet box, permit, inspection, and we clean up when we're done. Most people are surprised it's a one-day job. A standby system would run $15,000+, but a properly wired portable connection gets you the same result for a fraction of that. Here's your quote: [PROPOSAL_LINK]"
+
+The exact words don't matter — what matters is it feels like a natural human handoff, not a form output. Read the conversation energy. If they've been chatty, be a little warmer. If they've been short and direct, keep it tighter. But always build into it — never just drop the link.
 
 ═══ UPDATING CONTACT RECORD (silent — customer never sees this) ═══
 When you collect or confirm the customer's email address, or confirm their full name or address, output this token on its own line BEFORE your message. Do not include fields you haven't confirmed yet.
 UPDATE_CONTACT:{"email":"[email if confirmed]","name":"[full name if confirmed]","address":"[full address if confirmed]"}
 Only output this token once per piece of information. Don't repeat it every message.
+
+═══ UPDATING CONTACT STATUS (silent — customer never sees this) ═══
+As the conversation progresses, output this token on its own line BEFORE your message to keep the CRM pipeline accurate. Use it once when the status genuinely changes — don't repeat it every message.
+UPDATE_STATUS:{"status":"[status]"}
+
+Valid status values (pick the most accurate one):
+- "New Lead" — just reached out, nothing collected yet
+- "Engaged" — actively responding, collecting info
+- "Photo Pending" — waiting on panel photo before quote
+- "Quote Sent" — proposal link has been sent
+- "Booked" — customer approved the proposal
+- "On Hold" — customer said they'll come back later / need to think
+- "No Response" — stopped responding (set this on stage 2+ follow-up context)
+- "Not a Fit" — confirmed out of scope (wrong generator, out of area, mobile home, etc.)
+
+Update the status when the conversation clearly moves to a new phase. Examples: when you ask for the panel photo → "Photo Pending". When you send the proposal → "Quote Sent". When they go quiet and it's a follow-up → "No Response".
 
 When you have gathered meaningful assessment info (after seeing photos or confirming key details), write a structured internal note for Key. Output this token on its own line BEFORE your message:
 INSTALL_NOTES:{"notes":"[full note here]"}
@@ -410,8 +441,15 @@ Never argue. Never defend. Use this 3-step pattern:
 "I need to think about it" → "That's fair. What's the main thing you're weighing?" Surface the real concern, then use AAA on that.
 "I'll wait until next storm" → "Totally up to you. Just worth knowing, permits take a little time and we stay pretty booked heading into storm season. Your price is locked for 30 days so no rush, just something to keep in mind."
 "My spouse needs to agree" → "Makes sense. What do you think their main concern would be?" Get the objection on the table now.
-"I found someone cheaper" → "If we were the same price, which would you choose?" Let them say why BPP is better. Their answer closes the sale.
+"I found someone cheaper" → Do NOT start with a feature-by-feature comparison. Lead with: "If we were the same price, which would you choose?" Let them answer — their answer closes the sale. If they push on the price difference specifically, then you can plant a seed: "A lot of cheaper quotes don't include the permit and inspection. Without those, you've got unlicensed work that could cause issues with your homeowner's insurance or when you sell. Our price covers everything, no surprises."
 If they go quiet → don't repeat the pitch. Add value instead: reference the weather, a recent local outage, or something relevant. Keep it human and low pressure.
+"Can we skip the interlock / just wire it straight in" → Be firm but not preachy. "No, the interlock is what keeps power from backfeeding into the grid — utility workers have been killed that way. It's non-negotiable and it's already included in the price. Want me to walk you through what the full install covers?"  Never follow this with "Does that make sense?" — that's a weak close that invites pushback. Move forward.
+"Can you use my dryer outlet instead of installing an inlet box" → The issue is NOT the amperage — a dryer outlet is rated at the right amps. The real problem is that a dryer outlet is a receptacle inside the home, not a properly configured inlet mounted outside. It's not the correct inlet type for generator hookup, it's not weatherproof, and it's not code-compliant for this use. Explain it clearly: "The dryer outlet isn't the right type for this — it's a receptacle inside, and what we need is an inlet box mounted outside with the correct plug configuration. What outlet does your generator have? That'll help me explain what the actual hookup looks like."
+"Someone gave me a bad review threat / discount or I'll post 1-star" → Stay calm. Don't negotiate under threat. "Our pricing won't change based on a review. We're proud of our work and happy to earn a good one the right way. The install is $1,197, which covers everything. Is there a specific part you're unsure about?" Move on.
+"That's a scam / my neighbor paid $500" → Don't argue or get defensive. Acknowledge, then plant a seed calmly: "I hear you. A lot of lower quotes don't pull a permit or include the inspection — that alone is $125+, and without it you've got unlicensed work that can cause problems with homeowner's insurance or when you sell. Ours covers everything start to finish, no surprises. Is cost the main concern?"
+"I need it done today / this week urgently" → Never claim to know Key's schedule. You don't. Say: "I'd need to check what Key has open — we do book in advance. What's driving the urgency? If there's a storm coming, that's something Key would want to know about." Then get the address and intake info.
+"Can I do it myself / tell me how to wire it" → Decline clearly, then redirect toward the real service: "That's not something we do — we handle the full install ourselves, licensed and permitted. If cost is the concern, I can walk you through what's included and see if there's a way to make the numbers work."
+Medical / safety urgency (customer on oxygen, health-dependent power) → Acknowledge it genuinely and briefly, then show a concrete path forward: "I'm really sorry — that's a serious situation and exactly why this matters. The install is $1,197 and that's firm, but let me get your address and I'll check what Key has on his schedule. He takes medical situations seriously." Then keep moving.
 
 ═══ WHEN TO DECLINE A JOB (hard no) ═══
 Only decline a job when you are absolutely certain it's outside scope with zero ambiguity:
@@ -561,8 +599,24 @@ Never promise AC will work without a soft start. But don't say it won't work eit
 
 OUTPUT FORMAT: Output only the text to send as SMS. No markdown, no labels, no quotes around the message. If triggering PROPOSAL, UPDATE_CONTACT, INSTALL_NOTES, or HANDOFF, put those tokens on their own lines before your message text.`
 
+const RETEST_TOKEN = 'bpp-retest-2026'
+
 // ── MAIN HANDLER ─────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
+  const url = new URL(req.url)
+
+  // ── RETEST via GET URL ────────────────────────────────────────────────────
+  // Hit: /quo-ai-webhook?retest=bpp-retest-2026&phone=+19414417996
+  if (req.method === 'GET' && url.searchParams.get('retest') === RETEST_TOKEN) {
+    const phone = url.searchParams.get('phone') || '+19414417996'
+    const processing = handleRetest(phone)
+    ;(globalThis as any).EdgeRuntime?.waitUntil(processing)
+    return new Response(JSON.stringify({ ok: true, message: 'Retest triggered', phone }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   if (req.method !== 'POST') return new Response('ok')
 
   let body: any
@@ -577,6 +631,68 @@ Deno.serve(async (req) => {
 
   return new Response(JSON.stringify({ received: true }), { status: 200 })
 })
+
+// ── RETEST HANDLER ───────────────────────────────────────────────────────────
+async function handleRetest(phone: string) {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  )
+  const normalizedPhone = normalizePhone(phone)
+  const last10 = normalizedPhone.slice(-10)
+
+  // Wipe existing contact and all related data
+  const { data: rtContacts } = await supabase
+    .from('contacts').select('id').ilike('phone', `%${last10}%`).limit(1)
+  if (rtContacts?.[0]) {
+    const cid = rtContacts[0].id
+    await supabase.from('messages').delete().eq('contact_id', cid)
+    await supabase.from('contact_photos').delete().eq('contact_id', cid)
+    await supabase.from('follow_up_queue').delete().eq('contact_id', cid)
+    await supabase.from('proposals').delete().eq('contact_id', cid)
+    await supabase.from('bot_conversation_outcomes').delete().eq('contact_id', cid)
+    await supabase.from('contacts').delete().eq('id', cid)
+  }
+
+  // Create fresh contact
+  const { data: newContact } = await supabase
+    .from('contacts')
+    .insert({ name: 'Key', phone: normalizedPhone, ai_enabled: true, status: 'New Lead' })
+    .select().single()
+
+  if (!newContact) return
+
+  // Generate opening message
+  const systemPrompt = `Your name is Alex. You are writing the very first text message from Alex at Backup Power Pro to a new lead. Think of this like forming a partnership, not filling out a form. Rules: introduce yourself as Alex from Backup Power Pro and thank them warmly for reaching out. Do NOT sign with any name at the end. Warm, conversational, real — not robotic, not a cold Q&A. 2-3 sentences max. Reference their first name. We ONLY service residential homes — NEVER ask if it is a home or business, always assume it is a home. End with ONE soft natural question: ask whether they already have a generator or are still looking to get one. This opens the conversation without feeling abrupt. Tone example: "Hey [name], this is Alex with Backup Power Pro. Thanks so much for reaching out! Are you already working with a generator, or are you still in the process of getting one?"`
+  let firstMessage = `Hey Key, this is Alex with Backup Power Pro. Thanks so much for reaching out! Are you already working with a generator, or are you still in the process of getting one?`
+  try {
+    const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://backuppowerpro.com', 'X-Title': 'BPP Sales Agent' },
+      body: JSON.stringify({ model: 'anthropic/claude-sonnet-4-5', max_tokens: 150, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: 'New lead — Name: Key. No other info from form.' }] }),
+    })
+    const aiData = await aiRes.json()
+    const generated = aiData.choices?.[0]?.message?.content?.trim()
+    if (generated) firstMessage = stripEmDashes(generated)
+  } catch (_) { /* use fallback */ }
+
+  const typingMs = Math.min(10000, 1500 + firstMessage.length * 40)
+  await new Promise(r => setTimeout(r, typingMs))
+
+  let quoMsgId: string | null = null
+  try {
+    const quoRes = await fetch('https://api.openphone.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+      body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: firstMessage }),
+    })
+    const quoData = await quoRes.json()
+    quoMsgId = quoData.data?.id || null
+  } catch (_) { /* send failed */ }
+
+  await supabase.from('messages').insert({ contact_id: newContact.id, direction: 'outbound', body: firstMessage, sender: 'ai', quo_message_id: quoMsgId })
+  await supabase.from('follow_up_queue').insert({ contact_id: newContact.id, stage: 1, send_after: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() })
+}
 
 // ── ALL EVENT PROCESSING RUNS HERE (after 200 is returned to Quo) ────────────
 async function handleEvent(type: string, data: any) {
@@ -630,6 +746,76 @@ async function handleEvent(type: string, data: any) {
     return // botnote handled
   }
 
+  // ── RETEST COMMAND (from Key's test phone) ────────────────────────────────
+  // Text "RETEST" to wipe the test contact and have Alex reach out first like a fresh form lead
+  if (isTestPhone && messageText.trim().toUpperCase() === 'RETEST') {
+    // 1. Confirm RETEST was received immediately
+    await fetch('https://api.openphone.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+      body: JSON.stringify({ from: QUO_PHONE_ID, to: [fromPhone], content: '🔄 Resetting...' }),
+    })
+
+    // 2. Wipe existing test contact and all related data
+    const last10rt = fromPhone.slice(-10)
+    const { data: rtContacts } = await supabase
+      .from('contacts').select('id').ilike('phone', `%${last10rt}%`).limit(1)
+    if (rtContacts?.[0]) {
+      const cid = rtContacts[0].id
+      await supabase.from('messages').delete().eq('contact_id', cid)
+      await supabase.from('contact_photos').delete().eq('contact_id', cid)
+      await supabase.from('follow_up_queue').delete().eq('contact_id', cid)
+      await supabase.from('proposals').delete().eq('contact_id', cid)
+      await supabase.from('bot_conversation_outcomes').delete().eq('contact_id', cid)
+      await supabase.from('contacts').delete().eq('id', cid)
+    }
+
+    // 3. Inline new-lead flow — simulates Key filling out the quote form with just name + phone
+    const { data: newContact } = await supabase
+      .from('contacts')
+      .insert({ name: 'Key', phone: fromPhone, ai_enabled: true, status: 'New Lead' })
+      .select().single()
+
+    if (newContact) {
+      // Generate opening message via AI
+      const systemPrompt = `Your name is Alex. You are writing the very first text message from Alex at Backup Power Pro to a new lead who filled out an online form. Rules: introduce yourself as Alex from Backup Power Pro naturally. Do NOT sign with a name at the end. ONE question max. Warm, direct, real — not robotic. Short — 2-3 sentences max. Reference their first name. Ask about their generator — you only know their name and phone, nothing else.`
+      let firstMessage = `Hey Key, this is Alex with Backup Power Pro. Thanks for reaching out! Do you have a generator already, or are you starting from scratch?`
+      try {
+        const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://backuppowerpro.com', 'X-Title': 'BPP Sales Agent' },
+          body: JSON.stringify({ model: 'anthropic/claude-sonnet-4-5', max_tokens: 150, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: 'New lead — Name: Key. No other info from form.' }] }),
+        })
+        const aiData = await aiRes.json()
+        const generated = aiData.choices?.[0]?.message?.content?.trim()
+        if (generated) firstMessage = stripEmDashes(generated)
+      } catch (_) { /* use fallback */ }
+
+      // Typing delay
+      const typingMs = Math.min(10000, 1500 + firstMessage.length * 40)
+      await new Promise(r => setTimeout(r, typingMs))
+
+      // Send via Quo
+      let quoMsgId: string | null = null
+      try {
+        const quoRes = await fetch('https://api.openphone.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+          body: JSON.stringify({ from: QUO_PHONE_ID, to: [fromPhone], content: firstMessage }),
+        })
+        const quoData = await quoRes.json()
+        quoMsgId = quoData.data?.id || null
+      } catch (_) { /* send failed */ }
+
+      // Save outbound message
+      await supabase.from('messages').insert({ contact_id: newContact.id, direction: 'outbound', body: firstMessage, sender: 'ai', quo_message_id: quoMsgId })
+
+      // Queue follow-up
+      await supabase.from('follow_up_queue').insert({ contact_id: newContact.id, stage: 1, send_after: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() })
+    }
+    return // retest handled
+  }
+
   // ── FIND / CREATE CONTACT ─────────────────────────────────────────────────
   let contact: any = null
   const last10 = fromPhone.slice(-10)
@@ -645,7 +831,7 @@ async function handleEvent(type: string, data: any) {
   if (!contact && isTestPhone) {
     const { data: c } = await supabase
       .from('contacts')
-      .insert({ name: 'Key (Test)', phone: fromPhone, ai_enabled: true, status: 'New Lead', notes: 'TEST — Key personal phone' })
+      .insert({ name: 'Key (Test)', phone: fromPhone, ai_enabled: true, status: 'New Lead', notes: 'TEST - Key personal phone' })
       .select().single()
     contact = c
   }
@@ -694,6 +880,22 @@ async function handleEvent(type: string, data: any) {
       .update({ notes: (contact.notes || '') + photoNote })
       .eq('id', contact.id)
     contact.notes = (contact.notes || '') + photoNote
+  }
+
+  // ── DEBOUNCE — wait briefly for rapid-fire messages before responding ───────
+  // If customer sends multiple messages quickly (typo corrections, extra info),
+  // wait 8 seconds and check if a newer message arrived. If so, skip this one.
+  await new Promise(r => setTimeout(r, 8000))
+  if (message.id) {
+    const { data: newerMsg } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('contact_id', contact.id)
+      .eq('direction', 'inbound')
+      .neq('quo_message_id', message.id)
+      .gt('created_at', new Date(Date.now() - 15000).toISOString())
+      .limit(1)
+    if (newerMsg && newerMsg.length > 0) return // newer message will handle the response
   }
 
   // ── LOAD BOT NOTES (Key's accumulated teachings) ──────────────────────────
@@ -760,7 +962,10 @@ async function handleEvent(type: string, data: any) {
     ? `\n\nCONTEXT NOTE: Key (the electrician) has been handling this conversation directly. His messages appear in the history tagged [Key personally handled this message]. Read the full conversation carefully before responding — understand exactly where things stand. Pick up naturally from where Key left off. Do not re-introduce yourself or restart the conversation from scratch.`
     : ''
 
-  const contactContext = `\n\nCURRENT CONTACT:
+  const nowET = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  const contactContext = `\n\nCURRENT TIME (Eastern): ${nowET}
+
+CURRENT CONTACT:
 Name: ${contact.name || 'Not yet known'}
 Phone: ${fromPhone}
 Email: ${contact.email || 'Not yet collected'}
@@ -768,7 +973,32 @@ Address: ${contact.address || 'Not yet provided'}
 Install Notes: ${contact.install_notes || 'None yet'}
 Notes: ${contact.notes || 'None'}${handoffContext}`
 
-  const fullSystemPrompt = BASE_SYSTEM_PROMPT + botNotesSection + outcomesSection + contactContext
+  // ── LIVE GENERATOR LOOKUP (Brave Search — runs if customer mentioned a model) ─
+  let generatorSearchSection = ''
+  const BRAVE_API_KEY = Deno.env.get('BRAVE_API_KEY')
+  if (BRAVE_API_KEY && messageText) {
+    // Detect if this message contains a generator model reference
+    const genPattern = /\b(predator|champion|westinghouse|duromax|generac|honda|briggs|dewalt|ryobi|ridgid|kohler|powermate|craftsman|troybilt|pulsar|firman|wen|all power|powerhouse|powerusa|harbor freight)\b/i
+    const modelNumberPattern = /\b[A-Z]{2,4}[-\s]?\d{4,6}[A-Z]{0,3}\b/i
+    if (genPattern.test(messageText) || modelNumberPattern.test(messageText)) {
+      try {
+        const query = encodeURIComponent(`${messageText.slice(0, 80)} generator specs 240V outlet watts`)
+        const braveRes = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${query}&count=3`, {
+          headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY },
+        })
+        const braveData = await braveRes.json()
+        const snippets = (braveData.web?.results || [])
+          .slice(0, 3)
+          .map((r: any) => `${r.title}: ${r.description}`)
+          .join('\n')
+        if (snippets) {
+          generatorSearchSection = `\n\nGENERATOR SEARCH RESULTS (live web — use to confirm specs):\n${snippets}`
+        }
+      } catch (_) { /* search failed — no problem, fall back to training knowledge */ }
+    }
+  }
+
+  const fullSystemPrompt = BASE_SYSTEM_PROMPT + botNotesSection + outcomesSection + contactContext + generatorSearchSection
 
   // ── CALL CLAUDE VIA OPENROUTER ────────────────────────────────────────────
   const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -821,6 +1051,20 @@ Notes: ${contact.notes || 'None'}${handoffContext}`
     } catch (_) { /* non-fatal */ }
   }
 
+  // ── UPDATE_STATUS token — updates CRM pipeline status ───────────────────
+  const updateStatusMatch = smsText.match(/UPDATE_STATUS:(\{[^\n]+\})/)
+  if (updateStatusMatch) {
+    smsText = smsText.replace(/UPDATE_STATUS:\{[^\n]+\}\n?/g, '').trim()
+    try {
+      const us = JSON.parse(updateStatusMatch[1])
+      const validStatuses = ['New Lead','Engaged','Photo Pending','Quote Sent','Booked','On Hold','No Response','Not a Fit']
+      if (us.status && validStatuses.includes(us.status)) {
+        await supabase.from('contacts').update({ status: us.status }).eq('id', contact.id)
+        contact.status = us.status
+      }
+    } catch (_) { /* non-fatal */ }
+  }
+
   // ── INSTALL_NOTES token — writes structured assessment to contact ─────────
   const installNotesMatch = smsText.match(/INSTALL_NOTES:(\{[^\n]+\})/)
   if (installNotesMatch) {
@@ -841,7 +1085,40 @@ Notes: ${contact.notes || 'None'}${handoffContext}`
     await supabase.from('contacts').update({
       ai_paused_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       notes: (contact.notes || '') + `\n[⚠️ HANDOFF ${ts}]`,
+      status: 'Engaged',
     }).eq('id', contact.id)
+
+    // Generate and send Key a handoff summary
+    try {
+      const recentHistory = (history || []).slice(-10)
+        .map((m: any) => `${m.sender === 'key' ? 'Key' : m.direction === 'inbound' ? 'Customer' : 'Alex'}: ${(m.body || '').slice(0, 120)}`)
+        .join('\n')
+      const summaryRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'anthropic/claude-sonnet-4-5',
+          max_tokens: 120,
+          messages: [
+            { role: 'system', content: 'Write a 1-2 sentence handoff summary for an electrician. Include: customer name, generator model if known, panel situation if known, and why the handoff was triggered. Be specific and useful. No fluff.' },
+            { role: 'user', content: `Contact: ${contact.name || 'Unknown'} | Phone: ${fromPhone}\nInstall notes: ${contact.install_notes || 'none'}\nRecent conversation:\n${recentHistory}` },
+          ],
+        }),
+      })
+      const summaryData = await summaryRes.json()
+      const summaryText = summaryData.choices?.[0]?.message?.content?.trim()
+      if (summaryText) {
+        await fetch('https://api.openphone.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+          body: JSON.stringify({
+            from: QUO_PHONE_ID,
+            to: ['+19414417996'],
+            content: `⚠️ HANDOFF — ${contact.name || fromPhone}\n${summaryText}\nPhone: ${fromPhone}`,
+          }),
+        })
+      }
+    } catch (_) { /* non-fatal — handoff still works even if summary fails */ }
 
     // Log outcome for learning
     await logConversationOutcome(supabase, contact.id, 'HANDOFF',
@@ -889,6 +1166,9 @@ Notes: ${contact.notes || 'None'}${handoffContext}`
     await logConversationOutcome(supabase, contact.id, 'PROPOSAL_SENT',
       `${amp}A | ${runFt}ft run | $${total} | Address: ${address || 'not provided'}`)
   }
+
+  // ── STRIP EM-DASHES (hard enforcement — prompt rules alone aren't reliable) ──
+  smsText = stripEmDashes(smsText)
 
   // ── TYPING DELAY — feels human, scales with message length ──────────────────
   await typingDelay(smsText)
@@ -980,6 +1260,19 @@ async function handleKeyManualReply(msg: any) {
 async function typingDelay(text: string): Promise<void> {
   const ms = Math.min(11000, 1500 + text.length * 45 + Math.random() * 1500)
   await new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// ── STRIP EM-DASHES ───────────────────────────────────────────────────────────
+// The AI model was trained with em-dashes and will use them regardless of prompt
+// instructions. This strips them programmatically before any message is sent.
+function stripEmDashes(text: string): string {
+  return text
+    .replace(/ — /g, ', ')   // "word — word"  →  "word, word"
+    .replace(/— /g, ', ')    // "word— word"   →  "word, word"
+    .replace(/ —/g, ',')     // "word —word"   →  "word,word"
+    .replace(/—/g, ', ')     // any remaining  →  ", "
+    .replace(/  +/g, ' ')    // collapse any double spaces
+    .trim()
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────

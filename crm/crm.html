@@ -2032,6 +2032,12 @@ async function confirmPayment() {
   await autoProgressStage(contactId, 9);
   showToast(method + ' payment of $' + amount.toLocaleString() + ' recorded — job complete!', 'success');
   renderPaymentDrill();
+  // Fire post-install review + referral text (non-blocking)
+  fetch(`${SUPABASE_URL}/functions/v1/quo-ai-review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify({ contactId }),
+  }).catch(() => {});
 }
 
 let _undoPayPending = null;
