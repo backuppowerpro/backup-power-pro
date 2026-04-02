@@ -439,19 +439,49 @@ function renderProposal() {
       </div>
     </div>
 
+    <!-- Install Photos Gallery -->
+    <div style="margin-bottom:16px">
+      <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:10px">Recent Installs &mdash; Greenville &amp; Upstate SC</div>
+      <div style="display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none">
+        <img src="img/install-full-setup.jpg" alt="Generator connected to home inlet box" loading="lazy"
+          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+        <img src="img/install-inlet-brick-1.jpg" alt="Generator inlet box installed on brick exterior" loading="lazy"
+          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+        <img src="img/install-inlet-siding.jpg" alt="Generator inlet box on vinyl siding" loading="lazy"
+          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+        <img src="img/install-inlet-interlock.jpg" alt="Inlet box and interlock kit installed on brick" loading="lazy"
+          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+        <img src="img/install-surge-protector.jpg" alt="Whole-home surge protector installed at panel" loading="lazy"
+          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+      </div>
+      <div style="text-align:center;font-size:10px;color:var(--text3);margin-top:6px">← Swipe to see more</div>
+    </div>
+
     <!-- Social Proof -->
     <div style="margin-bottom:16px">
+      <!-- Google rating badge -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">
+        <svg width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        <span style="font-size:14px;font-weight:700;color:var(--text)">4.9</span>
+        <span style="color:var(--gold);font-size:14px;letter-spacing:1px">★★★★★</span>
+        <span style="font-size:12px;color:var(--text3)">102 Google reviews</span>
+      </div>
       <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:10px">What Upstate SC Homeowners Are Saying</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="display:flex;flex-direction:column;gap:10px">
         <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
-          <div style="font-size:14px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
-          <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:8px">"Key had our generator hooked up in about 3 hours. Everything was permitted and passed inspection first try."</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text3)">Mike R. &mdash; Greenville, SC</div>
+          <div style="font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.55;margin-bottom:8px">"Key moved/wired several breakers, drilled through a brick wall, mounted a generator outlet and installed an interlock. He was very responsive, excellent communication and was very reasonable about an unexpected issue discovered while doing the job. The work was very professional and no mess left behind. Highly recommended."</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3)">Chris A. &mdash; Greenville, SC &nbsp;&middot;&nbsp; <span style="color:#4285F4">Google</span></div>
         </div>
         <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
-          <div style="font-size:14px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
-          <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:8px">"I was nervous about permits but they handled everything. Day of install was fast and our family finally feels prepared."</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text3)">Jennifer S. &mdash; Spartanburg, SC</div>
+          <div style="font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.55;margin-bottom:8px">"Key was courteous and on time. He installed a generator inlet for me and the work looks good and he cleaned up well. Key is a good communicator that runs a very well run little business."</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3)">Christopher C. &mdash; Greenville, SC &nbsp;&middot;&nbsp; <span style="color:#4285F4">Google</span></div>
+        </div>
+        <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
+          <div style="font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.55;margin-bottom:8px">"My experience with Key Electric was outstanding. From the moment we saw their advertising video on Facebook, to our first contact and all subsequent communications, their proposal and approval process, and their installation, Key Electric did a great job. The owner, Key Goodson, was very polite and courteous at all times, very personable, friendly and knowledgeable. I highly recommend Key Electric!"</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3)">Dwellion H. &mdash; Greenville, SC &nbsp;&middot;&nbsp; <span style="color:#4285F4">Google</span></div>
         </div>
       </div>
     </div>
