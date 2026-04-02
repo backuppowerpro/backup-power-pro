@@ -428,11 +428,18 @@ function renderProposal() {
                   <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Full evaluation of your main panel — catch issues before they become emergencies.</div>
                 </div>
               </div>
+              <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
+                <span style="color:var(--gold);font-size:14px;margin-top:1px;flex-shrink:0">📅</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">Priority Scheduling</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Move to the front of the line — your install gets scheduled first.</div>
+                </div>
+              </div>
             </div>
           </div>
           <!-- price -->
           <div style="text-align:right;flex-shrink:0;padding-top:2px">
-            <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">+$${P.pom_price||447}</div>
+            <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">+$447</div>
             <div style="font-size:10px;color:rgba(255,255,255,.45);font-weight:600;margin-top:1px">one-time</div>
           </div>
         </div>
@@ -442,19 +449,16 @@ function renderProposal() {
     <!-- Install Photos Gallery -->
     <div style="margin-bottom:16px">
       <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:10px">Recent Installs &mdash; Greenville &amp; Upstate SC</div>
-      <div style="display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none">
-        <img src="img/install-full-setup.jpg" alt="Generator connected to home inlet box" loading="lazy"
-          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <img src="img/install-inlet-brick-1.jpg" alt="Generator inlet box installed on brick exterior" loading="lazy"
-          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+          style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)">
         <img src="img/install-inlet-siding.jpg" alt="Generator inlet box on vinyl siding" loading="lazy"
-          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
-        <img src="img/install-inlet-interlock.jpg" alt="Inlet box and interlock kit installed on brick" loading="lazy"
-          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+          style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)">
         <img src="img/install-surge-protector.jpg" alt="Whole-home surge protector installed at panel" loading="lazy"
-          style="width:220px;height:160px;object-fit:cover;border-radius:10px;flex-shrink:0;scroll-snap-align:start;border:1.5px solid var(--border)">
+          style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)">
+        <img src="img/install-inlet-panel.jpg" alt="Generator inlet box installed on brick next to panel" loading="lazy"
+          style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)">
       </div>
-      <div style="text-align:center;font-size:10px;color:var(--text3);margin-top:6px">← Swipe to see more</div>
     </div>
 
     <!-- Social Proof -->
