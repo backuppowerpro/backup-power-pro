@@ -283,9 +283,8 @@ function calcTotal(amp) {
   const pr = getPrice(amp);
   const base = pr.total || pr.base || 0;
   // Don't add surge if old-format proposal already includes it in total
-  const surgeAdder = (surgeOn && !P.include_surge) ? (P.surge_price || 375) : 0;
-  const pomAdder = pomOn ? (P.pom_price || 97) : 0;
-  return base + surgeAdder + pomAdder;
+  const pomAdder = pomOn ? (P.pom_price || 447) : 0;
+  return base + pomAdder;
 }
 
 function fmt(n) { return '$' + Number(n).toLocaleString('en-US'); }
@@ -384,55 +383,12 @@ function renderProposal() {
 
     ${notesHtml}
 
-    <!-- Surge Protection Upsell -->
-    <div class="surge-card" id="surge-card">
-      <div class="surge-head">
-        <div class="surge-eyebrow">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          One More Thing to Consider
-        </div>
-        <div class="surge-title">Protect What Powers Your Life</div>
-        <div class="surge-sub">When the grid comes back after an outage, the voltage spike can damage everything plugged in. One device at your panel stops the surge before it reaches a single outlet.</div>
-      </div>
-      <div class="surge-risk-grid">
-        <div class="surge-risk-item">
-          <div class="surge-risk-icon">&#10052;&#65039;</div>
-          <div class="surge-risk-name">HVAC System</div>
-          <div class="surge-risk-cost">$4,500</div>
-          <div class="surge-risk-label">to replace</div>
-        </div>
-        <div class="surge-risk-item">
-          <div class="surge-risk-icon">&#128250;</div>
-          <div class="surge-risk-name">Electronics</div>
-          <div class="surge-risk-cost">$3,200</div>
-          <div class="surge-risk-label">to replace</div>
-        </div>
-        <div class="surge-risk-item">
-          <div class="surge-risk-icon">&#127859;</div>
-          <div class="surge-risk-name">Appliances</div>
-          <div class="surge-risk-cost">$2,800</div>
-          <div class="surge-risk-label">to replace</div>
-        </div>
-      </div>
-      <div class="surge-action" onclick="toggleSurge()">
-        <div class="surge-toggle-track ${surgeOn?'on':''}" id="surge-toggle">
-          <div class="surge-toggle-knob"></div>
-        </div>
-        <div class="surge-toggle-text">
-          <div class="surge-toggle-label">Add Whole-Home Surge Protection</div>
-          <div class="surge-toggle-price ${surgeOn?'on':''}" id="surge-price-label">+${fmt(P.surge_price || 375)} &middot; protects $10,500+ in appliances</div>
-        </div>
-      </div>
-      <div class="surge-stat">That's <strong>${((P.surge_price||375)/10500*100).toFixed(1)}% of what you're protecting</strong> &mdash; for the lifetime of the device.</div>
-    </div>
-
-    <!-- Peace of Mind Package -->
-    ${P.include_pom ? `
-    <div id="pom-card" onclick="togglePom()" style="position:relative;background:linear-gradient(135deg,#fffbe6 0%,#fff8d0 60%,#fff3a0 100%);border:2.5px solid var(--gold);border-radius:16px;padding:0;margin-bottom:16px;cursor:pointer;transition:all .2s;overflow:hidden;box-shadow:0 4px 18px rgba(255,186,0,.18)">
+    <!-- Peace of Mind Protection Package -->
+    <div id="pom-card" onclick="togglePom()" style="position:relative;background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 100%);border:2.5px solid var(--gold);border-radius:16px;padding:0;margin-bottom:16px;cursor:pointer;transition:all .2s;overflow:hidden;box-shadow:0 4px 18px rgba(255,186,0,.22)">
       <!-- top badge bar -->
       <div style="background:var(--gold);padding:7px 18px;display:flex;align-items:center;justify-content:space-between">
-        <div style="font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7a4a00">⭐ Most Popular Add-On</div>
-        <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:#7a4a00;opacity:.8">Less than $9/month</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7a4a00">⭐ Recommended Add-On</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:#7a4a00;opacity:.8">Everything in one</div>
       </div>
       <!-- body -->
       <div style="padding:16px 18px 18px">
@@ -445,27 +401,43 @@ function renderProposal() {
           </div>
           <!-- content -->
           <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
               <span style="font-size:20px">🛡️</span>
-              <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:900;color:var(--navy)">Peace of Mind Package</div>
+              <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:900;color:#fff">Peace of Mind Protection Package</div>
             </div>
-            <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#7a4a00;margin-bottom:10px;line-height:1.4">Your system stays protected long after install day.</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 10px">
-              <div style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">✓</span> Annual tune-up visit</div>
-              <div style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">✓</span> Priority scheduling</div>
-              <div style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">✓</span> Lifetime phone support</div>
-              <div style="font-size:12px;color:#555;display:flex;align-items:center;gap:5px"><span style="color:var(--gold);font-size:13px">✓</span> Jump the service queue</div>
+            <div style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:12px;line-height:1.4">Complete protection — before, during, and after every outage.</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
+                <span style="color:var(--gold);font-size:14px;margin-top:1px;flex-shrink:0">⚡</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">Whole-Home Surge Protection</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Installed on your panel. Backed by a $75,000 connected equipment warranty.</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
+                <span style="color:var(--gold);font-size:14px;margin-top:1px;flex-shrink:0">📋</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">Safety &amp; Wattage Planning Guide</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Customized for your home's setup so you know exactly what to run during an outage.</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
+                <span style="color:var(--gold);font-size:14px;margin-top:1px;flex-shrink:0">🔍</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">20-Point Panel Safety Inspection</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Full evaluation of your main panel — catch issues before they become emergencies.</div>
+                </div>
+              </div>
             </div>
           </div>
           <!-- price -->
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:var(--navy)">+$${P.pom_price||97}</div>
-            <div style="font-size:10px;color:#888;font-weight:600;margin-top:1px">one-time</div>
+          <div style="text-align:right;flex-shrink:0;padding-top:2px">
+            <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">+$${P.pom_price||447}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.45);font-weight:600;margin-top:1px">one-time</div>
           </div>
         </div>
       </div>
     </div>
-    ` : ''}
 
     <!-- Social Proof -->
     <div style="margin-bottom:16px">
@@ -602,11 +574,8 @@ function renderPricing() {
     if (P.include_surge) rows += priceRow('Whole-house surge protector', 'Installed on main panel', fmt(P.price_surge));
   }
 
-  if (surgeOn && !P.include_surge) {
-    rows += priceRow('Whole-home surge protector', 'Installed on main panel', fmt(surgePrice));
-  }
   if (pomOn) {
-    rows += priceRow('Peace of Mind Package', 'Annual maintenance + priority service', fmt(P.pom_price || 97));
+    rows += priceRow('Peace of Mind Protection Package', 'Surge protection, panel inspection, wattage guide', fmt(P.pom_price || 447));
   }
 
   const total = calcTotal(chosenAmp);
@@ -792,8 +761,8 @@ function renderApproved() {
     pricingRowsHtml += `<tr><td class="price-item-name">Base installation</td><td>${fmt(pr.base || P.price_base || 0)}</td></tr>`;
     if (P.include_cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(P.price_cord || 0)}</td></tr>`;
   }
-  if (P.selected_surge) {
-    pricingRowsHtml += `<tr><td class="price-item-name">Whole-home surge protector</td><td>${fmt(P.surge_price || 375)}</td></tr>`;
+  if (P.selected_pom) {
+    pricingRowsHtml += `<tr><td class="price-item-name">Peace of Mind Protection Package</td><td>${fmt(P.pom_price || 447)}</td></tr>`;
   }
 
   // Parse terms snapshot for display
@@ -804,7 +773,7 @@ function renderApproved() {
       termsDisplay = `
         <div class="legal-terms">
           <strong>Scope & Pricing Acknowledged:</strong> ${esc(terms.contact_name)} approved a ${terms.selected_amp || '30'} Amp Connection System
-          ${terms.selected_surge ? 'with whole-home surge protection' : 'without surge protection'} for a total of ${fmt(terms.total)}.
+          ${terms.selected_pom ? 'with the Peace of Mind Protection Package' : 'without the protection package'} for a total of ${fmt(terms.total)}.
           <br><br><strong>Acknowledgments:</strong><br>
           ${terms.scope_acknowledged ? '&#10003; Reviewed and agreed to the scope of work and pricing.' : ''}<br>
           ${terms.safety_acknowledged ? '&#10003; Read and understood the Generator Safety Instructions for portable generator inlet installations.' : ''}
@@ -865,17 +834,21 @@ function renderApproved() {
       </div>
     </div>
 
-    ${!P.selected_surge ? `
-    <!-- Post-approval surge upsell -->
+    ${!P.selected_pom ? `
+    <!-- Post-approval protection package upsell -->
     <div style="background:linear-gradient(135deg,#0b1f3b,#1a3a5c);border-radius:14px;padding:18px 20px;margin-bottom:16px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;right:0;width:160px;height:160px;background:radial-gradient(circle,rgba(255,186,0,.08),transparent 70%)"></div>
       <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">One More Thing Before We Schedule</div>
-      <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">Want to Add Surge Protection?</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.65);margin-bottom:12px;line-height:1.5">Most customers add it once they realize — a single voltage spike after an outage can destroy your HVAC, refrigerator, and electronics. One device on your panel stops it.</div>
-      <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.8);margin-bottom:12px">
-        <span style="color:var(--gold);font-weight:700">+$${P.surge_price||375}</span> &nbsp;&middot;&nbsp; Installed on your panel &nbsp;&middot;&nbsp; Protects $10,500+ in appliances
+      <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:8px">Add the Peace of Mind Protection Package?</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+        <div style="font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">⚡</span> Whole-home surge protection + $75,000 connected equipment warranty</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">📋</span> Customized safety &amp; wattage planning guide</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">🔍</span> 20-point main panel safety inspection</div>
       </div>
-      <div style="font-size:13px;color:rgba(255,255,255,.7)">Just text Key at <a href="sms:8644005302?body=I'd like to add surge protection to my proposal" style="color:var(--gold);font-weight:700;text-decoration:none">(864) 400-5302</a> and say "add surge" — he'll update your invoice before install day.</div>
+      <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.8);margin-bottom:12px">
+        <span style="color:var(--gold);font-weight:700">+$${P.pom_price||447}</span> &nbsp;&middot;&nbsp; All three, done the same day as your install
+      </div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7)">Just text Key at <a href="sms:8644005302?body=I'd like to add the Peace of Mind Protection Package" style="color:var(--gold);font-weight:700;text-decoration:none">(864) 400-5302</a> and say "add protection package" — he'll update your invoice before install day.</div>
     </div>` : ''}
 
     <!-- Referral Card -->
@@ -974,7 +947,7 @@ async function downloadPDF() {
   });
   const total = P.total || 0;
   const ampLabel = P.selected_amp === '50' ? '50 Amp' : '30 Amp';
-  const surgeLabel = P.selected_surge ? 'Included (+' + fmt(P.surge_price || 375) + ')' : 'Not included';
+  const surgeLabel = P.selected_pom ? 'Included (+' + fmt(P.pom_price || 447) + ')' : 'Not included';
   const pr = getPrice(P.selected_amp || P.amp_type || '30');
 
   // Build pricing rows
@@ -996,8 +969,8 @@ async function downloadPDF() {
     pricingRows += pdfRow('Base installation', fmt(pr.base || P.price_base || 0));
     if (P.include_cord) pricingRows += pdfRow('Power transfer cord', fmt(P.price_cord || 0));
   }
-  if (P.selected_surge) {
-    pricingRows += pdfRow('Whole-home surge protector', fmt(P.surge_price || 375));
+  if (P.selected_pom) {
+    pricingRows += pdfRow('Peace of Mind Protection Package', fmt(P.pom_price || 447));
   }
 
   // Build two separate page divs — each rendered to its own canvas
@@ -1062,7 +1035,7 @@ async function downloadPDF() {
           <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b;text-align:right">${fmt(total)}</td>
         </tr>
       </table>
-      <div style="font-size:11px;color:#8a9ab5;margin-bottom:16px">Surge Protection: ${surgeLabel}</div>
+      <div style="font-size:11px;color:#8a9ab5;margin-bottom:16px">Protection Package: ${surgeLabel}</div>
 
       <!-- Payment Terms -->
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11px;color:#92400e;line-height:1.6">

@@ -1636,9 +1636,9 @@ function openPanel(id) {
       else if (p.status === 'Created') { badge = 'Proposal'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
       else { badge = esc(p.status); badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
       const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
-      const surgeLabel = p.selected_surge ? ' + Surge' : (p.include_surge ? ' + Surge' : '');
-      const pomLabel = p.include_pom ? ' + POM' : '';
-      const displayTotal = (p.total || 0) + (p.include_pom ? 97 : 0) + ((p.include_surge && !p.selected_surge) ? 375 : 0);
+      const surgeLabel = '';
+      const pomLabel = p.include_pom ? ' + Protection Pkg' : '';
+      const displayTotal = (p.total || 0) + (p.include_pom ? (p.pom_price || 447) : 0);
       const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
       cardsHtml += `
         <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer${p.status === 'Cancelled' ? ';opacity:.5' : ''}" onclick="selectProposalAndDrill(${idx})">
@@ -1683,9 +1683,8 @@ function renderProposalDrill() {
   const hasSurge = p.include_surge || p.selected_surge || false;
   const isApproved = p.status === 'Approved';
   let items = '<div class="pay-row"><span class="pay-row-label">Base install (' + (p.amp_type||'30') + 'A)</span><span class="pay-row-val">$' + (p.total||0).toLocaleString() + '</span></div>';
-  if (hasSurge) items += '<div class="pay-row"><span class="pay-row-label">Surge protector</span><span class="pay-row-val">+$375</span></div>';
-  if (hasPOM) items += '<div class="pay-row"><span class="pay-row-label">Peace of Mind Package</span><span class="pay-row-val">+$97</span></div>';
-  const totalWithAddons = (p.total || 0) + (hasSurge && !p.selected_surge ? 375 : 0) + (hasPOM ? 97 : 0);
+  if (hasPOM) items += '<div class="pay-row"><span class="pay-row-label">Peace of Mind Protection Package</span><span class="pay-row-val">+$' + (p.pom_price || 447) + '</span></div>';
+  const totalWithAddons = (p.total || 0) + (hasPOM ? (p.pom_price || 447) : 0);
   const isCancelled = p.status === 'Cancelled';
   const canEdit = !isApproved && !isCancelled;
   const previewUrl = url + '&preview=1';
@@ -1718,8 +1717,7 @@ function renderProposalDrill() {
   let addons = '';
   if (hasPOM || hasSurge) {
     addons = '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">';
-    if (hasSurge) addons += '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8">Surge</span>';
-    if (hasPOM) addons += '<span class="prop-badge" style="background:rgba(255,186,0,.15);color:var(--gold);border:1px solid var(--gold)">Peace of Mind</span>';
+    if (hasPOM) addons += '<span class="prop-badge" style="background:rgba(255,186,0,.15);color:var(--gold);border:1px solid var(--gold)">Protection Package</span>';
     addons += '</div>';
   }
 
@@ -1879,8 +1877,7 @@ async function renderPaymentDrill() {
     invoiceLineItems = [];
     invoiceLineItems._contactId = contactId;
     invoiceLineItems.push({ name: 'Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', amount: baseAmount });
-    if (hasSurge && !p.selected_surge) invoiceLineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
-    if (hasPOM) invoiceLineItems.push({ name: 'Peace of Mind Package', amount: 97 });
+    if (hasPOM) invoiceLineItems.push({ name: 'Peace of Mind Protection Package', amount: p.pom_price || 447 });
   }
 
   const totalAmount = invoiceLineItems.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
@@ -4245,7 +4242,7 @@ const QB_C = {
 const QB_S = {
   base30: 1197, base50: 1497,
   longRun30perFt: 12, longRun50perFt: 14,
-  mainBreaker: 126, twinQuad: 129, surge: 375, pom: 97,
+  mainBreaker: 126, twinQuad: 129, surge: 0, pom: 447,
   cordValue30: 146, cordValue50: 194,
 };
 let qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true };
