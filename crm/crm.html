@@ -2860,7 +2860,7 @@ async function saveProposal() {
   const c = allContacts.find(x => x.id === contactId);
   const cordIncluded = document.getElementById('p-cord-check').checked;
   const surgeIncluded = false; // surge is always offered as customer-facing toggle on proposal
-  const pomIncluded = true; // always included on every proposal
+  const pomIncluded = document.getElementById('p-pom-check')?.checked || false;
 
   const pricing30 = pBuildPricing('30');
   const pricing50 = pBuildPricing('50');
