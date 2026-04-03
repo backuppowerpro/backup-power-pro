@@ -1590,17 +1590,8 @@ function selectProposalAndDrill(idx) {
   invoiceLineItems = []; // Reset so payment drill reloads from this proposal
   const contactId = currentPanelContactId;
   const p = proposalMap[contactId]?.[idx];
-  if (p && p.status === 'Approved') {
-    // Skip proposal view, go straight to payment. Back goes to contact.
-    const backBtn = document.getElementById('payment-back-btn');
-    if (backBtn) { backBtn.textContent = '← Contact'; backBtn.setAttribute('onclick', "drillTo('contact')"); }
-    drillTo('payment');
-  } else {
-    // Normal flow through proposal. Payment back goes to proposal.
-    const backBtn = document.getElementById('payment-back-btn');
-    if (backBtn) { backBtn.textContent = '← Proposal'; backBtn.setAttribute('onclick', "drillTo('proposal')"); }
-    drillTo('proposal');
-  }
+  // All proposals now use the unified proposal view (payment is inline)
+  drillTo('proposal');
 }
 
 function drillTo(level) {
@@ -1741,55 +1732,36 @@ function openPanel(id) {
   lockBody();
 }
 
-// ── PROPOSAL DRILL (Level 2) ────────────────────────────
-function renderProposalDrill() {
+// ── PROPOSAL DRILL (Level 2) — unified proposal + invoice + payment ───────
+async function renderProposalDrill() {
   const contactId = currentPanelContactId;
   const p = proposalMap[contactId]?.[currentProposalIdx];
   const el = document.getElementById('drill-proposal-content');
   if (!p) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px 0">No proposal yet</div>'; return; }
+
   const url = PROPOSAL_BASE_URL + '?token=' + p.token;
-  let statusBadge = '';
+  const previewUrl = url + '&preview=1';
   const fmtTS = function(d) { return d ? new Date(d).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : ''; };
-  if (p.status === 'Cancelled') statusBadge = '<span class="prop-badge" style="background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb">Cancelled</span>';
-  else if (p.status === 'Approved') statusBadge = '<span class="prop-badge prop-approved">&check; Invoice</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Approved ' + fmtTS(p.signed_at) + '</div>';
-  else if (p.status === 'Viewed') statusBadge = '<span class="prop-badge prop-viewed">Viewed</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Viewed ' + fmtTS(p.viewed_at) + '</div>';
-  else if (p.status === 'Copied' || p.status === 'Created') statusBadge = '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe">Proposal</span><div style="font-size:10px;color:var(--text3);margin-top:4px">' + fmtTS(p.created_at) + '</div>';
-  else statusBadge = '<span class="prop-badge prop-sent">' + esc(p.status) + '</span>';
+
   const hasPOM = p.include_pom || false;
   const hasSurge = p.include_surge || p.selected_surge || false;
   const isApproved = p.status === 'Approved';
-  let items = '<div class="pay-row"><span class="pay-row-label">Base install (' + (p.amp_type||'30') + 'A)</span><span class="pay-row-val">$' + (p.total||0).toLocaleString() + '</span></div>';
-  if (hasPOM) items += '<div class="pay-row"><span class="pay-row-label">Peace of Mind Protection Package</span><span class="pay-row-val">+$' + (p.pom_price || 447) + '</span></div>';
-  const totalWithAddons = (p.total || 0) + (hasPOM ? (p.pom_price || 447) : 0);
   const isCancelled = p.status === 'Cancelled';
   const canEdit = !isApproved && !isCancelled;
-  const previewUrl = url + '&preview=1';
+
+  // ── Status badge ────────────────────────────────────────
+  let statusBadge = '';
+  if (isCancelled) statusBadge = '<span class="prop-badge" style="background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb">Cancelled</span>';
+  else if (isApproved) statusBadge = '<span class="prop-badge prop-approved">&check; Invoice</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Approved ' + fmtTS(p.signed_at) + '</div>';
+  else if (p.status === 'Viewed') statusBadge = '<span class="prop-badge prop-viewed">Viewed</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Viewed ' + fmtTS(p.viewed_at) + '</div>';
+  else statusBadge = '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe">Proposal</span><div style="font-size:10px;color:var(--text3);margin-top:4px">' + fmtTS(p.created_at) + '</div>';
+
+  // ── Viewed info ─────────────────────────────────────────
   const viewedInfo = p.viewed_at
-    ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Viewed ' + new Date(p.viewed_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) + (p.view_count > 1 ? ' · ' + p.view_count + 'x' : '') + '</div>'
+    ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">Viewed ' + fmtTS(p.viewed_at) + (p.view_count > 1 ? ' · ' + p.view_count + 'x' : '') + '</div>'
     : '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:8px">Not yet viewed</div>';
 
-  // ── Primary action ──────────────────────────────────────
-  let primaryBtn = '';
-  if (isApproved) {
-    primaryBtn = '<button class="prop-action-btn" onclick="drillTo(\'payment\')" style="background:var(--green);color:#fff;font-size:16px;padding:14px">Collect Payment  →</button>';
-  } else if (!isCancelled) {
-    primaryBtn = '<button class="prop-action-btn prop-action-create" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')" style="font-size:15px;padding:13px">Copy Link</button>';
-  }
-
-  // ── Secondary row (edit + preview) ─────────────────────
-  let secondaryRow = '';
-  if (!isCancelled) {
-    const editLink = canEdit ? '<button onclick="editProposal(\'' + p.id + '\')" style="background:none;border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Edit</button>' : '';
-    secondaryRow = '<div style="display:flex;justify-content:center;gap:4px;margin-top:6px;margin-bottom:4px">'
-      + editLink
-      + '<a href="' + esc(previewUrl) + '" target="_blank" style="color:var(--text2);font-size:13px;font-weight:600;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Preview</a>'
-      + '</div>';
-  }
-
-  // ── Inspection (POM only, approved only) ───────────────
-  const inspSection = (hasPOM && isApproved) ? '<button class="prop-action-btn" onclick="drillTo(\'inspection\')" style="background:#dbeafe;color:#1d4ed8;margin-top:8px">Inspection →</button>' : '';
-
-  // ── Add-ons summary ────────────────────────────────────
+  // ── Add-ons badges ──────────────────────────────────────
   let addons = '';
   if (hasPOM || hasSurge) {
     addons = '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">';
@@ -1797,24 +1769,125 @@ function renderProposalDrill() {
     addons += '</div>';
   }
 
-  // ── Cancel / revive (subtle) ───────────────────────────
+  // ── Cancelled banner ────────────────────────────────────
+  const frozenNote = isCancelled ? '<div style="background:#fee2e2;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--red);text-align:center;font-weight:600">Cancelled — customer can no longer view or sign</div>' : '';
+
+  // ── Line items ──────────────────────────────────────────
+  let lineItemsSection = '';
+  let totalAmount = 0;
+  if (isApproved) {
+    // Editable line items for invoicing
+    if (!invoiceLineItems.length || invoiceLineItems._contactId !== contactId) {
+      invoiceLineItems = [];
+      invoiceLineItems._contactId = contactId;
+      invoiceLineItems.push({ name: 'Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', amount: p.total || 0 });
+      if (hasPOM) invoiceLineItems.push({ name: 'Peace of Mind Protection Package', amount: p.pom_price || 447 });
+    }
+    totalAmount = invoiceLineItems.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
+    let liHtml = '';
+    invoiceLineItems.forEach(function(li, i) {
+      liHtml += '<div class="pay-row" style="display:flex;align-items:center;gap:6px;padding:8px 12px">'
+        + '<input class="form-input" value="' + esc(li.name) + '" oninput="invoiceLineItems[' + i + '].name=this.value" style="flex:1;padding:6px 8px;font-size:13px;min-width:0">'
+        + '<div style="display:flex;align-items:center;gap:2px;flex-shrink:0"><span style="color:var(--text3);font-size:13px;font-weight:700">$</span><input type="number" class="form-input" value="' + li.amount + '" oninput="invoiceLineItems[' + i + '].amount=parseFloat(this.value)||0;updatePayTotal()" style="width:80px;padding:6px 8px;font-size:13px;text-align:right;font-weight:700"></div>'
+        + '<button onclick="removeInvoiceLine(' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px 6px;min-width:28px">✕</button>'
+        + '</div>';
+    });
+    liHtml += '<button onclick="addInvoiceLine()" style="width:100%;padding:8px;background:none;border:1.5px dashed var(--border);border-radius:var(--r-sm);color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;margin-top:4px">+ Add Line Item</button>';
+    lineItemsSection = '<div class="pay-summary" style="padding:0;overflow:hidden;margin-bottom:8px">'
+      + '<div style="padding:10px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between"><span>Line Items</span><span style="font-weight:400">tap to edit</span></div>'
+      + liHtml
+      + '<div class="pay-total" id="pay-total-display" style="padding:12px">$' + totalAmount.toLocaleString() + '</div>'
+      + '</div>';
+  } else {
+    // Read-only summary for unapproved proposals
+    totalAmount = (p.total || 0) + (hasPOM ? (p.pom_price || 447) : 0);
+    let items = '<div class="pay-row"><span class="pay-row-label">Base install (' + (p.amp_type||'30') + 'A)</span><span class="pay-row-val">$' + (p.total||0).toLocaleString() + '</span></div>';
+    if (hasPOM) items += '<div class="pay-row"><span class="pay-row-label">Peace of Mind Protection Package</span><span class="pay-row-val">+$' + (p.pom_price||447) + '</span></div>';
+    lineItemsSection = '<div class="pay-summary" style="margin-bottom:12px">' + items + '</div>'
+      + '<div class="pay-total" style="margin-bottom:12px">$' + totalAmount.toLocaleString() + '</div>';
+  }
+
+  // ── Payment data (approved only) ────────────────────────
+  let paidRow = '', collectSection = '', historyHtml = '', actionSection = '';
+  if (isApproved) {
+    let inspPassed = true;
+    if (hasPOM) {
+      const { data } = await db.from('inspections').select('status').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
+      inspPassed = data && data[0] && data[0].status === 'passed';
+    }
+    const { data: payments } = await db.from('payments').select('*').eq('contact_id', contactId).order('created_at', { ascending: false });
+    const payHistory = payments || [];
+    const totalPaid = payHistory.reduce(function(s, pay) { return s + (pay.amount || 0); }, 0);
+    const hasPaid = totalPaid >= totalAmount;
+    const collectDisabled = hasPOM && !inspPassed;
+
+    // Paid / balance row
+    if (totalPaid > 0) {
+      paidRow = '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:0 2px 10px">'
+        + '<span style="color:var(--green)">Paid: $' + totalPaid.toLocaleString() + '</span>'
+        + (totalAmount - totalPaid > 0 ? '<span style="color:var(--red)">Balance: $' + (totalAmount - totalPaid).toLocaleString() + '</span>' : '<span style="color:var(--green)">Paid in full ✓</span>')
+        + '</div>';
+    }
+
+    // Action section: inspection blocks copy/preview
+    if (collectDisabled) {
+      // Inspection warning — blocks everything
+      actionSection = '<button onclick="drillTo(\'inspection\')" style="width:100%;background:#fef3c7;border:none;border-radius:var(--r-sm);padding:13px;margin-bottom:12px;font-size:13px;color:#92400e;text-align:center;cursor:pointer;font-weight:600">⚠️ Complete panel inspection before collecting payment →</button>';
+    } else {
+      // Copy Invoice Link | Preview | (Edit Inspection if POM passed)
+      const inspBtn = hasPOM ? '<button onclick="drillTo(\'inspection\')" style="flex:1;padding:10px;background:var(--bg);border:1.5px solid #bfdbfe;border-radius:var(--r-sm);font-weight:600;font-size:12px;cursor:pointer;color:#1d4ed8">Edit Inspection</button>' : '';
+      actionSection = '<div id="pay-invoice-section" style="margin-bottom:12px"></div>'
+        + (inspBtn ? '<div style="display:flex;gap:6px;margin-bottom:12px">' + inspBtn + '</div>' : '');
+    }
+
+    // Payment form
+    if (!hasPaid && !collectDisabled) {
+      collectSection = '<div id="offline-pay-section">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Record Offline Payment</div>'
+        + '<div style="display:flex;gap:6px;margin-bottom:10px">'
+        + '<button id="pay-method-cash" onclick="selectPayMethod(\'Cash\')" style="flex:1;padding:9px 4px;border:2px solid var(--border);background:var(--bg);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">Cash</button>'
+        + '<button id="pay-method-check" onclick="selectPayMethod(\'Check\')" style="flex:1;padding:9px 4px;border:2px solid var(--border);background:var(--bg);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">Check</button>'
+        + '<button id="pay-method-tap" onclick="selectPayMethod(\'Tap to Pay\')" style="flex:1;padding:9px 4px;border:2px solid var(--border);background:var(--bg);border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">Tap to Pay</button>'
+        + '</div>'
+        + '<div id="pay-amount-row" style="display:none;margin-bottom:10px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:18px;font-weight:800;color:var(--navy)">$</span><input type="number" id="pay-amount-input" value="' + totalAmount + '" min="1" style="flex:1;padding:10px 12px;border:2px solid var(--navy);border-radius:var(--r-sm);font-size:18px;font-weight:800;text-align:center;font-family:Outfit,sans-serif;outline:none" onfocus="this.select()"></div></div>'
+        + '<button id="pay-confirm-btn" onclick="confirmPayment()" style="display:none;width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);font-family:Outfit,sans-serif;font-weight:700;font-size:15px;cursor:pointer">Confirm Payment</button>'
+        + '</div>';
+    }
+
+    // Payment history
+    if (payHistory.length) {
+      historyHtml = '<div class="panel-section-label" style="margin-top:12px">Payment History</div>';
+      payHistory.forEach(function(pay) {
+        var isOffline = pay.method === 'Cash' || pay.method === 'Check';
+        historyHtml += '<div class="pay-history-item"><div><div style="font-size:13px;font-weight:600">$' + (pay.amount||0).toLocaleString() + '</div><div style="font-size:11px;color:var(--text3)">' + new Date(pay.created_at).toLocaleDateString() + '</div></div><div style="display:flex;align-items:center;gap:6px"><span class="prop-badge" style="background:#d1fae5;color:var(--green)">' + esc(pay.method || 'Card') + '</span>' + (isOffline ? '<button onclick="undoPayment(\'' + pay.id + '\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:4px" title="Undo">✕</button>' : '') + '</div></div>';
+      });
+    }
+  }
+
+  // ── Action row (unapproved proposals) ───────────────────
+  let unapprovedActions = '';
+  if (!isApproved && !isCancelled) {
+    const editLink = canEdit ? '<button onclick="editProposal(\'' + p.id + '\')" style="background:none;border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Edit</button>' : '';
+    unapprovedActions = '<button class="prop-action-btn prop-action-create" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')" style="font-size:15px;padding:13px">Copy Link</button>'
+      + '<div style="display:flex;justify-content:center;gap:4px;margin-top:6px;margin-bottom:4px">'
+      + editLink
+      + '<a href="' + esc(previewUrl) + '" target="_blank" style="color:var(--text2);font-size:13px;font-weight:600;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Preview</a>'
+      + '</div>';
+  }
+
+  // ── Cancel / revive ─────────────────────────────────────
   const cancelLink = isCancelled
     ? '<button id="cancel-proposal-btn" style="background:none;border:none;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;margin-top:16px;text-decoration:underline" onclick="reviveProposal(\'' + p.id + '\')">Revive Proposal</button>'
     : '<button id="cancel-proposal-btn" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;margin-top:16px;text-decoration:underline" onclick="cancelProposal(\'' + p.id + '\')">Cancel Proposal</button>';
-  const frozenNote = isCancelled ? '<div style="background:#fee2e2;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--red);text-align:center;font-weight:600">Cancelled — customer can no longer view or sign</div>' : '';
 
-  el.innerHTML = '<div style="text-align:center;margin-bottom:12px">'
-    + statusBadge
-    + '<div class="pay-total" style="margin-top:8px">$' + totalWithAddons.toLocaleString() + '</div>'
-    + '</div>'
-    + viewedInfo
-    + frozenNote
-    + addons
-    + '<div class="pay-summary" style="margin-bottom:12px">' + items + '</div>'
-    + primaryBtn
-    + secondaryRow
-    + inspSection
+  el.innerHTML = '<div style="text-align:center;margin-bottom:12px">' + statusBadge + '</div>'
+    + viewedInfo + frozenNote + addons
+    + lineItemsSection + paidRow
+    + unapprovedActions
+    + actionSection + collectSection + historyHtml
     + '<div style="text-align:center">' + cancelLink + '</div>';
+
+  if (isApproved) loadInvoiceSection(contactId);
 }
 
 let _cancelProposalPending = null;
@@ -2077,12 +2150,12 @@ function updatePayTotal() {
 
 function addInvoiceLine() {
   invoiceLineItems.push({ name: '', amount: 0 });
-  renderPaymentDrill();
+  renderProposalDrill();
 }
 
 function removeInvoiceLine(idx) {
   invoiceLineItems.splice(idx, 1);
-  renderPaymentDrill();
+  renderProposalDrill();
 }
 
 
@@ -2107,7 +2180,7 @@ async function confirmPayment() {
   // Auto-advance to Complete (9)
   await autoProgressStage(contactId, 9);
   showToast(method + ' payment of $' + amount.toLocaleString() + ' recorded — job complete!', 'success');
-  renderPaymentDrill();
+  renderProposalDrill();
   // Fire post-install review + referral text (non-blocking)
   fetch(`${SUPABASE_URL}/functions/v1/quo-ai-review`, {
     method: 'POST',
