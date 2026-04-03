@@ -38,7 +38,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 @media(max-width:480px){.property-banner{margin:-24px -20px 0;width:calc(100% + 40px)}.property-banner-addr{font-size:13px}}
 /* ── SCOPE + PRICE PRODUCT THUMBS ──────────────────── */
 .scope-thumb{width:52px;height:52px;border-radius:9px;object-fit:cover;flex-shrink:0;margin-left:auto;border:1.5px solid rgba(0,0,0,.07);box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.price-item-cell{display:flex;align-items:center;gap:10px}
+.price-item-cell{display:flex;align-items:flex-start;gap:12px}
 .price-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(0,0,0,.07);box-shadow:0 1px 4px rgba(0,0,0,.08)}
 
 /* ── SCROLL REVEAL ──────────────────────────────────── */
@@ -150,11 +150,14 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 
 /* ── PRICING TABLE ──────────────────────────────────── */
 .price-table{width:100%;border-collapse:collapse;font-size:14px}
-.price-table td{padding:11px 0;border-bottom:1px solid var(--border);vertical-align:top}
+.price-table td{padding:16px 0;border-bottom:1px solid var(--border);vertical-align:top}
 .price-table tr:last-child td{border-bottom:none}
-.price-table td:last-child{text-align:right;font-weight:600;color:var(--text);white-space:nowrap}
-.price-item-name{font-weight:500;color:var(--text)}
-.price-item-desc{font-size:12px;color:var(--text3);margin-top:2px}
+.price-table td:last-child{text-align:right;font-weight:700;color:var(--navy);white-space:nowrap;padding-left:12px}
+.price-item-name{font-weight:700;color:var(--navy);font-size:14px}
+.price-item-desc{font-size:12px;color:var(--text3);margin-top:2px;margin-bottom:8px}
+.price-item-bullets{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.price-item-bullet{font-size:12px;color:var(--text2);display:flex;align-items:baseline;gap:6px;line-height:1.4}
+.price-item-bullet::before{content:'✓';color:var(--green);font-weight:900;font-size:11px;flex-shrink:0}
 .price-total-row td{padding-top:14px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;color:var(--navy)}
 .total-badge{background:var(--navy);color:var(--gold);font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;padding:5px 14px;border-radius:8px;display:inline-block;transition:all .3s}
 .per-day-note{text-align:center;padding:10px 0 2px;font-size:13px;color:var(--text3);line-height:1.5}
@@ -981,17 +984,50 @@ function renderPricing() {
     const cord = pr.cord || 0;
     const permit = pr.permitInspection || 125;
     const _pi = (chosenAmp === '50' ? '50' : '30');
-    rows += priceRow('Installation', 'Inlet box, interlock kit, panel work, walkthrough', fmt(Math.max(0, base - longRun - mb - tq - cord - permit)), `assets/product-images/inlet-${_pi}amp.jpg`);
-    if (longRun) rows += priceRowIncluded('Extended wire run', ((P.run_ft || 5) - 5) + ' extra feet — distance included in your quote');
-    rows += priceRow('Permit & inspection', 'Filed with your local jurisdiction', fmt(permit), 'assets/product-images/permit-inspection.jpg');
-    if (cord) rows += priceRow('Power transfer cord', _pi + 'A compatible', fmt(cord), `assets/product-images/cord-${_pi}amp.jpg`);
-    if (mb) rows += priceRow('Main breaker replacement', 'Upgraded to current code', fmt(mb));
-    if (tq) rows += priceRow('Panel space optimization', 'Twin/quad breaker swap', fmt(tq));
+    const is50 = chosenAmp === '50';
+    rows += priceRow(
+      `${_pi} Amp Generator Installation`,
+      null,
+      fmt(Math.max(0, base - longRun - mb - tq - cord - permit)),
+      `assets/product-images/inlet-${_pi}amp.jpg`,
+      [
+        `${_pi}A weather-rated inlet box — exterior wall mount`,
+        'Interlock kit — UL-listed, prevents back-feed to the grid',
+        'Breaker wiring & panel work',
+        'Site cleanup — we leave it the way we found it',
+        'Step-by-step walkthrough before we leave'
+      ]
+    );
+    if (longRun) rows += priceRowIncluded('Extended Wire Run', `${(P.run_ft || 5) - 5} extra feet of wire — distance already included in your quote`, null, null);
+    rows += priceRow(
+      'Permit & County Inspection',
+      null,
+      fmt(permit),
+      'assets/product-images/permit-inspection.jpg',
+      [
+        'Permit application filed with your county on your behalf',
+        'Inspection scheduled and coordinated by us',
+        'Certificate of completion — nothing for you to do'
+      ]
+    );
+    if (cord) rows += priceRow(
+      `${_pi}A Power Transfer Cord`,
+      null,
+      fmt(cord),
+      `assets/product-images/cord-${_pi}amp.jpg`,
+      [
+        `Matches your generator's ${_pi}-amp output`,
+        'Plugs directly into your new inlet box',
+        'Heavy-duty, weather-resistant — stays in the garage'
+      ]
+    );
+    if (mb) rows += priceRow('Main Breaker Replacement', 'Upgraded to current code requirements', fmt(mb));
+    if (tq) rows += priceRow('Panel Space Optimization', 'Twin/quad breaker swap to free up slots', fmt(tq));
   } else {
     const _pi2 = (chosenAmp === '50' ? '50' : '30');
-    rows += priceRow('Base installation', 'Inlet box, interlock kit, permit, inspection, walkthrough', fmt(pr.base || P.price_base), `assets/product-images/inlet-${_pi2}amp.jpg`);
-    if (P.include_cord) rows += priceRow('Power transfer cord', 'Connects generator to inlet box', fmt(P.price_cord), `assets/product-images/cord-${_pi2}amp.jpg`);
-    if (P.include_surge) rows += priceRow('Whole-house surge protector', 'Installed on main panel', fmt(P.price_surge));
+    rows += priceRow(`${_pi2} Amp Generator Installation`, 'Inlet box, interlock kit, permit, inspection, walkthrough', fmt(pr.base || P.price_base), `assets/product-images/inlet-${_pi2}amp.jpg`);
+    if (P.include_cord) rows += priceRow(`${_pi2}A Power Transfer Cord`, 'Connects generator to inlet box', fmt(P.price_cord), `assets/product-images/cord-${_pi2}amp.jpg`);
+    if (P.include_surge) rows += priceRow('Whole-House Surge Protector', 'Installed on main panel', fmt(P.price_surge));
   }
 
   if (Array.isArray(P.custom_items)) {
@@ -1024,14 +1060,16 @@ function renderPricing() {
   if (anchorNew) anchorNew.textContent = fmt(total);
 }
 
-function priceRow(name, desc, price, img) {
+function priceRow(name, desc, price, img, bullets) {
   const imgHtml = img ? `<img class="price-thumb" src="${img}" alt="" loading="lazy">` : '';
-  return `<tr><td><div class="price-item-cell">${imgHtml}<div><div class="price-item-name">${esc(name)}</div><div class="price-item-desc">${esc(desc)}</div></div></div></td><td>${price}</td></tr>`;
+  const bulletsHtml = bullets?.length ? `<div class="price-item-bullets">${bullets.map(b => `<div class="price-item-bullet">${esc(b)}</div>`).join('')}</div>` : '';
+  return `<tr><td><div class="price-item-cell">${imgHtml}<div><div class="price-item-name">${esc(name)}</div>${desc ? `<div class="price-item-desc">${esc(desc)}</div>` : ''}${bulletsHtml}</div></div></td><td>${price}</td></tr>`;
 }
 
-function priceRowIncluded(name, desc, img) {
+function priceRowIncluded(name, desc, img, bullets) {
   const imgHtml = img ? `<img class="price-thumb" src="${img}" alt="" loading="lazy">` : '';
-  return `<tr><td><div class="price-item-cell">${imgHtml}<div><div class="price-item-name">${esc(name)}</div><div class="price-item-desc">${esc(desc)}</div></div></div></td><td><span style="color:var(--green);font-size:12px;font-weight:700">✓ Included</span></td></tr>`;
+  const bulletsHtml = bullets?.length ? `<div class="price-item-bullets">${bullets.map(b => `<div class="price-item-bullet">${esc(b)}</div>`).join('')}</div>` : '';
+  return `<tr><td><div class="price-item-cell">${imgHtml}<div><div class="price-item-name">${esc(name)}</div>${desc ? `<div class="price-item-desc">${esc(desc)}</div>` : ''}${bulletsHtml}</div></div></td><td><span style="color:var(--green);font-size:12px;font-weight:700">✓ Included</span></td></tr>`;
 }
 
 // ── AMP TOGGLE ───────────────────────────────────────────────
