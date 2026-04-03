@@ -2122,17 +2122,52 @@ async function loadInvoiceSection(contactId) {
   if (!el) return;
   const { data } = await db.from('invoices').select('token,viewed_at,view_count,status').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
   const inv = data && data[0];
-  if (inv) {
+  if (inv && inv.status === 'cancelled') {
+    // Cancelled invoice — show banner + option to create new one
+    el.innerHTML = '<div style="background:#f3f4f6;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--text3);text-align:center">Invoice cancelled</div>'
+      + '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px" onclick="copyInvoiceLink(\'' + contactId + '\')">Create New Invoice</button>';
+  } else if (inv) {
     const invUrl = 'https://backuppowerpro.com/invoice.html?token=' + inv.token;
     const previewUrl = invUrl + '&preview=1';
     const isPaid = inv.status === 'paid';
-    const viewedText = inv.viewed_at ? 'Client viewed: ' + new Date(inv.viewed_at).toLocaleString() : '';
+    const viewedText = inv.viewed_at ? 'Client viewed: ' + new Date(inv.viewed_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
     const copyLabel = isPaid ? 'Copy Receipt Link' : 'Copy Invoice Link';
     const copyToast = isPaid ? 'Receipt link copied!' : 'Invoice link copied!';
-    el.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:4px"><button class="btn btn-outline" style="flex:1;min-height:44px" onclick="navigator.clipboard.writeText(\'' + invUrl + '\');showToast(\'' + copyToast + '\',\'success\')">' + copyLabel + '</button><a class="btn btn-outline" style="flex:1;min-height:44px;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center" href="' + previewUrl + '" target="_blank">Preview</a></div>' + (viewedText ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:12px">' + viewedText + '</div>' : '');
+    const cancelBtn = !isPaid
+      ? '<div style="text-align:center;margin-top:6px"><button id="cancel-invoice-btn" onclick="cancelInvoice(\'' + contactId + '\')" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;text-decoration:underline">Cancel Invoice</button></div>'
+      : '';
+    el.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:4px">'
+      + '<button class="btn btn-outline" style="flex:1;min-height:44px" onclick="navigator.clipboard.writeText(\'' + invUrl + '\');showToast(\'' + copyToast + '\',\'success\')">' + copyLabel + '</button>'
+      + '<a class="btn btn-outline" style="flex:1;min-height:44px;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center" href="' + previewUrl + '" target="_blank">Preview</a>'
+      + '</div>'
+      + (viewedText ? '<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:4px">' + viewedText + '</div>' : '')
+      + cancelBtn;
   } else {
     // No invoice yet — create one on the fly
     el.innerHTML = '<button class="btn btn-outline" style="width:100%;margin-bottom:8px;min-height:44px" onclick="copyInvoiceLink(\'' + contactId + '\')">Copy Invoice Link</button>';
+  }
+}
+
+let _cancelInvoicePending = null;
+let _cancelInvoiceTimer = null;
+async function cancelInvoice(contactId) {
+  if (_cancelInvoicePending === contactId) {
+    clearTimeout(_cancelInvoiceTimer);
+    _cancelInvoicePending = null;
+    const { error } = await db.from('invoices').update({ status: 'cancelled' }).eq('contact_id', contactId).neq('status', 'paid');
+    if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+    showToast('Invoice cancelled', 'success');
+    renderProposalDrill();
+  } else {
+    clearTimeout(_cancelInvoiceTimer);
+    _cancelInvoicePending = contactId;
+    const btn = document.getElementById('cancel-invoice-btn');
+    if (btn) { btn.textContent = 'Tap again to confirm'; btn.style.color = 'var(--red)'; }
+    _cancelInvoiceTimer = setTimeout(function() {
+      _cancelInvoicePending = null;
+      const btn2 = document.getElementById('cancel-invoice-btn');
+      if (btn2) { btn2.textContent = 'Cancel Invoice'; btn2.style.color = 'var(--text3)'; }
+    }, 3000);
   }
 }
 
@@ -2238,8 +2273,8 @@ async function copyInvoiceLink(contactId) {
   const p = proposalMap[contactId]?.[0];
   if (!c) return;
   const total = getInvoiceTotal();
-  // Check if invoice already exists for this contact
-  const { data: existing } = await db.from('invoices').select('token').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
+  // Check if a non-cancelled invoice already exists for this contact
+  const { data: existing } = await db.from('invoices').select('token').eq('contact_id', contactId).neq('status', 'cancelled').order('created_at', { ascending: false }).limit(1);
   let token;
   if (existing && existing.length > 0) {
     token = existing[0].token;
