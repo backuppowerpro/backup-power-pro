@@ -173,8 +173,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 
 /* PROPERTY PHOTO BANNER — lives inside .hero-card */
 .property-banner{position:relative;width:100%;height:220px;background:var(--navy);overflow:hidden;flex-shrink:0;margin:-28px -28px 24px;width:calc(100% + 56px)}
-.property-banner img{position:absolute;inset:-15%;width:130%;height:130%;object-fit:cover;transform-origin:center 70%;animation:bannerZoomIn 1.4s cubic-bezier(0.25,0.46,0.45,0.94) forwards;will-change:transform}
-@keyframes bannerZoomIn{from{transform:scale(1.18)}to{transform:scale(1)}}
+.property-banner img{position:absolute;inset:-15%;width:130%;height:130%;object-fit:cover;transform-origin:center 70%;will-change:transform}
 .property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.65) 100%);pointer-events:none}
 .property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:14px 20px 16px;pointer-events:none}
 .property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:4px}
@@ -340,16 +339,26 @@ async function renderPropertyBanner() {
     img.alt = 'Your home';
     img.src = `https://maps.googleapis.com/maps/api/streetview?size=1400x520&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
     img.id = 'banner-photo';
+    img.style.transform = 'scale(1.18) translateY(0px)';
     // Insert before gradient so it's behind the label
     bannerEl.insertBefore(img, bannerEl.querySelector('.property-banner-grad'));
-    // Parallax on scroll
-    window.addEventListener('scroll', function onBannerScroll() {
+    // Drive zoom-out + parallax together via rAF so they never conflict
+    const _zoomStart = Date.now();
+    const _zoomDuration = 1400;
+    function _updateBanner() {
       const el = document.getElementById('banner-photo');
-      if (!el) { window.removeEventListener('scroll', onBannerScroll); return; }
+      if (!el) return;
+      const elapsed = Date.now() - _zoomStart;
+      const t = Math.min(elapsed / _zoomDuration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const scale = 1.18 - (0.18 * eased);
       const scrollY = window.scrollY || window.pageYOffset;
-      const shift = Math.min(scrollY * 0.18, 30); // max 30px shift
-      el.style.transform = `scale(1) translateY(${shift}px)`;
-    }, { passive: true });
+      const shift = Math.min(scrollY * 0.2, 40);
+      el.style.transform = `scale(${scale.toFixed(4)}) translateY(${shift}px)`;
+      if (t < 1) requestAnimationFrame(_updateBanner);
+    }
+    requestAnimationFrame(_updateBanner);
+    window.addEventListener('scroll', _updateBanner, { passive: true });
   } catch(e) { /* keep initials on network error */ }
 }
 
