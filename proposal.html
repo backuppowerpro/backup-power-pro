@@ -171,16 +171,15 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .site-footer .cred-license{font-weight:600;color:var(--text2);margin-top:6px}
 .site-footer .cred-dba{font-size:11px;margin-top:2px}
 
-/* PROPERTY PHOTO BANNER */
-#property-banner-wrap{max-width:680px;margin:0 auto;padding:0 20px 16px}
-.property-banner{position:relative;width:100%;height:160px;background:var(--navy);overflow:hidden;flex-shrink:0;border-radius:14px}
+/* PROPERTY PHOTO BANNER — lives inside .hero-card */
+.property-banner{position:relative;width:100%;height:220px;background:var(--navy);overflow:hidden;flex-shrink:0;margin:-28px -28px 24px;width:calc(100% + 56px)}
 .property-banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.65) 100%);pointer-events:none}
-.property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:16px 20px 18px;pointer-events:none}
+.property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:14px 20px 16px;pointer-events:none}
 .property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:4px}
-.property-banner-addr{font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);line-height:1.25}
+.property-banner-addr{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);line-height:1.25}
 .property-banner-initials{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:52px;font-weight:800;color:rgba(255,255,255,.18);letter-spacing:-3px;pointer-events:none}
-@media(max-width:480px){.property-banner{height:120px}.property-banner-addr{font-size:15px}}
+@media(max-width:480px){.property-banner{height:170px;margin:-24px -20px 20px;width:calc(100% + 40px)}.property-banner-addr{font-size:14px}}
 
 @media(max-width:480px){
   .hero-title{font-size:22px}
@@ -200,8 +199,6 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
   <img src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:32px;">
   <div class="tagline">Licensed Electrical Contractor · SC LIC #2942 · Upstate SC</div>
 </header>
-
-<div id="property-banner-wrap"></div>
 
 <main class="page" id="main">
   <div class="state-wrap">
@@ -381,11 +378,10 @@ function renderProposal() {
       <div class="card-body" style="font-size:14px;color:var(--text2);line-height:1.6">${esc(P.notes)}</div>
     </div>` : '';
 
-  renderPropertyBanner();
-
   document.getElementById('main').innerHTML = `
     <!-- Hero -->
     <div class="hero-card">
+      <div id="property-banner-wrap"></div>
       <div class="hero-eyebrow">Your Custom Proposal</div>
       <div class="hero-title">The Storm-Ready<br>Connection System</div>
       <div class="hero-sub">One cord. Full power. Done in a day.</div>
@@ -613,6 +609,7 @@ function renderProposal() {
   });
 
   renderPricing();
+  renderPropertyBanner();
 }
 
 // ── ACK ROW WIRING (clean click handling) ───────────────────
@@ -832,7 +829,6 @@ async function approveProposal() {
 // ── APPROVED STATE ──────────────────────────────────────────
 function renderApproved() {
   window.scrollTo(0, 0);
-  renderPropertyBanner();
   const signedDate = P.signed_at
     ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : '';
