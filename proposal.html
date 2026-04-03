@@ -476,15 +476,15 @@ function renderProposal() {
   const pr = getPrice(chosenAmp);
   const _ai = chosenAmp === '50' ? '50' : '30';
   const includes = [
-    { name: 'Generator inlet box', desc: 'Weather-rated, installed on exterior of home', img: `assets/product-images/inlet-${_ai}amp.jpg` },
+    { name: 'Generator inlet box', desc: 'Weather-rated, installed on exterior of home' },
     { name: 'Interlock kit', desc: 'Code-compliant, UL-listed — prevents back-feed' },
-    { name: 'Permit pulled & filed', desc: 'We handle all paperwork with your county', img: 'assets/product-images/permit-inspection.jpg' },
-    { name: 'State electrical inspection', desc: 'Scheduled and coordinated by us — nothing for you to do', img: 'assets/product-images/permit-inspection.jpg' },
+    { name: 'Permit pulled & filed', desc: 'We handle all paperwork with your county' },
+    { name: 'State electrical inspection', desc: 'Scheduled and coordinated by us — nothing for you to do' },
     { name: 'Site cleanup', desc: 'We leave it exactly the way we found it' },
     { name: 'Customer walkthrough', desc: 'Step-by-step how to use your system every time' },
   ];
   if (pr.cordIncluded !== false && P.cord_included !== false) {
-    includes.push({ name: 'Power transfer cord', desc: 'Connects your generator to the inlet box', img: `assets/product-images/cord-${_ai}amp.jpg` });
+    includes.push({ name: 'Power transfer cord', desc: 'Connects your generator to the inlet box' });
   }
 
   const scopeItems = includes.map(i => `
