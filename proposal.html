@@ -282,9 +282,9 @@ function getPrice(amp) {
 function calcTotal(amp) {
   const pr = getPrice(amp);
   const base = pr.total || pr.base || 0;
-  // Don't add surge if old-format proposal already includes it in total
   const pomAdder = pomOn ? (P.pom_price || 447) : 0;
-  return base + pomAdder;
+  const customAdder = Array.isArray(P.custom_items) ? P.custom_items.reduce((s, i) => s + (i.price || 0), 0) : 0;
+  return base + pomAdder + customAdder;
 }
 
 function fmt(n) { return '$' + Number(n).toLocaleString('en-US'); }
@@ -326,6 +326,16 @@ function renderProposal() {
   document.getElementById('main').innerHTML = `
     <!-- Hero -->
     <div class="hero-card">
+      ${P.contact_address ? (() => {
+        const MAPS_KEY = 'AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ';
+        const addr = encodeURIComponent(P.contact_address);
+        const svUrl = `https://maps.googleapis.com/maps/api/streetview?size=700x220&location=${addr}&fov=85&pitch=5&key=${MAPS_KEY}`;
+        return `<div id="sv-wrap" style="margin:-28px -28px 20px;border-radius:16px 16px 0 0;overflow:hidden;height:180px;background:var(--navy2)">
+          <img src="${svUrl}" alt="Your home at ${esc(P.contact_address)}"
+            style="width:100%;height:100%;object-fit:cover;display:block"
+            onerror="document.getElementById('sv-wrap').style.display='none'">
+        </div>`;
+      })() : ''}
       <div class="hero-eyebrow">Your Custom Proposal</div>
       <div class="hero-title">The Storm-Ready<br>Connection System</div>
       <div class="hero-sub">One cord. Full power. Done in a day.</div>
@@ -610,6 +620,13 @@ function renderPricing() {
 
   if (pomOn) {
     rows += priceRow('Peace of Mind Protection Package', 'Surge protection, panel inspection, wattage guide', fmt(P.pom_price || 447));
+  }
+
+  // Custom line items added by Key
+  if (Array.isArray(P.custom_items)) {
+    P.custom_items.forEach(item => {
+      if (item.title || item.price) rows += priceRow(item.title || 'Additional service', '', fmt(item.price || 0));
+    });
   }
 
   const total = calcTotal(chosenAmp);
