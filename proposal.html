@@ -390,6 +390,8 @@ async function renderPropertyBanner() {
     img.id = 'banner-photo';
     img.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
     bannerEl.insertBefore(img, bannerEl.querySelector('.property-banner-grad'));
+    const initialsEl = bannerEl.querySelector('.property-banner-initials');
+    if (initialsEl) initialsEl.style.display = 'none';
   } catch(e) {}
 }
 
