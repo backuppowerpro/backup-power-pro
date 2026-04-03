@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Backup Power Pro — Proposal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <style>
@@ -13,46 +13,134 @@
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
   --green:#059669; --red:#dc2626; --border:#e4e8f0;
   --bg:#f4f6fa; --text:#1a2a42; --text2:#4a5568; --text3:#8a9ab5;
+  --blue:#1d4ed8;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;min-height:100%}
 
-/* HEADER */
-.site-header{background:var(--navy);padding:18px 24px;text-align:center}
+/* ── HEADER ─────────────────────────────────────────── */
+.site-header{background:var(--navy);padding:16px 24px;text-align:center}
 .site-header .brand{font-family:'Outfit',sans-serif;font-weight:800;font-size:20px;color:#fff;letter-spacing:-.01em}
 .site-header .brand span{color:var(--gold)}
 .site-header .tagline{font-size:12px;color:rgba(255,255,255,.5);margin-top:2px}
 
-/* PAGE */
-.page{max-width:680px;margin:0 auto;padding:28px 20px 60px}
+/* ── PAGE ───────────────────────────────────────────── */
+.page{max-width:680px;margin:0 auto;padding:24px 20px 60px}
 
-/* HERO */
-.hero-card{background:var(--navy);border-radius:16px;padding:28px 28px 24px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
+/* ── PROPERTY PHOTO BANNER ──────────────────────────── */
+.property-banner{position:relative;width:calc(100% + 56px);margin:-28px -28px 0;background:var(--navy);overflow:hidden;flex-shrink:0;border-radius:16px 16px 0 0}
+.property-banner img{width:100%;height:auto;display:block}
+.property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,rgba(11,31,59,.55) 55%,#0b1f3b 100%);pointer-events:none}
+.property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:14px 20px 18px;pointer-events:none}
+.property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:4px}
+.property-banner-addr{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);line-height:1.25}
+.property-banner-initials{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:52px;font-weight:800;color:rgba(255,255,255,.18);letter-spacing:-3px;pointer-events:none;min-height:160px}
+@media(max-width:480px){.property-banner{margin:-24px -20px 0;width:calc(100% + 40px)}.property-banner-addr{font-size:13px}}
+/* ── SCOPE + PRICE PRODUCT THUMBS ──────────────────── */
+.scope-thumb{width:52px;height:52px;border-radius:9px;object-fit:cover;flex-shrink:0;margin-left:auto;border:1.5px solid rgba(0,0,0,.07);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.price-item-cell{display:flex;align-items:center;gap:10px}
+.price-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(0,0,0,.07);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* ── SCROLL REVEAL ──────────────────────────────────── */
+.reveal{opacity:0;transform:translateY(32px);transition:opacity .65s ease,transform .65s ease}
+.reveal.revealed{opacity:1;transform:translateY(0)}
+.reveal-fast{transition-duration:.4s}
+.reveal-delay-1{transition-delay:.08s}
+.reveal-delay-2{transition-delay:.16s}
+.reveal-delay-3{transition-delay:.24s}
+.reveal-delay-4{transition-delay:.32s}
+
+/* ── HERO CARD ──────────────────────────────────────── */
+.hero-card{background:var(--navy);border-radius:16px;padding:28px 28px 24px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
 .hero-card::before{content:'';position:absolute;top:-30px;right:-30px;width:160px;height:160px;background:var(--gold);opacity:.06;border-radius:50%}
-.hero-eyebrow{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
-.hero-title{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;line-height:1.15;margin-bottom:6px}
-.hero-sub{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:20px}
+.hero-eyebrow{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.expires-badge{font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 10px;background:rgba(255,186,0,.15);border:1px solid rgba(255,186,0,.3);border-radius:20px;color:var(--gold);white-space:nowrap}
+.hero-title{font-family:'Outfit',sans-serif;font-size:26px;font-weight:900;line-height:1.1;margin-bottom:6px}
+.hero-sub{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:20px;line-height:1.5}
 .hero-meta{display:flex;gap:20px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.12);padding-top:16px}
 .hero-meta-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:3px;font-family:'Outfit',sans-serif}
 .hero-meta-value{font-size:13px;font-weight:600;color:#fff;word-break:break-word}
 
-/* CARD */
-.card{background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
+/* ── PERSONAL NOTE ──────────────────────────────────── */
+.personal-note{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start}
+.personal-note-avatar{width:40px;height:40px;border-radius:50%;background:var(--navy);color:var(--gold);font-family:'Outfit',sans-serif;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.personal-note-from{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:5px}
+.personal-note-text{font-size:13px;color:var(--text2);line-height:1.65}
+
+/* ── PROBLEM SECTION ────────────────────────────────── */
+.problem-section{background:var(--navy);border-radius:16px;padding:24px 22px;margin-bottom:16px;color:#fff}
+.section-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.problem-headline{font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;line-height:1.2;color:#fff;margin-bottom:18px}
+
+/* ── STAT GRID ──────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.stat-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 8px;text-align:center}
+.stat-num{font-family:'Outfit',sans-serif;font-size:26px;font-weight:900;color:var(--gold);display:block;line-height:1}
+.stat-unit{font-size:11px;color:rgba(255,255,255,.45);font-weight:600;display:block;margin-top:2px}
+.stat-label{font-size:10px;color:rgba(255,255,255,.45);margin-top:6px;line-height:1.3}
+
+/* ── PROBLEM BODY ───────────────────────────────────── */
+.problem-body{font-size:13px;color:rgba(255,255,255,.72);line-height:1.65;margin-bottom:16px}
+.loss-list{display:flex;flex-direction:column;gap:7px}
+.loss-item{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.85);background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:10px 12px;font-weight:500}
+
+/* ── OUTCOME SECTION ────────────────────────────────── */
+.outcome-section{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:26px 22px;margin-bottom:16px;text-align:center}
+.outcome-headline{font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--navy);margin-bottom:12px;line-height:1.2}
+.outcome-scenario{font-size:14px;color:var(--text2);line-height:1.75;margin-bottom:22px;text-align:left}
+.trio{display:flex;border-radius:10px;overflow:hidden;border:2px solid var(--navy);margin-top:4px}
+.trio-item{flex:1;padding:13px 6px;text-align:center;background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;line-height:1.35;border-right:1.5px solid rgba(255,255,255,.15)}
+.trio-item:last-child{border-right:none}
+.trio-item .trio-num{display:block;font-size:20px;color:var(--gold);margin-bottom:3px}
+
+/* ── CARD ───────────────────────────────────────────── */
+.card{background:#fff;border:1.5px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
 .card-head{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .card-icon{width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .card-head h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
 .card-body{padding:18px 20px}
 
-/* SCOPE LIST */
+/* ── SCOPE LIST ─────────────────────────────────────── */
 .scope-list{list-style:none;display:flex;flex-direction:column;gap:10px}
-.scope-item{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text)}
+.scope-item{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text);opacity:0;transform:translateX(-10px);transition:opacity .4s ease,transform .4s ease}
+.scope-item.scope-in{opacity:1;transform:translateX(0)}
 .scope-check{width:20px;height:20px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .scope-check svg{width:10px;height:10px}
 .scope-item-text strong{display:block;font-weight:600}
 .scope-item-text span{font-size:12px;color:var(--text3)}
 
-/* AMP TOGGLE */
-.amp-toggle-wrap{margin-bottom:20px}
+/* ── INSTALL PHOTOS ─────────────────────────────────── */
+.photos-section{margin-bottom:16px}
+.photos-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:10px}
+.photos-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.photos-grid img{width:100%;height:90px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);transition:transform .2s ease}
+.photos-grid img:hover{transform:scale(1.04)}
+
+/* ── REVIEWS ────────────────────────────────────────── */
+.reviews-section{margin-bottom:16px}
+.reviews-rating{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px}
+.reviews-list{display:flex;flex-direction:column;gap:10px}
+.review-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px}
+.review-stars{font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px}
+.review-text{font-size:12px;color:var(--text);line-height:1.6;margin-bottom:8px}
+.review-author{font-size:11px;font-weight:700;color:var(--text3)}
+
+/* ── PRICE ANCHOR ───────────────────────────────────── */
+.anchor-section{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:22px 20px;margin-bottom:16px}
+.anchor-headline{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;text-align:center;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
+.anchor-vs-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
+.anchor-col{flex:1;text-align:center}
+.anchor-col-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.anchor-price-old{font-family:'Outfit',sans-serif;font-size:30px;font-weight:900;color:#94a3b8;position:relative;display:inline-block}
+.anchor-price-old::after{content:'';position:absolute;left:0;top:50%;height:3px;background:var(--red);transform:translateY(-50%);width:0;transition:width .9s cubic-bezier(.4,0,.2,1);border-radius:2px}
+.anchor-price-old.struck::after{width:100%}
+.anchor-vs-badge{background:var(--bg);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;color:var(--text3);flex-shrink:0}
+.anchor-price-new{font-family:'Outfit',sans-serif;font-size:32px;font-weight:900;color:var(--green)}
+.anchor-tagline{text-align:center;font-size:13px;color:var(--text2);line-height:1.5}
+.anchor-tagline strong{color:var(--navy)}
+
+/* ── AMP TOGGLE ─────────────────────────────────────── */
+.amp-toggle-wrap{margin-bottom:16px}
 .amp-toggle-label{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;text-align:center}
 .amp-toggle{display:flex;background:#f1f5f9;border-radius:12px;padding:4px;gap:4px}
 .amp-toggle-btn{flex:1;padding:12px 0;border-radius:10px;border:none;background:transparent;color:var(--text2);font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
@@ -60,7 +148,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .amp-toggle-btn:not(.active):hover{background:#e2e8f0}
 .amp-toggle-btn .amp-sub{font-size:10px;font-weight:500;opacity:.7;display:block;margin-top:2px}
 
-/* PRICING TABLE */
+/* ── PRICING TABLE ──────────────────────────────────── */
 .price-table{width:100%;border-collapse:collapse;font-size:14px}
 .price-table td{padding:11px 0;border-bottom:1px solid var(--border);vertical-align:top}
 .price-table tr:last-child td{border-bottom:none}
@@ -69,41 +157,48 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .price-item-desc{font-size:12px;color:var(--text3);margin-top:2px}
 .price-total-row td{padding-top:14px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;color:var(--navy)}
 .total-badge{background:var(--navy);color:var(--gold);font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;padding:5px 14px;border-radius:8px;display:inline-block;transition:all .3s}
-.compare-box{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-top:16px;font-size:13px;color:var(--green);font-weight:600;text-align:center;line-height:1.5}
-.compare-box span{font-size:11px;font-weight:400;color:#065f46}
+.per-day-note{text-align:center;padding:10px 0 2px;font-size:13px;color:var(--text3);line-height:1.5}
 
-/* SURGE UPSELL */
-.surge-card{background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 100%);border-radius:14px;margin-bottom:16px;overflow:hidden;position:relative}
-.surge-card::before{content:'';position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(255,186,0,.08) 0%,transparent 70%)}
-.surge-head{padding:20px 20px 0;position:relative}
-.surge-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.surge-title{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:6px}
-.surge-sub{font-size:13px;color:rgba(255,255,255,.6);line-height:1.5}
-.surge-risk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:16px 20px}
-.surge-risk-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 10px;text-align:center}
-.surge-risk-icon{font-size:20px;margin-bottom:4px}
-.surge-risk-name{font-size:11px;color:rgba(255,255,255,.7);font-weight:500;margin-bottom:4px}
-.surge-risk-cost{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff}
-.surge-risk-label{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
-.surge-action{padding:0 20px 20px;display:flex;align-items:center;gap:12px;cursor:pointer}
+/* ── POM CARD ───────────────────────────────────────── */
+.pom-card{background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 100%);border:2.5px solid var(--gold);border-radius:16px;margin-bottom:16px;cursor:pointer;transition:all .2s;overflow:hidden;box-shadow:0 4px 18px rgba(255,186,0,.22)}
+.pom-badge-bar{background:var(--gold);padding:7px 18px;display:flex;align-items:center;justify-content:space-between}
+.pom-body{padding:16px 18px 18px;position:relative}
+.pom-body::before{content:'';position:absolute;top:0;right:0;width:140px;height:140px;background:radial-gradient(circle,rgba(255,186,0,.08),transparent 70%)}
 .surge-toggle-track{width:52px;height:32px;border-radius:16px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.2);cursor:pointer;position:relative;transition:all .25s;flex-shrink:0}
 .surge-toggle-track.on{background:var(--gold);border-color:var(--gold)}
 .surge-toggle-knob{width:24px;height:24px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .surge-toggle-track.on .surge-toggle-knob{transform:translateX(20px)}
-.surge-toggle-text{flex:1}
-.surge-toggle-label{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#fff}
-.surge-toggle-price{font-size:12px;color:rgba(255,255,255,.5);margin-top:1px}
-.surge-toggle-price.on{color:var(--gold)}
-.surge-stat{font-size:11px;color:rgba(255,255,255,.4);text-align:center;padding:0 20px 16px;line-height:1.4}
-.surge-stat strong{color:rgba(255,255,255,.7)}
+.pom-feature{display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px}
+.pom-feature-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:2px}
+.pom-feature-desc{font-size:11px;color:rgba(255,255,255,.55);line-height:1.4}
 
-/* SIGN SECTION */
+/* ── GUARANTEE SECTION ──────────────────────────────── */
+.guarantee-section{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:24px 20px;margin-bottom:16px}
+.guarantee-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#f0fdf4;border:1.5px solid #d1fae5;border-radius:10px;margin-bottom:10px}
+.guarantee-item:last-child{margin-bottom:0}
+.guarantee-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+.guarantee-item-title{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;color:var(--navy);margin-bottom:2px}
+.guarantee-item-desc{font-size:12px;color:var(--text2);line-height:1.45}
+
+/* ── AUTHORITY BADGES ───────────────────────────────── */
+.badge-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:18px}
+.authority-badge{display:flex;align-items:center;gap:5px;padding:6px 12px;background:var(--navy);color:#fff;border-radius:20px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700}
+
+/* ── SCARCITY BAR ───────────────────────────────────── */
+.scarcity-bar{background:linear-gradient(135deg,#7f1d1d,#991b1b);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.scarcity-dots{display:flex;gap:5px;flex-shrink:0}
+.scarcity-dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .3s}
+.scarcity-dot.filled{background:var(--gold)}
+.scarcity-text{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:#fff;line-height:1.4}
+.scarcity-sub{font-size:11px;color:rgba(255,255,255,.65);font-weight:500;margin-top:2px}
+
+/* ── SIGN SECTION ───────────────────────────────────── */
 .sign-card{background:#fff;border:2px solid var(--navy);border-radius:14px;overflow:hidden;margin-bottom:16px}
-.sign-card-head{background:var(--navy);padding:16px 20px}
-.sign-card-head h2{font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;color:#fff}
+.sign-card-head{background:var(--navy);padding:18px 20px}
+.sign-card-head h2{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#fff}
 .sign-card-head p{font-size:13px;color:rgba(255,255,255,.6);margin-top:3px}
 .sign-card-body{padding:20px}
-.ack-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#f8f9fb;border:1.5px solid var(--border);border-radius:10px;margin-bottom:16px;cursor:pointer;transition:border-color .15s;user-select:none;-webkit-user-select:none;min-height:48px}
+.ack-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#f8f9fb;border:1.5px solid var(--border);border-radius:10px;margin-bottom:12px;cursor:pointer;transition:border-color .15s;user-select:none;-webkit-user-select:none;min-height:48px}
 .ack-row:hover{border-color:var(--navy2)}
 .ack-row.checked{border-color:var(--green);background:#f0fdf4}
 .ack-box{width:28px;height:28px;border-radius:7px;border:2px solid #cbd5e1;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:0;transition:all .15s}
@@ -117,34 +212,22 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .sig-preview{font-family:'Dancing Script',cursive;font-size:28px;color:var(--navy);text-align:center;padding:12px 0 4px;min-height:48px;opacity:.7;transition:opacity .2s}
 .sig-preview:empty{opacity:0}
 .name-hint{font-size:12px;color:var(--text3);margin-top:6px}
-.approve-btn{width:100%;padding:16px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:10px}
-.approve-btn:hover{background:var(--navy2)}
+.approve-btn{width:100%;padding:18px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.01em}
+.approve-btn:hover:not(:disabled){background:var(--navy2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(11,31,59,.35)}
 .approve-btn:disabled{opacity:.4;cursor:not-allowed;background:#94a3b8}
 
-/* APPROVED */
+/* ── APPROVED STATE ─────────────────────────────────── */
 .approved-banner{background:var(--green);border-radius:14px;padding:32px 24px;text-align:center;color:#fff;margin-bottom:16px}
 .approved-icon{width:64px;height:64px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
 .approved-banner h2{font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;margin-bottom:6px}
 .approved-banner p{font-size:14px;opacity:.85}
-.approved-receipt{background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px}
-.approved-receipt-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px}
-.approved-receipt-row:not(:last-child){border-bottom:1px solid var(--border)}
-.approved-receipt-label{color:var(--text3)}
-.approved-receipt-value{font-weight:600;color:var(--text)}
-
-/* NEXT STEPS */
 .next-step-item{display:flex;gap:14px;align-items:flex-start;padding:14px 0}
 .next-step-item:not(:last-child){border-bottom:1px solid var(--border)}
-.next-step-num{width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--gold);font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.next-step-num{width:32px;height:32px;border-radius:50%;background:var(--navy);color:var(--gold);font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .next-step-text strong{display:block;font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
 .next-step-text span{font-size:12px;color:var(--text3);line-height:1.4}
 
-/* DOWNLOAD BTN */
-.dl-btn{width:100%;padding:14px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
-.dl-btn:hover{background:var(--navy);color:#fff}
-.dl-btn:disabled{opacity:.6;pointer-events:none}
-
-/* LEGAL / AGREEMENT */
+/* ── LEGAL ──────────────────────────────────────────── */
 .legal-section{background:#f8f9fb;border:1.5px solid var(--border);border-radius:10px;padding:16px 18px;margin-top:12px}
 .legal-section-title{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
 .legal-row{display:flex;justify-content:space-between;padding:7px 0;font-size:12px;border-bottom:1px solid var(--border)}
@@ -154,7 +237,12 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .legal-terms{font-size:12px;color:var(--text2);line-height:1.6;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:10px;max-height:200px;overflow-y:auto}
 .legal-footer{font-size:11px;color:var(--text3);text-align:center;margin-top:14px;line-height:1.5;font-style:italic}
 
-/* LOADING / ERROR */
+/* ── DL BUTTON ──────────────────────────────────────── */
+.dl-btn{width:100%;padding:14px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
+.dl-btn:hover{background:var(--navy);color:#fff}
+.dl-btn:disabled{opacity:.6;pointer-events:none}
+
+/* ── LOADING / ERROR ────────────────────────────────── */
 .state-wrap{text-align:center;padding:60px 24px}
 .state-wrap svg{width:48px;height:48px;opacity:.25;margin-bottom:14px}
 .state-wrap h2{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:var(--navy);margin-bottom:8px}
@@ -162,7 +250,13 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .spinner-large{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* FOOTER */
+/* ── CONFETTI ───────────────────────────────────────── */
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1}
+  100%{transform:translateY(110vh) rotate(720deg) scale(.5);opacity:0}
+}
+
+/* ── FOOTER ─────────────────────────────────────────── */
 .site-footer{text-align:center;padding:28px 24px 24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px}
 .site-footer a{color:var(--text3);text-decoration:none}
 .site-footer a:hover{color:var(--navy)}
@@ -171,24 +265,16 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .site-footer .cred-license{font-weight:600;color:var(--text2);margin-top:6px}
 .site-footer .cred-dba{font-size:11px;margin-top:2px}
 
-/* PROPERTY PHOTO BANNER — lives inside .hero-card */
-.property-banner{position:relative;width:100%;height:220px;background:var(--navy);overflow:hidden;flex-shrink:0;margin:-28px -28px 24px;width:calc(100% + 56px)}
-.property-banner img{position:absolute;inset:-15%;width:130%;height:130%;object-fit:cover;transform-origin:center 70%;will-change:transform}
-.property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.65) 100%);pointer-events:none}
-.property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:14px 20px 16px;pointer-events:none}
-.property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:4px}
-.property-banner-addr{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);line-height:1.25}
-.property-banner-initials{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:52px;font-weight:800;color:rgba(255,255,255,.18);letter-spacing:-3px;pointer-events:none}
-@media(max-width:480px){.property-banner{height:170px;margin:-24px -20px 20px;width:calc(100% + 40px)}.property-banner-addr{font-size:14px}}
-
+/* ── RESPONSIVE ─────────────────────────────────────── */
 @media(max-width:480px){
   .hero-title{font-size:22px}
   .hero-card{padding:24px 20px 20px}
   .hero-meta{gap:14px}
   .page{padding:16px 14px 48px}
-  .surge-risk-grid{grid-template-columns:1fr 1fr 1fr;gap:6px}
-  .surge-risk-item{padding:10px 6px}
-  .surge-risk-cost{font-size:14px}
+  .stat-grid{gap:6px}
+  .stat-num{font-size:22px}
+  .anchor-price-old,.anchor-price-new{font-size:24px}
+  .photos-grid img{height:72px}
   .sig-preview{padding:16px 0 12px;min-height:56px}
 }
 </style>
@@ -197,7 +283,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 
 <header class="site-header">
   <img src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:32px;">
-  <div class="tagline">Licensed Electrical Contractor · SC LIC #2942 · Upstate SC</div>
+  <div class="tagline">Licensed Electrical Contractor &middot; SC LIC #2942 &middot; Upstate SC</div>
 </header>
 
 <main class="page" id="main">
@@ -222,40 +308,31 @@ const SUPABASE_URL = 'https://reowtzedjflwmlptupbk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let P = null;           // proposal data
-let chosenAmp = null;    // '30' or '50'
+let P = null;
+let chosenAmp = null;
 let surgeOn = false;
 let pomOn = false;
 let ackScope = false;
 let ackSafety = false;
 let isPreview = false;
 
-// ── INIT ────────────────────────────────────────────────────
+// ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   const token = new URLSearchParams(window.location.search).get('token');
   if (!token) { showError('No proposal found.', 'This link is missing a proposal token.'); return; }
-
   const { data, error } = await db.from('proposals').select('*').eq('token', token).single();
   if (error || !data) { showError('Proposal not found.', 'This link may be invalid or has been removed.'); return; }
-
   P = data;
-
-  // Track view (skip if preview mode)
   isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
   if (!isPreview) trackView(token);
-
   if (P.status === 'Cancelled') {
-    document.getElementById('app').innerHTML = '<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">🚫</div><div style="font-family:Outfit,sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:8px">Proposal Cancelled</div><div style="font-size:14px;color:var(--text3);max-width:360px;margin:0 auto">This proposal has been cancelled and is no longer available. Please contact Backup Power Pro at <a href="tel:8644005302" style="color:var(--blue);font-weight:600">(864) 400-5302</a> if you have questions.</div></div>';
+    document.getElementById('main').innerHTML = '<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">🚫</div><div style="font-family:Outfit,sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:8px">Proposal Cancelled</div><div style="font-size:14px;color:var(--text3);max-width:360px;margin:0 auto">This proposal has been cancelled. Please contact Backup Power Pro at <a href="tel:8644005302" style="color:var(--blue);font-weight:600">(864) 400-5302</a> if you have questions.</div></div>';
     return;
   }
-  if (P.status === 'Approved') {
-    renderApproved();
-  } else {
-    renderProposal();
-  }
+  if (P.status === 'Approved') { renderApproved(); } else { renderProposal(); }
 });
 
-// ── VIEW TRACKING ───────────────────────────────────────────
+// ── VIEW TRACKING ────────────────────────────────────────────
 async function trackView(token) {
   try {
     await db.from('proposals').update({
@@ -266,27 +343,15 @@ async function trackView(token) {
   } catch(e) {}
 }
 
-// ── GET IP ──────────────────────────────────────────────────
 async function getIP() {
-  try {
-    const r = await fetch('https://api.ipify.org?format=json');
-    const d = await r.json();
-    return d.ip;
-  } catch(e) { return 'unknown'; }
+  try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); return d.ip; } catch(e) { return 'unknown'; }
 }
 
-// ── PRICING HELPERS ─────────────────────────────────────────
+// ── PRICING HELPERS ──────────────────────────────────────────
 function getPrice(amp) {
   if (amp === '50' && P.pricing_50) return P.pricing_50;
   if (amp === '30' && P.pricing_30) return P.pricing_30;
-  return {
-    base: P.price_base || 0,
-    cord: P.include_cord ? (P.price_cord || 150) : 0,
-    cordIncluded: P.include_cord,
-    mainBreaker: 0, twinQuad: 0, longRun: 0,
-    permitInspection: 0,
-    total: P.total || 0,
-  };
+  return { base: P.price_base || 0, cord: P.include_cord ? (P.price_cord || 150) : 0, cordIncluded: P.include_cord, mainBreaker: 0, twinQuad: 0, longRun: 0, permitInspection: 0, total: P.total || 0 };
 }
 
 function calcTotal(amp) {
@@ -310,59 +375,85 @@ async function renderPropertyBanner() {
   const parts = name.trim().split(/\s+/);
   const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
                  : parts.length === 1 ? parts[0][0].toUpperCase() : '?';
-
   const gradHtml = `<div class="property-banner-grad"></div>`;
-  const labelHtml = addr ? `
-    <div class="property-banner-label">
-      <div class="property-banner-eyebrow">📍 Your Installation Address</div>
-      <div class="property-banner-addr">${esc(addr)}</div>
-    </div>` : '';
-
-  // Always render initials fallback first
-  wrap.innerHTML = `
-    <div class="property-banner">
-      <div class="property-banner-initials">${initials}</div>
-      ${gradHtml}
-      ${addr ? labelHtml : `<div class="property-banner-label"><div class="property-banner-addr">${esc(name)}</div></div>`}
-    </div>`;
-
+  const labelHtml = addr ? `<div class="property-banner-label"><div class="property-banner-eyebrow">📍 Your Installation Address</div><div class="property-banner-addr">${esc(addr)}</div></div>` : '';
+  wrap.innerHTML = `<div class="property-banner"><div class="property-banner-initials">${initials}</div>${gradHtml}${addr ? labelHtml : `<div class="property-banner-label"><div class="property-banner-addr">${esc(name)}</div></div>`}</div>`;
   if (!addr) return;
-
-  // Check Street View coverage via metadata API — only show photo if imagery exists
   try {
     const r = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(addr)}&key=${_SV_KEY}`);
     const d = await r.json();
-    if (d.status !== 'OK') return; // no imagery — keep initials fallback
+    if (d.status !== 'OK') return;
     const bannerEl = wrap.querySelector('.property-banner');
     if (!bannerEl) return;
     const img = document.createElement('img');
     img.alt = 'Your home';
-    img.src = `https://maps.googleapis.com/maps/api/streetview?size=1400x520&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
     img.id = 'banner-photo';
-    img.style.transform = 'scale(1.18) translateY(0px)';
-    // Insert before gradient so it's behind the label
-    bannerEl.insertBefore(img, bannerEl.querySelector('.property-banner-grad'));
-    // Drive zoom-out + parallax together via rAF so they never conflict
-    const _zoomStart = Date.now();
-    const _zoomDuration = 1400;
-    function _updateBanner() {
-      const el = document.getElementById('banner-photo');
-      if (!el) return;
-      const elapsed = Date.now() - _zoomStart;
-      const t = Math.min(elapsed / _zoomDuration, 1);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-      const scale = 1.18 - (0.18 * eased);
-      const scrollY = window.scrollY || window.pageYOffset;
-      const shift = Math.min(scrollY * 0.2, 40);
-      el.style.transform = `scale(${scale.toFixed(4)}) translateY(${shift}px)`;
-      if (t < 1) requestAnimationFrame(_updateBanner);
-    }
-    requestAnimationFrame(_updateBanner);
-    window.addEventListener('scroll', _updateBanner, { passive: true });
-  } catch(e) { /* keep initials on network error */ }
+    img.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
+  } catch(e) {}
 }
 
-// ── RENDER PROPOSAL ─────────────────────────────────────────
+// ── SCROLL REVEAL ────────────────────────────────────────────
+function initScrollReveal() {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('revealed');
+      // Trigger stat counters
+      if (entry.target.classList.contains('stat-grid')) animateStats(entry.target);
+      // Trigger price anchor strike-through
+      if (entry.target.id === 'anchor-section') {
+        setTimeout(() => { document.querySelector('.anchor-price-old')?.classList.add('struck'); }, 500);
+      }
+      // Stagger scope checklist items
+      if (entry.target.classList.contains('scope-list')) {
+        entry.target.querySelectorAll('.scope-item').forEach((el, i) => {
+          setTimeout(() => el.classList.add('scope-in'), i * 80);
+        });
+      }
+      obs.unobserve(entry.target);
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+}
+
+function animateStats(container) {
+  container.querySelectorAll('.stat-num').forEach(el => {
+    const target = parseFloat(el.dataset.target);
+    const decimals = String(target).includes('.') ? 1 : 0;
+    const duration = 1200;
+    const start = Date.now();
+    function tick() {
+      const elapsed = Date.now() - start;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = (target * eased).toFixed(decimals);
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// ── CONFETTI ─────────────────────────────────────────────────
+function launchConfetti() {
+  const colors = ['#ffba00','#0b1f3b','#059669','#fff','#dc2626','#1d4ed8'];
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden';
+  document.body.appendChild(container);
+  for (let i = 0; i < 90; i++) {
+    const piece = document.createElement('div');
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const x = Math.random() * 100;
+    const delay = Math.random() * 0.9;
+    const dur = 2.2 + Math.random() * 1.8;
+    const size = 6 + Math.random() * 9;
+    const isCircle = Math.random() > 0.5;
+    piece.style.cssText = `position:absolute;left:${x}%;top:-12px;width:${size}px;height:${size}px;background:${color};border-radius:${isCircle ? '50%' : '2px'};animation:confettiFall ${dur}s ease-in ${delay}s forwards`;
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.remove(), 5000);
+}
+
+// ── RENDER PROPOSAL ──────────────────────────────────────────
 function renderProposal() {
   const isNew = !!P.pricing_30 || !!P.pricing_50;
   const hasBothPricing = !!P.pricing_30 && !!P.pricing_50;
@@ -370,211 +461,307 @@ function renderProposal() {
   surgeOn = P.selected_surge || false;
   pomOn = P.selected_pom || false;
 
-  const createdDate = new Date(P.created_at).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-  });
+  const firstName = (P.contact_name || '').trim().split(/\s+/)[0] || P.contact_name || 'Homeowner';
+  const createdDate = new Date(P.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const includes = [
-    { name: 'Generator inlet box', desc: 'Installed on exterior of home, weather-rated' },
-    { name: 'Interlock kit', desc: 'Code-compliant, UL-listed — prevents back-feed' },
-    { name: 'Permit pulled & filed', desc: 'We handle all paperwork with the county' },
-    { name: 'State electrical inspection', desc: 'Scheduled and coordinated for you' },
-    { name: 'Site cleanup', desc: 'We leave it the way we found it' },
-    { name: 'Customer walkthrough', desc: 'Step-by-step how to use your new system' },
-  ];
+  // Expiration countdown (30 days)
+  const expiresDate = new Date(new Date(P.created_at).getTime() + 30 * 24 * 60 * 60 * 1000);
+  const daysLeft = Math.ceil((expiresDate - Date.now()) / (1000 * 60 * 60 * 24));
+  const expiresBadge = daysLeft > 0
+    ? `<span class="expires-badge">⏰ Expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}</span>`
+    : `<span class="expires-badge" style="background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.3);color:#fca5a5">Expired — contact us</span>`;
+
+  // What's included
   const pr = getPrice(chosenAmp);
-  if (pr.cordIncluded !== false && (P.cord_included !== false)) {
-    includes.push({ name: 'Power transfer cord', desc: 'Connects your generator to the inlet box' });
+  const _ai = chosenAmp === '50' ? '50' : '30';
+  const includes = [
+    { name: 'Generator inlet box', desc: 'Weather-rated, installed on exterior of home', img: `assets/product-images/inlet-${_ai}amp.jpg` },
+    { name: 'Interlock kit', desc: 'Code-compliant, UL-listed — prevents back-feed' },
+    { name: 'Permit pulled & filed', desc: 'We handle all paperwork with your county', img: 'assets/product-images/permit-inspection.jpg' },
+    { name: 'State electrical inspection', desc: 'Scheduled and coordinated by us — nothing for you to do', img: 'assets/product-images/permit-inspection.jpg' },
+    { name: 'Site cleanup', desc: 'We leave it exactly the way we found it' },
+    { name: 'Customer walkthrough', desc: 'Step-by-step how to use your system every time' },
+  ];
+  if (pr.cordIncluded !== false && P.cord_included !== false) {
+    includes.push({ name: 'Power transfer cord', desc: 'Connects your generator to the inlet box', img: `assets/product-images/cord-${_ai}amp.jpg` });
   }
 
-  const notesHtml = P.notes ? `
-    <div class="card">
-      <div class="card-head">
-        <div class="card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-        <h2>Notes from Key</h2>
+  const scopeItems = includes.map(i => `
+    <li class="scope-item">
+      <div class="scope-check"><svg viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg></div>
+      <div class="scope-item-text"><strong>${esc(i.name)}</strong><span>${esc(i.desc)}</span></div>
+      ${i.img ? `<img class="scope-thumb" src="${i.img}" alt="${esc(i.name)}" loading="lazy">` : ''}
+    </li>`).join('');
+
+  // Personal note from Key
+  const noteHtml = P.notes ? `
+    <div class="personal-note reveal">
+      <div class="personal-note-avatar">K</div>
+      <div>
+        <div class="personal-note-from">A note from Key</div>
+        <div class="personal-note-text">${esc(P.notes)}</div>
       </div>
-      <div class="card-body" style="font-size:14px;color:var(--text2);line-height:1.6">${esc(P.notes)}</div>
     </div>` : '';
 
+  // Amp toggle
+  const ampToggleHtml = hasBothPricing ? `
+    <div class="amp-toggle-wrap reveal">
+      <div class="amp-toggle-label">Choose Your Setup <span style="font-weight:400;font-size:11px;color:var(--text3)">(match your generator's output)</span></div>
+      <div class="amp-toggle">
+        <button class="amp-toggle-btn ${chosenAmp === '30' ? 'active' : ''}" onclick="switchAmp('30')">
+          30 Amp<span class="amp-sub">${P.amp_type === '30' || P.selected_amp === '30' ? '⭐ Recommended' : 'Standard'}</span>
+        </button>
+        <button class="amp-toggle-btn ${chosenAmp === '50' ? 'active' : ''}" onclick="switchAmp('50')">
+          50 Amp<span class="amp-sub">${P.amp_type === '50' || P.selected_amp === '50' ? '⭐ Recommended' : 'More circuits'}</span>
+        </button>
+      </div>
+    </div>` : '';
+
+  const baseTotal = calcTotal(chosenAmp);
+
   document.getElementById('main').innerHTML = `
-    <!-- Hero -->
+
+    <!-- ══ ACT 1: PERSONAL HEADER ══ -->
     <div class="hero-card">
       <div id="property-banner-wrap"></div>
-      <div class="hero-eyebrow">Your Custom Proposal</div>
+      <div class="hero-eyebrow" style="margin-top:20px">
+        Built for ${esc(firstName)} · Upstate SC
+        ${expiresBadge}
+      </div>
       <div class="hero-title">The Storm-Ready<br>Connection System</div>
-      <div class="hero-sub">One cord. Full power. Done in a day.</div>
+      <div class="hero-sub">One cord. Full power. Done in a day — without the $15,000 standby generator.</div>
       <div class="hero-meta">
-        <div class="hero-meta-item">
+        <div>
           <div class="hero-meta-label">Prepared For</div>
           <div class="hero-meta-value">${esc(P.contact_name)}</div>
         </div>
-        ${P.contact_address ? `<div class="hero-meta-item">
-          <div class="hero-meta-label">Address</div>
-          <div class="hero-meta-value">${esc(P.contact_address)}</div>
-        </div>` : ''}
-        <div class="hero-meta-item">
-          <div class="hero-meta-label">Date</div>
+        ${P.contact_address ? `<div><div class="hero-meta-label">Address</div><div class="hero-meta-value">${esc(P.contact_address)}</div></div>` : ''}
+        <div>
+          <div class="hero-meta-label">Proposal Date</div>
           <div class="hero-meta-value">${createdDate}</div>
         </div>
       </div>
     </div>
 
-    <!-- What's Included -->
-    <div class="card">
-      <div class="card-head">
-        <div class="card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <h2>Everything Included</h2>
+    ${noteHtml}
+
+    <!-- ══ ACT 2: THE PROBLEM ══ -->
+    <div class="problem-section reveal">
+      <div class="section-eyebrow">⚡ The reality in Upstate SC</div>
+      <div class="problem-headline">Your generator is ready.<br>Your house isn't connected to it.</div>
+
+      <div class="stat-grid reveal">
+        <div class="stat-item">
+          <span class="stat-num" data-target="1.2">1.2</span>
+          <span class="stat-unit">×/year</span>
+          <div class="stat-label">Avg outages per SC customer</div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" data-target="97">97</span>
+          <span class="stat-unit">min</span>
+          <div class="stat-label">Avg outage length</div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" data-target="22">22</span>
+          <span class="stat-unit">hrs+</span>
+          <div class="stat-label">Storm year average</div>
+        </div>
       </div>
-      <div class="card-body">
-        <ul class="scope-list">
-          ${includes.map(i => `<li class="scope-item"><div class="scope-check"><svg viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg></div><div class="scope-item-text"><strong>${esc(i.name)}</strong><span>${esc(i.desc)}</span></div></li>`).join('')}
-        </ul>
+
+      <p class="problem-body">South Carolina ranks among the worst states in the Southeast for outage duration — more than double North Carolina, nearly triple Georgia. When a storm rolls through the Upstate, you're not looking at a quick blip. You're looking at hours, sometimes days.</p>
+      <p class="problem-body" style="margin-bottom:16px">Right now, if the power goes out, your only option is extension cords run out a window — losing half your circuits, creating a fire hazard, and risking a back-feed that could seriously injure a lineman working on your street.</p>
+
+      <div class="loss-list">
+        <div class="loss-item">🥩 <strong>$300+ in groceries spoiled</strong> every time the power's out long enough</div>
+        <div class="loss-item">🌡️ <strong>No HVAC</strong> — dangerous in summer heat, miserable in winter cold</div>
+        <div class="loss-item">💊 <strong>Medical equipment offline</strong> — CPAP, oxygen, refrigerated medication</div>
+        <div class="loss-item">⚠️ <strong>Real legal and safety risk</strong> — extension cords without a transfer switch can back-feed the grid</div>
       </div>
     </div>
 
-    ${hasBothPricing ? `
-    <!-- Amp Toggle -->
-    <div class="amp-toggle-wrap">
-      <div class="amp-toggle-label">Choose Your Setup <span style="font-weight:400;font-size:11px;color:var(--text3)">(depending on your generator)</span></div>
-      <div class="amp-toggle">
-        <button class="amp-toggle-btn ${chosenAmp==='30'?'active':''}" onclick="switchAmp('30')">
-          30 Amp<span class="amp-sub">${P.amp_type==='30'||P.selected_amp==='30'?'⭐ Recommended':'Standard'}</span>
-        </button>
-        <button class="amp-toggle-btn ${chosenAmp==='50'?'active':''}" onclick="switchAmp('50')">
-          50 Amp<span class="amp-sub">${P.amp_type==='50'||P.selected_amp==='50'?'⭐ Recommended':'More circuits'}</span>
-        </button>
+    <!-- ══ ACT 3: THE OUTCOME ══ -->
+    <div class="outcome-section reveal">
+      <div class="section-eyebrow" style="justify-content:center;color:var(--gold);margin-bottom:8px">✦ What changes</div>
+      <div class="outcome-headline">Picture the next storm hitting Upstate SC.</div>
+      <p class="outcome-scenario">Power goes out at 7pm. Your neighbors are scrambling for flashlights and candles. You walk to the garage, plug in one cord, and flip your interlock. Your whole house comes back on. Refrigerator running. Lights on. A/C holding. CPAP working. Kids sleeping. No extension cords tangled through windows. No fire hazard. No jury-rigged workarounds. Just full, code-compliant power from the generator you already own — exactly the way you left everything.</p>
+      <div class="trio">
+        <div class="trio-item"><span class="trio-num">①</span>One Cord.</div>
+        <div class="trio-item"><span class="trio-num">②</span>Full Power.</div>
+        <div class="trio-item"><span class="trio-num">③</span>Done in a Day.</div>
       </div>
-    </div>` : ''}
+    </div>
 
-    <!-- Pricing -->
-    <div class="card" id="pricing-card">
+    <!-- ══ ACT 3b: WHAT'S INCLUDED ══ -->
+    <div class="card reveal">
       <div class="card-head">
-        <div class="card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-        <h2>Your Investment</h2>
+        <div class="card-icon" style="background:#f0fdf4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2>Everything Included — Zero Surprises</h2>
+      </div>
+      <div class="card-body">
+        <ul class="scope-list reveal">${scopeItems}</ul>
+        <div style="margin-top:16px;padding:12px 14px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;font-size:12px;color:#92400e;text-align:center;font-weight:600">
+          💳 Payment is due on completion day only — after you see everything working.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ INSTALL PHOTOS ══ -->
+    <div class="photos-section reveal">
+      <div class="photos-label">Recent Installs — Greenville &amp; Upstate SC</div>
+      <div class="photos-grid">
+        <img src="img/install-inlet-brick-1.jpg" alt="Generator inlet on brick" loading="lazy">
+        <img src="img/install-inlet-siding.jpg" alt="Generator inlet on siding" loading="lazy">
+        <img src="img/install-surge-protector.jpg" alt="Surge protector" loading="lazy">
+        <img src="img/install-inlet-panel.jpg" alt="Inlet next to panel" loading="lazy">
+      </div>
+    </div>
+
+    <!-- ══ SOCIAL PROOF ══ -->
+    <div class="reviews-section reveal">
+      <div class="reviews-rating">
+        <svg width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        <span style="font-size:14px;font-weight:700;color:var(--text)">4.9</span>
+        <span style="color:var(--gold);font-size:14px;letter-spacing:1px">★★★★★</span>
+        <span style="font-size:12px;color:var(--text3)">102 Google reviews</span>
+      </div>
+      <div class="reviews-list">
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Key moved/wired several breakers, drilled through a brick wall, mounted a generator outlet and installed an interlock. He was very responsive, excellent communication and was very reasonable about an unexpected issue discovered while doing the job. The work was very professional and no mess left behind. Highly recommended."</div>
+          <div class="review-author">Chris A. — Greenville, SC &nbsp;·&nbsp; <span style="color:#4285F4">Google</span></div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"My experience with Key Electric was outstanding. From the moment we saw their advertising video on Facebook, to our first contact and all subsequent communications, their proposal and approval process, and their installation — Key Electric did a great job. The owner, Key Goodson, was very polite and courteous at all times, very personable, friendly and knowledgeable. I highly recommend Key Electric!"</div>
+          <div class="review-author">Dwellion H. — Greenville, SC &nbsp;·&nbsp; <span style="color:#4285F4">Google</span></div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Key was courteous and on time. He installed a generator inlet for me and the work looks good and he cleaned up well. Key is a good communicator that runs a very well run little business."</div>
+          <div class="review-author">Christopher C. — Greenville, SC &nbsp;·&nbsp; <span style="color:#4285F4">Google</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ACT 4: THE INVESTMENT ══ -->
+    <div class="anchor-section reveal" id="anchor-section">
+      <div class="anchor-headline">Why homeowners choose us over the alternative</div>
+      <div class="anchor-vs-row">
+        <div class="anchor-col">
+          <div class="anchor-col-label">Standby Generator</div>
+          <div class="anchor-price-old">$15,000</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">plus installation · plus maintenance</div>
+        </div>
+        <div class="anchor-vs-badge">VS</div>
+        <div class="anchor-col">
+          <div class="anchor-col-label">Storm-Ready Connection System</div>
+          <div class="anchor-price-new" id="anchor-our-price">${fmt(baseTotal)}</div>
+          <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:4px">total · everything included</div>
+        </div>
+      </div>
+      <div class="anchor-tagline">You already own the generator. <strong>We unlock everything it can do.</strong></div>
+    </div>
+
+    ${ampToggleHtml}
+
+    <!-- Pricing Card -->
+    <div class="card reveal" id="pricing-card">
+      <div class="card-head">
+        <div class="card-icon" style="background:#fffbeb">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h2>Your Investment Breakdown</h2>
       </div>
       <div class="card-body" id="pricing-body"></div>
     </div>
 
-    ${notesHtml}
-
-    <!-- Peace of Mind Protection Package -->
-    <div id="pom-card" onclick="togglePom()" style="position:relative;background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 100%);border:2.5px solid var(--gold);border-radius:16px;padding:0;margin-bottom:16px;cursor:pointer;transition:all .2s;overflow:hidden;box-shadow:0 4px 18px rgba(255,186,0,.22)">
-      <!-- top badge bar -->
-      <div style="background:var(--gold);padding:7px 18px;display:flex;align-items:center;justify-content:space-between">
+    <!-- POM Add-On -->
+    <div class="pom-card reveal" id="pom-card" onclick="togglePom()">
+      <div class="pom-badge-bar">
         <div style="font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7a4a00">⭐ Recommended Add-On</div>
-        <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:#7a4a00;opacity:.8">Everything in one</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:#7a4a00;opacity:.8">All three, same day</div>
       </div>
-      <!-- body -->
-      <div style="padding:16px 18px 18px">
+      <div class="pom-body">
         <div style="display:flex;align-items:flex-start;gap:14px">
-          <!-- toggle -->
           <div style="padding-top:3px;flex-shrink:0">
-            <div class="surge-toggle-track ${pomOn?'on':''}" id="pom-toggle">
-              <div class="surge-toggle-knob"></div>
-            </div>
+            <div class="surge-toggle-track ${pomOn ? 'on' : ''}" id="pom-toggle"><div class="surge-toggle-knob"></div></div>
           </div>
-          <!-- content -->
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
               <span style="font-size:20px">🛡️</span>
               <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:900;color:#fff">Peace of Mind Protection Package</div>
             </div>
-            <div style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:12px;line-height:1.4">Complete protection — before, during, and after every outage.</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px">Complete protection — before, during, and after every outage.</div>
             <div style="display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
-                <span style="color:var(--gold);font-size:14px;margin-top:1px;flex-shrink:0">⚡</span>
-                <div>
-                  <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">Whole-Home Surge Protection</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Installed on your panel. Backed by a $75,000 connected equipment warranty.</div>
-                </div>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
-                <span style="color:var(--gold);font-size:14px;margin-top:1px;flex-shrink:0">📋</span>
-                <div>
-                  <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">Safety &amp; Wattage Planning Guide</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Customized for your home's setup so you know exactly what to run during an outage.</div>
-                </div>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
-                <span style="color:var(--gold);font-size:14px;margin-top:1px;flex-shrink:0">🔍</span>
-                <div>
-                  <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">20-Point Panel Safety Inspection</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Full evaluation of your main panel — catch issues before they become emergencies.</div>
-                </div>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
-                <span style="color:var(--gold);font-size:14px;margin-top:1px;flex-shrink:0">📅</span>
-                <div>
-                  <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">Priority Scheduling</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.4">Move to the front of the line — your install gets scheduled first.</div>
-                </div>
-              </div>
+              <div class="pom-feature"><span style="color:var(--gold);font-size:14px;flex-shrink:0">⚡</span><div><div class="pom-feature-title">Whole-Home Surge Protection</div><div class="pom-feature-desc">Installed on your panel. Backed by a $75,000 connected equipment warranty.</div></div></div>
+              <div class="pom-feature"><span style="color:var(--gold);font-size:14px;flex-shrink:0">📋</span><div><div class="pom-feature-title">Safety & Wattage Planning Guide</div><div class="pom-feature-desc">Customized for your home so you know exactly what to run during an outage.</div></div></div>
+              <div class="pom-feature"><span style="color:var(--gold);font-size:14px;flex-shrink:0">🔍</span><div><div class="pom-feature-title">20-Point Panel Safety Inspection</div><div class="pom-feature-desc">Full evaluation of your main panel — catch issues before they become emergencies.</div></div></div>
+              <div class="pom-feature"><span style="color:var(--gold);font-size:14px;flex-shrink:0">📅</span><div><div class="pom-feature-title">Priority Scheduling</div><div class="pom-feature-desc">Move to the front of the line — your install gets scheduled first.</div></div></div>
             </div>
           </div>
-          <!-- price -->
           <div style="text-align:right;flex-shrink:0;padding-top:2px">
-            <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">+$447</div>
+            <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">+$${P.pom_price || 447}</div>
             <div style="font-size:10px;color:rgba(255,255,255,.45);font-weight:600;margin-top:1px">one-time</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Install Photos Gallery -->
-    <div style="margin-bottom:16px">
-      <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:10px">Recent Installs &mdash; Greenville &amp; Upstate SC</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
-        <img src="img/install-inlet-brick-1.jpg" alt="Generator inlet on brick" loading="lazy"
-          style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border)">
-        <img src="img/install-inlet-siding.jpg" alt="Generator inlet on siding" loading="lazy"
-          style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border)">
-        <img src="img/install-surge-protector.jpg" alt="Surge protector" loading="lazy"
-          style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border)">
-        <img src="img/install-inlet-panel.jpg" alt="Inlet next to panel" loading="lazy"
-          style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border)">
+    <!-- ══ ACT 5: RISK REMOVAL ══ -->
+    <div class="guarantee-section reveal">
+      <div class="section-eyebrow" style="color:var(--green)">✓ Our triple guarantee</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:var(--navy);margin-bottom:16px">We Remove Every Risk From Your Decision</div>
+      <div class="guarantee-item">
+        <div class="guarantee-icon">🔒</div>
+        <div>
+          <div class="guarantee-item-title">Price-Lock Guarantee</div>
+          <div class="guarantee-item-desc">Your quote is locked for 30 days. No surprises, no add-ons, no "we found something" upcharges. The number you see is the number you pay.</div>
+        </div>
+      </div>
+      <div class="guarantee-item">
+        <div class="guarantee-icon">✅</div>
+        <div>
+          <div class="guarantee-item-title">Satisfaction Guarantee</div>
+          <div class="guarantee-item-desc">If anything isn't right when we're done, we fix it. No questions, no charge, no runaround. You don't pay until you've seen it work.</div>
+        </div>
+      </div>
+      <div class="guarantee-item">
+        <div class="guarantee-icon">🛠️</div>
+        <div>
+          <div class="guarantee-item-title">Workmanship Guarantee</div>
+          <div class="guarantee-item-desc">All electrical work is backed against defects. We stand behind everything we install — because we pulled the permit, it was inspected, and it's done right.</div>
+        </div>
+      </div>
+      <div class="badge-row">
+        <div class="authority-badge">⚡ SC LIC #2942</div>
+        <div class="authority-badge">📋 Permit + Inspection Included</div>
+        <div class="authority-badge">🛡️ Fully Insured</div>
+        <div class="authority-badge">★ 4.9 Google · 102 Reviews</div>
       </div>
     </div>
 
-    <!-- Social Proof -->
-    <div style="margin-bottom:16px">
-      <!-- Google rating badge -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">
-        <svg width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        <span style="font-size:14px;font-weight:700;color:var(--text)">4.9</span>
-        <span style="color:var(--gold);font-size:14px;letter-spacing:1px">★★★★★</span>
-        <span style="font-size:12px;color:var(--text3)">102 Google reviews</span>
+    <!-- Scarcity -->
+    <div class="scarcity-bar reveal">
+      <div class="scarcity-dots">
+        <div class="scarcity-dot filled"></div>
+        <div class="scarcity-dot filled"></div>
+        <div class="scarcity-dot filled"></div>
+        <div class="scarcity-dot"></div>
+        <div class="scarcity-dot"></div>
       </div>
-      <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:center;margin-bottom:10px">What Upstate SC Homeowners Are Saying</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
-          <div style="font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
-          <div style="font-size:12px;color:var(--text);line-height:1.55;margin-bottom:8px">"Key moved/wired several breakers, drilled through a brick wall, mounted a generator outlet and installed an interlock. He was very responsive, excellent communication and was very reasonable about an unexpected issue discovered while doing the job. The work was very professional and no mess left behind. Highly recommended."</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text3)">Chris A. &mdash; Greenville, SC &nbsp;&middot;&nbsp; <span style="color:#4285F4">Google</span></div>
-        </div>
-        <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
-          <div style="font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
-          <div style="font-size:12px;color:var(--text);line-height:1.55;margin-bottom:8px">"Key was courteous and on time. He installed a generator inlet for me and the work looks good and he cleaned up well. Key is a good communicator that runs a very well run little business."</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text3)">Christopher C. &mdash; Greenville, SC &nbsp;&middot;&nbsp; <span style="color:#4285F4">Google</span></div>
-        </div>
-        <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px">
-          <div style="font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px">★★★★★</div>
-          <div style="font-size:12px;color:var(--text);line-height:1.55;margin-bottom:8px">"My experience with Key Electric was outstanding. From the moment we saw their advertising video on Facebook, to our first contact and all subsequent communications, their proposal and approval process, and their installation, Key Electric did a great job. The owner, Key Goodson, was very polite and courteous at all times, very personable, friendly and knowledgeable. I highly recommend Key Electric!"</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text3)">Dwellion H. &mdash; Greenville, SC &nbsp;&middot;&nbsp; <span style="color:#4285F4">Google</span></div>
-        </div>
+      <div>
+        <div class="scarcity-text">3 of 5 install slots filled this week</div>
+        <div class="scarcity-sub">Proposals are scheduled in the order approved — storm season fills fast.</div>
       </div>
     </div>
 
-    <!-- Reassurance -->
-    <div style="text-align:center;padding:12px 16px;font-size:14px;color:var(--green);font-weight:600;margin-bottom:4px">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Your price is locked for 30 days &mdash; no surprises. <span style="color:var(--text3);font-size:12px;font-weight:500">&nbsp;·&nbsp; We schedule approved proposals in order &mdash; slots fill fast.</span>
-    </div>
-
-    <!-- Approve & Sign -->
-    <div class="sign-card" id="sign-section">
+    <!-- ══ SIGN ══ -->
+    <div class="sign-card reveal" id="sign-section">
       <div class="sign-card-head">
-        <h2>Approve This Proposal</h2>
-        <p>Review the safety instructions, then type your name to approve.</p>
+        <h2>Secure Your Install Date</h2>
+        <p>Review the scope, check both boxes, and sign below. No payment until the job is done.</p>
       </div>
       <div class="sign-card-body">
         <div class="ack-row" id="ack-row-scope">
@@ -587,9 +774,7 @@ function renderProposal() {
           <div class="ack-box" id="ack-box-safety">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="2,6 5,9 10,3"/></svg>
           </div>
-          <span class="ack-text">I have read and understood the
-            <a href="javascript:void(0)" id="safety-link">Generator Safety Instructions</a>
-            for portable generator inlet installations.</span>
+          <span class="ack-text">I have read and understood the <a href="javascript:void(0)" id="safety-link">Generator Safety Instructions</a> for portable generator inlet installations.</span>
         </div>
         <div>
           <label class="form-label">Your Full Name <span class="req">*</span></label>
@@ -599,28 +784,24 @@ function renderProposal() {
         </div>
         <button class="approve-btn" id="approve-btn" onclick="approveProposal()" disabled>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Approve &amp; Secure My Install Date &mdash; <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
+          Approve &amp; Lock My Install Date — <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
         </button>
-        <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">
-          Payment is due on completion day only &mdash; after you see everything working.
+        <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">
+          ⚡ Payment due on completion day only — after your home is powered up and you've seen it work.
         </div>
         <div id="approve-err" style="font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:center"></div>
       </div>
     </div>
 
-    <!-- PDF only available after signing -->
-
-    <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6">
+    <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.8;padding-bottom:8px">
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
-      <div style="margin-top:12px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
+      <div style="margin-top:10px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
     </div>
   `;
 
-  // Wire up acknowledgment rows with proper click handling
+  // Wire interactions
   wireAckRow('ack-row-scope', 'ack-box-scope', 'scope');
   wireAckRow('ack-row-safety', 'ack-box-safety', 'safety');
-
-  // Wire up safety link to open in new tab without toggling checkbox
   document.getElementById('safety-link').addEventListener('click', function(e) {
     e.stopPropagation();
     window.open('inlet-safety-instructions.html', '_blank');
@@ -628,13 +809,13 @@ function renderProposal() {
 
   renderPricing();
   renderPropertyBanner();
+  initScrollReveal();
 }
 
-// ── ACK ROW WIRING (clean click handling) ───────────────────
+// ── ACK ROW WIRING ───────────────────────────────────────────
 function wireAckRow(rowId, boxId, key) {
   const row = document.getElementById(rowId);
   row.addEventListener('click', function(e) {
-    // Don't toggle if clicking a link
     if (e.target.tagName === 'A') return;
     if (key === 'scope') ackScope = !ackScope;
     else ackSafety = !ackSafety;
@@ -647,20 +828,14 @@ function updateAckVisual(rowId, boxId, checked) {
   const row = document.getElementById(rowId);
   const box = document.getElementById(boxId);
   const svg = box.querySelector('svg');
-  if (checked) {
-    row.classList.add('checked');
-    svg.style.display = '';
-  } else {
-    row.classList.remove('checked');
-    svg.style.display = 'none';
-  }
+  if (checked) { row.classList.add('checked'); svg.style.display = ''; }
+  else { row.classList.remove('checked'); svg.style.display = 'none'; }
 }
 
-// ── RENDER PRICING ROWS ─────────────────────────────────────
+// ── RENDER PRICING ───────────────────────────────────────────
 function renderPricing() {
   const pr = getPrice(chosenAmp);
   const isNew = !!P.pricing_30 || !!P.pricing_50;
-  const surgePrice = P.surge_price || 375;
   let rows = '';
 
   if (isNew) {
@@ -670,24 +845,22 @@ function renderPricing() {
     const tq = pr.twinQuad || 0;
     const cord = pr.cord || 0;
     const permit = pr.permitInspection || 125;
-
-    rows += priceRow('Installation', 'Inlet box, interlock kit, panel work, walkthrough', fmt(Math.max(0, base - longRun - mb - tq - cord - permit)));
-    if (longRun) rows += priceRow('Extended run', ((P.run_ft || 5) - 5) + ' extra feet', fmt(longRun));
-    rows += priceRow('Permit & inspection', 'Filed with your local jurisdiction', fmt(permit));
-    if (cord) rows += priceRow('Power transfer cord', (chosenAmp === '50' ? '50' : '30') + 'A compatible', fmt(cord));
+    const _pi = (chosenAmp === '50' ? '50' : '30');
+    rows += priceRow('Installation', 'Inlet box, interlock kit, panel work, walkthrough', fmt(Math.max(0, base - longRun - mb - tq - cord - permit)), `assets/product-images/inlet-${_pi}amp.jpg`);
+    if (longRun) rows += priceRowIncluded('Extended wire run', ((P.run_ft || 5) - 5) + ' extra feet — distance included in your quote');
+    rows += priceRow('Permit & inspection', 'Filed with your local jurisdiction', fmt(permit), 'assets/product-images/permit-inspection.jpg');
+    if (cord) rows += priceRow('Power transfer cord', _pi + 'A compatible', fmt(cord), `assets/product-images/cord-${_pi}amp.jpg`);
     if (mb) rows += priceRow('Main breaker replacement', 'Upgraded to current code', fmt(mb));
     if (tq) rows += priceRow('Panel space optimization', 'Twin/quad breaker swap', fmt(tq));
   } else {
-    rows += priceRow('Base installation', 'Inlet box, interlock kit, permit, inspection, walkthrough', fmt(pr.base || P.price_base));
-    if (P.include_cord) rows += priceRow('Power transfer cord', 'Connects generator to inlet box', fmt(P.price_cord));
+    const _pi2 = (chosenAmp === '50' ? '50' : '30');
+    rows += priceRow('Base installation', 'Inlet box, interlock kit, permit, inspection, walkthrough', fmt(pr.base || P.price_base), `assets/product-images/inlet-${_pi2}amp.jpg`);
+    if (P.include_cord) rows += priceRow('Power transfer cord', 'Connects generator to inlet box', fmt(P.price_cord), `assets/product-images/cord-${_pi2}amp.jpg`);
     if (P.include_surge) rows += priceRow('Whole-house surge protector', 'Installed on main panel', fmt(P.price_surge));
   }
 
-  if (pomOn) {
-    rows += priceRow('Peace of Mind Protection Package', 'Surge protection, panel inspection, wattage guide', fmt(P.pom_price || 447));
-  }
+  if (pomOn) rows += priceRow('Peace of Mind Protection Package', 'Surge protection, panel inspection, wattage guide', fmt(P.pom_price || 447));
 
-  // Custom line items added by Key
   if (Array.isArray(P.custom_items)) {
     P.custom_items.forEach(item => {
       if (item.title || item.price) rows += priceRow(item.title || 'Additional service', '', fmt(item.price || 0));
@@ -695,7 +868,6 @@ function renderPricing() {
   }
 
   const total = calcTotal(chosenAmp);
-
   const body = document.getElementById('pricing-body');
   if (!body) return;
   body.innerHTML = `
@@ -706,23 +878,29 @@ function renderPricing() {
         <td><span class="total-badge" id="total-badge">${fmt(total)}</span></td>
       </tr>
     </table>
-    <div class="compare-box">
-      Get backup power for your whole home &mdash; without the $15,000 standby generator.<br>
-      <span>You already own the generator. We connect it the right way.</span>
-    </div>
-    <div style="text-align:center;padding:10px 0 2px;font-size:13px;color:var(--text3);line-height:1.5">
-      That's just <strong style="color:var(--navy)">$${(total/3650).toFixed(2)}/day</strong> for 10 years of whole-home storm protection.
+    <div class="per-day-note">
+      That's just <strong style="color:var(--navy)">$${(total / 3650).toFixed(2)}/day</strong> for 10 years of whole-home storm protection.
     </div>`;
 
   const approveTotal = document.getElementById('approve-total');
   if (approveTotal) approveTotal.textContent = fmt(total);
+
+  // Update anchor price if visible
+  const anchorNew = document.getElementById('anchor-our-price');
+  if (anchorNew) anchorNew.textContent = fmt(total);
 }
 
-function priceRow(name, desc, price) {
-  return `<tr><td><div class="price-item-name">${esc(name)}</div><div class="price-item-desc">${esc(desc)}</div></td><td>${price}</td></tr>`;
+function priceRow(name, desc, price, img) {
+  const imgHtml = img ? `<img class="price-thumb" src="${img}" alt="" loading="lazy">` : '';
+  return `<tr><td><div class="price-item-cell">${imgHtml}<div><div class="price-item-name">${esc(name)}</div><div class="price-item-desc">${esc(desc)}</div></div></div></td><td>${price}</td></tr>`;
 }
 
-// ── AMP TOGGLE ──────────────────────────────────────────────
+function priceRowIncluded(name, desc, img) {
+  const imgHtml = img ? `<img class="price-thumb" src="${img}" alt="" loading="lazy">` : '';
+  return `<tr><td><div class="price-item-cell">${imgHtml}<div><div class="price-item-name">${esc(name)}</div><div class="price-item-desc">${esc(desc)}</div></div></div></td><td><span style="color:var(--green);font-size:12px;font-weight:700">✓ Included</span></td></tr>`;
+}
+
+// ── AMP TOGGLE ───────────────────────────────────────────────
 function switchAmp(amp) {
   chosenAmp = amp;
   document.querySelectorAll('.amp-toggle-btn').forEach(b => {
@@ -731,144 +909,84 @@ function switchAmp(amp) {
   renderPricing();
 }
 
-// ── POM TOGGLE ──────────────────────────────────────────────
+// ── POM TOGGLE ───────────────────────────────────────────────
 function togglePom() {
   pomOn = !pomOn;
   const card = document.getElementById('pom-card');
   const track = document.getElementById('pom-toggle');
-  if (card) {
-    card.style.boxShadow = pomOn ? '0 4px 24px rgba(255,186,0,.38)' : '0 4px 18px rgba(255,186,0,.18)';
-    card.style.transform = pomOn ? 'scale(1.01)' : 'scale(1)';
-  }
+  if (card) { card.style.boxShadow = pomOn ? '0 4px 24px rgba(255,186,0,.38)' : '0 4px 18px rgba(255,186,0,.18)'; card.style.transform = pomOn ? 'scale(1.01)' : 'scale(1)'; }
   if (track) track.classList.toggle('on', pomOn);
   renderPricing();
   updateApproveBtn();
 }
 
-// ── SURGE TOGGLE ────────────────────────────────────────────
+// ── SURGE TOGGLE ─────────────────────────────────────────────
 function toggleSurge() {
   surgeOn = !surgeOn;
   const track = document.getElementById('surge-toggle');
   const label = document.getElementById('surge-price-label');
   if (track) track.classList.toggle('on', surgeOn);
-  if (label) {
-    label.classList.toggle('on', surgeOn);
-    label.textContent = surgeOn
-      ? 'Added to your proposal'
-      : '+' + fmt(P.surge_price || 375) + ' \u00B7 protects $10,500+ in appliances';
-  }
+  if (label) { label.classList.toggle('on', surgeOn); label.textContent = surgeOn ? 'Added to your proposal' : '+' + fmt(P.surge_price || 375) + ' · protects $10,500+ in appliances'; }
   renderPricing();
 }
 
-// ── SIGNATURE PREVIEW ───────────────────────────────────────
+// ── SIGNATURE & VALIDATION ───────────────────────────────────
 function updateSigPreview() {
   const name = (document.getElementById('signer-name')?.value || '').trim();
   const preview = document.getElementById('sig-preview');
   if (preview) preview.textContent = name;
 }
 
-// ── VALIDATION ──────────────────────────────────────────────
 function validateForm() {
   const name = (document.getElementById('signer-name')?.value || '').trim();
   const btn = document.getElementById('approve-btn');
   if (btn) btn.disabled = !(name.length >= 2 && ackScope && ackSafety);
 }
 
-// ── APPROVE ─────────────────────────────────────────────────
+function updateApproveBtn() {
+  const total = calcTotal(chosenAmp);
+  const approveTotal = document.getElementById('approve-total');
+  if (approveTotal) approveTotal.textContent = fmt(total);
+  const btn = document.getElementById('approve-btn');
+  if (btn && !btn.disabled) validateForm();
+}
+
+// ── APPROVE ──────────────────────────────────────────────────
 let approving = false;
 async function approveProposal() {
   if (isPreview) { alert('Preview mode — approval is disabled.'); return; }
   if (approving) return;
   const name = document.getElementById('signer-name').value.trim();
-  const err  = document.getElementById('approve-err');
-  const btn  = document.getElementById('approve-btn');
-
+  const err = document.getElementById('approve-err');
+  const btn = document.getElementById('approve-btn');
   if (!name || !ackScope || !ackSafety) { err.textContent = 'Please complete all fields above.'; return; }
-
   approving = true;
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner-large" style="width:20px;height:20px;border-width:2.5px;margin:0"></div> Submitting...';
-
   const ip = await getIP();
   const total = calcTotal(chosenAmp);
-
-  const termsSnapshot = JSON.stringify({
-    proposal_id: P.id,
-    proposal_token: P.token,
-    contact_name: P.contact_name,
-    contact_address: P.contact_address,
-    selected_amp: chosenAmp,
-    selected_surge: surgeOn,
-    surge_price: surgeOn ? (P.surge_price || 375) : 0,
-    pricing: getPrice(chosenAmp),
-    total: total,
-    scope_acknowledged: true,
-    safety_acknowledged: true,
-    signer_name: name,
-    signed_at: new Date().toISOString(),
-    ip_address: ip,
-    user_agent: navigator.userAgent,
-  });
-
-  const { error } = await db.from('proposals').update({
-    status: 'Approved',
-    signed_at: new Date().toISOString(),
-    signer_name: name,
-    safety_ack: true,
-    selected_amp: chosenAmp,
-    selected_surge: surgeOn,
-    selected_pom: pomOn,
-    total: total,
-    approved_ip: ip,
-    approved_user_agent: navigator.userAgent,
-    approved_terms_snapshot: termsSnapshot,
-    is_locked: true,
-  }).eq('token', P.token);
-
-  if (error) {
-    err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.';
-    btn.disabled = false;
-    approving = false;
-    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve &amp; Get Started &mdash; <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>';
-    return;
-  }
-
-  P.status = 'Approved';
-  P.signer_name = name;
-  P.signed_at = new Date().toISOString();
-  P.selected_amp = chosenAmp;
-  P.selected_surge = surgeOn;
-  P.selected_pom = pomOn;
-  P.total = total;
-  P.approved_ip = ip;
-  renderApproved();
+  const termsSnapshot = JSON.stringify({ proposal_id: P.id, proposal_token: P.token, contact_name: P.contact_name, contact_address: P.contact_address, selected_amp: chosenAmp, selected_surge: surgeOn, surge_price: surgeOn ? (P.surge_price || 375) : 0, pricing: getPrice(chosenAmp), total, scope_acknowledged: true, safety_acknowledged: true, signer_name: name, signed_at: new Date().toISOString(), ip_address: ip, user_agent: navigator.userAgent });
+  const { error } = await db.from('proposals').update({ status: 'Approved', signed_at: new Date().toISOString(), signer_name: name, safety_ack: true, selected_amp: chosenAmp, selected_surge: surgeOn, selected_pom: pomOn, total, approved_ip: ip, approved_user_agent: navigator.userAgent, approved_terms_snapshot: termsSnapshot, is_locked: true }).eq('token', P.token);
+  if (error) { err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.'; btn.disabled = false; approving = false; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve &amp; Lock My Install Date — <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>'; return; }
+  P.status = 'Approved'; P.signer_name = name; P.signed_at = new Date().toISOString(); P.selected_amp = chosenAmp; P.selected_surge = surgeOn; P.selected_pom = pomOn; P.total = total; P.approved_ip = ip;
+  launchConfetti();
+  setTimeout(() => renderApproved(), 800);
 }
 
-// ── APPROVED STATE ──────────────────────────────────────────
+// ── APPROVED STATE ───────────────────────────────────────────
 function renderApproved() {
   window.scrollTo(0, 0);
-  const signedDate = P.signed_at
-    ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-    : '';
-  const signedTime = P.signed_at
-    ? new Date(P.signed_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
-    : '';
+  renderPropertyBanner && setTimeout(renderPropertyBanner, 100);
+  const signedDate = P.signed_at ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  const signedTime = P.signed_at ? new Date(P.signed_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '';
   const total = P.total || 0;
   const ampLabel = P.selected_amp === '50' ? '50 Amp' : '30 Amp';
-  const surgeLabel = P.selected_surge ? 'Included' : 'Not included';
   const pr = getPrice(P.selected_amp || P.amp_type || '30');
-
-  // Build pricing rows for display
   let pricingRowsHtml = '';
   if (P.pricing_30 || P.pricing_50) {
-    const base = pr.base || 0;
-    const longRun = pr.longRun || 0;
-    const mb = pr.mainBreaker || 0;
-    const tq = pr.twinQuad || 0;
-    const cord = pr.cord || 0;
-    const permit = pr.permitInspection || 125;
+    const base = pr.base || 0; const longRun = pr.longRun || 0; const mb = pr.mainBreaker || 0; const tq = pr.twinQuad || 0; const cord = pr.cord || 0; const permit = pr.permitInspection || 125;
     pricingRowsHtml += `<tr><td class="price-item-name">Installation</td><td>${fmt(Math.max(0, base - longRun - mb - tq - cord - permit))}</td></tr>`;
-    if (longRun) pricingRowsHtml += `<tr><td class="price-item-name">Extended run</td><td>${fmt(longRun)}</td></tr>`;
+    if (longRun) pricingRowsHtml += `<tr><td class="price-item-name">Extended wire run</td><td><span style="color:var(--green);font-size:12px;font-weight:700">✓ Included</span></td></tr>`;
     pricingRowsHtml += `<tr><td class="price-item-name">Permit & inspection</td><td>${fmt(permit)}</td></tr>`;
     if (cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(cord)}</td></tr>`;
     if (mb) pricingRowsHtml += `<tr><td class="price-item-name">Main breaker replacement</td><td>${fmt(mb)}</td></tr>`;
@@ -877,97 +995,55 @@ function renderApproved() {
     pricingRowsHtml += `<tr><td class="price-item-name">Base installation</td><td>${fmt(pr.base || P.price_base || 0)}</td></tr>`;
     if (P.include_cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(P.price_cord || 0)}</td></tr>`;
   }
-  if (P.selected_pom) {
-    pricingRowsHtml += `<tr><td class="price-item-name">Peace of Mind Protection Package</td><td>${fmt(P.pom_price || 447)}</td></tr>`;
-  }
+  if (P.selected_pom) pricingRowsHtml += `<tr><td class="price-item-name">Peace of Mind Protection Package</td><td>${fmt(P.pom_price || 447)}</td></tr>`;
 
-  // Parse terms snapshot for display
   let termsDisplay = '';
   if (P.approved_terms_snapshot) {
     try {
       const terms = typeof P.approved_terms_snapshot === 'string' ? JSON.parse(P.approved_terms_snapshot) : P.approved_terms_snapshot;
-      termsDisplay = `
-        <div class="legal-terms">
-          <strong>Scope & Pricing Acknowledged:</strong> ${esc(terms.contact_name)} approved a ${terms.selected_amp || '30'} Amp Connection System
-          ${terms.selected_pom ? 'with the Peace of Mind Protection Package' : 'without the protection package'} for a total of ${fmt(terms.total)}.
-          <br><br><strong>Acknowledgments:</strong><br>
-          ${terms.scope_acknowledged ? '&#10003; Reviewed and agreed to the scope of work and pricing.' : ''}<br>
-          ${terms.safety_acknowledged ? '&#10003; Read and understood the Generator Safety Instructions for portable generator inlet installations.' : ''}
-        </div>`;
-    } catch(e) {
-      termsDisplay = `<div class="legal-terms">${esc(P.approved_terms_snapshot)}</div>`;
-    }
+      termsDisplay = `<div class="legal-terms"><strong>Scope & Pricing Acknowledged:</strong> ${esc(terms.contact_name)} approved a ${terms.selected_amp || '30'} Amp Connection System ${terms.selected_pom ? 'with the Peace of Mind Protection Package' : 'without the protection package'} for a total of ${fmt(terms.total)}.<br><br><strong>Acknowledgments:</strong><br>${terms.scope_acknowledged ? '&#10003; Reviewed and agreed to the scope of work and pricing.' : ''}<br>${terms.safety_acknowledged ? '&#10003; Read and understood the Generator Safety Instructions.' : ''}</div>`;
+    } catch(e) { termsDisplay = `<div class="legal-terms">${esc(P.approved_terms_snapshot)}</div>`; }
   }
 
   document.getElementById('main').innerHTML = `
+    <div id="property-banner-wrap"></div>
+
     <div class="approved-banner">
-      <div class="approved-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <h2>You're All Set!</h2>
-      <p>Your home will have reliable backup power &mdash; done in a day.</p>
+      <div class="approved-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>You're Storm-Ready. ⚡</h2>
+      <p>Your install date is being locked in. We'll reach out within 48 hours to confirm.</p>
     </div>
 
-    <!-- Next Steps -->
     <div class="card">
       <div class="card-head">
         <div class="card-icon" style="background:#eff6ff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
         <h2>What Happens Next</h2>
       </div>
       <div class="card-body">
-        <div class="next-step-item">
-          <div class="next-step-num">1</div>
-          <div class="next-step-text">
-            <strong>Key will reach out to schedule your installation within 48 hours</strong>
-            <span>You'll get a call or text to confirm your date and answer any questions.</span>
-          </div>
-        </div>
-        <div class="next-step-item">
-          <div class="next-step-num">2</div>
-          <div class="next-step-text">
-            <strong>We pull your permit</strong>
-            <span>We handle all paperwork with your local jurisdiction. Nothing for you to do.</span>
-          </div>
-        </div>
-        <div class="next-step-item">
-          <div class="next-step-num">3</div>
-          <div class="next-step-text">
-            <strong>Installation day</strong>
-            <span>We arrive, install everything, clean up, and walk you through your new system. Most installs are done in a few hours. Payment is due upon completion.</span>
-          </div>
-        </div>
-        <div class="next-step-item">
-          <div class="next-step-num">4</div>
-          <div class="next-step-text">
-            <strong>State inspection</strong>
-            <span>We schedule and coordinate the electrical inspection. You're officially code-compliant and storm-ready.</span>
-          </div>
-        </div>
+        <div class="next-step-item"><div class="next-step-num">1</div><div class="next-step-text"><strong>Key reaches out within 48 hours</strong><span>You'll get a text to confirm your date and answer any final questions.</span></div></div>
+        <div class="next-step-item"><div class="next-step-num">2</div><div class="next-step-text"><strong>We pull your permit</strong><span>We handle all paperwork with your local jurisdiction. Nothing for you to do.</span></div></div>
+        <div class="next-step-item"><div class="next-step-num">3</div><div class="next-step-text"><strong>Installation day — done in a day</strong><span>We arrive, install everything, clean up, and walk you through your new system. Payment is due upon completion.</span></div></div>
+        <div class="next-step-item"><div class="next-step-num">4</div><div class="next-step-text"><strong>State electrical inspection</strong><span>We schedule and coordinate the inspection. You're officially code-compliant and storm-ready.</span></div></div>
         <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-          <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Questions? Call or text anytime</div>
+          <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Questions? Call or text Key anytime</div>
           <a href="tel:8644005302" style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:var(--navy);text-decoration:none">(864) 400-5302</a>
         </div>
       </div>
     </div>
 
     ${!P.selected_pom ? `
-    <!-- Post-approval protection package upsell -->
     <div style="background:linear-gradient(135deg,#0b1f3b,#1a3a5c);border-radius:14px;padding:18px 20px;margin-bottom:16px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;right:0;width:160px;height:160px;background:radial-gradient(circle,rgba(255,186,0,.08),transparent 70%)"></div>
-      <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">One More Thing Before We Schedule</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">One More Thing</div>
       <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:8px">Add the Peace of Mind Protection Package?</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
         <div style="font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">⚡</span> Whole-home surge protection + $75,000 connected equipment warranty</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">📋</span> Customized safety &amp; wattage planning guide</div>
         <div style="font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">🔍</span> 20-point main panel safety inspection</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:7px"><span style="color:var(--gold)">📋</span> Customized safety &amp; wattage planning guide</div>
       </div>
-      <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.8);margin-bottom:12px">
-        <span style="color:var(--gold);font-weight:700">+$${P.pom_price||447}</span> &nbsp;&middot;&nbsp; All three, done the same day as your install
-      </div>
-      <div style="font-size:13px;color:rgba(255,255,255,.7)">Just text Key at <a href="sms:8644005302?body=I'd like to add the Peace of Mind Protection Package" style="color:var(--gold);font-weight:700;text-decoration:none">(864) 400-5302</a> and say "add protection package" — he'll update your invoice before install day.</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7)">Text Key at <a href="sms:8644005302?body=I'd like to add the Peace of Mind Protection Package" style="color:var(--gold);font-weight:700;text-decoration:none">(864) 400-5302</a> — say "add protection package" and he'll update your invoice before install day.</div>
     </div>` : ''}
 
-    <!-- Referral Card -->
     <div style="background:linear-gradient(135deg,#fffbe6,#fff8d0);border:2px solid var(--gold);border-radius:14px;padding:18px 20px;margin-bottom:16px">
       <div style="display:flex;align-items:flex-start;gap:12px">
         <div style="font-size:28px;flex-shrink:0">🏡</div>
@@ -979,24 +1055,16 @@ function renderApproved() {
       </div>
     </div>
 
-    <!-- Line Items -->
     <div class="card">
       <div class="card-head">
-        <div class="card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="card-icon" style="background:#fffbeb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
         <h2>Approved Pricing</h2>
       </div>
       <div class="card-body">
-        <table class="price-table">
-          ${pricingRowsHtml}
-          <tr class="price-total-row">
-            <td>Total Approved</td>
-            <td><span class="total-badge">${fmt(total)}</span></td>
-          </tr>
-        </table>
+        <table class="price-table">${pricingRowsHtml}<tr class="price-total-row"><td>Total Approved</td><td><span class="total-badge">${fmt(total)}</span></td></tr></table>
       </div>
     </div>
 
-    <!-- Agreement & Authorization -->
     <div class="card">
       <div class="card-head">
         <div class="card-icon" style="background:#f0fdf4"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
@@ -1004,38 +1072,17 @@ function renderApproved() {
       </div>
       <div class="card-body">
         ${termsDisplay}
-
         <div class="legal-section" style="margin-top:14px">
           <div class="legal-section-title">Electronic Signature</div>
-          <div class="legal-row">
-            <span class="legal-label">Signed By</span>
-            <span class="legal-value" style="font-family:'Dancing Script',cursive;font-size:18px;color:var(--navy)">${esc(P.signer_name)}</span>
-          </div>
-          <div class="legal-row">
-            <span class="legal-label">Date & Time</span>
-            <span class="legal-value">${signedTime}</span>
-          </div>
-          <div class="legal-row">
-            <span class="legal-label">IP Address</span>
-            <span class="legal-value">${esc(P.approved_ip || 'N/A')}</span>
-          </div>
-          <div class="legal-row">
-            <span class="legal-label">Browser</span>
-            <span class="legal-value" style="font-size:10px">${esc(P.approved_user_agent || 'N/A')}</span>
-          </div>
-          <div class="legal-row">
-            <span class="legal-label">Safety Instructions</span>
-            <span class="legal-value">${P.safety_ack ? '&#10003; Acknowledged' : 'Not acknowledged'}</span>
-          </div>
+          <div class="legal-row"><span class="legal-label">Signed By</span><span class="legal-value" style="font-family:'Dancing Script',cursive;font-size:18px;color:var(--navy)">${esc(P.signer_name)}</span></div>
+          <div class="legal-row"><span class="legal-label">Date & Time</span><span class="legal-value">${signedTime}</span></div>
+          <div class="legal-row"><span class="legal-label">IP Address</span><span class="legal-value">${esc(P.approved_ip || 'N/A')}</span></div>
+          <div class="legal-row"><span class="legal-label">Safety Instructions</span><span class="legal-value">${P.safety_ack ? '&#10003; Acknowledged' : 'Not acknowledged'}</span></div>
         </div>
-
-        <div class="legal-footer">
-          This document constitutes a binding agreement between the parties under the Electronic Signatures in Global and National Commerce Act (ESIGN Act).
-        </div>
+        <div class="legal-footer">This document constitutes a binding agreement under the Electronic Signatures in Global and National Commerce Act (ESIGN Act).</div>
       </div>
     </div>
 
-    <!-- Download PDF -->
     <button class="dl-btn" onclick="downloadPDF()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Download Proposal PDF
@@ -1046,355 +1093,75 @@ function renderApproved() {
       <div style="margin-top:12px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
     </div>
   `;
+
+  setTimeout(initScrollReveal, 100);
 }
 
-// ── PDF DOWNLOAD ────────────────────────────────────────────
+// ── PDF DOWNLOAD ─────────────────────────────────────────────
 let downloading = false;
 async function downloadPDF() {
   if (downloading) return;
   downloading = true;
   const dlBtn = document.querySelector('.dl-btn');
   if (dlBtn) { dlBtn.disabled = true; dlBtn.innerHTML = '<div class="spinner-large" style="width:18px;height:18px;border-width:2px;margin:0"></div> Generating PDF...'; }
-  const signedDate = P.signed_at
-    ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-    : '';
-  const createdDate = new Date(P.created_at).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-  });
+  const signedDate = P.signed_at ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  const createdDate = new Date(P.created_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   const total = P.total || 0;
   const ampLabel = P.selected_amp === '50' ? '50 Amp' : '30 Amp';
-  const surgeLabel = P.selected_pom ? 'Included (+' + fmt(P.pom_price || 447) + ')' : 'Not included';
   const pr = getPrice(P.selected_amp || P.amp_type || '30');
-
-  // Build pricing rows
   let pricingRows = '';
   if (P.pricing_30 || P.pricing_50) {
-    const base = pr.base || 0;
-    const longRun = pr.longRun || 0;
-    const mb = pr.mainBreaker || 0;
-    const tq = pr.twinQuad || 0;
-    const cord = pr.cord || 0;
-    const permit = pr.permitInspection || 125;
-    pricingRows += pdfRow('Installation', fmt(Math.max(0, base - longRun - mb - tq - cord - permit)));
-    if (longRun) pricingRows += pdfRow('Extended run (' + ((P.run_ft || 20) - 20) + ' ft)', fmt(longRun));
-    pricingRows += pdfRow('Permit & inspection', fmt(permit));
-    if (cord) pricingRows += pdfRow('Power transfer cord', fmt(cord));
-    if (mb) pricingRows += pdfRow('Main breaker replacement', fmt(mb));
-    if (tq) pricingRows += pdfRow('Panel space optimization', fmt(tq));
+    const base = pr.base || 0; const longRun = pr.longRun || 0; const mb = pr.mainBreaker || 0; const tq = pr.twinQuad || 0; const cord = pr.cord || 0; const permit = pr.permitInspection || 125;
+    pricingRows += `<tr><td style="padding:6px 0">Installation</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(Math.max(0, base - longRun - mb - tq - cord - permit))}</td></tr>`;
+    if (longRun) pricingRows += `<tr><td style="padding:6px 0">Extended wire run</td><td style="padding:6px 0;text-align:right;font-weight:600;color:#059669">✓ Included</td></tr>`;
+    pricingRows += `<tr><td style="padding:6px 0">Permit & inspection</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(permit)}</td></tr>`;
+    if (cord) pricingRows += `<tr><td style="padding:6px 0">Power transfer cord</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(cord)}</td></tr>`;
+    if (mb) pricingRows += `<tr><td style="padding:6px 0">Main breaker replacement</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(mb)}</td></tr>`;
+    if (tq) pricingRows += `<tr><td style="padding:6px 0">Panel space optimization</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(tq)}</td></tr>`;
   } else {
-    pricingRows += pdfRow('Base installation', fmt(pr.base || P.price_base || 0));
-    if (P.include_cord) pricingRows += pdfRow('Power transfer cord', fmt(P.price_cord || 0));
+    pricingRows += `<tr><td style="padding:6px 0">Base installation</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(pr.base || P.price_base || 0)}</td></tr>`;
+    if (P.include_cord) pricingRows += `<tr><td style="padding:6px 0">Power transfer cord</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(P.price_cord || 0)}</td></tr>`;
   }
-  if (P.selected_pom) {
-    pricingRows += pdfRow('Peace of Mind Protection Package', fmt(P.pom_price || 447));
-  }
+  if (P.selected_pom) pricingRows += `<tr><td style="padding:6px 0">Peace of Mind Protection Package</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(P.pom_price || 447)}</td></tr>`;
 
-  // Build two separate page divs — each rendered to its own canvas
-  const sty = 'font-family:Helvetica,Arial,sans-serif;color:#1a2a42;padding:20px 24px;width:632px;background:#fff;';
-
-  const page1 = `
-    <div style="${sty}">
-      <!-- Header -->
-      <div style="background:#0b1f3b;border-radius:10px;padding:24px;color:#fff;margin-bottom:20px;text-align:center">
-        <img src="https://backuppowerpro.com/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:32px;margin-bottom:6px;" crossorigin="anonymous">
-        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:3px">Licensed Electrical Contractor &middot; SC LIC #2942 &middot; Upstate SC</div>
-      </div>
-
-      <!-- Title -->
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffba00;margin-bottom:4px">APPROVED PROPOSAL</div>
-        <div style="font-size:24px;font-weight:800;color:#0b1f3b">The Storm-Ready Connection System</div>
-      </div>
-
-      <!-- Customer Info -->
-      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px">
-        <tr>
-          <td style="padding:6px 0;color:#8a9ab5">Customer</td>
-          <td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.contact_name)}</td>
-        </tr>
-        ${P.contact_address ? `<tr>
-          <td style="padding:6px 0;color:#8a9ab5">Address</td>
-          <td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.contact_address)}</td>
-        </tr>` : ''}
-        <tr>
-          <td style="padding:6px 0;color:#8a9ab5">Proposal Date</td>
-          <td style="padding:6px 0;font-weight:600;text-align:right">${createdDate}</td>
-        </tr>
-        <tr>
-          <td style="padding:6px 0;color:#8a9ab5">Setup Type</td>
-          <td style="padding:6px 0;font-weight:600;text-align:right">${ampLabel} Connection System</td>
-        </tr>
-      </table>
-
-      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
-
-      <!-- Scope -->
-      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Everything Included</div>
-      <div style="font-size:12px;color:#4a5568;line-height:1.8;margin-bottom:16px">
-        &#10003; Generator inlet box (weather-rated, exterior mount)<br>
-        &#10003; Interlock kit (UL-listed, code-compliant)<br>
-        &#10003; Permit pulled &amp; filed with local jurisdiction<br>
-        &#10003; State electrical inspection coordinated<br>
-        &#10003; Complete site cleanup<br>
-        &#10003; Customer walkthrough &amp; training<br>
-        ${(pr.cordIncluded !== false) ? '&#10003; Power transfer cord<br>' : ''}
-      </div>
-
-      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
-
-      <!-- Pricing -->
-      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Pricing</div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
-        ${pricingRows}
-        <tr style="border-top:2px solid #0b1f3b">
-          <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b">Total</td>
-          <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b;text-align:right">${fmt(total)}</td>
-        </tr>
-      </table>
-      <div style="font-size:11px;color:#8a9ab5;margin-bottom:16px">Protection Package: ${surgeLabel}</div>
-
-      <!-- Payment Terms -->
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11px;color:#92400e;line-height:1.6">
-        <strong>Payment Terms:</strong> Full payment is due upon completion of installation. An invoice will be provided on-site once the work is finished and your walkthrough is complete.
-      </div>
-
-      <!-- Footer / Credentials -->
-      <div style="border-top:1px solid #e4e8f0;padding-top:12px;margin-top:auto;text-align:center">
-        <div style="font-size:11px;font-weight:700;color:#0b1f3b;margin-bottom:2px">Key Electric LLC</div>
-        <div style="font-size:9px;color:#8a9ab5;line-height:1.5">
-          22 Kimbell CT, Greenville SC 29617 &middot; (864) 400-5302 &middot; backuppowerpro.com<br>
-          SC Electrical Contractor License #2942 &middot; Fully Licensed &amp; Insured &middot; DBA: Backup Power Pro
-        </div>
-      </div>
+  const pageHtml = `<div style="font-family:'Inter',system-ui,sans-serif;background:#fff;padding:32px;color:#1a2a42">
+    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #0b1f3b;padding-bottom:16px;margin-bottom:20px">
+      <div><div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:#0b1f3b">Backup Power Pro</div><div style="font-size:11px;color:#8a9ab5">SC LIC #2942 · (864) 400-5302 · backuppowerpro.com</div></div>
+      <div style="background:#ffba00;color:#0b1f3b;font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;padding:6px 14px;border-radius:6px">✓ APPROVED</div>
     </div>
-  `;
-
-  const signedTime = P.signed_at
-    ? new Date(P.signed_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
-    : '';
-
-  // Parse terms for PDF
-  let termsText = '';
-  if (P.approved_terms_snapshot) {
-    try {
-      const terms = typeof P.approved_terms_snapshot === 'string' ? JSON.parse(P.approved_terms_snapshot) : P.approved_terms_snapshot;
-      termsText = `${esc(terms.contact_name)} approved a ${terms.selected_amp || '30'} Amp Connection System ${terms.selected_surge ? 'with whole-home surge protection' : 'without surge protection'} for a total of ${fmt(terms.total)}. Scope of work and pricing were reviewed and agreed to. Generator Safety Instructions for portable generator inlet installations were read and understood.`;
-    } catch(e) {
-      termsText = esc(P.approved_terms_snapshot);
-    }
-  }
-
-  const page2 = `
-    <div style="${sty}">
-      <!-- Header -->
-      <div style="background:#0b1f3b;border-radius:10px;padding:18px 24px;color:#fff;margin-bottom:20px;text-align:center">
-        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffba00">AGREEMENT & AUTHORIZATION</div>
-      </div>
-
-      <!-- Terms Agreed To -->
-      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Terms of Agreement</div>
-      <div style="font-size:11px;color:#4a5568;line-height:1.7;background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:14px;margin-bottom:16px">
-        ${termsText}
-      </div>
-
-      <!-- Safety Acknowledgment -->
-      <div style="font-size:12px;color:#4a5568;margin-bottom:16px;display:flex;align-items:center;gap:8px">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:${P.safety_ack ? '#059669' : '#dc2626'};border-radius:4px;flex-shrink:0">
-          <span style="color:#fff;font-size:12px;font-weight:bold">${P.safety_ack ? '&#10003;' : '&#10007;'}</span>
-        </span>
-        Generator Safety Instructions: <strong>${P.safety_ack ? 'Acknowledged' : 'Not acknowledged'}</strong>
-      </div>
-
-      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
-
-      <!-- Electronic Signature -->
-      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Electronic Signature</div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
-        <tr>
-          <td style="padding:8px 0;color:#8a9ab5;width:120px">Electronically signed by</td>
-          <td style="padding:8px 0;font-weight:600;text-align:right;font-size:18px;font-family:cursive">${esc(P.signer_name)}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px 0;color:#8a9ab5">Date &amp; Time</td>
-          <td style="padding:8px 0;font-weight:600;text-align:right">${signedTime}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px 0;color:#8a9ab5">IP Address</td>
-          <td style="padding:8px 0;font-weight:600;text-align:right">${esc(P.approved_ip || 'N/A')}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px 0;color:#8a9ab5;vertical-align:top">Browser</td>
-          <td style="padding:8px 0;font-weight:500;text-align:right;font-size:9px;color:#4a5568;word-break:break-all">${esc(P.approved_user_agent || 'N/A')}</td>
-        </tr>
-      </table>
-
-      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
-
-      <!-- Safety Instructions -->
-      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Generator Safety Instructions</div>
-      <div style="font-size:10px;color:#4a5568;line-height:1.6;background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:12px;margin-bottom:16px">
-        1. Never operate a generator indoors. Carbon monoxide is deadly and odorless.<br>
-        2. Place generator at least 20 feet from your home with exhaust away from openings.<br>
-        3. Use only the installed inlet connection. Never back-feed your panel with extension cords.<br>
-        4. Turn OFF the generator before refueling. Allow it to cool before adding fuel.<br>
-        5. Follow the interlock procedure: Main OFF, then generator ON. Reverse when disconnecting.<br>
-        6. Never exceed your generator's rated capacity. Add loads gradually.<br>
-        7. Keep the generator dry. Use a canopy in rain. Never touch with wet hands.<br>
-        8. Inspect your cord before each use. Replace immediately if damaged.
-      </div>
-
-      <!-- Legal Footer -->
-      <div style="background:#f8f9fb;border:1px solid #e4e8f0;border-radius:8px;padding:12px;font-size:10px;color:#6b7280;text-align:center;line-height:1.6;margin-bottom:16px">
-        This document constitutes a binding agreement between the parties under the Electronic Signatures in Global and National Commerce Act (ESIGN Act). The electronic signature above carries the same legal weight as a handwritten signature.
-      </div>
-
-      <!-- Footer / Credentials -->
-      <div style="border-top:1px solid #e4e8f0;padding-top:12px;text-align:center">
-        <div style="font-size:11px;font-weight:700;color:#0b1f3b;margin-bottom:2px">Key Electric LLC</div>
-        <div style="font-size:9px;color:#8a9ab5;line-height:1.5">
-          22 Kimbell CT, Greenville SC 29617 &middot; (864) 400-5302 &middot; backuppowerpro.com<br>
-          SC Electrical Contractor License #2942 &middot; Fully Licensed &amp; Insured &middot; DBA: Backup Power Pro
-        </div>
-      </div>
+    <div style="margin-bottom:18px"><div style="font-size:11px;color:#8a9ab5;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">PROPOSAL</div><div style="font-size:24px;font-weight:800;color:#0b1f3b">The Storm-Ready Connection System</div></div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px">
+      <tr><td style="padding:6px 0;color:#8a9ab5">Customer</td><td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.contact_name)}</td></tr>
+      ${P.contact_address ? '<tr><td style="padding:6px 0;color:#8a9ab5">Address</td><td style="padding:6px 0;font-weight:600;text-align:right">' + esc(P.contact_address) + '</td></tr>' : ''}
+      <tr><td style="padding:6px 0;color:#8a9ab5">Proposal Date</td><td style="padding:6px 0;font-weight:600;text-align:right">${createdDate}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a9ab5">Signed</td><td style="padding:6px 0;font-weight:600;text-align:right">${signedDate}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a9ab5">Setup Type</td><td style="padding:6px 0;font-weight:600;text-align:right">${ampLabel} Connection System</td></tr>
+    </table>
+    <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+    <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Everything Included</div>
+    <div style="font-size:12px;color:#4a5568;line-height:1.8;margin-bottom:16px">
+      &#10003; Generator inlet box (weather-rated, exterior mount)<br>
+      &#10003; Interlock kit (UL-listed, code-compliant)<br>
+      &#10003; Permit pulled &amp; filed with local jurisdiction<br>
+      &#10003; State electrical inspection coordinated<br>
+      &#10003; Complete site cleanup<br>
+      &#10003; Customer walkthrough &amp; training<br>
+      ${(pr.cordIncluded !== false) ? '&#10003; Power transfer cord<br>' : ''}
     </div>
-  `;
-
-  // Render each page as a separate canvas, then stitch into PDF with jsPDF
-  const el1 = document.createElement('div');
-  el1.style.cssText = 'width:680px;';
-  el1.innerHTML = page1;
-  document.body.appendChild(el1);
-
-  const el2 = document.createElement('div');
-  el2.style.cssText = 'width:680px;';
-  el2.innerHTML = page2;
-  document.body.appendChild(el2);
-
-  const customerName = (P.contact_name || 'Proposal').replace(/[^a-zA-Z0-9]/g, '-');
-  const restoreBtn = () => {
-    downloading = false;
-    if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Proposal PDF'; }
-  };
-
-  try {
-    const canvasOpts = { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' };
-    const canvas1 = await html2canvas(el1, canvasOpts);
-    const canvas2 = await html2canvas(el2, canvasOpts);
-
-    // Letter size in mm: 215.9 x 279.4
-    const pdf = new jspdf.jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
-    const pageW = 215.9;
-    const marginX = 12;
-    const marginY = 10;
-    const contentW = pageW - (marginX * 2);
-
-    // Page 1
-    const img1 = canvas1.toDataURL('image/jpeg', 0.98);
-    const h1 = (canvas1.height * contentW) / canvas1.width;
-    pdf.addImage(img1, 'JPEG', marginX, marginY, contentW, h1);
-
-    // Page 2
-    pdf.addPage();
-    const img2 = canvas2.toDataURL('image/jpeg', 0.98);
-    const h2 = (canvas2.height * contentW) / canvas2.width;
-    pdf.addImage(img2, 'JPEG', marginX, marginY, contentW, h2);
-
-    pdf.save('BPP-Proposal-' + customerName + '.pdf');
-  } catch (e) {
-    console.error('PDF generation failed:', e);
-  }
-
-  // Cleanup
-  if (el1.parentNode) document.body.removeChild(el1);
-  if (el2.parentNode) document.body.removeChild(el2);
-  restoreBtn();
-}
-
-function pdfRow(name, price) {
-  return `<tr><td style="padding:6px 0;color:#4a5568">${name}</td><td style="padding:6px 0;font-weight:600;text-align:right">${price}</td></tr>`;
-}
-
-// ── DRAFT PDF (unapproved proposals) ───────────────────────
-async function downloadDraftPDF() {
-  const btn = document.querySelector('.dl-btn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner-large" style="width:18px;height:18px;border-width:2px;margin:0"></div> Generating PDF...'; }
-
-  const createdDate = new Date(P.created_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  const total = calcTotal(chosenAmp);
-  const ampLabel = (chosenAmp || P.selected_amp || P.amp_type || '30') === '50' ? '50 Amp' : '30 Amp';
-  const pr = getPrice(chosenAmp);
-
-  let pricingRows = '';
-  if (P.pricing_30 || P.pricing_50) {
-    const base = pr.base || 0, longRun = pr.longRun || 0, mb = pr.mainBreaker || 0, tq = pr.twinQuad || 0, cord = pr.cord || 0, permit = pr.permitInspection || 125;
-    pricingRows += pdfRow('Installation', fmt(Math.max(0, base - longRun - mb - tq - cord - permit)));
-    if (longRun) pricingRows += pdfRow('Extended run', fmt(longRun));
-    pricingRows += pdfRow('Permit & inspection', fmt(permit));
-    if (cord) pricingRows += pdfRow('Power transfer cord', fmt(cord));
-    if (mb) pricingRows += pdfRow('Main breaker replacement', fmt(mb));
-    if (tq) pricingRows += pdfRow('Panel space optimization', fmt(tq));
-  } else {
-    pricingRows += pdfRow('Base installation', fmt(pr.base || P.price_base || 0));
-    if (P.include_cord) pricingRows += pdfRow('Power transfer cord', fmt(P.price_cord || 0));
-  }
-  if (surgeOn && !P.include_surge) {
-    pricingRows += pdfRow('Whole-home surge protector', fmt(P.surge_price || 375));
-  }
-
-  const sty = 'font-family:Helvetica,Arial,sans-serif;color:#1a2a42;padding:20px 24px;width:632px;background:#fff;';
-  const pageHtml = `
-    <div style="${sty}">
-      <div style="background:#0b1f3b;border-radius:10px;padding:24px;color:#fff;margin-bottom:20px;text-align:center">
-        <img src="https://backuppowerpro.com/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:32px;margin-bottom:6px;" crossorigin="anonymous">
-        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:3px">Licensed Electrical Contractor &middot; SC LIC #2942 &middot; Upstate SC</div>
-      </div>
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffba00;margin-bottom:4px">PROPOSAL</div>
-        <div style="font-size:24px;font-weight:800;color:#0b1f3b">The Storm-Ready Connection System</div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px">
-        <tr><td style="padding:6px 0;color:#8a9ab5">Customer</td><td style="padding:6px 0;font-weight:600;text-align:right">${esc(P.contact_name)}</td></tr>
-        ${P.contact_address ? '<tr><td style="padding:6px 0;color:#8a9ab5">Address</td><td style="padding:6px 0;font-weight:600;text-align:right">' + esc(P.contact_address) + '</td></tr>' : ''}
-        <tr><td style="padding:6px 0;color:#8a9ab5">Proposal Date</td><td style="padding:6px 0;font-weight:600;text-align:right">${createdDate}</td></tr>
-        <tr><td style="padding:6px 0;color:#8a9ab5">Setup Type</td><td style="padding:6px 0;font-weight:600;text-align:right">${ampLabel} Connection System</td></tr>
-      </table>
-      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
-      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Everything Included</div>
-      <div style="font-size:12px;color:#4a5568;line-height:1.8;margin-bottom:16px">
-        &#10003; Generator inlet box (weather-rated, exterior mount)<br>
-        &#10003; Interlock kit (UL-listed, code-compliant)<br>
-        &#10003; Permit pulled &amp; filed with local jurisdiction<br>
-        &#10003; State electrical inspection coordinated<br>
-        &#10003; Complete site cleanup<br>
-        &#10003; Customer walkthrough &amp; training<br>
-        ${(pr.cordIncluded !== false) ? '&#10003; Power transfer cord<br>' : ''}
-      </div>
-      <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
-      <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Pricing</div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
-        ${pricingRows}
-        <tr style="border-top:2px solid #0b1f3b">
-          <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b">Total</td>
-          <td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b;text-align:right">${fmt(total)}</td>
-        </tr>
-      </table>
-      ${P.notes ? '<div style="border-top:2px solid #e4e8f0;margin:12px 0"></div><div style="font-size:12px;font-weight:700;color:#0b1f3b;margin-bottom:6px">Notes from Key</div><div style="font-size:11px;color:#4a5568;line-height:1.6">' + esc(P.notes) + '</div>' : ''}
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:16px;font-size:11px;color:#92400e;line-height:1.6">
-        <strong>Payment Terms:</strong> Full payment is due upon completion of installation.
-      </div>
-      <div style="text-align:center;font-size:10px;color:#8a9ab5;border-top:1px solid #e4e8f0;padding-top:12px;margin-top:16px">
-        Backup Power Pro &middot; SC LIC #2942 &middot; (864) 400-5302 &middot; backuppowerpro.com
-      </div>
-    </div>`;
+    <div style="border-top:2px solid #e4e8f0;margin:12px 0"></div>
+    <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Pricing</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">${pricingRows}<tr style="border-top:2px solid #0b1f3b"><td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b">Total</td><td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b;text-align:right">${fmt(total)}</td></tr></table>
+    ${P.notes ? '<div style="border-top:2px solid #e4e8f0;margin:12px 0"></div><div style="font-size:12px;font-weight:700;color:#0b1f3b;margin-bottom:6px">Notes from Key</div><div style="font-size:11px;color:#4a5568;line-height:1.6">' + esc(P.notes) + '</div>' : ''}
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:16px;font-size:11px;color:#92400e;line-height:1.6"><strong>Payment Terms:</strong> Full payment is due upon completion of installation.</div>
+    <div style="text-align:center;font-size:10px;color:#8a9ab5;border-top:1px solid #e4e8f0;padding-top:12px;margin-top:16px">Backup Power Pro · SC LIC #2942 · (864) 400-5302 · backuppowerpro.com</div>
+  </div>`;
 
   const el = document.createElement('div');
   el.style.cssText = 'width:680px;';
   el.innerHTML = pageHtml;
   document.body.appendChild(el);
-
   try {
-    const canvasOpts = { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' };
-    const canvas = await html2canvas(el, canvasOpts);
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
     const pdf = new jspdf.jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
     const pageW = 215.9, marginX = 12, marginY = 10, contentW = pageW - (marginX * 2);
     const img = canvas.toDataURL('image/jpeg', 0.98);
@@ -1402,19 +1169,14 @@ async function downloadDraftPDF() {
     pdf.addImage(img, 'JPEG', marginX, marginY, contentW, h);
     pdf.save('BPP-Proposal-' + (P.contact_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '-') + '.pdf');
   } catch(e) { console.error('PDF generation failed:', e); }
-
   if (el.parentNode) document.body.removeChild(el);
-  if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Proposal PDF'; }
+  downloading = false;
+  if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Proposal PDF'; }
 }
 
-// ── ERROR ───────────────────────────────────────────────────
+// ── ERROR ─────────────────────────────────────────────────────
 function showError(title, msg) {
-  document.getElementById('main').innerHTML = `
-    <div class="state-wrap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <h2>${title}</h2>
-      <p>${msg}</p>
-    </div>`;
+  document.getElementById('main').innerHTML = `<div class="state-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h2>${title}</h2><p>${msg}</p></div>`;
 }
 
 function esc(s) {
