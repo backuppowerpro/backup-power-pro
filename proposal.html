@@ -160,7 +160,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .per-day-note{text-align:center;padding:10px 0 2px;font-size:13px;color:var(--text3);line-height:1.5}
 
 /* ── POM CARD ───────────────────────────────────────── */
-.pom-card{background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 100%);border:2.5px solid var(--gold);border-radius:16px;margin-bottom:16px;cursor:pointer;transition:all .2s;overflow:hidden;box-shadow:0 4px 18px rgba(255,186,0,.22)}
+.pom-card{background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 100%);border:2.5px solid var(--gold);border-top:none;border-radius:0 0 14px 14px;margin-bottom:16px;cursor:pointer;transition:all .2s;overflow:hidden;box-shadow:0 8px 24px rgba(255,186,0,.25)}
 .pom-badge-bar{background:var(--gold);padding:7px 18px;display:flex;align-items:center;justify-content:space-between}
 .pom-body{padding:16px 18px 18px;position:relative}
 .pom-body::before{content:'';position:absolute;top:0;right:0;width:140px;height:140px;background:radial-gradient(circle,rgba(255,186,0,.08),transparent 70%)}
@@ -794,7 +794,7 @@ function renderProposal() {
     ${ampToggleHtml}
 
     <!-- Pricing Card -->
-    <div class="card reveal" id="pricing-card">
+    <div class="card reveal" id="pricing-card" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2.5px solid var(--gold)">
       <div class="card-head">
         <div class="card-icon" style="background:#fffbeb">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
