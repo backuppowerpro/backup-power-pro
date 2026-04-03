@@ -160,8 +160,27 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .per-day-note{text-align:center;padding:10px 0 2px;font-size:13px;color:var(--text3);line-height:1.5}
 
 /* ── POM CARD ───────────────────────────────────────── */
-.pom-card{background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 100%);border:2.5px solid var(--gold);border-top:none;border-radius:0 0 14px 14px;margin-bottom:16px;cursor:pointer;transition:all .2s;overflow:hidden;box-shadow:0 8px 24px rgba(255,186,0,.25)}
-.pom-badge-bar{background:var(--gold);padding:7px 18px;display:flex;align-items:center;justify-content:space-between}
+/* ── UNIFIED INVESTMENT BLOCK ───────────────────────── */
+.investment-block{background:#fff;border:2px solid var(--gold);border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 4px 24px rgba(255,186,0,.15)}
+.investment-head{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.investment-head h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
+.investment-head-icon{width:32px;height:32px;border-radius:8px;background:#fffbeb;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.investment-items{padding:4px 20px 0}
+.pom-divider-bar{background:var(--gold);padding:7px 20px;display:flex;align-items:center;justify-content:space-between;font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7a4a00}
+.pom-section{background:linear-gradient(135deg,#0b1f3b 0%,#1a3a5c 100%);padding:18px 20px;cursor:pointer;transition:background .2s}
+.pom-section:hover{background:linear-gradient(135deg,#0f2a50 0%,#1e4570 100%)}
+.pom-top-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.pom-title{font-family:'Outfit',sans-serif;font-size:15px;font-weight:900;color:#fff;flex:1}
+.pom-price-label{font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:var(--gold);text-align:right;flex-shrink:0}
+.pom-price-sub{font-size:10px;color:rgba(255,255,255,.4);font-weight:600;text-align:right}
+.pom-features-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pom-feature-pill{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 11px;display:flex;align-items:flex-start;gap:8px}
+.pom-feature-pill-title{font-size:12px;font-weight:700;color:#fff;line-height:1.3}
+.pom-feature-pill-desc{font-size:11px;color:rgba(255,255,255,.5);line-height:1.4;margin-top:2px}
+.investment-total-section{padding:14px 20px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.investment-total-label{font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;color:var(--navy)}
+.investment-per-day{text-align:center;padding:0 20px 14px;font-size:13px;color:var(--text3)}
+@media(max-width:480px){.pom-features-grid{grid-template-columns:1fr}}
 .pom-body{padding:16px 18px 18px;position:relative}
 .pom-body::before{content:'';position:absolute;top:0;right:0;width:140px;height:140px;background:radial-gradient(circle,rgba(255,186,0,.08),transparent 70%)}
 .surge-toggle-track{width:52px;height:32px;border-radius:16px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.2);cursor:pointer;position:relative;transition:all .25s;flex-shrink:0}
@@ -793,47 +812,47 @@ function renderProposal() {
 
     ${ampToggleHtml}
 
-    <!-- Pricing Card -->
-    <div class="card reveal" id="pricing-card" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2.5px solid var(--gold)">
-      <div class="card-head">
-        <div class="card-icon" style="background:#fffbeb">
+    <!-- ══ UNIFIED INVESTMENT BLOCK ══ -->
+    <div class="investment-block reveal">
+
+      <div class="investment-head">
+        <div class="investment-head-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
-        <h2>Your Investment Breakdown</h2>
+        <h2>Your Investment</h2>
       </div>
-      <div class="card-body" id="pricing-body"></div>
-    </div>
 
-    <!-- POM Add-On -->
-    <div class="pom-card reveal" id="pom-card" onclick="togglePom()">
-      <div class="pom-badge-bar">
-        <div style="font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7a4a00">⭐ Recommended Add-On</div>
-        <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:#7a4a00;opacity:.8">All three, same day</div>
+      <div class="investment-items" id="pricing-items"></div>
+
+      <div class="pom-divider-bar">
+        <span>⭐ Recommended Add-On</span>
+        <span style="opacity:.75;font-weight:600;letter-spacing:0;text-transform:none;font-size:11px">All three, same day</span>
       </div>
-      <div class="pom-body">
-        <div style="display:flex;align-items:flex-start;gap:14px">
-          <div style="padding-top:3px;flex-shrink:0">
-            <div class="surge-toggle-track ${pomOn ? 'on' : ''}" id="pom-toggle"><div class="surge-toggle-knob"></div></div>
-          </div>
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <span style="font-size:20px">🛡️</span>
-              <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:900;color:#fff">Peace of Mind Protection Package</div>
-            </div>
-            <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px">Complete protection — before, during, and after every outage.</div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <div class="pom-feature"><span style="color:var(--gold);font-size:14px;flex-shrink:0">⚡</span><div><div class="pom-feature-title">Whole-Home Surge Protection</div><div class="pom-feature-desc">Installed on your panel. Backed by a $75,000 connected equipment warranty.</div></div></div>
-              <div class="pom-feature"><span style="color:var(--gold);font-size:14px;flex-shrink:0">📋</span><div><div class="pom-feature-title">Safety & Wattage Planning Guide</div><div class="pom-feature-desc">Customized for your home so you know exactly what to run during an outage.</div></div></div>
-              <div class="pom-feature"><span style="color:var(--gold);font-size:14px;flex-shrink:0">🔍</span><div><div class="pom-feature-title">20-Point Panel Safety Inspection</div><div class="pom-feature-desc">Full evaluation of your main panel — catch issues before they become emergencies.</div></div></div>
-              <div class="pom-feature"><span style="color:var(--gold);font-size:14px;flex-shrink:0">📅</span><div><div class="pom-feature-title">Priority Scheduling</div><div class="pom-feature-desc">Move to the front of the line — your install gets scheduled first.</div></div></div>
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;padding-top:2px">
-            <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">+$${P.pom_price || 447}</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.45);font-weight:600;margin-top:1px">one-time</div>
+
+      <div class="pom-section" id="pom-card" onclick="togglePom()">
+        <div class="pom-top-row">
+          <div class="surge-toggle-track ${pomOn ? 'on' : ''}" id="pom-toggle" style="flex-shrink:0"><div class="surge-toggle-knob"></div></div>
+          <span style="font-size:18px">🛡️</span>
+          <div class="pom-title">Peace of Mind Protection Package</div>
+          <div>
+            <div class="pom-price-label">+$${P.pom_price || 447}</div>
+            <div class="pom-price-sub">one-time</div>
           </div>
         </div>
+        <div class="pom-features-grid">
+          <div class="pom-feature-pill"><span style="font-size:14px;flex-shrink:0">⚡</span><div><div class="pom-feature-pill-title">Surge Protection</div><div class="pom-feature-pill-desc">$75K equipment warranty</div></div></div>
+          <div class="pom-feature-pill"><span style="font-size:14px;flex-shrink:0">📋</span><div><div class="pom-feature-pill-title">Wattage Guide</div><div class="pom-feature-pill-desc">Know exactly what to run</div></div></div>
+          <div class="pom-feature-pill"><span style="font-size:14px;flex-shrink:0">🔍</span><div><div class="pom-feature-pill-title">Panel Inspection</div><div class="pom-feature-pill-desc">20-point safety check</div></div></div>
+          <div class="pom-feature-pill"><span style="font-size:14px;flex-shrink:0">📅</span><div><div class="pom-feature-pill-title">Priority Scheduling</div><div class="pom-feature-pill-desc">Move to front of the line</div></div></div>
+        </div>
       </div>
+
+      <div class="investment-total-section">
+        <span class="investment-total-label">Total</span>
+        <span class="total-badge" id="total-badge"></span>
+      </div>
+      <div class="investment-per-day" id="per-day-note"></div>
+
     </div>
 
     <!-- ══ ACT 5: RISK REMOVAL ══ -->
@@ -975,8 +994,6 @@ function renderPricing() {
     if (P.include_surge) rows += priceRow('Whole-house surge protector', 'Installed on main panel', fmt(P.price_surge));
   }
 
-  if (pomOn) rows += priceRow('Peace of Mind Protection Package', 'Surge protection, panel inspection, wattage guide', fmt(P.pom_price || 447));
-
   if (Array.isArray(P.custom_items)) {
     P.custom_items.forEach(item => {
       if (item.title || item.price) rows += priceRow(item.title || 'Additional service', '', fmt(item.price || 0));
@@ -984,24 +1001,25 @@ function renderPricing() {
   }
 
   const total = calcTotal(chosenAmp);
-  const body = document.getElementById('pricing-body');
-  if (!body) return;
-  body.innerHTML = `
-    <table class="price-table">
-      ${rows}
-      <tr class="price-total-row">
-        <td>Total</td>
-        <td><span class="total-badge" id="total-badge">${fmt(total)}</span></td>
-      </tr>
-    </table>
-    <div class="per-day-note">
-      That's just <strong style="color:var(--navy)">$${(total / 3650).toFixed(2)}/day</strong> for 10 years of whole-home storm protection.
-    </div>`;
+
+  const itemsEl = document.getElementById('pricing-items');
+  if (itemsEl) itemsEl.innerHTML = `<table class="price-table" style="margin:0">${rows}</table>`;
+
+  const totalBadge = document.getElementById('total-badge');
+  if (totalBadge) totalBadge.textContent = fmt(total);
+
+  const perDay = document.getElementById('per-day-note');
+  if (perDay) perDay.innerHTML = `That's just <strong style="color:var(--navy)">$${(total / 3650).toFixed(2)}/day</strong> for 10 years of whole-home storm protection.`;
+
+  // Update POM toggle visual
+  const pomToggle = document.getElementById('pom-toggle');
+  if (pomToggle) pomToggle.classList.toggle('on', pomOn);
+  const pomCard = document.getElementById('pom-card');
+  if (pomCard) { pomCard.style.boxShadow = pomOn ? 'inset 0 0 0 2px rgba(255,186,0,.4)' : ''; }
 
   const approveTotal = document.getElementById('approve-total');
   if (approveTotal) approveTotal.textContent = fmt(total);
 
-  // Update anchor price if visible
   const anchorNew = document.getElementById('anchor-our-price');
   if (anchorNew) anchorNew.textContent = fmt(total);
 }
