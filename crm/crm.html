@@ -699,11 +699,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <div class="qb-section-title">Options</div>
       <div class="qb-row active" id="qb-row-cord" onclick="qbToggle('cordIncluded')">
         <div class="qb-row-left"><span class="qb-row-name" id="qb-cord-label">30A Cord</span><span class="qb-row-sub" id="qb-cord-sub">Included</span></div>
-        <div style="display:flex;align-items:center"><span class="qb-row-right" id="qb-cord-right">+$146</span><button class="qb-row-toggle on" id="qb-tog-cord"></button></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right" id="qb-cord-right">+$129</span><button class="qb-row-toggle on" id="qb-tog-cord"></button></div>
       </div>
       <div class="qb-row" id="qb-row-main" onclick="qbToggle('mainBreaker')">
         <div class="qb-row-left"><span class="qb-row-name">Main Breaker</span><span class="qb-row-sub">Needs replacement</span></div>
-        <div style="display:flex;align-items:center"><span class="qb-row-right">+$126</span><button class="qb-row-toggle" id="qb-tog-main"></button></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right">+$224</span><button class="qb-row-toggle" id="qb-tog-main"></button></div>
       </div>
       <div class="qb-row" id="qb-row-twin" onclick="qbToggle('twinQuad')">
         <div class="qb-row-left"><span class="qb-row-name">Twin / Quad</span><span class="qb-row-sub">Making panel space</span></div>
@@ -802,7 +802,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
               <input type="checkbox" id="p-main-breaker" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
               <span style="flex:1">Main breaker replacement</span>
-              <span style="font-weight:600;color:var(--text2)">+$126</span>
+              <span style="font-weight:600;color:var(--text2)">+$224</span>
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
               <input type="checkbox" id="p-twin-quad" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
@@ -823,6 +823,17 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
             <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em">Your profit</div>
             <div id="p-profit" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:20px;color:var(--green);margin-top:2px"></div>
           </div>
+        </div>
+
+        <!-- Custom Line Items -->
+        <div class="form-row">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <label style="margin:0;color:var(--text3);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Extra Services</label>
+            <button type="button" onclick="pAddCustomItem()" id="p-add-item-btn" style="background:none;border:1px dashed var(--border);border-radius:var(--r-xs);padding:3px 10px;font-size:12px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px">
+              <span style="font-size:15px;line-height:1">+</span> Add service
+            </button>
+          </div>
+          <div id="p-custom-items" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
 
         <!-- Notes -->
@@ -909,8 +920,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 <div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this)panelSave()">
 <div class="side-panel" id="side-panel">
   <div class="panel-head" style="flex-direction:column;align-items:stretch;gap:0">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="panel-name" id="panel-name" style="user-select:none;padding:4px 10px;border-radius:var(--r-xs);width:fit-content">Lead</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+        <div id="panel-avatar" style="flex-shrink:0"></div>
+        <div class="panel-name" id="panel-name" style="user-select:none;padding:4px 10px;border-radius:var(--r-xs);width:fit-content">Lead</div>
+      </div>
       <button class="modal-close" onclick="cancelPanel()">&#10005;</button>
     </div>
   </div>
@@ -1089,6 +1103,51 @@ let allJobs          = [];
 let allProposals     = [];
 let allJurisdictions = [];
 let proposalMap  = {};   // contact_id → latest proposal
+
+// ── LAST-TOUCHED TRACKER ─────────────────────────────────────────────────────
+// Persists across page reloads via localStorage.
+// Anything that touches a contact (save, new, proposal create/edit) updates this.
+// ── STREET VIEW AVATARS ────────────────────────────────────
+const _SV_KEY = 'AIzaSyDeEyRe8GCIe0zyiTxobN6cdIAGEhKhsKQ';
+const _AVATAR_COLORS = ['#0b1f3b','#1d4ed8','#0891b2','#059669','#7c3aed','#db2777','#b45309','#0f766e'];
+function _avatarColor(id) {
+  let h = 0; const s = String(id||'');
+  for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
+  return _AVATAR_COLORS[Math.abs(h) % _AVATAR_COLORS.length];
+}
+function _avatarInitials(name) {
+  const p = (name||'').trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return '?';
+  return p.length >= 2 ? (p[0][0]+p[p.length-1][0]).toUpperCase() : p[0][0].toUpperCase();
+}
+function _avatarHtml(c, size) {
+  const color = _avatarColor(c.id);
+  const initials = _avatarInitials(c.name);
+  const fs = size <= 36 ? '12px' : size <= 48 ? '15px' : '19px';
+  const base = `border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;background:${color};width:${size}px;height:${size}px`;
+  const span = `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${fs};font-family:'Outfit',sans-serif;pointer-events:none">${initials}</span>`;
+  if (!c.address) return `<div style="${base}">${span}</div>`;
+  const px = size * 2;
+  const src = `https://maps.googleapis.com/maps/api/streetview?size=${px}x${px}&location=${encodeURIComponent(c.address)}&fov=90&pitch=0&key=${_SV_KEY}`;
+  const img = `<img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()" loading="lazy">`;
+  return `<div style="${base}">${span}${img}</div>`;
+}
+// ───────────────────────────────────────────────────────────
+const _LS_TOUCH_KEY = 'bpp_crm_touched';
+function _loadTouched() {
+  try { return JSON.parse(localStorage.getItem(_LS_TOUCH_KEY) || '{}'); } catch { return {}; }
+}
+function touchContact(id) {
+  const t = _loadTouched();
+  t[id] = Date.now();
+  // Keep only last 500 entries to avoid bloat
+  const keys = Object.keys(t).sort((a, b) => t[b] - t[a]);
+  if (keys.length > 500) keys.slice(500).forEach(k => delete t[k]);
+  localStorage.setItem(_LS_TOUCH_KEY, JSON.stringify(t));
+}
+function _getTouchTime(id) {
+  return _loadTouched()[id] || 0;
+}
 let stageFilter  = 'all'; // 'all' | 1..9 | 'archived'
 let analyticsCollapsed = false;
 let contactsShown = 5;
@@ -1314,9 +1373,11 @@ function renderContacts() {
     return true;
   });
 
+  const _touched = _loadTouched();
   list.sort((a, b) => {
-    const diff = new Date(b.created_at) - new Date(a.created_at);
-    return diff !== 0 ? diff : (b.id > a.id ? 1 : -1);
+    const ta = Math.max(_touched[a.id] || 0, new Date(a.created_at).getTime());
+    const tb = Math.max(_touched[b.id] || 0, new Date(b.created_at).getTime());
+    return tb !== ta ? tb - ta : (b.id > a.id ? 1 : -1);
   });
 
   const total = list.length;
@@ -1330,8 +1391,8 @@ function renderContacts() {
   const wrap = document.getElementById('contacts-table');
 
   if (total === 0) {
-    const cols = `<colgroup><col style="width:14%"><col class="col-phone" style="width:12%"><col style="width:15%"><col class="col-notes" style="width:21%"><col class="col-jur" style="width:15%"><col style="width:15%"></colgroup>`;
-    const thead = `<tr><th style="width:14%">Name</th><th class="col-phone" style="width:12%">Phone</th><th style="width:15%">Address</th><th class="col-notes" style="width:21%">Notes</th><th class="col-jur" style="width:15%">Jurisdiction</th><th style="width:15%">Stage</th></tr>`;
+    const cols = `<colgroup><col style="width:18%"><col class="col-phone" style="width:12%"><col style="width:14%"><col class="col-notes" style="width:19%"><col class="col-jur" style="width:14%"><col style="width:15%"></colgroup>`;
+    const thead = `<tr><th style="width:18%">Name</th><th class="col-phone" style="width:12%">Phone</th><th style="width:14%">Address</th><th class="col-notes" style="width:19%">Notes</th><th class="col-jur" style="width:14%">Jurisdiction</th><th style="width:15%">Stage</th></tr>`;
     const emptyContent = searchTerm
       ? `<button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff;padding:10px 20px;font-size:14px" onclick="addFromSearch()">+ Add New Lead</button>`
       : `<div class="empty">
@@ -1368,9 +1429,10 @@ function renderContacts() {
     const actColors = { approved: 'var(--gold)', paid: 'var(--green)', viewed: '#3b82f6' };
     const actTitles = { approved: 'Proposal approved', paid: 'Invoice paid', viewed: 'Proposal viewed' };
     const activityDot = actType ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + actColors[actType] + ';margin-left:6px;vertical-align:middle;flex-shrink:0" title="' + actTitles[actType] + '"></span>' : '';
+    const avatarHtml = _avatarHtml(c, 34);
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
-      <td class="name">${esc(c.name)}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
-      <td class="phone col-phone">${esc(c.phone||'—')}</td>
+      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
+      <td class="phone col-phone">${esc(fmtPhone(c.phone)||'—')}</td>
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : '—'}</td>
       <td class="col-jur" style="font-size:12px">${jurCell}</td>
@@ -1378,9 +1440,9 @@ function renderContacts() {
     </tr>`;
   }).join('');
 
-  const thead = `<tr><th style="width:14%">Name</th><th class="col-phone" style="width:12%">Phone</th><th style="width:15%">Address</th><th class="col-notes" style="width:21%">Notes</th><th class="col-jur" style="width:15%">Jurisdiction</th><th style="width:15%">Stage</th></tr>`;
+  const thead = `<tr><th style="width:18%">Name</th><th class="col-phone" style="width:12%">Phone</th><th style="width:14%">Address</th><th class="col-notes" style="width:19%">Notes</th><th class="col-jur" style="width:14%">Jurisdiction</th><th style="width:15%">Stage</th></tr>`;
 
-  const cols = `<colgroup><col style="width:14%"><col class="col-phone" style="width:12%"><col style="width:15%"><col class="col-notes" style="width:21%"><col class="col-jur" style="width:15%"><col style="width:15%"></colgroup>`;
+  const cols = `<colgroup><col style="width:18%"><col class="col-phone" style="width:12%"><col style="width:14%"><col class="col-notes" style="width:19%"><col class="col-jur" style="width:14%"><col style="width:15%"></colgroup>`;
   wrap.innerHTML = `<div class="table-wrap">
     <div class="table-scroll">
       <table>
@@ -1582,6 +1644,7 @@ function openPanel(id) {
   // Fill fields
   document.getElementById('panel-id').value          = c.id;
   document.getElementById('panel-name').textContent  = c.name;
+  document.getElementById('panel-avatar').innerHTML  = _avatarHtml(c, 52);
   document.getElementById('panel-name-input').value  = c.name  || '';
   const phoneEl = document.getElementById('panel-phone');
   phoneEl.value = c.phone || '';
@@ -1774,6 +1837,7 @@ async function doCancelProposal(proposalId) {
     const p = arr.find(x => x.id === proposalId);
     if (p) p.status = 'Cancelled';
   }
+  touchContact(contactId);
   showToast('Proposal cancelled', 'success');
   drillTo('contact');
   if (contactId) openPanel(contactId);
@@ -1788,6 +1852,7 @@ async function reviveProposal(proposalId) {
     const p = arr.find(x => x.id === proposalId);
     if (p) p.status = 'Created';
   }
+  touchContact(contactId);
   showToast('Proposal revived', 'success');
   drillTo('contact');
   if (contactId) openPanel(contactId);
@@ -1857,6 +1922,7 @@ async function saveInspection(existingId) {
   if (existingId) { ({ error } = await db.from('inspections').update(payload).eq('id', existingId)); }
   else { ({ error } = await db.from('inspections').insert([payload])); }
   if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  touchContact(contactId);
   showToast('Inspection saved', 'success');
 }
 
@@ -2076,6 +2142,7 @@ async function collectPayment(contactId, amount) {
     const np = (c.name || '').split(' ');
     fireMetaEvent('Purchase', { email: c.email, phone: c.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' }, { currency: 'USD', value: amount });
   }
+  touchContact(contactId);
   showToast('Payment recorded!', 'success');
   renderPaymentDrill();
 }
@@ -2386,6 +2453,7 @@ async function panelSave() {
   // Update local data in place to preserve order
   if (c) Object.assign(c, payload);
   buildDuplicateMap();
+  touchContact(id);
   showToast('Lead saved', 'success');
   closePanel();
   renderContacts();
@@ -2402,6 +2470,7 @@ async function autoProgressStage(contactId, targetStage) {
   if (error) return;
   db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: targetStage }]);
   c.stage = targetStage;
+  touchContact(contactId);
   renderContacts();
   loadPermitAnalytics();
 }
@@ -2420,6 +2489,7 @@ async function setStageFromLatestProposal(contactId, proposalStage) {
   if (error) return;
   db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: proposalStage }]);
   c.stage = proposalStage;
+  touchContact(contactId);
   renderContacts();
   loadPermitAnalytics();
 }
@@ -2746,7 +2816,8 @@ function pRecalc() {
   const primary = pBuildPricing(amps[0]);
   const pomChecked = document.getElementById('p-pom-check')?.checked || false;
   const surgeChecked = document.getElementById('p-surge-check')?.checked || false;
-  const displayTotal = primary.total + (pomChecked ? 97 : 0);
+  const customTotal = pCustomItemsTotal ? pCustomItemsTotal() : 0;
+  const displayTotal = primary.total + (pomChecked ? 97 : 0) + customTotal;
   document.getElementById('p-total').textContent = '$' + displayTotal.toLocaleString();
   document.getElementById('p-profit').textContent = '$' + primary.profit.toLocaleString();
   document.getElementById('p-profit').style.color = primary.profit >= 500 ? 'var(--green)' : '#d4980b';
@@ -2762,6 +2833,46 @@ function pRecalc() {
   const is50 = pAmpType === '50';
   const cordLbl = document.getElementById('p-cord-price-lbl');
   if (cordLbl) cordLbl.textContent = is50 ? '+$' + QB_S.cordValue50 : '+$' + QB_S.cordValue30;
+}
+
+function pAddCustomItem(title='', price='') {
+  const container = document.getElementById('p-custom-items');
+  const idx = container.children.length;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;align-items:center';
+  row.innerHTML = `
+    <input type="text" placeholder="Service description" value="${title}"
+      style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-xs);font-size:13px;font-family:inherit;background:var(--bg)"
+      oninput="pRecalc()">
+    <input type="number" placeholder="$" value="${price}" min="0"
+      style="width:72px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-xs);font-size:13px;font-family:inherit;background:var(--bg);text-align:right"
+      oninput="pRecalc()">
+    <button type="button" onclick="this.parentElement.remove();pRecalc()"
+      style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:0 2px" title="Remove">×</button>
+  `;
+  container.appendChild(row);
+  row.querySelector('input').focus();
+  pRecalc();
+}
+
+function pGetCustomItems() {
+  const rows = document.getElementById('p-custom-items').children;
+  const items = [];
+  for (const row of rows) {
+    const inputs = row.querySelectorAll('input');
+    const title = inputs[0].value.trim();
+    const price = parseFloat(inputs[1].value) || 0;
+    if (title || price) items.push({ title, price });
+  }
+  return items;
+}
+
+function pCustomItemsTotal() {
+  return pGetCustomItems().reduce((s, i) => s + i.price, 0);
+}
+
+function pClearCustomItems() {
+  document.getElementById('p-custom-items').innerHTML = '';
 }
 
 function pSetAmp(type) {
@@ -2784,6 +2895,7 @@ let _proposalReturnContactId = null;
 
 function backToContactFromProposal() {
   const contactId = _proposalReturnContactId || document.getElementById('p-contact-id').value;
+  _editingProposalId = null; // Always clear edit state when dismissing modal
   closeModal('proposal-overlay');
   if (contactId) openPanel(contactId);
 }
@@ -2803,26 +2915,27 @@ function editProposal(proposalId) {
   _editingProposalId = proposalId;
   closePanel();
   openProposalModal(contactId);
-  // Pre-fill from existing proposal
-  setTimeout(function() {
-    pSetAmp(p.amp_type === '50' ? '50' : '30');
-    document.getElementById('p-run-slider').value = p.run_ft || 5;
-    pRunFt = p.run_ft || 5;
-    document.getElementById('p-run-display').textContent = pRunFt + 'ft';
-    document.getElementById('p-cord-check').checked = p.cord_included !== false;
-    document.getElementById('p-main-breaker').checked = !!p.include_main_breaker;
-    document.getElementById('p-twin-quad').checked = !!p.include_twin_quad;
-    if (document.getElementById('p-surge-check')) document.getElementById('p-surge-check').checked = !!p.include_surge;
-    if (document.getElementById('p-pom-check')) document.getElementById('p-pom-check').checked = !!p.include_pom;
-    document.getElementById('p-notes').value = p.notes || '';
-    document.getElementById('proposal-modal-title').textContent = 'Edit Proposal';
-    document.getElementById('p-create-btn').textContent = 'Save Changes';
-    pRecalc();
-  }, 100);
+  // Pre-fill synchronously — form elements are in DOM even when modal is hidden
+  pSetAmp(p.amp_type === '50' ? '50' : '30');
+  document.getElementById('p-run-slider').value = p.run_ft || 5;
+  pRunFt = p.run_ft || 5;
+  document.getElementById('p-run-display').textContent = pRunFt + 'ft';
+  document.getElementById('p-cord-check').checked = p.cord_included !== false;
+  document.getElementById('p-main-breaker').checked = !!p.include_main_breaker;
+  document.getElementById('p-twin-quad').checked = !!p.include_twin_quad;
+  if (document.getElementById('p-surge-check')) document.getElementById('p-surge-check').checked = !!p.include_surge;
+  if (document.getElementById('p-pom-check')) document.getElementById('p-pom-check').checked = !!p.include_pom;
+  document.getElementById('p-notes').value = p.notes || '';
+  pClearCustomItems();
+  (p.custom_items || []).forEach(item => pAddCustomItem(item.title, item.price));
+  document.getElementById('proposal-modal-title').textContent = 'Edit Proposal';
+  document.getElementById('p-create-btn').textContent = 'Save Changes';
+  pRecalc();
 }
 
 function openProposalModal(contactId) {
-  if (!_editingProposalId) _editingProposalId = null; // Only reset if not already set by editProposal
+  // Note: _editingProposalId is managed by editProposal() / backToContactFromProposal() / saveProposal()
+  // Do NOT touch it here — editProposal sets it before calling this function
   _proposalReturnContactId = contactId;
   const c = allContacts.find(x => x.id === contactId);
   if (!c) return;
@@ -2840,6 +2953,7 @@ function openProposalModal(contactId) {
   document.getElementById('p-main-breaker').checked = false;
   document.getElementById('p-twin-quad').checked = false;
   document.getElementById('p-notes').value = '';
+  pClearCustomItems();
   document.getElementById('p-run-slider').value = 5;
   pRunFt = 5;
   document.getElementById('p-run-display').textContent = '5ft';
@@ -2887,6 +3001,7 @@ async function saveProposal() {
     price_cord:      cordIncluded ? (pAmpType === '50' ? QB_S.cordValue50 : QB_S.cordValue30) : 0,
     price_surge:     QB_S.surge,
     notes:           document.getElementById('p-notes').value.trim(),
+    custom_items:    pGetCustomItems(),
     status:          'Created',
   };
 
@@ -2912,6 +3027,7 @@ async function saveProposal() {
     const aIdx = allProposals.findIndex(x => x.id === _editingProposalId);
     if (aIdx >= 0) allProposals[aIdx] = data;
     _editingProposalId = null;
+    touchContact(contactId);
     showToast('Proposal updated!', 'success');
     closeModal('proposal-overlay');
     openPanel(contactId);
@@ -2945,6 +3061,7 @@ async function saveProposal() {
   currentProposalIdx = 0; // New proposal is first in array
   openPanel(contactId);
   setTimeout(function() { drillTo('proposal'); }, 100);
+  touchContact(contactId);
   showToast('Proposal created — link copied!', 'success');
 }
 
@@ -3208,7 +3325,7 @@ function jobContactSearch(term) {
   _jobContactFocusedIdx = -1;
   let html = '';
   matches.forEach(c => {
-    html += '<li style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text2)" onmousedown="event.preventDefault();selectJobContact(\'' + c.id + '\')">' + esc(c.name) + (c.phone ? '<span style="color:var(--text3);margin-left:8px;font-size:11px">' + esc(c.phone) + '</span>' : '') + '</li>';
+    html += '<li style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text2)" onmousedown="event.preventDefault();selectJobContact(\'' + c.id + '\')">' + esc(c.name) + (c.phone ? '<span style="color:var(--text3);margin-left:8px;font-size:11px">' + esc(fmtPhone(c.phone)) + '</span>' : '') + '</li>';
   });
   if (!matches.length) {
     const safeTerm = esc(term).replace(/'/g, "\\'");
@@ -3280,6 +3397,7 @@ async function createContactFromEvent(name) {
   const { data, error } = await db.from('contacts').insert([{ name: fullName, stage: 1 }]).select().single();
   if (error) { showToast('Failed to create contact: ' + error.message, 'error'); return; }
   allContacts.unshift(data);
+  touchContact(data.id);
   renderContacts();
   selectJobContact(data.id);
   showToast(fullName + ' added as new lead', 'success');
@@ -3487,6 +3605,7 @@ async function saveJob() {
   }
   savingJob = false;
   jobOriginal = null;
+  if (payload.contact_id) touchContact(payload.contact_id);
   showToast(id ? 'Event updated' : 'Event added', 'success');
   closeModal('job-overlay');
   loadJobs();
@@ -4242,8 +4361,8 @@ const QB_C = {
 const QB_S = {
   base30: 1197, base50: 1497,
   longRun30perFt: 12, longRun50perFt: 14,
-  mainBreaker: 126, twinQuad: 129, surge: 0, pom: 447,
-  cordValue30: 146, cordValue50: 194,
+  mainBreaker: 224, twinQuad: 129, surge: 0, pom: 447,
+  cordValue30: 129, cordValue50: 198,
 };
 let qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true };
 
