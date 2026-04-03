@@ -1129,7 +1129,7 @@ function _avatarHtml(c, size) {
   if (!c.address) return `<div style="${base}">${span}</div>`;
   const px = size * 2;
   const src = `https://maps.googleapis.com/maps/api/streetview?size=${px}x${px}&location=${encodeURIComponent(c.address)}&fov=90&pitch=0&key=${_SV_KEY}`;
-  const img = `<img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()" loading="lazy">`;
+  const img = `<img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()">`;
   return `<div style="${base}">${span}${img}</div>`;
 }
 // ───────────────────────────────────────────────────────────
