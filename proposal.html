@@ -581,6 +581,7 @@ function closeCelebrationModal() {
   if (backdrop) { backdrop.style.background = 'rgba(11,31,59,0)'; setTimeout(() => backdrop.remove(), 400); }
   if (modal) modal.remove();
   document.body.style.overflow = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── RENDER PROPOSAL ──────────────────────────────────────────
