@@ -338,7 +338,7 @@ async function renderPropertyBanner() {
     const img = document.createElement('img');
     img.alt = 'Your home';
     img.src = `https://maps.googleapis.com/maps/api/streetview?size=1400x520&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
-    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:bottom';
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 70%';
     // Insert before gradient so it's behind the label
     bannerEl.insertBefore(img, bannerEl.querySelector('.property-banner-grad'));
   } catch(e) { /* keep initials on network error */ }
