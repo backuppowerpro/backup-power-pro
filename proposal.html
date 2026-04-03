@@ -250,11 +250,50 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .spinner-large{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── CONFETTI ───────────────────────────────────────── */
+/* ── CONFETTI + CELEBRATION ─────────────────────────── */
 @keyframes confettiFall{
   0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1}
-  100%{transform:translateY(110vh) rotate(720deg) scale(.5);opacity:0}
+  80%{opacity:1}
+  100%{transform:translateY(115vh) rotate(900deg) scale(.3);opacity:0}
 }
+@keyframes confettiSway{
+  0%,100%{margin-left:0}
+  25%{margin-left:18px}
+  75%{margin-left:-18px}
+}
+@keyframes flashBurst{
+  0%{opacity:.55}
+  100%{opacity:0}
+}
+@keyframes heroIn{
+  0%{opacity:0;transform:translateY(28px)}
+  100%{opacity:1;transform:translateY(0)}
+}
+@keyframes approvedBounce{
+  0%{transform:scale(.75);opacity:0}
+  55%{transform:scale(1.06)}
+  75%{transform:scale(.97)}
+  100%{transform:scale(1);opacity:1}
+}
+@keyframes checkDraw{
+  0%{stroke-dashoffset:40}
+  100%{stroke-dashoffset:0}
+}
+@keyframes btnPulse{
+  0%,100%{box-shadow:0 4px 20px rgba(11,31,59,.25)}
+  50%{box-shadow:0 4px 36px rgba(11,31,59,.55),0 0 0 6px rgba(11,31,59,.08)}
+}
+@keyframes lossIn{
+  0%{opacity:0;transform:translateX(-16px)}
+  100%{opacity:1;transform:translateX(0)}
+}
+@keyframes statPop{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.18)}
+}
+.approve-btn:not([disabled]){animation:btnPulse 2.2s ease-in-out infinite}
+.approved-banner{animation:approvedBounce .65s cubic-bezier(.34,1.56,.64,1) forwards}
+.approved-icon svg polyline{stroke-dasharray:40;stroke-dashoffset:40;animation:checkDraw .5s ease-out .3s forwards}
 
 /* ── FOOTER ─────────────────────────────────────────── */
 .site-footer{text-align:center;padding:28px 24px 24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px}
@@ -409,6 +448,30 @@ function initScrollReveal() {
           setTimeout(() => el.classList.add('scope-in'), i * 80);
         });
       }
+      // Stagger loss list items
+      if (entry.target.classList.contains('loss-list')) {
+        entry.target.querySelectorAll('.loss-item').forEach((el, i) => {
+          el.style.opacity = '0';
+          el.style.transform = 'translateX(-16px)';
+          setTimeout(() => {
+            el.style.transition = 'opacity .4s ease, transform .4s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateX(0)';
+          }, i * 100);
+        });
+      }
+      // Stagger guarantee items
+      if (entry.target.classList.contains('guarantee-section')) {
+        entry.target.querySelectorAll('.guarantee-item').forEach((el, i) => {
+          el.style.opacity = '0';
+          el.style.transform = 'translateX(-14px)';
+          setTimeout(() => {
+            el.style.transition = 'opacity .45s ease, transform .45s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateX(0)';
+          }, 150 + i * 120);
+        });
+      }
       obs.unobserve(entry.target);
     });
   }, { threshold: 0.12 });
@@ -416,40 +479,92 @@ function initScrollReveal() {
 }
 
 function animateStats(container) {
-  container.querySelectorAll('.stat-num').forEach(el => {
+  container.querySelectorAll('.stat-num').forEach((el, idx) => {
     const target = parseFloat(el.dataset.target);
     const decimals = String(target).includes('.') ? 1 : 0;
-    const duration = 1200;
-    const start = Date.now();
-    function tick() {
-      const elapsed = Date.now() - start;
-      const t = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = (target * eased).toFixed(decimals);
-      if (t < 1) requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
+    const duration = 1400;
+    const startDelay = idx * 120;
+    setTimeout(() => {
+      const start = Date.now();
+      function tick() {
+        const elapsed = Date.now() - start;
+        const t = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = (target * eased).toFixed(decimals);
+        if (t < 1) { requestAnimationFrame(tick); }
+        else { el.style.animation = 'statPop .35s ease-out forwards'; }
+      }
+      requestAnimationFrame(tick);
+    }, startDelay);
   });
 }
 
 // ── CONFETTI ─────────────────────────────────────────────────
 function launchConfetti() {
-  const colors = ['#ffba00','#0b1f3b','#059669','#fff','#dc2626','#1d4ed8'];
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden';
-  document.body.appendChild(container);
-  for (let i = 0; i < 90; i++) {
-    const piece = document.createElement('div');
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    const x = Math.random() * 100;
-    const delay = Math.random() * 0.9;
-    const dur = 2.2 + Math.random() * 1.8;
-    const size = 6 + Math.random() * 9;
-    const isCircle = Math.random() > 0.5;
-    piece.style.cssText = `position:absolute;left:${x}%;top:-12px;width:${size}px;height:${size}px;background:${color};border-radius:${isCircle ? '50%' : '2px'};animation:confettiFall ${dur}s ease-in ${delay}s forwards`;
-    container.appendChild(piece);
+  // Screen flash
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:fixed;inset:0;background:rgba(255,186,0,.35);z-index:9998;pointer-events:none;animation:flashBurst .7s ease-out forwards';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 800);
+
+  const colors = ['#ffba00','#0b1f3b','#059669','#fff','#dc2626','#1d4ed8','#f97316','#a855f7','#ec4899'];
+  const emojis = ['⚡','🎉','✅','🏠','💪','🔒','🎊'];
+
+  function burst(count, opts = {}) {
+    const c = document.createElement('div');
+    c.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden';
+    document.body.appendChild(c);
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      const isEmoji = Math.random() > 0.82;
+      const isStrip = !isEmoji && Math.random() > 0.65;
+      const isCircle = !isEmoji && !isStrip && Math.random() > 0.4;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const x = opts.spread ? (Math.random() * 140 - 20) : (Math.random() * 100);
+      const delay = Math.random() * (opts.maxDelay || 0.7);
+      const dur = 2.8 + Math.random() * 2.2;
+      const sway = Math.random() > 0.5 ? `confettiSway ${1.2 + Math.random()}s ease-in-out infinite` : '';
+      if (isEmoji) {
+        p.style.cssText = `position:absolute;left:${x}%;top:-20px;font-size:${16 + Math.random()*10}px;animation:confettiFall ${dur}s ease-in ${delay}s forwards${sway ? ','+sway : ''}`;
+        p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      } else {
+        const w = isStrip ? `${3+Math.random()*3}px` : `${6+Math.random()*10}px`;
+        const h = isStrip ? `${14+Math.random()*8}px` : w;
+        p.style.cssText = `position:absolute;left:${x}%;top:-14px;width:${w};height:${h};background:${color};border-radius:${isCircle?'50%':'2px'};animation:confettiFall ${dur}s ease-in ${delay}s forwards${sway?','+sway:''}`;
+      }
+      c.appendChild(p);
+    }
+    setTimeout(() => c.remove(), 6500);
   }
-  setTimeout(() => container.remove(), 5000);
+
+  burst(140, { spread: true, maxDelay: 0.4 });
+  setTimeout(() => burst(100, { maxDelay: 0.5 }), 350);
+  setTimeout(() => burst(80, { spread: true, maxDelay: 0.6 }), 750);
+  setTimeout(() => burst(60, { maxDelay: 0.4 }), 1200);
+
+  // Celebration modal
+  setTimeout(() => showCelebrationModal(), 500);
+}
+
+function showCelebrationModal() {
+  const firstName = (P.contact_name || '').trim().split(/\s+/)[0] || 'Homeowner';
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;pointer-events:none';
+  modal.innerHTML = `
+    <div id="congrats-card" style="background:#fff;border-radius:20px;padding:32px 28px;max-width:360px;width:100%;text-align:center;pointer-events:all;box-shadow:0 24px 80px rgba(0,0,0,.22);transform:scale(.7);opacity:0;transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .35s ease">
+      <div style="font-size:48px;margin-bottom:12px">🎉</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:#0b1f3b;margin-bottom:10px;line-height:1.2">Congratulations, ${esc(firstName)}!</div>
+      <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:20px">You just took the first step to securing backup power for your home.<br><br>We'll take it from here. When the power goes out, 100% of homeowners are glad they chose Backup Power Pro. ⚡</div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:#0b1f3b;color:#fff;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;border:none;border-radius:10px;padding:12px 28px;cursor:pointer;width:100%">Let's Do This →</button>
+    </div>`;
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => {
+    const card = modal.querySelector('#congrats-card');
+    requestAnimationFrame(() => {
+      card.style.transform = 'scale(1)';
+      card.style.opacity = '1';
+    });
+  });
 }
 
 // ── RENDER PROPOSAL ──────────────────────────────────────────
@@ -567,7 +682,7 @@ function renderProposal() {
         </div>
       </div>
 
-      <div class="loss-list">
+      <div class="loss-list reveal">
         <div class="loss-item">🥩 <strong>$300+ in groceries spoiled</strong> every time the power's out long enough</div>
         <div class="loss-item">💊 <strong>Medical equipment offline</strong> — CPAP, oxygen, refrigerated medication</div>
         <div class="loss-item">⚠️ <strong>Real legal and safety risk</strong> — extension cords without a transfer switch can back-feed the grid</div>
@@ -784,6 +899,9 @@ function renderProposal() {
   renderPricing();
   renderPropertyBanner();
   initScrollReveal();
+  // Hero entrance
+  const hero = document.querySelector('.hero-card');
+  if (hero) { hero.style.cssText += ';opacity:0;transform:translateY(28px)'; requestAnimationFrame(() => { hero.style.transition = 'opacity .7s ease, transform .7s ease'; hero.style.opacity = '1'; hero.style.transform = 'translateY(0)'; }); }
 }
 
 // ── ACK ROW WIRING ───────────────────────────────────────────
