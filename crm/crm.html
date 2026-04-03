@@ -2606,10 +2606,12 @@ async function panelSave() {
   if (!changed) { panelResetDirty(); closePanel(); loadContacts(); return; }
   const { error } = await db.from('contacts').update(payload).eq('id', id);
   if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
-  // If address changed, sync contact_address on all linked proposals
+  // If address changed, sync contact_address on all linked proposals and invoices
   const addressChanged = (c?.address || '').trim() !== payload.address;
   if (addressChanged && payload.address) {
-    db.from('proposals').update({ contact_address: payload.address }).eq('contact_id', id);
+    const { error: propSyncErr } = await db.from('proposals').update({ contact_address: payload.address }).eq('contact_id', id);
+    if (propSyncErr) console.error('Proposal address sync failed:', propSyncErr);
+    await db.from('invoices').update({ contact_address: payload.address }).eq('contact_id', id);
   }
   panelResetDirty();
   // Log stage change if it changed
