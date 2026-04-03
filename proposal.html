@@ -1046,7 +1046,7 @@ function updateApproveBtn() {
 // ── APPROVE ──────────────────────────────────────────────────
 let approving = false;
 async function approveProposal() {
-  if (isPreview) { alert('Preview mode — approval is disabled.'); return; }
+  if (isPreview) { launchConfetti(); return; }
   if (approving) return;
   const name = document.getElementById('signer-name').value.trim();
   const err = document.getElementById('approve-err');
