@@ -371,27 +371,23 @@ async function renderPropertyBanner() {
   const wrap = document.getElementById('property-banner-wrap');
   if (!wrap) return;
   const addr = P.contact_address;
-  const name = P.contact_name || '';
-  const parts = name.trim().split(/\s+/);
-  const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
-                 : parts.length === 1 ? parts[0][0].toUpperCase() : '?';
-  const gradHtml = `<div class="property-banner-grad"></div>`;
-  const labelHtml = addr ? `<div class="property-banner-label"><div class="property-banner-eyebrow">📍 Your Installation Address</div><div class="property-banner-addr">${esc(addr)}</div></div>` : '';
-  wrap.innerHTML = `<div class="property-banner"><div class="property-banner-initials">${initials}</div>${gradHtml}${addr ? labelHtml : `<div class="property-banner-label"><div class="property-banner-addr">${esc(name)}</div></div>`}</div>`;
-  if (!addr) return;
+  if (!addr) return; // no address — skip entirely, show nothing
   try {
     const r = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(addr)}&key=${_SV_KEY}`);
     const d = await r.json();
-    if (d.status !== 'OK') return;
-    const bannerEl = wrap.querySelector('.property-banner');
-    if (!bannerEl) return;
+    if (d.status !== 'OK') return; // no coverage — skip entirely, show nothing
     const img = document.createElement('img');
     img.alt = 'Your home';
     img.id = 'banner-photo';
     img.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
-    bannerEl.insertBefore(img, bannerEl.querySelector('.property-banner-grad'));
-    const initialsEl = bannerEl.querySelector('.property-banner-initials');
-    if (initialsEl) initialsEl.style.display = 'none';
+    const gradHtml = `<div class="property-banner-grad"></div>`;
+    const labelHtml = `<div class="property-banner-label"><div class="property-banner-eyebrow">📍 Your Installation Address</div><div class="property-banner-addr">${esc(addr)}</div></div>`;
+    wrap.innerHTML = `<div class="property-banner"></div>`;
+    const bannerEl = wrap.querySelector('.property-banner');
+    bannerEl.appendChild(img);
+    bannerEl.insertAdjacentHTML('beforeend', gradHtml + labelHtml);
+    const eyebrow = document.getElementById('hero-eyebrow');
+    if (eyebrow) eyebrow.style.marginTop = '20px';
   } catch(e) {}
 }
 
@@ -527,7 +523,7 @@ function renderProposal() {
     <!-- ══ ACT 1: PERSONAL HEADER ══ -->
     <div class="hero-card">
       <div id="property-banner-wrap"></div>
-      <div class="hero-eyebrow" style="margin-top:20px">
+      <div class="hero-eyebrow" id="hero-eyebrow">
         Built for ${esc(firstName)} · Upstate SC
         ${expiresBadge}
       </div>
