@@ -679,7 +679,7 @@ function renderProposal() {
     { name: 'Generator inlet box', desc: 'Installed on your exterior wall, weather-rated' },
     { name: 'Interlock kit', desc: 'Panel-matched and code-compliant — prevents dangerous back-feed' },
     { name: 'Permit pulled & filed', desc: 'We handle all county paperwork — nothing for you to do' },
-    { name: 'State electrical inspection', desc: 'Scheduled and coordinated by us' },
+    { name: 'Electrical inspection', desc: 'We book it for a specific day — you don\'t have to coordinate anything' },
     { name: 'Site cleanup', desc: 'We leave your home exactly how we found it' },
     { name: 'Customer walkthrough', desc: 'We show you exactly how to use your system before we leave' },
   ];
@@ -1004,7 +1004,7 @@ function renderPricing() {
       `assets/product-images/inlet-${_pi}amp.jpg`,
       [
         `${_pi}A weather-rated inlet box — exterior wall mount`,
-        'Interlock kit — UL-listed, prevents back-feed to the grid',
+        'Interlock kit — panel-matched, prevents back-feed to the grid',
         'Breaker wiring & panel work',
         'Site cleanup — we leave it the way we found it',
         'Step-by-step walkthrough before we leave'
@@ -1325,9 +1325,9 @@ async function downloadPDF() {
     <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Everything Included</div>
     <div style="font-size:12px;color:#4a5568;line-height:1.8;margin-bottom:16px">
       &#10003; Generator inlet box (weather-rated, exterior mount)<br>
-      &#10003; Interlock kit (UL-listed, code-compliant)<br>
+      &#10003; Interlock kit (panel-matched, code-compliant)<br>
       &#10003; Permit pulled &amp; filed with local jurisdiction<br>
-      &#10003; State electrical inspection coordinated<br>
+      &#10003; Electrical inspection scheduled &amp; coordinated<br>
       &#10003; Complete site cleanup<br>
       &#10003; Customer walkthrough &amp; training<br>
       ${(pr.cordIncluded !== false) ? '&#10003; Power transfer cord<br>' : ''}
