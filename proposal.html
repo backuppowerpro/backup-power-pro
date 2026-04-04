@@ -481,7 +481,7 @@ async function renderPropertyBanner() {
     const titleCase = s => (s||'').replace(/\w\S*/g, t => t.charAt(0).toUpperCase()+t.substr(1).toLowerCase());
     const displayName = titleCase(P.contact_name || '');
     const gradHtml = `<div class="property-banner-grad"></div>`;
-    const forTagHtml = displayName ? `<div class="property-banner-for-tag"><span class="property-banner-for-text">For ${esc(displayName)}</span></div>` : '';
+    const forTagHtml = displayName ? `<div class="property-banner-for-tag"><span class="property-banner-for-text">Prepared for ${esc(displayName)}</span></div>` : '';
     const labelHtml = `<div class="property-banner-label"><div class="property-banner-eyebrow">📍 Your Installation Address</div><div class="property-banner-addr">${esc(addr)}</div></div>`;
     wrap.innerHTML = `<div class="property-banner"></div>`;
     const bannerEl = wrap.querySelector('.property-banner');
