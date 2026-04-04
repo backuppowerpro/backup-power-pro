@@ -205,13 +205,20 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .pom-feature-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:2px}
 .pom-feature-desc{font-size:11px;color:rgba(255,255,255,.55);line-height:1.4}
 
-/* ── AFTERPAY BLOCK ─────────────────────────────────── */
-.afterpay-block{background:#b2fce4;border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 20px rgba(0,120,80,.12)}
-.afterpay-logo{font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:#000;letter-spacing:-.02em;flex-shrink:0;white-space:nowrap}
-.afterpay-logo span{display:inline-block;width:18px;height:18px;background:#000;border-radius:50%;margin-right:4px;vertical-align:middle;position:relative;top:-1px}
-.afterpay-logo span::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;background:#b2fce4;border-radius:50%}
-.afterpay-text{font-size:13px;color:#00593c;font-weight:600;line-height:1.4}
-.afterpay-text strong{display:block;font-size:14px;color:#003d29;font-family:'Outfit',sans-serif;font-weight:800;margin-bottom:2px}
+/* ── BNPL BLOCKS (Afterpay + Klarna) ────────────────── */
+.bnpl-row{display:flex;gap:10px;margin-bottom:16px}
+.bnpl-row > *{flex:1}
+.afterpay-block{background:#b2fce4;border-radius:14px;padding:16px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 4px 20px rgba(0,120,80,.12)}
+.afterpay-logo{font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#000;letter-spacing:-.02em;white-space:nowrap}
+.afterpay-logo-dot{display:inline-block;width:16px;height:16px;background:#000;border-radius:50%;margin-right:4px;vertical-align:middle;position:relative;top:-1px}
+.afterpay-logo-dot::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:5px;height:5px;background:#b2fce4;border-radius:50%}
+.afterpay-text{font-size:12px;color:#00593c;font-weight:600;line-height:1.4}
+.afterpay-text strong{display:block;font-size:13px;color:#003d29;font-family:'Outfit',sans-serif;font-weight:800;margin-bottom:2px}
+.klarna-block{background:#ffb3c7;border-radius:14px;padding:16px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 4px 20px rgba(255,90,140,.15)}
+.klarna-logo{font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#000;letter-spacing:-.02em;white-space:nowrap;font-style:italic}
+.klarna-text{font-size:12px;color:#7a0030;font-weight:600;line-height:1.4}
+.klarna-text strong{display:block;font-size:13px;color:#4a001e;font-family:'Outfit',sans-serif;font-weight:800;margin-bottom:2px}
+@media(max-width:420px){.bnpl-row{flex-direction:column}}
 
 /* ── GUARANTEE SECTION ──────────────────────────────── */
 .guarantee-section{background:linear-gradient(160deg,#fff 0%,#f9fbff 100%);border-radius:16px;padding:24px 20px;margin-bottom:16px;box-shadow:0 4px 24px rgba(11,31,59,.08),0 1px 4px rgba(11,31,59,.04)}
@@ -871,14 +878,21 @@ function renderProposal() {
 
     </div>
 
-    <!-- ══ AFTERPAY ══ -->
-    <div class="afterpay-block reveal">
-      <div class="afterpay-logo">
-        <span></span>afterpay
+    <!-- ══ BNPL OPTIONS ══ -->
+    <div class="bnpl-row reveal">
+      <div class="afterpay-block">
+        <div class="afterpay-logo"><span class="afterpay-logo-dot"></span>afterpay</div>
+        <div class="afterpay-text">
+          <strong>6 interest-free payments</strong>
+          Pay over time — no fees, no interest.
+        </div>
       </div>
-      <div class="afterpay-text">
-        <strong>Split into 6 interest-free payments</strong>
-        Pay over time at no extra cost — available on your invoice for convenience.
+      <div class="klarna-block">
+        <div class="klarna-logo">klarna.</div>
+        <div class="klarna-text">
+          <strong>Flexible payment plans</strong>
+          Pay now, later, or over time.
+        </div>
       </div>
     </div>
 
