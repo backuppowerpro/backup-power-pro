@@ -30,7 +30,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 /* ── PROPERTY PHOTO BANNER ──────────────────────────── */
 .property-banner{position:relative;width:calc(100% + 56px);margin:-28px -28px 0;background:var(--navy);overflow:hidden;flex-shrink:0;border-radius:16px 16px 0 0}
 .property-banner img{width:100%;height:auto;display:block}
-.property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,rgba(11,31,59,.55) 55%,#0b1f3b 100%);pointer-events:none}
+.property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(11,31,59,.65) 0%,transparent 28%,rgba(11,31,59,.45) 55%,#0b1f3b 100%);pointer-events:none}
+.property-banner-greeting{position:absolute;top:0;left:0;right:0;padding:16px 20px;pointer-events:none}
+.property-banner-greeting-text{font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,.92);line-height:1.4;text-shadow:0 1px 10px rgba(0,0,0,.6)}
 .property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:14px 20px 18px;pointer-events:none}
 .property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:4px}
 .property-banner-addr{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);line-height:1.25}
@@ -69,7 +71,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 }
 .hero-title{font-family:'Outfit',sans-serif;font-size:26px;font-weight:900;line-height:1.1;margin-bottom:6px}
 .hero-sub{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:20px;line-height:1.5}
-.hero-meta{display:flex;gap:20px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.12);padding-top:16px}
+.hero-meta{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
 .hero-meta-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:3px;font-family:'Outfit',sans-serif}
 .hero-meta-value{font-size:13px;font-weight:600;color:#fff;word-break:break-word}
 
@@ -79,31 +81,33 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .personal-note-from{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:5px}
 .personal-note-text{font-size:13px;color:var(--text2);line-height:1.65}
 
-/* ── PROBLEM SECTION ────────────────────────────────── */
-.problem-section{background:var(--navy);border-radius:16px;padding:24px 22px;margin-bottom:16px;color:#fff}
+/* ── REALITY BLOCK (problem + outcome combined) ─────── */
+.reality-block{background:var(--navy);border-radius:16px;overflow:hidden;margin-bottom:16px;color:#fff}
 .section-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:7px}
 .problem-headline{font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;line-height:1.2;color:#fff;margin-bottom:18px}
-
-/* ── STAT GRID ──────────────────────────────────────── */
-.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
-.stat-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 8px;text-align:center}
-.stat-num{font-family:'Outfit',sans-serif;font-size:26px;font-weight:900;color:var(--gold);display:block;line-height:1}
-.stat-unit{font-size:11px;color:rgba(255,255,255,.45);font-weight:600;display:block;margin-top:2px}
-.stat-label{font-size:10px;color:rgba(255,255,255,.45);margin-top:6px;line-height:1.3}
-
-/* ── PROBLEM BODY ───────────────────────────────────── */
-.problem-body{font-size:13px;color:rgba(255,255,255,.72);line-height:1.65;margin-bottom:16px}
+.reality-top{padding:24px 22px 20px}
+.reality-stats{display:flex;align-items:stretch;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin-bottom:18px}
+.reality-stat{flex:1;padding:14px 12px;display:flex;align-items:center;gap:10px}
+.reality-stat-divider{width:1px;background:rgba(255,255,255,.1);flex-shrink:0}
+.reality-num{font-family:'Outfit',sans-serif;font-size:38px;font-weight:900;color:var(--gold);line-height:1;flex-shrink:0}
+.reality-stat-info{display:flex;flex-direction:column;gap:3px}
+.reality-stat-unit{font-size:11px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.04em}
+.reality-stat-sub{font-size:10px;color:rgba(255,255,255,.45);line-height:1.4}
 .loss-list{display:flex;flex-direction:column;gap:7px}
 .loss-item{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.85);background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:10px 12px;font-weight:500}
-
-/* ── OUTCOME SECTION ────────────────────────────────── */
-.outcome-section{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:26px 22px;margin-bottom:16px;text-align:center}
-.outcome-headline{font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--navy);margin-bottom:12px;line-height:1.2}
-.outcome-scenario{font-size:14px;color:var(--text2);line-height:1.75;margin-bottom:22px;text-align:left}
-.trio{display:flex;border-radius:10px;overflow:hidden;border:2px solid var(--navy);margin-top:4px}
-.trio-item{flex:1;padding:13px 6px;text-align:center;background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;line-height:1.35;border-right:1.5px solid rgba(255,255,255,.15)}
-.trio-item:last-child{border-right:none}
-.trio-item .trio-num{display:block;font-size:20px;color:var(--gold);margin-bottom:3px}
+.loss-emoji{display:inline-block;font-size:18px;flex-shrink:0}
+.loss-emoji--meat{animation:emojiMeat 3.8s ease-in-out infinite}
+.loss-emoji--pill{animation:emojiPill 2.8s ease-in-out infinite}
+.loss-emoji--warn{animation:emojiWarn 2.4s ease-in-out infinite}
+@keyframes emojiMeat{0%,55%,100%{transform:translateY(0) rotate(0deg)}10%{transform:translateY(-9px) rotate(-20deg)}20%{transform:translateY(2px) rotate(10deg)}30%{transform:translateY(-5px) rotate(-7deg)}40%{transform:translateY(1px) rotate(4deg)}50%{transform:translateY(0) rotate(0deg)}}
+@keyframes emojiPill{0%,55%,100%{transform:rotate(0deg)}10%{transform:rotate(-30deg)}20%{transform:rotate(22deg)}30%{transform:rotate(-14deg)}40%{transform:rotate(8deg)}50%{transform:rotate(0deg)}}
+@keyframes emojiWarn{0%,45%,100%{transform:scale(1);opacity:1}12%{transform:scale(1.35);opacity:.5}24%{transform:scale(1);opacity:1}36%{transform:scale(1.18);opacity:.7}}
+.reality-divider{display:flex;align-items:center;gap:10px;padding:0 22px;margin:4px 0}
+.reality-divider-line{flex:1;height:1px;background:rgba(255,186,0,.25)}
+.reality-divider-label{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.reality-bottom{padding:18px 22px 24px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,186,0,.15);margin-top:16px}
+.outcome-headline-inner{font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#fff;margin-bottom:10px;line-height:1.25}
+.outcome-scenario-inner{font-size:13px;color:rgba(255,255,255,.68);line-height:1.8}
 
 /* ── CARD ───────────────────────────────────────────── */
 .card{background:#fff;border:1.5px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
@@ -128,19 +132,11 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .photos-grid img{width:100%;height:90px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);transition:transform .2s ease}
 .photos-grid img:hover{transform:scale(1.04)}
 
-/* ── REVIEWS ────────────────────────────────────────── */
-.reviews-section{margin-bottom:16px}
-.reviews-rating{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px}
-.reviews-list{display:flex;flex-direction:column;gap:10px}
-.review-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px}
-.review-stars{font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px}
-.review-text{font-size:12px;color:var(--text);line-height:1.6;margin-bottom:8px}
-.review-author{font-size:11px;font-weight:700;color:var(--text3)}
-
-/* ── PRICE ANCHOR ───────────────────────────────────── */
-.anchor-section{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:22px 20px;margin-bottom:16px}
+/* ── PROOF + ANCHOR BLOCK ───────────────────────────── */
+.proof-anchor-block{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px}
+.proof-anchor-top{padding:22px 20px 18px}
 .anchor-headline{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;text-align:center;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
-.anchor-vs-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px}
+.anchor-vs-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px}
 .anchor-col{flex:1;text-align:center}
 .anchor-col-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
 .anchor-price-old{font-family:'Outfit',sans-serif;font-size:30px;font-weight:900;color:#94a3b8;position:relative;display:inline-block}
@@ -150,6 +146,15 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .anchor-price-new{font-family:'Outfit',sans-serif;font-size:32px;font-weight:900;color:var(--green)}
 .anchor-tagline{text-align:center;font-size:13px;color:var(--text2);line-height:1.5}
 .anchor-tagline strong{color:var(--navy)}
+.proof-divider{display:flex;align-items:center;gap:10px;padding:0 20px;margin:2px 0}
+.proof-divider-line{flex:1;height:1px;background:var(--border)}
+.proof-divider-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);white-space:nowrap;font-family:'Outfit',sans-serif}
+.proof-anchor-bottom{background:var(--bg);border-top:1px solid var(--border);padding:18px 20px}
+.review-card-inner{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.review-stars{font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px}
+.review-text{font-size:12px;color:var(--text);line-height:1.6;margin-bottom:8px}
+.review-author{font-size:11px;font-weight:700;color:var(--text3)}
+.proof-rating-row{display:flex;align-items:center;justify-content:center;gap:8px}
 
 /* ── AMP TOGGLE ─────────────────────────────────────── */
 .amp-toggle-wrap{margin-bottom:16px}
@@ -349,8 +354,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
   .hero-card{padding:24px 20px 20px}
   .hero-meta{gap:14px}
   .page{padding:16px 14px 48px}
-  .stat-grid{gap:6px}
-  .stat-num{font-size:22px}
+  .reality-num{font-size:28px}
   .anchor-price-old,.anchor-price-new{font-size:24px}
   .photos-grid img{height:72px}
   .sig-preview{padding:16px 0 12px;min-height:56px}
@@ -465,12 +469,15 @@ async function renderPropertyBanner() {
     img.alt = 'Your home';
     img.id = 'banner-photo';
     img.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
+    const contactFirst = (P.contact_name || '').trim().split(' ')[0];
+    const greetingLine = contactFirst ? `Hey ${esc(contactFirst)} — here's exactly what I'd do at your place.` : '';
     const gradHtml = `<div class="property-banner-grad"></div>`;
+    const greetingHtml = greetingLine ? `<div class="property-banner-greeting"><div class="property-banner-greeting-text">${greetingLine}</div></div>` : '';
     const labelHtml = `<div class="property-banner-label"><div class="property-banner-eyebrow">📍 Your Installation Address</div><div class="property-banner-addr">${esc(addr)}</div></div>`;
     wrap.innerHTML = `<div class="property-banner"></div>`;
     const bannerEl = wrap.querySelector('.property-banner');
     bannerEl.appendChild(img);
-    bannerEl.insertAdjacentHTML('beforeend', gradHtml + labelHtml);
+    bannerEl.insertAdjacentHTML('beforeend', gradHtml + greetingHtml + labelHtml);
     const eyebrow = document.getElementById('hero-eyebrow');
     if (eyebrow) eyebrow.style.marginTop = '20px';
   } catch(e) {}
@@ -483,7 +490,7 @@ function initScrollReveal() {
       if (!entry.isIntersecting) return;
       entry.target.classList.add('revealed');
       // Trigger stat counters
-      if (entry.target.classList.contains('stat-grid')) animateStats(entry.target);
+      if (entry.target.classList.contains('reality-stats')) animateStats(entry.target);
       // Trigger price anchor strike-through
       if (entry.target.id === 'anchor-section') {
         setTimeout(() => { document.querySelector('.anchor-price-old')?.classList.add('struck'); }, 500);
@@ -525,7 +532,7 @@ function initScrollReveal() {
 }
 
 function animateStats(container) {
-  container.querySelectorAll('.stat-num').forEach((el, idx) => {
+  container.querySelectorAll('.reality-num').forEach((el, idx) => {
     const target = parseFloat(el.dataset.target);
     const decimals = String(target).includes('.') ? 1 : 0;
     const duration = 1400;
@@ -726,8 +733,6 @@ function renderProposal() {
         Built for ${esc(firstName)} · Upstate SC
         ${expiresBadge}
       </div>
-      <div class="hero-title">The Storm-Ready<br>Connection System</div>
-      <div class="hero-sub">One cord. Full power. Done in a day — without the $15,000 standby generator.</div>
       <div class="hero-meta">
         <div>
           <div class="hero-meta-label">Prepared For</div>
@@ -739,49 +744,52 @@ function renderProposal() {
           <div class="hero-meta-value">${createdDate}</div>
         </div>
       </div>
+      <div class="hero-title">The Storm-Ready<br>Connection System</div>
+      <div class="hero-sub">One cord. Full power. Done in a day — without the $15,000 standby generator.</div>
     </div>
 
     ${noteHtml}
 
-    <!-- ══ ACT 2: THE PROBLEM ══ -->
-    <div class="problem-section reveal">
-      <div class="section-eyebrow">⚡ The reality in Upstate SC</div>
-      <div class="problem-headline">Your generator is ready.<br>Your house isn't connected to it.</div>
+    <!-- ══ ACT 2+3: REALITY BLOCK ══ -->
+    <div class="reality-block reveal">
+      <div class="reality-top">
+        <div class="section-eyebrow">⚡ The reality in Upstate SC</div>
+        <div class="problem-headline">Your generator is ready.<br>Your house isn't connected to it.</div>
 
-      <div class="stat-grid reveal">
-        <div class="stat-item">
-          <span class="stat-num" data-target="1.2">1.2</span>
-          <span class="stat-unit">×/year</span>
-          <div class="stat-label">Avg outages per SC customer</div>
+        <div class="reality-stats reveal">
+          <div class="reality-stat">
+            <span class="reality-num" data-target="1.2">1.2</span>
+            <div class="reality-stat-info">
+              <span class="reality-stat-unit">outages / year</span>
+              <span class="reality-stat-sub">per SC customer — basically guaranteed</span>
+            </div>
+          </div>
+          <div class="reality-stat-divider"></div>
+          <div class="reality-stat">
+            <span class="reality-num" data-target="22">22</span>
+            <div class="reality-stat-info">
+              <span class="reality-stat-unit">hours+ in the dark</span>
+              <span class="reality-stat-sub">storm year average — not minutes</span>
+            </div>
+          </div>
         </div>
-        <div class="stat-item">
-          <span class="stat-num" data-target="97">97</span>
-          <span class="stat-unit">min</span>
-          <div class="stat-label">Avg outage length</div>
-        </div>
-        <div class="stat-item">
-          <span class="stat-num" data-target="22">22</span>
-          <span class="stat-unit">hrs+</span>
-          <div class="stat-label">Storm year average</div>
+
+        <div class="loss-list reveal">
+          <div class="loss-item"><span class="loss-emoji loss-emoji--meat">🥩</span> <strong>$300+ in groceries spoiled</strong> every time the power's out long enough</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--pill">💊</span> <strong>Medical equipment offline</strong> — CPAP, oxygen, refrigerated medication</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--warn">⚠️</span> <strong>Real legal and safety risk</strong> — extension cords without a transfer switch can back-feed the grid</div>
         </div>
       </div>
 
-      <div class="loss-list reveal">
-        <div class="loss-item">🥩 <strong>$300+ in groceries spoiled</strong> every time the power's out long enough</div>
-        <div class="loss-item">💊 <strong>Medical equipment offline</strong> — CPAP, oxygen, refrigerated medication</div>
-        <div class="loss-item">⚠️ <strong>Real legal and safety risk</strong> — extension cords without a transfer switch can back-feed the grid</div>
+      <div class="reality-divider">
+        <div class="reality-divider-line"></div>
+        <span class="reality-divider-label">✦ Here's what changes</span>
+        <div class="reality-divider-line"></div>
       </div>
-    </div>
 
-    <!-- ══ ACT 3: THE OUTCOME ══ -->
-    <div class="outcome-section reveal">
-      <div class="section-eyebrow" style="justify-content:center;color:var(--gold);margin-bottom:8px">✦ What changes</div>
-      <div class="outcome-headline">Picture the next storm hitting Upstate SC.</div>
-      <p class="outcome-scenario">Power goes out at 7pm. Your neighbors are scrambling for flashlights and candles. You walk to the garage, plug in one cord, and flip your interlock. Your home essentials comes back on. Refrigerator running. Lights on. Fans cooling. CPAP working. Kids sleeping. No extension cords tangled through windows. No fire hazard. No jury-rigged workarounds. Just full, code-compliant power from the generator you already own.</p>
-      <div class="trio">
-        <div class="trio-item"><span class="trio-num">①</span>One Cord.</div>
-        <div class="trio-item"><span class="trio-num">②</span>Full Power.</div>
-        <div class="trio-item"><span class="trio-num">③</span>Done in a Day.</div>
+      <div class="reality-bottom">
+        <div class="outcome-headline-inner">Picture the next storm hitting Upstate SC.</div>
+        <p class="outcome-scenario-inner">Power goes out at 7pm. Your neighbors are scrambling for flashlights and candles. You walk to the garage, plug in one cord, and flip your interlock. Your home comes back on. Refrigerator running. Lights on. Fans cooling. CPAP working. Kids sleeping. No extension cords tangled through windows. No fire hazard. No jury-rigged workarounds. Just full, code-compliant power from the generator you already own.</p>
       </div>
     </div>
 
@@ -798,40 +806,45 @@ function renderProposal() {
       </div>
     </div>
 
-    <!-- ══ SOCIAL PROOF ══ -->
-    <div class="reviews-section reveal">
-      <div class="reviews-rating">
-        <svg width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        <span style="font-size:14px;font-weight:700;color:var(--text)">4.9</span>
-        <span style="color:var(--gold);font-size:14px;letter-spacing:1px">★★★★★</span>
-        <span style="font-size:12px;color:var(--text3)">102 Google reviews</span>
+    <!-- ══ SOCIAL PROOF + PRICE ANCHOR ══ -->
+    <div class="proof-anchor-block reveal" id="anchor-section">
+      <div class="proof-anchor-top">
+        <div class="anchor-headline">Why homeowners choose us over the alternative</div>
+        <div class="anchor-vs-row">
+          <div class="anchor-col">
+            <div class="anchor-col-label">Standby Generator</div>
+            <div class="anchor-price-old">$15,000</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">plus installation · plus maintenance</div>
+          </div>
+          <div class="anchor-vs-badge">VS</div>
+          <div class="anchor-col">
+            <div class="anchor-col-label">Storm-Ready Connection System</div>
+            <div class="anchor-price-new" id="anchor-our-price">${fmt(baseTotal)}</div>
+            <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:4px">total · everything included</div>
+          </div>
+        </div>
+        <div class="anchor-tagline">You already own the generator. <strong>We unlock everything it can do.</strong></div>
       </div>
-      <div class="reviews-list">
-        <div class="review-card">
+
+      <div class="proof-divider">
+        <div class="proof-divider-line"></div>
+        <span class="proof-divider-label">Don't take our word for it</span>
+        <div class="proof-divider-line"></div>
+      </div>
+
+      <div class="proof-anchor-bottom">
+        <div class="review-card-inner">
           <div class="review-stars">★★★★★</div>
           <div class="review-text">"Key moved/wired several breakers, drilled through a brick wall, mounted a generator outlet and installed an interlock. He was very responsive, excellent communication and was very reasonable about an unexpected issue discovered while doing the job. The work was very professional and no mess left behind. Highly recommended."</div>
           <div class="review-author">Chris A. — Greenville, SC &nbsp;·&nbsp; <span style="color:#4285F4">Google</span></div>
         </div>
-      </div>
-    </div>
-
-    <!-- ══ ACT 4: THE INVESTMENT ══ -->
-    <div class="anchor-section reveal" id="anchor-section">
-      <div class="anchor-headline">Why homeowners choose us over the alternative</div>
-      <div class="anchor-vs-row">
-        <div class="anchor-col">
-          <div class="anchor-col-label">Standby Generator</div>
-          <div class="anchor-price-old">$15,000</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px">plus installation · plus maintenance</div>
-        </div>
-        <div class="anchor-vs-badge">VS</div>
-        <div class="anchor-col">
-          <div class="anchor-col-label">Storm-Ready Connection System</div>
-          <div class="anchor-price-new" id="anchor-our-price">${fmt(baseTotal)}</div>
-          <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:4px">total · everything included</div>
+        <div class="proof-rating-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" style="flex-shrink:0"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">4.9</span>
+          <span style="color:var(--gold);font-size:13px;letter-spacing:1px">★★★★★</span>
+          <span style="font-size:11px;color:var(--text3)">102 Google reviews</span>
         </div>
       </div>
-      <div class="anchor-tagline">You already own the generator. <strong>We unlock everything it can do.</strong></div>
     </div>
 
     ${ampToggleHtml}
