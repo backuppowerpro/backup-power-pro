@@ -32,7 +32,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .property-banner img{width:100%;height:auto;display:block}
 .property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(11,31,59,.65) 0%,transparent 28%,rgba(11,31,59,.45) 55%,#0b1f3b 100%);pointer-events:none}
 .property-banner-greeting{position:absolute;top:0;left:0;right:0;padding:16px 20px;pointer-events:none}
-.property-banner-greeting-text{font-family:'Outfit',sans-serif;font-size:17px;font-weight:700;color:#fff;line-height:1.3;text-shadow:0 1px 12px rgba(0,0,0,.7)}
+.property-banner-greeting-text{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.25;text-shadow:0 2px 14px rgba(0,0,0,.8)}
 .property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:14px 20px 18px;pointer-events:none}
 .property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:4px}
 .property-banner-addr{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);line-height:1.25}
@@ -467,7 +467,7 @@ async function renderPropertyBanner() {
     img.id = 'banner-photo';
     img.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
     const contactFirst = (P.contact_name || '').trim().split(' ')[0];
-    const greetingLine = contactFirst ? `I put this together just for you, ${esc(contactFirst)}.` : '';
+    const greetingLine = P.contact_name ? `Storm-Ready Connection System — Prepared for ${esc(P.contact_name)}` : '';
     const gradHtml = `<div class="property-banner-grad"></div>`;
     const greetingHtml = greetingLine ? `<div class="property-banner-greeting"><div class="property-banner-greeting-text">${greetingLine}</div></div>` : '';
     const labelHtml = `<div class="property-banner-label"><div class="property-banner-eyebrow">📍 Your Installation Address</div><div class="property-banner-addr">${esc(addr)}</div></div>`;
