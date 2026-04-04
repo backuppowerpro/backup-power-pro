@@ -55,6 +55,18 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .hero-card::before{content:'';position:absolute;top:-30px;right:-30px;width:160px;height:160px;background:var(--gold);opacity:.06;border-radius:50%}
 .hero-eyebrow{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .expires-badge{font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 10px;background:rgba(255,186,0,.15);border:1px solid rgba(255,186,0,.3);border-radius:20px;color:var(--gold);white-space:nowrap}
+.expires-clock{display:inline-block;animation:alarmRing 2.8s ease-in-out infinite}
+@keyframes alarmRing{
+  0%,40%,100%{transform:translateY(0) rotate(0deg)}
+  42%{transform:translateY(-4px) rotate(-18deg)}
+  45%{transform:translateY(-6px) rotate(16deg)}
+  48%{transform:translateY(-5px) rotate(-14deg)}
+  51%{transform:translateY(-5px) rotate(12deg)}
+  54%{transform:translateY(-4px) rotate(-10deg)}
+  57%{transform:translateY(-3px) rotate(7deg)}
+  60%{transform:translateY(-1px) rotate(-4deg)}
+  63%{transform:translateY(0) rotate(0deg)}
+}
 .hero-title{font-family:'Outfit',sans-serif;font-size:26px;font-weight:900;line-height:1.1;margin-bottom:6px}
 .hero-sub{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:20px;line-height:1.5}
 .hero-meta{display:flex;gap:20px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.12);padding-top:16px}
@@ -654,7 +666,7 @@ function renderProposal() {
   const expiresDate = new Date(new Date(P.created_at).getTime() + 30 * 24 * 60 * 60 * 1000);
   const daysLeft = Math.ceil((expiresDate - Date.now()) / (1000 * 60 * 60 * 24));
   const expiresBadge = daysLeft > 0
-    ? `<span class="expires-badge">⏰ Expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}</span>`
+    ? `<span class="expires-badge"><span class="expires-clock">⏰</span> Expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}</span>`
     : `<span class="expires-badge" style="background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.3);color:#fca5a5">Expired — contact us</span>`;
 
   // What's included
