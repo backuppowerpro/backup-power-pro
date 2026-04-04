@@ -12,7 +12,7 @@
 :root {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
   --green:#059669; --red:#dc2626; --border:#e4e8f0;
-  --bg:#f4f6fa; --text:#1a2a42; --text2:#4a5568; --text3:#8a9ab5;
+  --bg:#eef1f7; --text:#1a2a42; --text2:#4a5568; --text3:#8a9ab5;
   --blue:#1d4ed8;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -25,7 +25,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .site-header .tagline{font-size:12px;color:rgba(255,255,255,.5);margin-top:2px}
 
 /* ── PAGE ───────────────────────────────────────────── */
-.page{max-width:680px;margin:0 auto;padding:24px 20px 60px}
+.page{max-width:660px;margin:0 auto;padding:24px 20px 48px}
 
 /* ── PROPERTY PHOTO BANNER ──────────────────────────── */
 .property-banner{position:relative;width:calc(100% + 56px);margin:-28px -28px 0;background:var(--navy);overflow:hidden;flex-shrink:0;border-radius:16px 16px 0 0}
@@ -53,9 +53,8 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .reveal-delay-4{transition-delay:.32s}
 
 /* ── HERO CARD ──────────────────────────────────────── */
-.hero-card{background:var(--navy);border-radius:16px;padding:28px 28px 24px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
-.hero-card::before{content:'';position:absolute;top:-30px;right:-30px;width:160px;height:160px;background:var(--gold);opacity:.06;border-radius:50%}
-.hero-eyebrow{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.hero-card{background:var(--navy);border-radius:20px;padding:28px 28px 24px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
+.hero-eyebrow{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;margin-top:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
 .expires-badge{font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 10px;background:rgba(255,186,0,.15);border:1px solid rgba(255,186,0,.3);border-radius:20px;color:var(--gold);white-space:nowrap}
 .expires-clock{display:inline-block;animation:alarmRing 2.8s ease-in-out infinite}
 @keyframes alarmRing{
@@ -69,14 +68,14 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
   60%{transform:translateY(-1px) rotate(-4deg)}
   63%{transform:translateY(0) rotate(0deg)}
 }
-.hero-title{font-family:'Outfit',sans-serif;font-size:26px;font-weight:900;line-height:1.1;margin-bottom:6px}
-.hero-sub{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:20px;line-height:1.5}
+.hero-title{font-family:'Outfit',sans-serif;font-size:28px;font-weight:900;line-height:1.1;margin-bottom:6px}
+.hero-sub{font-size:14px;color:rgba(255,255,255,.72);line-height:1.5}
 .hero-meta{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
 .hero-meta-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:3px;font-family:'Outfit',sans-serif}
 .hero-meta-value{font-size:13px;font-weight:600;color:#fff;word-break:break-word}
 
 /* ── PERSONAL NOTE ──────────────────────────────────── */
-.personal-note{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start}
+.personal-note{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;box-shadow:0 2px 16px rgba(11,31,59,.07),0 1px 4px rgba(11,31,59,.04)}
 .personal-note-avatar{width:40px;height:40px;border-radius:50%;background:var(--navy);color:var(--gold);font-family:'Outfit',sans-serif;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .personal-note-from{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:5px}
 .personal-note-text{font-size:13px;color:var(--text2);line-height:1.65}
@@ -92,9 +91,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .reality-num{font-family:'Outfit',sans-serif;font-size:38px;font-weight:900;color:var(--gold);line-height:1;flex-shrink:0}
 .reality-stat-info{display:flex;flex-direction:column;gap:3px}
 .reality-stat-unit{font-size:11px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.04em}
-.reality-stat-sub{font-size:10px;color:rgba(255,255,255,.45);line-height:1.4}
+.reality-stat-sub{font-size:11px;color:rgba(255,255,255,.45);line-height:1.4}
 .loss-list{display:flex;flex-direction:column;gap:7px}
-.loss-item{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.85);background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:10px 12px;font-weight:500}
+.loss-item{display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,.85);background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:12px 14px;font-weight:500}
 .loss-emoji{display:inline-block;font-size:18px;flex-shrink:0}
 .loss-emoji--meat{animation:emojiMeat 3.8s ease-in-out infinite}
 .loss-emoji--pill{animation:emojiPill 2.8s ease-in-out infinite}
@@ -102,12 +101,12 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 @keyframes emojiMeat{0%,55%,100%{transform:translateY(0) rotate(0deg)}10%{transform:translateY(-9px) rotate(-20deg)}20%{transform:translateY(2px) rotate(10deg)}30%{transform:translateY(-5px) rotate(-7deg)}40%{transform:translateY(1px) rotate(4deg)}50%{transform:translateY(0) rotate(0deg)}}
 @keyframes emojiPill{0%,55%,100%{transform:rotate(0deg)}10%{transform:rotate(-30deg)}20%{transform:rotate(22deg)}30%{transform:rotate(-14deg)}40%{transform:rotate(8deg)}50%{transform:rotate(0deg)}}
 @keyframes emojiWarn{0%,45%,100%{transform:scale(1);opacity:1}12%{transform:scale(1.35);opacity:.5}24%{transform:scale(1);opacity:1}36%{transform:scale(1.18);opacity:.7}}
-.reality-bottom{padding:18px 22px 24px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,186,0,.15);margin-top:16px}
+.reality-bottom{padding:16px 22px 22px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,186,0,.15)}
 .outcome-headline-inner{font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#fff;margin-bottom:10px;line-height:1.25}
 .outcome-scenario-inner{font-size:13px;color:rgba(255,255,255,.68);line-height:1.8}
 
 /* ── CARD ───────────────────────────────────────────── */
-.card{background:#fff;border:1.5px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.card{background:#fff;border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 16px rgba(11,31,59,.07),0 1px 4px rgba(11,31,59,.04)}
 .card-head{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .card-icon{width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .card-head h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
@@ -115,9 +114,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 
 /* ── SCOPE LIST ─────────────────────────────────────── */
 .scope-list{list-style:none;display:flex;flex-direction:column;gap:10px}
-.scope-item{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text);opacity:0;transform:translateX(-10px);transition:opacity .4s ease,transform .4s ease}
+.scope-item{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text);opacity:0;transform:translateX(-10px);transition:opacity .4s ease,transform .4s ease;padding:3px 0}
 .scope-item.scope-in{opacity:1;transform:translateX(0)}
-.scope-check{width:20px;height:20px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.scope-check{width:22px;height:22px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .scope-check svg{width:10px;height:10px}
 .scope-item-text strong{display:block;font-weight:600}
 .scope-item-text span{font-size:12px;color:var(--text3)}
@@ -130,9 +129,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .photos-grid img:hover{transform:scale(1.04)}
 
 /* ── PROOF + ANCHOR BLOCK ───────────────────────────── */
-.proof-anchor-block{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px}
+.proof-anchor-block{background:#fff;border:none;border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 2px 16px rgba(11,31,59,.07),0 1px 4px rgba(11,31,59,.04)}
 .proof-anchor-top{padding:22px 20px 18px}
-.anchor-headline{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;text-align:center;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
+.anchor-headline{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;text-align:center;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
 .anchor-vs-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px}
 .anchor-col{flex:1;text-align:center}
 .anchor-col-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
@@ -149,7 +148,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .proof-anchor-bottom{background:var(--bg);border-top:1px solid var(--border);padding:18px 20px}
 .review-card-inner{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
 .review-stars{font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px}
-.review-text{font-size:12px;color:var(--text);line-height:1.6;margin-bottom:8px}
+.review-text{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px}
 .review-author{font-size:11px;font-weight:700;color:var(--text3)}
 .proof-rating-row{display:flex;align-items:center;justify-content:center;gap:8px}
 
@@ -178,7 +177,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 
 /* ── POM CARD ───────────────────────────────────────── */
 /* ── UNIFIED INVESTMENT BLOCK ───────────────────────── */
-.investment-block{background:#fff;border:2px solid var(--gold);border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 4px 24px rgba(255,186,0,.15)}
+.investment-block{background:#fff;border:2px solid var(--gold);border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 4px 32px rgba(255,186,0,.12),0 2px 8px rgba(0,0,0,.05)}
 .investment-head{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .investment-head h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
 .investment-head-icon{width:32px;height:32px;border-radius:8px;background:#fffbeb;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -209,8 +208,8 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .pom-feature-desc{font-size:11px;color:rgba(255,255,255,.55);line-height:1.4}
 
 /* ── GUARANTEE SECTION ──────────────────────────────── */
-.guarantee-section{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:24px 20px;margin-bottom:16px}
-.guarantee-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#f0fdf4;border:1.5px solid #d1fae5;border-radius:10px;margin-bottom:10px}
+.guarantee-section{background:#fff;border-radius:16px;padding:24px 20px;margin-bottom:16px;box-shadow:0 2px 16px rgba(11,31,59,.07),0 1px 4px rgba(11,31,59,.04)}
+.guarantee-item{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;background:#f8fffe;border:1.5px solid #c6f6ef;border-radius:10px;margin-bottom:10px}
 .guarantee-item:last-child{margin-bottom:0}
 .guarantee-icon{font-size:22px;flex-shrink:0;margin-top:1px}
 .guarantee-item-title{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;color:var(--navy);margin-bottom:2px}
@@ -218,7 +217,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 
 /* ── AUTHORITY BADGES ───────────────────────────────── */
 .badge-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:18px}
-.authority-badge{display:flex;align-items:center;gap:5px;padding:6px 12px;background:var(--navy);color:#fff;border-radius:20px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700}
+.authority-badge{display:flex;align-items:center;gap:5px;padding:6px 12px;background:var(--navy);color:#fff;border-radius:20px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;opacity:.9}
 
 /* ── SCARCITY BAR ───────────────────────────────────── */
 .scarcity-bar{background:linear-gradient(135deg,#7f1d1d,#991b1b);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
@@ -229,7 +228,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .scarcity-sub{font-size:11px;color:rgba(255,255,255,.65);font-weight:500;margin-top:2px}
 
 /* ── SIGN SECTION ───────────────────────────────────── */
-.sign-card{background:#fff;border:2px solid var(--navy);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.sign-card{background:#fff;border:1.5px solid rgba(11,31,59,.8);border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:0 2px 16px rgba(11,31,59,.07),0 1px 4px rgba(11,31,59,.04)}
 .sign-card-head{background:var(--navy);padding:18px 20px}
 .sign-card-head h2{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#fff}
 .sign-card-head p{font-size:13px;color:rgba(255,255,255,.6);margin-top:3px}
@@ -677,15 +676,15 @@ function renderProposal() {
   const pr = getPrice(chosenAmp);
   const _ai = chosenAmp === '50' ? '50' : '30';
   const includes = [
-    { name: 'Generator inlet box', desc: 'Weather-rated, installed on exterior of home' },
-    { name: 'Interlock kit', desc: 'Code-compliant, UL-listed — prevents back-feed' },
-    { name: 'Permit pulled & filed', desc: 'We handle all paperwork with your county' },
-    { name: 'State electrical inspection', desc: 'Scheduled and coordinated by us — nothing for you to do' },
-    { name: 'Site cleanup', desc: 'We leave it exactly the way we found it' },
-    { name: 'Customer walkthrough', desc: 'Step-by-step how to use your system every time' },
+    { name: 'Generator inlet box', desc: 'Installed on your exterior wall, weather-rated' },
+    { name: 'Interlock kit', desc: 'Code-compliant and UL-listed — prevents dangerous back-feed' },
+    { name: 'Permit pulled & filed', desc: 'We handle all county paperwork — nothing for you to do' },
+    { name: 'State electrical inspection', desc: 'Scheduled and coordinated by us' },
+    { name: 'Site cleanup', desc: 'We leave your home exactly how we found it' },
+    { name: 'Customer walkthrough', desc: 'We show you exactly how to use your system before we leave' },
   ];
   if (pr.cordIncluded !== false && P.cord_included !== false) {
-    includes.push({ name: 'Power transfer cord', desc: 'Connects your generator to the inlet box' });
+    includes.push({ name: 'Power transfer cord', desc: 'Connects your generator directly to the inlet box' });
   }
 
   const scopeItems = includes.map(i => `
@@ -731,7 +730,7 @@ function renderProposal() {
         ${expiresBadge}
       </div>
       <div class="hero-title">The Storm-Ready<br>Connection System</div>
-      <div class="hero-sub">One cord. Full power. Done in a day — without the $15,000 standby generator.</div>
+      <div class="hero-sub">Your generator is already paid for. We make it power your home.</div>
     </div>
 
     ${noteHtml}
@@ -739,7 +738,7 @@ function renderProposal() {
     <!-- ══ ACT 2+3: REALITY BLOCK ══ -->
     <div class="reality-block reveal">
       <div class="reality-top">
-        <div class="section-eyebrow">⚡ The reality in Upstate SC</div>
+        <div class="section-eyebrow">⚡ Before we get started</div>
         <div class="problem-headline">Your generator is ready.<br>Your house isn't connected to it.</div>
 
         <div class="reality-stats reveal">
@@ -761,16 +760,16 @@ function renderProposal() {
         </div>
 
         <div class="loss-list reveal">
-          <div class="loss-item"><span class="loss-emoji loss-emoji--meat">🥩</span> <strong>$300+ in groceries spoiled</strong> every time the power's out long enough</div>
-          <div class="loss-item"><span class="loss-emoji loss-emoji--pill">💊</span> <strong>Medical equipment offline</strong> — CPAP, oxygen, refrigerated medication</div>
-          <div class="loss-item"><span class="loss-emoji loss-emoji--warn">⚠️</span> <strong>Real legal and safety risk</strong> — extension cords without a transfer switch can back-feed the grid</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--meat">🥩</span> <strong>$300+ in groceries lost</strong> every time the outage lasts long enough</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--pill">💊</span> <strong>Medical equipment shuts off</strong> — CPAP, oxygen, and refrigerated medication</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--warn">⚠️</span> <strong>Extension cords are illegal</strong> — running a generator through a window back-feeds the grid and is a code violation</div>
         </div>
       </div>
 
 
       <div class="reality-bottom">
-        <div class="outcome-headline-inner">Picture the next storm hitting Upstate SC.</div>
-        <p class="outcome-scenario-inner">Power goes out at 7pm. Your neighbors are scrambling for flashlights and candles. You walk to the garage, plug in one cord, and flip your interlock. Your home comes back on. Refrigerator running. Lights on. Fans cooling. CPAP working. Kids sleeping. No extension cords tangled through windows. No fire hazard. No jury-rigged workarounds. Just full, code-compliant power from the generator you already own.</p>
+        <div class="outcome-headline-inner">Next outage, this is your house.</div>
+        <p class="outcome-scenario-inner">Power goes out at 7pm. Your neighbors are scrambling. You walk to the garage, plug in one cord, and flip your interlock. Refrigerator running. Lights on. CPAP working. Kids sleeping. No extension cords. No fire hazard. Just your generator — doing exactly what it was built to do.</p>
       </div>
     </div>
 
@@ -780,7 +779,7 @@ function renderProposal() {
         <div class="card-icon" style="background:#f0fdf4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        <h2>Everything Included — Zero Surprises</h2>
+        <h2>Everything's Handled.</h2>
       </div>
       <div class="card-body">
         <ul class="scope-list reveal">${scopeItems}</ul>
@@ -790,7 +789,7 @@ function renderProposal() {
     <!-- ══ SOCIAL PROOF + PRICE ANCHOR ══ -->
     <div class="proof-anchor-block reveal" id="anchor-section">
       <div class="proof-anchor-top">
-        <div class="anchor-headline">Why homeowners choose us over the alternative</div>
+        <div class="anchor-headline">A fraction of the cost. All the protection.</div>
         <div class="anchor-vs-row">
           <div class="anchor-col">
             <div class="anchor-col-label">Standby Generator</div>
@@ -804,7 +803,7 @@ function renderProposal() {
             <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:4px">total · everything included</div>
           </div>
         </div>
-        <div class="anchor-tagline">You already own the generator. <strong>We unlock everything it can do.</strong></div>
+        <div class="anchor-tagline">You already paid for the generator. <strong>We make it work for your home.</strong></div>
       </div>
 
       <div class="proof-divider">
@@ -837,14 +836,13 @@ function renderProposal() {
         <div class="investment-head-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
-        <h2>Your Investment</h2>
+        <h2>Your Price Breakdown</h2>
       </div>
 
       <div class="investment-items" id="pricing-items"></div>
 
       <div class="pom-divider-bar">
-        <span>Recommended Add-On</span>
-        <span style="opacity:.75;font-weight:600;letter-spacing:0;text-transform:none;font-size:11px">All three, same day</span>
+        <span>Optional Add-On · Same Day</span>
       </div>
 
       <div class="pom-section" id="pom-card" onclick="togglePom()">
@@ -875,27 +873,27 @@ function renderProposal() {
 
     <!-- ══ ACT 5: RISK REMOVAL ══ -->
     <div class="guarantee-section reveal">
-      <div class="section-eyebrow" style="color:var(--green)">✓ Our triple guarantee</div>
-      <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:var(--navy);margin-bottom:16px">We Remove Every Risk From Your Decision</div>
+      <div class="section-eyebrow" style="color:var(--green)">Our Guarantees</div>
+      <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:var(--navy);margin-bottom:16px">Zero risk. Zero surprises. Our word on it.</div>
       <div class="guarantee-item">
         <div class="guarantee-icon">🔒</div>
         <div>
           <div class="guarantee-item-title">Price-Lock Guarantee</div>
-          <div class="guarantee-item-desc">The number you see is the number you pay. No surprises.</div>
+          <div class="guarantee-item-desc">The price you see today is the price you pay. Locked in. No exceptions.</div>
         </div>
       </div>
       <div class="guarantee-item">
         <div class="guarantee-icon">✅</div>
         <div>
           <div class="guarantee-item-title">Satisfaction Guarantee</div>
-          <div class="guarantee-item-desc">We show up on time, keep your home clean, and walk you through everything before we leave. That's the standard. Every job. No exceptions.</div>
+          <div class="guarantee-item-desc">We show up on time, keep your home clean, and walk you through the system before we leave. Every job.</div>
         </div>
       </div>
       <div class="guarantee-item">
         <div class="guarantee-icon">🛠️</div>
         <div>
           <div class="guarantee-item-title">Workmanship Guarantee</div>
-          <div class="guarantee-item-desc">Permitted, inspected, and backed against defects. Done right.</div>
+          <div class="guarantee-item-desc">Permitted, inspected by the state, and backed against defects. Done right or we make it right.</div>
         </div>
       </div>
       <div class="badge-row">
@@ -911,14 +909,14 @@ function renderProposal() {
     <div class="sign-card reveal" id="sign-section">
       <div class="sign-card-head">
         <h2>Secure Your Install Date</h2>
-        <p>Review the scope, check both boxes, and sign below. No payment until the job is done.</p>
+        <p>Check both boxes, sign your name, and you're locked in. You won't be charged until installation day — after your home is powered up.</p>
       </div>
       <div class="sign-card-body">
         <div class="ack-row" id="ack-row-scope">
           <div class="ack-box" id="ack-box-scope">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="2,6 5,9 10,3"/></svg>
           </div>
-          <span class="ack-text">I have reviewed the scope of work and pricing above and agree to proceed.</span>
+          <span class="ack-text">I've reviewed the scope of work and pricing above and agree to move forward.</span>
         </div>
         <div class="ack-row" id="ack-row-safety">
           <div class="ack-box" id="ack-box-safety">
@@ -937,15 +935,14 @@ function renderProposal() {
           Approve &amp; Lock My Install Date — <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
         </button>
         <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">
-          ⚡ Payment due on completion day only — after your home is powered up and you've seen it work.
+          No payment today. Billed on completion.
         </div>
         <div id="approve-err" style="font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:center"></div>
       </div>
     </div>
 
     <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.8;padding-bottom:8px">
-      Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
-      <div style="margin-top:10px"><a href="/assets/docs/the-portable-generator-power-guide.pdf" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">📘 Generator Safety Guide (PDF)</a></div>
+      Have questions? Text or call Key directly at <strong style="color:var(--navy)">(864) 400-5302</strong>
     </div>
   `;
 
