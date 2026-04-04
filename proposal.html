@@ -30,11 +30,11 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 /* ── PROPERTY PHOTO BANNER ──────────────────────────── */
 .property-banner{position:relative;width:calc(100% + 56px);margin:-28px -28px 0;background:var(--navy);overflow:hidden;flex-shrink:0;border-radius:16px 16px 0 0}
 .property-banner img{width:100%;height:auto;display:block}
-.property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(11,31,59,.65) 0%,transparent 28%,rgba(11,31,59,.45) 55%,#0b1f3b 100%);pointer-events:none}
-.property-banner-greeting{position:absolute;top:0;left:0;right:0;padding:16px 20px;pointer-events:none}
-.property-banner-greeting-text{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.25;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+.property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(11,31,59,.5) 0%,transparent 30%,rgba(11,31,59,.35) 60%,#0b1f3b 100%);pointer-events:none}
+.property-banner-for-tag{position:absolute;top:14px;left:16px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:20px;padding:5px 13px;pointer-events:none}
+.property-banner-for-text{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.9)}
 .property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:14px 20px 18px;pointer-events:none}
-.property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:4px}
+.property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:4px}
 .property-banner-addr{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);line-height:1.25}
 .property-banner-initials{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:52px;font-weight:800;color:rgba(255,255,255,.18);letter-spacing:-3px;pointer-events:none;min-height:160px}
 @media(max-width:480px){.property-banner{margin:-24px -20px 0;width:calc(100% + 40px)}.property-banner-addr{font-size:13px}}
@@ -54,8 +54,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 
 /* ── HERO CARD ──────────────────────────────────────── */
 .hero-card{background:var(--navy);border-radius:20px;padding:28px 28px 24px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
-.hero-eyebrow{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;margin-top:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
-.expires-badge{font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 10px;background:rgba(255,186,0,.15);border:1px solid rgba(255,186,0,.3);border-radius:20px;color:var(--gold);white-space:nowrap}
+.hero-footer-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.09);flex-wrap:wrap}
+.hero-date-text{font-size:11px;color:rgba(255,255,255,.42);font-weight:600;letter-spacing:.04em;font-family:'Outfit',sans-serif}
+.expires-badge{font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 10px;background:rgba(255,186,0,.15);border-radius:20px;color:var(--gold);white-space:nowrap}
 .expires-clock{display:inline-block;animation:alarmRing 2.8s ease-in-out infinite}
 @keyframes alarmRing{
   0%,40%,100%{transform:translateY(0) rotate(0deg)}
@@ -105,12 +106,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .outcome-headline-inner{font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#fff;margin-bottom:10px;line-height:1.25}
 .outcome-scenario-inner{font-size:13px;color:rgba(255,255,255,.68);line-height:1.8}
 
-/* ── CARD ───────────────────────────────────────────── */
+/* ── CARD (generic fallback) ─────────────────────────── */
 .card{background:linear-gradient(160deg,#fff 0%,#f9fbff 100%);border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 4px 24px rgba(11,31,59,.08),0 1px 4px rgba(11,31,59,.04)}
-.card-head{padding:16px 20px 12px;border-bottom:1px solid #f0f3f8;display:flex;align-items:center;gap:10px}
 .card-icon{width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.card-head h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
-.card-body{padding:18px 20px}
 
 /* ── SCOPE LIST ─────────────────────────────────────── */
 .scope-list{list-style:none;display:flex;flex-direction:column;gap:10px}
@@ -128,10 +126,13 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .photos-grid img{width:100%;height:90px;object-fit:cover;border-radius:8px;box-shadow:0 2px 10px rgba(11,31,59,.1);transition:transform .2s ease}
 .photos-grid img:hover{transform:scale(1.04)}
 
-/* ── PROOF + ANCHOR BLOCK ───────────────────────────── */
-.proof-anchor-block{background:linear-gradient(160deg,#fff 0%,#f9fbff 100%);border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 4px 24px rgba(11,31,59,.08),0 1px 4px rgba(11,31,59,.04)}
-.proof-anchor-top{padding:22px 20px 18px}
-.anchor-headline{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;text-align:center;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
+/* ── SCOPE + PROOF UNIFIED BLOCK ────────────────────── */
+.scope-proof-block{background:#fff;border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 4px 24px rgba(11,31,59,.08),0 1px 4px rgba(11,31,59,.04)}
+.scope-proof-head{display:flex;align-items:center;gap:10px;padding:20px 20px 16px}
+.scope-proof-head h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
+.scope-proof-body{padding:0 20px 22px}
+.scope-proof-anchor{padding:22px 20px 18px;background:#f9fbff}
+.anchor-headline{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;text-align:center;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:18px}
 .anchor-vs-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px}
 .anchor-col{flex:1;text-align:center}
 .anchor-col-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
@@ -142,10 +143,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .anchor-price-new{font-family:'Outfit',sans-serif;font-size:32px;font-weight:900;color:var(--green)}
 .anchor-tagline{text-align:center;font-size:13px;color:var(--text2);line-height:1.5}
 .anchor-tagline strong{color:var(--navy)}
-.proof-divider{display:flex;align-items:center;gap:10px;padding:0 20px;margin:2px 0}
-.proof-divider-line{flex:1;height:1px;background:#edf0f5}
-.proof-divider-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);white-space:nowrap;font-family:'Outfit',sans-serif}
-.proof-anchor-bottom{background:#f4f7fc;padding:18px 20px}
+.scope-proof-review{padding:18px 20px 20px;background:#f4f7fc}
 .review-card-inner{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px rgba(11,31,59,.07),0 1px 3px rgba(11,31,59,.04)}
 .review-stars{font-size:13px;color:var(--gold);margin-bottom:6px;letter-spacing:1px}
 .review-text{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px}
@@ -465,17 +463,15 @@ async function renderPropertyBanner() {
     img.alt = 'Your home';
     img.id = 'banner-photo';
     img.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
-    const contactFirst = (P.contact_name || '').trim().split(' ')[0];
-    const greetingLine = P.contact_name ? `Storm-Ready Connection System — Prepared for ${esc(P.contact_name)}` : '';
+    const titleCase = s => (s||'').replace(/\w\S*/g, t => t.charAt(0).toUpperCase()+t.substr(1).toLowerCase());
+    const displayName = titleCase(P.contact_name || '');
     const gradHtml = `<div class="property-banner-grad"></div>`;
-    const greetingHtml = greetingLine ? `<div class="property-banner-greeting"><div class="property-banner-greeting-text">${greetingLine}</div></div>` : '';
+    const forTagHtml = displayName ? `<div class="property-banner-for-tag"><span class="property-banner-for-text">For ${esc(displayName)}</span></div>` : '';
     const labelHtml = `<div class="property-banner-label"><div class="property-banner-eyebrow">📍 Your Installation Address</div><div class="property-banner-addr">${esc(addr)}</div></div>`;
     wrap.innerHTML = `<div class="property-banner"></div>`;
     const bannerEl = wrap.querySelector('.property-banner');
     bannerEl.appendChild(img);
-    bannerEl.insertAdjacentHTML('beforeend', gradHtml + greetingHtml + labelHtml);
-    const eyebrow = document.getElementById('hero-eyebrow');
-    if (eyebrow) eyebrow.style.marginTop = '20px';
+    bannerEl.insertAdjacentHTML('beforeend', gradHtml + forTagHtml + labelHtml);
   } catch(e) {}
 }
 
@@ -725,12 +721,14 @@ function renderProposal() {
     <!-- ══ ACT 1: PERSONAL HEADER ══ -->
     <div class="hero-card">
       <div id="property-banner-wrap"></div>
-      <div class="hero-eyebrow" id="hero-eyebrow">
-        <span>${esc(P.contact_name)} &nbsp;·&nbsp; ${createdDate}</span>
-        ${expiresBadge}
+      <div style="padding-top:22px">
+        <div class="hero-title">The Storm-Ready<br>Connection System</div>
+        <div class="hero-sub" style="margin-top:8px">Your generator is already paid for.<br>We connect it to your panel — permitted, inspected, done in a day.</div>
+        <div class="hero-footer-row">
+          <span class="hero-date-text">${createdDate}</span>
+          ${expiresBadge}
+        </div>
       </div>
-      <div class="hero-title">The Storm-Ready<br>Connection System</div>
-      <div class="hero-sub">Your generator is already paid for. We make it power your home.</div>
     </div>
 
     ${noteHtml}
@@ -773,22 +771,24 @@ function renderProposal() {
       </div>
     </div>
 
-    <!-- ══ ACT 3b: WHAT'S INCLUDED ══ -->
-    <div class="card reveal">
-      <div class="card-head">
+    <!-- ══ ACT 3b + SOCIAL PROOF: UNIFIED BLOCK ══ -->
+    <div class="scope-proof-block reveal" id="anchor-section">
+
+      <!-- Scope header -->
+      <div class="scope-proof-head">
         <div class="card-icon" style="background:#f0fdf4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <h2>Everything's Handled.</h2>
       </div>
-      <div class="card-body">
+
+      <!-- Scope list -->
+      <div class="scope-proof-body">
         <ul class="scope-list reveal">${scopeItems}</ul>
       </div>
-    </div>
 
-    <!-- ══ SOCIAL PROOF + PRICE ANCHOR ══ -->
-    <div class="proof-anchor-block reveal" id="anchor-section">
-      <div class="proof-anchor-top">
+      <!-- Price anchor (seamless, no divider line) -->
+      <div class="scope-proof-anchor">
         <div class="anchor-headline">A fraction of the cost. All the protection.</div>
         <div class="anchor-vs-row">
           <div class="anchor-col">
@@ -806,13 +806,8 @@ function renderProposal() {
         <div class="anchor-tagline">You already paid for the generator. <strong>We make it work for your home.</strong></div>
       </div>
 
-      <div class="proof-divider">
-        <div class="proof-divider-line"></div>
-        <span class="proof-divider-label">Don't take our word for it</span>
-        <div class="proof-divider-line"></div>
-      </div>
-
-      <div class="proof-anchor-bottom">
+      <!-- Review (bottom, blended in) -->
+      <div class="scope-proof-review">
         <div class="review-card-inner">
           <div class="review-stars">★★★★★</div>
           <div class="review-text">"Key moved/wired several breakers, drilled through a brick wall, mounted a generator outlet and installed an interlock. He was very responsive, excellent communication and was very reasonable about an unexpected issue discovered while doing the job. The work was very professional and no mess left behind. Highly recommended."</div>
@@ -825,6 +820,7 @@ function renderProposal() {
           <span style="font-size:11px;color:var(--text3)">102 Google reviews</span>
         </div>
       </div>
+
     </div>
 
     ${ampToggleHtml}
