@@ -317,6 +317,11 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .approved-banner{animation:approvedBounce .65s cubic-bezier(.34,1.56,.64,1) forwards}
 .approved-icon svg polyline{stroke-dasharray:40;stroke-dashoffset:40;animation:checkDraw .5s ease-out .3s forwards}
 
+/* ── PREVIEW MODE ───────────────────────────────────── */
+.preview-bar{position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#1c1003;font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:7px 16px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.preview-bar-dot{width:7px;height:7px;border-radius:50%;background:#1c1003;opacity:.5;flex-shrink:0}
+.preview-watermark{position:fixed;inset:0;pointer-events:none;z-index:99998;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.preview-watermark span{font-family:'Outfit',sans-serif;font-size:clamp(60px,14vw,120px);font-weight:900;color:rgba(11,31,59,.045);letter-spacing:.1em;text-transform:uppercase;transform:rotate(-35deg);white-space:nowrap;user-select:none}
 /* ── FOOTER ─────────────────────────────────────────── */
 .site-footer{text-align:center;padding:28px 24px 24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px}
 .site-footer a{color:var(--text3);text-decoration:none}
@@ -386,6 +391,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   P = data;
   isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
   if (!isPreview) trackView(token);
+  if (isPreview) {
+    document.body.insertAdjacentHTML('afterbegin',
+      `<div class="preview-bar"><div class="preview-bar-dot"></div>Preview Mode — Not Sent to Client<div class="preview-bar-dot"></div></div>
+       <div class="preview-watermark"><span>Preview</span></div>`
+    );
+    document.body.style.paddingTop = '34px';
+  }
   if (P.status === 'Cancelled') {
     document.getElementById('main').innerHTML = '<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">🚫</div><div style="font-family:Outfit,sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:8px">Proposal Cancelled</div><div style="font-size:14px;color:var(--text3);max-width:360px;margin:0 auto">This proposal has been cancelled. Please contact Backup Power Pro at <a href="tel:8644005302" style="color:var(--blue);font-weight:600">(864) 400-5302</a> if you have questions.</div></div>';
     return;
