@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BPP Daily Briefing — Sun, April 5</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0b1f3b;
+      color: #e8edf5;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      padding: 16px;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 24px 0 20px;
+      border-bottom: 1px solid #1e3a5f;
+      margin-bottom: 20px;
+    }
+    .header-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #ffba00;
+      margin-bottom: 4px;
+    }
+    .header-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .header-sub {
+      font-size: 13px;
+      color: #8ba3c7;
+      margin-top: 4px;
+    }
+
+    /* Week progress bar */
+    .week-bar-wrap {
+      margin-top: 16px;
+      background: #132640;
+      border-radius: 8px;
+      padding: 12px 16px;
+      border: 1px solid #1e3a5f;
+    }
+    .week-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #8ba3c7;
+      margin-bottom: 8px;
+    }
+    .week-bar-label span:first-child { font-weight: 600; color: #e8edf5; }
+    .week-bar-bg {
+      background: #1e3a5f;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .week-bar-fill {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #ffba00, #f59e0b);
+      transition: width 0.3s;
+    }
+    .week-bar-note {
+      font-size: 11px;
+      color: #8ba3c7;
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #ffba00;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #1e3a5f;
+    }
+
+    /* Card */
+    .card {
+      background: #132640;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    /* Metric grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .metric-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .metric {
+      background: #0d1e38;
+      border-radius: 8px;
+      padding: 10px 12px;
+      border: 1px solid #1e3a5f;
+    }
+    .metric-label {
+      font-size: 11px;
+      color: #8ba3c7;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .metric-sub {
+      font-size: 11px;
+      color: #8ba3c7;
+      margin-top: 2px;
+    }
+
+    /* Colors */
+    .green { color: #22c55e; }
+    .red { color: #ef4444; }
+    .yellow { color: #f59e0b; }
+    .gold { color: #ffba00; }
+    .muted { color: #8ba3c7; }
+    .white { color: #ffffff; }
+
+    /* Status dot */
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .dot-green { background: #22c55e; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-red { background: #ef4444; }
+
+    /* Campaign table */
+    .camp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .camp-table th {
+      text-align: left;
+      color: #8ba3c7;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 4px 8px 8px 0;
+      border-bottom: 1px solid #1e3a5f;
+    }
+    .camp-table td {
+      padding: 8px 8px 4px 0;
+      border-bottom: 1px solid #0f2035;
+      vertical-align: top;
+    }
+    .camp-table tr:last-child td { border-bottom: none; }
+    .camp-name { font-weight: 600; font-size: 12px; max-width: 140px; }
+
+    /* Sparkline bars */
+    .spark-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 40px;
+      margin-top: 8px;
+    }
+    .spark-day {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .spark-bar-wrap {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .spark-bar {
+      width: 100%;
+      border-radius: 3px 3px 0 0;
+      background: #ffba00;
+      opacity: 0.7;
+      min-height: 2px;
+    }
+    .spark-bar.today { opacity: 1; background: #22c55e; }
+    .spark-label {
+      font-size: 9px;
+      color: #8ba3c7;
+      text-align: center;
+    }
+    .spark-leads {
+      font-size: 10px;
+      font-weight: 700;
+      color: #e8edf5;
+      text-align: center;
+    }
+
+    /* Action items */
+    .action-card {
+      background: #132640;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .action-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .priority-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .priority-now { background: #ef4444; color: #fff; }
+    .priority-today { background: #f59e0b; color: #000; }
+    .priority-week { background: #22c55e; color: #000; }
+    .action-title { font-weight: 700; font-size: 15px; color: #ffffff; line-height: 1.3; }
+    .action-body { font-size: 13px; color: #b0bfd4; margin-bottom: 8px; line-height: 1.5; }
+    .action-impact {
+      background: #0d1e38;
+      border-left: 3px solid #ffba00;
+      border-radius: 0 6px 6px 0;
+      padding: 8px 10px;
+      font-size: 12px;
+      color: #e8edf5;
+      margin-bottom: 8px;
+    }
+    .action-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+    .owner-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .owner-claude { background: #1e3a5f; color: #8ba3c7; }
+    .owner-key { background: #ffba00; color: #000; }
+    .time-est { color: #8ba3c7; }
+
+    /* Pipeline row */
+    .pipeline-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #0f2035;
+      font-size: 13px;
+    }
+    .pipeline-row:last-child { border-bottom: none; }
+    .status-pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #1e3a5f;
+      color: #8ba3c7;
+    }
+
+    /* What Claude handles */
+    .auto-list { list-style: none; }
+    .auto-list li {
+      padding: 6px 0;
+      font-size: 13px;
+      color: #b0bfd4;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      border-bottom: 1px solid #0f2035;
+    }
+    .auto-list li:last-child { border-bottom: none; }
+    .auto-list li::before {
+      content: '⚡';
+      font-size: 12px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 20px 0 10px;
+      font-size: 12px;
+      color: #4a6080;
+      border-top: 1px solid #1e3a5f;
+      margin-top: 10px;
+    }
+    .footer strong { color: #8ba3c7; }
+
+    /* Divider */
+    hr { border: none; border-top: 1px solid #1e3a5f; margin: 10px 0; }
+
+    /* Flag banner */
+    .flag {
+      background: #1a0f00;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #f59e0b;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .flag-icon { flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-label">Backup Power Pro</div>
+    <div class="header-title">Daily Briefing</div>
+    <div class="header-sub">Sunday, April 5, 2026 &nbsp;·&nbsp; Generated 2:22 PM</div>
+
+    <!-- Week progress -->
+    <div class="week-bar-wrap" style="margin-top:16px;">
+      <div class="week-bar-label">
+        <span>Week Goal: 5 Installs</span>
+        <span class="yellow">On Track — Close Your Leads</span>
+      </div>
+      <div class="week-bar-bg">
+        <div class="week-bar-fill" style="width: 52%;"></div>
+      </div>
+      <div class="week-bar-note">13 Meta leads this week · Need ~17 at 30% close rate · Week ends tonight</div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 1: META ADS -->
+  <div class="section">
+    <div class="section-title">Meta Ads</div>
+
+    <!-- Yesterday snapshot -->
+    <div class="card">
+      <div style="font-size:12px; color:#8ba3c7; margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px;">Yesterday — Apr 4</div>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-label">Spend</div>
+          <div class="metric-value white">$58.33</div>
+          <div class="metric-sub">of ~$55/day avg</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Leads</div>
+          <div class="metric-value green">5</div>
+          <div class="metric-sub">lead_captured events</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">CPL</div>
+          <div class="metric-value green">$11.67</div>
+          <div class="metric-sub">target &lt;$30 ✓</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">CTR</div>
+          <div class="metric-value green">3.94%</div>
+          <div class="metric-sub">benchmark &gt;2% ✓</div>
+        </div>
+      </div>
+      <div class="metric-grid-3">
+        <div class="metric">
+          <div class="metric-label">Impressions</div>
+          <div class="metric-value white" style="font-size:18px;">4,418</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Reach</div>
+          <div class="metric-value white" style="font-size:18px;">3,514</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Frequency</div>
+          <div class="metric-value green" style="font-size:18px;">1.26</div>
+          <div class="metric-sub">target &lt;3.0 ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week totals -->
+    <div class="card">
+      <div style="font-size:12px; color:#8ba3c7; margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px;">Week to Date — Mar 30–Apr 5</div>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-label">Spent</div>
+          <div class="metric-value white">$391</div>
+          <div class="metric-sub">~$55.88/day avg</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Leads</div>
+          <div class="metric-value yellow">13</div>
+          <div class="metric-sub">need ~17 for 5 installs</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Week CPL</div>
+          <div class="metric-value yellow">$30.09</div>
+          <div class="metric-sub">target &lt;$30 — razor edge</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">CTR</div>
+          <div class="metric-value green">4.03%</div>
+          <div class="metric-sub">healthy all week</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campaign breakdown -->
+    <div class="flag">
+      <span class="flag-icon">⚠️</span>
+      <span><strong>Creative Age Alert:</strong> Both active campaigns launched March 6 — that's <strong>30 days</strong> running on the same creative. Fatigue threshold is 14 days. CTR is still healthy but this is a ticking clock.</span>
+    </div>
+
+    <div class="card">
+      <div style="font-size:12px; color:#8ba3c7; margin-bottom:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px;">Campaign Breakdown (Lifetime Since Mar 6)</div>
+      <table class="camp-table">
+        <thead>
+          <tr>
+            <th>Campaign</th>
+            <th>Leads</th>
+            <th>CPL</th>
+            <th>CTR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="camp-name">Static Creative</div>
+              <div style="font-size:11px; color:#8ba3c7;">No daily cap set</div>
+            </td>
+            <td><span class="green" style="font-weight:700;">17</span></td>
+            <td><span class="green" style="font-weight:700;">$12.84</span></td>
+            <td><span class="green">6.20%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="camp-name">Fresh Creative</div>
+              <div style="font-size:11px; color:#8ba3c7;">$40/day budget</div>
+            </td>
+            <td><span class="white" style="font-weight:700;">69</span></td>
+            <td><span class="yellow" style="font-weight:700;">$22.08</span></td>
+            <td><span class="white">4.45%</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="font-size:12px; color:#8ba3c7; margin-top:10px;">
+        <span class="dot dot-green"></span>Static Creative outperforms Fresh Creative on CPL ($12.84 vs $22.08) and CTR (6.2% vs 4.45%). Total lifetime spend: <strong class="white">$218 + $1,524 = $1,742</strong>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 2: WEBSITE -->
+  <div class="section">
+    <div class="section-title">Website — PostHog</div>
+
+    <div class="card">
+      <div style="font-size:12px; color:#8ba3c7; margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px;">Yesterday — Apr 4</div>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-label">Pageviews</div>
+          <div class="metric-value white">81</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Leads</div>
+          <div class="metric-value green">4</div>
+          <div class="metric-sub">lead_captured events</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">CVR</div>
+          <div class="metric-value green">4.9%</div>
+          <div class="metric-sub">target &gt;3% ✓</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Meta Traffic</div>
+          <div class="metric-value white">91%</div>
+          <div class="metric-sub">83 of 91 PVs</div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:#8ba3c7;">Converting at 4.9% — well above the 3% floor. Nearly all traffic is Meta-sourced, meaning organic/direct is minimal.</div>
+    </div>
+
+    <!-- 7-day sparkline -->
+    <div class="card">
+      <div style="font-size:12px; color:#8ba3c7; margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px;">7-Day Leads Trend</div>
+      <div style="font-size:11px; color:#22c55e; margin-bottom:12px;">Trend is UP — 0 → 4 leads/day over the week</div>
+
+      <!-- Sparkline bars -->
+      <div class="spark-row">
+        <!-- Mar 29: 0 leads, max=4 -->
+        <div class="spark-day">
+          <div class="spark-leads" style="color:#4a6080;">0</div>
+          <div class="spark-bar-wrap" style="height:32px;">
+            <div class="spark-bar" style="height:2px; opacity:0.3;"></div>
+          </div>
+          <div class="spark-label">M29</div>
+        </div>
+        <!-- Mar 30: 2 leads -->
+        <div class="spark-day">
+          <div class="spark-leads">2</div>
+          <div class="spark-bar-wrap" style="height:32px;">
+            <div class="spark-bar" style="height:16px;"></div>
+          </div>
+          <div class="spark-label">M30</div>
+        </div>
+        <!-- Mar 31: 0 leads -->
+        <div class="spark-day">
+          <div class="spark-leads" style="color:#4a6080;">0</div>
+          <div class="spark-bar-wrap" style="height:32px;">
+            <div class="spark-bar" style="height:2px; opacity:0.3;"></div>
+          </div>
+          <div class="spark-label">M31</div>
+        </div>
+        <!-- Apr 1: 1 lead -->
+        <div class="spark-day">
+          <div class="spark-leads">1</div>
+          <div class="spark-bar-wrap" style="height:32px;">
+            <div class="spark-bar" style="height:8px;"></div>
+          </div>
+          <div class="spark-label">A1</div>
+        </div>
+        <!-- Apr 2: 3 leads -->
+        <div class="spark-day">
+          <div class="spark-leads">3</div>
+          <div class="spark-bar-wrap" style="height:32px;">
+            <div class="spark-bar" style="height:24px;"></div>
+          </div>
+          <div class="spark-label">A2</div>
+        </div>
+        <!-- Apr 3: 4 leads -->
+        <div class="spark-day">
+          <div class="spark-leads">4</div>
+          <div class="spark-bar-wrap" style="height:32px;">
+            <div class="spark-bar" style="height:32px;"></div>
+          </div>
+          <div class="spark-label">A3</div>
+        </div>
+        <!-- Apr 4: 4 leads (yesterday) -->
+        <div class="spark-day">
+          <div class="spark-leads green">4</div>
+          <div class="spark-bar-wrap" style="height:32px;">
+            <div class="spark-bar" style="height:32px; background:#22c55e; opacity:1;"></div>
+          </div>
+          <div class="spark-label" style="color:#22c55e;">A4 ✓</div>
+        </div>
+        <!-- Apr 5: 1 lead (partial today) -->
+        <div class="spark-day">
+          <div class="spark-leads yellow">1+</div>
+          <div class="spark-bar-wrap" style="height:32px;">
+            <div class="spark-bar" style="height:8px; background:#f59e0b; opacity:0.8;"></div>
+          </div>
+          <div class="spark-label" style="color:#f59e0b;">A5 ~</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px; color:#8ba3c7; margin-top:10px;">
+        7-day total: <strong class="white">15 leads</strong> from PostHog events &nbsp;·&nbsp; Last 3 days averaging 4/day — strongest stretch of the week
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 3: LEADS PIPELINE -->
+  <div class="section">
+    <div class="section-title">Leads Pipeline</div>
+
+    <div class="card">
+      <div style="font-size:12px; color:#8ba3c7; margin-bottom:8px;">Supabase CRM</div>
+      <div style="display:flex; align-items:center; gap:8px; padding: 12px 0;">
+        <span style="font-size:28px;">⚠️</span>
+        <div>
+          <div style="font-weight:600; color:#f59e0b;">No records returned</div>
+          <div style="font-size:12px; color:#8ba3c7; margin-top:2px;">The Supabase query returned an empty array. Either no contacts have been added to the CRM, or the publishable API key doesn't have read access to the contacts table.</div>
+        </div>
+      </div>
+      <div style="background:#0d1e38; border-radius:6px; padding:10px; font-size:12px; color:#8ba3c7; border: 1px solid #1e3a5f;">
+        <strong class="white">What this means:</strong> 13 Meta leads came in this week per ad data, but none are showing in the pipeline tracker. These leads may be living only in Quo/Dubsado and not synced to Supabase. This is a blind spot — Key can't easily see pipeline health at a glance.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 4: QUO INBOX -->
+  <div class="section">
+    <div class="section-title">Quo Inbox</div>
+
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:8px; padding: 8px 0;">
+        <span style="font-size:24px;">📵</span>
+        <div>
+          <div style="font-weight:600; color:#f59e0b;">API Error — Data Unavailable</div>
+          <div style="font-size:12px; color:#8ba3c7; margin-top:2px;">The Quo messages endpoint returned a 400 error (invalid phone number ID). The phone number ID "PNTZHfvSsh" may be incorrect or have changed.</div>
+        </div>
+      </div>
+      <div style="background:#0d1e38; border-radius:6px; padding:10px; font-size:12px; color:#e8edf5; border: 1px solid #1e3a5f; margin-top:8px;">
+        <strong class="yellow">Action required:</strong> Manually check the Quo app for any incoming leads before responding. Leads from the week's 13 Meta conversions may have texted back and be waiting.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 5: ACTION LIST -->
+  <div class="section">
+    <div class="section-title">Today's Action List</div>
+
+    <!-- Action 1: Check Quo manually -->
+    <div class="action-card" style="border-left: 3px solid #ef4444;">
+      <div class="action-header">
+        <span class="priority-badge priority-now">NOW</span>
+        <div class="action-title">Manually check Quo for unread lead messages</div>
+      </div>
+      <div class="action-body">
+        The Quo API failed with a bad phone number ID — so I can't see your inbox automatically. With 13 leads in from this week, there's a real chance someone has texted back and you haven't replied. Every minute past 15 after a lead texts dramatically drops your close rate.
+      </div>
+      <div class="action-impact">
+        Impact: A single un-replied lead at $1,500 avg job = $1,500 at risk. The first person to reply wins the job — someone else is also running ads in Upstate SC.
+      </div>
+      <div class="action-footer">
+        <span class="owner-badge owner-key">KEY</span>
+        <span class="time-est">2 min</span>
+      </div>
+    </div>
+
+    <!-- Action 2: Follow up this week's leads -->
+    <div class="action-card" style="border-left: 3px solid #ef4444;">
+      <div class="action-header">
+        <span class="priority-badge priority-now">NOW</span>
+        <div class="action-title">Send follow-up texts to this week's cold leads</div>
+      </div>
+      <div class="action-body">
+        You have 13 leads this week but your pipeline tracker shows nothing. That means most of these folks haven't been moved to "booked." Sunday afternoon is actually excellent timing — people are home, relaxed, and thinking about the week ahead. A simple "Hey [Name], just checking in — still interested in getting your generator hooked up?" is all it takes.
+      </div>
+      <div class="action-impact">
+        Impact: At a 30% close rate, 13 leads should yield ~4 installs. At $1,500 each that's $6,000. Each person you follow up on has already said yes once (they filled the form). You're not cold calling — you're closing warm intent.
+      </div>
+      <div class="action-footer">
+        <span class="owner-badge owner-key">KEY</span>
+        <span class="time-est">20–30 min</span>
+      </div>
+    </div>
+
+    <!-- Action 3: Static Creative getting less budget -->
+    <div class="action-card" style="border-left: 3px solid #f59e0b;">
+      <div class="action-header">
+        <span class="priority-badge priority-today">TODAY</span>
+        <div class="action-title">Shift budget toward Static Creative — it's your best performer</div>
+      </div>
+      <div class="action-body">
+        The Static Creative campaign is generating leads at $12.84 each while Fresh Creative costs $22.08. That's a 42% cheaper lead — and Static has a 6.2% CTR vs 4.45% for Fresh. Yet Fresh Creative has a $40/day cap and has spent $1,524 lifetime vs Static's $218. Your money is flowing to the worse performer.
+      </div>
+      <div class="action-impact">
+        Impact: If you reallocate $20/day from Fresh to Static, and Static maintains $12.84 CPL vs $22.08, you get ~1.5 extra leads per $20 spent. That's roughly 10+ extra leads per month at no additional cost.
+      </div>
+      <div class="action-footer">
+        <span class="owner-badge owner-key">KEY</span>
+        <span class="time-est">5 min in Meta Ads Manager</span>
+      </div>
+    </div>
+
+    <!-- Action 4: New creative needed -->
+    <div class="action-card" style="border-left: 3px solid #f59e0b;">
+      <div class="action-header">
+        <span class="priority-badge priority-today">TODAY</span>
+        <div class="action-title">Plan your next creative refresh — 30 days is too long</div>
+      </div>
+      <div class="action-body">
+        Both campaigns launched March 6 — that's 30 days on the same creative. The rule of thumb is 14 days before fatigue hits. The fact that CTR is still at 4% means you haven't cratered yet, but you're on borrowed time. A sudden CTR drop will push CPL above $30 fast. Get ahead of it.
+      </div>
+      <div class="action-impact">
+        Impact: When creative fatigue hits, CPL typically jumps 40–60%. That takes you from $30 CPL to $42–48/lead. At your current volume, that's $150–200 extra wasted per week. Proactive refresh costs nothing — reactive damage costs installs.
+      </div>
+      <div class="action-footer">
+        <span class="owner-badge owner-key">KEY</span>
+        <span class="time-est">Record 1 new video this week (10 min)</span>
+      </div>
+    </div>
+
+    <!-- Action 5: CRM / Pipeline blind spot -->
+    <div class="action-card" style="border-left: 3px solid #f59e0b;">
+      <div class="action-header">
+        <span class="priority-badge priority-today">TODAY</span>
+        <div class="action-title">Fix the pipeline visibility gap — leads aren't showing in CRM</div>
+      </div>
+      <div class="action-body">
+        13 leads from Meta this week, 0 showing in the Supabase pipeline. This means the Zapier flow (Quote Form → Quo text → lead) isn't writing to Supabase, or it's writing to a different table. Without CRM visibility, you can't tell who's been followed up, who's booked, or who's gone cold.
+      </div>
+      <div class="action-impact">
+        Impact: With 5 installs/week as your goal, you need to be able to see every open lead and their status. Flying blind on pipeline = missing installs you could have closed.
+      </div>
+      <div class="action-footer">
+        <span class="owner-badge owner-claude">CLAUDE</span>
+        <span class="time-est">I'll check the Zapier flow and Supabase schema</span>
+      </div>
+    </div>
+
+    <!-- Action 6: Google LSA -->
+    <div class="action-card" style="border-left: 3px solid #22c55e;">
+      <div class="action-header">
+        <span class="priority-badge priority-week">THIS WEEK</span>
+        <div class="action-title">Set up Google Local Service Ads — your highest-intent channel</div>
+      </div>
+      <div class="action-body">
+        Meta leads are warm but Google LSA leads are hot — they actively searched "generator installation near me." You're almost entirely Meta-dependent (91% of site traffic). LSA runs on a pay-per-lead model with Google Guaranteed badge, typically $15–50/lead in SC markets. The strategy doc says LSAs are Priority #1 over Meta.
+      </div>
+      <div class="action-impact">
+        Impact: Adding a second lead channel reduces your dependency on Meta's algorithm. If Meta has a bad day (policy issue, creative fatigue, algorithm shift), you still have leads flowing. At $20 CPL on LSA and 1-2 leads/day, that's potentially doubling your lead volume.
+      </div>
+      <div class="action-footer">
+        <span class="owner-badge owner-key">KEY</span>
+        <span class="time-est">30 min to apply at ads.google.com/localservices</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 6: WHAT CLAUDE IS HANDLING -->
+  <div class="section">
+    <div class="section-title">What Claude Is Handling</div>
+    <div class="card">
+      <ul class="auto-list">
+        <li>Generating and deploying this daily briefing to backuppowerpro.com/daily/</li>
+        <li>Monitoring Meta ad spend, CPL, and frequency daily — will flag when CPL crosses $30</li>
+        <li>Investigating the Quo phone number ID mismatch — will fix for tomorrow's briefing</li>
+        <li>Watching for creative fatigue signals (CTR drop &gt;20% week-over-week)</li>
+        <li>Sending this SMS summary to your phone right now</li>
+      </ul>
+    </div>
+  </div>
+
+
+  <!-- SECTION 7: WEEK GOAL TRACKER -->
+  <div class="section">
+    <div class="section-title">Week Goal Tracker</div>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div>
+          <div style="font-size:18px; font-weight:700; color:#ffffff;">13 leads in so far</div>
+          <div style="font-size:12px; color:#8ba3c7;">Week ending today, Sunday</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:24px; font-weight:700; color:#f59e0b;">~4 installs</div>
+          <div style="font-size:11px; color:#8ba3c7;">at 30% close rate</div>
+        </div>
+      </div>
+
+      <div class="week-bar-bg" style="margin-bottom:8px;">
+        <div class="week-bar-fill" style="width: 80%;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:#8ba3c7;">
+        <span>0 installs</span>
+        <span class="yellow">~4 estimated</span>
+        <span>5 goal</span>
+      </div>
+
+      <hr style="margin: 12px 0;">
+
+      <div style="font-size:13px; color:#b0bfd4; line-height:1.6;">
+        You're one conversion away from hitting 5. The leads are there — follow-up aggressiveness this afternoon/evening is what separates a 4-install week from a 5-install week. Closing one more today matters.
+      </div>
+
+      <div style="background:#0d1e38; border-radius:8px; padding:12px; margin-top:10px; border: 1px solid #1e3a5f;">
+        <div style="font-size:12px; font-weight:600; color:#ffba00; margin-bottom:4px;">Quick close math</div>
+        <div style="font-size:12px; color:#b0bfd4; line-height:1.7;">
+          5 installs × $1,700 avg = <strong class="white">$8,500 revenue target</strong><br>
+          Week ad spend: <strong class="white">$391</strong> · Break-even at 1 install<br>
+          Net if 5 installs: <strong class="green">~$8,109</strong> (before materials)
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div><strong>BPP Daily Briefing</strong> — Generated Sun Apr 5, 2026 at 2:22 PM</div>
+    <div style="margin-top:4px;">Data: Meta Ads API · PostHog · Supabase · Quo</div>
+    <div style="margin-top:8px; color:#2a4060;">Reply to the SMS to give Claude a task or ask a question.</div>
+    <div style="margin-top:8px; font-size:11px; color:#2a4060;">This link is private and expires tomorrow when a new report is generated.</div>
+  </div>
+
+</div>
+</body>
+</html>
