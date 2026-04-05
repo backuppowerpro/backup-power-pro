@@ -109,6 +109,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 /* ── CARD (generic fallback) ─────────────────────────── */
 .card{background:linear-gradient(160deg,#fff 0%,#f9fbff 100%);border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 4px 24px rgba(11,31,59,.08),0 1px 4px rgba(11,31,59,.04)}
 .card-icon{width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-head{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid #f0f3f8}
+.card-head h2{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
+.card-body{padding:20px}
 
 /* ── SCOPE LIST ─────────────────────────────────────── */
 .scope-list{list-style:none;display:flex;flex-direction:column;gap:10px}
@@ -630,7 +633,7 @@ function showCelebrationModal() {
     <div id="congrats-card" style="background:#fff;border-radius:20px;padding:32px 28px;max-width:360px;width:100%;text-align:center;pointer-events:all;box-shadow:0 32px 80px rgba(0,0,0,.35);transform:scale(.7);opacity:0;transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .35s ease">
       <div style="font-size:48px;margin-bottom:12px">🎉</div>
       <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:#0b1f3b;margin-bottom:10px;line-height:1.2">Congratulations, ${esc(firstName)}!</div>
-      <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:8px">You just took the first step to securing backup power for your home. We'll take it from here.<br><br>When the power goes out, 100% of homeowners are glad they chose Backup Power Pro. ⚡</div>
+      <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:8px">You just took the first step to securing backup power for your home. We'll take it from here.<br><br>Next time the power goes out, your house stays on. ⚡</div>
       <div style="font-size:11px;color:#94a3b8;margin-top:16px">Tap anywhere to continue</div>
     </div>`;
   document.body.appendChild(modal);
@@ -759,7 +762,7 @@ function renderProposal() {
             <span class="reality-num" data-target="1.2">1.2</span>
             <div class="reality-stat-info">
               <span class="reality-stat-unit">outages / year</span>
-              <span class="reality-stat-sub">per SC customer — basically guaranteed</span>
+              <span class="reality-stat-sub">average per SC customer — it's not if, it's when</span>
             </div>
           </div>
           <div class="reality-stat-divider"></div>
@@ -767,13 +770,13 @@ function renderProposal() {
             <span class="reality-num" data-target="22">22</span>
             <div class="reality-stat-info">
               <span class="reality-stat-unit">hours+ in the dark</span>
-              <span class="reality-stat-sub">during major storms — not minutes</span>
+              <span class="reality-stat-sub">during major storms — long enough to lose everything in your fridge</span>
             </div>
           </div>
         </div>
 
         <div class="loss-list reveal">
-          <div class="loss-item"><span class="loss-emoji loss-emoji--meat">🥩</span> <strong>$300+ in groceries lost</strong> every time the outage lasts long enough</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--meat">🥩</span> <strong>$300+ in groceries lost</strong> during any extended outage</div>
           <div class="loss-item"><span class="loss-emoji loss-emoji--pill">💊</span> <strong>Medical equipment shuts off</strong> — CPAP, oxygen, and refrigerated medication</div>
           <div class="loss-item"><span class="loss-emoji loss-emoji--warn">⚠️</span> <strong>No whole-home protection</strong> — extension cords only reach a few outlets. Most of your home stays dark</div>
         </div>
@@ -881,14 +884,14 @@ function renderProposal() {
     <!-- ══ BNPL OPTIONS ══ -->
     <div class="bnpl-row reveal">
       <div class="afterpay-block">
-        <div class="afterpay-logo"><span class="afterpay-logo-dot"></span>afterpay</div>
+        <img src="Afterpay_Mint_Logo.jpg" alt="Afterpay" style="height:28px;display:block;border-radius:4px">
         <div class="afterpay-text">
-          <strong>6 interest-free payments</strong>
+          <strong>4 interest-free payments</strong>
           Pay over time — no fees, no interest.
         </div>
       </div>
       <div class="klarna-block">
-        <div class="klarna-logo">klarna.</div>
+        <img src="Klarna_Payment_Badge.svg.png" alt="Klarna" style="height:28px;display:block">
         <div class="klarna-text">
           <strong>Flexible payment plans</strong>
           Pay now, later, or over time.
@@ -911,7 +914,7 @@ function renderProposal() {
         <div class="guarantee-icon">✅</div>
         <div>
           <div class="guarantee-item-title">Satisfaction Guarantee</div>
-          <div class="guarantee-item-desc">We show up on time, keep your home clean, and walk you through the system before we leave. Every job.</div>
+          <div class="guarantee-item-desc">We show up on time, keep your home clean, and walk you through the system before we leave.</div>
         </div>
       </div>
       <div class="guarantee-item">
@@ -929,7 +932,20 @@ function renderProposal() {
       </div>
     </div>
 
-    <!-- Scarcity -->
+    <!-- ══ SCARCITY ══ -->
+    <div class="scarcity-bar reveal">
+      <div class="scarcity-dots">
+        <div class="scarcity-dot filled"></div>
+        <div class="scarcity-dot filled"></div>
+        <div class="scarcity-dot filled"></div>
+        <div class="scarcity-dot"></div>
+        <div class="scarcity-dot"></div>
+      </div>
+      <div class="scarcity-text">3 of 5 install slots filled this week
+        <div class="scarcity-sub">We complete 5 installs per week — lock your date before it's gone.</div>
+      </div>
+    </div>
+
     <!-- ══ SIGN ══ -->
     <div class="sign-card reveal" id="sign-section">
       <div class="sign-card-head">
