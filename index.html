@@ -375,20 +375,8 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
     document.addEventListener('DOMContentLoaded',function(){revealPage(urlVariant);});
     return;
   }
-  // Only run A/B test for Meta Ads traffic — Google/organic always gets control
-  var utmSource=(params.get('utm_source')||'').toLowerCase();
-  var isMetaTraffic=utmSource==='facebook'||utmSource==='instagram'||utmSource==='fb'||utmSource==='ig';
-  if(!isMetaTraffic){
-    document.addEventListener('DOMContentLoaded',function(){revealPage('control');});
-    return;
-  }
-  posthog.onFeatureFlags(function(){
-    revealPage(posthog.getFeatureFlag('landing-page-variant'));
-  });
-  // Fallback: show control if flags haven't loaded in 1s
-  setTimeout(function(){
-    if(!document.documentElement.classList.contains('bpp-ready')) revealPage('control');
-  },1000);
+  // Test concluded — stripped wins (5.2% vs 3.3% CVR). All traffic gets stripped.
+  document.addEventListener('DOMContentLoaded',function(){revealPage('stripped');});
 })();
 </script>
 </head>
