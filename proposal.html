@@ -94,7 +94,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .reality-stat-unit{font-size:11px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.04em}
 .reality-stat-sub{font-size:11px;color:rgba(255,255,255,.45);line-height:1.4}
 .loss-list{display:flex;flex-direction:column;gap:7px}
-.loss-item{display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,.85);background:rgba(220,38,38,.14);border-radius:8px;padding:12px 14px;font-weight:500;box-shadow:0 1px 6px rgba(0,0,0,.12)}
+.loss-item{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:rgba(255,255,255,.85);background:rgba(220,38,38,.14);border-radius:8px;padding:12px 14px;font-weight:500;box-shadow:0 1px 6px rgba(0,0,0,.12)}
 .loss-emoji{display:inline-block;font-size:18px;flex-shrink:0}
 .loss-emoji--meat{animation:emojiMeat 3.8s ease-in-out infinite}
 .loss-emoji--pill{animation:emojiPill 2.8s ease-in-out infinite}
@@ -768,9 +768,9 @@ function renderProposal() {
         </div>
 
         <div class="loss-list reveal">
-          <div class="loss-item"><span class="loss-emoji loss-emoji--meat">🥩</span> <strong>$300+ in groceries lost</strong> during any extended outage</div>
-          <div class="loss-item"><span class="loss-emoji loss-emoji--pill">💊</span> <strong>Medical equipment shuts off</strong> — CPAP, oxygen, and refrigerated medication</div>
-          <div class="loss-item"><span class="loss-emoji loss-emoji--warn">⚠️</span> <strong>No whole-home protection</strong> — extension cords only reach a few outlets. Most of your home stays dark</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--meat">🥩</span><strong>$500+ in groceries lost</strong> during any extended outage</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--pill">💊</span><strong>Medical equipment shuts off</strong> — CPAP, oxygen, and refrigerated medication</div>
+          <div class="loss-item"><span class="loss-emoji loss-emoji--warn">⚠️</span><strong>No whole-home protection</strong> — extension cords only reach a few outlets. Most of your home stays dark</div>
         </div>
       </div>
 
