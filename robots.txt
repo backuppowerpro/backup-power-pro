@@ -3,3 +3,5 @@ Allow: /
 Disallow: /quote-calculator.html
 
 Sitemap: https://backuppowerpro.com/sitemap.xml
+User-agent: *
+Disallow: /daily/

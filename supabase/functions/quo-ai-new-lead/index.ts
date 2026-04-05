@@ -1,18 +1,126 @@
 /**
  * quo-ai-new-lead
  * Called by get-quote.html when a form is submitted.
- * Creates contact in Supabase, sends AI-crafted first text via Quo, queues follow-up.
+ * Replaces Zapier: creates contact in Supabase CRM, fires Facebook CAPI Lead event,
+ * sends AI-crafted first text to lead, notifies Key, queues follow-up.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const QUO_API_KEY        = Deno.env.get('QUO_API_KEY')!
-const QUO_PHONE_ID       = Deno.env.get('QUO_PHONE_NUMBER_ID')!
-const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY')!
+const QUO_PHONE_ID       = Deno.env.get('QUO_PHONE_NUMBER_ID')!          // (864) 400-5302 — customer-facing
+const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'  // (864) 863-7155 — Key notifications
+const KEY_PHONE          = '+19414417996'                                  // Key's personal cell
+const FB_ACCESS_TOKEN    = Deno.env.get('FB_ACCESS_TOKEN')!               // Meta CAPI system user token
+const FB_PIXEL_ID        = '1389648775800936'                             // Meta Pixel / Dataset ID
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+// ── FACEBOOK CAPI ─────────────────────────────────────────────────────────────
+// Sends a server-side Lead event to Meta for accurate attribution.
+// All PII is pre-hashed SHA-256 by the browser before being sent here.
+async function fireMetaCAPI(payload: any): Promise<void> {
+  if (!FB_ACCESS_TOKEN) {
+    console.warn('[CAPI] FB_ACCESS_TOKEN not set — skipping')
+    return
+  }
+
+  const {
+    eventId, eventTimestamp, pageUrl, actionSource,
+    hashedPhone, hashedEmail, hashedFirstName, hashedLastName,
+    hashedCity, hashedState, hashedZip, hashedCountry,
+    clientIpAddress, clientUserAgent, fbp, fbc,
+  } = payload
+
+  const capiBody = {
+    data: [{
+      event_name: 'Lead',
+      event_time: eventTimestamp || Math.floor(Date.now() / 1000),
+      event_id: eventId || '',
+      event_source_url: pageUrl || 'https://backuppowerpro.com/get-quote.html',
+      action_source: actionSource || 'website',
+      user_data: {
+        ph:          hashedPhone    ? [hashedPhone]    : undefined,
+        em:          hashedEmail    ? [hashedEmail]    : undefined,
+        fn:          hashedFirstName? [hashedFirstName]: undefined,
+        ln:          hashedLastName ? [hashedLastName] : undefined,
+        ct:          hashedCity     ? [hashedCity]     : undefined,
+        st:          hashedState    ? [hashedState]    : undefined,
+        zp:          hashedZip      ? [hashedZip]      : undefined,
+        country:     hashedCountry  ? [hashedCountry]  : undefined,
+        client_ip_address:   clientIpAddress   || undefined,
+        client_user_agent:   clientUserAgent   || undefined,
+        fbp:         fbp || undefined,
+        fbc:         fbc || undefined,
+      },
+      custom_data: {
+        content_name:     'generator-inlet-quote',
+        content_category: 'generator-installation',
+        value:    1500,
+        currency: 'USD',
+      },
+    }],
+  }
+
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/${FB_PIXEL_ID}/events?access_token=${FB_ACCESS_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(capiBody),
+      }
+    )
+    const data = await res.json()
+    if (data.error) {
+      console.error('[CAPI] Error:', JSON.stringify(data.error))
+    } else {
+      console.log('[CAPI] OK — events_received:', data.events_received)
+    }
+  } catch (err) {
+    console.error('[CAPI] Fetch failed:', err)
+  }
+}
+
+// ── CREATE QUO CONTACT ────────────────────────────────────────────────────────
+// Creates a named contact in Quo so the inbox shows the lead's name.
+async function createQuoContact(firstName: string, lastName: string, phone: string): Promise<void> {
+  try {
+    await fetch('https://api.openphone.com/v1/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+      body: JSON.stringify({
+        defaultFields: {
+          firstName,
+          lastName: lastName || '',
+          phoneNumbers: [{ value: phone }],
+        },
+      }),
+    })
+    console.log('[quo-contact] created:', firstName, phone)
+  } catch (err) {
+    console.error('[quo-contact] failed:', err)
+  }
+}
+
+// ── NOTIFY KEY ────────────────────────────────────────────────────────────────
+// Sends a quick heads-up to Key's phone when a new lead comes in.
+async function notifyKey(firstName: string): Promise<void> {
+  const message = `LEAD: ${firstName || 'Unknown'}`
+
+  try {
+    await fetch('https://api.openphone.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+      body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [KEY_PHONE], content: message }),
+    })
+    console.log('[notify-key] sent')
+  } catch (err) {
+    console.error('[notify-key] failed:', err)
+  }
 }
 
 Deno.serve(async (req) => {
@@ -30,14 +138,16 @@ Deno.serve(async (req) => {
     panelLocation, genVoltage,
   } = body || {}
 
-  if (!phone) {
-    return new Response(JSON.stringify({ error: 'phone required' }), { status: 400, headers: CORS_HEADERS })
+  // ── FILTER: phone + firstName must exist (same as Zapier filter) ─────────
+  if (!phone || !firstName) {
+    console.log('[filter] missing phone or firstName — skipping')
+    return new Response(JSON.stringify({ skipped: true }), { status: 200, headers: CORS_HEADERS })
   }
 
   // Normalize phone
   const digits = phone.replace(/\D/g, '')
-  const normalizedPhone = digits.length === 10 ? `+1${digits}` : digits.startsWith('1') ? `+${digits}` : `+${digits}`
-  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim() || 'there'
+  const normalizedPhone = digits.length === 10 ? `+1${digits}` : `+${digits}`
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
   const fullAddress = address || [addressCity, addressState].filter(Boolean).join(', ') || ''
 
   const supabase = createClient(
@@ -54,6 +164,7 @@ Deno.serve(async (req) => {
     .limit(1)
 
   let contact: any = existing?.[0] ?? null
+  const isNew = !contact
 
   if (!contact) {
     const { data: c } = await supabase
@@ -80,60 +191,27 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'failed to create contact' }), { status: 500, headers: CORS_HEADERS })
   }
 
-  // ── GENERATE FIRST MESSAGE WITH AI ───────────────────────────────────────
-  const systemPrompt = `Your name is Alex. You are writing the very first text message from Alex at Backup Power Pro to a new lead who filled out an online form.
+  // ── CREATE QUO CONTACT (non-blocking) ────────────────────────────────────
+  // Always upsert so the Quo inbox shows the lead's name from first message.
+  createQuoContact(firstName, lastName || '', normalizedPhone).catch(err => console.error('[quo-contact] unhandled:', err))
 
-Rules:
-- Introduce yourself as Alex from Backup Power Pro and thank them warmly for reaching out.
-- Do NOT sign with any name at the end.
-- Warm, conversational, real — not robotic, not a cold Q&A
-- 2-3 sentences max
-- You may mention "Backup Power Pro" once in the intro, but don't repeat it
-- Do NOT mention the form or website explicitly
-- Reference their first name if available
-- We ONLY service residential homes. NEVER ask if it is for a home or business — always assume it is a home.
-- End with ONE soft, natural question: ask whether they already have a generator or are still looking to get one. This opens the conversation without feeling abrupt.
-- Do NOT ask for their address (we already have it from the form)
-- Tone example: "Hey [name], this is Alex with Backup Power Pro. Thanks so much for reaching out! Are you already working with a generator, or are you still in the process of getting one?"`
+  // ── FIRE META CAPI (non-blocking) ────────────────────────────────────────
+  // Run in background — don't let CAPI delay the text to the lead
+  fireMetaCAPI(body).catch(err => console.error('[CAPI] unhandled:', err))
 
-  const userMessage = `New lead details:
-Name: ${fullName}
-Address: ${fullAddress}
-Panel location: ${panelLocation || 'not provided'}
-Generator voltage answer: ${genVoltage || 'not provided'}`
-
-  let firstMessage = `Hey${firstName ? ' ' + firstName : ''}, this is Alex with Backup Power Pro. Thanks so much for reaching out! Are you already working with a generator, or are you still in the process of getting one?`
-
-  try {
-    const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://backuppowerpro.com',
-        'X-Title': 'BPP Sales Agent',
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-sonnet-4-5',
-        max_tokens: 200,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage },
-        ],
-      }),
-    })
-    const aiData = await aiRes.json()
-    const generated = aiData.choices?.[0]?.message?.content?.trim()
-    if (generated) firstMessage = generated
-  } catch (err) {
-    console.error('[AI] Failed to generate first message:', err)
+  // ── NOTIFY KEY (non-blocking) ────────────────────────────────────────────
+  if (isNew) {
+    notifyKey(firstName).catch(err => console.error('[notify-key] unhandled:', err))
   }
 
-  // ── TYPING DELAY ─────────────────────────────────────────────────────────
-  const typingMs = Math.min(11000, 1500 + firstMessage.length * 45 + Math.random() * 1500)
+  // ── FIRST MESSAGE ─────────────────────────────────────────────────────────
+  const firstMessage = `Hey ${firstName}, thanks for reaching out to Backup Power Pro! We got your request and will be in touch shortly to get you a quote. Do you already have a generator or are you looking to get one soon?`
+
+  // ── TYPING DELAY (feels human) ────────────────────────────────────────────
+  const typingMs = Math.min(8000, 1500 + Math.random() * 2000)
   await new Promise(resolve => setTimeout(resolve, typingMs))
 
-  // ── SEND VIA QUO ──────────────────────────────────────────────────────────
+  // ── SEND FIRST TEXT TO LEAD ───────────────────────────────────────────────
   let quoMsgId: string | null = null
   try {
     const quoRes = await fetch('https://api.openphone.com/v1/messages', {
@@ -157,11 +235,13 @@ Generator voltage answer: ${genVoltage || 'not provided'}`
   })
 
   // ── QUEUE FOLLOW-UP (24hrs if no reply) ───────────────────────────────────
-  await supabase.from('follow_up_queue').insert({
-    contact_id: contact.id,
-    stage: 1,
-    send_after: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-  })
+  if (isNew) {
+    await supabase.from('follow_up_queue').insert({
+      contact_id: contact.id,
+      stage: 1,
+      send_after: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    })
+  }
 
   return new Response(JSON.stringify({ success: true, contactId: contact.id }), {
     status: 200,
