@@ -152,13 +152,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .review-text{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px}
 .review-author{font-size:11px;font-weight:700;color:var(--text3)}
 .proof-rating-row{display:flex;align-items:center;justify-content:center;gap:8px}
-.review-carousel{position:relative;min-height:0}
-.review-slide{display:none}
-.review-slide.active{display:block}
-.review-slide.fade-out{animation:reviewFadeOut .4s ease forwards}
-.review-slide.fade-in{animation:reviewFadeIn .4s ease forwards}
-@keyframes reviewFadeOut{0%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(-16px)}}
-@keyframes reviewFadeIn{0%{opacity:0;transform:translateX(16px)}100%{opacity:1;transform:translateX(0)}}
+.review-carousel{position:relative;overflow:hidden;/* height set by JS */}
+.review-slide{position:absolute;top:0;left:0;right:0;opacity:0;visibility:hidden;transition:opacity .45s ease;pointer-events:none}
+.review-slide.active{opacity:1;visibility:visible;pointer-events:auto}
 .carousel-dots{display:flex;justify-content:center;gap:6px;margin-top:12px;margin-bottom:2px}
 .carousel-dot{width:6px;height:6px;border-radius:50%;background:#cbd5e1;border:none;padding:0;cursor:pointer;transition:background .3s}
 .carousel-dot.active{background:var(--navy)}
@@ -1428,9 +1424,15 @@ function initReviewCarousel() {
   const carousel = document.getElementById('review-carousel');
   const dotsWrap = document.getElementById('carousel-dots');
   if (!carousel || !dotsWrap) return;
-  const slides = carousel.querySelectorAll('.review-slide');
+  const slides = Array.from(carousel.querySelectorAll('.review-slide'));
   if (slides.length < 2) return;
   let current = 0;
+
+  // Slides are position:absolute — make all visible to measure, then fix container height
+  slides.forEach(s => { s.style.visibility = 'visible'; });
+  const maxH = Math.max(...slides.map(s => s.offsetHeight));
+  carousel.style.height = maxH + 'px';
+  slides.forEach(s => { s.style.visibility = ''; });
 
   // Build dots
   slides.forEach((_, i) => {
@@ -1441,26 +1443,16 @@ function initReviewCarousel() {
     dotsWrap.appendChild(dot);
   });
 
-  // Lock carousel height to the tallest slide so page never shifts
-  let maxH = 0;
-  slides.forEach(s => { s.style.display = 'block'; maxH = Math.max(maxH, s.offsetHeight); });
-  carousel.style.minHeight = maxH + 'px';
-  slides.forEach((s, i) => { if (i !== 0) s.style.display = ''; });
-
   function goTo(idx) {
     const dots = dotsWrap.querySelectorAll('.carousel-dot');
     slides[current].classList.remove('active');
-    slides[current].classList.add('fade-out');
-    setTimeout(() => { slides[current].classList.remove('fade-out'); }, 400);
     current = (idx + slides.length) % slides.length;
-    slides[current].classList.add('fade-in', 'active');
-    setTimeout(() => { slides[current].classList.remove('fade-in'); }, 400);
+    slides[current].classList.add('active');
     dots.forEach((d, i) => d.classList.toggle('active', i === current));
   }
 
   setInterval(() => goTo(current + 1), 7000);
 }
-
 
 // ── ERROR ─────────────────────────────────────────────────────
 function showError(title, msg) {
