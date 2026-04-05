@@ -1441,6 +1441,12 @@ function initReviewCarousel() {
     dotsWrap.appendChild(dot);
   });
 
+  // Lock carousel height to the tallest slide so page never shifts
+  let maxH = 0;
+  slides.forEach(s => { s.style.display = 'block'; maxH = Math.max(maxH, s.offsetHeight); });
+  carousel.style.minHeight = maxH + 'px';
+  slides.forEach((s, i) => { if (i !== 0) s.style.display = ''; });
+
   function goTo(idx) {
     const dots = dotsWrap.querySelectorAll('.carousel-dot');
     slides[current].classList.remove('active');
