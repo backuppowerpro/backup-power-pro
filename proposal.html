@@ -926,8 +926,8 @@ function renderProposal() {
     <!-- ══ SIGN ══ -->
     <div class="sign-card reveal" id="sign-section">
       <div class="sign-card-head">
-        <h2>Secure Your Install Date</h2>
-        <p>Check both boxes, sign your name, and you're locked in. You won't be charged until installation day — after your home is powered up.</p>
+        <h2>Approve This Proposal</h2>
+        <p>Check both boxes and sign below. Once approved, Key pulls your permit and reaches out to get you on the schedule. Your price is locked. No payment until the job is done.</p>
       </div>
       <div class="sign-card-body">
         <div class="ack-row" id="ack-row-scope">
@@ -950,7 +950,7 @@ function renderProposal() {
         </div>
         <button class="approve-btn" id="approve-btn" onclick="approveProposal()" disabled>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Approve &amp; Lock My Install Date — <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
+          Approve &amp; Lock In My Price — <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
         </button>
         <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">
           No payment today. Billed on completion.
@@ -1169,7 +1169,7 @@ async function approveProposal() {
   const total = calcTotal(chosenAmp);
   const termsSnapshot = JSON.stringify({ proposal_id: P.id, proposal_token: P.token, contact_name: P.contact_name, contact_address: P.contact_address, selected_amp: chosenAmp, selected_surge: surgeOn, surge_price: surgeOn ? (P.surge_price || 375) : 0, pricing: getPrice(chosenAmp), total, scope_acknowledged: true, safety_acknowledged: true, signer_name: name, signed_at: new Date().toISOString(), ip_address: ip, user_agent: navigator.userAgent });
   const { error } = await db.from('proposals').update({ status: 'Approved', signed_at: new Date().toISOString(), signer_name: name, safety_ack: true, selected_amp: chosenAmp, selected_surge: surgeOn, selected_pom: pomOn, total, approved_ip: ip, approved_user_agent: navigator.userAgent, approved_terms_snapshot: termsSnapshot, is_locked: true }).eq('token', P.token);
-  if (error) { err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.'; btn.disabled = false; approving = false; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve &amp; Lock My Install Date — <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>'; return; }
+  if (error) { err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.'; btn.disabled = false; approving = false; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve &amp; Lock In My Price — <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>'; return; }
   P.status = 'Approved'; P.signer_name = name; P.signed_at = new Date().toISOString(); P.selected_amp = chosenAmp; P.selected_surge = surgeOn; P.selected_pom = pomOn; P.total = total; P.approved_ip = ip;
   launchConfetti();
   setTimeout(() => renderApproved(), 800);
