@@ -727,10 +727,10 @@ function renderProposal() {
       <div class="amp-toggle-label">Choose Your Setup <span style="font-weight:400;font-size:11px;color:var(--text3)">(match your generator's output)</span></div>
       <div class="amp-toggle">
         <button class="amp-toggle-btn ${chosenAmp === '30' ? 'active' : ''}" onclick="switchAmp('30')">
-          30 Amp<span class="amp-sub">${P.amp_type === '30' || P.selected_amp === '30' ? '⭐ Recommended for your setup' : 'Standard'}</span>
+          30 Amp<span class="amp-sub">${P.amp_type === '30' || P.selected_amp === '30' ? '⭐ Recommended for your specific setup' : 'Standard'}</span>
         </button>
         <button class="amp-toggle-btn ${chosenAmp === '50' ? 'active' : ''}" onclick="switchAmp('50')">
-          50 Amp<span class="amp-sub">${P.amp_type === '50' || P.selected_amp === '50' ? '⭐ Recommended for your setup' : 'More circuits'}</span>
+          50 Amp<span class="amp-sub">${P.amp_type === '50' || P.selected_amp === '50' ? '⭐ Recommended for your specific setup' : 'More circuits'}</span>
         </button>
       </div>
     </div>` : '';
