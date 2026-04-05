@@ -235,13 +235,10 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .badge-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:18px}
 .authority-badge{display:flex;align-items:center;gap:5px;padding:6px 12px;background:var(--navy);color:#fff;border-radius:20px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;opacity:.9}
 
-/* ── SCARCITY BAR ───────────────────────────────────── */
-.scarcity-bar{background:linear-gradient(135deg,#7f1d1d,#991b1b);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:16px}
-.scarcity-dots{display:flex;gap:5px;flex-shrink:0}
-.scarcity-dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .3s}
-.scarcity-dot.filled{background:var(--gold)}
-.scarcity-text{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:#fff;line-height:1.4}
-.scarcity-sub{font-size:11px;color:rgba(255,255,255,.65);font-weight:500;margin-top:2px}
+/* ── SCARCITY NOTICE ────────────────────────────────── */
+.scarcity-notice{border-top:1px solid #e8ecf2;border-bottom:1px solid #e8ecf2;padding:11px 20px;margin-bottom:16px;text-align:center}
+.scarcity-notice p{font-size:12px;color:var(--text2);line-height:1.6}
+.scarcity-notice strong{color:var(--navy);font-weight:600}
 
 /* ── SIGN SECTION ───────────────────────────────────── */
 .sign-card{background:linear-gradient(160deg,#fff 0%,#f9fbff 100%);border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:0 6px 32px rgba(11,31,59,.12),0 2px 8px rgba(11,31,59,.06)}
@@ -933,17 +930,8 @@ function renderProposal() {
     </div>
 
     <!-- ══ SCARCITY ══ -->
-    <div class="scarcity-bar reveal">
-      <div class="scarcity-dots">
-        <div class="scarcity-dot filled"></div>
-        <div class="scarcity-dot filled"></div>
-        <div class="scarcity-dot filled"></div>
-        <div class="scarcity-dot"></div>
-        <div class="scarcity-dot"></div>
-      </div>
-      <div class="scarcity-text">3 of 5 install slots filled this week
-        <div class="scarcity-sub">We complete 5 installs per week — lock your date before it's gone.</div>
-      </div>
+    <div class="scarcity-notice reveal">
+      <p>We only take on <strong>five projects per week</strong> to maintain quality. Approving this proposal secures your place in line.</p>
     </div>
 
     <!-- ══ SIGN ══ -->
