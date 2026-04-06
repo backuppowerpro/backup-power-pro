@@ -89,6 +89,9 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 /* BUTTONS */
 .btn-pay{width:100%;padding:16px;background:var(--gold);color:var(--navy);border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
 .btn-pay:hover{filter:brightness(1.05);transform:translateY(-1px);box-shadow:0 4px 16px rgba(255,186,0,.3)}
+.btn-pay-card{width:100%;padding:13px;background:#fff;color:var(--navy);border:1.5px solid #d1d5db;border-radius:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;color:#6b7280}
+.btn-pay-card:hover{border-color:var(--navy);color:var(--navy)}
+.ach-badge{display:inline-block;background:#dcfce7;color:#15803d;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:6px;letter-spacing:.3px;vertical-align:middle}
 .dl-btn{width:100%;padding:14px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
 .dl-btn:hover{background:var(--navy);color:#fff}
 .dl-btn:disabled{opacity:.6;pointer-events:none}
@@ -102,6 +105,16 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .state-wrap p{font-size:14px;color:var(--text3)}
 .spinner-large{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* PROPERTY PHOTO BANNER */
+.property-banner{position:relative;width:100%;height:260px;background:var(--navy);overflow:hidden;flex-shrink:0}
+.property-banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.property-banner-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.65) 100%);pointer-events:none}
+.property-banner-label{position:absolute;bottom:0;left:0;right:0;padding:16px 20px 18px;pointer-events:none}
+.property-banner-eyebrow{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:4px}
+.property-banner-addr{font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);line-height:1.25}
+.property-banner-initials{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:80px;font-weight:800;color:rgba(255,255,255,.18);letter-spacing:-4px;pointer-events:none}
+@media(max-width:480px){.property-banner{height:210px}.property-banner-addr{font-size:15px}}
 
 /* FOOTER */
 .site-footer{text-align:center;padding:28px 24px 24px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px}
@@ -153,6 +166,8 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
   <img src="/assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:32px;">
   <div class="tagline">Licensed Electrical Contractor &middot; SC LIC #2942 &middot; Upstate SC</div>
 </header>
+
+<div id="property-banner-wrap"></div>
 
 <main class="page" id="main">
   <div class="state-wrap">
@@ -304,6 +319,51 @@ function buildAgreementHtml() {
     </div>`;
 }
 
+// ── PROPERTY PHOTO BANNER ────────────────────────────────────
+const _SV_KEY = 'AIzaSyB0xWm71ZDzS7ei5-vFx15rNP_lR1ZKbJs';
+
+async function renderPropertyBanner() {
+  const wrap = document.getElementById('property-banner-wrap');
+  if (!wrap) return;
+  const addr = INV.contact_address;
+  const name = INV.contact_name || '';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+                 : parts.length === 1 ? parts[0][0].toUpperCase() : '?';
+
+  const gradHtml = `<div class="property-banner-grad"></div>`;
+  const labelHtml = addr ? `
+    <div class="property-banner-label">
+      <div class="property-banner-eyebrow">📍 Your Installation Address</div>
+      <div class="property-banner-addr">${esc(addr)}</div>
+    </div>` : '';
+
+  // Always render initials fallback first
+  wrap.innerHTML = `
+    <div class="property-banner">
+      <div class="property-banner-initials">${initials}</div>
+      ${gradHtml}
+      ${addr ? labelHtml : `<div class="property-banner-label"><div class="property-banner-addr">${esc(name)}</div></div>`}
+    </div>`;
+
+  if (!addr) return;
+
+  // Check Street View coverage via metadata API — only show photo if imagery exists
+  try {
+    const r = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(addr)}&key=${_SV_KEY}`);
+    const d = await r.json();
+    if (d.status !== 'OK') return; // no imagery — keep initials fallback
+    const bannerEl = wrap.querySelector('.property-banner');
+    if (!bannerEl) return;
+    const img = document.createElement('img');
+    img.alt = 'Your home';
+    img.src = `https://maps.googleapis.com/maps/api/streetview?size=1400x520&location=${encodeURIComponent(addr)}&fov=80&pitch=5&key=${_SV_KEY}`;
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
+    // Insert before gradient so it's behind the label
+    bannerEl.insertBefore(img, bannerEl.querySelector('.property-banner-grad'));
+  } catch(e) { /* keep initials on network error */ }
+}
+
 // ── RENDER UNPAID INVOICE ───────────────────────────────────
 function renderInvoice() {
   const lineItems = INV.line_items || [];
@@ -325,6 +385,8 @@ function renderInvoice() {
       </div>
       <div class="card-body notes-text">${esc(INV.notes)}</div>
     </div>` : '';
+
+  renderPropertyBanner();
 
   document.getElementById('main').innerHTML = `
     <!-- Hero -->
@@ -414,10 +476,17 @@ function renderInvoice() {
       </div>
     </div>
 
-    <!-- Pay Online Button -->
-    <button class="btn-pay" onclick="payOnline()" data-amount="${fmt(total)}">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Pay ${fmt(total)} &mdash; Secure Your Install Date
+    <!-- Pay by Bank (ACH) — primary, saves $34 vs card -->
+    <button class="btn-pay" onclick="payOnline(true)" data-amount="${fmt(total)}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Pay ${fmt(total)} by Bank Transfer
+      <span class="ach-badge">NO FEE</span>
+    </button>
+
+    <!-- Pay by Card — secondary, smaller -->
+    <button class="btn-pay-card" onclick="payOnline(false)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Pay by credit or debit card instead
     </button>
 
     <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6">
@@ -447,6 +516,8 @@ function renderPaidInvoice() {
   lineItems.forEach(li => {
     lineItemRows += `<tr><td class="price-item-name">${esc(li.name)}</td><td>${fmt(li.amount)}</td></tr>`;
   });
+
+  renderPropertyBanner();
 
   document.getElementById('main').innerHTML = `
     <!-- Paid Banner -->
@@ -562,17 +633,17 @@ const STRIPE_PK = 'pk_live_51TGXWMGRrrWRVQEdk3Huz3nEHfTx0Kr9nj2gLfpEVjaDsKL5dQbF
 let _stripe = null;
 let _embeddedCheckout = null;
 
-async function payOnline() {
+// prefer_ach: true = show bank transfer first (default), false = card only (tap-to-pay mode)
+async function payOnline(prefer_ach = true) {
   if (new URLSearchParams(window.location.search).get('preview') === '1') { alert('Preview mode — payment is disabled.'); return; }
 
-  const btn = document.querySelector('.btn-pay');
+  const btn = prefer_ach ? document.querySelector('.btn-pay') : document.querySelector('.btn-pay-card');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span style="opacity:.7">Opening checkout…</span>'; }
 
   try {
     const token = new URLSearchParams(window.location.search).get('token');
     if (!_stripe) _stripe = Stripe(STRIPE_PK);
 
-    // Show the modal first with a loading state
     document.getElementById('checkout-overlay').classList.add('active');
     document.getElementById('checkout-container').innerHTML = '<div style="text-align:center;padding:40px 0"><div class="spinner-large" style="margin:0 auto 12px"></div><div style="font-size:13px;color:var(--text3)">Loading secure checkout…</div></div>';
 
@@ -581,7 +652,7 @@ async function payOnline() {
         const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-checkout-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({ token, embedded: true }),
+          body: JSON.stringify({ token, embedded: true, prefer_ach }),
         });
         const data = await res.json();
         if (!res.ok || !data.clientSecret) throw new Error(data.error || 'Failed to create checkout session');
@@ -593,7 +664,14 @@ async function payOnline() {
     document.getElementById('checkout-container').innerHTML = '';
     checkout.mount('#checkout-container');
 
-    if (btn) { btn.disabled = false; btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pay Online &mdash; ${btn.dataset.amount || ''}`; }
+    if (btn) {
+      btn.disabled = false;
+      if (prefer_ach) {
+        btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Pay by Bank Transfer <span class="ach-badge">NO FEE</span>`;
+      } else {
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pay by credit or debit card instead`;
+      }
+    }
   } catch (err) {
     closeCheckout();
     if (btn) { btn.disabled = false; }
