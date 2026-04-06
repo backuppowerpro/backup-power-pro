@@ -23,5 +23,6 @@ Untitled_Artwork*
 !img/install-*.jpg
 !assets/product-images/*.jpg
 !ads/creative/*.jpg
+!generators/img/*.jpg
 IMG_*
 bpp-claude-code-context.md
