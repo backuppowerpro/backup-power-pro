@@ -66,6 +66,102 @@ Never delete old log entries. The log builds over time.
 
 ---
 
+## THE `.claude` FOLDER — HOW TO USE IT
+
+The `.claude` folder lives at `/Users/keygoodson/.claude/` on Key's Mac. It is the Claude Code system folder — it controls how Claude Code behaves, what skills it has, what tasks run automatically, and where conversation memory lives. **This folder is NOT part of the repo and is never pushed to GitHub.**
+
+### ⚠️ What NOT to touch in `.claude`
+- **`credentials.md`** — master API keys file. Read it, never modify it, never expose its contents in logs or output.
+- **`settings.json` / `settings.local.json`** — Claude Code configuration. Don't modify unless you know exactly what you're doing.
+- **`projects/`** — conversation history and auto-memory. Never delete anything here.
+- **`backups/`** — auto-generated config backups. Leave alone.
+- **`agents/`** — sub-agent definitions used by GSD and audit skills. Leave alone unless you're specifically updating an agent.
+
+---
+
+### `credentials.md` — The Keys to Everything
+**Path**: `/Users/keygoodson/.claude/credentials.md`
+**What's in it**: Every API token, secret key, and password used across the entire BPP system.
+
+| Service | What's stored |
+|---------|--------------|
+| Gemini API (Nano Banana) | API key for image generation |
+| Quo (OpenPhone) | API key, phone number IDs, user ID |
+| PostHog | Personal API key, project ID |
+| Found Bank | Accountant login email + password (read-only) |
+| Meta Marketing API | System User token (never-expiring) |
+| Google Maps / Places | API key (restricted to backuppowerpro.com) |
+| Google Street View | API key (CRM avatars) |
+| Stripe | Secret key (live mode) |
+
+**Rule**: Read this file at the start of any session that involves API calls. Never copy its contents into any file that gets committed to git.
+
+---
+
+### `skills/` — Specialized Capabilities
+**Path**: `/Users/keygoodson/.claude/skills/`
+Skills are callable modules that give Claude specific capabilities. Invoke them with `/skill-name` in the chat.
+
+**BPP-relevant skills:**
+
+| Skill folder | How to invoke | What it does |
+|-------------|--------------|-------------|
+| `nano-banana/` | `/nano-banana` | Image generation via Gemini API. **ALWAYS read `SKILL.md` and `bpp-brand.json` before generating any BPP image.** Strict rules on model name, resolution, aspect ratio, prompt format. |
+| `ads-meta/` | `/ads-meta` | Full 46-check Meta Ads audit. Run monthly or after major account changes. |
+| `ads/` | `/ads` | Multi-platform ad audit. |
+| `ads-plan/` | `/ads-plan` | Strategic ad planning. |
+
+**How skills work**: Each skill has a `SKILL.md` file with exact instructions. When invoked, Claude reads that file and follows the process. Never skip reading the SKILL.md — the instructions are specific and missing them produces bad output.
+
+**Key rule for nano-banana specifically**: The model name is `gemini-3.1-flash-image-preview`. Not 2.0, not 2.5. The imageConfig must include `imageSize: "4K"` and `aspectRatio`. Use `responseModalities: ["TEXT", "IMAGE"]`. Draft at 1K ($0.04), upscale to 4K ($0.15) when ready.
+
+---
+
+### `scheduled-tasks/` — Automated Jobs
+**Path**: `/Users/keygoodson/.claude/scheduled-tasks/`
+Each subfolder is an automated task with its own `SKILL.md` containing full instructions.
+
+| Task | Schedule | Purpose |
+|------|----------|---------|
+| `bpp-daily-morning-report/` | 8:30 AM daily | Pulls Meta Ads, PostHog, Supabase data → generates HTML briefing → pushes to GitHub → texts Key the link |
+| `bpp-gbp-post-writer/` | Tuesdays 7:00 AM | Writes next Google Business Profile post draft → saves to `.agents/gbp-posts/pending.md` → shown in morning brief for approval |
+| `bpp-sms-command-handler/` | On trigger | Handles SMS commands from Key |
+| `bpp-4k-image-upscale/` | One-time Apr 6 2 AM | Upscales 3 ad creative images from 1K to 4K |
+
+**How to update a scheduled task**: Edit its `SKILL.md` file. Changes take effect on the next run. Always read the current SKILL.md before modifying so you don't break existing logic.
+
+**How to create a new scheduled task**: Use `mcp__scheduled-tasks__create_scheduled_task` tool with a `taskId`, `prompt`, `description`, and either `cronExpression` (recurring) or `fireAt` (one-time).
+
+---
+
+### `projects/` — Conversation Memory
+**Path**: `/Users/keygoodson/.claude/projects/-Users-keygoodson-Desktop-CLAUDE/`
+
+| What | Where |
+|------|-------|
+| **Auto-memory** (persists across sessions) | `memory/MEMORY.md` — Claude Code reads this automatically every session. Update it when account state changes (new CPL numbers, new campaigns, resolved blockers, etc.) |
+| **Conversation history** | `.jsonl` files — one per conversation. Don't touch. |
+| **Tool outputs** | `tool-results/` — cached outputs from large bash commands. Don't touch. |
+
+**MEMORY.md vs BPP_BRAIN.md**:
+- `MEMORY.md` = Claude Code's internal session notes. Terse, technical, credential-adjacent. Auto-loaded by Claude Code.
+- `BPP_BRAIN.md` = The shareable master brain. Full context, human-readable, safe to share with other AIs. Lives in the repo.
+- When something important changes, update BOTH.
+
+---
+
+### How a new AI should orient itself using `.claude`
+
+1. **Read** `/Users/keygoodson/Desktop/CLAUDE/CLAUDE.md` — entry point with startup checklist
+2. **Read** `/Users/keygoodson/Desktop/CLAUDE/BPP_BRAIN.md` — full business context + change log
+3. **Read** `/Users/keygoodson/.claude/projects/-Users-keygoodson-Desktop-CLAUDE/memory/MEMORY.md` — current session state
+4. **Read** `/Users/keygoodson/.claude/credentials.md` — when you need to make API calls
+5. **Before generating images** → read `/Users/keygoodson/.claude/skills/nano-banana/SKILL.md` and `bpp-brand.json`
+6. **Before Meta Ads audit** → invoke `/ads-meta` skill
+7. **Before touching a scheduled task** → read its `SKILL.md` first
+
+---
+
 ## THE BUSINESS
 
 **Company**: Backup Power Pro (legal entity: Key Electric LLC)
