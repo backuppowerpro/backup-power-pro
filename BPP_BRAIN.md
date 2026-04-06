@@ -425,7 +425,7 @@ Ad copy for all 3 is in `.agents/ad-copy-apr2026.md`
 ## CHANGE LOG
 *Every AI agent must add an entry here when making meaningful changes. Newest entries at top.*
 
-- [2026-04-06] Built generator affiliate hub at /generators/index.html (not linked yet). 5 categories, 10 picks, BPP installation CTA on every gas/dual-fuel page. Research notes in .planning/research/. Apply for Westinghouse/ShareASale (5-8%, 30-day cookie) before launch — covers 3 of 5 categories. Amazon Associates (3%) as fallback for Honda/Champion/Generac.
+- [2026-04-06] Fully redesigned generator affiliate hub at /generators/index.html. 5 curated picks (2 budget + 3 premium), all with 240V L14-30/50A outlet. Product photos downloaded locally to generators/img/ (no CDN hotlinks). Simplified card design: image → name → 3 stats → expert quote → price/CTA. 2-question quiz routes to best pick. BPP CTA block after each section. Firman removed (company website parked/defunct). NOT linked from main site — awaiting Key's approval. Replace YOURTAG-20 placeholder when Amazon Associates approved.
 - [2026-04-06] Added ACH bank transfer as primary payment option in invoice.html + create-checkout-session edge function. Saves ~$34/job vs card. — Key requested
 - [2026-04-06] Routed quote form from Zapier to Supabase edge function (quo-ai-new-lead). CAPI now fires server-side on every lead. Zapier is silent fallback only. Fixed API version v19→v21.
 - [2026-04-06] Removed Anderson County from all ad set targeting. Key doesn't service that area.
