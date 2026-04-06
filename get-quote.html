@@ -600,9 +600,11 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 </div><!-- /card-wrap -->
 
 <script>
-// ─── ZAPIER WEBHOOK URL ───────────────────────────────────────────────
-const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
-const META_PIXEL_ID  = '1389648775800936';
+// ─── ENDPOINTS ───────────────────────────────────────────────────────
+const SUPABASE_EDGE_URL = 'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/quo-ai-new-lead';
+const SUPABASE_ANON_KEY = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
+const ZAPIER_FALLBACK   = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
+const META_PIXEL_ID     = '1389648775800936';
 // ─────────────────────────────────────────────────────────────────────
 
 // SHA-256 hash helper (for Meta Advanced Matching + CAPI)
@@ -900,21 +902,29 @@ async function submitForm() {
     }, { eventID: eventId });
   }
 
-  try {
-    await fetch(ZAPIER_WEBHOOK, {
+  // ── Fire pixel immediately — don't wait for server ───────────────────
+  firePixelLead();
+  if(typeof posthog!=='undefined') posthog.capture('lead_captured',{source:'get_quote_form',has_address:!!(ap.city),has_email:!!rawEmail,page:window.location.pathname});
+  showSuccess(firstName);
+
+  // ── Send to edge function (CAPI + CRM + AI text + follow-up queue) ───
+  // Fire-and-forget after showing success — lead already sees confirmation
+  fetch(SUPABASE_EDGE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(payload)
+  }).catch(() => {
+    // Fallback to Zapier if edge function fails
+    fetch(ZAPIER_FALLBACK, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    });
-    firePixelLead();
-    if(typeof posthog!=='undefined') posthog.capture('lead_captured',{source:'get_quote_form',has_address:!!(ap.city),has_email:!!rawEmail,page:window.location.pathname});
-    showSuccess(firstName);
-  } catch (err) {
-    firePixelLead();
-    if(typeof posthog!=='undefined') posthog.capture('lead_captured',{source:'get_quote_form',has_address:!!(ap.city),has_email:!!rawEmail,page:window.location.pathname});
-    showSuccess(firstName);
-  }
+    }).catch(() => {});
+  });
 }
 
 function showSuccess(firstName) {
