@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BPP Daily Briefing — Mon, Apr 6</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0b1f3b;
+      color: #e8edf5;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      padding: 16px;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    .header {
+      text-align: center;
+      padding: 24px 0 20px;
+      border-bottom: 1px solid #1e3a5f;
+      margin-bottom: 20px;
+    }
+    .header .logo { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #ffba00; margin-bottom: 6px; }
+    .header h1 { font-size: 22px; font-weight: 700; color: #e8edf5; margin-bottom: 4px; }
+    .header .subtitle { font-size: 13px; color: #8ca0bc; }
+    .week-bar-wrap { margin: 16px 0 0; }
+    .week-bar-label { font-size: 12px; color: #8ca0bc; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .week-bar { background: #1e3a5f; border-radius: 20px; height: 10px; overflow: hidden; }
+    .week-bar-fill { height: 100%; background: #ffba00; border-radius: 20px; transition: width 0.3s; }
+
+    .section { margin-bottom: 20px; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #ffba00;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #1e3a5f;
+    }
+
+    .card {
+      background: #132640;
+      border: 1px solid #1e3a5f;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .card-row:last-child { margin-bottom: 0; }
+    .card-label { font-size: 13px; color: #8ca0bc; }
+    .card-value { font-size: 15px; font-weight: 600; }
+
+    .green { color: #22c55e; }
+    .red { color: #ef4444; }
+    .yellow { color: #f59e0b; }
+    .gold { color: #ffba00; }
+    .muted { color: #8ca0bc; }
+
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .metric-box {
+      background: #132640;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .metric-box .val { font-size: 24px; font-weight: 700; margin-bottom: 2px; }
+    .metric-box .lbl { font-size: 11px; color: #8ca0bc; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table th { text-align: left; color: #8ca0bc; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid #1e3a5f; font-size: 11px; text-transform: uppercase; }
+    .table td { padding: 8px 8px; border-bottom: 1px solid #0f2038; }
+    .table tr:last-child td { border-bottom: none; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-green { background: #14532d; color: #22c55e; }
+    .badge-red { background: #450a0a; color: #ef4444; }
+    .badge-yellow { background: #451a03; color: #f59e0b; }
+    .badge-gold { background: #3d2900; color: #ffba00; }
+    .badge-blue { background: #0c2340; color: #60a5fa; }
+
+    .action-card {
+      background: #132640;
+      border: 1px solid #1e3a5f;
+      border-left: 3px solid;
+      border-radius: 0 12px 12px 0;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .action-card.urgent { border-left-color: #ef4444; }
+    .action-card.today { border-left-color: #f59e0b; }
+    .action-card.week { border-left-color: #22c55e; }
+    .action-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 10px; }
+    .action-title { font-weight: 600; font-size: 14px; flex: 1; }
+    .action-body { font-size: 13px; color: #8ca0bc; margin-bottom: 8px; }
+    .action-impact { font-size: 13px; color: #e8edf5; margin-bottom: 8px; }
+    .action-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+    .owner-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+    .owner-claude { background: #1e3a5f; color: #60a5fa; }
+    .owner-key { background: #3d2900; color: #ffba00; }
+
+    .sparkline { display: flex; align-items: flex-end; gap: 4px; height: 40px; margin-top: 8px; }
+    .spark-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+    .spark-bar { width: 100%; background: #1e3a5f; border-radius: 2px 2px 0 0; min-height: 2px; }
+    .spark-bar.has-leads { background: #22c55e; }
+    .spark-label { font-size: 9px; color: #8ca0bc; }
+
+    .creative-img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
+    .approve-btn {
+      display: block;
+      width: 100%;
+      background: #ffba00;
+      color: #0b1f3b;
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      margin-top: 10px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .creative-card {
+      background: #0f2038;
+      border: 1px solid #1e3a5f;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .creative-card .name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .creative-card .angle { font-size: 12px; color: #8ca0bc; margin-bottom: 8px; }
+    .creative-card .headline { font-size: 13px; color: #e8edf5; font-style: italic; margin-bottom: 8px; border-left: 2px solid #ffba00; padding-left: 10px; }
+
+    .progress-bar { background: #1e3a5f; border-radius: 20px; height: 12px; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; border-radius: 20px; }
+
+    .gbp-post-body {
+      background: #0f2038;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      margin: 10px 0;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 20px 0 10px;
+      font-size: 12px;
+      color: #8ca0bc;
+      border-top: 1px solid #1e3a5f;
+      margin-top: 20px;
+    }
+
+    .pipeline-empty {
+      text-align: center;
+      padding: 20px;
+      color: #8ca0bc;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">Backup Power Pro</div>
+    <h1>Daily Briefing</h1>
+    <div class="subtitle">Monday, April 6, 2026 &mdash; Generated 8:37 AM</div>
+    <div class="week-bar-wrap">
+      <div class="week-bar-label">
+        <span>Week goal: 5 installs</span>
+        <span class="yellow">0 / 5 booked</span>
+      </div>
+      <div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- META ADS SNAPSHOT -->
+  <div class="section">
+    <div class="section-title">Meta Ads — Yesterday (Apr 5)</div>
+
+    <div class="metric-grid" style="margin-bottom:12px;">
+      <div class="metric-box">
+        <div class="val green">$58.26</div>
+        <div class="lbl">Spend</div>
+      </div>
+      <div class="metric-box">
+        <div class="val green">$14.57</div>
+        <div class="lbl">CPL (checkout)</div>
+      </div>
+      <div class="metric-box">
+        <div class="val green">4.24%</div>
+        <div class="lbl">CTR</div>
+      </div>
+      <div class="metric-box">
+        <div class="val green">1.22</div>
+        <div class="lbl">Frequency</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-row">
+        <span class="card-label">Impressions</span>
+        <span class="card-value">4,578</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Reach</span>
+        <span class="card-value">3,765 unique people</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Link clicks</span>
+        <span class="card-value">194 <span class="muted" style="font-size:13px">($0.30/click)</span></span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Landing page views</span>
+        <span class="card-value">66</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Quote form starts (checkout)</span>
+        <span class="card-value green">4 <span class="badge badge-green">6% CVR on LPVs</span></span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Frequency status</span>
+        <span class="card-value green">1.22 &mdash; Healthy ✓</span>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:16px;">Campaigns — Lifetime (since Mar 7)</div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Campaign</th>
+            <th>Spend</th>
+            <th>Leads</th>
+            <th>CPL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Advantage+ Prospecting<br><span style="font-size:11px;color:#8ca0bc;">$40/day budget</span></td>
+            <td>$1,501</td>
+            <td>68</td>
+            <td><span class="yellow">$22.08</span></td>
+          </tr>
+          <tr>
+            <td>Manual Targeting Legacy</td>
+            <td>$241</td>
+            <td>17</td>
+            <td><span class="green">$14.17</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div style="font-size:12px;color:#8ca0bc;margin-bottom:6px;">Week-to-date (Apr 6, early)</div>
+      <div class="card-row">
+        <span class="card-label">Spend so far today</span>
+        <span class="card-value muted">$0 &mdash; day just started</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">CPL target</span>
+        <span class="card-value green">&lt; $30 &mdash; both campaigns on target ✓</span>
+      </div>
+    </div>
+
+    <div class="card" style="background:#0f2038; border-color:#1e3a5f;">
+      <div style="font-size:13px;color:#f59e0b;font-weight:600;margin-bottom:6px;">⚠️ Tracking Note</div>
+      <div style="font-size:13px;color:#8ca0bc;">Meta pixel is tracking "initiate_checkout" (quote form start) as the primary conversion — not completed form submissions. PostHog recorded 0 <code>lead_captured</code> events yesterday despite 66 landing page views. The form submission event may not be firing. This creates a blind spot: we can't see how many people actually completed the form vs just started it.</div>
+    </div>
+  </div>
+
+  <!-- WEBSITE -->
+  <div class="section">
+    <div class="section-title">Website — PostHog (Yesterday)</div>
+    <div class="metric-grid" style="margin-bottom:12px;">
+      <div class="metric-box">
+        <div class="val">66</div>
+        <div class="lbl">Pageviews</div>
+      </div>
+      <div class="metric-box">
+        <div class="val">60</div>
+        <div class="lbl">Unique Visitors</div>
+      </div>
+      <div class="metric-box">
+        <div class="val red">0</div>
+        <div class="lbl">lead_captured events</div>
+      </div>
+      <div class="metric-box">
+        <div class="val yellow">91%</div>
+        <div class="lbl">Meta Traffic</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;color:#8ca0bc;margin-bottom:10px;">7-Day Pageview Trend</div>
+      <div class="sparkline">
+        <!-- Mar 30: 55 PV, 0 leads -->
+        <div class="spark-bar-wrap">
+          <div class="spark-bar" style="height:24px;"></div>
+          <div class="spark-label">M30</div>
+        </div>
+        <!-- Mar 31: 70 PV, 0 leads -->
+        <div class="spark-bar-wrap">
+          <div class="spark-bar" style="height:30px;"></div>
+          <div class="spark-label">Tu31</div>
+        </div>
+        <!-- Apr 1: 86 PV, 1 lead -->
+        <div class="spark-bar-wrap">
+          <div class="spark-bar has-leads" style="height:37px;"></div>
+          <div class="spark-label">W1</div>
+        </div>
+        <!-- Apr 2: 56 PV, 3 leads -->
+        <div class="spark-bar-wrap">
+          <div class="spark-bar has-leads" style="height:24px;"></div>
+          <div class="spark-label">Th2</div>
+        </div>
+        <!-- Apr 3: 82 PV, 4 leads -->
+        <div class="spark-bar-wrap">
+          <div class="spark-bar has-leads" style="height:35px;"></div>
+          <div class="spark-label">F3</div>
+        </div>
+        <!-- Apr 4: 81 PV, 4 leads -->
+        <div class="spark-bar-wrap">
+          <div class="spark-bar has-leads" style="height:35px;"></div>
+          <div class="spark-label">Sa4</div>
+        </div>
+        <!-- Apr 5: 93 PV, 1 lead -->
+        <div class="spark-bar-wrap">
+          <div class="spark-bar has-leads" style="height:40px;"></div>
+          <div class="spark-label">Su5</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#8ca0bc;margin-top:8px;">
+        Green bars = days with <code>lead_captured</code> events. 7-day total: <span class="green">13 leads</span> tracked in PostHog vs <span class="yellow">17+ in Meta pixel</span> — slight discrepancy suggests some tracking gaps.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-row">
+        <span class="card-label">Site CVR (leads/UV yesterday)</span>
+        <span class="card-value red">0% &mdash; <span style="font-size:12px">event not firing</span></span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Meta sends 91% of all traffic</span>
+        <span class="card-value yellow">High dependency</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">7-day avg pageviews/day</span>
+        <span class="card-value green">75 PV/day</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADS PIPELINE -->
+  <div class="section">
+    <div class="section-title">Leads Pipeline — CRM</div>
+    <div class="card">
+      <div class="pipeline-empty">
+        <div style="font-size:32px;margin-bottom:8px;">📭</div>
+        <div style="font-weight:600;margin-bottom:4px;">No contacts in CRM yet</div>
+        <div style="font-size:13px;color:#8ca0bc;">The Supabase contacts table is empty. Leads from the quote form aren't flowing into the CRM automatically. This is a critical gap — there's no pipeline to manage.</div>
+      </div>
+    </div>
+    <div class="card" style="background:#0f2038;border-color:#1e3a5f;">
+      <div style="font-size:13px;color:#ef4444;font-weight:600;margin-bottom:6px;">🔴 Pipeline Blind Spot</div>
+      <div style="font-size:13px;color:#8ca0bc;">Meta pixel shows 85 total leads (17 legacy + 68 Advantage+) since March 7 — but 0 of them appear in the CRM. Either the Zapier webhook to Supabase isn't routing them there, or the quote form isn't submitting to the Supabase endpoint. You have leads who filled out the form that you may have followed up with outside the system.</div>
+    </div>
+  </div>
+
+  <!-- QUO INBOX -->
+  <div class="section">
+    <div class="section-title">Quo Inbox</div>
+    <div class="card">
+      <div style="font-size:13px;color:#8ca0bc;">
+        Quo API returned an error on this pull — the messages list endpoint requires participant filtering that wasn't available in this request format. <span class="yellow">Check your Quo inbox manually</span> for any leads who may have replied overnight or this morning.
+      </div>
+      <div style="margin-top:10px;font-size:13px;">
+        <strong>Rule:</strong> Any inbound text from a lead gets a reply within 15 minutes. Speed to respond is the single biggest factor in close rate.
+      </div>
+    </div>
+  </div>
+
+  <!-- KEY MUST DO -->
+  <div class="section">
+    <div class="section-title">Key Must Do — UI Actions</div>
+
+    <div class="action-card urgent" style="border-left-color:#ef4444;">
+      <div class="action-header">
+        <div class="action-title">🔴 Approve new ad creatives — 5 images pending</div>
+        <span class="owner-badge owner-key">KEY</span>
+      </div>
+      <div class="action-body">You have 5 creative images sitting in <code>/ads/creative/</code> that have never been uploaded to Ads Manager. These are fresh angles (before/after, inlet box, price anchor, storm neighborhood) that haven't been tested against your current winners.</div>
+      <div class="action-impact">Currently both campaigns are running on the same creative pool since March. New images break frequency fatigue before it becomes a problem and give the algorithm fresh material to work with. Adding 2-3 new ads to Advantage+ could drop CPL from $22 to closer to $14 (like the Legacy campaign).</div>
+      <div class="action-meta">
+        <span class="badge badge-yellow">TODAY</span>
+        <span class="badge badge-blue">5 min in Ads Manager</span>
+      </div>
+    </div>
+
+    <div class="action-card today" style="border-left-color:#f59e0b;">
+      <div class="action-header">
+        <div class="action-title">🟡 Post the GBP update (pre-written, ready to go)</div>
+        <span class="owner-badge owner-key">KEY</span>
+      </div>
+      <div class="action-body">The Google Business Profile post from April 5 is still awaiting your approval. It's pre-written: storm season urgency + inlet box value prop. Reply "post gbp" and I'll open Google Business Manager for you.</div>
+      <div class="action-impact">GBP posts signal to Google that your profile is active, which helps Local Pack ranking. Storm season framing is timely — 6-8 weeks out is exactly the right message window.</div>
+      <div class="action-meta">
+        <span class="badge badge-yellow">TODAY</span>
+        <span class="badge badge-blue">&lt; 5 min</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW CREATIVE PENDING APPROVAL -->
+  <div class="section">
+    <div class="section-title">New Creative — Awaiting Your Approval</div>
+    <div class="card" style="background:#0f1e35;border-color:#2a4a6b;">
+      <div style="font-size:13px;color:#f59e0b;font-weight:600;margin-bottom:10px;">5 images ready — 1K draft versions (4K upscales needed before final upload)</div>
+
+      <div class="creative-card">
+        <div class="name">1. Before/After — Cord vs. Inlet</div>
+        <div class="angle">Trust / Transformation angle</div>
+        <div class="headline">"From extension cords through a cracked door... to one clean connection outside."</div>
+        <img src="https://backuppowerpro.com/ads/creative/before-after-cord-1k.jpg" class="creative-img" alt="Before After Cord" onerror="this.style.display='none'">
+        <div class="badge badge-yellow" style="margin-bottom:8px;">AWAITING YOUR APPROVAL</div>
+      </div>
+
+      <div class="creative-card">
+        <div class="name">2. Inlet Box on Brick</div>
+        <div class="angle">Product quality / Clean install angle</div>
+        <div class="headline">"One cord outside. Your essentials inside. Done in a day."</div>
+        <img src="https://backuppowerpro.com/ads/creative/inlet-box-brick-1k.jpg" class="creative-img" alt="Inlet Box Brick" onerror="this.style.display='none'">
+        <div class="badge badge-yellow" style="margin-bottom:8px;">AWAITING YOUR APPROVAL</div>
+      </div>
+
+      <div class="creative-card">
+        <div class="name">3. Price Anchor</div>
+        <div class="angle">Price comparison / Value angle</div>
+        <div class="headline">"Standby generators cost $15,000. This costs $1,197."</div>
+        <img src="https://backuppowerpro.com/ads/creative/price-anchor-1k.jpg" class="creative-img" alt="Price Anchor" onerror="this.style.display='none'">
+        <div class="badge badge-yellow" style="margin-bottom:8px;">AWAITING YOUR APPROVAL</div>
+      </div>
+
+      <div class="creative-card">
+        <div class="name">4. Price Anchor V2</div>
+        <div class="angle">Price comparison — alternate layout</div>
+        <div class="headline">"$15,000 standby vs $1,197 inlet. Same result. Different price."</div>
+        <img src="https://backuppowerpro.com/ads/creative/price-anchor-v2-1k.jpg" class="creative-img" alt="Price Anchor V2" onerror="this.style.display='none'">
+        <div class="badge badge-yellow" style="margin-bottom:8px;">AWAITING YOUR APPROVAL</div>
+      </div>
+
+      <div class="creative-card">
+        <div class="name">5. Storm Neighborhood</div>
+        <div class="angle">Fear / Urgency — storm season</div>
+        <div class="headline">"Your neighbors are about to find out who's prepared."</div>
+        <img src="https://backuppowerpro.com/ads/creative/storm-neighborhood-1k.jpg" class="creative-img" alt="Storm Neighborhood" onerror="this.style.display='none'">
+        <div class="badge badge-yellow" style="margin-bottom:8px;">AWAITING YOUR APPROVAL</div>
+      </div>
+
+      <div style="text-align:center;padding:12px 0 4px;font-size:13px;color:#8ca0bc;">Reply <strong style="color:#ffba00">"post [ad name]"</strong> to approve and I'll handle the upload instructions</div>
+    </div>
+  </div>
+
+  <!-- GBP POST PENDING -->
+  <div class="section">
+    <div class="section-title">Google Business Profile — Post Ready</div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Pre-Season Urgency Post (generated Apr 5, still pending)</div>
+      <div class="gbp-post-body">Storm season is 6–8 weeks out. Now is the time to get your generator actually connected.
+
+Most homeowners in Greenville, Spartanburg, and Pickens County already own a portable generator. Most of them will wait until the first major outage to realize they're still running extension cords through a cracked door.
+
+We install a generator inlet box that connects directly to your breaker panel — one cord outside, your essentials back on like normal. Fully permitted and inspected by the county. Done in one day.
+
+$1,197 all in. Slots are limited to 5 per week.
+
+Get your price in 30 seconds at backuppowerpro.com</div>
+      <div style="font-size:13px;color:#8ca0bc;margin-top:8px;">📷 Suggested photo: <code>storm-neighborhood-1k.jpg</code> or any job site photo<br>🔗 CTA: "Learn more" → backuppowerpro.com</div>
+      <div style="margin-top:12px;font-size:13px;font-weight:600;color:#ffba00;">Reply "post gbp" and I'll open Google Business Manager so you can paste and publish in under 2 minutes.</div>
+    </div>
+  </div>
+
+  <!-- CLAUDE'S ACTION LIST -->
+  <div class="section">
+    <div class="section-title">Today's Action List — Claude Owned</div>
+
+    <div class="action-card urgent">
+      <div class="action-header">
+        <div class="action-title">Audit PostHog lead_captured event — why is it returning 0?</div>
+        <span class="owner-badge owner-claude">CLAUDE</span>
+      </div>
+      <div class="action-body">Yesterday: 66 landing page views, 4 quote form starts in Meta, but 0 <code>lead_captured</code> events in PostHog. Either the event name is wrong, the PostHog snippet isn't firing on form submit, or the form page isn't instrumented.</div>
+      <div class="action-impact">Without this event, we can't see actual form completion rate or site CVR. This is the primary KPI for the whole funnel. Fixing it = knowing if your landing page is converting at 2% or 8%.</div>
+      <div class="action-meta">
+        <span class="badge badge-red">NOW</span>
+        <span class="badge badge-blue">~30 min</span>
+      </div>
+    </div>
+
+    <div class="action-card urgent">
+      <div class="action-header">
+        <div class="action-title">Investigate CRM pipeline gap — 85 Meta leads, 0 in Supabase</div>
+        <span class="owner-badge owner-claude">CLAUDE</span>
+      </div>
+      <div class="action-body">Meta reports 85 leads since March 7. Supabase contacts table has 0 records. The quote form either isn't routing to Supabase, or the Zapier webhook is dropping contacts somewhere between form submission and CRM insert.</div>
+      <div class="action-impact">Every untracked lead is a missed follow-up. At 35% close rate and $1,347 avg ticket, 85 leads should have produced ~30 bookings (~$40,000 in revenue). Even recovering 10% of this gap is worth $4,000.</div>
+      <div class="action-meta">
+        <span class="badge badge-red">NOW</span>
+        <span class="badge badge-blue">~45 min</span>
+      </div>
+    </div>
+
+    <div class="action-card today">
+      <div class="action-header">
+        <div class="action-title">Generate 4K upscales for the 5 pending ad creatives</div>
+        <span class="owner-badge owner-claude">CLAUDE</span>
+      </div>
+      <div class="action-body">All 5 creative images exist as 1K drafts. Before Key uploads them to Ads Manager, they should be upscaled to 4K for best performance. Need Key's approval first (above), then I'll generate the 4K versions.</div>
+      <div class="action-impact">Meta recommends high-resolution creative. 4K images get better delivery and can be repurposed across placements (Feed, Reels, Stories) without quality loss.</div>
+      <div class="action-meta">
+        <span class="badge badge-yellow">TODAY</span>
+        <span class="badge badge-blue">After Key approval</span>
+      </div>
+    </div>
+
+    <div class="action-card today">
+      <div class="action-header">
+        <div class="action-title">Monitor Meta spend pacing throughout the day</div>
+        <span class="owner-badge owner-claude">CLAUDE</span>
+      </div>
+      <div class="action-body">Advantage+ is set to $40/day. Yesterday's $58.26 is slightly over, which suggests the algorithm may have been catching up from a previous under-delivery day. I'll check midday pacing and flag if either campaign drops below 70% utilization.</div>
+      <div class="action-impact">Under-delivery means you're leaving leads on the table. Over-delivery > 120% of budget could indicate bid instability. Both need fast response.</div>
+      <div class="action-meta">
+        <span class="badge badge-yellow">TODAY</span>
+        <span class="badge badge-blue">Ongoing</span>
+      </div>
+    </div>
+
+    <div class="action-card week">
+      <div class="action-header">
+        <div class="action-title">Build Supabase → quote form integration (end-to-end lead capture)</div>
+        <span class="owner-badge owner-claude">CLAUDE</span>
+      </div>
+      <div class="action-body">The root cause of the CRM gap is that leads from the quote form aren't auto-inserting into the contacts table. This needs an edge function or webhook route that takes form submissions and creates contact records with status "New Lead".</div>
+      <div class="action-impact">Once this is working, every new lead is tracked, timestamped, and visible in the pipeline. Follow-up cadence can be automated. This is the foundation for the whole sales process.</div>
+      <div class="action-meta">
+        <span class="badge badge-green">THIS WEEK</span>
+        <span class="badge badge-blue">~2 hrs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEK GOAL TRACKER -->
+  <div class="section">
+    <div class="section-title">Week Goal Tracker</div>
+    <div class="card">
+      <div class="card-row">
+        <span class="card-label">Installs booked this week</span>
+        <span class="card-value red">0 of 5</span>
+      </div>
+      <div class="progress-bar" style="margin-bottom:12px;">
+        <div class="progress-fill" style="width:0%;background:#ef4444;"></div>
+      </div>
+      <div class="card-row">
+        <span class="card-label">7-day PostHog leads</span>
+        <span class="card-value yellow">13 leads tracked</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Meta lifetime leads (since Mar 7)</span>
+        <span class="card-value">85 total</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Leads needed at 35% close rate</span>
+        <span class="card-value muted">14 leads = 5 installs</span>
+      </div>
+      <div style="margin-top:10px;padding:10px;background:#0f2038;border-radius:8px;font-size:13px;color:#8ca0bc;">
+        At current Meta pacing (~4 quote form starts/day), you're generating enough lead volume — the question is whether those starts are converting to completions and whether you're following up fast enough. The CRM gap (above) is the critical unknown.
+      </div>
+    </div>
+  </div>
+
+  <!-- FINANCIAL PULSE -->
+  <div class="section">
+    <div class="section-title">Financial Pulse — $150k Goal Tracker</div>
+    <div class="card">
+      <div class="card-row">
+        <span class="card-label">April revenue (confirmed)</span>
+        <span class="card-value yellow">$171 <span style="font-size:12px;color:#8ca0bc;">— 6 days in</span></span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">April extrapolated (if pace holds)</span>
+        <span class="card-value red">~$855/month</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Target to be on track</span>
+        <span class="card-value muted">$16,940/month net</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">$150k goal progress</span>
+        <span class="card-value red">$0 accumulated</span>
+      </div>
+
+      <div class="progress-bar" style="margin: 12px 0;">
+        <div class="progress-fill" style="width:0%;background:#ef4444;"></div>
+      </div>
+
+      <div style="padding:12px;background:#0f2038;border-radius:8px;font-size:13px;color:#8ca0bc;margin-top:6px;">
+        <strong style="color:#ef4444;">Honest read:</strong> April is starting slow. $171 in 6 days likely reflects no completed installs yet — possibly a deposit or a carry-over from March. The Meta leads are flowing, but there's a gap between "lead generated" and "install booked and paid." The CRM blind spot is hiding what's actually happening in the pipeline.<br><br>
+        <strong style="color:#e8edf5;">What needs to happen this week:</strong> Book 5 installs (at $1,347 avg = $6,735 revenue). After materials ~$400/install and ad spend ~$290 (7 days × $41/day), that's roughly $4,440 net before the $3k draw — meaning Month-to-month profit of ~$1,440 before the draw. Still not accumulating toward $150k yet, but 5 installs/week consistently would get there.<br><br>
+        At 5 installs/week × 4.3 weeks × $1,347 avg = <strong style="color:#ffba00;">$29,000/month revenue</strong> → ~$16,940 net after everything. You'd pay off the house in 9 months from that run rate. <strong>The bottleneck is bookings, not leads.</strong>
+      </div>
+    </div>
+
+    <div class="card" style="background:#0f2038;">
+      <div style="font-size:11px;color:#8ca0bc;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Monthly Baseline (Historical)</div>
+      <div class="card-row">
+        <span class="card-label">January net (after draw)</span>
+        <span class="card-value red">-$3,529</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">February net (after draw)</span>
+        <span class="card-value red">-$1,605</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">March net (after draw, normalized)</span>
+        <span class="card-value red">-$3,135 <span style="font-size:11px;color:#8ca0bc;">(-$5,125 w/ van repair)</span></span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Gap to fill this month</span>
+        <span class="card-value yellow">$3k draw + expenses + any savings</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>Generated by Claude — Mon Apr 6, 2026 at 8:37 AM</div>
+    <div style="margin-top:4px;">Reply to execute any action &bull; Report refreshes tomorrow morning</div>
+    <div style="margin-top:8px;color:#1e3a5f;">backuppowerpro.com &bull; Greenville &bull; Spartanburg &bull; Pickens</div>
+  </div>
+
+</div>
+</body>
+</html>
