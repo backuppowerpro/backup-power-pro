@@ -602,8 +602,7 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 <script>
 // ─── ENDPOINTS ───────────────────────────────────────────────────────
 const SUPABASE_EDGE_URL = 'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/quo-ai-new-lead';
-const SUPABASE_ANON_KEY = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
-const ZAPIER_FALLBACK   = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NzExMDYsImV4cCI6MjA5MDI0NzEwNn0.srmz3lm08HW7MRGIRA8zAgglTcSrjBwxJ7LDYsEwveE';
 const META_PIXEL_ID     = '1389648775800936';
 // ─────────────────────────────────────────────────────────────────────
 
@@ -916,15 +915,7 @@ async function submitForm() {
       'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
     },
     body: JSON.stringify(payload)
-  }).catch(() => {
-    // Fallback to Zapier if edge function fails
-    fetch(ZAPIER_FALLBACK, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(() => {});
-  });
+  }).catch(() => {});
 }
 
 function showSuccess(firstName) {
