@@ -4,11 +4,17 @@ You are working on **Backup Power Pro**, a generator inlet installation business
 
 ## Start here — every session
 
-1. **Read `BPP_BRAIN.md`** — this is the master context file. It contains the full business, tech stack, what's running, what's pending, and the change log. Read it before doing anything.
+1. **Read `BPP_BRAIN.md`** — master context file. Full business, tech stack, what's running, what's pending, and the change log.
 
-2. **Read `/Users/keygoodson/.claude/projects/-Users-keygoodson-Desktop-CLAUDE/memory/MEMORY.md`** — Claude Code's auto-memory. Contains current account state, credentials locations, and session-specific notes.
+2. **Read `/Users/keygoodson/.claude/projects/-Users-keygoodson-Desktop-CLAUDE/memory/MEMORY.md`** — Claude Code auto-memory. Current account state, credentials locations, session notes.
 
-3. **Check the change log** at the bottom of `BPP_BRAIN.md` to understand what other AI sessions have done since you last worked on this.
+3. **Check `PENDING UPDATES` section at the top of `BPP_BRAIN.md`**. If it contains anything other than `*— No pending updates —*`:
+   - Read each update entry carefully
+   - Apply the changes to the relevant sections of `BPP_BRAIN.md`
+   - Add entries to the Change Log for each one
+   - Replace the pending content with `*— No pending updates —*`
+   - `git add BPP_BRAIN.md && git commit -m "Apply pending brain updates from other AI sessions" && git push`
+   - Tell Key what you processed so he knows it landed
 
 ## Before you finish any session
 
@@ -16,7 +22,7 @@ You are working on **Backup Power Pro**, a generator inlet installation business
 ```
 - [YYYY-MM-DD] What you changed — why you changed it
 ```
-And update the relevant section of `BPP_BRAIN.md` to reflect the new state.
+Update the relevant section too. Then `git add BPP_BRAIN.md && git commit -m "Update brain" && git push`.
 
 This is how the brain grows. Every AI builds on what the last one figured out.
 

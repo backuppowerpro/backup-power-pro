@@ -5,6 +5,23 @@
 
 ---
 
+## 📥 PENDING UPDATES — Process on next Claude Code session
+
+*This section is the handoff zone. Claude.ai and other AI tools drop updates here. Claude Code reads this on startup, applies all changes to the relevant sections, commits, pushes, then clears this section.*
+
+**How Claude.ai should format updates:**
+```
+### UPDATE — [date] — [brief title]
+**Changed**: [what was built, decided, or changed]
+**Section to update**: [which section of BPP_BRAIN.md needs updating]
+**New content**: [exact text to add or replace]
+**Files affected**: [any files that were discussed or changed]
+```
+
+*— No pending updates —*
+
+---
+
 ## ⚠️ CRITICAL RULES FOR ANY AI READING THIS
 
 ### DO NOT TOUCH — EVER
