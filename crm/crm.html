@@ -941,6 +941,141 @@ html.dark .kanban-card-amount{color:var(--gold)}
 /* ── PREMIUM NAV TWEAK ──────────────────────────────────── */
 .nav{box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 4px 14px rgba(10,20,40,.18)}
 
+/* ══════════════════════════════════════════════════════════
+   PASS 12 — AI TASKMASTER (morning briefing + chat)
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Morning briefing card ────────────────────────────────── */
+.tm-briefing{position:relative;background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);margin:0 0 var(--sp-md);overflow:hidden;animation:tmSlideDown .38s var(--ease);border:1px solid var(--border)}
+.tm-briefing::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold) 0%,#ffd166 50%,var(--gold) 100%)}
+html.dark .tm-briefing{background:var(--card);border-color:#3d3830}
+@keyframes tmSlideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.tm-brief-head{display:flex;align-items:flex-start;gap:var(--sp-3);padding:18px 22px 12px;border-bottom:1px solid var(--border)}
+html.dark .tm-brief-head{border-bottom-color:#3d3830}
+.tm-brief-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;box-shadow:0 4px 10px rgba(255,186,0,.22)}
+.tm-brief-title{flex:1;min-width:0}
+.tm-brief-greeting{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:var(--text);letter-spacing:-.015em;line-height:1.25}
+.tm-brief-sub{font-size:12.5px;color:var(--text2);margin-top:2px;font-weight:500}
+.tm-brief-count{background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;padding:4px 11px;border-radius:var(--r-pill);letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
+html.dark .tm-brief-count{background:var(--gold);color:#1e1b17}
+.tm-brief-count.zero{background:#d1fae5;color:var(--green2)}
+html.dark .tm-brief-count.zero{background:rgba(16,185,129,.18);color:#4ade80}
+.tm-brief-close{background:transparent;border:none;color:var(--text3);cursor:pointer;padding:4px;border-radius:var(--r-xs);font-size:18px;line-height:1;transition:color var(--t-fast),background var(--t-fast);flex-shrink:0}
+.tm-brief-close:hover{color:var(--text);background:var(--bg)}
+html.dark .tm-brief-close:hover{background:#1e1b17}
+.tm-brief-body{padding:8px 18px 14px;max-height:420px;overflow-y:auto}
+.tm-brief-section{margin-top:12px}
+.tm-brief-section:first-child{margin-top:6px}
+.tm-brief-sec-head{display:flex;align-items:center;gap:8px;font-family:'Outfit',sans-serif;font-weight:800;font-size:11.5px;color:var(--text);text-transform:uppercase;letter-spacing:.06em;padding:4px 4px;margin-bottom:4px}
+.tm-brief-sec-head.urgent{color:var(--red)}
+.tm-brief-sec-head.today{color:#3b82f6}
+.tm-brief-sec-head.msg{color:#8b5cf6}
+.tm-brief-sec-head.mat{color:#f97316}
+.tm-brief-sec-head.good{color:var(--green2)}
+.tm-brief-sec-count{background:var(--bg);color:var(--text2);font-size:10px;font-weight:800;padding:2px 7px;border-radius:var(--r-pill);margin-left:auto}
+html.dark .tm-brief-sec-count{background:#1e1b17}
+.tm-brief-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;transition:background var(--t-fast),transform var(--t-fast);margin-bottom:2px}
+.tm-brief-item:hover{background:var(--bg);transform:translateX(2px)}
+html.dark .tm-brief-item:hover{background:#1e1b17}
+.tm-brief-item-dot{width:6px;height:6px;border-radius:50%;margin-top:7px;flex-shrink:0;background:var(--text3)}
+.tm-brief-item.urgent .tm-brief-item-dot{background:var(--red)}
+.tm-brief-item.today .tm-brief-item-dot{background:#3b82f6}
+.tm-brief-item.msg .tm-brief-item-dot{background:#8b5cf6}
+.tm-brief-item.mat .tm-brief-item-dot{background:#f97316}
+.tm-brief-item.good .tm-brief-item-dot{background:var(--green)}
+.tm-brief-item-body{flex:1;min-width:0}
+.tm-brief-item-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:13.5px;color:var(--text);line-height:1.3;letter-spacing:-.005em}
+.tm-brief-item-meta{font-size:12px;color:var(--text2);margin-top:2px;line-height:1.35}
+.tm-brief-foot{display:flex;align-items:center;gap:8px;padding:10px 18px 14px;border-top:1px solid var(--border);background:var(--bg)}
+html.dark .tm-brief-foot{background:#1e1b17;border-top-color:#3d3830}
+.tm-brief-btn{background:var(--navy);color:#fff;border:none;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:9px 16px;border-radius:var(--r-sm);cursor:pointer;letter-spacing:.005em;transition:background var(--t-fast),transform var(--t-fast);box-shadow:var(--shadow-sm)}
+.tm-brief-btn:hover{background:#132a4f;transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.tm-brief-btn:active{transform:translateY(0)}
+.tm-brief-btn.secondary{background:transparent;color:var(--text2);box-shadow:none}
+.tm-brief-btn.secondary:hover{color:var(--text);background:var(--card);box-shadow:var(--shadow-sm)}
+html.dark .tm-brief-btn.secondary:hover{background:var(--card)}
+.tm-brief-footer-note{font-size:11.5px;color:var(--text3);margin-left:auto;font-style:italic}
+.tm-brief-empty{padding:24px 12px;text-align:center;color:var(--text3);font-size:13px}
+.tm-brief-empty-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px}
+
+/* ── Chat launcher button (floating, bottom-right above FAB) ── */
+.tm-launcher{position:fixed;bottom:96px;right:24px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);border:none;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(255,186,0,.32),0 2px 6px rgba(10,20,40,.15);z-index:59;display:none;align-items:center;justify-content:center;transition:transform var(--t-base),box-shadow var(--t-base);font-family:'Outfit',sans-serif;line-height:1}
+.tm-launcher.visible{display:flex;animation:tmLauncherPop .34s var(--ease)}
+@keyframes tmLauncherPop{from{opacity:0;transform:scale(.6) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.tm-launcher:hover{transform:scale(1.06);box-shadow:0 10px 28px rgba(255,186,0,.42),0 4px 10px rgba(10,20,40,.2)}
+.tm-launcher:active{transform:scale(.94)}
+.tm-launcher:focus-visible{outline:3px solid rgba(255,186,0,.4);outline-offset:3px}
+.tm-launcher-badge{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid var(--bg);font-family:'Outfit',sans-serif;box-shadow:0 2px 4px rgba(0,0,0,.15)}
+html.dark .tm-launcher-badge{border-color:var(--bg)}
+
+/* ── Chat panel (slide-in from right, above everything) ── */
+.tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:310;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.tm-panel-overlay.open{opacity:1;pointer-events:auto}
+.tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--card);display:flex;flex-direction:column;box-shadow:-14px 0 48px rgba(10,20,40,.22);transform:translateX(100%);transition:transform .3s var(--ease);z-index:320;border-left:1px solid var(--border)}
+html.dark .tm-panel{box-shadow:-14px 0 48px rgba(0,0,0,.55);border-left-color:#3d3830}
+.tm-panel.open{transform:translateX(0)}
+.tm-panel-head{display:flex;align-items:center;gap:12px;padding:16px 20px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0}
+html.dark .tm-panel-head{border-bottom-color:#3d3830}
+.tm-panel-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 2px 6px rgba(255,186,0,.28)}
+.tm-panel-title{flex:1;min-width:0}
+.tm-panel-title h3{font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:var(--text);margin:0;letter-spacing:-.01em;line-height:1.2}
+.tm-panel-title p{font-size:11.5px;color:var(--text3);margin:1px 0 0;font-weight:500}
+.tm-panel-title p .tm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;vertical-align:1px;box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:tmPulseDot 2.1s ease-in-out infinite}
+@keyframes tmPulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}50%{box-shadow:0 0 0 5px rgba(16,185,129,0)}}
+.tm-panel-close{background:var(--bg);border:none;color:var(--text2);width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;transition:background var(--t-fast),color var(--t-fast);flex-shrink:0}
+html.dark .tm-panel-close{background:#1e1b17}
+.tm-panel-close:hover{background:var(--border);color:var(--text)}
+html.dark .tm-panel-close:hover{background:#3d3830;color:var(--text)}
+.tm-panel-body{flex:1;overflow-y:auto;padding:18px 18px 8px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+html.dark .tm-panel-body{background:#1e1b17}
+.tm-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 18px;flex:1}
+.tm-empty-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;box-shadow:0 8px 22px rgba(255,186,0,.3)}
+.tm-empty-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--text);margin-bottom:3px;letter-spacing:-.005em}
+.tm-empty-sub{font-size:12.5px;color:var(--text2);margin-bottom:18px;max-width:280px;line-height:1.45}
+.tm-chips{display:flex;flex-direction:column;gap:7px;width:100%;max-width:320px}
+.tm-chip{padding:10px 14px;border:1px solid var(--border);border-radius:var(--r-pill);background:var(--card);color:var(--text);font-family:'Inter',sans-serif;font-weight:500;font-size:12.5px;cursor:pointer;transition:border-color var(--t-fast),background var(--t-fast),transform var(--t-fast),box-shadow var(--t-fast);text-align:left;box-shadow:var(--shadow-sm)}
+.tm-chip:hover{border-color:var(--gold);background:var(--card);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+html.dark .tm-chip{background:var(--card);border-color:#3d3830}
+html.dark .tm-chip:hover{border-color:var(--gold)}
+.tm-msg{display:flex;gap:9px;max-width:100%;animation:tmMsgIn .28s var(--ease)}
+@keyframes tmMsgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.tm-msg.user{flex-direction:row-reverse}
+.tm-msg-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-family:'Outfit',sans-serif}
+.tm-msg.asst .tm-msg-av{background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy)}
+.tm-msg.user .tm-msg-av{background:var(--navy);color:#fff}
+html.dark .tm-msg.user .tm-msg-av{background:#3d3830;color:var(--text)}
+.tm-bubble{max-width:calc(100% - 40px);padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;font-family:'Inter',sans-serif;word-wrap:break-word;white-space:pre-wrap}
+.tm-msg.asst .tm-bubble{background:var(--card);color:var(--text);border-top-left-radius:4px;border:1px solid var(--border)}
+html.dark .tm-msg.asst .tm-bubble{background:var(--card);border-color:#3d3830}
+.tm-msg.user .tm-bubble{background:var(--navy);color:#fff;border-top-right-radius:4px}
+html.dark .tm-msg.user .tm-bubble{background:#3d3830;color:var(--text)}
+.tm-bubble a.tm-link{color:var(--gold);font-weight:700;text-decoration:none;border-bottom:1px dashed rgba(255,186,0,.4);cursor:pointer}
+.tm-bubble a.tm-link:hover{border-bottom-style:solid}
+.tm-msg.user .tm-bubble a.tm-link{color:#ffd166}
+.tm-typing{display:inline-flex;gap:4px;align-items:center;padding:2px 0}
+.tm-typing span{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:tmTyping 1.2s ease-in-out infinite}
+.tm-typing span:nth-child(2){animation-delay:.15s}
+.tm-typing span:nth-child(3){animation-delay:.3s}
+@keyframes tmTyping{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.tm-panel-foot{padding:12px 14px 14px;border-top:1px solid var(--border);background:var(--card);display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
+html.dark .tm-panel-foot{border-top-color:#3d3830}
+.tm-compose{flex:1;resize:none;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:var(--r-md);padding:10px 14px;font-family:'Inter',sans-serif;font-size:13.5px;outline:none;max-height:110px;min-height:40px;line-height:1.4;transition:border-color var(--t-fast),box-shadow var(--t-fast)}
+.tm-compose:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,186,0,.18)}
+html.dark .tm-compose{background:#1e1b17;border-color:#3d3830}
+.tm-send{background:var(--navy);color:#fff;border:none;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast);box-shadow:var(--shadow-sm)}
+.tm-send:hover:not(:disabled){background:#132a4f;transform:translateY(-1px)}
+.tm-send:active:not(:disabled){transform:translateY(0)}
+.tm-send:disabled{background:var(--border);cursor:not-allowed;box-shadow:none}
+html.dark .tm-send{background:var(--gold);color:#1e1b17}
+html.dark .tm-send:hover:not(:disabled){background:#ffd166}
+html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
+.tm-hint{font-size:10.5px;color:var(--text3);margin:6px 18px 0;text-align:center}
+
+@media (max-width: 520px){
+  .tm-panel{max-width:100%}
+  .tm-launcher{bottom:86px;right:18px;width:48px;height:48px;font-size:20px}
+  .tm-brief-body{max-height:360px}
+}
 </style>
 </head>
 <body>
@@ -994,6 +1129,32 @@ html.dark .kanban-card-amount{color:var(--gold)}
 <!-- ── FAB (+ Lead) ──────────────────────────────────────── -->
 <button class="fab" id="fab-add-lead" style="display:none" onclick="openContactModal(null)" title="Add Lead">+</button>
 
+<!-- ── PASS 12: AI Taskmaster launcher (sits above the add-lead FAB) ── -->
+<button class="tm-launcher" id="tm-launcher" onclick="tmOpenPanel()" title="Ask your assistant" aria-label="Open assistant">
+  <span style="display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1">&#x2728;</span>
+  <span class="tm-launcher-badge" id="tm-launcher-badge" style="display:none">0</span>
+</button>
+
+<!-- ── PASS 12: AI Taskmaster chat panel ────────────────── -->
+<div class="tm-panel-overlay" id="tm-panel-overlay" onclick="tmClosePanel()"></div>
+<aside class="tm-panel" id="tm-panel" role="dialog" aria-label="Taskmaster chat" aria-hidden="true">
+  <div class="tm-panel-head">
+    <div class="tm-panel-avatar">&#x2728;</div>
+    <div class="tm-panel-title">
+      <h3>Ask your assistant</h3>
+      <p><span class="tm-dot"></span>Knows your pipeline</p>
+    </div>
+    <button class="tm-panel-close" onclick="tmClosePanel()" aria-label="Close" title="Close">&times;</button>
+  </div>
+  <div class="tm-panel-body" id="tm-panel-body"></div>
+  <div class="tm-panel-foot">
+    <textarea class="tm-compose" id="tm-compose" rows="1" placeholder="Ask about your leads, permits, or materials..." onkeydown="tmComposeKey(event)" oninput="tmAutosize(this)" maxlength="1000"></textarea>
+    <button class="tm-send" id="tm-send" onclick="tmSubmitCompose()" title="Send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</aside>
+
 <!-- ── TAB BAR ───────────────────────────────────────────── -->
 <div class="tab-bar" id="main-tab-bar" style="display:none">
   <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">Leads</button>
@@ -1027,6 +1188,9 @@ html.dark .kanban-card-amount{color:var(--gold)}
 <!-- ── MAIN ──────────────────────────────────────────────── -->
 <div id="tab-leads" style="display:none">
 <main class="main" id="main-content">
+
+  <!-- ── PASS 12: AI Taskmaster briefing (mounted by generateBriefing) ─ -->
+  <div id="tm-briefing-mount"></div>
 
   <!-- ── CONTACTS SECTION ─────────────────────────────── -->
   <span id="leads-count" style="display:none"></span>
@@ -1744,6 +1908,8 @@ function showApp() {
   document.getElementById('main-tab-bar').style.display = 'flex';
   document.getElementById('tab-leads').style.display = 'block';
   document.getElementById('fab-add-lead').style.display = 'flex';
+  const tml = document.getElementById('tm-launcher');
+  if (tml) tml.classList.add('visible');
   init();
 }
 
@@ -8829,6 +8995,1243 @@ setTimeout(() => {
       return result;
     };
   }
+})();
+
+// ══════════════════════════════════════════════════════════
+// PASS 12 — AI TASKMASTER
+// Morning briefing + chat assistant with rule-based fallback
+// + optional Claude API path via Supabase edge function.
+//
+// Everything lives in one IIFE so we don't leak symbols into the global
+// namespace. The only globals we expose are window.tmOpenPanel,
+// window.tmClosePanel, window.tmSubmitCompose, window.tmComposeKey,
+// window.tmAutosize, and window.generateBriefing — so the HTML handlers
+// bound above keep working.
+// ══════════════════════════════════════════════════════════
+(function() {
+  'use strict';
+
+  // ── CONFIG ───────────────────────────────────────────────
+  var TM_ENDPOINT = SUPABASE_URL + '/functions/v1/ai-taskmaster';
+  var TM_ANON_JWT = (typeof SEND_SMS_ANON_JWT !== 'undefined' && SEND_SMS_ANON_JWT)
+    ? SEND_SMS_ANON_JWT
+    : '';
+  var TM_CHAT_KEY = 'bpp_taskmaster_chat';
+  var TM_DISMISS_PREFIX = 'bpp_briefing_seen_';
+  var TM_REMIND_KEY = 'bpp_briefing_remind_until';
+  var TM_DAY_MS = 86400000;
+  var MAX_BRIEF_ITEMS_PER_SECTION = 5;
+
+  // ── UTILITIES ────────────────────────────────────────────
+  function _todayKey() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function _timeOfDayGreeting() {
+    var h = new Date().getHours();
+    if (h < 5)  return 'Good evening';
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+  function _timeOfDayLabel() {
+    var h = new Date().getHours();
+    if (h < 5)  return 'late-night';
+    if (h < 12) return 'morning';
+    if (h < 17) return 'afternoon';
+    return 'evening';
+  }
+  function _weekdayLabel() {
+    var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    return days[new Date().getDay()];
+  }
+  function _daysSinceTs(ts) {
+    if (!ts) return null;
+    var t = (typeof ts === 'number') ? ts : new Date(ts).getTime();
+    if (isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / TM_DAY_MS));
+  }
+  // Returns days since the contact was last "touched" in any way we can detect:
+  // 1) the CRM's localStorage touch map (authoritative for user actions)
+  // 2) the last_touched_at DB column if present
+  // 3) last outbound message (if allMessages contains one for this contact)
+  // 4) created_at (floor)
+  function _daysSinceLastTouch(c) {
+    if (!c) return null;
+    var touchMap = (typeof _loadTouched === 'function') ? _loadTouched() : null;
+    if (touchMap && touchMap[c.id]) {
+      var d = _daysSinceTs(touchMap[c.id]);
+      if (d !== null) return d;
+    }
+    if (c.last_touched_at) {
+      var d2 = _daysSinceTs(c.last_touched_at);
+      if (d2 !== null) return d2;
+    }
+    return _daysSinceTs(c.created_at);
+  }
+  function _daysSinceISO(iso) {
+    if (!iso) return null;
+    try {
+      var d = new Date(iso + 'T00:00:00');
+      if (isNaN(d.getTime())) return null;
+      return Math.max(0, Math.floor((Date.now() - d.getTime()) / TM_DAY_MS));
+    } catch(e) { return null; }
+  }
+  function _firstName(name) {
+    if (!name) return '';
+    return String(name).split(/\s+/)[0] || '';
+  }
+  function _shortName(c) {
+    if (!c) return '';
+    var n = (typeof dispName === 'function' ? dispName(c.name, 'New Lead') : (c.name || 'New Lead')).trim();
+    return n || 'New Lead';
+  }
+  function _escHtml(s) {
+    return (typeof esc === 'function') ? esc(s || '') : String(s || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function _stageLabel(id) {
+    var s = (typeof PERMIT_STAGES !== 'undefined' ? PERMIT_STAGES : []).find(function(x){ return x.id === (id || 1); });
+    return s ? s.label : 'Stage ' + (id || 1);
+  }
+  function _getJurName(c) {
+    if (!c || !c.jurisdiction_id) return '';
+    var list = (typeof allJurisdictions !== 'undefined' && Array.isArray(allJurisdictions)) ? allJurisdictions : [];
+    var j = list.find(function(x) { return x.id === c.jurisdiction_id; });
+    return j ? j.name : '';
+  }
+  function _getJurFlowLocal(jurName) {
+    var flows = {
+      'Greenville County':   { submit_to_pay: 5, pay_to_print: 3, print_to_inspect: 2 },
+      'City of Greenville':  { submit_to_pay: 4, pay_to_print: 3, print_to_inspect: 2 },
+      'City of Greer':       { submit_to_pay: 4, pay_to_print: 3, print_to_inspect: 2 },
+      'City of Mauldin':     { submit_to_pay: 5, pay_to_print: 3, print_to_inspect: 2 },
+      'City of Simpsonville':{ submit_to_pay: 4, pay_to_print: 3, print_to_inspect: 2 },
+      'Fountain Inn':        { submit_to_pay: 5, pay_to_print: 3, print_to_inspect: 2 },
+      'Spartanburg County':  { submit_to_pay: 7, pay_to_print: 3, print_to_inspect: 3 },
+      'Pickens County':      { submit_to_pay: 5, pay_to_print: 3, print_to_inspect: 2 },
+    };
+    return flows[jurName] || { submit_to_pay: 5, pay_to_print: 3, print_to_inspect: 2 };
+  }
+
+  // ── STRUCTURED-DATA READERS ───────────────────────────────
+  // The permit + materials data is stored as __pm_<key>:<value> lines inside
+  // install_notes (Pass 9). We mirror the reader here so generateBriefing does
+  // not depend on the private helpers defined inside the pass9 IIFE.
+  function _pmField(c, key) {
+    if (!c || !c.install_notes) return '';
+    var re = new RegExp('^__pm_' + key + ':\\s*(.*)$', 'm');
+    var m = c.install_notes.match(re);
+    return m ? (m[1] || '').trim() : '';
+  }
+  function _getPermitData(c) {
+    // Prefer the public accessor if the pass9 block exposed it
+    if (typeof window.getPermitData === 'function') {
+      try { return window.getPermitData(c) || {}; } catch(e) {}
+    }
+    return {
+      number:           _pmField(c, 'pnum'),
+      submitted_at:     _pmField(c, 'psub'),
+      ready_to_pay_at:  _pmField(c, 'prtp'),
+      paid_at:          _pmField(c, 'ppaid'),
+      ready_to_print_at:_pmField(c, 'prtpr'),
+      printed_at:       _pmField(c, 'pprn'),
+      inspect_sched_at: _pmField(c, 'pisch'),
+      inspect_passed_at:_pmField(c, 'pipas'),
+      notes:            _pmField(c, 'pnotes'),
+    };
+  }
+  function _getMaterialsData(c) {
+    if (typeof window.getMaterialsData === 'function') {
+      try { return window.getMaterialsData(c) || {}; } catch(e) {}
+    }
+    return {
+      inlet:        _pmField(c, 'minlet'),
+      panel_brand:  _pmField(c, 'mpb'),
+      panel_model:  _pmField(c, 'mpm'),
+      interlock:    _pmField(c, 'mintlk'),
+      ordered_at:   _pmField(c, 'mord'),
+      received_at:  _pmField(c, 'mrcv'),
+    };
+  }
+  function _getScheduledISO(c) {
+    if (!c || !c.install_notes) return '';
+    var m = c.install_notes.match(/^Scheduled:\s*(\d{4}-\d{2}-\d{2})/m);
+    return m ? m[1] : '';
+  }
+
+  // ── LOCAL STORAGE HELPERS ────────────────────────────────
+  function _briefingSeenToday() {
+    try { return localStorage.getItem(TM_DISMISS_PREFIX + _todayKey()) === '1'; } catch(e) { return false; }
+  }
+  function _markBriefingSeen() {
+    try { localStorage.setItem(TM_DISMISS_PREFIX + _todayKey(), '1'); } catch(e) {}
+    // Clean up old keys so we don't accumulate forever
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(TM_DISMISS_PREFIX) === 0 && k !== TM_DISMISS_PREFIX + _todayKey()) {
+          localStorage.removeItem(k);
+        }
+      }
+    } catch(e) {}
+  }
+  function _remindLaterUntil() {
+    try {
+      var raw = localStorage.getItem(TM_REMIND_KEY);
+      return raw ? parseInt(raw, 10) : 0;
+    } catch(e) { return 0; }
+  }
+  function _setRemindLater(minutes) {
+    try { localStorage.setItem(TM_REMIND_KEY, String(Date.now() + minutes * 60000)); } catch(e) {}
+  }
+  function _clearRemindLater() {
+    try { localStorage.removeItem(TM_REMIND_KEY); } catch(e) {}
+  }
+  function _loadChatHistory() {
+    try {
+      var raw = localStorage.getItem(TM_CHAT_KEY);
+      if (!raw) return [];
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch(e) { return []; }
+  }
+  function _saveChatHistory(arr) {
+    try {
+      // Keep last 40 turns so the blob stays reasonable
+      var trimmed = arr.slice(-40);
+      localStorage.setItem(TM_CHAT_KEY, JSON.stringify(trimmed));
+    } catch(e) {}
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // BRIEFING ENGINE
+  // Pure function — takes in-memory allContacts and computes the report.
+  // Returns { counts, urgent, today, materials, messages, goodNews }.
+  // Each section is an array of { id, contactId, name, meta, note }.
+  // ══════════════════════════════════════════════════════════
+  function buildBriefing() {
+    var contacts = (typeof allContacts !== 'undefined' && Array.isArray(allContacts)) ? allContacts : [];
+    var active = contacts.filter(function(c) { return c && c.status !== 'Archived'; });
+    var urgent = [];
+    var today = [];
+    var materials = [];
+    var goodNews = [];
+
+    var now = Date.now();
+    var todayISO = _todayKey();
+
+    // ── URGENT ───────────────────────────────────────────────
+    // 1) Warm Lead (stage 1-2) for >1 days without first contact
+    active.forEach(function(c) {
+      var stage = c.stage || 1;
+      if (stage !== 1 && stage !== 2) return;
+      var age = _daysSinceTs(c.created_at);
+      if (age === null) return;
+      // No outbound contact yet? (prefer touch map / DB field / then age)
+      var touched = _daysSinceLastTouch(c);
+      if (age >= 1 && (touched === null || touched >= 1)) {
+        urgent.push({
+          id: 'cold-' + c.id,
+          contactId: c.id,
+          kind: 'cold_lead',
+          name: _shortName(c),
+          meta: _stageLabel(stage) + ' \u00b7 ' + age + 'd old',
+          note: 'No first contact yet. Text ' + _firstName(c.name || 'them') + ' to open the conversation.',
+          priority: 1 + Math.min(age, 10),
+        });
+      }
+    });
+
+    // 2) Quote Sent (stage 3) for >3 days without follow-up
+    active.forEach(function(c) {
+      if ((c.stage || 1) !== 3) return;
+      var age = _daysSinceLastTouch(c);
+      if (age !== null && age >= 3) {
+        urgent.push({
+          id: 'quote-' + c.id,
+          contactId: c.id,
+          kind: 'stale_quote',
+          name: _shortName(c),
+          meta: 'Quote Sent \u00b7 ' + age + 'd quiet',
+          note: 'Check-in: "' + _firstName(c.name) + ', still a good time to lock this in?"',
+          priority: 2 + Math.min(age, 10),
+        });
+      }
+    });
+
+    // 3) Permits stuck in submitted/ready_to_pay longer than jurisdiction window
+    active.forEach(function(c) {
+      var pd = _getPermitData(c);
+      if (!pd) return;
+      var jurName = _getJurName(c);
+      var flow = _getJurFlowLocal(jurName);
+
+      if (pd.submitted_at && !pd.ready_to_pay_at) {
+        var d = _daysSinceISO(pd.submitted_at);
+        if (d !== null && d > flow.submit_to_pay) {
+          urgent.push({
+            id: 'perm-sub-' + c.id,
+            contactId: c.id,
+            kind: 'permit_wait',
+            name: _shortName(c),
+            meta: (jurName || 'Permit') + ' \u00b7 submitted ' + d + 'd ago',
+            note: 'Likely ready to pay. Check portal or call the office.',
+            priority: 3 + Math.min(d, 10),
+          });
+        }
+      }
+      if (pd.ready_to_pay_at && !pd.paid_at) {
+        var d2 = _daysSinceISO(pd.ready_to_pay_at);
+        if (d2 !== null && d2 >= 2) {
+          urgent.push({
+            id: 'perm-pay-' + c.id,
+            contactId: c.id,
+            kind: 'permit_pay',
+            name: _shortName(c),
+            meta: 'Ready to pay \u00b7 ' + d2 + 'd',
+            note: 'Pay the fee and mark paid in the permit tracker.',
+            priority: 4 + Math.min(d2, 10),
+          });
+        }
+      }
+    });
+
+    // 4) Booked (stage 4) without materials ordered
+    active.forEach(function(c) {
+      var stage = c.stage || 1;
+      if (stage < 4 || stage > 5) return;
+      var md = _getMaterialsData(c);
+      if (!md) return;
+      if (md.inlet && md.interlock && !md.ordered_at) {
+        materials.push({
+          id: 'mat-' + c.id,
+          contactId: c.id,
+          kind: 'materials_pending',
+          name: _shortName(c),
+          meta: (md.inlet || '?') + ' + ' + (md.interlock || 'interlock TBD'),
+          note: 'Picked but not marked ordered. Put in the next bulk order.',
+          priority: 2,
+        });
+      } else if (!md.inlet || !md.interlock) {
+        materials.push({
+          id: 'mat-pick-' + c.id,
+          contactId: c.id,
+          kind: 'materials_select',
+          name: _shortName(c),
+          meta: _stageLabel(stage) + ' \u00b7 materials not picked',
+          note: 'Choose inlet ' + (md.inlet ? '' : 'and ') + (md.interlock ? '' : 'interlock ') + 'from the panel tab.',
+          priority: 1,
+        });
+      }
+    });
+
+    // 5) Stage 4+ without install date scheduled
+    active.forEach(function(c) {
+      var stage = c.stage || 1;
+      if (stage !== 4) return;
+      var sched = _getScheduledISO(c);
+      if (!sched) {
+        urgent.push({
+          id: 'noinstall-' + c.id,
+          contactId: c.id,
+          kind: 'no_install_date',
+          name: _shortName(c),
+          meta: 'Booked \u00b7 no install date',
+          note: 'Pick a date from the Schedule tab so materials and permit can line up.',
+          priority: 3,
+        });
+      }
+    });
+
+    // ── TODAY ────────────────────────────────────────────────
+    // a) Jobs scheduled for today
+    active.forEach(function(c) {
+      var sched = _getScheduledISO(c);
+      if (sched === todayISO) {
+        today.push({
+          id: 'inst-' + c.id,
+          contactId: c.id,
+          kind: 'install_today',
+          name: _shortName(c),
+          meta: 'Install today \u00b7 ' + _stageLabel(c.stage || 4),
+          note: 'Text "on my way" at departure. Bring inlet + interlock kit.',
+          priority: 1,
+        });
+      }
+    });
+    // b) Quotes sent exactly 2, 5, 7 days ago → gentle nudge days
+    active.forEach(function(c) {
+      if ((c.stage || 1) !== 3) return;
+      var d = _daysSinceLastTouch(c);
+      if (d === 2 || d === 5 || d === 7) {
+        today.push({
+          id: 'nudge-' + c.id,
+          contactId: c.id,
+          kind: 'quote_nudge',
+          name: _shortName(c),
+          meta: 'Quote \u00b7 ' + d + 'd ago',
+          note: 'Perfect nudge day. One line: "Any questions on the quote?"',
+          priority: d,
+        });
+      }
+    });
+    // c) Jobs with permit submitted that likely just hit "ready to pay" today
+    active.forEach(function(c) {
+      var pd = _getPermitData(c);
+      if (!pd || !pd.submitted_at || pd.ready_to_pay_at) return;
+      var jurName = _getJurName(c);
+      var flow = _getJurFlowLocal(jurName);
+      var d = _daysSinceISO(pd.submitted_at);
+      if (d !== null && d === flow.submit_to_pay) {
+        today.push({
+          id: 'perm-today-' + c.id,
+          contactId: c.id,
+          kind: 'permit_check',
+          name: _shortName(c),
+          meta: (jurName || 'Permit') + ' \u00b7 day ' + d,
+          note: 'Check the portal — this one is usually ready to pay around now.',
+          priority: 2,
+        });
+      }
+    });
+
+    // ── GOOD NEWS ────────────────────────────────────────────
+    // Paid invoices (last 24h), approved proposals (last 24h), new leads today
+    active.forEach(function(c) {
+      if (c._hasPaidInvoice) {
+        goodNews.push({
+          id: 'paid-' + c.id,
+          contactId: c.id,
+          kind: 'paid_invoice',
+          name: _shortName(c),
+          meta: 'Invoice paid',
+          note: 'Cash in. Send the Google review ask.',
+          priority: 1,
+        });
+      }
+    });
+    // Proposals
+    if (typeof proposalMap !== 'undefined' && proposalMap) {
+      Object.keys(proposalMap).forEach(function(cid) {
+        var props = proposalMap[cid] || [];
+        props.forEach(function(p) {
+          if (!p) return;
+          if (p.status === 'Approved' && p.signed_at) {
+            var d = _daysSinceTs(p.signed_at);
+            if (d !== null && d <= 1) {
+              var c = active.find(function(x) { return x.id === cid; });
+              if (c) {
+                goodNews.push({
+                  id: 'appr-' + p.id,
+                  contactId: cid,
+                  kind: 'proposal_approved',
+                  name: _shortName(c),
+                  meta: 'Proposal approved',
+                  note: 'They signed. Book the install and order materials.',
+                  priority: 1,
+                });
+              }
+            }
+          }
+        });
+      });
+    }
+    // New leads today
+    active.forEach(function(c) {
+      var age = _daysSinceTs(c.created_at);
+      if (age === 0) {
+        goodNews.push({
+          id: 'new-' + c.id,
+          contactId: c.id,
+          kind: 'new_lead',
+          name: _shortName(c),
+          meta: 'New lead today',
+          note: 'Respond within 15 min for best close rate.',
+          priority: 1,
+        });
+      }
+    });
+
+    // ── Sort by priority desc then name asc, cap each section
+    function sortCap(arr) {
+      arr.sort(function(a, b) {
+        if ((b.priority || 0) !== (a.priority || 0)) return (b.priority || 0) - (a.priority || 0);
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      return arr.slice(0, MAX_BRIEF_ITEMS_PER_SECTION);
+    }
+
+    urgent = sortCap(urgent);
+    today = sortCap(today);
+    materials = sortCap(materials);
+    goodNews = sortCap(goodNews);
+
+    // Raw counts before capping for the header
+    var total = urgent.length + today.length + materials.length;
+
+    return {
+      counts: {
+        total: total,
+        urgent: urgent.length,
+        today: today.length,
+        materials: materials.length,
+        goodNews: goodNews.length,
+        activeTotal: active.length,
+        newLeads24h: active.filter(function(c) { return _daysSinceTs(c.created_at) === 0; }).length,
+      },
+      urgent: urgent,
+      today: today,
+      materials: materials,
+      goodNews: goodNews,
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // BRIEFING RENDER
+  // ══════════════════════════════════════════════════════════
+  function renderBriefingCard(data) {
+    var mount = document.getElementById('tm-briefing-mount');
+    if (!mount) return;
+
+    var greeting = _timeOfDayGreeting() + ', Key.';
+    var weekday = _weekdayLabel();
+    var tod = _timeOfDayLabel();
+    var subtitle = "Here's your " + weekday + ' ' + tod + ' briefing.';
+    var total = data.counts.total;
+    var countHtml = total === 0
+      ? '<span class="tm-brief-count zero">All clear</span>'
+      : '<span class="tm-brief-count">' + total + ' to act on</span>';
+
+    function sectionHtml(kind, title, items) {
+      if (!items || !items.length) return '';
+      var classMap = { urgent:'urgent', today:'today', msg:'msg', mat:'mat', good:'good' };
+      var rows = items.map(function(it) {
+        var cid = it.contactId ? String(it.contactId).replace(/"/g, '&quot;') : '';
+        return '<div class="tm-brief-item ' + classMap[kind] + '" data-contact-id="' + cid + '" role="button" tabindex="0">'
+          + '<span class="tm-brief-item-dot"></span>'
+          + '<div class="tm-brief-item-body">'
+          + '<div class="tm-brief-item-name">' + _escHtml(it.name) + ' <span style="color:var(--text3);font-weight:500;font-size:11.5px;margin-left:4px">' + _escHtml(it.meta || '') + '</span></div>'
+          + '<div class="tm-brief-item-meta">' + _escHtml(it.note || '') + '</div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+      return '<div class="tm-brief-section">'
+        + '<div class="tm-brief-sec-head ' + classMap[kind] + '">' + title + '<span class="tm-brief-sec-count">' + items.length + '</span></div>'
+        + rows
+        + '</div>';
+    }
+
+    var bodyHtml = '';
+    bodyHtml += sectionHtml('urgent', '\uD83D\uDD25 Overdue', data.urgent);
+    bodyHtml += sectionHtml('today',  '\uD83D\uDCC5 Today',    data.today);
+    bodyHtml += sectionHtml('mat',    '\uD83D\uDCE6 Materials this week', data.materials);
+    bodyHtml += sectionHtml('good',   '\u2728 Good news',      data.goodNews);
+
+    if (!bodyHtml) {
+      bodyHtml = '<div class="tm-brief-empty">'
+        + '<div class="tm-brief-empty-title">You are caught up.</div>'
+        + 'No urgent items, no overdue follow-ups, and no materials pending. Take a minute to review the pipeline or send one surprise thank-you text.'
+        + '</div>';
+    }
+
+    var html = ''
+      + '<div class="tm-briefing" id="tm-briefing-card">'
+      +   '<div class="tm-brief-head">'
+      +     '<div class="tm-brief-avatar">\u2728</div>'
+      +     '<div class="tm-brief-title">'
+      +       '<div class="tm-brief-greeting">' + _escHtml(greeting) + '</div>'
+      +       '<div class="tm-brief-sub">' + _escHtml(subtitle) + '</div>'
+      +     '</div>'
+      +     countHtml
+      +     '<button class="tm-brief-close" onclick="tmDismissBriefing()" title="Dismiss" aria-label="Dismiss briefing">&times;</button>'
+      +   '</div>'
+      +   '<div class="tm-brief-body">' + bodyHtml + '</div>'
+      +   '<div class="tm-brief-foot">'
+      +     '<button class="tm-brief-btn" onclick="tmOpenPanel()">Ask the assistant</button>'
+      +     '<button class="tm-brief-btn secondary" onclick="tmRemindLater()">Remind me later</button>'
+      +     '<span class="tm-brief-footer-note">' + data.counts.activeTotal + ' active leads \u00b7 ' + data.counts.newLeads24h + ' new today</span>'
+      +   '</div>'
+      + '</div>';
+
+    mount.innerHTML = html;
+
+    // Wire up item clicks → open contact panel
+    var items = mount.querySelectorAll('.tm-brief-item[data-contact-id]');
+    Array.prototype.forEach.call(items, function(el) {
+      var cid = el.getAttribute('data-contact-id');
+      if (!cid) return;
+      el.addEventListener('click', function() {
+        if (typeof openPanel === 'function') openPanel(cid);
+      });
+      el.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (typeof openPanel === 'function') openPanel(cid);
+        }
+      });
+    });
+  }
+
+  function hideBriefingCard() {
+    var mount = document.getElementById('tm-briefing-mount');
+    if (mount) mount.innerHTML = '';
+  }
+
+  // Public generateBriefing — shows the card unless Key already dismissed today
+  // OR asked to be reminded later and the delay hasn't elapsed yet.
+  function generateBriefing(force) {
+    if (!force) {
+      if (_briefingSeenToday()) return;
+      var remindUntil = _remindLaterUntil();
+      if (remindUntil && Date.now() < remindUntil) return;
+    }
+    try {
+      var data = buildBriefing();
+      renderBriefingCard(data);
+    } catch(e) {
+      console.warn('Briefing generation failed:', e);
+    }
+  }
+  window.generateBriefing = generateBriefing;
+
+  // Handlers bound from the card HTML
+  window.tmDismissBriefing = function() {
+    _markBriefingSeen();
+    _clearRemindLater();
+    hideBriefingCard();
+  };
+  window.tmRemindLater = function() {
+    _setRemindLater(60); // 1h
+    hideBriefingCard();
+    if (typeof showToast === 'function') {
+      showToast('I\'ll bring the briefing back in an hour', 'info');
+    }
+  };
+
+  // ══════════════════════════════════════════════════════════
+  // CHAT PANEL
+  // ══════════════════════════════════════════════════════════
+  function _chatHistory() { return _loadChatHistory(); }
+  function _appendChatTurn(role, content) {
+    var arr = _chatHistory();
+    arr.push({ role: role, content: content, ts: Date.now() });
+    _saveChatHistory(arr);
+    return arr;
+  }
+  function _clearChatHistory() {
+    try { localStorage.removeItem(TM_CHAT_KEY); } catch(e) {}
+  }
+
+  function renderChatPanel() {
+    var body = document.getElementById('tm-panel-body');
+    if (!body) return;
+    var history = _chatHistory();
+
+    if (!history.length) {
+      body.innerHTML = ''
+        + '<div class="tm-empty">'
+        +   '<div class="tm-empty-avatar">\u2728</div>'
+        +   '<div class="tm-empty-title">Hey Key.</div>'
+        +   '<div class="tm-empty-sub">I know your pipeline, permits, and materials. Ask me what needs attention or start with one of these.</div>'
+        +   '<div class="tm-chips">'
+        +     '<button class="tm-chip" onclick="tmAskPreset(\'What needs my attention today?\')">What needs my attention today?</button>'
+        +     '<button class="tm-chip" onclick="tmAskPreset(\'Who hasn\\u2019t been contacted in 3+ days?\')">Who hasn\u2019t been contacted in 3+ days?</button>'
+        +     '<button class="tm-chip" onclick="tmAskPreset(\'What permits are likely ready to pay?\')">What permits are likely ready to pay?</button>'
+        +     '<button class="tm-chip" onclick="tmAskPreset(\'Which jobs need materials ordered?\')">Which jobs need materials ordered?</button>'
+        +     '<button class="tm-chip" onclick="tmAskPreset(\'What are my hot leads?\')">What are my hot leads?</button>'
+        +   '</div>'
+        + '</div>';
+      return;
+    }
+
+    var html = history.map(function(m) {
+      var cls = (m.role === 'user') ? 'user' : 'asst';
+      var av = (m.role === 'user') ? 'K' : '\u2728';
+      var content = _renderMessageContent(m.content || '');
+      return '<div class="tm-msg ' + cls + '">'
+        + '<div class="tm-msg-av">' + av + '</div>'
+        + '<div class="tm-bubble">' + content + '</div>'
+        + '</div>';
+    }).join('');
+    body.innerHTML = html;
+
+    // Wire contact links
+    var links = body.querySelectorAll('a.tm-link[data-contact-id]');
+    Array.prototype.forEach.call(links, function(a) {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        var cid = a.getAttribute('data-contact-id');
+        if (cid && typeof openPanel === 'function') openPanel(cid);
+      });
+    });
+
+    // Scroll to bottom
+    body.scrollTop = body.scrollHeight;
+  }
+
+  // Convert "(id:abc123)" markers into clickable contact links. When the
+  // preceding run of text ends with the contact's display name we wrap that
+  // name as the link instead of injecting a duplicate. This keeps lines like
+  // "Michelle Torres (id:abc)" rendering as a single clickable "Michelle Torres"
+  // token. Text is escaped first so this is XSS-safe.
+  function _renderMessageContent(text) {
+    var escText = _escHtml(text || '');
+    var contacts = (typeof allContacts !== 'undefined' && Array.isArray(allContacts)) ? allContacts : [];
+
+    escText = escText.replace(/(\S[^\n]*?)?\s?\(id:([a-zA-Z0-9\-]+)\)/g, function(full, prefix, cid) {
+      var c = contacts.find(function(x) { return x.id === cid; });
+      if (!c) return (prefix || '') + ' ';
+      var name = _shortName(c);
+      var escName = _escHtml(name);
+      var link = '<a class="tm-link" data-contact-id="' + cid + '" href="#">' + escName + '</a>';
+      if (!prefix) return link;
+      // Strip a trailing occurrence of the name off prefix (the model or the
+      // rule-based answer usually prints "Name (id:xxx)")
+      var idx = prefix.lastIndexOf(escName);
+      if (idx !== -1 && idx + escName.length === prefix.length) {
+        return prefix.slice(0, idx) + link;
+      }
+      // Also handle bullet-style "• Name" where prefix is "• Name"
+      return prefix + ' ' + link;
+    });
+
+    // Newlines → <br>
+    escText = escText.replace(/\n/g, '<br>');
+    return escText;
+  }
+
+  window.tmOpenPanel = function() {
+    var p = document.getElementById('tm-panel');
+    var o = document.getElementById('tm-panel-overlay');
+    if (!p || !o) return;
+    renderChatPanel();
+    p.classList.add('open');
+    o.classList.add('open');
+    p.setAttribute('aria-hidden', 'false');
+    setTimeout(function() {
+      var ta = document.getElementById('tm-compose');
+      if (ta) ta.focus();
+    }, 260);
+  };
+  window.tmClosePanel = function() {
+    var p = document.getElementById('tm-panel');
+    var o = document.getElementById('tm-panel-overlay');
+    if (p) { p.classList.remove('open'); p.setAttribute('aria-hidden', 'true'); }
+    if (o) o.classList.remove('open');
+  };
+  window.tmAskPreset = function(q) {
+    var ta = document.getElementById('tm-compose');
+    if (ta) ta.value = q;
+    window.tmSubmitCompose();
+  };
+  window.tmAutosize = function(ta) {
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(110, ta.scrollHeight) + 'px';
+  };
+  window.tmComposeKey = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      window.tmSubmitCompose();
+    }
+  };
+  window.tmSubmitCompose = function() {
+    var ta = document.getElementById('tm-compose');
+    if (!ta) return;
+    var q = (ta.value || '').trim();
+    if (!q) return;
+    ta.value = '';
+    window.tmAutosize(ta);
+    _askTaskmaster(q);
+  };
+
+  async function _askTaskmaster(question) {
+    // Append the user turn
+    _appendChatTurn('user', question);
+    renderChatPanel();
+    _showTyping();
+
+    // Build a local, rule-based answer FIRST — this is our fallback and the
+    // "context" we also hand to Claude so it does not have to re-derive
+    // everything from the raw contact list.
+    var localAnswer = _ruleBasedAnswer(question);
+    var contextSummary = _buildContextSummary();
+    var history = _chatHistory().slice(-6).map(function(m) {
+      return { role: m.role, content: m.content };
+    });
+    // Drop the latest user turn from history — we send it as the question
+    if (history.length && history[history.length - 1].role === 'user') history.pop();
+
+    var finalAnswer = localAnswer;
+    try {
+      if (TM_ENDPOINT && TM_ANON_JWT) {
+        var resp = await fetch(TM_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + TM_ANON_JWT,
+            'apikey': TM_ANON_JWT,
+          },
+          body: JSON.stringify({ question: question, contextSummary: contextSummary, history: history }),
+        });
+        if (resp.ok) {
+          var data = await resp.json().catch(function() { return null; });
+          if (data && !data.fallback && data.answer) {
+            finalAnswer = data.answer;
+          } else if (data && data.fallback && data.answer) {
+            // Prefer our rich local answer over the plain server fallback message
+            finalAnswer = localAnswer;
+          }
+        }
+      }
+    } catch(e) {
+      // Keep the rule-based answer
+    }
+
+    _hideTyping();
+    _appendChatTurn('assistant', finalAnswer);
+    renderChatPanel();
+  }
+
+  function _showTyping() {
+    var body = document.getElementById('tm-panel-body');
+    if (!body) return;
+    // Remove any existing typing indicator
+    var old = body.querySelector('.tm-msg.asst.tm-typing-row');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var wrap = document.createElement('div');
+    wrap.className = 'tm-msg asst tm-typing-row';
+    wrap.innerHTML = '<div class="tm-msg-av">\u2728</div><div class="tm-bubble"><div class="tm-typing"><span></span><span></span><span></span></div></div>';
+    body.appendChild(wrap);
+    body.scrollTop = body.scrollHeight;
+  }
+  function _hideTyping() {
+    var body = document.getElementById('tm-panel-body');
+    if (!body) return;
+    var old = body.querySelector('.tm-msg.asst.tm-typing-row');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // CONTEXT SUMMARY — compact text blob we hand to Claude
+  // ══════════════════════════════════════════════════════════
+  function _buildContextSummary() {
+    var b = buildBriefing();
+    var lines = [];
+    lines.push('Active leads: ' + b.counts.activeTotal);
+    lines.push('New today: ' + b.counts.newLeads24h);
+
+    // Stage counts
+    var contacts = (typeof allContacts !== 'undefined' && Array.isArray(allContacts)) ? allContacts : [];
+    var active = contacts.filter(function(c) { return c && c.status !== 'Archived'; });
+    var stageCounts = {};
+    active.forEach(function(c) {
+      var s = c.stage || 1;
+      stageCounts[s] = (stageCounts[s] || 0) + 1;
+    });
+    var stageLine = [];
+    for (var s = 1; s <= 9; s++) {
+      if (stageCounts[s]) stageLine.push(_stageLabel(s) + ': ' + stageCounts[s]);
+    }
+    if (stageLine.length) lines.push('Stages — ' + stageLine.join(' | '));
+
+    function fmtSection(name, items) {
+      if (!items || !items.length) return;
+      lines.push('');
+      lines.push(name + ' (' + items.length + '):');
+      items.slice(0, 8).forEach(function(it) {
+        lines.push('- ' + it.name + ' [id:' + it.contactId + '] — ' + it.meta + ' — ' + it.note);
+      });
+    }
+    fmtSection('URGENT', b.urgent);
+    fmtSection('TODAY', b.today);
+    fmtSection('MATERIALS', b.materials);
+    fmtSection('GOOD NEWS', b.goodNews);
+    return lines.join('\n').slice(0, 4000);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // RULE-BASED INTERPRETER (fallback when Claude API not configured)
+  // Handles the most common questions Key would ask and always produces
+  // something useful grounded in the current pipeline.
+  // ══════════════════════════════════════════════════════════
+  function _ruleBasedAnswer(q) {
+    var question = (q || '').toLowerCase().trim();
+    var contacts = (typeof allContacts !== 'undefined' && Array.isArray(allContacts)) ? allContacts : [];
+    var active = contacts.filter(function(c) { return c && c.status !== 'Archived'; });
+    var b = buildBriefing();
+
+    // Contact name lookup — do this first so "Sarah" routes to her even if
+    // her name contains one of the keyword words below.
+    var nameHit = _findContactByName(question);
+    if (nameHit) return _contactSummary(nameHit);
+
+    // Intent detection
+    var intent = _detectIntent(question);
+
+    if (intent === 'attention' || intent === 'today' || intent === 'urgent') {
+      return _formatAttentionAnswer(b);
+    }
+    if (intent === 'overdue' || intent === 'stale' || intent === 'cold') {
+      return _formatOverdueAnswer(b);
+    }
+    if (intent === 'permits') {
+      return _formatPermitsAnswer(active);
+    }
+    if (intent === 'materials') {
+      return _formatMaterialsAnswer(b, active);
+    }
+    if (intent === 'new_leads') {
+      return _formatNewLeadsAnswer(active);
+    }
+    if (intent === 'hot') {
+      return _formatHotLeadsAnswer(active, b);
+    }
+    if (intent === 'money') {
+      return _formatMoneyAnswer(active);
+    }
+    if (intent === 'messages') {
+      return _formatMessagesAnswer();
+    }
+    if (intent === 'help') {
+      return _formatHelpAnswer();
+    }
+
+    // Default — show a short briefing summary so we never leave Key hanging
+    return _formatAttentionAnswer(b);
+  }
+
+  function _detectIntent(q) {
+    // NOTE: open-ended ends (no trailing \b) so plurals like "permits",
+    // "messages", "materials", "follow-ups" all match.
+    if (/\b(help|what can you do|how do you work)/.test(q)) return 'help';
+    // Permits / materials / messages come BEFORE attention because
+    // "need materials ordered" would otherwise trip 'need' in the attention
+    // regex. Ordering matters.
+    if (/\b(permit|jurisdiction|portal|county|inspect)/.test(q)) return 'permits';
+    if (/\b(material|inlet|interlock|panel brand|breaker|order)/.test(q)) return 'materials';
+    if (/\b(message|text|sms|unread|inbox)/.test(q)) return 'messages';
+    if (/\b(hasn'?t been|haven'?t been|without reply|no response|no reply|overdue|late|stale|cold|quiet|contacted in|behind|follow[- ]?up)/.test(q)) return 'overdue';
+    if (/\b(hot|top priority|best lead|closest to closing|most likely to close|who'?s closest)/.test(q)) return 'hot';
+    if (/\b(money|revenue|goal|150|profit|income|financial|earnings|progress toward)/.test(q)) return 'money';
+    if (/\b(new lead|recent lead|today'?s lead|latest lead|new contact|fresh lead)/.test(q)) return 'new_leads';
+    if (/\b(today|attention|urgent|priority|priorities|what should i do|focus|need my)/.test(q)) return 'attention';
+    return null;
+  }
+
+  function _findContactByName(q) {
+    var contacts = (typeof allContacts !== 'undefined' && Array.isArray(allContacts)) ? allContacts : [];
+    var active = contacts.filter(function(c) { return c && c.status !== 'Archived' && c.name; });
+    // Try to find a contact whose name (or first/last word) appears in the query
+    // Require min 3 chars to avoid matching "a"/"an"/etc.
+    var best = null;
+    active.forEach(function(c) {
+      var parts = String(c.name).toLowerCase().split(/\s+/);
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].length >= 3 && q.indexOf(parts[i]) !== -1) {
+          if (!best || (parts[i].length > best._w)) {
+            best = c; best._w = parts[i].length;
+          }
+        }
+      }
+      // Full name substring match beats single-word
+      if (String(c.name).toLowerCase().length >= 5 && q.indexOf(String(c.name).toLowerCase()) !== -1) {
+        best = c; best._w = 99;
+      }
+    });
+    return best;
+  }
+
+  function _contactSummary(c) {
+    var lines = [];
+    var name = _shortName(c);
+    var stage = c.stage || 1;
+    var age = _daysSinceTs(c.created_at);
+    var touched = _daysSinceLastTouch(c);
+    lines.push(name + ' (id:' + c.id + ')');
+    lines.push('Stage: ' + _stageLabel(stage) + (age !== null ? ' \u00b7 ' + age + 'd in system' : ''));
+    if (touched !== null) lines.push('Last touch: ' + touched + 'd ago');
+    var jur = _getJurName(c);
+    if (jur) lines.push('Jurisdiction: ' + jur);
+    var md = _getMaterialsData(c);
+    if (md && (md.inlet || md.panel_brand)) {
+      var mat = [];
+      if (md.inlet) mat.push(md.inlet);
+      if (md.panel_brand) mat.push(md.panel_brand);
+      if (md.ordered_at) mat.push('ordered ' + md.ordered_at);
+      lines.push('Materials: ' + mat.join(' \u00b7 '));
+    }
+    var pd = _getPermitData(c);
+    if (pd) {
+      var ps = [];
+      if (pd.submitted_at) ps.push('submitted ' + pd.submitted_at);
+      if (pd.paid_at) ps.push('paid ' + pd.paid_at);
+      if (pd.inspect_sched_at) ps.push('inspection ' + pd.inspect_sched_at);
+      if (ps.length) lines.push('Permit: ' + ps.join(' \u00b7 '));
+    }
+    lines.push('');
+    lines.push('Tap the name to open the full card.');
+    return lines.join('\n');
+  }
+
+  function _formatAttentionAnswer(b) {
+    if (b.counts.total === 0 && !b.goodNews.length) {
+      return "You're caught up. No urgent items, no overdue follow-ups, no permits pending action. Take the win.";
+    }
+    var out = [];
+    if (b.urgent.length) {
+      out.push('\uD83D\uDD25 ' + b.urgent.length + ' overdue:');
+      b.urgent.slice(0, 4).forEach(function(it) {
+        out.push('• ' + it.name + ' (id:' + it.contactId + ') — ' + it.meta + '. ' + it.note);
+      });
+    }
+    if (b.today.length) {
+      if (out.length) out.push('');
+      out.push('\uD83D\uDCC5 Today:');
+      b.today.slice(0, 4).forEach(function(it) {
+        out.push('• ' + it.name + ' (id:' + it.contactId + ') — ' + it.meta);
+      });
+    }
+    if (b.materials.length) {
+      if (out.length) out.push('');
+      out.push('\uD83D\uDCE6 Materials:');
+      b.materials.slice(0, 3).forEach(function(it) {
+        out.push('• ' + it.name + ' (id:' + it.contactId + ') — ' + it.meta);
+      });
+    }
+    if (b.goodNews.length) {
+      if (out.length) out.push('');
+      out.push('\u2728 Good news: ' + b.goodNews.length + ' (paid invoices, approvals, fresh leads)');
+    }
+    out.push('');
+    out.push('Tap any name to open the card.');
+    return out.join('\n');
+  }
+
+  function _formatOverdueAnswer(b) {
+    if (!b.urgent.length) {
+      return 'Nothing overdue right now. Warm leads are all fresh and quotes are within the normal window.';
+    }
+    var out = ['\uD83D\uDD25 ' + b.urgent.length + ' overdue items:'];
+    b.urgent.forEach(function(it) {
+      out.push('• ' + it.name + ' (id:' + it.contactId + ') — ' + it.meta + '. ' + it.note);
+    });
+    out.push('');
+    out.push('Start with the top of the list — they have been quiet the longest.');
+    return out.join('\n');
+  }
+
+  function _formatPermitsAnswer(active) {
+    var out = [];
+    var submitted = [];
+    var readyPay = [];
+    var paidNotPrint = [];
+    var printed = [];
+    var inspect = [];
+    active.forEach(function(c) {
+      var pd = _getPermitData(c);
+      if (!pd) return;
+      var jur = _getJurName(c) || '?';
+      if (pd.submitted_at && !pd.ready_to_pay_at) {
+        var d = _daysSinceISO(pd.submitted_at);
+        submitted.push({ c:c, d:d, jur:jur });
+      } else if (pd.ready_to_pay_at && !pd.paid_at) {
+        readyPay.push({ c:c, jur:jur, d:_daysSinceISO(pd.ready_to_pay_at) });
+      } else if (pd.paid_at && !pd.printed_at) {
+        paidNotPrint.push({ c:c, jur:jur, d:_daysSinceISO(pd.paid_at) });
+      } else if (pd.printed_at && !pd.inspect_sched_at) {
+        printed.push({ c:c, jur:jur });
+      } else if (pd.inspect_sched_at && !pd.inspect_passed_at) {
+        inspect.push({ c:c, jur:jur, d:pd.inspect_sched_at });
+      }
+    });
+
+    if (submitted.length) {
+      out.push('Submitted, waiting on jurisdiction (' + submitted.length + '):');
+      submitted.slice(0, 5).forEach(function(x) {
+        var flow = _getJurFlowLocal(x.jur);
+        var tag = x.d !== null ? x.d + 'd in review' : '';
+        var warn = x.d !== null && x.d > flow.submit_to_pay ? ' \u2014 likely ready to pay' : '';
+        out.push('• ' + _shortName(x.c) + ' (id:' + x.c.id + ') — ' + x.jur + ' \u00b7 ' + tag + warn);
+      });
+    }
+    if (readyPay.length) {
+      if (out.length) out.push('');
+      out.push('Ready to pay (' + readyPay.length + '):');
+      readyPay.slice(0, 5).forEach(function(x) {
+        out.push('• ' + _shortName(x.c) + ' (id:' + x.c.id + ') — ' + x.jur + (x.d !== null ? ' \u00b7 ' + x.d + 'd waiting' : ''));
+      });
+    }
+    if (paidNotPrint.length) {
+      if (out.length) out.push('');
+      out.push('Paid, waiting for print (' + paidNotPrint.length + '):');
+      paidNotPrint.slice(0, 4).forEach(function(x) {
+        out.push('• ' + _shortName(x.c) + ' (id:' + x.c.id + ') — ' + x.jur);
+      });
+    }
+    if (printed.length) {
+      if (out.length) out.push('');
+      out.push('Printed, need inspection booked (' + printed.length + '):');
+      printed.slice(0, 4).forEach(function(x) {
+        out.push('• ' + _shortName(x.c) + ' (id:' + x.c.id + ') — ' + x.jur);
+      });
+    }
+    if (inspect.length) {
+      if (out.length) out.push('');
+      out.push('Inspection scheduled (' + inspect.length + '):');
+      inspect.slice(0, 4).forEach(function(x) {
+        out.push('• ' + _shortName(x.c) + ' (id:' + x.c.id + ') — ' + x.d);
+      });
+    }
+
+    if (!out.length) return 'No active permits in flight right now. Once a booking moves past stage 4, I will track it here.';
+    return out.join('\n');
+  }
+
+  function _formatMaterialsAnswer(b, active) {
+    var byStatus = { pick:[], order:[], received:[] };
+    active.forEach(function(c) {
+      var stage = c.stage || 1;
+      if (stage < 4 || stage > 8) return;
+      var md = _getMaterialsData(c);
+      if (!md) return;
+      if (!md.inlet || !md.interlock) byStatus.pick.push({ c:c, md:md });
+      else if (!md.ordered_at) byStatus.order.push({ c:c, md:md });
+      else if (!md.received_at) byStatus.received.push({ c:c, md:md });
+    });
+    var out = [];
+    if (byStatus.pick.length) {
+      out.push('Need to pick inlet / interlock (' + byStatus.pick.length + '):');
+      byStatus.pick.slice(0, 4).forEach(function(x) {
+        out.push('• ' + _shortName(x.c) + ' (id:' + x.c.id + ') — ' + _stageLabel(x.c.stage || 1));
+      });
+    }
+    if (byStatus.order.length) {
+      if (out.length) out.push('');
+      out.push('Picked, not ordered (' + byStatus.order.length + '):');
+      byStatus.order.slice(0, 6).forEach(function(x) {
+        out.push('• ' + _shortName(x.c) + ' (id:' + x.c.id + ') — ' + (x.md.inlet || '?') + ' + ' + (x.md.interlock || 'interlock'));
+      });
+      out.push('');
+      out.push('Group these into one bulk order to save shipping.');
+    }
+    if (byStatus.received.length) {
+      if (out.length) out.push('');
+      out.push('Ordered, waiting on delivery (' + byStatus.received.length + '):');
+      byStatus.received.slice(0, 4).forEach(function(x) {
+        out.push('• ' + _shortName(x.c) + ' (id:' + x.c.id + ') — ordered ' + (x.md.ordered_at || '?'));
+      });
+    }
+    if (!out.length) return 'No materials pending — every booked job has inlet, interlock, and an order on file. Nice.';
+    return out.join('\n');
+  }
+
+  function _formatNewLeadsAnswer(active) {
+    var fresh = active.filter(function(c) {
+      var d = _daysSinceTs(c.created_at);
+      return d !== null && d <= 2;
+    }).sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+    if (!fresh.length) return 'No new leads in the last 48 hours. Time to check if the ads are still serving.';
+    var out = ['New leads (last 48h) — ' + fresh.length + ':'];
+    fresh.slice(0, 8).forEach(function(c) {
+      var d = _daysSinceTs(c.created_at);
+      var when = d === 0 ? 'today' : d === 1 ? 'yesterday' : d + 'd ago';
+      out.push('• ' + _shortName(c) + ' (id:' + c.id + ') — ' + _stageLabel(c.stage || 1) + ' \u00b7 ' + when);
+    });
+    out.push('');
+    out.push('Goal: respond within 15 minutes for the best close rate.');
+    return out.join('\n');
+  }
+
+  function _formatHotLeadsAnswer(active, b) {
+    // Hot = stage 3-4 with recent activity
+    var hot = active.filter(function(c) {
+      var stage = c.stage || 1;
+      if (stage < 3 || stage > 4) return false;
+      var touched = _daysSinceLastTouch(c);
+      return touched !== null && touched <= 5;
+    }).sort(function(a, b) {
+      return (_daysSinceLastTouch(a) || 99) - (_daysSinceLastTouch(b) || 99);
+    });
+    if (!hot.length) return 'No hot leads right now. Everyone in quote-sent or booked is further out than 5 days.';
+    var out = ['Hot leads (' + hot.length + ') — closest to closing:'];
+    hot.slice(0, 6).forEach(function(c) {
+      var touched = _daysSinceLastTouch(c);
+      out.push('• ' + _shortName(c) + ' (id:' + c.id + ') — ' + _stageLabel(c.stage || 1) + ' \u00b7 touched ' + touched + 'd ago');
+    });
+    return out.join('\n');
+  }
+
+  function _formatMoneyAnswer(active) {
+    var booked = active.filter(function(c) { return (c.stage || 1) >= 4 && (c.stage || 1) <= 8; }).length;
+    var complete = active.filter(function(c) { return (c.stage || 1) === 9; }).length;
+    var quoteSent = active.filter(function(c) { return (c.stage || 1) === 3; }).length;
+    var avg = 1347; // midpoint of $1,197-$1,497
+    var pipeValue = (booked + quoteSent * 0.4) * avg;
+    var out = [];
+    out.push('Pipeline snapshot:');
+    out.push('• Quote out: ' + quoteSent + ' (expected $' + Math.round(quoteSent * avg * 0.4).toLocaleString() + ' at 40% close)');
+    out.push('• Booked / in-flight: ' + booked + ' ($' + (booked * avg).toLocaleString() + ' committed)');
+    out.push('• Completed (all-time, non-archived): ' + complete);
+    out.push('');
+    out.push('North star: $150k spendable profit in Found.');
+    out.push('Target monthly profit after the $3k draw and all expenses:');
+    out.push('• Phase 1 solo: $21,600');
+    out.push('• Phase 2 with 1 sub: $42,200');
+    out.push('• Phase 3 with 2 subs: $67,500');
+    return out.join('\n');
+  }
+
+  function _formatMessagesAnswer() {
+    return 'I can see the inbox tab, but for live unread counts and message previews open the Messages tab. In the next iteration I will read recent inbound texts directly here.';
+  }
+
+  function _formatHelpAnswer() {
+    return "I read your pipeline, permits, and materials. Ask me things like:\n"
+      + "• What needs my attention today?\n"
+      + "• Who hasn't been contacted in 3+ days?\n"
+      + "• What permits are likely ready to pay?\n"
+      + "• Which jobs need materials ordered?\n"
+      + "• What are my hot leads?\n"
+      + "• How is progress toward $150k?\n"
+      + "\nOr type a customer's name and I will summarize their card.";
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // WIRE INTO loadContacts — render the briefing after data loads
+  // ══════════════════════════════════════════════════════════
+  var _tmOrigLoadContacts = window.loadContacts;
+  if (typeof _tmOrigLoadContacts === 'function') {
+    window.loadContacts = async function() {
+      var result = await _tmOrigLoadContacts.apply(this, arguments);
+      try {
+        // Show the briefing once per day, unless Key asked for "remind me later"
+        generateBriefing(false);
+      } catch(e) { console.warn('generateBriefing failed', e); }
+      return result;
+    };
+  }
+
+  // Also try to render on window load in case loadContacts already completed
+  function _scheduleFirstBriefing() {
+    if (typeof allContacts !== 'undefined' && Array.isArray(allContacts) && allContacts.length > 0) {
+      generateBriefing(false);
+    } else {
+      setTimeout(_scheduleFirstBriefing, 1500);
+    }
+  }
+  // Kick off after the app loads
+  setTimeout(_scheduleFirstBriefing, 2500);
+
+  // Close the panel with Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var p = document.getElementById('tm-panel');
+      if (p && p.classList.contains('open')) window.tmClosePanel();
+    }
+  });
 })();
 
 </script>
