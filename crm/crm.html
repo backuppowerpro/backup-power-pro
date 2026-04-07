@@ -6106,6 +6106,789 @@ setTimeout(() => {
   setInterval(checkSmartEvents, 30000);
 }, 4000);
 
+// ══════════════════════════════════════════════════════════
+// PASS 2 — CRM POLISH & POWER FEATURES
+// Drag-drop kanban, command palette, smart prompts,
+// install date, activity feed, micro-interactions, shortcuts
+// ══════════════════════════════════════════════════════════
+(function pass2(){
+  // Inject CSS
+  const css = `
+  /* Kanban drag */
+  .kanban-card{transition:transform .15s cubic-bezier(.4,0,.2,1),box-shadow .2s,opacity .15s,border-color .15s}
+  .kanban-card[draggable="true"]{cursor:grab}
+  .kanban-card.kdragging{opacity:.55;transform:rotate(-1.5deg) scale(1.02);box-shadow:0 12px 28px rgba(10,20,40,.22);cursor:grabbing}
+  .kanban-col.kdrop-target{background:rgba(255,186,0,.10);outline:2px dashed var(--gold);outline-offset:-4px}
+  html.dark .kanban-col.kdrop-target{background:rgba(230,168,0,.12)}
+  .kanban-card-date{display:inline-block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:var(--green);background:rgba(5,150,105,.12);padding:1px 6px;border-radius:var(--r-pill);margin-top:4px}
+  html.dark .kanban-card-date{background:rgba(74,222,128,.15);color:#4ade80}
+  /* Command palette */
+  .cmdk-overlay{position:fixed;inset:0;background:rgba(8,15,30,.55);backdrop-filter:blur(6px);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;opacity:0;transition:opacity .15s}
+  .cmdk-overlay.open{display:flex;opacity:1}
+  .cmdk{width:560px;max-width:92vw;background:var(--card);border-radius:var(--r-lg);box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column;max-height:70vh;transform:translateY(-12px);transition:transform .22s cubic-bezier(.16,1,.3,1);font-family:'Inter',sans-serif}
+  .cmdk-overlay.open .cmdk{transform:translateY(0)}
+  .cmdk-input{width:100%;padding:18px 22px;font-size:16px;font-family:'Inter',sans-serif;border:none;outline:none;background:var(--card);color:var(--text);border-bottom:1px solid var(--border)}
+  html.dark .cmdk-input{border-bottom-color:#3d3830}
+  .cmdk-list{flex:1;overflow-y:auto;padding:6px 0}
+  .cmdk-section{padding:10px 22px 4px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-family:'Outfit',sans-serif}
+  .cmdk-item{display:flex;align-items:center;gap:12px;padding:10px 22px;cursor:pointer;font-size:14px;color:var(--text);transition:background .08s}
+  .cmdk-item.active{background:var(--bg)}
+  html.dark .cmdk-item.active{background:#1e1b17}
+  .cmdk-item .cmdk-icon{width:28px;height:28px;border-radius:var(--r-sm);background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;font-size:13px}
+  html.dark .cmdk-item .cmdk-icon{background:#1e1b17}
+  .cmdk-item.active .cmdk-icon{background:var(--gold);color:var(--navy)}
+  .cmdk-item-name{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmdk-item-sub{font-size:11px;color:var(--text3);font-weight:500}
+  .cmdk-empty{padding:32px 22px;text-align:center;color:var(--text3);font-size:13px}
+  .cmdk-foot{padding:10px 22px;border-top:1px solid var(--border);background:var(--bg);font-size:11px;color:var(--text3);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  html.dark .cmdk-foot{background:#1e1b17;border-top-color:#3d3830}
+  .cmdk-key{display:inline-block;padding:2px 6px;background:var(--card);border-radius:4px;font-family:'Outfit',sans-serif;font-weight:700;font-size:10px;color:var(--text2);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  html.dark .cmdk-key{background:#28241f;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+  /* Smart prompt banner */
+  .smart-prompt{background:linear-gradient(135deg,rgba(255,186,0,.12),rgba(255,186,0,.04));border:1px solid rgba(255,186,0,.35);border-radius:var(--r-md);padding:12px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px;animation:promptIn .25s cubic-bezier(.16,1,.3,1)}
+  html.dark .smart-prompt{background:linear-gradient(135deg,rgba(230,168,0,.12),rgba(230,168,0,.04));border-color:rgba(230,168,0,.35)}
+  @keyframes promptIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .smart-prompt-icon{width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-family:'Outfit',sans-serif}
+  .smart-prompt-body{flex:1;min-width:0}
+  .smart-prompt-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px}
+  .smart-prompt-sub{font-size:11.5px;color:var(--text2);line-height:1.35}
+  .smart-prompt-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .smart-prompt-btn{padding:6px 12px;border-radius:var(--r-sm);background:var(--navy);color:#fff;border:none;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:transform .12s,box-shadow .15s}
+  html.dark .smart-prompt-btn{background:var(--gold);color:#1e1b17}
+  .smart-prompt-btn:hover{box-shadow:0 4px 10px rgba(11,31,59,.25)}
+  .smart-prompt-btn:active{transform:scale(.97)}
+  .smart-prompt-dismiss{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;flex-shrink:0;align-self:flex-start}
+  .smart-prompt-dismiss:hover{color:var(--text)}
+  .smart-prompt-date{padding:6px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Inter',sans-serif;font-size:12px;outline:none}
+  html.dark .smart-prompt-date{background:#1e1b17;border-color:#3d3830;color-scheme:dark}
+  /* Activity feed */
+  .activity-feed{display:flex;flex-direction:column;gap:0;margin-bottom:8px;position:relative}
+  .activity-feed::before{content:'';position:absolute;left:13px;top:8px;bottom:8px;width:1.5px;background:var(--border)}
+  html.dark .activity-feed::before{background:#3d3830}
+  .activity-item{display:flex;gap:12px;padding:6px 0;position:relative;align-items:flex-start}
+  .activity-icon{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;z-index:1;border:2px solid var(--card)}
+  html.dark .activity-icon{background:#1e1b17;border-color:var(--card)}
+  .activity-icon.created{background:#dbeafe;color:#1d4ed8}
+  .activity-icon.stage{background:#fef3c7;color:#92400e}
+  .activity-icon.proposal{background:#ede9fe;color:#7c3aed}
+  .activity-icon.invoice{background:#d1fae5;color:var(--green)}
+  .activity-icon.payment{background:rgba(255,186,0,.2);color:#92400e}
+  .activity-icon.message{background:#e0f2fe;color:#0369a1}
+  html.dark .activity-icon.created{background:rgba(59,130,246,.18);color:#7cb3f0}
+  html.dark .activity-icon.stage{background:rgba(234,179,8,.18);color:#facc15}
+  html.dark .activity-icon.proposal{background:rgba(124,58,237,.18);color:#c4b5fd}
+  html.dark .activity-icon.invoice{background:rgba(5,150,105,.18);color:#4ade80}
+  html.dark .activity-icon.payment{background:rgba(230,168,0,.18);color:#facc15}
+  html.dark .activity-icon.message{background:rgba(3,105,161,.2);color:#7dd3fc}
+  .activity-body{flex:1;min-width:0;padding-top:3px;padding-bottom:8px}
+  .activity-title{font-size:12.5px;color:var(--text);font-weight:600;line-height:1.35}
+  .activity-sub{font-size:11px;color:var(--text3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .activity-time{font-size:10px;color:var(--text3);font-weight:600;flex-shrink:0;padding-top:6px}
+  /* Typing indicator bubble */
+  .msg-typing{display:flex;align-items:center;gap:4px;padding:10px 14px;background:var(--bg);border-radius:18px;border-bottom-right-radius:4px;align-self:flex-end;max-width:60%;opacity:.85}
+  html.dark .msg-typing{background:#1e1b17}
+  .msg-typing span{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:typingDot 1.2s infinite ease-in-out}
+  .msg-typing span:nth-child(2){animation-delay:.15s}
+  .msg-typing span:nth-child(3){animation-delay:.3s}
+  @keyframes typingDot{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+  /* Micro-interactions polish */
+  .btn:active, button:active{transform:scale(.97)}
+  .kanban-card{transition:transform .15s,box-shadow .2s}
+  .toast{transition:opacity .25s,transform .35s cubic-bezier(.16,1.4,.3,1)}
+  /* Date picker hint label */
+  .install-date-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;background:var(--bg);border-radius:var(--r-sm)}
+  html.dark .install-date-row{background:#1e1b17}
+  .install-date-row label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:0;flex-shrink:0}
+  `;
+  const styleEl = document.createElement('style');
+  styleEl.textContent = css;
+  document.head.appendChild(styleEl);
+
+  // ── COMMAND PALETTE ──────────────────────────────────────
+  const cmdkOverlay = document.createElement('div');
+  cmdkOverlay.className = 'cmdk-overlay';
+  cmdkOverlay.id = 'cmdk-overlay';
+  cmdkOverlay.innerHTML = `
+    <div class="cmdk" onclick="event.stopPropagation()">
+      <input type="text" class="cmdk-input" id="cmdk-input" placeholder="Search contacts, jump to a tab, run a command…" autocomplete="off" spellcheck="false">
+      <div class="cmdk-list" id="cmdk-list"></div>
+      <div class="cmdk-foot">
+        <span><span class="cmdk-key">↑</span><span class="cmdk-key">↓</span> navigate</span>
+        <span><span class="cmdk-key">↵</span> select</span>
+        <span><span class="cmdk-key">esc</span> close</span>
+        <span style="margin-left:auto"><span class="cmdk-key">⌘K</span> open</span>
+      </div>
+    </div>`;
+  cmdkOverlay.addEventListener('click', (e) => { if (e.target === cmdkOverlay) closeCmdk(); });
+  document.body.appendChild(cmdkOverlay);
+
+  const RECENT_KEY = 'bpp_crm_recent_contacts';
+  function getRecentContacts() {
+    try {
+      const ids = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+      return ids.map(id => allContacts.find(c => c.id === id)).filter(Boolean).slice(0, 5);
+    } catch (e) { return []; }
+  }
+  function pushRecentContact(id) {
+    try {
+      let ids = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+      ids = [id, ...ids.filter(x => x !== id)].slice(0, 10);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(ids));
+    } catch (e) {}
+  }
+
+  let cmdkActiveIdx = 0;
+  let cmdkItems = [];
+
+  function buildCmdkItems(query) {
+    const items = [];
+    const q = (query || '').toLowerCase().trim();
+
+    // Recents (only when no query)
+    if (!q) {
+      const recents = getRecentContacts();
+      if (recents.length) {
+        items.push({ type: 'section', label: 'Recent' });
+        recents.forEach(c => {
+          items.push({
+            type: 'contact', icon: '◉', name: c.name || '(no name)', sub: c.phone || c.email || '',
+            action: () => { closeCmdk(); openPanel(c.id); }
+          });
+        });
+      }
+    }
+
+    // Contacts
+    if (q) {
+      const matches = (allContacts || []).filter(c => {
+        if (c.status === 'Archived') return false;
+        const hay = ((c.name || '') + ' ' + (c.phone || '') + ' ' + (c.email || '') + ' ' + (c.address || '')).toLowerCase();
+        return hay.includes(q);
+      }).slice(0, 8);
+      if (matches.length) {
+        items.push({ type: 'section', label: 'Contacts' });
+        matches.forEach(c => {
+          items.push({
+            type: 'contact', icon: '◉', name: c.name || '(no name)', sub: c.phone || c.email || c.address || '',
+            action: () => { closeCmdk(); openPanel(c.id); }
+          });
+        });
+      }
+    }
+
+    // Actions
+    const actions = [
+      { name: 'Go to Leads', sub: 'Press 1', icon: '1', match: 'leads contacts go list', action: () => { closeCmdk(); switchTab('leads'); } },
+      { name: 'Go to Messages', sub: 'Press 2', icon: '2', match: 'messages inbox sms', action: () => { closeCmdk(); switchTab('messages'); } },
+      { name: 'Go to Invoices', sub: 'Press 3', icon: '3', match: 'invoices billing payments', action: () => { closeCmdk(); switchTab('invoices'); } },
+      { name: 'Go to Pipeline', sub: 'Kanban view', icon: '◫', match: 'pipeline kanban board view', action: () => { closeCmdk(); switchTab('leads'); if (typeof setLeadsView === 'function') setLeadsView('pipeline'); } },
+      { name: 'New Contact', sub: 'Add a lead', icon: '+', match: 'new contact lead add create', action: () => { closeCmdk(); openContactModal(null); } },
+      { name: 'Toggle Dark Mode', sub: 'Switch theme', icon: '☾', match: 'dark mode theme toggle light', action: () => { closeCmdk(); document.documentElement.classList.toggle('dark'); try { localStorage.setItem('bpp_crm_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {} } },
+    ];
+    const matchedActions = actions.filter(a => !q || a.match.includes(q) || a.name.toLowerCase().includes(q));
+    if (matchedActions.length) {
+      items.push({ type: 'section', label: 'Actions' });
+      matchedActions.forEach(a => items.push({ type: 'action', icon: a.icon, name: a.name, sub: a.sub, action: a.action }));
+    }
+
+    return items;
+  }
+
+  function renderCmdk() {
+    const list = document.getElementById('cmdk-list');
+    if (!list) return;
+    if (!cmdkItems.length) {
+      list.innerHTML = '<div class="cmdk-empty">No matches</div>';
+      return;
+    }
+    let activeCounter = -1;
+    list.innerHTML = cmdkItems.map((it) => {
+      if (it.type === 'section') return `<div class="cmdk-section">${esc(it.label)}</div>`;
+      activeCounter++;
+      const isActive = activeCounter === cmdkActiveIdx;
+      return `<div class="cmdk-item${isActive ? ' active' : ''}" data-idx="${activeCounter}">
+        <div class="cmdk-icon">${esc(it.icon || '')}</div>
+        <div style="flex:1;min-width:0">
+          <div class="cmdk-item-name">${esc(it.name || '')}</div>
+          ${it.sub ? `<div class="cmdk-item-sub">${esc(it.sub)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.cmdk-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.dataset.idx);
+        const selectable = cmdkItems.filter(x => x.type !== 'section');
+        if (selectable[idx]) selectable[idx].action();
+      });
+      el.addEventListener('mousemove', () => {
+        cmdkActiveIdx = parseInt(el.dataset.idx);
+        list.querySelectorAll('.cmdk-item').forEach(x => x.classList.toggle('active', parseInt(x.dataset.idx) === cmdkActiveIdx));
+      });
+    });
+  }
+
+  function refreshCmdk() {
+    const inp = document.getElementById('cmdk-input');
+    cmdkItems = buildCmdkItems(inp ? inp.value : '');
+    cmdkActiveIdx = 0;
+    renderCmdk();
+  }
+
+  function openCmdk() {
+    cmdkOverlay.classList.add('open');
+    const inp = document.getElementById('cmdk-input');
+    if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 30); }
+    refreshCmdk();
+  }
+  function closeCmdk() { cmdkOverlay.classList.remove('open'); }
+  window.openCmdk = openCmdk;
+  window.closeCmdk = closeCmdk;
+
+  document.getElementById('cmdk-input').addEventListener('input', refreshCmdk);
+  document.getElementById('cmdk-input').addEventListener('keydown', (e) => {
+    const selectable = cmdkItems.filter(x => x.type !== 'section');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      cmdkActiveIdx = Math.min(cmdkActiveIdx + 1, selectable.length - 1);
+      renderCmdk();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      cmdkActiveIdx = Math.max(cmdkActiveIdx - 1, 0);
+      renderCmdk();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectable[cmdkActiveIdx]) selectable[cmdkActiveIdx].action();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeCmdk();
+    }
+  });
+
+  // ── GLOBAL KEYBOARD SHORTCUTS ────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable;
+    // Cmd/Ctrl+K
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      if (cmdkOverlay.classList.contains('open')) closeCmdk(); else openCmdk();
+      return;
+    }
+    if (cmdkOverlay.classList.contains('open')) return;
+    // Skip if typing
+    if (isInput) return;
+    // /
+    if (e.key === '/') {
+      const s = document.getElementById('search');
+      if (s) { e.preventDefault(); s.focus(); }
+      return;
+    }
+    // Esc - close panel/modal
+    if (e.key === 'Escape') {
+      const sp = document.getElementById('side-panel-overlay');
+      if (sp && sp.classList.contains('open')) { closePanel(); return; }
+      const openModal = document.querySelector('.modal-overlay.open');
+      if (openModal) { openModal.classList.remove('open'); return; }
+    }
+    // 1, 2, 3 -> tabs
+    if (e.key === '1') { switchTab('leads'); return; }
+    if (e.key === '2') { switchTab('messages'); return; }
+    if (e.key === '3') { switchTab('invoices'); return; }
+    // N -> new contact
+    if (e.key === 'n' || e.key === 'N') {
+      if (typeof openContactModal === 'function') { e.preventDefault(); openContactModal(null); }
+    }
+  });
+
+  // ── DRAG & DROP KANBAN ────────────────────────────────────
+  // Wrap renderKanban to add drag handlers after each render
+  const _origRenderKanban = window.renderKanban;
+  if (typeof _origRenderKanban === 'function') {
+    window.renderKanban = function() {
+      _origRenderKanban.apply(this, arguments);
+      attachKanbanDnD();
+    };
+  }
+
+  function attachKanbanDnD() {
+    const wrap = document.getElementById('kanban-board');
+    if (!wrap) return;
+    const cards = wrap.querySelectorAll('.kanban-card');
+    cards.forEach(card => {
+      // Extract contact id from the onclick attribute
+      const onclickAttr = card.getAttribute('onclick') || '';
+      const m = onclickAttr.match(/openPanel\('([^']+)'\)/);
+      if (!m) return;
+      const cid = m[1];
+      card.setAttribute('draggable', 'true');
+      card.dataset.contactId = cid;
+      card.addEventListener('dragstart', (e) => {
+        card.classList.add('kdragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', cid); } catch(err) {}
+        window._dragContactId = cid;
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('kdragging');
+        document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('kdrop-target'));
+        window._dragContactId = null;
+      });
+    });
+    const cols = wrap.querySelectorAll('.kanban-col');
+    cols.forEach(col => {
+      col.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        col.classList.add('kdrop-target');
+      });
+      col.addEventListener('dragleave', (e) => {
+        if (!col.contains(e.relatedTarget)) col.classList.remove('kdrop-target');
+      });
+      col.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        col.classList.remove('kdrop-target');
+        const cid = window._dragContactId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+        const targetStage = parseInt(col.getAttribute('data-stage'));
+        if (!cid || !targetStage) return;
+        const c = allContacts.find(x => x.id === cid);
+        if (!c) return;
+        const oldStage = c.stage || 1;
+        // Map kanban bucket to actual stage. Booked column = stage 4 (don't downgrade later permit work).
+        let newStage = targetStage;
+        if (targetStage === 4 && oldStage >= 4 && oldStage <= 8) newStage = oldStage;
+        if (newStage === oldStage) return;
+        // Optimistic update
+        c.stage = newStage;
+        renderKanban();
+        try {
+          const { error } = await db.from('contacts').update({ stage: newStage }).eq('id', cid);
+          if (error) throw error;
+          db.from('stage_history').insert([{ contact_id: cid, from_stage: oldStage, to_stage: newStage }]);
+          touchContact(cid);
+          renderContacts();
+          if (typeof loadPermitAnalytics === 'function') loadPermitAnalytics();
+          showToast('Moved to ' + (KANBAN_COLS.find(k => k.stage === targetStage)?.label || 'stage ' + newStage), 'success');
+          // If dropping into Installed and there's an unpaid invoice, prompt
+          if (newStage === 9) {
+            try {
+              const { data: invs } = await db.from('invoices')
+                .select('id,status,total')
+                .eq('contact_id', cid)
+                .neq('status', 'paid')
+                .limit(1);
+              if (invs && invs.length) {
+                smartToast('Unpaid invoice on this contact — record payment?', {
+                  kind: 'success',
+                  duration: 6000,
+                  onClick: () => { openPanel(cid); setTimeout(() => { try { drillTo('payment'); } catch(e) {} }, 250); }
+                });
+              }
+            } catch(e) {}
+          }
+        } catch (err) {
+          // Revert
+          c.stage = oldStage;
+          renderKanban();
+          showToast('Move failed', 'error');
+        }
+      });
+    });
+  }
+
+  // Hook attachKanbanDnD on initial render too
+  setTimeout(attachKanbanDnD, 500);
+
+  // ── INSTALL DATE FIELD (saved into install_notes prefix) ──
+  // Helper functions to get/set scheduled date stored as a "Scheduled: YYYY-MM-DD" line in install_notes
+  window.getScheduledDate = function(c) {
+    if (!c) return '';
+    const txt = c.install_notes || '';
+    const m = txt.match(/Scheduled:\s*(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : '';
+  };
+  window.setScheduledDateLocal = function(c, dateStr) {
+    if (!c) return;
+    let txt = c.install_notes || '';
+    txt = txt.replace(/Scheduled:\s*\d{4}-\d{2}-\d{2}\s*/g, '').trim();
+    if (dateStr) {
+      txt = ('Scheduled: ' + dateStr + (txt ? '\n' + txt : '')).trim();
+    }
+    c.install_notes = txt;
+  };
+  window.fmtScheduledDate = function(d) {
+    if (!d) return '';
+    try {
+      const dt = new Date(d + 'T00:00:00');
+      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch (e) { return d; }
+  };
+
+  // Render the install date row + smart prompt inside the open panel
+  function renderPanelExtras() {
+    const id = currentPanelContactId;
+    if (!id) return;
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+
+    // Insert host container right after the prop section
+    let host = document.getElementById('panel-extras-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'panel-extras-host';
+      const propSection = document.getElementById('panel-prop-section');
+      if (propSection && propSection.parentNode) {
+        propSection.parentNode.insertBefore(host, propSection.nextSibling);
+      }
+    }
+
+    const stage = c.stage || 1;
+    const scheduled = getScheduledDate(c);
+    const dismissed = JSON.parse(localStorage.getItem('bpp_crm_prompt_dismiss') || '{}');
+    const dismissKey = id + ':' + stage;
+    const showPrompt = !dismissed[dismissKey];
+
+    let html = '';
+
+    // Smart prompt by stage
+    if (showPrompt) {
+      if (stage === 3) {
+        html += `<div class="smart-prompt">
+          <div class="smart-prompt-icon">!</div>
+          <div class="smart-prompt-body">
+            <div class="smart-prompt-title">Send a follow-up text?</div>
+            <div class="smart-prompt-sub">Customers who get a check-in within 24h convert 2x more.</div>
+            <div class="smart-prompt-actions">
+              <button class="smart-prompt-btn" onclick="pass2SendCheckin('${id}')">Send check-in</button>
+            </div>
+          </div>
+          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+        </div>`;
+      } else if (stage === 4 && !scheduled) {
+        html += `<div class="smart-prompt">
+          <div class="smart-prompt-icon">📅</div>
+          <div class="smart-prompt-body">
+            <div class="smart-prompt-title">Add an install date</div>
+            <div class="smart-prompt-sub">Pick a day for this booking so it shows on the kanban and list.</div>
+            <div class="smart-prompt-actions">
+              <input type="date" class="smart-prompt-date" id="install-date-input" value="">
+              <button class="smart-prompt-btn" onclick="pass2SaveInstallDate('${id}')">Save</button>
+            </div>
+          </div>
+          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+        </div>`;
+      } else if (stage >= 4 && stage <= 8) {
+        // Already booked but no payment recorded? subtle nudge to record install date if absent
+      }
+      if (stage === 9) {
+        // Check for unpaid invoice -> show "Record payment" prompt
+        const invs = (window.allInvoices || []).filter(i => i.contact_id === id && i.status !== 'paid');
+        if (invs.length) {
+          html += `<div class="smart-prompt">
+            <div class="smart-prompt-icon">$</div>
+            <div class="smart-prompt-body">
+              <div class="smart-prompt-title">Record payment?</div>
+              <div class="smart-prompt-sub">There's an unpaid invoice on this contact. Tap to open the payment screen.</div>
+              <div class="smart-prompt-actions">
+                <button class="smart-prompt-btn" onclick="try{drillTo('payment')}catch(e){}">Open payment</button>
+              </div>
+            </div>
+            <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+          </div>`;
+        }
+      }
+    }
+
+    // Persistent install date row when stage >= booked
+    if (stage >= 4) {
+      html += `<div class="install-date-row">
+        <label>Install Date</label>
+        <input type="date" class="smart-prompt-date" id="panel-install-date" value="${esc(scheduled)}" style="flex:1" onchange="pass2InlineSaveInstallDate('${id}', this.value)">
+      </div>`;
+    }
+
+    // Activity feed section label + content
+    html += `<div class="panel-section-label" style="margin-top:18px">Activity</div>
+      <div id="panel-activity-feed"><div style="color:var(--text3);font-size:12px;padding:6px 0">Loading…</div></div>`;
+
+    host.innerHTML = html;
+
+    // Load activity feed async
+    loadActivityFeed(id);
+  }
+
+  window.pass2DismissPrompt = function(key) {
+    try {
+      const d = JSON.parse(localStorage.getItem('bpp_crm_prompt_dismiss') || '{}');
+      d[key] = true;
+      localStorage.setItem('bpp_crm_prompt_dismiss', JSON.stringify(d));
+    } catch (e) {}
+    renderPanelExtras();
+  };
+
+  window.pass2SendCheckin = function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    if (typeof openMessagesFromPanel === 'function') {
+      openMessagesFromPanel();
+      setTimeout(() => {
+        const compose = document.getElementById('msg-compose');
+        if (compose) {
+          const fname = (c.name || '').split(' ')[0] || 'there';
+          compose.value = `Hey ${fname}, just checking in — any questions about the proposal? Happy to walk through it.`;
+          compose.focus();
+          compose.style.height = 'auto';
+          compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+        }
+      }, 200);
+    }
+  };
+
+  window.pass2SaveInstallDate = async function(id) {
+    const inp = document.getElementById('install-date-input');
+    if (!inp || !inp.value) { showToast('Pick a date first', 'error'); return; }
+    await pass2InlineSaveInstallDate(id, inp.value);
+  };
+
+  window.pass2InlineSaveInstallDate = async function(id, dateStr) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    setScheduledDateLocal(c, dateStr);
+    const { error } = await db.from('contacts').update({ install_notes: c.install_notes }).eq('id', id);
+    if (error) { showToast('Save failed', 'error'); return; }
+    showToast(dateStr ? 'Install date saved' : 'Date cleared', 'success');
+    touchContact(id);
+    renderContacts();
+    if (typeof renderKanban === 'function') renderKanban();
+    renderPanelExtras();
+  };
+
+  // ── ACTIVITY FEED ────────────────────────────────────────
+  async function loadActivityFeed(contactId) {
+    const host = document.getElementById('panel-activity-feed');
+    if (!host) return;
+    const c = allContacts.find(x => x.id === contactId);
+    if (!c) { host.innerHTML = ''; return; }
+
+    const events = [];
+    // Created
+    if (c.created_at) {
+      events.push({
+        kind: 'created', icon: '+', title: 'Lead created',
+        sub: c.lead_source || c.source || '',
+        ts: new Date(c.created_at).getTime()
+      });
+    }
+
+    // Stage history
+    try {
+      const { data: sh } = await db.from('stage_history').select('from_stage,to_stage,changed_at').eq('contact_id', contactId).order('changed_at', { ascending: true });
+      if (sh) {
+        sh.forEach(s => {
+          const toLabel = (PERMIT_STAGES.find(x => x.id === s.to_stage) || {}).label || ('Stage ' + s.to_stage);
+          events.push({
+            kind: 'stage', icon: '→', title: 'Moved to ' + toLabel,
+            ts: new Date(s.changed_at).getTime()
+          });
+        });
+      }
+    } catch (e) {}
+
+    // Proposals
+    const props = (proposalMap && proposalMap[contactId]) || [];
+    props.forEach(p => {
+      if (p.created_at) events.push({
+        kind: 'proposal', icon: '◧', title: 'Proposal created',
+        sub: '$' + (Number(p.total) || 0).toLocaleString(),
+        ts: new Date(p.created_at).getTime()
+      });
+      if (p.viewed_at) events.push({
+        kind: 'proposal', icon: '◉', title: 'Proposal viewed' + (p.view_count > 1 ? ' (' + p.view_count + 'x)' : ''),
+        ts: new Date(p.viewed_at).getTime()
+      });
+      if (p.signed_at || p.status === 'Approved') events.push({
+        kind: 'proposal', icon: '✓', title: 'Proposal approved',
+        sub: '$' + (Number(p.total) || 0).toLocaleString(),
+        ts: new Date(p.signed_at || p.created_at).getTime()
+      });
+    });
+
+    // Invoices + payments
+    const invs = (window.allInvoices || []).filter(i => i.contact_id === contactId);
+    invs.forEach(inv => {
+      if (inv.created_at) events.push({
+        kind: 'invoice', icon: '⟁', title: 'Invoice created',
+        sub: '$' + (Number(inv.total) || 0).toLocaleString(),
+        ts: new Date(inv.created_at).getTime()
+      });
+      if (inv.paid_at && inv.status === 'paid') events.push({
+        kind: 'payment', icon: '$', title: 'Payment received',
+        sub: '$' + (Number(inv.total) || 0).toLocaleString(),
+        ts: new Date(inv.paid_at).getTime()
+      });
+    });
+
+    // Recent messages
+    try {
+      const { data: msgs } = await db.from('messages').select('id,direction,body,created_at').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(8);
+      if (msgs) {
+        msgs.forEach(m => {
+          const isOut = m.direction === 'outbound';
+          events.push({
+            kind: 'message', icon: isOut ? '↗' : '↙',
+            title: isOut ? 'Sent message' : 'Received message',
+            sub: (m.body || '').slice(0, 60),
+            ts: new Date(m.created_at).getTime()
+          });
+        });
+      }
+    } catch (e) {}
+
+    // Sort newest first
+    events.sort((a, b) => b.ts - a.ts);
+    if (!events.length) { host.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:6px 0">No activity yet</div>'; return; }
+    host.innerHTML = `<div class="activity-feed">${events.slice(0, 25).map(ev => `
+      <div class="activity-item">
+        <div class="activity-icon ${ev.kind}">${esc(ev.icon)}</div>
+        <div class="activity-body">
+          <div class="activity-title">${esc(ev.title)}</div>
+          ${ev.sub ? `<div class="activity-sub">${esc(ev.sub)}</div>` : ''}
+        </div>
+        <div class="activity-time">${esc(_relativeTime(new Date(ev.ts).toISOString()))}</div>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  // ── HOOK openPanel & switchTab to track recents + render extras
+  const _origOpenPanel = window.openPanel;
+  if (typeof _origOpenPanel === 'function') {
+    window.openPanel = function(id) {
+      _origOpenPanel.apply(this, arguments);
+      try { pushRecentContact(id); } catch (e) {}
+      setTimeout(renderPanelExtras, 50);
+    };
+  }
+
+  // Re-render extras when stage changes via panelSave
+  const _origPanelSave = window.panelSave;
+  if (typeof _origPanelSave === 'function') {
+    window.panelSave = async function() {
+      const result = await _origPanelSave.apply(this, arguments);
+      // closePanel already happens inside; nothing to do
+      return result;
+    };
+  }
+
+  // Re-render extras when autoProgressStage moves a contact while panel is open
+  const _origAutoProgress = window.autoProgressStage;
+  if (typeof _origAutoProgress === 'function') {
+    window.autoProgressStage = async function(contactId, targetStage) {
+      const result = await _origAutoProgress.apply(this, arguments);
+      if (currentPanelContactId === contactId) renderPanelExtras();
+      return result;
+    };
+  }
+
+  // ── CONTEXT-AWARE QUICK REPLIES ──────────────────────────
+  // Override insertQuickReply to handle template replacement
+  const _origInsertQR = window.insertQuickReply;
+  window.insertQuickReply = function(btn) {
+    const compose = document.getElementById('msg-compose');
+    if (!compose) return;
+    let txt = btn.textContent.trim();
+    const c = allContacts.find(x => x.id === currentMsgContactId);
+    if (c) {
+      const fname = (c.name || '').split(' ')[0] || '';
+      const sched = getScheduledDate(c);
+      txt = txt.replace(/\{name\}/g, fname).replace(/\{date\}/g, sched ? fmtScheduledDate(sched) : 'install day').replace(/\{time\}/g, '9am');
+    }
+    compose.value = txt;
+    compose.focus();
+    compose.style.height = 'auto';
+    compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+  };
+
+  // Update quick replies based on contact stage when message panel opens
+  function updateQuickReplies() {
+    const wrap = document.getElementById('quick-replies');
+    if (!wrap) return;
+    const c = allContacts.find(x => x.id === currentMsgContactId);
+    const stage = c?.stage || 1;
+    let templates;
+    if (stage === 1 || stage === 2) {
+      templates = [
+        "Hey {name}, this is Key with Backup Power Pro!",
+        "Got your inquiry — what's the best time to chat?",
+        "Want me to send over a quick quote?",
+        "What size generator do you have?",
+      ];
+    } else if (stage === 3) {
+      templates = [
+        "Just checking in — any questions about the quote?",
+        "Want me to schedule the install?",
+        "Happy to walk you through the proposal anytime.",
+        "{name}, did the proposal come through OK?",
+      ];
+    } else if (stage >= 4 && stage <= 8) {
+      templates = [
+        "See you {date} at {time}!",
+        "Confirming our install for {date}.",
+        "Running 15 min late, sorry!",
+        "On my way!",
+      ];
+    } else {
+      templates = [
+        "Thanks again, {name}! Hope everything's working great.",
+        "Quick question — would you mind leaving a Google review?",
+        "Just checking in — generator running OK?",
+      ];
+    }
+    wrap.innerHTML = templates.slice(0, 8).map(t =>
+      `<button class="qr-chip" onclick="insertQuickReply(this)">${esc(t)}</button>`
+    ).join('');
+  }
+
+  // Hook loadMessageThread to refresh quick replies
+  const _origLoadThread = window.loadMessageThread;
+  if (typeof _origLoadThread === 'function') {
+    window.loadMessageThread = async function(contactId) {
+      const r = await _origLoadThread.apply(this, arguments);
+      try { updateQuickReplies(); } catch(e) {}
+      return r;
+    };
+  }
+
+  // ── TYPING INDICATOR for outbound sending ────────────────
+  // Hook sendMessage to show a ghost bubble while sending
+  const _origSendMessage = window.sendMessage;
+  if (typeof _origSendMessage === 'function') {
+    window.sendMessage = async function() {
+      // Show typing indicator
+      const threadEl = document.getElementById('msg-thread');
+      let typingNode = null;
+      if (threadEl && (document.getElementById('msg-compose')?.value || '').trim()) {
+        typingNode = document.createElement('div');
+        typingNode.className = 'msg-typing';
+        typingNode.innerHTML = '<span></span><span></span><span></span>';
+        typingNode.style.alignSelf = 'flex-end';
+        // Append after a tiny delay so the optimistic bubble shows first
+        setTimeout(() => {
+          if (typingNode && threadEl && document.body.contains(threadEl)) {
+            threadEl.appendChild(typingNode);
+            threadEl.scrollTop = threadEl.scrollHeight;
+          }
+        }, 30);
+      }
+      try {
+        const result = await _origSendMessage.apply(this, arguments);
+        if (typingNode && typingNode.parentNode) typingNode.parentNode.removeChild(typingNode);
+        return result;
+      } catch (e) {
+        if (typingNode && typingNode.parentNode) typingNode.parentNode.removeChild(typingNode);
+        throw e;
+      }
+    };
+  }
+})();
+
 </script>
 </body>
 </html>
