@@ -1643,7 +1643,9 @@ function _bannerHtml(c) {
   const color = _avatarColor(c.id);
   const initials = _avatarInitials(dispName(c.name, ''));
   const displayName = esc(dispName(c.name, 'Unnamed'));
-  const fallbackInitials = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:0"><span style="font-size:64px;font-weight:800;color:rgba(255,255,255,0.32);font-family:'Outfit',sans-serif;letter-spacing:-2px">${initials}</span></div>`;
+  // Fallback initials only show until/unless the Street View image loads.
+  // We tag them so the async image loader can hide them when the photo arrives.
+  const fallbackInitials = `<div class="bnr-fallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;transition:opacity .25s ease"><span style="font-size:64px;font-weight:800;color:rgba(255,255,255,0.32);font-family:'Outfit',sans-serif;letter-spacing:-2px">${initials}</span></div>`;
   // Soft top-to-bottom gradient + a stronger bottom gradient under the name for legibility on any photo
   const gradient = `<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.10) 0%,rgba(0,0,0,0.20) 50%,rgba(0,0,0,0.55) 100%);pointer-events:none;z-index:1"></div>`;
   const nameGrad = `<div style="position:absolute;inset:auto 0 0 0;height:96px;background:linear-gradient(to top,rgba(8,15,30,0.85) 0%,rgba(8,15,30,0.55) 35%,rgba(8,15,30,0) 100%);pointer-events:none;z-index:2"></div>`;
@@ -1657,6 +1659,11 @@ function _bannerHtml(c) {
       if (!el) return;
       const img = document.createElement('img');
       img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 70%;z-index:0';
+      img.onload = () => {
+        // Photo arrived — hide the initials watermark behind it.
+        const fb = el.querySelector('.bnr-fallback');
+        if (fb) fb.style.opacity = '0';
+      };
       img.src = `https://maps.googleapis.com/maps/api/streetview?size=750x420&location=${encodeURIComponent(c.address)}&fov=80&pitch=5&key=${_SV_KEY}`;
       // Insert behind everything (z-index handles stacking, but DOM order matters for fallback)
       el.insertBefore(img, el.firstChild);
@@ -7012,8 +7019,9 @@ setTimeout(() => {
   html.dark .smart-prompt-btn{background:var(--gold);color:#1e1b17}
   .smart-prompt-btn:hover{box-shadow:0 4px 10px rgba(11,31,59,.25)}
   .smart-prompt-btn:active{transform:scale(.97)}
-  .smart-prompt-dismiss{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;flex-shrink:0;align-self:flex-start}
-  .smart-prompt-dismiss:hover{color:var(--text)}
+  .smart-prompt-dismiss{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;width:24px;height:24px;border-radius:6px;flex-shrink:0;align-self:flex-start;display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),color var(--t-fast)}
+  .smart-prompt-dismiss:hover{color:var(--text);background:rgba(0,0,0,.05)}
+  html.dark .smart-prompt-dismiss:hover{background:rgba(255,255,255,.06)}
   .smart-prompt-date{padding:6px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:'Inter',sans-serif;font-size:12px;outline:none}
   html.dark .smart-prompt-date{background:#1e1b17;border-color:#3d3830;color-scheme:dark}
   /* Activity feed */
