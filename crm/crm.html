@@ -1757,7 +1757,8 @@ async function loadContacts() {
 }
 
 function renderContacts() {
-  searchTerm = (document.getElementById('search').value || '').toLowerCase();
+  const searchEl = document.getElementById('search');
+  searchTerm = ((searchEl && searchEl.value) || '').toLowerCase();
 
   let list = allContacts.filter(c => {
     const isArchived = c.status === 'Archived';
@@ -2049,13 +2050,16 @@ function openPanel(id) {
   if (!c) return;
 
   currentPanelContactId = id;
+  // Reset message thread context so opening a new contact never shows stale messages
+  currentMsgContactId = id;
+  allMessages = [];
   resetDrill();
   // Reset archive state
   resetNameArchive();
 
   // Fill fields
   document.getElementById('panel-id').value          = c.id;
-  document.getElementById('panel-name').textContent  = c.name;
+  document.getElementById('panel-name').textContent  = c.name || 'Unnamed';
   document.getElementById('panel-banner').innerHTML  = _bannerHtml(c);
   document.getElementById('panel-name-input').value  = c.name  || '';
   const phoneEl = document.getElementById('panel-phone');
@@ -2923,6 +2927,9 @@ function closePanel() {
   document.getElementById('side-panel-overlay').classList.remove('open');
   unlockBody();
   panelAddrHide();
+  // Clear message-thread context so the 15s poller doesn't keep fetching for a closed panel
+  currentMsgContactId = null;
+  allMessages = [];
   if (_jobModalReturnState) {
     const s = _jobModalReturnState;
     _jobModalReturnState = null;
@@ -2961,7 +2968,9 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+let _panelSaving = false;
 async function panelSave() {
+  if (_panelSaving) return;
   const id   = document.getElementById('panel-id').value;
   const name = document.getElementById('panel-name-input').value.trim();
   if (!name) { showToast('Name is required', 'error'); return; }
@@ -2971,6 +2980,7 @@ async function panelSave() {
   // Validate email format if provided
   const emailVal = document.getElementById('panel-email').value.trim();
   if (emailVal && !isValidEmail(emailVal)) { showToast('Invalid email format', 'error'); return; }
+  _panelSaving = true;
   const c = allContacts.find(x => x.id === id);
   const installNotesVal = (document.getElementById('panel-install-notes')?.value || '').trim();
   const payload = {
@@ -2998,9 +3008,9 @@ async function panelSave() {
     (c.stage || 1) !== payload.stage ||
     String(c.jurisdiction_id || '') !== String(payload.jurisdiction_id || '')
   );
-  if (!changed) { panelResetDirty(); closePanel(); loadContacts(); return; }
+  if (!changed) { _panelSaving = false; panelResetDirty(); closePanel(); loadContacts(); return; }
   const { error } = await db.from('contacts').update(payload).eq('id', id);
-  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  if (error) { _panelSaving = false; showToast('Save failed: ' + error.message, 'error'); return; }
   // If address changed, sync contact_address on all linked proposals and invoices
   const addressChanged = (c?.address || '').trim() !== payload.address;
   if (addressChanged && payload.address) {
@@ -3020,6 +3030,7 @@ async function panelSave() {
   buildDuplicateMap();
   touchContact(id);
   showToast('Lead saved', 'success');
+  _panelSaving = false;
   closePanel();
   renderContacts();
   loadPermitAnalytics();
@@ -5588,32 +5599,30 @@ let msgPollTimer = null;
 function startMessagePolling() {
   // Poll every 15 seconds when messages panel is open
   msgPollTimer = setInterval(async () => {
-    if (currentDrillLevel === 'messages' && currentMsgContactId) {
-      const { data } = await db
-        .from('messages')
-        .select('*')
-        .eq('contact_id', currentMsgContactId)
-        .order('created_at', { ascending: true });
-      if (data) {
-        // Refresh if count differs OR the latest message ID changed (catches status updates too)
-        const realMsgs = allMessages.filter(m => !m.id.startsWith('tmp-'));
-        const latestLocal = realMsgs.length ? realMsgs[realMsgs.length - 1].id : null;
-        const latestRemote = data.length ? data[data.length - 1].id : null;
-        if (data.length !== realMsgs.length || latestLocal !== latestRemote) {
-          allMessages = data;
-          renderThread();
+    try {
+      if (currentDrillLevel === 'messages' && currentMsgContactId) {
+        const { data, error } = await db
+          .from('messages')
+          .select('*')
+          .eq('contact_id', currentMsgContactId)
+          .order('created_at', { ascending: true });
+        if (!error && data) {
+          // Refresh if count differs OR the latest message ID changed (catches status updates too)
+          const realMsgs = allMessages.filter(m => !String(m.id || '').startsWith('tmp-'));
+          const latestLocal = realMsgs.length ? realMsgs[realMsgs.length - 1].id : null;
+          const latestRemote = data.length ? data[data.length - 1].id : null;
+          if (data.length !== realMsgs.length || latestLocal !== latestRemote) {
+            allMessages = data;
+            renderThread();
+          }
         }
       }
-    }
-    // Update inbox unread badge if on messages tab
-    if (activeTab === 'messages') {
-      loadInbox();
-    }
-    if (activeTab === 'invoices') {
-      loadInvoicesTab(true);
-    }
-    // Always refresh invoice unread count for the tab badge
-    refreshInvoiceTabBadge();
+      // Update inbox unread badge if on messages tab
+      if (activeTab === 'messages') loadInbox();
+      if (activeTab === 'invoices') loadInvoicesTab(true);
+      // Always refresh invoice unread count for the tab badge
+      refreshInvoiceTabBadge();
+    } catch (e) { console.warn('msg poll error:', e); }
   }, 15000);
 }
 
