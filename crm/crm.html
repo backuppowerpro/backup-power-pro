@@ -8345,6 +8345,30 @@ setTimeout(() => {
     }
   };
 
+  // Open contact panel + jump straight to materials. One click instead of two.
+  // Used by the materials board row click handler so the badge → edit flow is instant.
+  window.pmBoardOpenAndPick = function(id) {
+    if (typeof openPanel === 'function') openPanel(id);
+    // Wait for the panel to render and the materials section to mount, then open it.
+    setTimeout(() => { try { window.pmOpenMaterialsSection(id); } catch(e) {} }, 280);
+  };
+
+  // Same idea but for the permits board — open panel + scroll to permit section.
+  window.pmBoardOpenAndPickPermit = function(id) {
+    if (typeof openPanel === 'function') openPanel(id);
+    setTimeout(() => {
+      try {
+        const key = 'bpp_pm_permit_open_' + id;
+        localStorage.setItem(key, '1');
+        const sec = document.getElementById('pm-section-permit');
+        if (sec) {
+          sec.classList.add('open');
+          sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } catch(e) {}
+    }, 280);
+  };
+
   // Click a permit step to set today's date
   window.pmTogglePermitStep = async function(id, stepKey) {
     const c = allContacts.find(x => x.id === id);
@@ -8598,7 +8622,8 @@ setTimeout(() => {
         const sectionLabel = (g.label || '').toLowerCase();
         const chipLabel = (stepLabel || '').toLowerCase();
         const showStepChip = chipLabel && chipLabel !== sectionLabel;
-        html += `<div class="pm-board-row" onclick="openPanel('${c.id}')">
+        // Row click → open panel and jump to the permit section.
+        html += `<div class="pm-board-row" onclick="window.pmBoardOpenAndPickPermit('${c.id}')">
           <div style="display:flex;flex-direction:column;min-width:0;flex:1">
             <div class="pm-board-name">${esc(dispName(c.name, 'New Lead'))}</div>
             <div class="pm-board-jur">${jurName ? esc(jurName) : '<span style="color:var(--text3)">No jurisdiction</span>'}${pd.number ? ' · ' + esc(pd.number) : ''}</div>
@@ -8713,7 +8738,11 @@ setTimeout(() => {
       if (md.ordered_at) { status = 'ordered'; statusLabel = 'Ordered'; }
       const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
       const stageLabel = stageDef ? stageDef.label : ('Stage ' + (c.stage || 1));
-      html += `<div class="pm-mboard-row" onclick="openPanel('${c.id}')">
+      // Row click → open panel and jump straight to materials section.
+      // One-click flow from "row needs materials" to "edit materials" — no
+      // intermediate banner click. The PICK MATERIALS banner inside the
+      // panel is still there for users who land on the panel some other way.
+      html += `<div class="pm-mboard-row" onclick="window.pmBoardOpenAndPick('${c.id}')">
         <div class="pm-mboard-name">${esc(dispName(c.name, 'New Lead'))}<small>${esc(stageLabel)} \u00b7 booked ${new Date(c.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })}</small></div>
         <div class="pm-mboard-cell">${inletDisp}</div>
         <div class="pm-mboard-cell">${intlkDisp}</div>
