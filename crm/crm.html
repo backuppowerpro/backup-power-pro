@@ -938,7 +938,7 @@ html.dark .kanban-card-amount{color:var(--gold)}
 
   <div id="contacts-view">
     <div class="toolbar">
-      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'&&leadsView==='pipeline')renderKanban();searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
+      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
       <div class="view-toggle">
         <button class="view-toggle-btn" id="view-list-btn" onclick="setLeadsView('list')" title="List view">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -948,12 +948,22 @@ html.dark .kanban-card-amount{color:var(--gold)}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
           Pipeline
         </button>
+        <button class="view-toggle-btn" id="view-permits-btn" onclick="setLeadsView('permits')" title="Permit tracker">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M9 17h1"/><path d="M14 9h1"/><path d="M14 13h1"/><path d="M14 17h1"/></svg>
+          Permits
+        </button>
+        <button class="view-toggle-btn" id="view-materials-btn" onclick="setLeadsView('materials')" title="Materials checklist">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Materials
+        </button>
       </div>
     </div>
     <!-- Single, unified stage filter — drives BOTH list and kanban -->
     <div id="permit-analytics" style="margin-top:6px"></div>
     <div id="contacts-table"></div>
     <div id="kanban-board" style="display:none"></div>
+    <div id="permits-board" style="display:none"></div>
+    <div id="materials-board" style="display:none"></div>
   </div>
 
   <!-- Stats accessed via nav bar icon -->
@@ -1762,6 +1772,12 @@ async function loadContacts() {
   if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
     renderKanban();
   }
+  if (typeof leadsView !== 'undefined' && leadsView === 'permits' && typeof renderPermitsBoard === 'function') {
+    try { renderPermitsBoard(); } catch(e) {}
+  }
+  if (typeof leadsView !== 'undefined' && leadsView === 'materials' && typeof renderMaterialsBoard === 'function') {
+    try { renderMaterialsBoard(); } catch(e) {}
+  }
   // Restore stats panel visibility from localStorage
   if (localStorage.getItem('crm_stats_visible') === '1') {
     statsVisible = true;
@@ -1916,6 +1932,12 @@ function toggleAnalyticsFilter(stageId) {
   // The unified chip row drives both views — keep the kanban in sync.
   if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
     renderKanban();
+  }
+  if (typeof leadsView !== 'undefined' && leadsView === 'permits' && typeof renderPermitsBoard === 'function') {
+    try { renderPermitsBoard(); } catch(e) {}
+  }
+  if (typeof leadsView !== 'undefined' && leadsView === 'materials' && typeof renderMaterialsBoard === 'function') {
+    try { renderMaterialsBoard(); } catch(e) {}
   }
   // Restore old scroll instantly, then smooth-scroll to active chip
   requestAnimationFrame(() => {
@@ -5948,7 +5970,8 @@ function refreshInvoiceTabBadge() {
 let leadsView = (function() {
   try {
     const saved = localStorage.getItem('bpp_crm_leads_view');
-    return saved === 'list' ? 'list' : 'pipeline';
+    if (saved === 'list' || saved === 'pipeline' || saved === 'permits' || saved === 'materials') return saved;
+    return 'pipeline';
   } catch(e) { return 'pipeline'; }
 })();
 
@@ -5957,16 +5980,36 @@ function setLeadsView(v) {
   try { localStorage.setItem('bpp_crm_leads_view', v); } catch(e) {}
   const listBtn = document.getElementById('view-list-btn');
   const pipeBtn = document.getElementById('view-pipe-btn');
+  const permBtn = document.getElementById('view-permits-btn');
+  const matBtn  = document.getElementById('view-materials-btn');
   if (listBtn) listBtn.classList.toggle('active', v === 'list');
   if (pipeBtn) pipeBtn.classList.toggle('active', v === 'pipeline');
+  if (permBtn) permBtn.classList.toggle('active', v === 'permits');
+  if (matBtn)  matBtn.classList.toggle('active', v === 'materials');
   const tableEl = document.getElementById('contacts-table');
   const kanbanEl = document.getElementById('kanban-board');
+  const permitsEl = document.getElementById('permits-board');
+  const materialsEl = document.getElementById('materials-board');
+  // Hide everything first
+  if (tableEl) tableEl.style.display = 'none';
+  if (kanbanEl) kanbanEl.style.display = 'none';
+  if (permitsEl) permitsEl.style.display = 'none';
+  if (materialsEl) materialsEl.style.display = 'none';
   if (v === 'pipeline') {
-    if (tableEl) tableEl.style.display = 'none';
     if (kanbanEl) { kanbanEl.style.display = 'block'; renderKanban(); }
+  } else if (v === 'permits') {
+    if (permitsEl) {
+      permitsEl.style.display = 'block';
+      try { if (typeof renderPermitsBoard === 'function') renderPermitsBoard(); } catch(e) {}
+    }
+  } else if (v === 'materials') {
+    if (materialsEl) {
+      materialsEl.style.display = 'block';
+      try { if (typeof renderMaterialsBoard === 'function') renderMaterialsBoard(); } catch(e) {}
+    }
   } else {
+    // 'list'
     if (tableEl) tableEl.style.display = '';
-    if (kanbanEl) kanbanEl.style.display = 'none';
   }
 }
 
@@ -7004,6 +7047,969 @@ setTimeout(() => {
         if (typingNode && typingNode.parentNode) typingNode.parentNode.removeChild(typingNode);
         throw e;
       }
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // PASS 9 — PERMIT TRACKER + MATERIALS CHECKLIST
+  // ══════════════════════════════════════════════════════════
+  // Storage strategy: structured key:value lines stored in install_notes,
+  // following the same pattern as the existing "Scheduled: YYYY-MM-DD" line.
+  // All permit/materials lines are prefixed with __pm_ so they can be parsed
+  // and stripped without disturbing free-text install notes.
+
+  // ── JURISDICTION FLOW METADATA ───────────────────────────
+  // Per-jurisdiction process info. The DB permit_jurisdictions table holds
+  // portal_url + credentials; this constant adds typical wait days and notes
+  // so the smart reminders know when to fire.
+  const JURISDICTION_FLOWS = {
+    'Greenville County':   { typical_days_submit_to_pay: 5, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 2, notes: 'Online portal (eTRAKiT). Pay via credit card. Print at home.' },
+    'City of Greenville':  { typical_days_submit_to_pay: 4, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 2, notes: 'CivicPlus portal. City limits only.' },
+    'City of Greer':       { typical_days_submit_to_pay: 4, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 2, notes: 'eTRAKiT portal.' },
+    'City of Mauldin':     { typical_days_submit_to_pay: 5, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 2, notes: 'Citizenserve portal. South Greenville.' },
+    'City of Simpsonville':{ typical_days_submit_to_pay: 4, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 2, notes: 'InfoVision portal.' },
+    'Fountain Inn':        { typical_days_submit_to_pay: 5, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 2, notes: 'iWorq portal. Call to confirm.' },
+    'Spartanburg County':  { typical_days_submit_to_pay: 7, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 3, notes: 'Email-based submission. Slower turnaround.' },
+    'Pickens County':      { typical_days_submit_to_pay: 5, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 2, notes: 'Call permit office to confirm.' },
+    // Generic default for any unknown jurisdiction
+    '__default':           { typical_days_submit_to_pay: 5, typical_days_pay_to_print: 3, typical_days_print_to_inspect: 2, notes: '' },
+  };
+
+  function getJurFlow(jurName) {
+    return (jurName && JURISDICTION_FLOWS[jurName]) || JURISDICTION_FLOWS.__default;
+  }
+
+  // ── PERMIT STEPS (the actual lifecycle, decoupled from pipeline stage) ──
+  const PERMIT_STEPS = [
+    { key:'submitted',         label:'Submitted',         color:'#3b82f6', icon:'\u2191' },
+    { key:'ready_to_pay',      label:'Ready to pay',      color:'#eab308', icon:'$' },
+    { key:'paid',              label:'Paid',              color:'#f97316', icon:'\u2713' },
+    { key:'ready_to_print',    label:'Ready to print',    color:'#8b5cf6', icon:'\u29c9' },
+    { key:'printed',           label:'Printed',           color:'#14b8a6', icon:'\u2399' },
+    { key:'inspect_scheduled', label:'Inspection set',    color:'#ec4899', icon:'\u270e' },
+    { key:'inspect_passed',    label:'Inspection passed', color:'#059669', icon:'\u2714' },
+  ];
+
+  // ── INLET BOX OPTIONS (matched to generator output) ──────
+  const INLET_OPTIONS = [
+    { id:'L5-30',  label:'L5-30 (30A, 120V)',     gen:'2-3kW (smaller portables)' },
+    { id:'L14-20', label:'L14-20 (20A, 240V)',    gen:'3-4kW' },
+    { id:'L14-30', label:'L14-30 (30A, 240V)',    gen:'4-7.5kW (most common)' },
+    { id:'CS6375', label:'CS6375 (50A, 125/250V)',gen:'7.5-10kW (twist-lock)' },
+    { id:'L14-50', label:'L14-50 (50A, 240V)',    gen:'7.5-12.5kW' },
+    { id:'14-50',  label:'14-50R (50A, 240V)',    gen:'10-12.5kW (RV-style)' },
+  ];
+
+  // ── INTERLOCK OPTIONS (matched to panel brand) ───────────
+  const INTERLOCK_OPTIONS = [
+    { panel_brand:'Square D',     panel_model:'QO Series',       interlock:'Square D QO Interlock Kit',          notes:'Most common in Upstate SC' },
+    { panel_brand:'Square D',     panel_model:'Homeline',        interlock:'Square D Homeline Interlock Kit',    notes:'' },
+    { panel_brand:'Eaton',        panel_model:'BR Series',       interlock:'Eaton BR Interlock Kit',             notes:'' },
+    { panel_brand:'Eaton',        panel_model:'CH Series',       interlock:'Eaton CH Interlock Kit',             notes:'' },
+    { panel_brand:'Siemens',      panel_model:'QP Series',       interlock:'Siemens QP Interlock Kit',           notes:'' },
+    { panel_brand:'GE',           panel_model:'THQL/THQP',       interlock:'GE Generator Interlock Kit',         notes:'' },
+    { panel_brand:'Cutler-Hammer',panel_model:'CH Series',       interlock:'Eaton CH Interlock Kit',             notes:'Cutler-Hammer = Eaton CH' },
+    { panel_brand:'Federal Pacific',panel_model:'Stab-Lok',      interlock:'Replace panel first',                notes:'Unsafe — recommend panel swap' },
+    { panel_brand:'Other',        panel_model:'',                interlock:'Custom — research needed',           notes:'Photo the panel before ordering' },
+  ];
+
+  // ── STRUCTURED-DATA HELPERS (read/write in install_notes) ──
+  // We store one key per line as: __pm_<key>:<value>
+  function _readPmField(c, key) {
+    if (!c) return '';
+    const txt = c.install_notes || '';
+    const re = new RegExp('^__pm_' + key + ':\\s*(.*)$', 'm');
+    const m = txt.match(re);
+    return m ? (m[1] || '').trim() : '';
+  }
+  function _writePmFieldLocal(c, key, value) {
+    if (!c) return;
+    let txt = c.install_notes || '';
+    const re = new RegExp('^__pm_' + key + ':.*\\n?', 'gm');
+    txt = txt.replace(re, '');
+    txt = txt.replace(/\n{2,}/g, '\n').replace(/^\n+|\n+$/g, '');
+    if (value !== '' && value !== null && value !== undefined) {
+      txt = ('__pm_' + key + ':' + value + (txt ? '\n' + txt : '')).trim();
+    }
+    c.install_notes = txt;
+  }
+  async function _persistInstallNotes(c) {
+    if (!c) return;
+    await db.from('contacts').update({ install_notes: c.install_notes }).eq('id', c.id);
+  }
+
+  // Public-ish accessors for permit data
+  window.getPermitData = function(c) {
+    if (!c) return {};
+    return {
+      number:           _readPmField(c, 'pnum'),
+      submitted_at:     _readPmField(c, 'psub'),
+      ready_to_pay_at:  _readPmField(c, 'prtp'),
+      paid_at:          _readPmField(c, 'ppaid'),
+      ready_to_print_at:_readPmField(c, 'prtpr'),
+      printed_at:       _readPmField(c, 'pprn'),
+      inspect_sched_at: _readPmField(c, 'pisch'),
+      inspect_passed_at:_readPmField(c, 'pipas'),
+      notes:            _readPmField(c, 'pnotes'),
+    };
+  };
+  // Materials data
+  window.getMaterialsData = function(c) {
+    if (!c) return {};
+    return {
+      inlet:        _readPmField(c, 'minlet'),
+      panel_brand:  _readPmField(c, 'mpb'),
+      panel_model:  _readPmField(c, 'mpm'),
+      interlock:    _readPmField(c, 'mintlk'),
+      surge:        _readPmField(c, 'msurge') === '1',
+      ordered_at:   _readPmField(c, 'mord'),
+      received_at:  _readPmField(c, 'mrcv'),
+      notes:        _readPmField(c, 'mnotes'),
+    };
+  };
+
+  // Determine the current permit step from the data
+  function permitCurrentStep(pd) {
+    if (pd.inspect_passed_at) return 'inspect_passed';
+    if (pd.inspect_sched_at)  return 'inspect_scheduled';
+    if (pd.printed_at)        return 'printed';
+    if (pd.ready_to_print_at) return 'ready_to_print';
+    if (pd.paid_at)           return 'paid';
+    if (pd.ready_to_pay_at)   return 'ready_to_pay';
+    if (pd.submitted_at)      return 'submitted';
+    return null;
+  }
+
+  // Days since a YYYY-MM-DD date string
+  function _daysSince(dateStr) {
+    if (!dateStr) return 0;
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
+      return Math.max(0, diff);
+    } catch (e) { return 0; }
+  }
+  function _todayISO() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  // Auto-suggest interlock from selected panel brand
+  function _suggestInterlock(panelBrand) {
+    const m = INTERLOCK_OPTIONS.find(x => x.panel_brand === panelBrand);
+    return m ? m.interlock : '';
+  }
+
+  // ── CSS injection (single style block, scoped class names) ──
+  const _pass9CSS = `
+  /* === Pass 9: Permit + Materials === */
+  .pm-section{margin-top:18px;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--card)}
+  html.dark .pm-section{background:#28241f;border-color:#3d3830}
+  .pm-section-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none;background:var(--card);transition:background .15s}
+  .pm-section-head:hover{background:var(--bg)}
+  html.dark .pm-section-head:hover{background:#1e1b17}
+  .pm-section-icon{width:30px;height:30px;border-radius:8px;background:rgba(255,186,0,.12);color:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:800;font-family:'Outfit',sans-serif}
+  html.dark .pm-section-icon{background:rgba(230,168,0,.18)}
+  .pm-section-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:var(--text);flex:1;letter-spacing:-.005em}
+  .pm-section-status{font-size:11px;font-weight:700;color:var(--text3);font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;padding:3px 8px;border-radius:var(--r-pill);background:var(--bg)}
+  html.dark .pm-section-status{background:#1e1b17}
+  .pm-section-status.warn{background:#fef3c7;color:#92400e}
+  .pm-section-status.hot{background:#fee2e2;color:var(--red)}
+  .pm-section-status.ok{background:#d1fae5;color:var(--green)}
+  html.dark .pm-section-status.warn{background:rgba(234,179,8,.18);color:#facc15}
+  html.dark .pm-section-status.hot{background:rgba(220,38,38,.18);color:#f87171}
+  html.dark .pm-section-status.ok{background:rgba(5,150,105,.18);color:#4ade80}
+  .pm-section-chev{transition:transform .2s;color:var(--text3);flex-shrink:0}
+  .pm-section.open .pm-section-chev{transform:rotate(180deg)}
+  .pm-section-body{display:none;padding:6px 14px 16px;border-top:1px solid var(--border)}
+  html.dark .pm-section-body{border-top-color:#3d3830}
+  .pm-section.open .pm-section-body{display:block;animation:pmSlideIn .22s var(--ease)}
+  @keyframes pmSlideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Permit progress steps */
+  .pm-steps{display:flex;flex-direction:column;gap:4px;margin:8px 0 4px;position:relative}
+  .pm-steps::before{content:'';position:absolute;left:14px;top:14px;bottom:14px;width:2px;background:var(--border);border-radius:1px;z-index:0}
+  html.dark .pm-steps::before{background:#3d3830}
+  .pm-step{display:flex;align-items:center;gap:11px;padding:7px 0;cursor:pointer;position:relative;z-index:1;transition:transform .15s}
+  .pm-step:hover{transform:translateX(2px)}
+  .pm-step-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--card);border:2px solid var(--border);color:var(--text3);font-size:12px;font-weight:800;font-family:'Outfit',sans-serif;transition:all .2s;box-shadow:0 0 0 3px var(--card)}
+  html.dark .pm-step-dot{background:#28241f;border-color:#3d3830;box-shadow:0 0 0 3px #28241f}
+  .pm-step.done .pm-step-dot{background:var(--green);border-color:var(--green);color:#fff}
+  .pm-step.current .pm-step-dot{background:var(--gold);border-color:var(--gold);color:var(--navy);animation:pmPulse 1.8s ease-in-out infinite}
+  html.dark .pm-step.current .pm-step-dot{color:#1e1b17}
+  @keyframes pmPulse{0%,100%{box-shadow:0 0 0 3px var(--card),0 0 0 0 rgba(255,186,0,.45)}50%{box-shadow:0 0 0 3px var(--card),0 0 0 8px rgba(255,186,0,0)}}
+  html.dark @keyframes pmPulse{0%,100%{box-shadow:0 0 0 3px #28241f,0 0 0 0 rgba(230,168,0,.45)}50%{box-shadow:0 0 0 3px #28241f,0 0 0 8px rgba(230,168,0,0)}}
+  .pm-step.overdue .pm-step-dot{background:var(--red);border-color:var(--red);color:#fff;animation:pmPulse 1.6s ease-in-out infinite}
+  .pm-step-body{flex:1;min-width:0}
+  .pm-step-label{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+  .pm-step.done .pm-step-label{color:var(--text2)}
+  .pm-step-meta{font-size:11px;color:var(--text3);margin-top:1px}
+  .pm-step-meta.warn{color:#92400e;font-weight:600}
+  .pm-step-meta.hot{color:var(--red);font-weight:700}
+  .pm-step-clear{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:var(--r-xs);opacity:0;transition:opacity .15s,color .15s}
+  .pm-step:hover .pm-step-clear{opacity:1}
+  .pm-step-clear:hover{color:var(--red);background:#fef2f2}
+  html.dark .pm-step-clear:hover{background:rgba(220,38,38,.12)}
+
+  /* Form rows used inside the panel sections */
+  .pm-row{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+  .pm-row label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:'Outfit',sans-serif}
+  .pm-row .form-input,.pm-row .form-select,.pm-row .form-textarea{width:100%}
+  .pm-row-inline{display:flex;gap:8px;align-items:center}
+  .pm-row-inline .pm-row{flex:1;margin-bottom:0}
+
+  /* Portal link button */
+  .pm-portal-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--r-sm);color:#1d4ed8;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;text-decoration:none;cursor:pointer;transition:all .15s;width:100%;justify-content:center}
+  .pm-portal-btn:hover{background:#dbeafe;box-shadow:0 2px 6px rgba(29,78,216,.18)}
+  html.dark .pm-portal-btn{background:#1e2a3d;color:#7cb3f0;border-color:#2a3a52}
+  html.dark .pm-portal-btn:hover{background:#2a3a52}
+
+  /* Materials banner above panel sections */
+  .pm-banner{margin-bottom:12px;padding:10px 12px;background:linear-gradient(135deg,rgba(255,186,0,.14),rgba(255,186,0,.04));border:1px solid rgba(255,186,0,.4);border-radius:var(--r-md);display:flex;align-items:flex-start;gap:10px;animation:promptIn .25s cubic-bezier(.16,1,.3,1)}
+  html.dark .pm-banner{background:linear-gradient(135deg,rgba(230,168,0,.14),rgba(230,168,0,.04));border-color:rgba(230,168,0,.4)}
+  .pm-banner-icon{width:24px;height:24px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-size:13px;font-family:'Outfit',sans-serif}
+  html.dark .pm-banner-icon{color:#1e1b17}
+  .pm-banner-body{flex:1;min-width:0;font-size:12px;color:var(--text);line-height:1.4}
+  .pm-banner-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:12.5px;color:var(--text);margin-bottom:2px}
+
+  /* Mark ordered/received pill buttons */
+  .pm-pill-row{display:flex;gap:6px;margin-top:6px}
+  .pm-pill{flex:1;padding:9px 8px;border:1.5px solid var(--border);background:var(--card);color:var(--text2);border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:11.5px;cursor:pointer;transition:all .15s;text-align:center}
+  .pm-pill:hover{border-color:var(--navy);color:var(--navy);transform:translateY(-1px)}
+  .pm-pill.on{background:var(--green);border-color:var(--green);color:#fff}
+  .pm-pill.on:hover{background:#047857;color:#fff;border-color:#047857}
+  html.dark .pm-pill{background:#1e1b17;border-color:#3d3830}
+  html.dark .pm-pill:hover{border-color:var(--gold);color:var(--gold)}
+  html.dark .pm-pill.on{background:var(--green);border-color:var(--green);color:#fff}
+
+  .pm-checkbox-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;user-select:none;font-size:12.5px;color:var(--text);font-weight:600;transition:background .15s}
+  .pm-checkbox-row:hover{background:var(--border)}
+  html.dark .pm-checkbox-row{background:#1e1b17}
+  html.dark .pm-checkbox-row:hover{background:#302b25}
+  .pm-checkbox-box{width:18px;height:18px;border-radius:5px;border:2px solid var(--border-strong);background:var(--card);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;transition:all .15s}
+  .pm-checkbox-row.checked .pm-checkbox-box{background:var(--green);border-color:var(--green)}
+
+  /* === Permits dashboard board === */
+  .pm-board{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .pm-board-empty{padding:60px 24px;text-align:center;color:var(--text3);font-size:13px;background:var(--card);border:1px dashed var(--border-strong);border-radius:var(--r-md)}
+  .pm-board-section{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-sm)}
+  .pm-board-section-head{padding:10px 14px;background:var(--bg);font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  html.dark .pm-board-section-head{background:#1e1b17}
+  .pm-board-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .pm-board-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+  .pm-board-row:hover{background:rgba(11,31,59,.025)}
+  html.dark .pm-board-row:hover{background:rgba(255,255,255,.025)}
+  .pm-board-row:last-child{border-bottom:none}
+  .pm-board-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pm-board-jur{font-size:11.5px;color:var(--text3);white-space:nowrap}
+  .pm-board-step{font-size:11px;font-weight:700;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;border-radius:var(--r-pill);white-space:nowrap}
+  .pm-board-days{font-size:11px;color:var(--text3);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:60px;text-align:right}
+  .pm-board-days.warn{color:#92400e;font-weight:700}
+  .pm-board-days.hot{color:var(--red);font-weight:800}
+  .pm-board-action{padding:6px 12px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;cursor:pointer;flex-shrink:0;transition:background .15s}
+  .pm-board-action:hover{background:var(--navy2)}
+  html.dark .pm-board-action{background:var(--gold);color:#1e1b17}
+  html.dark .pm-board-action:hover{background:#cca000}
+
+  /* Materials board */
+  .pm-mboard-row{display:grid;grid-template-columns:1fr 130px 130px 100px;gap:10px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+  .pm-mboard-row:hover{background:rgba(11,31,59,.025)}
+  html.dark .pm-mboard-row:hover{background:rgba(255,255,255,.025)}
+  .pm-mboard-row:last-child{border-bottom:none}
+  .pm-mboard-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pm-mboard-name small{display:block;font-family:'Inter',sans-serif;font-weight:500;font-size:11px;color:var(--text3);margin-top:1px}
+  .pm-mboard-cell{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pm-mboard-cell.muted{color:var(--text3);font-style:italic}
+  .pm-mboard-status{font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;border-radius:var(--r-pill);text-align:center;white-space:nowrap}
+  .pm-mboard-status.todo{background:#fef3c7;color:#92400e}
+  .pm-mboard-status.ordered{background:#dbeafe;color:#1d4ed8}
+  .pm-mboard-status.received{background:#d1fae5;color:var(--green)}
+  html.dark .pm-mboard-status.todo{background:rgba(234,179,8,.18);color:#facc15}
+  html.dark .pm-mboard-status.ordered{background:rgba(59,130,246,.18);color:#7cb3f0}
+  html.dark .pm-mboard-status.received{background:rgba(5,150,105,.18);color:#4ade80}
+  @media(max-width:720px){
+    .pm-mboard-row{grid-template-columns:1fr 100px 80px;gap:8px}
+    .pm-mboard-row .pm-mboard-cell:nth-child(3){display:none}
+  }
+  `;
+  const _pass9StyleEl = document.createElement('style');
+  _pass9StyleEl.textContent = _pass9CSS;
+  document.head.appendChild(_pass9StyleEl);
+
+  // ══════════════════════════════════════════════════════════
+  // PANEL SECTIONS (rendered inside the side panel)
+  // ══════════════════════════════════════════════════════════
+  // We append our own host div to the panel-extras-host (created by pass 7)
+  // so the activity feed stays where it is and our sections appear above it.
+  // The renderPanelExtras hook calls renderPmPanelSections after it runs.
+
+  function renderPmPanelSections() {
+    const id = currentPanelContactId;
+    if (!id) return;
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const stage = c.stage || 1;
+    if (stage < 4) {
+      // Hide if not yet booked
+      const oldHost = document.getElementById('pm-panel-host');
+      if (oldHost) oldHost.remove();
+      const oldBanner = document.getElementById('pm-banner-host');
+      if (oldBanner) oldBanner.remove();
+      return;
+    }
+
+    // Two hosts: a banner host that goes ABOVE smart prompts/activity feed,
+    // and a sections host that holds the collapsible permit + materials details
+    // and goes BELOW the activity feed (alongside other detail sections).
+    let bannerHost = document.getElementById('pm-banner-host');
+    if (!bannerHost) {
+      bannerHost = document.createElement('div');
+      bannerHost.id = 'pm-banner-host';
+    }
+    let host = document.getElementById('pm-panel-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'pm-panel-host';
+    }
+    const extras = document.getElementById('panel-extras-host');
+    // Position banner ABOVE panel-extras-host
+    if (extras && extras.parentNode) {
+      if (bannerHost.parentNode !== extras.parentNode || bannerHost.nextSibling !== extras) {
+        extras.parentNode.insertBefore(bannerHost, extras);
+      }
+      // Position the section host AFTER panel-extras-host (which contains the activity feed)
+      if (host.parentNode !== extras.parentNode || host.previousSibling !== extras) {
+        extras.parentNode.insertBefore(host, extras.nextSibling);
+      }
+    }
+
+    const pd = getPermitData(c);
+    const md = getMaterialsData(c);
+    const jurName = c.jurisdiction_id ? (allJurisdictions.find(j => j.id === c.jurisdiction_id) || {}).name : '';
+    const jur = c.jurisdiction_id ? allJurisdictions.find(j => j.id === c.jurisdiction_id) : null;
+    const flow = getJurFlow(jurName);
+
+    // ── Materials banner (shows when materials still missing for booked job) ──
+    let banner = '';
+    const matComplete = md.received_at;
+    const matStarted = md.inlet || md.panel_brand || md.interlock;
+    if (!matComplete) {
+      const msg = matStarted
+        ? 'Materials picked but not yet received. Order or update status below.'
+        : 'No materials picked yet. Choose inlet + interlock before ordering.';
+      banner = `<div class="pm-banner">
+        <div class="pm-banner-icon">!</div>
+        <div class="pm-banner-body">
+          <div class="pm-banner-title">Materials needed for this job</div>
+          ${esc(msg)}
+        </div>
+      </div>`;
+    }
+
+    // ── Permit section ──
+    const currentStep = permitCurrentStep(pd);
+    const stepIdx = currentStep ? PERMIT_STEPS.findIndex(s => s.key === currentStep) : -1;
+    let stepStatus = '';
+    let stepStatusClass = '';
+    if (!currentStep) {
+      stepStatus = 'Not started';
+    } else {
+      const stepDef = PERMIT_STEPS[stepIdx];
+      stepStatus = stepDef.label;
+      // Stale check on the relevant timestamps
+      if (currentStep === 'submitted') {
+        const days = _daysSince(pd.submitted_at);
+        if (days >= flow.typical_days_submit_to_pay * 1.5) { stepStatusClass = 'hot'; stepStatus = days + 'd waiting'; }
+        else if (days >= flow.typical_days_submit_to_pay)  { stepStatusClass = 'warn'; stepStatus = days + 'd waiting'; }
+      } else if (currentStep === 'paid') {
+        const days = _daysSince(pd.paid_at);
+        if (days >= flow.typical_days_pay_to_print * 1.5) { stepStatusClass = 'hot'; stepStatus = days + 'd waiting'; }
+        else if (days >= flow.typical_days_pay_to_print)  { stepStatusClass = 'warn'; stepStatus = days + 'd waiting'; }
+      } else if (currentStep === 'inspect_passed') {
+        stepStatusClass = 'ok';
+      }
+    }
+
+    const permitOpen = localStorage.getItem('bpp_pm_permit_open_' + id) === '1';
+    const matOpen    = localStorage.getItem('bpp_pm_mat_open_' + id) === '1' || (!matComplete);
+
+    const stepsHtml = PERMIT_STEPS.map((s, i) => {
+      let timestamp = '';
+      let metaCls = '';
+      let isDone = false;
+      const isCurrent = (currentStep === s.key);
+      if (s.key === 'submitted')         { timestamp = pd.submitted_at;      isDone = !!pd.submitted_at; }
+      if (s.key === 'ready_to_pay')      { timestamp = pd.ready_to_pay_at;   isDone = !!pd.ready_to_pay_at; }
+      if (s.key === 'paid')              { timestamp = pd.paid_at;           isDone = !!pd.paid_at; }
+      if (s.key === 'ready_to_print')    { timestamp = pd.ready_to_print_at; isDone = !!pd.ready_to_print_at; }
+      if (s.key === 'printed')           { timestamp = pd.printed_at;        isDone = !!pd.printed_at; }
+      if (s.key === 'inspect_scheduled') { timestamp = pd.inspect_sched_at;  isDone = !!pd.inspect_sched_at; }
+      if (s.key === 'inspect_passed')    { timestamp = pd.inspect_passed_at; isDone = !!pd.inspect_passed_at; }
+      // Earlier steps are also done if a later step is set
+      if (!isDone && currentStep) {
+        const curIdx = PERMIT_STEPS.findIndex(x => x.key === currentStep);
+        if (i < curIdx) isDone = true;
+      }
+      // Overdue check on the current step
+      let isOverdue = false;
+      let metaText = timestamp ? new Date(timestamp + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+      if (isCurrent) {
+        let typical = 0;
+        let waitFrom = '';
+        if (s.key === 'submitted')      { typical = flow.typical_days_submit_to_pay; waitFrom = pd.submitted_at; }
+        if (s.key === 'paid')           { typical = flow.typical_days_pay_to_print;  waitFrom = pd.paid_at; }
+        if (s.key === 'printed')        { typical = flow.typical_days_print_to_inspect; waitFrom = pd.printed_at; }
+        if (typical && waitFrom) {
+          const d = _daysSince(waitFrom);
+          if (d >= typical * 1.5) { isOverdue = true; metaCls = 'hot'; metaText = 'Overdue · ' + d + 'd'; }
+          else if (d >= typical)  { metaCls = 'warn'; metaText = 'Due now · ' + d + 'd'; }
+          else if (d > 0)         { metaText = d + 'd waiting · expect ' + typical + 'd'; }
+          else                    { metaText = 'Just submitted'; }
+        }
+      }
+      const cls = (isCurrent && isOverdue) ? 'overdue' : (isCurrent ? 'current' : (isDone ? 'done' : ''));
+      const icon = isDone ? '\u2713' : (i + 1);
+      const clearBtn = isDone ? `<button class="pm-step-clear" onclick="event.stopPropagation();window.pmClearPermitStep('${id}','${s.key}')" title="Clear">\u2715</button>` : '';
+      return `<div class="pm-step ${cls}" onclick="window.pmTogglePermitStep('${id}','${s.key}')">
+        <div class="pm-step-dot">${icon}</div>
+        <div class="pm-step-body">
+          <div class="pm-step-label">${esc(s.label)}</div>
+          ${metaText ? `<div class="pm-step-meta ${metaCls}">${esc(metaText)}</div>` : ''}
+        </div>
+        ${clearBtn}
+      </div>`;
+    }).join('');
+
+    // Portal link from DB jurisdiction record (link1_url is the portal)
+    const portalUrl = jur && (jur.link1_url || jur.portal_url);
+    const portalBtn = portalUrl
+      ? `<a href="${esc(portalUrl)}" target="_blank" rel="noopener" class="pm-portal-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open ${esc(jurName || 'jurisdiction')} portal
+        </a>`
+      : '';
+
+    const jurNote = flow && flow.notes
+      ? `<div style="font-size:11px;color:var(--text3);margin:8px 0 4px;line-height:1.4">${esc(flow.notes)}</div>`
+      : '';
+    const jurMissing = !c.jurisdiction_id
+      ? `<div style="background:#fef3c7;border-radius:var(--r-sm);padding:9px 11px;font-size:11.5px;color:#92400e;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:7px">
+          <span>\u26a0\ufe0f</span> Pick a jurisdiction in Details to enable timing reminders.
+        </div>`
+      : '';
+
+    const permitSection = `<div class="pm-section ${permitOpen ? 'open' : ''}" id="pm-section-permit">
+      <div class="pm-section-head" onclick="window.pmToggleSection('permit','${id}')">
+        <div class="pm-section-icon">\u2625</div>
+        <div class="pm-section-title">Permit Status</div>
+        <div class="pm-section-status ${stepStatusClass}">${esc(stepStatus)}</div>
+        <svg class="pm-section-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="pm-section-body">
+        ${jurMissing}
+        <div class="pm-row">
+          <label>Permit Number</label>
+          <input class="form-input" type="text" id="pm-permit-num" value="${esc(pd.number)}" placeholder="e.g. ABC-12345" oninput="window.pmDebounceSave('${id}','pnum',this.value)">
+        </div>
+        ${jurNote}
+        <div class="pm-steps">${stepsHtml}</div>
+        <div class="pm-row" style="margin-top:14px">
+          <label>Permit Notes</label>
+          <textarea class="form-textarea" id="pm-permit-notes" placeholder="Anything weird about this permit (special inspector, payment method, etc.)" rows="2" oninput="window.pmDebounceSave('${id}','pnotes',this.value)">${esc(pd.notes)}</textarea>
+        </div>
+        ${portalBtn}
+      </div>
+    </div>`;
+
+    // ── Materials section ──
+    const inletOpts = '<option value="">— Select inlet —</option>' +
+      INLET_OPTIONS.map(o => `<option value="${esc(o.label)}" ${md.inlet === o.label ? 'selected' : ''}>${esc(o.label)} · ${esc(o.gen)}</option>`).join('');
+    const panelBrands = Array.from(new Set(INTERLOCK_OPTIONS.map(x => x.panel_brand)));
+    const panelOpts = '<option value="">— Select panel brand —</option>' +
+      panelBrands.map(b => `<option value="${esc(b)}" ${md.panel_brand === b ? 'selected' : ''}>${esc(b)}</option>`).join('');
+    const interlockOpts = '<option value="">— Auto-suggested —</option>' +
+      INTERLOCK_OPTIONS.map(o => `<option value="${esc(o.interlock)}" ${md.interlock === o.interlock ? 'selected' : ''}>${esc(o.interlock)}</option>`).join('');
+
+    let matStatusLabel = 'Not ordered';
+    let matStatusClass = '';
+    if (md.received_at) { matStatusLabel = 'Received'; matStatusClass = 'ok'; }
+    else if (md.ordered_at) { matStatusLabel = 'Ordered'; matStatusClass = 'warn'; }
+
+    const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+
+    const matSection = `<div class="pm-section ${matOpen ? 'open' : ''}" id="pm-section-mat">
+      <div class="pm-section-head" onclick="window.pmToggleSection('mat','${id}')">
+        <div class="pm-section-icon">\u25a3</div>
+        <div class="pm-section-title">Materials</div>
+        <div class="pm-section-status ${matStatusClass}">${esc(matStatusLabel)}</div>
+        <svg class="pm-section-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="pm-section-body">
+        <div class="pm-row">
+          <label>Inlet Box</label>
+          <select class="form-select" id="pm-mat-inlet" onchange="window.pmSavePmField('${id}','minlet',this.value)">${inletOpts}</select>
+        </div>
+        <div class="pm-row-inline">
+          <div class="pm-row">
+            <label>Panel Brand</label>
+            <select class="form-select" id="pm-mat-pb" onchange="window.pmOnPanelBrandChange('${id}',this.value)">${panelOpts}</select>
+          </div>
+          <div class="pm-row">
+            <label>Panel Model</label>
+            <input class="form-input" type="text" id="pm-mat-pm" value="${esc(md.panel_model)}" placeholder="e.g. QO 200A" oninput="window.pmDebounceSave('${id}','mpm',this.value)">
+          </div>
+        </div>
+        <div class="pm-row">
+          <label>Interlock Kit</label>
+          <select class="form-select" id="pm-mat-intlk" onchange="window.pmSavePmField('${id}','mintlk',this.value)">${interlockOpts}</select>
+        </div>
+        <div class="pm-checkbox-row ${md.surge ? 'checked' : ''}" onclick="window.pmToggleSurge('${id}')">
+          <div class="pm-checkbox-box">${md.surge ? '\u2713' : ''}</div>
+          <span>Whole-home surge protector included</span>
+        </div>
+        <div class="pm-pill-row">
+          <button class="pm-pill ${md.ordered_at ? 'on' : ''}" onclick="window.pmMarkOrdered('${id}')">${md.ordered_at ? 'Ordered \u2713 ' + fmtDate(md.ordered_at) : 'Mark Ordered'}</button>
+          <button class="pm-pill ${md.received_at ? 'on' : ''}" onclick="window.pmMarkReceived('${id}')">${md.received_at ? 'Received \u2713 ' + fmtDate(md.received_at) : 'Mark Received'}</button>
+        </div>
+        <div class="pm-row" style="margin-top:12px">
+          <label>Materials Notes</label>
+          <textarea class="form-textarea" id="pm-mat-notes" placeholder="Special order, extra cord length, accessories…" rows="2" oninput="window.pmDebounceSave('${id}','mnotes',this.value)">${esc(md.notes)}</textarea>
+        </div>
+      </div>
+    </div>`;
+
+    bannerHost.innerHTML = banner;
+    host.innerHTML = permitSection + matSection;
+  }
+
+  // Toggle a section open/closed (persists per-contact)
+  window.pmToggleSection = function(which, id) {
+    const key = 'bpp_pm_' + (which === 'permit' ? 'permit' : 'mat') + '_open_' + id;
+    const open = localStorage.getItem(key) === '1';
+    localStorage.setItem(key, open ? '0' : '1');
+    const sec = document.getElementById('pm-section-' + (which === 'permit' ? 'permit' : 'mat'));
+    if (sec) sec.classList.toggle('open');
+  };
+
+  // Click a permit step to set today's date
+  window.pmTogglePermitStep = async function(id, stepKey) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const fieldByKey = {
+      submitted:'psub', ready_to_pay:'prtp', paid:'ppaid',
+      ready_to_print:'prtpr', printed:'pprn',
+      inspect_scheduled:'pisch', inspect_passed:'pipas',
+    };
+    const field = fieldByKey[stepKey];
+    if (!field) return;
+    const existing = _readPmField(c, field);
+    if (existing) {
+      // already set — leave it (use the X button to clear)
+      return;
+    }
+    _writePmFieldLocal(c, field, _todayISO());
+    await _persistInstallNotes(c);
+    showToast(PERMIT_STEPS.find(s => s.key === stepKey).label + ' marked', 'success');
+    touchContact(id);
+    renderPmPanelSections();
+    if (typeof renderPermitsBoard === 'function') try { renderPermitsBoard(); } catch(e) {}
+  };
+  // Clear a permit step timestamp
+  window.pmClearPermitStep = async function(id, stepKey) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const fieldByKey = {
+      submitted:'psub', ready_to_pay:'prtp', paid:'ppaid',
+      ready_to_print:'prtpr', printed:'pprn',
+      inspect_scheduled:'pisch', inspect_passed:'pipas',
+    };
+    const field = fieldByKey[stepKey];
+    if (!field) return;
+    _writePmFieldLocal(c, field, '');
+    await _persistInstallNotes(c);
+    showToast('Cleared', 'success');
+    renderPmPanelSections();
+    if (typeof renderPermitsBoard === 'function') try { renderPermitsBoard(); } catch(e) {}
+  };
+
+  // Save an arbitrary __pm_<key> field immediately
+  window.pmSavePmField = async function(id, key, value) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    _writePmFieldLocal(c, key, value);
+    await _persistInstallNotes(c);
+    // No toast — too chatty
+  };
+
+  // Debounced save for text inputs (notes, permit number)
+  const _pmDebounceTimers = {};
+  window.pmDebounceSave = function(id, key, value) {
+    const k = id + ':' + key;
+    if (_pmDebounceTimers[k]) clearTimeout(_pmDebounceTimers[k]);
+    _pmDebounceTimers[k] = setTimeout(async () => {
+      const c = allContacts.find(x => x.id === id);
+      if (!c) return;
+      _writePmFieldLocal(c, key, value);
+      await _persistInstallNotes(c);
+    }, 600);
+  };
+
+  // Panel-brand picker — auto-suggests interlock if not set
+  window.pmOnPanelBrandChange = async function(id, brand) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    _writePmFieldLocal(c, 'mpb', brand);
+    const md = getMaterialsData(c);
+    if (!md.interlock) {
+      const suggested = _suggestInterlock(brand);
+      if (suggested) _writePmFieldLocal(c, 'mintlk', suggested);
+    }
+    await _persistInstallNotes(c);
+    renderPmPanelSections();
+  };
+
+  window.pmToggleSurge = async function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const cur = _readPmField(c, 'msurge') === '1';
+    _writePmFieldLocal(c, 'msurge', cur ? '' : '1');
+    await _persistInstallNotes(c);
+    renderPmPanelSections();
+  };
+
+  window.pmMarkOrdered = async function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const cur = _readPmField(c, 'mord');
+    _writePmFieldLocal(c, 'mord', cur ? '' : _todayISO());
+    await _persistInstallNotes(c);
+    showToast(cur ? 'Ordered cleared' : 'Marked ordered', 'success');
+    touchContact(id);
+    renderPmPanelSections();
+    if (typeof renderMaterialsBoard === 'function') try { renderMaterialsBoard(); } catch(e) {}
+  };
+  window.pmMarkReceived = async function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const cur = _readPmField(c, 'mrcv');
+    _writePmFieldLocal(c, 'mrcv', cur ? '' : _todayISO());
+    if (!cur && !_readPmField(c, 'mord')) {
+      // If marking received without an order date, set order date to today too
+      _writePmFieldLocal(c, 'mord', _todayISO());
+    }
+    await _persistInstallNotes(c);
+    showToast(cur ? 'Received cleared' : 'Marked received', 'success');
+    touchContact(id);
+    renderPmPanelSections();
+    if (typeof renderMaterialsBoard === 'function') try { renderMaterialsBoard(); } catch(e) {}
+  };
+
+  // Hook into renderPanelExtras: render our sections after the original runs
+  const _origRenderPanelExtras = window.renderPanelExtras;
+  // The original is a closure-bound function, not on window. So we hook the
+  // openPanel/autoProgressStage paths and re-call our sections from there.
+  const _origOpenPanel2 = window.openPanel;
+  if (typeof _origOpenPanel2 === 'function') {
+    window.openPanel = function(id) {
+      _origOpenPanel2.apply(this, arguments);
+      setTimeout(renderPmPanelSections, 80);
+    };
+  }
+  const _origAutoProgress2 = window.autoProgressStage;
+  if (typeof _origAutoProgress2 === 'function') {
+    window.autoProgressStage = async function(contactId, targetStage) {
+      const result = await _origAutoProgress2.apply(this, arguments);
+      if (currentPanelContactId === contactId) {
+        setTimeout(renderPmPanelSections, 80);
+      }
+      return result;
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // PERMITS BOARD VIEW (alternative to list/pipeline)
+  // ══════════════════════════════════════════════════════════
+  window.renderPermitsBoard = function() {
+    const wrap = document.getElementById('permits-board');
+    if (!wrap) return;
+    const term = ((document.getElementById('search') || {}).value || '').toLowerCase();
+
+    // Collect contacts that have any permit data, or are in stages 4-8
+    const eligible = allContacts.filter(c => {
+      if (c.status === 'Archived') return false;
+      const stage = c.stage || 1;
+      const pd = getPermitData(c);
+      const hasPermitData = !!(pd.submitted_at || pd.number);
+      return hasPermitData || (stage >= 4 && stage <= 8);
+    }).filter(c => {
+      if (!term) return true;
+      return fuzzyMatch(c, term);
+    });
+
+    if (!eligible.length) {
+      wrap.innerHTML = `<div class="pm-board"><div class="pm-board-empty">
+        <div style="font-size:32px;margin-bottom:10px">\u2625</div>
+        <div style="font-weight:700;color:var(--text2);font-size:14px;margin-bottom:4px">No active permits</div>
+        <div>Permits show here once a contact is booked or has permit data.</div>
+      </div></div>`;
+      return;
+    }
+
+    // Bucket each contact by urgency
+    function urgencyOf(c) {
+      const pd = getPermitData(c);
+      const jurName = c.jurisdiction_id ? (allJurisdictions.find(j => j.id === c.jurisdiction_id) || {}).name : '';
+      const flow = getJurFlow(jurName);
+      const cur = permitCurrentStep(pd);
+      if (!cur) return { rank: 4, label: 'Not started', class: '' };
+      if (cur === 'inspect_passed') return { rank: 3, label: 'Done', class: 'ok', days: 0 };
+
+      let waitFrom = '';
+      let typical = 0;
+      if (cur === 'submitted')      { waitFrom = pd.submitted_at;     typical = flow.typical_days_submit_to_pay; }
+      else if (cur === 'paid')      { waitFrom = pd.paid_at;          typical = flow.typical_days_pay_to_print; }
+      else if (cur === 'printed')   { waitFrom = pd.printed_at;       typical = flow.typical_days_print_to_inspect; }
+      else if (cur === 'ready_to_pay')   { waitFrom = pd.ready_to_pay_at; typical = 1; }
+      else if (cur === 'ready_to_print') { waitFrom = pd.ready_to_print_at; typical = 1; }
+      else if (cur === 'inspect_scheduled') { waitFrom = pd.inspect_sched_at; typical = 5; }
+      const days = waitFrom ? _daysSince(waitFrom) : 0;
+      if (typical && days >= typical * 1.5) return { rank: 0, label: 'Action needed', class: 'hot', days, typical, cur };
+      if (typical && days >= typical)       return { rank: 1, label: 'Check portal',  class: 'warn', days, typical, cur };
+      return { rank: 2, label: 'On track', class: '', days, typical, cur };
+    }
+
+    const enriched = eligible.map(c => ({ c, u: urgencyOf(c) }));
+    // Sort: action needed first, then warn, then on track
+    enriched.sort((a, b) => {
+      if (a.u.rank !== b.u.rank) return a.u.rank - b.u.rank;
+      const ad = a.u.days || 0; const bd = b.u.days || 0;
+      return bd - ad;
+    });
+
+    const groups = [
+      { rank: 0, label: 'Action needed', dot: '#dc2626' },
+      { rank: 1, label: 'Check portal',  dot: '#f59e0b' },
+      { rank: 2, label: 'On track',      dot: '#3b82f6' },
+      { rank: 3, label: 'Completed',     dot: '#059669' },
+      { rank: 4, label: 'Not started',   dot: '#9aa3b8' },
+    ];
+
+    let html = '<div class="pm-board">';
+    let renderedAny = false;
+    groups.forEach(g => {
+      const items = enriched.filter(e => e.u.rank === g.rank);
+      if (!items.length) return;
+      renderedAny = true;
+      html += `<div class="pm-board-section">
+        <div class="pm-board-section-head">
+          <div class="pm-board-dot" style="background:${g.dot}"></div>
+          ${esc(g.label)}
+          <span style="color:var(--text3);font-weight:700;margin-left:auto">${items.length}</span>
+        </div>`;
+      items.forEach(({ c, u }) => {
+        const pd = getPermitData(c);
+        const jur = c.jurisdiction_id ? allJurisdictions.find(j => j.id === c.jurisdiction_id) : null;
+        const jurName = jur ? jur.name : '';
+        const cur = u.cur || permitCurrentStep(pd);
+        const stepDef = cur ? PERMIT_STEPS.find(s => s.key === cur) : null;
+        const stepLabel = stepDef ? stepDef.label : 'Not started';
+        const stepBg = stepDef ? stepDef.color : '#9aa3b8';
+        const daysCls = u.class === 'hot' ? 'hot' : (u.class === 'warn' ? 'warn' : '');
+        const daysText = u.days != null
+          ? (u.days === 0 ? 'today' : (u.days + 'd' + (u.typical ? ' · ~' + u.typical + 'd' : '')))
+          : '';
+        // Action button text per current step
+        let actionText = 'Open';
+        if (cur === 'submitted')        actionText = 'Mark paid';
+        else if (cur === 'ready_to_pay')actionText = 'Mark paid';
+        else if (cur === 'paid')        actionText = 'Mark printed';
+        else if (cur === 'ready_to_print') actionText = 'Mark printed';
+        else if (cur === 'printed')     actionText = 'Schedule insp.';
+        else if (cur === 'inspect_scheduled') actionText = 'Mark passed';
+        else if (cur === 'inspect_passed')    actionText = 'View';
+        else                            actionText = 'Mark submitted';
+
+        html += `<div class="pm-board-row" onclick="openPanel('${c.id}')">
+          <div style="display:flex;flex-direction:column;min-width:0;flex:1">
+            <div class="pm-board-name">${esc(c.name || 'Unnamed')}</div>
+            <div class="pm-board-jur">${jurName ? esc(jurName) : '<span style="color:var(--text3)">No jurisdiction</span>'}${pd.number ? ' · ' + esc(pd.number) : ''}</div>
+          </div>
+          <div class="pm-board-step" style="background:${stepBg}1a;color:${stepBg}">${esc(stepLabel)}</div>
+          <div class="pm-board-days ${daysCls}">${esc(daysText)}</div>
+          <button class="pm-board-action" onclick="event.stopPropagation();window.pmBoardQuickAdvance('${c.id}','${cur || 'submitted'}')">${esc(actionText)}</button>
+        </div>`;
+      });
+      html += '</div>';
+    });
+    if (!renderedAny) {
+      html += `<div class="pm-board-empty">No permits match your filter.</div>`;
+    }
+    html += '</div>';
+    wrap.innerHTML = html;
+  };
+
+  // Quick-advance helper for the permits board action button
+  window.pmBoardQuickAdvance = async function(id, cur) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    let nextField = '';
+    if (!cur || cur === 'submitted')          nextField = 'ppaid';
+    else if (cur === 'ready_to_pay')          nextField = 'ppaid';
+    else if (cur === 'paid')                  nextField = 'pprn';
+    else if (cur === 'ready_to_print')        nextField = 'pprn';
+    else if (cur === 'printed')               nextField = 'pisch';
+    else if (cur === 'inspect_scheduled')     nextField = 'pipas';
+    else if (cur === 'inspect_passed')        { openPanel(id); return; }
+    if (!nextField) { openPanel(id); return; }
+    if (_readPmField(c, nextField)) { openPanel(id); return; }
+    _writePmFieldLocal(c, nextField, _todayISO());
+    await _persistInstallNotes(c);
+    showToast('Permit advanced', 'success');
+    touchContact(id);
+    renderPermitsBoard();
+    if (currentPanelContactId === id) renderPmPanelSections();
+  };
+
+  // ══════════════════════════════════════════════════════════
+  // MATERIALS BOARD VIEW
+  // ══════════════════════════════════════════════════════════
+  window.renderMaterialsBoard = function() {
+    const wrap = document.getElementById('materials-board');
+    if (!wrap) return;
+    const term = ((document.getElementById('search') || {}).value || '').toLowerCase();
+
+    // Eligible: stages 4-8 not yet received
+    const eligible = allContacts.filter(c => {
+      if (c.status === 'Archived') return false;
+      const stage = c.stage || 1;
+      if (stage < 4 || stage > 8) return false;
+      const md = getMaterialsData(c);
+      if (md.received_at) return false; // already received — drop
+      return true;
+    }).filter(c => {
+      if (!term) return true;
+      return fuzzyMatch(c, term);
+    });
+
+    if (!eligible.length) {
+      wrap.innerHTML = `<div class="pm-board"><div class="pm-board-empty">
+        <div style="font-size:32px;margin-bottom:10px">\u25a3</div>
+        <div style="font-weight:700;color:var(--text2);font-size:14px;margin-bottom:4px">All materials received</div>
+        <div>No outstanding materials for booked jobs.</div>
+      </div></div>`;
+      return;
+    }
+
+    // Sort: not started first, then ordered, oldest first
+    eligible.sort((a, b) => {
+      const ma = getMaterialsData(a);
+      const mb = getMaterialsData(b);
+      const aStarted = ma.inlet || ma.panel_brand;
+      const bStarted = mb.inlet || mb.panel_brand;
+      const aOrdered = !!ma.ordered_at;
+      const bOrdered = !!mb.ordered_at;
+      // Not started + booked oldest = top of list
+      if (aOrdered !== bOrdered) return aOrdered ? 1 : -1;
+      if (aStarted !== bStarted) return aStarted ? 1 : -1;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
+
+    let html = '<div class="pm-board"><div class="pm-board-section">'
+      + '<div class="pm-board-section-head"><div class="pm-board-dot" style="background:#eab308"></div>'
+      + 'Materials needed for booked jobs<span style="color:var(--text3);font-weight:700;margin-left:auto">' + eligible.length + '</span></div>';
+
+    eligible.forEach(c => {
+      const md = getMaterialsData(c);
+      const inlet = md.inlet || '<span class="muted">—</span>';
+      const intlk = md.interlock || (md.panel_brand ? _suggestInterlock(md.panel_brand) || '<span class="muted">pending</span>' : '<span class="muted">—</span>');
+      let status = 'todo';
+      let statusLabel = 'Not ordered';
+      if (md.ordered_at) { status = 'ordered'; statusLabel = 'Ordered'; }
+      html += `<div class="pm-mboard-row" onclick="openPanel('${c.id}')">
+        <div class="pm-mboard-name">${esc(c.name || 'Unnamed')}<small>Stage ${(c.stage || 1)} \u00b7 booked ${new Date(c.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })}</small></div>
+        <div class="pm-mboard-cell">${inlet}</div>
+        <div class="pm-mboard-cell">${intlk}</div>
+        <div class="pm-mboard-status ${status}">${esc(statusLabel)}</div>
+      </div>`;
+    });
+    html += '</div></div>';
+    wrap.innerHTML = html;
+  };
+
+  // ══════════════════════════════════════════════════════════
+  // SMART REMINDERS — wire into the existing notification center
+  // ══════════════════════════════════════════════════════════
+  // Once per day per contact+condition, fire a notification when a permit
+  // sits past its expected wait time. Dedupe is via the existing notifAdd
+  // dedupe (60s) plus a localStorage day-stamp.
+  function _scanPermitsForReminders() {
+    if (typeof notifAdd !== 'function') return;
+    if (!Array.isArray(allContacts)) return;
+    let lastScanDay = '';
+    try { lastScanDay = localStorage.getItem('bpp_pm_last_scan') || ''; } catch(e) {}
+    const today = _todayISO();
+    if (lastScanDay === today) return; // already scanned today
+    try { localStorage.setItem('bpp_pm_last_scan', today); } catch(e) {}
+
+    let firedKeys = {};
+    try { firedKeys = JSON.parse(localStorage.getItem('bpp_pm_fired_today') || '{}'); } catch(e) {}
+    if (firedKeys.__day !== today) firedKeys = { __day: today };
+
+    allContacts.forEach(c => {
+      if (c.status === 'Archived') return;
+      const pd = getPermitData(c);
+      const jurName = c.jurisdiction_id ? (allJurisdictions.find(j => j.id === c.jurisdiction_id) || {}).name : '';
+      const flow = getJurFlow(jurName);
+      const cur = permitCurrentStep(pd);
+      if (!cur || cur === 'inspect_passed') return;
+
+      let waitFrom = '';
+      let typical = 0;
+      if (cur === 'submitted')      { waitFrom = pd.submitted_at; typical = flow.typical_days_submit_to_pay; }
+      else if (cur === 'paid')      { waitFrom = pd.paid_at;      typical = flow.typical_days_pay_to_print; }
+      else if (cur === 'printed')   { waitFrom = pd.printed_at;   typical = flow.typical_days_print_to_inspect; }
+      if (!waitFrom || !typical) return;
+      const days = _daysSince(waitFrom);
+      if (days < typical) return;
+
+      const fireKey = c.id + ':' + cur + ':' + days;
+      if (firedKeys[fireKey]) return;
+      firedKeys[fireKey] = 1;
+
+      const stepLabel = (PERMIT_STEPS.find(s => s.key === cur) || {}).label || cur;
+      const title = (jurName || 'Permit') + ' — check status';
+      const sub = (c.name || 'Unnamed') + ' \u00b7 ' + days + 'd in ' + stepLabel;
+      try { notifAdd('lead', title, sub, c.id); } catch(e) {}
+    });
+    try { localStorage.setItem('bpp_pm_fired_today', JSON.stringify(firedKeys)); } catch(e) {}
+  }
+
+  // Schedule the scan after contacts load. We piggy-back on whichever path
+  // sets allContacts: the simplest hook is a periodic check until allContacts
+  // is populated, then run once.
+  let _pmReminderTries = 0;
+  (function tryReminderScan() {
+    _pmReminderTries++;
+    if (Array.isArray(allContacts) && allContacts.length > 0 && Array.isArray(allJurisdictions)) {
+      _scanPermitsForReminders();
+      // Re-scan every 30 minutes while the tab is open
+      setInterval(_scanPermitsForReminders, 30 * 60 * 1000);
+      return;
+    }
+    if (_pmReminderTries < 30) setTimeout(tryReminderScan, 1000);
+  })();
+
+  // Refresh the permits/materials boards on data load
+  const _origLoadContacts = window.loadContacts;
+  if (typeof _origLoadContacts === 'function') {
+    window.loadContacts = async function() {
+      const result = await _origLoadContacts.apply(this, arguments);
+      if (leadsView === 'permits' && typeof renderPermitsBoard === 'function') {
+        try { renderPermitsBoard(); } catch(e) {}
+      } else if (leadsView === 'materials' && typeof renderMaterialsBoard === 'function') {
+        try { renderMaterialsBoard(); } catch(e) {}
+      }
+      return result;
     };
   }
 })();
