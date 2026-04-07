@@ -268,7 +268,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;lett
 .btn-map:hover{background:#dbeafe}
 
 /* LAYOUT */
-.main{max-width:1140px;margin:0 auto;padding:var(--sp-8) var(--sp-5)}
+.main{max-width:1140px;margin:0 auto;padding:var(--sp-8) var(--sp-5) 120px}
 
 /* SECTION HEADERS */
 .section-head{display:flex;align-items:center;gap:12px;margin-bottom:var(--sp-5)}
@@ -277,6 +277,14 @@ h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;lett
 
 /* TOOLBAR */
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:var(--sp-5);flex-wrap:wrap}
+/* Search wrapper — groups the search input + inline add-lead button */
+.search-wrap{flex:1;min-width:200px;display:flex;align-items:stretch;gap:8px}
+.search-wrap .search-input{flex:1;min-width:0}
+.search-add{flex-shrink:0;width:40px;border:none;border-radius:var(--r-sm);background:var(--navy);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),transform var(--t-fast),box-shadow var(--t-fast);box-shadow:var(--shadow-sm)}
+.search-add:hover{background:#132a4f;box-shadow:0 4px 14px rgba(11,31,59,.22),var(--shadow-sm);transform:translateY(-1px)}
+.search-add:active{transform:translateY(0) scale(.95)}
+html.dark .search-add{background:var(--gold);color:#1e1b17}
+html.dark .search-add:hover{background:#cca000}
 .search-input{flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-family:'Inter',sans-serif;background:var(--card);color:var(--text);outline:none;transition:border-color var(--t-fast),box-shadow var(--t-fast);box-shadow:var(--shadow-sm)}
 .search-input:hover{border-color:var(--border-strong)}
 .search-input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(11,31,59,.1)}
@@ -1043,8 +1051,8 @@ html.dark .tm-brief-btn.secondary:hover{background:var(--card)}
 .tm-brief-empty{padding:24px 12px;text-align:center;color:var(--text3);font-size:13px}
 .tm-brief-empty-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px}
 
-/* ── Sparky launcher button (floating pill, bottom-right above FAB) ── */
-.tm-launcher{position:fixed;bottom:96px;right:24px;height:54px;border-radius:var(--r-pill);background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);border:none;cursor:pointer;box-shadow:0 8px 24px rgba(255,186,0,.36),0 3px 8px rgba(10,20,40,.18);z-index:59;display:none;align-items:center;gap:9px;padding:0 19px 0 14px;transition:transform var(--t-base),box-shadow var(--t-base),padding var(--t-base);font-family:'Outfit',sans-serif;line-height:1;letter-spacing:-.005em}
+/* ── Sparky launcher button (floating pill, bottom-right — the ONLY floating element) ── */
+.tm-launcher{position:fixed;bottom:24px;right:24px;height:54px;border-radius:var(--r-pill);background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);border:none;cursor:pointer;box-shadow:0 8px 24px rgba(255,186,0,.36),0 3px 8px rgba(10,20,40,.18);z-index:59;display:none;align-items:center;gap:9px;padding:0 19px 0 14px;transition:transform var(--t-base),box-shadow var(--t-base),padding var(--t-base);font-family:'Outfit',sans-serif;line-height:1;letter-spacing:-.005em}
 .tm-launcher.visible{display:inline-flex;animation:tmLauncherPop .42s var(--ease)}
 @keyframes tmLauncherPop{from{opacity:0;transform:scale(.6) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .tm-launcher-icon{width:30px;height:30px;border-radius:50%;background:rgba(11,31,59,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);transition:transform var(--t-base)}
@@ -1159,11 +1167,30 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
 @media (max-width: 520px){
   .tm-panel{max-width:100%}
-  .tm-launcher{bottom:86px;right:18px;height:48px;padding:0 16px 0 11px;gap:7px}
+  .tm-launcher{bottom:18px;right:18px;height:48px;padding:0 16px 0 11px;gap:7px}
   .tm-launcher-icon{width:26px;height:26px}
   .tm-launcher-icon svg{width:16px;height:16px}
   .tm-launcher-label{font-size:13.5px}
   .tm-brief-body{max-height:360px}
+}
+
+/* ── MOBILE: BRIEFING CARD BREATHING ROOM ─────────────────────
+   On narrow screens the briefing head was cramming avatar + title +
+   count pill + close button into one row, squeezing "Good afternoon, Key."
+   onto 3 lines. Wrap the count below the title and absolutely position
+   the close button so the greeting gets full width.
+*/
+@media(max-width:480px){
+  .tm-brief-head{flex-wrap:wrap;padding:16px 18px 14px;position:relative}
+  .tm-brief-title{flex:1 1 0;padding-right:36px}
+  .tm-brief-greeting{font-size:18px;line-height:1.22}
+  .tm-brief-sub{font-size:13px;margin-top:3px}
+  .tm-brief-count{flex-basis:100%;align-self:flex-start;margin-top:10px;font-size:10.5px;padding:5px 11px}
+  .tm-brief-close{position:absolute;top:14px;right:14px}
+  .tm-brief-body{padding:10px 18px 14px}
+  .tm-brief-foot{flex-wrap:wrap;gap:10px;padding:12px 18px 14px}
+  .tm-brief-foot .tm-brief-btn{flex:1 1 0;min-width:0;text-align:center}
+  .tm-brief-footer-note{flex-basis:100%;margin-left:0;text-align:center;margin-top:2px}
 }
 </style>
 </head>
@@ -1215,10 +1242,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <div class="notif-list" id="notif-list"></div>
 </div>
 
-<!-- ── FAB (+ Lead) ──────────────────────────────────────── -->
-<button class="fab" id="fab-add-lead" style="display:none" onclick="openContactModal(null)" title="Add Lead">+</button>
-
-<!-- ── PASS 13: Sparky launcher (always visible — sits above the add-lead FAB) ── -->
+<!-- ── PASS 13: Sparky launcher (only floating element — add-lead lives in the toolbar) ── -->
 <button class="tm-launcher" id="tm-launcher" onclick="tmOpenPanel()" title="Ask Sparky" aria-label="Ask Sparky">
   <span class="tm-launcher-icon" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
@@ -1291,7 +1315,12 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
   <div id="contacts-view">
     <div class="toolbar">
-      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
+      <div class="search-wrap">
+        <button class="search-add" onclick="openContactModal(null)" title="New lead" aria-label="New lead">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
+      </div>
       <div class="view-toggle">
         <button class="view-toggle-btn" id="view-list-btn" onclick="setLeadsView('list')" title="List view">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -1997,7 +2026,6 @@ function showApp() {
   document.getElementById('main-nav').style.display = 'flex';
   document.getElementById('main-tab-bar').style.display = 'flex';
   document.getElementById('tab-leads').style.display = 'block';
-  document.getElementById('fab-add-lead').style.display = 'flex';
   const tml = document.getElementById('tm-launcher');
   if (tml) tml.classList.add('visible');
   init();
@@ -5732,10 +5760,6 @@ function switchTab(tab) {
       }
     }
   });
-
-  // Show/hide FAB
-  const fab = document.getElementById('fab-add-lead');
-  if (fab) fab.style.display = tab === 'leads' ? 'flex' : 'none';
 
   // Load content for the active tab
   if (tab === 'messages') loadInbox();
