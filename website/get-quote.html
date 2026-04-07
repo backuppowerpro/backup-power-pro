@@ -661,6 +661,7 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 // ─── ZAPIER WEBHOOK URL ───────────────────────────────────────────────
 const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/26218930/ux5m926/'; // kept as backup
 const BPP_NEW_LEAD_URL = 'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/quo-ai-new-lead';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NzExMDYsImV4cCI6MjA5MDI0NzEwNn0.srmz3lm08HW7MRGIRA8zAgglTcSrjBwxJ7LDYsEwveE';
 const META_PIXEL_ID  = '1389648775800936';
 // ─────────────────────────────────────────────────────────────────────
 
@@ -962,10 +963,18 @@ async function submitForm() {
     // Primary: send to BPP AI agent (creates contact, sends first text, queues follow-ups)
     fetch(BPP_NEW_LEAD_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      },
       body: JSON.stringify(payload)
+    }).then(res => {
+      if (!res.ok) {
+        // Fallback to Zapier if our function fails
+        fetch(ZAPIER_WEBHOOK, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      }
     }).catch(() => {
-      // Fallback to Zapier if our function fails
+      // Fallback to Zapier on network error
       fetch(ZAPIER_WEBHOOK, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     });
     firePixelLead();
