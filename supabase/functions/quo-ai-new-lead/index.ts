@@ -87,19 +87,26 @@ async function fireMetaCAPI(payload: any): Promise<void> {
 
 // ── CREATE QUO CONTACT ────────────────────────────────────────────────────────
 // Creates a named contact in Quo so the inbox shows the lead's name.
+// IMPORTANT: Quo API requires every phoneNumbers[] entry to have BOTH `name` and `value`.
+// Sending only `value` returns 400 and the contact is silently never created.
 async function createQuoContact(firstName: string, lastName: string, phone: string): Promise<void> {
   try {
-    await fetch('https://api.openphone.com/v1/contacts', {
+    const res = await fetch('https://api.openphone.com/v1/contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
       body: JSON.stringify({
         defaultFields: {
           firstName,
           lastName: lastName || '',
-          phoneNumbers: [{ value: phone }],
+          phoneNumbers: [{ name: 'Mobile', value: phone }],
         },
       }),
     })
+    if (!res.ok) {
+      const errBody = await res.text()
+      console.error('[quo-contact] HTTP', res.status, errBody)
+      return
+    }
     console.log('[quo-contact] created:', firstName, phone)
   } catch (err) {
     console.error('[quo-contact] failed:', err)
