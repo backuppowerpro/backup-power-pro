@@ -5696,11 +5696,16 @@ function smartToast(message, opts) {
   t.className = 'toast show ' + (opts.kind || 'success');
   t.style.cursor = opts.onClick ? 'pointer' : 'default';
   t.style.maxWidth = '92vw';
+  // Base .toast CSS sets pointer-events:none — must override so onClick fires
+  if (opts.onClick) t.style.pointerEvents = 'auto';
   t.textContent = message;
   document.body.appendChild(t);
-  if (opts.onClick) t.addEventListener('click', () => { opts.onClick(); t.remove(); });
-  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)'; }, opts.duration || 4500);
-  setTimeout(() => t.remove(), (opts.duration || 4500) + 400);
+  let removed = false;
+  const cleanup = () => { if (removed) return; removed = true; t.remove(); };
+  if (opts.onClick) t.addEventListener('click', () => { try { opts.onClick(); } catch(e) {} cleanup(); });
+  const dur = opts.duration || 4500;
+  setTimeout(() => { if (!removed) { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)'; } }, dur);
+  setTimeout(cleanup, dur + 400);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -6580,7 +6585,8 @@ setTimeout(() => {
       }
       if (stage === 9) {
         // Check for unpaid invoice -> show "Record payment" prompt
-        const invs = (window.allInvoices || []).filter(i => i.contact_id === id && i.status !== 'paid');
+        // NOTE: allInvoices is a top-level `let`, not on window — reference it directly
+        const invs = (Array.isArray(allInvoices) ? allInvoices : []).filter(i => i.contact_id === id && i.status !== 'paid');
         if (invs.length) {
           html += `<div class="smart-prompt">
             <div class="smart-prompt-icon">$</div>
@@ -6712,7 +6718,8 @@ setTimeout(() => {
     });
 
     // Invoices + payments
-    const invs = (window.allInvoices || []).filter(i => i.contact_id === contactId);
+    // NOTE: allInvoices is a top-level `let`, not on window — reference it directly
+    const invs = (Array.isArray(allInvoices) ? allInvoices : []).filter(i => i.contact_id === contactId);
     invs.forEach(inv => {
       if (inv.created_at) events.push({
         kind: 'invoice', icon: '⟁', title: 'Invoice created',
@@ -6742,17 +6749,22 @@ setTimeout(() => {
       }
     } catch (e) {}
 
-    // Sort newest first
-    events.sort((a, b) => b.ts - a.ts);
-    if (!events.length) { host.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:6px 0">No activity yet</div>'; return; }
-    host.innerHTML = `<div class="activity-feed">${events.slice(0, 25).map(ev => `
+    // Drop events with bad timestamps then sort newest first
+    const cleanEvents = events.filter(ev => Number.isFinite(ev.ts) && ev.ts > 0);
+    cleanEvents.sort((a, b) => b.ts - a.ts);
+    if (!cleanEvents.length) { host.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:6px 0">No activity yet</div>'; return; }
+    const safeTime = (ms) => {
+      try { return _relativeTime(new Date(ms).toISOString()); }
+      catch (e) { return ''; }
+    };
+    host.innerHTML = `<div class="activity-feed">${cleanEvents.slice(0, 25).map(ev => `
       <div class="activity-item">
         <div class="activity-icon ${ev.kind}">${esc(ev.icon)}</div>
         <div class="activity-body">
           <div class="activity-title">${esc(ev.title)}</div>
           ${ev.sub ? `<div class="activity-sub">${esc(ev.sub)}</div>` : ''}
         </div>
-        <div class="activity-time">${esc(_relativeTime(new Date(ev.ts).toISOString()))}</div>
+        <div class="activity-time">${esc(safeTime(ev.ts))}</div>
       </div>
     `).join('')}</div>`;
   }
