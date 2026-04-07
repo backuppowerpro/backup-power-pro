@@ -1,30 +1,30 @@
 /**
  * send-sms
  *
- * Server-side SMS sender for the BPP CRM. Supports both OpenPhone (Quo) and Twilio.
- * Provider is controlled by the SMS_PROVIDER environment variable:
- *   SMS_PROVIDER=openphone  → routes through OpenPhone API (default, existing Quo numbers)
- *   SMS_PROVIDER=twilio     → routes through Twilio API (new integration, test number now, port later)
+ * Server-side SMS sender for the BPP CRM. Routes through Twilio.
+ *
+ * Architecture decision (Apr 7 2026): The CRM is Twilio-only. The legacy Quo
+ * (OpenPhone) auto-lead-response flow continues running independently from
+ * `quo-ai-new-lead`/`quo-ai-followup`/etc, but the CRM's outbound messaging is
+ * 100% Twilio. When (864) 400-5302 is ported from Quo to Twilio, the legacy
+ * flows get migrated and Quo retires entirely. Until then, the CRM sends from
+ * the Twilio test number (864) 863-7800.
  *
  * Request:  POST { contactId: uuid, body: string }
  *           Authorization: Bearer <SUPABASE_ANON_KEY>
  *
  * Response (success, 200):
- *   { success: true, message: { ... }, provider: 'openphone'|'twilio' }
+ *   { success: true, message: { ... } }
  *
  * Response (failure, 4xx/5xx):
- *   { success: false, error: string }
+ *   { success: false, error: string, message?: { ... } }
+ *
+ * The row is ALWAYS saved to the messages table — even on a failure — with
+ * status='failed' so the CRM thread always reflects what was attempted.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// ── PROVIDER CONFIG ────────────────────────────────────────────────────────────
-const SMS_PROVIDER = Deno.env.get('SMS_PROVIDER') || 'openphone'
-
-// OpenPhone (Quo)
-const QUO_API_KEY  = Deno.env.get('QUO_API_KEY') || ''
-const QUO_PHONE_ID = Deno.env.get('QUO_PHONE_NUMBER_ID') || ''
-
-// Twilio
+// ── TWILIO CONFIG ──────────────────────────────────────────────────────────────
 const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
 const TWILIO_AUTH_TOKEN  = Deno.env.get('TWILIO_AUTH_TOKEN') || ''
 const TWILIO_FROM        = Deno.env.get('TWILIO_PHONE_NUMBER') || ''
@@ -41,62 +41,15 @@ const json = (status: number, body: unknown) =>
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
 
-// ── SEND VIA OPENPHONE ─────────────────────────────────────────────────────────
-async function sendViaOpenPhone(to: string, body: string): Promise<{ id: string | null; error: string | null }> {
-  try {
-    const res = await fetch('https://api.openphone.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': QUO_API_KEY,
-      },
-      body: JSON.stringify({ from: QUO_PHONE_ID, to: [to], content: body }),
-    })
-    if (!res.ok) {
-      const errBody = await res.text()
-      console.error('[send-sms/openphone] error:', res.status, errBody)
-      return { id: null, error: `OpenPhone ${res.status}` }
-    }
-    const data = await res.json()
-    return { id: data?.data?.id ?? null, error: null }
-  } catch (err) {
-    console.error('[send-sms/openphone] threw:', err)
-    return { id: null, error: `network: ${(err as Error).message}` }
-  }
-}
-
-// ── SEND VIA TWILIO ────────────────────────────────────────────────────────────
-async function sendViaTwilio(to: string, body: string): Promise<{ id: string | null; error: string | null }> {
-  try {
-    const formData = new URLSearchParams({ From: TWILIO_FROM, To: to, Body: body })
-    const res = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
-        },
-        body: formData.toString(),
-      }
-    )
-    if (!res.ok) {
-      const errBody = await res.text()
-      console.error('[send-sms/twilio] error:', res.status, errBody)
-      return { id: null, error: `Twilio ${res.status}` }
-    }
-    const data = await res.json()
-    return { id: data?.sid ?? null, error: null }
-  } catch (err) {
-    console.error('[send-sms/twilio] threw:', err)
-    return { id: null, error: `network: ${(err as Error).message}` }
-  }
-}
-
 // ── HANDLER ────────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
   if (req.method !== 'POST') return json(405, { success: false, error: 'method not allowed' })
+
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
+    console.error('[send-sms] missing Twilio env vars')
+    return json(500, { success: false, error: 'twilio not configured' })
+  }
 
   let payload: { contactId?: string; body?: string }
   try {
@@ -133,13 +86,42 @@ Deno.serve(async (req) => {
   else if (digits.length >= 11)  toPhone = `+${digits}`
   else return json(400, { success: false, error: 'contact phone is invalid' })
 
-  // ── SEND VIA SELECTED PROVIDER ────────────────────────────────────────────────
-  const provider = SMS_PROVIDER === 'twilio' ? 'twilio' : 'openphone'
-  console.log(`[send-sms] provider=${provider}, to=${toPhone}`)
+  // ── SEND VIA TWILIO ──────────────────────────────────────────────────────────
+  let twilioSid: string | null = null
+  let sendError: string | null = null
 
-  const { id: providerMsgId, error: sendError } = provider === 'twilio'
-    ? await sendViaTwilio(toPhone, body)
-    : await sendViaOpenPhone(toPhone, body)
+  try {
+    const formData = new URLSearchParams({ From: TWILIO_FROM, To: toPhone, Body: body })
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
+        },
+        body: formData.toString(),
+      }
+    )
+
+    if (!res.ok) {
+      const errBody = await res.text()
+      console.error('[send-sms] Twilio error:', res.status, errBody)
+      // Twilio returns useful JSON on error — try to surface a clean message
+      try {
+        const errJson = JSON.parse(errBody)
+        sendError = errJson.message || `Twilio ${res.status}`
+      } catch {
+        sendError = `Twilio ${res.status}`
+      }
+    } else {
+      const data = await res.json()
+      twilioSid = data?.sid ?? null
+    }
+  } catch (err) {
+    console.error('[send-sms] Twilio fetch threw:', err)
+    sendError = `network: ${(err as Error).message}`
+  }
 
   const status: 'sent' | 'failed' = sendError ? 'failed' : 'sent'
 
@@ -151,7 +133,7 @@ Deno.serve(async (req) => {
       direction:      'outbound',
       body,
       sender:         'key',
-      quo_message_id: providerMsgId,   // reused for Twilio SID too
+      quo_message_id: twilioSid,   // column reused for Twilio SID
       status,
     })
     .select()
@@ -163,8 +145,8 @@ Deno.serve(async (req) => {
   }
 
   if (status === 'failed') {
-    return json(502, { success: false, error: sendError, message: savedMsg, provider })
+    return json(502, { success: false, error: sendError, message: savedMsg })
   }
 
-  return json(200, { success: true, message: savedMsg, provider })
+  return json(200, { success: true, message: savedMsg })
 })
