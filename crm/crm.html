@@ -580,6 +580,40 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .trend-delta.up{color:#059669}
 .trend-delta.down{color:var(--red)}
 .trend-delta.flat{color:var(--text3)}
+
+/* ── SMS MESSAGES ──────────────────────────────────────── */
+.msg-bubble{max-width:82%;padding:9px 13px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word;position:relative}
+.msg-bubble.inbound{background:var(--bg);color:var(--text);border-bottom-left-radius:4px;align-self:flex-start}
+.msg-bubble.outbound{background:var(--navy);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.msg-bubble.outbound.by-ai{background:#1a3a5c}
+.msg-bubble.outbound.by-key{background:var(--navy)}
+.msg-bubble.pending{opacity:.65}
+.msg-row{display:flex;flex-direction:column;gap:2px}
+.msg-row.inbound{align-items:flex-start}
+.msg-row.outbound{align-items:flex-end}
+.msg-meta{font-size:10px;color:var(--text3);padding:0 4px}
+.msg-sender-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:var(--r-pill)}
+.msg-sender-badge.ai{background:rgba(255,186,0,.15);color:#92400e}
+.msg-sender-badge.key{background:rgba(11,31,59,.08);color:var(--navy)}
+html.dark .msg-bubble.inbound{background:#2e2a24;color:var(--text)}
+html.dark .msg-bubble.outbound{background:#1a3a5c}
+html.dark .msg-bubble.outbound.by-key{background:var(--navy2)}
+html.dark .msg-sender-badge.ai{background:rgba(230,168,0,.15);color:var(--gold)}
+html.dark .msg-sender-badge.key{background:rgba(255,255,255,.08);color:var(--text2)}
+html.dark #drill-messages{background:var(--card)}
+html.dark #drill-messages>div:first-child{border-color:var(--border)}
+html.dark #drill-messages>div:last-child{border-color:var(--border);background:var(--card)}
+
+/* ── INBOX LIST ─────────────────────────────────────────── */
+.inbox-item{background:var(--card);border-radius:var(--r-md);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .12s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.inbox-item:hover{background:#f8faff}
+.inbox-item.unread{border-left:3px solid var(--gold)}
+.inbox-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text)}
+.inbox-preview{font-size:13px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.inbox-time{font-size:11px;color:var(--text3);flex-shrink:0;text-align:right}
+.inbox-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}
+html.dark .inbox-item:hover{background:#302b25}
+html.dark .inbox-item.unread{border-left-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -617,6 +651,23 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 
 <!-- ── FAB (+ Lead) ──────────────────────────────────────── -->
 <button class="fab" id="fab-add-lead" style="display:none" onclick="openContactModal(null)" title="Add Lead">+</button>
+
+<!-- ── TAB BAR ───────────────────────────────────────────── -->
+<div class="tab-bar" id="main-tab-bar" style="display:none">
+  <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">Leads</button>
+  <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')">Messages</button>
+</div>
+
+<!-- ── MESSAGES INBOX TAB ────────────────────────────────── -->
+<div id="tab-messages" style="display:none">
+  <main class="main" style="max-width:700px">
+    <div class="section-head">
+      <div class="section-title">Inbox</div>
+      <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
+    </div>
+    <div id="inbox-list" style="display:flex;flex-direction:column;gap:6px"></div>
+  </main>
+</div>
 
 <!-- ── MAIN ──────────────────────────────────────────────── -->
 <div id="tab-leads" style="display:none">
@@ -936,6 +987,9 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
       <!-- 1. PROPOSALS (always visible, prominent) -->
       <div id="panel-prop-section" style="margin-bottom:var(--sp-md)"></div>
 
+      <!-- 1b. MESSAGES BUTTON -->
+      <div id="panel-msg-section" style="margin-bottom:var(--sp-md)"></div>
+
       <!-- 2. CONTACT INFO (compact summary, expandable) -->
       <div class="contact-info-summary" id="contact-info-summary" onclick="toggleContactInfo()">
         <span id="contact-info-preview">No contact info</span>
@@ -992,6 +1046,19 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
     <div class="drill-level right" id="drill-payment">
       <button class="drill-back" id="payment-back-btn" onclick="drillTo('proposal')">&larr; Proposal</button>
       <div id="drill-payment-content"></div>
+    </div>
+    <!-- LEVEL 2b: SMS Messages -->
+    <div class="drill-level right" id="drill-messages" style="display:flex;flex-direction:column;padding:0;overflow:hidden">
+      <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <button class="drill-back" onclick="drillTo('contact')" style="margin-bottom:0">&larr; Contact</button>
+        <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text);flex:1">Messages</span>
+        <span id="msg-thread-phone" style="font-size:12px;color:var(--text3)"></span>
+      </div>
+      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:var(--card)">
+        <textarea id="msg-compose" class="form-textarea" placeholder="Type a message…" style="flex:1;min-height:52px;max-height:120px;resize:none;font-size:14px" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+        <button class="btn btn-primary" style="background:var(--navy);color:#fff;flex-shrink:0;height:52px;padding:0 18px" onclick="sendMessage()" id="msg-send-btn">Send</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1244,6 +1311,7 @@ async function checkPass() {
 function showApp() {
   document.getElementById('gate').style.display = 'none';
   document.getElementById('main-nav').style.display = 'flex';
+  document.getElementById('main-tab-bar').style.display = 'flex';
   document.getElementById('tab-leads').style.display = 'block';
   document.getElementById('fab-add-lead').style.display = 'flex';
   init();
@@ -1337,6 +1405,7 @@ async function init() {
   await Promise.all([loadContacts(), loadJobs(), loadProposals(), loadJurisdictions()]);
   await loadRecentPaidInvoices();
   startApprovalPolling();
+  startMessagePolling();
   // Update last_checked_at after rendering so activity dots show on this load, clear on next
   setTimeout(updateLastCheckedAt, 2000);
 }
@@ -1637,7 +1706,7 @@ function selectProposalAndDrill(idx) {
 }
 
 function drillTo(level) {
-  const levels = ['contact', 'proposal', 'inspection', 'payment'];
+  const levels = ['contact', 'proposal', 'inspection', 'payment', 'messages'];
   const targetIdx = levels.indexOf(level);
   levels.forEach(l => {
     const el = document.getElementById('drill-' + l);
@@ -1648,7 +1717,10 @@ function drillTo(level) {
     else el.classList.add('right');
   });
   currentDrillLevel = level;
-  if (level === 'proposal') renderProposalDrill();
+  if (level === 'messages') {
+    // Use currentMsgContactId if set, otherwise fall back to panel contact
+    loadMessageThread(currentMsgContactId || currentPanelContactId);
+  } else if (level === 'proposal') renderProposalDrill();
   else if (level === 'inspection') {
     // Update back button based on where we came from
     const inspBackBtn = document.querySelector('#drill-inspection .drill-back');
@@ -1669,7 +1741,7 @@ function drillTo(level) {
 function resetDrill() {
   currentDrillLevel = 'contact';
   currentProposalIdx = 0;
-  ['contact', 'proposal', 'inspection', 'payment'].forEach(l => {
+  ['contact', 'proposal', 'inspection', 'payment', 'messages'].forEach(l => {
     const el = document.getElementById('drill-' + l);
     if (!el) return;
     el.classList.remove('active', 'left', 'right');
@@ -1770,8 +1842,30 @@ function openPanel(id) {
       </button>`;
   }
 
+  // Messages button section — show count of messages
+  const msgSection = document.getElementById('panel-msg-section');
+  if (msgSection) {
+    db.from('messages').select('id', { count: 'exact', head: true }).eq('contact_id', c.id).then(({ count }) => {
+      const msgCount = count || 0;
+      const hasPhone = !!c.phone;
+      if (msgCount > 0 || hasPhone) {
+        msgSection.innerHTML = `<button class="prop-action-btn" style="background:var(--bg);color:var(--navy);border:1.5px solid var(--border)" onclick="openMessagesFromPanel()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Messages${msgCount > 0 ? ' <span style="background:var(--navy);color:#fff;border-radius:var(--r-pill);padding:1px 8px;font-size:11px;margin-left:4px">' + msgCount + '</span>' : ''}
+        </button>`;
+      } else {
+        msgSection.innerHTML = '';
+      }
+    });
+  }
+
   document.getElementById('side-panel-overlay').classList.add('open');
   lockBody();
+}
+
+function openMessagesFromPanel() {
+  currentMsgContactId = currentPanelContactId;
+  drillTo('messages');
 }
 
 // ── PROPOSAL DRILL (Level 2) — unified proposal + invoice + payment ───────
@@ -4740,6 +4834,327 @@ function playNotifSound() {
 
 function dismissApprovalNotif() {
   document.getElementById('approval-notif').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════════════════
+let activeTab = 'leads';
+
+function switchTab(tab) {
+  activeTab = tab;
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tab-btn-' + tab);
+  if (btn) btn.classList.add('active');
+
+  // Show/hide tab content
+  const tabs = ['leads', 'messages'];
+  tabs.forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+
+  // Show/hide FAB
+  const fab = document.getElementById('fab-add-lead');
+  if (fab) fab.style.display = tab === 'leads' ? 'flex' : 'none';
+
+  // Load content for the active tab
+  if (tab === 'messages') loadInbox();
+}
+
+// ══════════════════════════════════════════════════════════
+// MESSAGES / SMS
+// ══════════════════════════════════════════════════════════
+const QUO_API_KEY = '87685f5bc254cdea0113c1868f7e4d447e1871cdeb1e2f863ba9b4836983c1a4';
+const QUO_PHONE_NUMBER_ID = 'PNTZHfvSsh';
+
+let currentMsgContactId = null;
+let allMessages = []; // all messages for the current thread
+
+// ── INBOX ─────────────────────────────────────────────────
+async function loadInbox() {
+  const listEl = document.getElementById('inbox-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3)">Loading…</div>';
+
+  // Get most recent message per contact
+  const { data, error } = await db
+    .from('messages')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red)">Failed to load messages</div>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;margin:0 auto 12px;display:block;opacity:.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No messages yet</p></div>';
+    return;
+  }
+
+  // Group by contact_id, keep most recent per contact
+  const byContact = {};
+  data.forEach(m => {
+    if (!byContact[m.contact_id]) byContact[m.contact_id] = m;
+  });
+
+  // Check last-checked time for unread detection
+  const lastChecked = getLastCheckedAt();
+
+  const rows = Object.values(byContact)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map(m => {
+      const c = allContacts.find(x => x.id === m.contact_id);
+      const name = c ? c.name : 'Unknown';
+      const phone = c ? (c.phone || '') : '';
+      const isUnread = m.direction === 'inbound' && m.created_at > lastChecked;
+      const timeStr = _relativeTime(m.created_at);
+      const preview = (m.direction === 'outbound' ? 'You: ' : '') + (m.body || '').slice(0, 80);
+      const avatar = c ? _avatarHtml(c, 40) : `<div style="width:40px;height:40px;border-radius:50%;background:var(--border);flex-shrink:0"></div>`;
+      return `<div class="inbox-item${isUnread ? ' unread' : ''}" onclick="openMessagesPanel('${m.contact_id}')">
+        ${avatar}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="inbox-name">${esc(name)}</span>
+            ${isUnread ? '<span class="inbox-unread-dot"></span>' : ''}
+          </div>
+          <div class="inbox-preview">${esc(preview)}</div>
+        </div>
+        <div class="inbox-time">${timeStr}</div>
+      </div>`;
+    }).join('');
+
+  listEl.innerHTML = rows;
+}
+
+function _relativeTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = now - d;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return days + 'd ago';
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+// ── THREAD PANEL (inside contact side panel) ──────────────
+async function openMessagesPanel(contactId) {
+  currentMsgContactId = contactId;
+  const c = allContacts.find(x => x.id === contactId);
+
+  // Update phone display
+  const phoneEl = document.getElementById('msg-thread-phone');
+  if (phoneEl) phoneEl.textContent = c?.phone || '';
+
+  // Clear and show loading
+  const threadEl = document.getElementById('msg-thread');
+  if (threadEl) threadEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">Loading…</div>';
+
+  // If called from the inbox tab, open the side panel first then drill
+  if (activeTab === 'messages') {
+    if (c) {
+      openPanel(contactId);
+      // resetDrill() sets everything to 'right' except 'contact'.
+      // After openPanel settles, switch the tab back to leads (so panel works),
+      // then drill to messages. Small delay for panel open animation.
+      setTimeout(() => {
+        currentMsgContactId = contactId;
+        drillTo('messages');
+      }, 80);
+    }
+    return;
+  }
+
+  drillTo('messages');
+  await loadMessageThread(contactId);
+}
+
+async function loadMessageThread(contactId) {
+  if (!contactId) return;
+  currentMsgContactId = contactId;
+  const threadEl = document.getElementById('msg-thread');
+  if (!threadEl) return;
+
+  // Update phone display
+  const c = allContacts.find(x => x.id === contactId);
+  const phoneEl = document.getElementById('msg-thread-phone');
+  if (phoneEl) phoneEl.textContent = c?.phone || '';
+
+  threadEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">Loading…</div>';
+
+  const { data, error } = await db
+    .from('messages')
+    .select('*')
+    .eq('contact_id', contactId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    threadEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">Failed to load messages</div>';
+    return;
+  }
+
+  allMessages = data || [];
+  renderThread();
+}
+
+function renderThread() {
+  const threadEl = document.getElementById('msg-thread');
+  if (!threadEl) return;
+
+  if (!allMessages.length) {
+    threadEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">No messages yet. Send the first one below.</div>';
+    return;
+  }
+
+  const fmtTime = (ts) => {
+    const d = new Date(ts);
+    return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
+  };
+
+  const bubbles = allMessages.map(m => {
+    const isOut = m.direction === 'outbound';
+    const byAI = m.sender === 'ai';
+    const byKey = m.sender === 'key';
+    const senderBadge = isOut && (byAI || byKey)
+      ? `<span class="msg-sender-badge ${byAI ? 'ai' : 'key'}">${byAI ? 'AI' : 'Key'}</span>`
+      : '';
+    const bubbleClass = `msg-bubble ${isOut ? 'outbound ' + (byAI ? 'by-ai' : 'by-key') : 'inbound'}`;
+    return `<div class="msg-row ${isOut ? 'outbound' : 'inbound'}">
+      <div class="${bubbleClass}">${esc(m.body || '')}</div>
+      <div class="msg-meta">${senderBadge ? senderBadge + ' · ' : ''}${fmtTime(m.created_at)}</div>
+    </div>`;
+  }).join('');
+
+  threadEl.innerHTML = bubbles;
+  // Scroll to bottom
+  setTimeout(() => { threadEl.scrollTop = threadEl.scrollHeight; }, 50);
+}
+
+let sendingMsg = false;
+async function sendMessage() {
+  if (sendingMsg) return;
+  const contactId = currentMsgContactId;
+  if (!contactId) return;
+
+  const composeEl = document.getElementById('msg-compose');
+  const body = (composeEl?.value || '').trim();
+  if (!body) return;
+
+  const c = allContacts.find(x => x.id === contactId);
+  if (!c || !c.phone) { showToast('No phone number on file', 'error'); return; }
+
+  sendingMsg = true;
+  const sendBtn = document.getElementById('msg-send-btn');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '…'; }
+  composeEl.value = '';
+  composeEl.style.height = '';
+
+  // Normalize phone to E.164
+  let toPhone = (c.phone || '').replace(/\D/g, '');
+  if (toPhone.length === 10) toPhone = '1' + toPhone;
+  if (!toPhone.startsWith('+')) toPhone = '+' + toPhone;
+
+  // Optimistically add to thread
+  const optimisticMsg = {
+    id: 'tmp-' + Date.now(),
+    contact_id: contactId,
+    direction: 'outbound',
+    body,
+    sender: 'key',
+    created_at: new Date().toISOString(),
+    status: 'pending',
+  };
+  allMessages.push(optimisticMsg);
+  renderThread();
+
+  let quoMessageId = null;
+  let status = 'sent';
+  let quoError = null;
+
+  try {
+    const quoRes = await fetch('https://api.openphone.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': QUO_API_KEY,
+      },
+      body: JSON.stringify({
+        from: QUO_PHONE_NUMBER_ID,
+        to: [toPhone],
+        content: body,
+      }),
+    });
+
+    if (!quoRes.ok) {
+      const errBody = await quoRes.text();
+      console.error('[QUO] Send failed:', quoRes.status, errBody);
+      quoError = 'Send failed (' + quoRes.status + ')';
+      status = 'failed';
+    } else {
+      const quoData = await quoRes.json();
+      quoMessageId = quoData.data?.id || null;
+    }
+  } catch(e) {
+    console.error('[QUO] Network error:', e);
+    quoError = 'Network error';
+    status = 'failed';
+  }
+
+  // Save to Supabase regardless
+  const { data: savedMsg, error: saveErr } = await db.from('messages').insert([{
+    contact_id: contactId,
+    direction: 'outbound',
+    body,
+    sender: 'key',
+    quo_message_id: quoMessageId,
+    status,
+  }]).select().single();
+
+  // Replace optimistic message with real one
+  const idx = allMessages.findIndex(m => m.id === optimisticMsg.id);
+  if (idx >= 0) {
+    allMessages[idx] = savedMsg || { ...optimisticMsg, status };
+  }
+  renderThread();
+
+  if (quoError) {
+    showToast('SMS failed: ' + quoError, 'error');
+  } else {
+    showToast('Message sent', 'success');
+  }
+
+  sendingMsg = false;
+  if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send'; }
+}
+
+// ── POLL FOR NEW INBOUND MESSAGES ─────────────────────────
+let msgPollTimer = null;
+
+function startMessagePolling() {
+  // Poll every 15 seconds when messages panel is open
+  msgPollTimer = setInterval(async () => {
+    if (currentDrillLevel === 'messages' && currentMsgContactId) {
+      const { data } = await db
+        .from('messages')
+        .select('*')
+        .eq('contact_id', currentMsgContactId)
+        .order('created_at', { ascending: true });
+      if (data && data.length !== allMessages.length) {
+        allMessages = data;
+        renderThread();
+      }
+    }
+    // Update inbox unread badge if on messages tab
+    if (activeTab === 'messages') {
+      loadInbox();
+    }
+  }, 15000);
 }
 
 </script>
