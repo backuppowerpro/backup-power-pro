@@ -657,11 +657,7 @@ html.dark #drill-messages>div:last-child{border-color:var(--border);background:v
 
 /* ── AI TOGGLE ───────────────────────────────────────────── */
 html.dark #panel-ai-toggle{background:#2e2a24}
-/* ── PIPELINE HEADER ────────────────────────────────────── */
-.pipeline-header{display:flex;gap:6px;flex-wrap:wrap;padding:10px 0 4px;margin-bottom:4px}
-.pipeline-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);font-size:11px;font-weight:700;font-family:'Outfit',sans-serif;white-space:nowrap;cursor:pointer;transition:all .15s;border:none}
-.pipeline-pill:hover{filter:brightness(.93)}
-.pipeline-pill .pill-count{font-weight:800;margin-left:2px}
+/* Pipeline header bar removed in pass 7 — unified into #permit-analytics chip row */
 
 /* ── QUICK REPLY CHIPS ───────────────────────────────────── */
 .quick-replies{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 0}
@@ -796,40 +792,56 @@ html.dark .view-toggle{background:#1e1b17}
 html.dark .view-toggle-btn:hover{color:var(--gold)}
 .view-toggle-btn.active{background:var(--navy);color:#fff;box-shadow:0 1px 3px rgba(11,31,59,.2)}
 html.dark .view-toggle-btn.active{background:var(--gold);color:#1e1b17}
-.kanban-wrap{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:16px;animation:tabFade .2s var(--ease)}
-@media(max-width:900px){.kanban-wrap{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:600px){.kanban-wrap{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:420px){.kanban-wrap{grid-template-columns:1fr}}
-.kanban-col{background:var(--bg);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:10px;min-height:240px;border:1px solid var(--border)}
+.kanban-wrap{display:grid;grid-template-columns:repeat(9,minmax(220px,1fr));gap:12px;margin-top:16px;animation:tabFade .2s var(--ease);overflow-x:auto;padding-bottom:6px}
+.kanban-wrap::-webkit-scrollbar{height:8px}
+.kanban-wrap::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px}
+@media(max-width:1400px){.kanban-wrap{grid-template-columns:repeat(9,260px)}}
+.kanban-col{background:var(--bg);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-height:280px;border:1px solid var(--border);min-width:0}
 html.dark .kanban-col{background:rgba(255,255,255,.02)}
-.kanban-col-head{display:flex;align-items:center;gap:6px;padding:2px 2px 8px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.kanban-col-head{display:flex;flex-direction:column;gap:4px;padding:2px 2px 10px;border-bottom:1px solid var(--border);margin-bottom:4px}
 html.dark .kanban-col-head{border-bottom-color:var(--border)}
-.kanban-col-name{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text);flex:1;display:flex;align-items:center;gap:8px}
-.kanban-col-name::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--coldot,var(--gray));box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+.kanban-col-top{display:flex;align-items:center;gap:8px;width:100%}
+.kanban-col-name{font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text);flex:1;display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kanban-col-name::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--coldot,var(--gray));box-shadow:0 0 0 2px rgba(255,255,255,.6);flex-shrink:0}
 html.dark .kanban-col-name::before{box-shadow:0 0 0 2px rgba(255,255,255,.04)}
-.kanban-col[data-stage="1"] .kanban-col-name{--coldot:#ffba00}
+.kanban-col[data-stage="1"] .kanban-col-name{--coldot:#64748b}
 .kanban-col[data-stage="1"] .kanban-col-name::before{animation:pulseDot 2s var(--ease) infinite}
 .kanban-col[data-stage="2"] .kanban-col-name{--coldot:#3b82f6}
 .kanban-col[data-stage="3"] .kanban-col-name{--coldot:#8b5cf6}
-.kanban-col[data-stage="4"] .kanban-col-name{--coldot:#10b981}
+.kanban-col[data-stage="4"] .kanban-col-name{--coldot:#22c55e}
+.kanban-col[data-stage="5"] .kanban-col-name{--coldot:#eab308}
+.kanban-col[data-stage="6"] .kanban-col-name{--coldot:#f97316}
+.kanban-col[data-stage="7"] .kanban-col-name{--coldot:#14b8a6}
+.kanban-col[data-stage="8"] .kanban-col-name{--coldot:#ec4899}
 .kanban-col[data-stage="9"] .kanban-col-name{--coldot:#059669}
-@keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 0 0 0 rgba(255,186,0,.5)}50%{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 0 0 6px rgba(255,186,0,0)}}
-html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04),0 0 0 0 rgba(255,186,0,.5)}50%{box-shadow:0 0 0 2px rgba(255,255,255,.04),0 0 0 6px rgba(255,186,0,0)}}
-.kanban-col-count{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:var(--text2);background:var(--card);padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--border);font-variant-numeric:tabular-nums}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 0 0 0 rgba(100,116,139,.5)}50%{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 0 0 6px rgba(100,116,139,0)}}
+html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04),0 0 0 0 rgba(100,116,139,.5)}50%{box-shadow:0 0 0 2px rgba(255,255,255,.04),0 0 0 6px rgba(100,116,139,0)}}
+.kanban-col-count{font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;color:var(--text2);background:var(--card);padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--border);font-variant-numeric:tabular-nums;flex-shrink:0}
 html.dark .kanban-col-count{background:#28241f}
+.kanban-col-next{display:flex;align-items:center;gap:5px;font-family:'Inter',sans-serif;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.01em;line-height:1.3;padding:2px 0 0}
+.kanban-col-next-arrow{font-family:'Outfit',sans-serif;font-size:9px;font-weight:800;color:var(--coldot,var(--gold));letter-spacing:.06em;text-transform:uppercase;flex-shrink:0}
+.kanban-col[data-stage="9"] .kanban-col-next-arrow{color:#059669}
 .kanban-col-total{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:var(--text3);padding:0 4px 6px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
-.kanban-cards{display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;max-height:60vh;padding-right:2px}
+.kanban-cards{display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;max-height:62vh;padding-right:2px}
 .kanban-cards::-webkit-scrollbar{width:6px}
 .kanban-cards::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:6px}
-.kanban-card{background:var(--card);border-radius:var(--r-sm);padding:12px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base),border-color var(--t-fast);box-shadow:var(--shadow-sm);border:1px solid var(--border);border-left:3px solid transparent}
-.kanban-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);border-left-color:var(--coldot,var(--gold))}
+.kanban-card{background:var(--card);border-radius:var(--r-sm);padding:11px 12px 10px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base),border-color var(--t-fast);box-shadow:var(--shadow-sm);border:1px solid var(--border);border-left:3px solid var(--urgcolor,transparent);position:relative}
+.kanban-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);border-left-color:var(--urgcolor,var(--coldot,var(--gold)))}
 .kanban-card:active{transform:translateY(0)}
 html.dark .kanban-card{box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .kanban-card-name{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.005em}
 .kanban-card-meta{font-size:11px;color:var(--text3);margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-variant-numeric:tabular-nums}
+.kanban-card-meta .urg-cool{color:var(--text3)}
+.kanban-card-meta .urg-warm{color:#f97316;font-weight:700}
+.kanban-card-meta .urg-hot{color:var(--red);font-weight:800}
 .kanban-card-amount{font-family:'Outfit',sans-serif;font-weight:700;color:var(--navy);font-size:12px;font-variant-numeric:tabular-nums}
 html.dark .kanban-card-amount{color:var(--gold)}
-.kanban-empty{font-size:11px;color:var(--text3);text-align:center;padding:24px 8px;font-style:italic;opacity:.6;border:1px dashed var(--border);border-radius:var(--r-sm)}
+.kanban-card-next{margin-top:7px;font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:4px;line-height:1.3}
+.kanban-card-next::before{content:'→';font-family:'Outfit',sans-serif;font-weight:800;color:var(--urgcolor,var(--gold));flex-shrink:0}
+.kanban-card-next.done{color:#059669}
+.kanban-card-next.done::before{content:'✓';color:#059669}
+.kanban-empty{font-size:11px;color:var(--text3);text-align:center;padding:24px 8px;font-style:italic;opacity:.7;border:1px dashed var(--border);border-radius:var(--r-sm);line-height:1.6}
+.kanban-empty-icon{display:block;font-size:18px;margin-bottom:6px;opacity:.6;font-style:normal}
 
 /* ── PREMIUM NAV TWEAK ──────────────────────────────────── */
 .nav{box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 4px 14px rgba(10,20,40,.18)}
@@ -928,21 +940,21 @@ html.dark .kanban-card-amount{color:var(--gold)}
     <div class="toolbar">
       <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'&&leadsView==='pipeline')renderKanban();searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
       <div class="view-toggle">
-        <button class="view-toggle-btn active" id="view-list-btn" onclick="setLeadsView('list')" title="List view">
+        <button class="view-toggle-btn" id="view-list-btn" onclick="setLeadsView('list')" title="List view">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           List
         </button>
-        <button class="view-toggle-btn" id="view-pipe-btn" onclick="setLeadsView('pipeline')" title="Pipeline kanban">
+        <button class="view-toggle-btn active" id="view-pipe-btn" onclick="setLeadsView('pipeline')" title="Pipeline kanban">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
           Pipeline
         </button>
       </div>
     </div>
+    <!-- Single, unified stage filter — drives BOTH list and kanban -->
+    <div id="permit-analytics" style="margin-top:6px"></div>
     <div id="contacts-table"></div>
     <div id="kanban-board" style="display:none"></div>
   </div>
-
-  <div id="permit-analytics" style="margin-top:var(--sp-md)"></div>
 
   <!-- Stats accessed via nav bar icon -->
   <div id="trend-analytics" style="display:none"></div>
@@ -1746,6 +1758,10 @@ async function loadContacts() {
   renderContacts();
   loadPermitAnalytics();
   loadTrendAnalytics();
+  // After data load, refresh the kanban if it's the active view
+  if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
+    renderKanban();
+  }
   // Restore stats panel visibility from localStorage
   if (localStorage.getItem('crm_stats_visible') === '1') {
     statsVisible = true;
@@ -1809,6 +1825,9 @@ function renderContacts() {
         ${emptyContent}
       </div>
     </div>`;
+    if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
+      try { renderKanban(); } catch(e) {}
+    }
     return;
   }
 
@@ -1870,6 +1889,10 @@ function renderContacts() {
     scrollEl.addEventListener('scroll', checkScroll);
     checkScroll();
   }
+  // Keep the kanban in sync if it's the active view (mutations may have changed stages)
+  if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
+    try { renderKanban(); } catch(e) {}
+  }
 }
 
 
@@ -1890,6 +1913,10 @@ function toggleAnalyticsFilter(stageId) {
   contactsShown = 5;
   renderContacts();
   loadPermitAnalytics();
+  // The unified chip row drives both views — keep the kanban in sync.
+  if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
+    renderKanban();
+  }
   // Restore old scroll instantly, then smooth-scroll to active chip
   requestAnimationFrame(() => {
     body.style.overflow = '';
@@ -4689,15 +4716,15 @@ function cancelJurisdiction() {
 // ══════════════════════════════════════════════════════════
 
 const PERMIT_STAGES = [
-  { id:1, label:'Form Submitted',       color:'#64748b' },
-  { id:2, label:'Responded',            color:'#3b82f6' },
-  { id:3, label:'Quote Sent',           color:'#8b5cf6' },
-  { id:4, label:'Booked',               color:'#22c55e' },
-  { id:5, label:'Permit Submitted',     color:'#eab308' },
-  { id:6, label:'Permit Paid',          color:'#f97316' },
-  { id:7, label:'Permit Approved',      color:'#14b8a6' },
-  { id:8, label:'Inspection Scheduled', color:'#ec4899' },
-  { id:9, label:'Complete',             color:'#f59e0b' },
+  { id:1, label:'Form Submitted',       color:'#64748b', nextAction:'Send first message',       staleDays:1, emptyMsg:'No new leads' },
+  { id:2, label:'Responded',            color:'#3b82f6', nextAction:'Send quote',                staleDays:2, emptyMsg:'No active conversations' },
+  { id:3, label:'Quote Sent',           color:'#8b5cf6', nextAction:'Follow up on quote',        staleDays:3, emptyMsg:'No quotes out' },
+  { id:4, label:'Booked',               color:'#22c55e', nextAction:'Schedule install date',     staleDays:4, emptyMsg:'No bookings yet' },
+  { id:5, label:'Permit Submitted',     color:'#eab308', nextAction:'Wait for jurisdiction',     staleDays:7, emptyMsg:'No permits in review' },
+  { id:6, label:'Permit Paid',          color:'#f97316', nextAction:'Schedule inspection',       staleDays:5, emptyMsg:'No permits paid' },
+  { id:7, label:'Permit Approved',      color:'#14b8a6', nextAction:'Confirm install date',      staleDays:3, emptyMsg:'No approved permits' },
+  { id:8, label:'Inspection Scheduled', color:'#ec4899', nextAction:'Pass inspection',           staleDays:5, emptyMsg:'No inspections booked' },
+  { id:9, label:'Complete',             color:'#059669', nextAction:'Done',                      staleDays:99, emptyMsg:'No completed jobs yet' },
 ];
 
 const PIPELINE_FILTERS = [
@@ -4712,28 +4739,11 @@ const PIPELINE_FILTERS = [
 ];
 
 function _renderPipelineHeader() {
-  // Inject a small colored pill summary above the contact table
-  let el = document.getElementById('pipeline-header-bar');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'pipeline-header-bar';
-    el.className = 'pipeline-header';
-    const tableDiv = document.getElementById('contacts-table');
-    if (tableDiv) tableDiv.parentNode.insertBefore(el, tableDiv);
-  }
-  const activeNonArchived = allContacts.filter(c => c.status !== 'Archived');
-  if (!activeNonArchived.length) { el.innerHTML = ''; return; }
-
-  // Use PIPELINE_FILTERS which match the toggleAnalyticsFilter keys
-  const pills = PIPELINE_FILTERS.filter(f => f.id !== 'all').map(f => {
-    const cnt = activeNonArchived.filter(c => f.stages.includes(c.stage || 1)).length;
-    if (!cnt) return '';
-    const isActive = stageFilter === f.id;
-    const color = f.color;
-    return `<button class="pipeline-pill${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter('${f.id}')" style="background:${isActive ? color : color + '18'};color:${isActive ? '#fff' : color};border:1.5px solid ${isActive ? color : color + '30'}">${esc(f.label)}<span class="pill-count">${cnt}</span></button>`;
-  }).filter(Boolean).join('');
-
-  el.innerHTML = pills || '';
+  // DEPRECATED — replaced by the unified #permit-analytics chip row above the table.
+  // Kept as a no-op so existing call sites don't break, and so any leftover injected
+  // bar gets cleaned up on next render.
+  const el = document.getElementById('pipeline-header-bar');
+  if (el && el.parentNode) el.parentNode.removeChild(el);
 }
 
 function loadPermitAnalytics() {
@@ -5937,13 +5947,22 @@ function refreshInvoiceTabBadge() {
 // ══════════════════════════════════════════════════════════
 // PIPELINE KANBAN VIEW
 // ══════════════════════════════════════════════════════════
-let leadsView = 'list'; // 'list' | 'pipeline'
+// Pipeline is the default view — at-a-glance kanban tells the user what to do next.
+// Persisted preference still wins if the user has explicitly chosen list before.
+let leadsView = (function() {
+  try {
+    const saved = localStorage.getItem('bpp_crm_leads_view');
+    return saved === 'list' ? 'list' : 'pipeline';
+  } catch(e) { return 'pipeline'; }
+})();
 
 function setLeadsView(v) {
   leadsView = v;
   try { localStorage.setItem('bpp_crm_leads_view', v); } catch(e) {}
-  document.getElementById('view-list-btn').classList.toggle('active', v === 'list');
-  document.getElementById('view-pipe-btn').classList.toggle('active', v === 'pipeline');
+  const listBtn = document.getElementById('view-list-btn');
+  const pipeBtn = document.getElementById('view-pipe-btn');
+  if (listBtn) listBtn.classList.toggle('active', v === 'list');
+  if (pipeBtn) pipeBtn.classList.toggle('active', v === 'pipeline');
   const tableEl = document.getElementById('contacts-table');
   const kanbanEl = document.getElementById('kanban-board');
   if (v === 'pipeline') {
@@ -5952,87 +5971,125 @@ function setLeadsView(v) {
   } else {
     if (tableEl) tableEl.style.display = '';
     if (kanbanEl) kanbanEl.style.display = 'none';
-    const pipeBar = document.getElementById('pipeline-header-bar');
-    if (pipeBar) pipeBar.style.display = '';
   }
 }
 
-const KANBAN_COLS = [
-  { stage: 1, key: 'newlead',   label: 'New Lead' },
-  { stage: 2, key: 'contacted', label: 'Contacted' },
-  { stage: 3, key: 'quotesent', label: 'Quote Sent' },
-  { stage: 4, key: 'booked',    label: 'Booked' },
-  { stage: 9, key: 'installed', label: 'Installed' },
-];
+// KANBAN_COLS is derived from PERMIT_STAGES — single source of truth.
+// Each column maps 1:1 to a real DB stage (1-9). No fake buckets.
+const KANBAN_COLS = PERMIT_STAGES.map(s => ({
+  stage: s.id,
+  label: s.label,
+  nextAction: s.nextAction,
+  staleDays: s.staleDays,
+  emptyMsg: s.emptyMsg,
+  color: s.color,
+}));
+
+// Compute days since last touch for a contact.
+function _kanbanDaysSinceTouch(c) {
+  const touched = _loadTouched()[c.id];
+  const lastTs = touched || new Date(c.created_at).getTime();
+  const diffMs = Date.now() - lastTs;
+  return Math.floor(diffMs / 86400000);
+}
+
+// Determine urgency for a card based on how stale it is relative to its stage's expectation.
+// Returns one of: 'cool' | 'warm' | 'hot'. Stage 9 (Complete) is always cool.
+function _kanbanUrgency(c, stageDef) {
+  if (!stageDef || stageDef.id === 9) return { level:'cool', color:'transparent' };
+  const days = _kanbanDaysSinceTouch(c);
+  const threshold = stageDef.staleDays;
+  if (days >= threshold * 2) return { level:'hot',  color:'#dc2626', days };
+  if (days >= threshold)     return { level:'warm', color:'#f97316', days };
+  return { level:'cool', color:'transparent', days };
+}
 
 function renderKanban() {
   const wrap = document.getElementById('kanban-board');
   if (!wrap) return;
-  // Hide pipeline pill header in kanban view (it confuses the picture)
-  const pipeBar = document.getElementById('pipeline-header-bar');
-  if (pipeBar) pipeBar.style.display = leadsView === 'pipeline' ? 'none' : '';
 
   const term = (document.getElementById('search')?.value || '').toLowerCase();
-  const active = allContacts.filter(c => c.status !== 'Archived');
+  // Respect the global stage filter — same chip row drives both views.
+  let active = allContacts.filter(c => c.status !== 'Archived');
+  if (stageFilter !== 'all' && stageFilter !== 'archived') {
+    const pf = PIPELINE_FILTERS.find(f => f.id === stageFilter);
+    if (pf) active = active.filter(c => pf.stages.includes(c.stage || 1));
+  }
 
-  // Group contacts by their bucket: New Lead = stage 1, Contacted = 2,
-  // Quote Sent = 3, Booked = stages 4-8 (any post-booked permit work),
-  // Installed = stage 9.
+  // Pre-load touched timestamps once for the whole render pass
+  const touchedMap = _loadTouched();
+
   const cols = KANBAN_COLS.map(col => {
+    const stageDef = PERMIT_STAGES.find(s => s.id === col.stage);
     const items = active.filter(c => {
       const s = c.stage || 1;
-      let bucket;
-      if (s === 1) bucket = 1;
-      else if (s === 2) bucket = 2;
-      else if (s === 3) bucket = 3;
-      else if (s >= 4 && s <= 8) bucket = 4;
-      else if (s === 9) bucket = 9;
-      else bucket = 1;
-      if (bucket !== col.stage) return false;
+      if (s !== col.stage) return false;
       if (term && !fuzzyMatch(c, term)) return false;
       return true;
     });
-    return { col, items };
+    // Sort: hottest (most overdue) first within each column
+    items.sort((a, b) => {
+      const da = (touchedMap[a.id] || new Date(a.created_at).getTime());
+      const db = (touchedMap[b.id] || new Date(b.created_at).getTime());
+      return da - db; // oldest touch first → most overdue at top
+    });
+    return { col, items, stageDef };
   });
 
-  wrap.innerHTML = `<div class="kanban-wrap">${cols.map(({col, items}) => {
+  wrap.innerHTML = `<div class="kanban-wrap">${cols.map(({col, items, stageDef}) => {
     let totalVal = 0;
     items.forEach(c => {
       const p = (proposalMap[c.id] || []).find(x => x.status !== 'Cancelled');
       if (p) totalVal += Number(p.total) || 0;
     });
+
+    const isDone = col.stage === 9;
+    const arrowText = isDone ? 'STATUS' : 'NEXT';
+
     const cards = items.map(c => {
       const p = (proposalMap[c.id] || []).find(x => x.status !== 'Cancelled');
       const amt = p ? '$' + (Number(p.total) || 0).toLocaleString() : '';
-      const lastTouch = _loadTouched()[c.id] || new Date(c.created_at).getTime();
+      const lastTouch = touchedMap[c.id] || new Date(c.created_at).getTime();
       const ts = _relativeTime(new Date(lastTouch).toISOString());
-      return `<div class="kanban-card" onclick="openPanel('${c.id}')">
+      const urg = _kanbanUrgency(c, stageDef);
+      const days = urg.days != null ? urg.days : _kanbanDaysSinceTouch(c);
+      const staleHint = urg.level === 'hot'  ? `${days}d overdue`
+                      : urg.level === 'warm' ? `${days}d waiting`
+                      : ts;
+      const nextHint = isDone ? 'Job complete' : col.nextAction;
+      const nextClass = isDone ? 'kanban-card-next done' : 'kanban-card-next';
+      const styleVar = `--urgcolor:${urg.color}`;
+      return `<div class="kanban-card" style="${styleVar}" onclick="openPanel('${c.id}')">
         <div class="kanban-card-name">${esc(c.name || '')}</div>
         <div class="kanban-card-meta">
-          <span>${ts}</span>
+          <span class="urg-${urg.level}">${staleHint}</span>
           ${amt ? `<span class="kanban-card-amount">${amt}</span>` : ''}
         </div>
+        <div class="${nextClass}">${esc(nextHint)}</div>
       </div>`;
     }).join('');
+
+    const emptyState = `<div class="kanban-empty"><span class="kanban-empty-icon">${isDone ? '◯' : '◦'}</span>${esc(col.emptyMsg || 'All clear!')}</div>`;
+
     return `<div class="kanban-col" data-stage="${col.stage}">
       <div class="kanban-col-head">
-        <div class="kanban-col-name">${col.label}</div>
-        <div class="kanban-col-count">${items.length}</div>
+        <div class="kanban-col-top">
+          <div class="kanban-col-name">${esc(col.label)}</div>
+          <div class="kanban-col-count">${items.length}</div>
+        </div>
+        <div class="kanban-col-next">
+          <span class="kanban-col-next-arrow">${arrowText}</span>
+          <span>${esc(col.nextAction)}</span>
+        </div>
       </div>
       ${totalVal > 0 ? `<div class="kanban-col-total">$${totalVal.toLocaleString()}</div>` : ''}
-      <div class="kanban-cards">${cards || '<div class="kanban-empty">Nothing here yet</div>'}</div>
+      <div class="kanban-cards">${cards || emptyState}</div>
     </div>`;
   }).join('')}</div>`;
 }
 
-// Restore saved view on load
-try {
-  const savedView = localStorage.getItem('bpp_crm_leads_view');
-  if (savedView === 'pipeline') {
-    // Defer until DOM ready
-    setTimeout(() => setLeadsView('pipeline'), 50);
-  }
-} catch(e) {}
+// Apply the chosen view (pipeline by default) once the DOM is ready
+setTimeout(() => setLeadsView(leadsView), 50);
 
 // Initialize notifications on load
 notifLoad();
@@ -6511,9 +6568,8 @@ setTimeout(() => {
         const c = allContacts.find(x => x.id === cid);
         if (!c) return;
         const oldStage = c.stage || 1;
-        // Map kanban bucket to actual stage. Booked column = stage 4 (don't downgrade later permit work).
-        let newStage = targetStage;
-        if (targetStage === 4 && oldStage >= 4 && oldStage <= 8) newStage = oldStage;
+        // Columns now map 1:1 to real stages — drop target IS the new stage.
+        const newStage = targetStage;
         if (newStage === oldStage) return;
         // Optimistic update
         c.stage = newStage;
@@ -6525,7 +6581,8 @@ setTimeout(() => {
           touchContact(cid);
           renderContacts();
           if (typeof loadPermitAnalytics === 'function') loadPermitAnalytics();
-          showToast('Moved to ' + (KANBAN_COLS.find(k => k.stage === targetStage)?.label || 'stage ' + newStage), 'success');
+          const stageLabel = (PERMIT_STAGES.find(s => s.id === newStage) || {}).label || ('stage ' + newStage);
+          showToast('Moved to ' + stageLabel, 'success');
           // If dropping into Installed and there's an unpaid invoice, prompt
           if (newStage === 9) {
             try {
