@@ -1347,12 +1347,9 @@ html.dark .kanban-card-amount{color:var(--gold)}
 <div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this)panelSave()">
 <div class="side-panel" id="side-panel">
   <div class="panel-head" style="padding:0;overflow:visible;flex-direction:column;align-items:stretch;gap:0">
-    <!-- Full-width Street View banner with name overlaid via bottom gradient -->
-    <div id="panel-banner" style="position:relative;width:100%;height:200px;background:var(--navy);overflow:hidden;flex-shrink:0">
-      <div id="panel-banner-grad" style="position:absolute;inset:auto 0 0 0;height:88px;background:linear-gradient(to top, rgba(8,15,30,.82) 0%, rgba(8,15,30,.55) 35%, rgba(8,15,30,0) 100%);pointer-events:none;z-index:2"></div>
-      <div class="panel-name" id="panel-name" style="position:absolute;left:18px;right:60px;bottom:14px;user-select:none;color:#fff;font-size:24px;font-weight:800;letter-spacing:-.018em;text-shadow:0 2px 12px rgba(0,0,0,.45);z-index:3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Lead</div>
-      <button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.42);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3">&#10005;</button>
-    </div>
+    <!-- Full-width Street View banner. Inner contents (gradient, name, close button)
+         are populated by _bannerHtml() each time the panel opens. -->
+    <div id="panel-banner" style="position:relative;width:100%;height:200px;background:var(--navy);overflow:hidden;flex-shrink:0"></div>
   </div>
   <div class="drill-container">
     <!-- LEVEL 1: Contact Details (Progressive Disclosure) -->
@@ -1644,9 +1641,14 @@ function _avatarHtml(c, size) {
 
 function _bannerHtml(c) {
   const color = _avatarColor(c.id);
-  const initials = _avatarInitials(c.name);
-  const fallbackInitials = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="font-size:52px;font-weight:800;color:rgba(255,255,255,0.35);font-family:'Outfit',sans-serif;letter-spacing:-2px">${initials}</span></div>`;
-  const gradient = `<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.08) 0%,rgba(0,0,0,0.55) 100%);pointer-events:none"></div>`;
+  const initials = _avatarInitials(dispName(c.name, ''));
+  const displayName = esc(dispName(c.name, 'Unnamed'));
+  const fallbackInitials = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:0"><span style="font-size:64px;font-weight:800;color:rgba(255,255,255,0.32);font-family:'Outfit',sans-serif;letter-spacing:-2px">${initials}</span></div>`;
+  // Soft top-to-bottom gradient + a stronger bottom gradient under the name for legibility on any photo
+  const gradient = `<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.10) 0%,rgba(0,0,0,0.20) 50%,rgba(0,0,0,0.55) 100%);pointer-events:none;z-index:1"></div>`;
+  const nameGrad = `<div style="position:absolute;inset:auto 0 0 0;height:96px;background:linear-gradient(to top,rgba(8,15,30,0.85) 0%,rgba(8,15,30,0.55) 35%,rgba(8,15,30,0) 100%);pointer-events:none;z-index:2"></div>`;
+  const nameLabel = `<div class="panel-name" style="position:absolute;left:18px;right:60px;bottom:14px;color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:24px;letter-spacing:-.018em;text-shadow:0 2px 12px rgba(0,0,0,.45);z-index:3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.15">${displayName}</div>`;
+  const closeBtn = `<button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.42);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3">&#10005;</button>`;
   const bannerId = 'bnr-' + c.id;
   if (c.address) {
     _svStatus(c.address).then(status => {
@@ -1654,12 +1656,13 @@ function _bannerHtml(c) {
       const el = document.getElementById(bannerId);
       if (!el) return;
       const img = document.createElement('img');
-      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 70%';
-      img.src = `https://maps.googleapis.com/maps/api/streetview?size=750x380&location=${encodeURIComponent(c.address)}&fov=80&pitch=5&key=${_SV_KEY}`;
-      el.insertBefore(img, el.querySelector('div')); // insert before gradient
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 70%;z-index:0';
+      img.src = `https://maps.googleapis.com/maps/api/streetview?size=750x420&location=${encodeURIComponent(c.address)}&fov=80&pitch=5&key=${_SV_KEY}`;
+      // Insert behind everything (z-index handles stacking, but DOM order matters for fallback)
+      el.insertBefore(img, el.firstChild);
     });
   }
-  return `<div id="${bannerId}" style="position:relative;width:100%;height:190px;background:${color};overflow:hidden">${fallbackInitials}${gradient}</div>`;
+  return `<div id="${bannerId}" style="position:relative;width:100%;height:100%;background:${color};overflow:hidden">${fallbackInitials}${gradient}${nameGrad}${nameLabel}${closeBtn}</div>`;
 }
 // ───────────────────────────────────────────────────────────
 const _LS_TOUCH_KEY = 'bpp_crm_touched';
@@ -2239,7 +2242,7 @@ function openPanel(id) {
 
   // Fill fields
   document.getElementById('panel-id').value          = c.id;
-  document.getElementById('panel-name').textContent  = dispName(c.name, 'Unnamed');
+  // Banner now renders the name overlay itself (via _bannerHtml). No separate panel-name element.
   document.getElementById('panel-banner').innerHTML  = _bannerHtml(c);
   document.getElementById('panel-name-input').value  = dispName(c.name) || '';
   const phoneEl = document.getElementById('panel-phone');
@@ -3264,7 +3267,9 @@ let nameArchivePending = false;
 let nameArchiveTimer = null;
 
 function panelNameArchive() {
-  const el = document.getElementById('panel-name');
+  // Name now lives inside the banner — query it as a class to support both old/new layouts
+  const el = document.querySelector('#panel-banner .panel-name') || document.getElementById('panel-name');
+  if (!el) return;
   const c = allContacts.find(x => x.id === document.getElementById('panel-id').value);
   const isArchived = c?.status === 'Archived';
 
@@ -3274,14 +3279,14 @@ function panelNameArchive() {
     el.dataset.origText = el.textContent;
     el.textContent = isArchived ? 'Tap again to unarchive' : 'Tap again to archive';
     el.style.color = isArchived ? 'var(--green)' : 'var(--gold)';
-    el.style.fontSize = '13px';
-    el.style.background = isArchived ? '#dcfce720' : '#ffba0018';
+    el.style.fontSize = '14px';
+    el.style.textShadow = '0 1px 8px rgba(0,0,0,.6)';
     nameArchiveTimer = setTimeout(() => {
       nameArchivePending = false;
       el.textContent = el.dataset.origText;
       el.style.color = '';
       el.style.fontSize = '';
-      el.style.background = '';
+      el.style.textShadow = '';
     }, 3000);
   } else {
     // Second tap — confirm and archive/unarchive
@@ -3302,8 +3307,8 @@ function panelNameArchive() {
 function resetNameArchive() {
   nameArchivePending = false;
   clearTimeout(nameArchiveTimer);
-  const el = document.getElementById('panel-name');
-  if (el) { el.style.color = ''; el.style.fontSize = ''; el.style.background = ''; }
+  const el = document.querySelector('#panel-banner .panel-name') || document.getElementById('panel-name');
+  if (el) { el.style.color = ''; el.style.fontSize = ''; el.style.textShadow = ''; el.style.background = ''; }
 }
 
 // ── PROGRESSIVE DISCLOSURE PANEL FUNCTIONS ──────────────
