@@ -511,8 +511,20 @@ html.dark .approval-notif-amount{color:var(--gold)}
   .cal-event{font-size:14px;padding:10px 12px;flex:0 0 auto}
   .cal-slot{display:none}
   td.phone,.col-phone{display:none}
+  /* On phones, hide address and jurisdiction columns too — they're mostly
+     empty ("—") and they force the name column to truncate to "Er...".
+     Show just Name and Stage. Need to zero out ALL hidden <col> widths
+     otherwise table-layout:fixed reserves their declared percentage. */
+  td.col-addr,th.col-addr,td.col-jur,th.col-jur{display:none}
+  #contacts-table col.col-phone,
+  #contacts-table col.col-addr,
+  #contacts-table col.col-notes,
+  #contacts-table col.col-jur{width:0!important}
+  #contacts-table col:nth-child(1){width:62%!important}
+  #contacts-table col:nth-child(6){width:38%!important}
   .toolbar{flex-direction:column;align-items:stretch}
   .search-input{min-width:0}
+  .view-toggle{margin-left:0;align-self:stretch;justify-content:center}
   .modal{max-height:95vh}
   .modal-body{-webkit-overflow-scrolling:touch}
 }
@@ -2246,8 +2258,8 @@ function renderContacts() {
   const wrap = document.getElementById('contacts-table');
 
   if (total === 0) {
-    const cols = `<colgroup><col style="width:20%"><col class="col-phone" style="width:14%"><col style="width:16%"><col class="col-notes" style="width:18%"><col class="col-jur" style="width:16%"><col style="width:16%"></colgroup>`;
-    const thead = `<tr><th style="width:20%">Name</th><th class="col-phone" style="width:14%">Phone</th><th style="width:16%">Address</th><th class="col-notes" style="width:18%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:16%">Stage</th></tr>`;
+    const cols = `<colgroup><col style="width:20%"><col class="col-phone" style="width:14%"><col class="col-addr" style="width:16%"><col class="col-notes" style="width:18%"><col class="col-jur" style="width:16%"><col style="width:16%"></colgroup>`;
+    const thead = `<tr><th style="width:20%">Name</th><th class="col-phone" style="width:14%">Phone</th><th class="col-addr" style="width:16%">Address</th><th class="col-notes" style="width:18%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:16%">Stage</th></tr>`;
     const emptyContent = searchTerm
       ? `<button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff;padding:10px 20px;font-size:14px" onclick="addFromSearch()">+ Add New Lead</button>`
       : `<div class="empty">
@@ -2294,16 +2306,16 @@ function renderContacts() {
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
       <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dispName(c.name, 'Unknown'))}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
       <td class="phone col-phone">${c.phone ? `<a href="tel:${c.phone.replace(/\D/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:none;font-weight:500">${esc(fmtPhone(c.phone))}</a>` : empty}</td>
-      <td class="addr">${addrCell}</td>
+      <td class="addr col-addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : empty}</td>
       <td class="col-jur" style="font-size:12px">${jurCell}</td>
       <td style="overflow:visible">${stageBadge}</td>
     </tr>`;
   }).join('');
 
-  const thead = `<tr><th style="width:20%">Name</th><th class="col-phone" style="width:14%">Phone</th><th style="width:16%">Address</th><th class="col-notes" style="width:18%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:16%">Stage</th></tr>`;
+  const thead = `<tr><th style="width:20%">Name</th><th class="col-phone" style="width:14%">Phone</th><th class="col-addr" style="width:16%">Address</th><th class="col-notes" style="width:18%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:16%">Stage</th></tr>`;
 
-  const cols = `<colgroup><col style="width:20%"><col class="col-phone" style="width:14%"><col style="width:16%"><col class="col-notes" style="width:18%"><col class="col-jur" style="width:16%"><col style="width:16%"></colgroup>`;
+  const cols = `<colgroup><col style="width:20%"><col class="col-phone" style="width:14%"><col class="col-addr" style="width:16%"><col class="col-notes" style="width:18%"><col class="col-jur" style="width:16%"><col style="width:16%"></colgroup>`;
   wrap.innerHTML = `<div class="table-wrap">
     <div class="table-scroll">
       <table>
@@ -7000,13 +7012,16 @@ function refreshInvoiceTabBadge() {
 // ══════════════════════════════════════════════════════════
 // PIPELINE KANBAN VIEW
 // ══════════════════════════════════════════════════════════
-// Pipeline is the default view — at-a-glance kanban tells the user what to do next.
-// Persisted preference still wins if the user has explicitly chosen list before.
+// Default view depends on screen size: pipeline/kanban on desktop (at-a-glance
+// all stages), list on mobile (kanban is unusable at <768px — one column at a
+// time with horizontal scroll). Persisted preference still wins if the user
+// has explicitly chosen one before.
 let leadsView = (function() {
   try {
     const saved = localStorage.getItem('bpp_crm_leads_view');
     if (saved === 'list' || saved === 'pipeline' || saved === 'permits' || saved === 'materials') return saved;
-    return 'pipeline';
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width:768px)').matches;
+    return isMobile ? 'list' : 'pipeline';
   } catch(e) { return 'pipeline'; }
 })();
 
