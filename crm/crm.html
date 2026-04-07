@@ -83,7 +83,10 @@ html.dark .side-panel{background:var(--card);box-shadow:-8px 0 40px rgba(0,0,0,.
 html.dark .panel-head{background:var(--card)}
 html.dark .panel-body{background:var(--card)}
 html.dark .panel-foot{background:var(--card)}
-html.dark .panel-name{color:var(--text)}
+html.dark .panel-name{color:#fff}
+html.dark #panel-banner .panel-name{color:#fff}
+html.dark #panel-banner .modal-close{background:rgba(0,0,0,.42);color:#fff}
+html.dark #panel-banner .modal-close:hover{background:rgba(0,0,0,.65);color:#fff}
 html.dark .panel-close{background:#3d3830;color:var(--text2)}
 html.dark .panel-close:hover{background:#4d4338}
 html.dark .panel-section-label{color:var(--text3)}
@@ -341,10 +344,11 @@ td.actions{white-space:nowrap}
 .cal-event.complete:hover{background:#bbf7d0}
 .cal-event.cancelled{background:#fee2e2;color:#991b1b;border:none}
 .cal-event.cancelled:hover{background:#fecaca}
-.cal-add-hint{font-size:16px;color:var(--border);text-align:center;opacity:.4;transition:opacity .15s;line-height:1;font-weight:300}
-.cal-slot{flex:1 1 0;min-height:0;padding:8px 10px;border-radius:var(--r-sm)}
-.cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{opacity:.7}
-@media(hover:none){.cal-add-hint{opacity:.4}}
+.cal-add-hint{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin:auto;border-radius:50%;font-size:16px;color:var(--text3);text-align:center;opacity:.32;transition:opacity .15s, background .15s, color .15s, transform .15s, border-color .15s;line-height:1;font-weight:400;border:1px dashed var(--border-strong)}
+.cal-slot{flex:1 1 0;min-height:0;padding:8px 10px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center}
+.cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{opacity:1;background:rgba(255,186,0,.12);color:var(--navy);border-color:rgba(255,186,0,.5);transform:scale(1.05)}
+html.dark .cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{background:rgba(230,168,0,.18);color:var(--gold);border-color:rgba(230,168,0,.55)}
+@media(hover:none){.cal-add-hint{opacity:.45}}
 .cal-holiday{font-size:9px;font-weight:700;color:#9333ea;background:#f3e8ff;padding:1px 6px;border-radius:var(--r-pill);margin-left:auto;white-space:nowrap}
 html.dark .cal-holiday{background:#2d1f4e;color:#c084fc}
 
@@ -357,9 +361,10 @@ body.modal-open{overflow:hidden;padding-right:var(--scrollbar-w,0px)}
 .modal{background:var(--card);border-radius:var(--r-lg);width:100%;max-width:480px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-xl);border:1px solid var(--border)}
 .modal-head{padding:24px 24px 0;display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .modal-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;color:var(--text);flex:1;letter-spacing:-.015em}
-.modal-close{width:32px;height:32px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:17px;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),color var(--t-fast)}
+.modal-close{width:32px;height:32px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:17px;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),color var(--t-fast),transform var(--t-fast)}
 .modal-close:hover{background:var(--bg);color:var(--text)}
 .modal-close:active{transform:scale(.93)}
+#panel-banner .modal-close:hover{background:rgba(0,0,0,.62);color:#fff}
 .modal-body{padding:18px 24px;overflow-y:auto;flex:1}
 .modal-foot{padding:16px 24px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 .form-row{margin-bottom:var(--sp-5)}
@@ -528,6 +533,9 @@ html.dark .contact-info-summary:hover{background:#302b25}
 .tab-btn.active{color:var(--text);border-bottom-color:var(--gold);font-weight:700}
 .tab-btn:hover:not(.active){color:var(--text)}
 .tab-btn:focus-visible{outline:none;color:var(--text)}
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;line-height:1;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;vertical-align:1px;font-variant-numeric:tabular-nums}
+.tab-badge.tab-badge-red{background:var(--red);color:#fff;font-weight:700}
+html.dark .tab-badge{background:var(--gold);color:#1e1b17}
 @media(max-width:480px){.tab-btn{padding:13px 14px;font-size:13px}}
 
 /* ── QUOTE BUILDER ────────────────────────────────────── */
@@ -870,10 +878,19 @@ html.dark .view-toggle{background:#1e1b17}
 html.dark .view-toggle-btn:hover{color:var(--gold)}
 .view-toggle-btn.active{background:var(--navy);color:#fff;box-shadow:0 1px 3px rgba(11,31,59,.2)}
 html.dark .view-toggle-btn.active{background:var(--gold);color:#1e1b17}
-.kanban-wrap{display:grid;grid-template-columns:repeat(9,minmax(220px,1fr));gap:12px;margin-top:16px;animation:tabFade .2s var(--ease);overflow-x:auto;padding-bottom:6px}
+/* Kanban breakout: escape the main 1140px container so the board can use the full viewport,
+   and add a soft right-edge fade to telegraph that you can scroll horizontally. */
+.kanban-shell{position:relative;margin-left:calc(50% - 50vw + 20px);margin-right:calc(50% - 50vw + 20px);margin-top:16px;animation:tabFade .2s var(--ease)}
+.kanban-shell::after{content:'';position:absolute;top:0;right:0;bottom:14px;width:48px;pointer-events:none;background:linear-gradient(to right, transparent, var(--bg));border-radius:0 var(--r-md) var(--r-md) 0;opacity:var(--kfade-opacity,1);transition:opacity .2s var(--ease)}
+html.dark .kanban-shell::after{background:linear-gradient(to right, transparent, var(--bg))}
+.kanban-wrap{display:grid;grid-template-columns:repeat(9,minmax(232px,1fr));gap:12px;overflow-x:auto;padding:0 4px 6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.kanban-wrap > .kanban-col{scroll-snap-align:start}
 .kanban-wrap::-webkit-scrollbar{height:8px}
+.kanban-wrap::-webkit-scrollbar-track{background:transparent}
 .kanban-wrap::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px}
+.kanban-wrap::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 @media(max-width:1400px){.kanban-wrap{grid-template-columns:repeat(9,260px)}}
+@media(max-width:900px){.kanban-shell{margin-left:0;margin-right:0}}
 .kanban-col{background:var(--bg);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-height:280px;border:1px solid var(--border);min-width:0}
 html.dark .kanban-col{background:rgba(255,255,255,.02)}
 .kanban-col-head{display:flex;flex-direction:column;gap:4px;padding:2px 2px 10px;border-bottom:1px solid var(--border);margin-bottom:4px}
@@ -980,8 +997,8 @@ html.dark .kanban-card-amount{color:var(--gold)}
 <!-- ── TAB BAR ───────────────────────────────────────────── -->
 <div class="tab-bar" id="main-tab-bar" style="display:none">
   <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">Leads</button>
-  <button class="tab-btn" id="tab-btn-invoices" onclick="switchTab('invoices')">Invoices <span id="tab-inv-badge" style="display:none;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;padding:1px 6px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;margin-left:3px;vertical-align:middle"></span></button>
-  <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')">Messages <span id="tab-msg-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;margin-left:3px;vertical-align:middle"></span></button>
+  <button class="tab-btn" id="tab-btn-invoices" onclick="switchTab('invoices')">Invoices<span class="tab-badge" id="tab-inv-badge" style="display:none"></span></button>
+  <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')">Messages<span class="tab-badge tab-badge-red" id="tab-msg-badge" style="display:none"></span></button>
 </div>
 
 <!-- ── INVOICES TAB ──────────────────────────────────────── -->
@@ -1330,12 +1347,11 @@ html.dark .kanban-card-amount{color:var(--gold)}
 <div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this)panelSave()">
 <div class="side-panel" id="side-panel">
   <div class="panel-head" style="padding:0;overflow:visible;flex-direction:column;align-items:stretch;gap:0">
-    <!-- Full-width Street View banner -->
-    <div id="panel-banner" style="position:relative;width:100%;height:190px;background:var(--navy);overflow:hidden;flex-shrink:0"></div>
-    <!-- Name + close strip below photo -->
-    <div style="padding:12px 16px 10px;border-bottom:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <div class="panel-name" id="panel-name" style="user-select:none;flex:1;min-width:0">Lead</div>
-      <button class="modal-close" onclick="cancelPanel()">&#10005;</button>
+    <!-- Full-width Street View banner with name overlaid via bottom gradient -->
+    <div id="panel-banner" style="position:relative;width:100%;height:200px;background:var(--navy);overflow:hidden;flex-shrink:0">
+      <div id="panel-banner-grad" style="position:absolute;inset:auto 0 0 0;height:88px;background:linear-gradient(to top, rgba(8,15,30,.82) 0%, rgba(8,15,30,.55) 35%, rgba(8,15,30,0) 100%);pointer-events:none;z-index:2"></div>
+      <div class="panel-name" id="panel-name" style="position:absolute;left:18px;right:60px;bottom:14px;user-select:none;color:#fff;font-size:24px;font-weight:800;letter-spacing:-.018em;text-shadow:0 2px 12px rgba(0,0,0,.45);z-index:3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Lead</div>
+      <button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.42);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3">&#10005;</button>
     </div>
   </div>
   <div class="drill-container">
@@ -1936,8 +1952,8 @@ function renderContacts() {
   const wrap = document.getElementById('contacts-table');
 
   if (total === 0) {
-    const cols = `<colgroup><col style="width:18%"><col class="col-phone" style="width:12%"><col style="width:14%"><col class="col-notes" style="width:19%"><col class="col-jur" style="width:14%"><col style="width:15%"></colgroup>`;
-    const thead = `<tr><th style="width:18%">Name</th><th class="col-phone" style="width:12%">Phone</th><th style="width:14%">Address</th><th class="col-notes" style="width:19%">Notes</th><th class="col-jur" style="width:14%">Jurisdiction</th><th style="width:15%">Stage</th></tr>`;
+    const cols = `<colgroup><col style="width:20%"><col class="col-phone" style="width:14%"><col style="width:16%"><col class="col-notes" style="width:18%"><col class="col-jur" style="width:16%"><col style="width:16%"></colgroup>`;
+    const thead = `<tr><th style="width:20%">Name</th><th class="col-phone" style="width:14%">Phone</th><th style="width:16%">Address</th><th class="col-notes" style="width:18%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:16%">Stage</th></tr>`;
     const emptyContent = searchTerm
       ? `<button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff;padding:10px 20px;font-size:14px" onclick="addFromSearch()">+ Add New Lead</button>`
       : `<div class="empty">
@@ -1962,12 +1978,15 @@ function renderContacts() {
       ? `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>${esc(stageInfo.label)}</span>`
       : `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}">${esc(stageInfo.label)}</span>`;
 
+    // Empty placeholder: a single tiny dot, dimmed. Less visual noise than an em-dash, but still scannable.
+    const empty = '<span style="color:var(--text3);opacity:.4;font-size:13px">·</span>';
+
     const addrCell = c.address
       ? `<span title="${esc(c.address)}">${esc(c.address.split(',')[0])}</span>`
-      : '<span style="color:var(--text3);font-size:12px">—</span>';
+      : empty;
 
     const jur = c.jurisdiction_id ? allJurisdictions.find(j => j.id === c.jurisdiction_id) : null;
-    const jurCell = jur ? `<span style="font-size:12px">${esc(jur.name)}</span>` : '<span style="color:var(--text3);font-size:12px">—</span>';
+    const jurCell = jur ? `<span style="font-size:12px">${esc(jur.name)}</span>` : empty;
 
     const dupIds = getDupIds(c.id);
     const dupBadge = dupIds.length ? `<span style="font-size:9px;background:#fef2f2;color:#dc2626;padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;cursor:pointer" onclick="event.stopPropagation();openMergeModal('${c.id}','${dupIds[0]}')">DUP</span>` : '';
@@ -1979,18 +1998,18 @@ function renderContacts() {
     const activityDot = actType ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + actColors[actType] + ';margin-left:6px;vertical-align:middle;flex-shrink:0" title="' + actTitles[actType] + '"></span>' : '';
     const avatarHtml = _avatarHtml(c, 34);
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
-      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
-      <td class="phone col-phone">${c.phone ? `<a href="tel:${c.phone.replace(/\D/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:none;font-weight:500">${esc(fmtPhone(c.phone))}</a>` : '<span style="color:var(--text3)">—</span>'}</td>
+      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dispName(c.name, 'Unknown'))}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
+      <td class="phone col-phone">${c.phone ? `<a href="tel:${c.phone.replace(/\D/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:none;font-weight:500">${esc(fmtPhone(c.phone))}</a>` : empty}</td>
       <td class="addr">${addrCell}</td>
-      <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : '—'}</td>
+      <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : empty}</td>
       <td class="col-jur" style="font-size:12px">${jurCell}</td>
       <td style="overflow:visible">${stageBadge}</td>
     </tr>`;
   }).join('');
 
-  const thead = `<tr><th style="width:18%">Name</th><th class="col-phone" style="width:12%">Phone</th><th style="width:14%">Address</th><th class="col-notes" style="width:19%">Notes</th><th class="col-jur" style="width:14%">Jurisdiction</th><th style="width:15%">Stage</th></tr>`;
+  const thead = `<tr><th style="width:20%">Name</th><th class="col-phone" style="width:14%">Phone</th><th style="width:16%">Address</th><th class="col-notes" style="width:18%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:16%">Stage</th></tr>`;
 
-  const cols = `<colgroup><col style="width:18%"><col class="col-phone" style="width:12%"><col style="width:14%"><col class="col-notes" style="width:19%"><col class="col-jur" style="width:14%"><col style="width:15%"></colgroup>`;
+  const cols = `<colgroup><col style="width:20%"><col class="col-phone" style="width:14%"><col style="width:16%"><col class="col-notes" style="width:18%"><col class="col-jur" style="width:16%"><col style="width:16%"></colgroup>`;
   wrap.innerHTML = `<div class="table-wrap">
     <div class="table-scroll">
       <table>
@@ -2220,9 +2239,9 @@ function openPanel(id) {
 
   // Fill fields
   document.getElementById('panel-id').value          = c.id;
-  document.getElementById('panel-name').textContent  = c.name || 'Unnamed';
+  document.getElementById('panel-name').textContent  = dispName(c.name, 'Unnamed');
   document.getElementById('panel-banner').innerHTML  = _bannerHtml(c);
-  document.getElementById('panel-name-input').value  = c.name  || '';
+  document.getElementById('panel-name-input').value  = dispName(c.name) || '';
   const phoneEl = document.getElementById('panel-phone');
   phoneEl.value = c.phone || '';
   formatPanelPhone(phoneEl);
@@ -4591,6 +4610,21 @@ function autoCapName(el) {
   el.value = el.value.replace(/(^|[\s\-'])(\w)/g, (m, sep, c) => sep + c.toUpperCase());
   el.setSelectionRange(pos, pos);
 }
+// Display-time name normalizer: title-case + split CamelCase imports like "CarlosRuiz" → "Carlos Ruiz".
+// Always use this when rendering c.name in the UI (lists, kanban, panels, palette, exports).
+function dispName(s, fallback) {
+  if (!s) return fallback || '';
+  let str = String(s).trim();
+  if (!str) return fallback || '';
+  // Split CamelCase or PascalCase tokens that have no whitespace (e.g. "CarlosRuiz")
+  if (!/\s/.test(str)) {
+    const split = str.replace(/([a-z])([A-Z])/g, '$1 $2');
+    if (split !== str) str = split;
+  }
+  // Title-case each word, preserving hyphenated/apostrophe segments
+  return str.toLowerCase().replace(/(^|[\s\-'])(\w)/g, (m, sep, c) => sep + c.toUpperCase());
+}
+window.dispName = dispName;
 
 function esc(s) {
   if (!s) return '';
@@ -4871,15 +4905,17 @@ const PERMIT_STAGES = [
   { id:9, label:'Complete',             color:'#059669', nextAction:'Done',                      staleDays:99, emptyMsg:'No completed jobs yet' },
 ];
 
+// Filter chips: stage-aligned labels so the chips match the kanban column headers
+// 1:1. The chip names ARE the stage names — no two competing taxonomies on screen.
 const PIPELINE_FILTERS = [
   { id:'all',              label:'All',              stages:[1,2,3,4,5,6,7,8,9], color:'var(--navy)'  },
-  { id:'warm_lead',        label:'Warm Lead',        stages:[1,2],               color:'#64748b'      },
-  { id:'3day_lead',        label:'3-Day Lead',       stages:[3],                 color:'#8b5cf6'      },
-  { id:'pending_approval', label:'Pending Approval', stages:[4],                 color:'#22c55e'      },
-  { id:'prepare_job',      label:'Prepare Job',      stages:[7,8],               color:'#14b8a6'      },
+  { id:'new_leads',        label:'New Leads',        stages:[1,2],               color:'#64748b'      },
+  { id:'quote_sent',       label:'Quote Sent',       stages:[3],                 color:'#8b5cf6'      },
+  { id:'booked',           label:'Booked',           stages:[4],                 color:'#22c55e'      },
   { id:'permit_pending',   label:'Permit Pending',   stages:[5],                 color:'#eab308'      },
   { id:'permit_paid',      label:'Permit Paid',      stages:[6],                 color:'#f97316'      },
-  { id:'completed',        label:'Completed',        stages:[9],                 color:'#f59e0b'      },
+  { id:'ready_to_install', label:'Ready to Install', stages:[7,8],               color:'#14b8a6'      },
+  { id:'completed',        label:'Completed',        stages:[9],                 color:'#059669'      },
 ];
 
 function _renderPipelineHeader() {
@@ -5490,7 +5526,7 @@ async function loadInbox() {
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .map(m => {
       const c = allContacts.find(x => x.id === m.contact_id);
-      const name = c ? c.name : 'Unknown';
+      const name = c ? dispName(c.name, 'New Lead') : 'New Lead';
       const phone = c ? (c.phone || '') : '';
       const isUnread = m.direction === 'inbound' && m.created_at > lastChecked;
       const timeStr = _relativeTime(m.created_at);
@@ -5558,7 +5594,7 @@ async function openMessagesPanel(contactId) {
   const phoneEl = document.getElementById('msg-thread-phone');
   if (phoneEl) {
     const ph = c.phone || '';
-    phoneEl.textContent = ph;
+    phoneEl.textContent = ph ? fmtPhone(ph) : '';
     phoneEl.style.display = ph ? '' : 'none';
   }
 
@@ -6555,7 +6591,7 @@ function renderInvoicesTab() {
 
   list.innerHTML = rows.map(inv => {
     const c = allContacts.find(x => x.id === inv.contact_id);
-    const name = (c && c.name) || inv.contact_name || 'Unknown';
+    const name = dispName((c && c.name) || inv.contact_name || '', 'Unknown');
     const phone = (c && c.phone) || inv.contact_phone || '';
     const total = '$' + (Number(inv.total) || 0).toLocaleString();
     const ts = inv.created_at ? _relativeTime(inv.created_at) : '';
@@ -6722,7 +6758,7 @@ function renderKanban() {
     return { col, items, stageDef };
   });
 
-  wrap.innerHTML = `<div class="kanban-wrap">${cols.map(({col, items, stageDef}) => {
+  wrap.innerHTML = `<div class="kanban-shell"><div class="kanban-wrap">${cols.map(({col, items, stageDef}) => {
     let totalVal = 0;
     items.forEach(c => {
       const p = (proposalMap[c.id] || []).find(x => x.status !== 'Cancelled');
@@ -6746,7 +6782,7 @@ function renderKanban() {
       const nextClass = isDone ? 'kanban-card-next done' : 'kanban-card-next';
       const styleVar = `--urgcolor:${urg.color}`;
       return `<div class="kanban-card" style="${styleVar}" onclick="openPanel('${c.id}')">
-        <div class="kanban-card-name">${esc(c.name || '')}</div>
+        <div class="kanban-card-name">${esc(dispName(c.name, 'New Lead'))}</div>
         <div class="kanban-card-meta">
           <span class="urg-${urg.level}">${staleHint}</span>
           ${amt ? `<span class="kanban-card-amount">${amt}</span>` : ''}
@@ -6771,7 +6807,19 @@ function renderKanban() {
       ${totalVal > 0 ? `<div class="kanban-col-total">$${totalVal.toLocaleString()}</div>` : ''}
       <div class="kanban-cards">${cards || emptyState}</div>
     </div>`;
-  }).join('')}</div>`;
+  }).join('')}</div></div>`;
+  // Wire up the right-edge fade indicator: hide it as the user scrolls to the end.
+  const kanbanWrap = wrap.querySelector('.kanban-wrap');
+  const kanbanShell = wrap.querySelector('.kanban-shell');
+  if (kanbanWrap && kanbanShell) {
+    const updateFade = () => {
+      const remaining = kanbanWrap.scrollWidth - kanbanWrap.clientWidth - kanbanWrap.scrollLeft;
+      const opacity = Math.max(0, Math.min(1, remaining / 60));
+      kanbanShell.style.setProperty('--kfade-opacity', String(opacity));
+    };
+    kanbanWrap.addEventListener('scroll', updateFade, { passive: true });
+    requestAnimationFrame(updateFade);
+  }
 }
 
 // Apply the chosen view (pipeline by default) once the DOM is ready
@@ -6889,7 +6937,7 @@ async function checkSmartEvents() {
         // Only fire once we've seeded — avoid spamming on first poll
         if (!checkSmartEvents._seeded) return;
         const c = allContacts.find(x => x.id === m.contact_id);
-        const name = c ? c.name : 'Unknown';
+        const name = c ? dispName(c.name, 'Unknown') : 'Unknown';
         notifAdd('message', 'New message from ' + name, (m.body || '').slice(0, 60), m.contact_id);
         smartToast('New message from ' + name, {
           kind: 'success',
@@ -7053,7 +7101,7 @@ setTimeout(() => {
         items.push({ type: 'section', label: 'Recent' });
         recents.forEach(c => {
           items.push({
-            type: 'contact', icon: '◉', name: c.name || '(no name)', sub: c.phone || c.email || '',
+            type: 'contact', icon: '◉', name: dispName(c.name, 'New Lead'), sub: (c.phone ? fmtPhone(c.phone) : '') || c.email || '',
             action: () => { closeCmdk(); openPanel(c.id); }
           });
         });
@@ -7071,7 +7119,7 @@ setTimeout(() => {
         items.push({ type: 'section', label: 'Contacts' });
         matches.forEach(c => {
           items.push({
-            type: 'contact', icon: '◉', name: c.name || '(no name)', sub: c.phone || c.email || c.address || '',
+            type: 'contact', icon: '◉', name: dispName(c.name, 'New Lead'), sub: (c.phone ? fmtPhone(c.phone) : '') || c.email || c.address || '',
             action: () => { closeCmdk(); openPanel(c.id); }
           });
         });
@@ -7597,17 +7645,29 @@ setTimeout(() => {
   }
 
   // ── CONTEXT-AWARE QUICK REPLIES ──────────────────────────
-  // Override insertQuickReply to handle template replacement
+  // Substitute placeholders ({name}/{date}/{time}) with the current contact's real values.
+  // Used both when rendering chip labels AND when clicking a chip — so what you see is what you send.
+  function _qrFillTemplate(tpl, c) {
+    if (!c) return tpl;
+    const fname = dispName((c.name || '').split(' ')[0] || '', '');
+    const sched = (typeof getScheduledDate === 'function') ? getScheduledDate(c) : '';
+    const dateStr = sched ? fmtScheduledDate(sched) : 'install day';
+    return String(tpl)
+      .replace(/\{name\}/g, fname || 'there')
+      .replace(/\{date\}/g, dateStr)
+      .replace(/\{time\}/g, '9am');
+  }
+
+  // Override insertQuickReply: chips already show the resolved text, so we just paste it.
   const _origInsertQR = window.insertQuickReply;
   window.insertQuickReply = function(btn) {
     const compose = document.getElementById('msg-compose');
     if (!compose) return;
     let txt = btn.textContent.trim();
-    const c = allContacts.find(x => x.id === currentMsgContactId);
-    if (c) {
-      const fname = (c.name || '').split(' ')[0] || '';
-      const sched = getScheduledDate(c);
-      txt = txt.replace(/\{name\}/g, fname).replace(/\{date\}/g, sched ? fmtScheduledDate(sched) : 'install day').replace(/\{time\}/g, '9am');
+    // Defensive: if the chip text still has placeholders for any reason, resolve them now.
+    if (/\{(name|date|time)\}/.test(txt)) {
+      const c = allContacts.find(x => x.id === currentMsgContactId);
+      txt = _qrFillTemplate(txt, c);
     }
     compose.value = txt;
     compose.focus();
@@ -7650,8 +7710,10 @@ setTimeout(() => {
         "Just checking in — generator running OK?",
       ];
     }
+    // Render the chip with placeholders ALREADY resolved against the current contact.
+    // What you see is what you send — no mystery {date}/{time} tokens on the screen.
     wrap.innerHTML = templates.slice(0, 8).map(t =>
-      `<button class="qr-chip" onclick="insertQuickReply(this)">${esc(t)}</button>`
+      `<button class="qr-chip" onclick="insertQuickReply(this)">${esc(_qrFillTemplate(t, c))}</button>`
     ).join('');
   }
 
@@ -7912,8 +7974,13 @@ setTimeout(() => {
   html.dark .pm-portal-btn:hover{background:#2a3a52}
 
   /* Materials banner above panel sections */
-  .pm-banner{margin-bottom:12px;padding:10px 12px;background:linear-gradient(135deg,rgba(255,186,0,.14),rgba(255,186,0,.04));border:1px solid rgba(255,186,0,.4);border-radius:var(--r-md);display:flex;align-items:flex-start;gap:10px;animation:promptIn .25s cubic-bezier(.16,1,.3,1)}
+  .pm-banner{margin-bottom:12px;padding:10px 12px;background:linear-gradient(135deg,rgba(255,186,0,.14),rgba(255,186,0,.04));border:1px solid rgba(255,186,0,.4);border-radius:var(--r-md);display:flex;align-items:center;gap:10px;animation:promptIn .25s cubic-bezier(.16,1,.3,1);text-align:left;width:100%;font-family:inherit}
   html.dark .pm-banner{background:linear-gradient(135deg,rgba(230,168,0,.14),rgba(230,168,0,.04));border-color:rgba(230,168,0,.4)}
+  button.pm-banner-action{cursor:pointer;color:inherit;transition:transform var(--t-fast),box-shadow var(--t-fast),border-color var(--t-fast)}
+  button.pm-banner-action:hover{border-color:rgba(255,186,0,.7);box-shadow:0 4px 14px rgba(255,186,0,.18);transform:translateY(-1px)}
+  button.pm-banner-action:active{transform:scale(.99)}
+  .pm-banner-cta{font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;padding-left:6px}
+  html.dark .pm-banner-cta{color:var(--gold)}
   .pm-banner-icon{width:24px;height:24px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-size:13px;font-family:'Outfit',sans-serif}
   html.dark .pm-banner-icon{color:#1e1b17}
   .pm-banner-body{flex:1;min-width:0;font-size:12px;color:var(--text);line-height:1.4}
@@ -7967,6 +8034,10 @@ setTimeout(() => {
   .pm-mboard-name small{display:block;font-family:'Inter',sans-serif;font-weight:500;font-size:11px;color:var(--text3);margin-top:1px}
   .pm-mboard-cell{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pm-mboard-cell.muted{color:var(--text3);font-style:italic}
+  .pm-mboard-pick{font-weight:600;color:var(--text)}
+  .pm-mboard-todo{display:inline-flex;align-items:center;gap:4px;font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:var(--r-pill);border:1px dashed var(--border-strong)}
+  .pm-mboard-todo::before{content:'+';font-weight:800;font-size:13px;line-height:1;color:var(--text3)}
+  html.dark .pm-mboard-todo{border-color:#3d3830}
   .pm-mboard-status{font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;border-radius:var(--r-pill);text-align:center;white-space:nowrap}
   .pm-mboard-status.todo{background:#fef3c7;color:#92400e}
   .pm-mboard-status.ordered{background:#dbeafe;color:#1d4ed8}
@@ -8043,14 +8114,17 @@ setTimeout(() => {
     if (!matComplete) {
       const msg = matStarted
         ? 'Materials picked but not yet received. Order or update status below.'
-        : 'No materials picked yet. Choose inlet + interlock before ordering.';
-      banner = `<div class="pm-banner">
+        : 'No materials picked yet. Choose inlet + interlock to get started.';
+      const cta = matStarted ? 'Update status \u2192' : 'Pick materials \u2192';
+      // Banner is a real button — clicking opens the materials section and scrolls to it.
+      banner = `<button type="button" class="pm-banner pm-banner-action" onclick="window.pmOpenMaterialsSection('${id}')">
         <div class="pm-banner-icon">!</div>
         <div class="pm-banner-body">
           <div class="pm-banner-title">Materials needed for this job</div>
           ${esc(msg)}
         </div>
-      </div>`;
+        <div class="pm-banner-cta">${esc(cta)}</div>
+      </button>`;
     }
 
     // ── Permit section ──
@@ -8169,12 +8243,12 @@ setTimeout(() => {
     </div>`;
 
     // ── Materials section ──
-    const inletOpts = '<option value="">— Select inlet —</option>' +
+    const inletOpts = '<option value="">Select inlet…</option>' +
       INLET_OPTIONS.map(o => `<option value="${esc(o.label)}" ${md.inlet === o.label ? 'selected' : ''}>${esc(o.label)} · ${esc(o.gen)}</option>`).join('');
     const panelBrands = Array.from(new Set(INTERLOCK_OPTIONS.map(x => x.panel_brand)));
-    const panelOpts = '<option value="">— Select panel brand —</option>' +
+    const panelOpts = '<option value="">Select brand…</option>' +
       panelBrands.map(b => `<option value="${esc(b)}" ${md.panel_brand === b ? 'selected' : ''}>${esc(b)}</option>`).join('');
-    const interlockOpts = '<option value="">— Auto-suggested —</option>' +
+    const interlockOpts = '<option value="">Auto-suggested</option>' +
       INTERLOCK_OPTIONS.map(o => `<option value="${esc(o.interlock)}" ${md.interlock === o.interlock ? 'selected' : ''}>${esc(o.interlock)}</option>`).join('');
 
     let matStatusLabel = 'Not ordered';
@@ -8236,6 +8310,26 @@ setTimeout(() => {
     localStorage.setItem(key, open ? '0' : '1');
     const sec = document.getElementById('pm-section-' + (which === 'permit' ? 'permit' : 'mat'));
     if (sec) sec.classList.toggle('open');
+  };
+
+  // Open the materials section and scroll it into view (called by the
+  // "Materials needed for this job" banner — turns it from a dead-end into a CTA).
+  window.pmOpenMaterialsSection = function(id) {
+    const key = 'bpp_pm_mat_open_' + id;
+    localStorage.setItem(key, '1');
+    const sec = document.getElementById('pm-section-mat');
+    if (sec) {
+      sec.classList.add('open');
+      // Scroll the side panel body so the materials section is visible
+      requestAnimationFrame(() => {
+        try { sec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+        // Drop focus into the inlet select so the user can immediately pick
+        setTimeout(() => {
+          const inletSel = document.getElementById('pm-mat-inlet');
+          if (inletSel) try { inletSel.focus(); } catch(e) {}
+        }, 350);
+      });
+    }
   };
 
   // Click a permit step to set today's date
@@ -8381,10 +8475,20 @@ setTimeout(() => {
     if (!wrap) return;
     const term = ((document.getElementById('search') || {}).value || '').toLowerCase();
 
+    // Respect the global stage filter from the chip row — same chips drive every leads view.
+    let stageFilterStages = null;
+    try {
+      if (typeof stageFilter !== 'undefined' && stageFilter !== 'all' && stageFilter !== 'archived') {
+        const pf = (typeof PIPELINE_FILTERS !== 'undefined' ? PIPELINE_FILTERS : []).find(f => f.id === stageFilter);
+        if (pf && Array.isArray(pf.stages)) stageFilterStages = pf.stages;
+      }
+    } catch(e) {}
+
     // Collect contacts that have any permit data, or are in stages 4-8
     const eligible = allContacts.filter(c => {
       if (c.status === 'Archived') return false;
       const stage = c.stage || 1;
+      if (stageFilterStages && !stageFilterStages.includes(stage)) return false;
       const pd = getPermitData(c);
       const hasPermitData = !!(pd.submitted_at || pd.number);
       return hasPermitData || (stage >= 4 && stage <= 8);
@@ -8476,12 +8580,17 @@ setTimeout(() => {
         else if (cur === 'inspect_passed')    actionText = 'View';
         else                            actionText = 'Mark submitted';
 
+        // Hide the per-row step chip when it would just repeat the section header label
+        // (e.g. every row in "Not started" already says "Not started" — redundant clutter).
+        const sectionLabel = (g.label || '').toLowerCase();
+        const chipLabel = (stepLabel || '').toLowerCase();
+        const showStepChip = chipLabel && chipLabel !== sectionLabel;
         html += `<div class="pm-board-row" onclick="openPanel('${c.id}')">
           <div style="display:flex;flex-direction:column;min-width:0;flex:1">
-            <div class="pm-board-name">${esc(c.name || 'Unnamed')}</div>
+            <div class="pm-board-name">${esc(dispName(c.name, 'New Lead'))}</div>
             <div class="pm-board-jur">${jurName ? esc(jurName) : '<span style="color:var(--text3)">No jurisdiction</span>'}${pd.number ? ' · ' + esc(pd.number) : ''}</div>
           </div>
-          <div class="pm-board-step" style="background:${stepBg}1a;color:${stepBg}">${esc(stepLabel)}</div>
+          ${showStepChip ? `<div class="pm-board-step" style="background:${stepBg}1a;color:${stepBg}">${esc(stepLabel)}</div>` : ''}
           <div class="pm-board-days ${daysCls}">${esc(daysText)}</div>
           <button class="pm-board-action" onclick="event.stopPropagation();window.pmBoardQuickAdvance('${c.id}','${cur || 'submitted'}')">${esc(actionText)}</button>
         </div>`;
@@ -8525,11 +8634,21 @@ setTimeout(() => {
     if (!wrap) return;
     const term = ((document.getElementById('search') || {}).value || '').toLowerCase();
 
+    // Respect the global stage filter from the chip row.
+    let stageFilterStages = null;
+    try {
+      if (typeof stageFilter !== 'undefined' && stageFilter !== 'all' && stageFilter !== 'archived') {
+        const pf = (typeof PIPELINE_FILTERS !== 'undefined' ? PIPELINE_FILTERS : []).find(f => f.id === stageFilter);
+        if (pf && Array.isArray(pf.stages)) stageFilterStages = pf.stages;
+      }
+    } catch(e) {}
+
     // Eligible: stages 4-8 not yet received
     const eligible = allContacts.filter(c => {
       if (c.status === 'Archived') return false;
       const stage = c.stage || 1;
       if (stage < 4 || stage > 8) return false;
+      if (stageFilterStages && !stageFilterStages.includes(stage)) return false;
       const md = getMaterialsData(c);
       if (md.received_at) return false; // already received — drop
       return true;
@@ -8567,15 +8686,24 @@ setTimeout(() => {
 
     eligible.forEach(c => {
       const md = getMaterialsData(c);
-      const inlet = md.inlet || '<span class="muted">—</span>';
-      const intlk = md.interlock || (md.panel_brand ? _suggestInterlock(md.panel_brand) || '<span class="muted">pending</span>' : '<span class="muted">—</span>');
+      // Real, helpful columns. If the user hasn't picked materials yet, show
+      // "Pick inlet" / "Pick interlock" prompts (not silent em-dashes).
+      const inletDisp = md.inlet
+        ? `<span class="pm-mboard-pick">${esc(md.inlet)}</span>`
+        : `<span class="pm-mboard-todo">Pick inlet</span>`;
+      const intlkResolved = md.interlock || (md.panel_brand ? _suggestInterlock(md.panel_brand) : '');
+      const intlkDisp = intlkResolved
+        ? `<span class="pm-mboard-pick">${esc(intlkResolved)}</span>${md.interlock ? '' : ' <small style="color:var(--text3);font-weight:500">(suggested)</small>'}`
+        : `<span class="pm-mboard-todo">Pick interlock</span>`;
       let status = 'todo';
       let statusLabel = 'Not ordered';
       if (md.ordered_at) { status = 'ordered'; statusLabel = 'Ordered'; }
+      const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
+      const stageLabel = stageDef ? stageDef.label : ('Stage ' + (c.stage || 1));
       html += `<div class="pm-mboard-row" onclick="openPanel('${c.id}')">
-        <div class="pm-mboard-name">${esc(c.name || 'Unnamed')}<small>Stage ${(c.stage || 1)} \u00b7 booked ${new Date(c.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })}</small></div>
-        <div class="pm-mboard-cell">${inlet}</div>
-        <div class="pm-mboard-cell">${intlk}</div>
+        <div class="pm-mboard-name">${esc(dispName(c.name, 'New Lead'))}<small>${esc(stageLabel)} \u00b7 booked ${new Date(c.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })}</small></div>
+        <div class="pm-mboard-cell">${inletDisp}</div>
+        <div class="pm-mboard-cell">${intlkDisp}</div>
         <div class="pm-mboard-status ${status}">${esc(statusLabel)}</div>
       </div>`;
     });
