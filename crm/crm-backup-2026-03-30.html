@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BPP CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
+  --green:#059669; --red:#dc2626; --blue:#3b82f6;
+  --gray:#6b7280; --border:#e4e8f0; --bg:#f4f6fa;
+  --card:#ffffff; --text:#1a2a42; --text2:#4a5568; --text3:#8a9ab5;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+
+/* NAV */
+.nav{background:var(--navy);display:flex;align-items:center;padding:0 20px;height:54px;gap:10px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.nav-brand{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:#fff;margin-right:auto}
+.nav-brand span{color:var(--gold)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Outfit',sans-serif;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--gold);color:var(--navy)}
+.btn-primary:hover{background:#e6a800}
+.btn-ghost{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.btn-outline{background:transparent;color:var(--text2);border:1.5px solid var(--border)}
+.btn-outline:hover{border-color:var(--navy);color:var(--navy);background:#f0f4ff}
+.btn-danger{background:#fee2e2;color:var(--red);border:1.5px solid #fecaca}
+.btn-danger:hover{background:#fecaca}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px}
+.btn-map{background:#e8f4fd;color:#1d6fa4;border:1px solid #b3d9f5;padding:4px 10px;font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-family:'Outfit',sans-serif}
+.btn-map:hover{background:#cde8f8}
+
+/* LAYOUT */
+.main{max-width:1140px;margin:0 auto;padding:20px}
+
+/* SECTION HEADERS */
+.section-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.section-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:var(--navy);flex:1}
+.section-divider{border:none;border-top:2px solid var(--border);margin:28px 0}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.search-input{flex:1;min-width:180px;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;background:var(--card);color:var(--text);outline:none;transition:border .15s}
+.search-input:focus{border-color:var(--navy)}
+.filter-pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s;font-family:'Outfit',sans-serif}
+.pill:hover{border-color:var(--navy2);color:var(--navy)}
+.pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* CONTACTS TABLE */
+.table-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:#f8fafc;padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1.5px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f8faff}
+td{padding:10px 14px;vertical-align:middle}
+td.name{font-weight:600;color:var(--navy)}
+td.phone a{color:var(--blue);text-decoration:none;font-weight:500}
+td.phone a:hover{text-decoration:underline}
+td.addr a{color:var(--text2);text-decoration:none;font-size:12.5px;display:flex;align-items:center;gap:4px}
+td.addr a:hover{color:var(--blue)}
+td.notes-cell{color:var(--text3);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.actions{white-space:nowrap}
+/* ── SIDE PANEL ─────────────────────────────────────────── */
+.panel-backdrop{position:fixed;inset:0;background:rgba(10,20,40,.35);z-index:300;display:none;backdrop-filter:blur(1px)}
+.panel-backdrop.open{display:block}
+.side-panel{position:fixed;top:0;right:-440px;width:420px;max-width:100vw;height:100%;background:#fff;z-index:301;box-shadow:-8px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1)}
+.side-panel.open{right:0}
+.panel-head{padding:18px 20px 14px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:10px;background:#fff;position:sticky;top:0;z-index:2}
+.panel-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:19px;color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.panel-close{width:32px;height:32px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;font-size:18px;color:var(--text2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.panel-close:hover{background:#e2e8f0}
+.panel-body{flex:1;overflow-y:auto;padding:18px 20px}
+.panel-foot{padding:14px 20px;border-top:1.5px solid var(--border);display:flex;gap:8px;align-items:center;background:#fff}
+.panel-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:18px 0 8px}
+.panel-section-label:first-child{margin-top:0}
+.prop-action-btn{width:100%;padding:11px 16px;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px;transition:all .15s}
+.prop-action-create{background:var(--navy);color:#fff}
+.prop-action-create:hover{background:var(--navy2)}
+.prop-action-view{background:#dbeafe;color:#1d4ed8;border:1.5px solid #bfdbfe}
+.prop-action-view:hover{background:#bfdbfe}
+.delete-btn-confirm{background:var(--red)!important;color:#fff!important}
+@media(max-width:500px){.side-panel{width:100vw}}
+
+/* PROPOSAL BADGES */
+.prop-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11.5px;font-weight:700;font-family:'Outfit',sans-serif;white-space:nowrap}
+.prop-none{background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb}
+.prop-sent{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+.prop-approved{background:#d1fae5;color:var(--green);border:1px solid #a7f3d0}
+
+/* SHOW MORE */
+.show-more-bar{text-align:center;padding:10px;background:var(--card);border-top:1px solid var(--border);border-radius:0 0 10px 10px}
+.contact-count{font-size:12px;color:var(--text3);margin-bottom:6px}
+
+/* EMPTY STATE */
+.empty{padding:40px 20px;text-align:center;color:var(--text3)}
+.empty svg{width:36px;height:36px;margin:0 auto 12px;display:block;opacity:.4}
+.empty p{font-size:14px}
+
+/* ── WEEKLY CALENDAR ──────────────────────────────── */
+.cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.week-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;min-height:220px}
+.cal-day{background:var(--card);border-radius:8px;border:1.5px solid var(--border);min-height:180px;display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s}
+.cal-day.today{border-color:var(--navy);background:#f0f4ff}
+.cal-day-head{padding:7px 8px 5px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:5px;background:rgba(0,0,0,.02)}
+.cal-day-name{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.cal-day-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:var(--text);line-height:1}
+.cal-day.today .cal-day-num{color:var(--navy)}
+.cal-day-body{flex:1;padding:5px;display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.cal-day-body:hover{background:rgba(59,130,246,.04)}
+.cal-event{background:var(--navy);color:#fff;border-radius:4px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4}
+.cal-event:hover{background:var(--navy2)}
+.cal-event.complete{background:#6b7280}
+.cal-add-hint{font-size:10px;color:var(--text3);text-align:center;padding:4px;opacity:0;transition:opacity .15s;margin-top:auto}
+.cal-day-body:hover .cal-add-hint{opacity:1}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.2)}
+.modal-head{padding:20px 24px 0;display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.modal-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:var(--navy);flex:1}
+.modal-close{width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;font-size:17px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:#e2e8f0}
+.modal-body{padding:16px 24px}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.form-row{margin-bottom:14px}
+.form-row label{display:block;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;color:var(--text);background:var(--card);outline:none;transition:border .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--navy)}
+.form-input.locked{background:#f8fafc;color:var(--text2)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
+.addr-wrap{position:relative}
+.addr-change{display:none!important}
+.field-row{display:flex;gap:6px;align-items:flex-start}
+.field-row .form-input,.field-row .addr-wrap{flex:1;min-width:0}
+.field-row .addr-wrap .form-input{width:100%}
+.fld-btn{flex-shrink:0;width:34px;height:36px;border-radius:7px;border:1.5px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--text2);padding:0}
+.fld-btn:hover{border-color:var(--navy);background:#f0f4ff;color:var(--navy)}
+.addr-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--navy);border-top:none;border-radius:0 0 8px 8px;z-index:999;display:none;list-style:none;max-height:220px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.addr-dropdown li{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text2);line-height:1.3}
+.addr-dropdown li:last-child{border-bottom:none}
+.addr-dropdown li:hover,.addr-dropdown li.focused{background:#f0f4ff;color:var(--navy)}
+
+/* Proposal form */
+.line-items{background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:14px}
+.line-item{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.line-item:last-child{margin-bottom:0;border-top:1px solid var(--border);padding-top:10px}
+.line-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--navy)}
+.line-item label{flex:1;font-size:13px;font-weight:600;cursor:pointer}
+.line-price{font-size:14px;font-weight:700;color:var(--navy);min-width:60px;text-align:right}
+.total-label{font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;flex:1}
+.total-amount{font-size:22px;font-weight:800;color:var(--navy);font-family:'Outfit',sans-serif}
+
+/* After proposal created */
+.link-box{background:#f0f4ff;border:1.5px solid #c7d8ff;border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.link-url{font-size:12px;color:var(--blue);word-break:break-all;margin-bottom:8px;font-family:monospace}
+.link-actions{display:flex;gap:8px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Outfit',sans-serif;z-index:9999;opacity:0;transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+
+@media(max-width:700px){
+  .cal-grid{grid-template-columns:repeat(7,minmax(90px,1fr));overflow-x:auto}
+  td.notes-cell,.col-notes{display:none}
+}
+@media(max-width:480px){
+  td.phone,.col-phone{display:none}
+  .toolbar{flex-direction:column;align-items:stretch}
+  .search-input{min-width:0}
+  .filter-pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;scrollbar-width:none}
+  .filter-pills::-webkit-scrollbar{display:none}
+  .pill{flex-shrink:0}
+}
+
+/* ── HIDDEN UTILITY ──────────────────────────────────── */
+.hidden{display:none!important}
+
+/* ── TAB BAR ──────────────────────────────────────────── */
+.tab-bar{background:#fff;border-bottom:1.5px solid var(--border);display:flex;position:sticky;top:54px;z-index:49;padding:0 8px;overflow-x:auto;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{padding:13px 18px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;border:none;background:none;color:var(--text2);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--gold)}
+.tab-btn:hover:not(.active){color:var(--navy)}
+@media(max-width:480px){.tab-btn{padding:12px 14px;font-size:13px}}
+
+/* ── QUOTE BUILDER ────────────────────────────────────── */
+.qb-wrap{max-width:540px;margin:0 auto;padding:20px 20px 60px}
+.qb-mode-bar{display:flex;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:3px;margin-bottom:20px}
+.qb-mode-btn{flex:1;padding:9px 0;border-radius:8px;border:none;background:transparent;color:var(--text2);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s}
+.qb-mode-btn.active{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,31,59,.2)}
+.qb-card{background:var(--card);border:1.5px solid rgba(255,186,0,.5);border-radius:16px;padding:22px;margin-bottom:20px;box-shadow:0 2px 16px rgba(255,186,0,.07)}
+.qb-price-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.qb-price-label{color:var(--text3);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+.qb-price-big{font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(30px,8vw,46px);line-height:1;color:var(--navy);letter-spacing:-1px}
+.qb-price-note{color:var(--gold);font-size:10px;font-weight:600;margin-top:4px}
+.qb-profit-box{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;text-align:right;flex-shrink:0}
+.qb-profit-label{color:var(--text3);font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.qb-profit-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;line-height:1}
+.qb-profit-pct{color:var(--text3);font-size:10px;font-weight:600;margin-top:3px}
+.qb-pips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.qb-pip{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px}
+.qb-pip.accent{border-color:rgba(255,186,0,.5)}
+.qb-pip-label{color:var(--text3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.qb-pip-val{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--text2)}
+.qb-pip.accent .qb-pip-val{color:var(--navy)}
+.qb-breakdown-toggle{background:none;border:none;color:var(--text3);font-size:11px;font-weight:600;margin-top:12px;padding:0;display:flex;align-items:center;gap:5px;cursor:pointer;font-family:'Inter',sans-serif}
+.qb-breakdown-arrow{font-size:8px;display:inline-block;transition:transform .15s}
+.qb-breakdown-body{margin-top:10px;padding-top:10px;border-top:1.5px solid var(--border)}
+.qb-breakdown-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
+.qb-breakdown-key{color:var(--text3);font-size:11px}
+.qb-breakdown-val{color:var(--text2);font-size:11px;font-weight:600;margin-left:8px;flex-shrink:0}
+.qb-breakdown-total{display:flex;justify-content:space-between;padding-top:8px;margin-top:4px}
+.qb-breakdown-total-key{color:var(--text2);font-size:12px;font-weight:700}
+.qb-breakdown-total-val{color:var(--navy);font-size:12px;font-weight:800;font-family:'Outfit',sans-serif}
+.qb-section{margin-bottom:20px}
+.qb-section-title{color:var(--text3);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.qb-amp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qb-amp-btn{padding:14px 0;border-radius:12px;border:1.5px solid var(--border);background:var(--card);transition:all .12s;text-align:center;cursor:pointer;width:100%}
+.qb-amp-btn:active{transform:scale(.97)}
+.qb-amp-btn.active{border-color:var(--navy);background:#eef2ff}
+.qb-amp-num{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:var(--text3)}
+.qb-amp-btn.active .qb-amp-num{color:var(--navy)}
+.qb-amp-sub{font-size:10px;color:var(--text3);margin-top:2px;font-weight:500}
+.qb-amp-btn.active .qb-amp-sub{color:var(--text2)}
+.qb-slider-wrap{margin-bottom:16px}
+.qb-slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.qb-slider-label{color:var(--text2);font-size:12px;font-weight:600}
+.qb-slider-val{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:var(--navy)}
+.qb-slider-val span{font-size:11px;color:var(--text3);margin-left:2px;font-weight:600}
+.qb-slider-note{font-size:10px;margin-top:5px;color:var(--text2);font-weight:500}
+.qb-slider-note.highlight{color:var(--navy);font-weight:700}
+input[type=range].qb-range{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none;cursor:pointer;display:block}
+input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--navy);cursor:pointer;box-shadow:0 0 0 4px rgba(11,31,59,.12),0 2px 6px rgba(0,0,0,.15)}
+.qb-toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qb-toggle{padding:12px;border-radius:12px;width:100%;border:1.5px solid var(--border);background:var(--card);transition:all .12s;display:flex;justify-content:space-between;align-items:center;text-align:left;cursor:pointer}
+.qb-toggle:active{transform:scale(.97)}
+.qb-toggle.active{border-color:var(--navy);background:#eef2ff}
+.qb-toggle-label{font-size:12px;font-weight:700;color:var(--text2)}
+.qb-toggle.active .qb-toggle-label{color:var(--navy)}
+.qb-toggle-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.qb-toggle.active .qb-toggle-sub{color:var(--text2)}
+.qb-toggle-right{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text3);margin-left:8px;flex-shrink:0}
+.qb-toggle.active .qb-toggle-right{color:var(--navy)}
+.qb-chips{display:flex;flex-wrap:wrap;gap:6px}
+.qb-chip{padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text2);font-size:11px;font-weight:600;transition:all .12s;white-space:nowrap;font-family:'Inter',sans-serif;cursor:pointer}
+.qb-chip:active{transform:scale(.96)}
+.qb-chip.active{border-color:var(--navy);background:#eef2ff;color:var(--navy)}
+.qb-cord-sub-label{color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.qb-adapter-note{color:var(--text2);font-size:10px;margin-top:8px;line-height:1.5}
+.qb-template-box{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.qb-template-title{color:var(--text3);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.qb-template-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.qb-template-key{color:var(--text2);font-size:12px}
+.qb-template-num{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:var(--navy);background:rgba(255,186,0,.12);border:1px solid rgba(255,186,0,.4);border-radius:8px;padding:4px 12px}
+.qb-template-note{color:var(--text3);font-size:10px;line-height:1.6}
+.qb-tell-box{background:linear-gradient(135deg,rgba(255,186,0,.06) 0%,var(--card) 100%);border:1.5px solid rgba(255,186,0,.4);border-radius:14px;padding:16px 18px}
+.qb-tell-title{color:var(--navy);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.qb-tell-total{font-family:'Outfit',sans-serif;font-size:32px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:14px;letter-spacing:-.5px}
+.qb-tell-items{display:flex;flex-direction:column;gap:6px}
+.qb-tell-item{display:flex;justify-content:space-between;align-items:center}
+.qb-tell-item-key{color:var(--text2);font-size:12px}
+.qb-tell-item-val{color:var(--text);font-size:12px;font-weight:700;margin-left:10px;flex-shrink:0}
+.qb-tell-divider{border-top:1.5px solid rgba(255,186,0,.4);margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center}
+.qb-tell-divider-key{color:var(--text2);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700}
+.qb-tell-divider-val{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--navy)}
+.qb-market-note{font-size:10px;color:var(--text3);text-align:center;padding:8px 16px;line-height:1.5;margin-top:20px}
+.qb-market-note strong{color:var(--text2)}
+@media(max-width:480px){.qb-wrap{padding:14px 12px 50px}.qb-toggle-grid{grid-template-columns:1fr}}
+
+/* ── PERMIT IFRAME ────────────────────────────────────── */
+.permit-wrap{display:flex;flex-direction:column;height:calc(100vh - 108px)}
+.permit-iframe{flex:1;border:none;width:100%;display:block}
+.permit-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--text3);text-align:center;padding:40px 20px}
+.permit-placeholder h3{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:var(--navy);margin:0}
+.permit-placeholder code{background:var(--card);border:1.5px solid var(--border);border-radius:6px;padding:6px 14px;font-size:13px;color:var(--text);display:inline-block}
+</style>
+</head>
+<body>
+
+<!-- ── PASSWORD GATE ──────────────────────────────────── -->
+<div id="gate" style="display:flex;position:fixed;inset:0;z-index:999;background:var(--navy);align-items:center;justify-content:center;padding:24px">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
+    <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px">BPP <span style="color:var(--gold)">CRM</span></div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:24px">Backup Power Pro</div>
+    <input id="gate-input" type="password" placeholder="Password"
+      style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:'Inter',sans-serif;outline:none;text-align:center;letter-spacing:.1em;margin-bottom:12px;transition:border .15s"
+      onkeydown="if(event.key==='Enter')checkPass()"
+      onfocus="this.style.borderColor='var(--navy)'"
+      onblur="this.style.borderColor='var(--border)'">
+    <div id="gate-err" style="font-size:12px;color:var(--red);min-height:18px;margin-bottom:8px"></div>
+    <button onclick="checkPass()" style="width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer">Enter</button>
+  </div>
+</div>
+
+<!-- ── NAV ───────────────────────────────────────────────── -->
+<nav class="nav" id="main-nav" style="display:none">
+  <img src="assets/images/logo-white-v2.png" alt="Backup Power Pro" style="height:28px;margin-right:auto">
+  <button class="btn btn-primary btn-sm" id="nav-add-lead" onclick="openContactModal(null)">+ Lead</button>
+</nav>
+
+<!-- ── TAB BAR ──────────────────────────────────────────── -->
+<div class="tab-bar" id="tab-bar" style="display:none">
+  <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">Leads</button>
+  <button class="tab-btn" id="tab-btn-quote" onclick="switchTab('quote')">Quote Builder</button>
+  <button class="tab-btn" id="tab-btn-permits" onclick="switchTab('permits')">Permits</button>
+</div>
+
+<!-- ── MAIN ──────────────────────────────────────────────── -->
+<div id="tab-leads" style="display:none">
+<main class="main" id="main-content">
+
+  <!-- ── CONTACTS SECTION ─────────────────────────────── -->
+  <div class="section-head">
+    <div class="section-title">Leads</div>
+    <span id="leads-count" style="font-size:12px;color:var(--text3)"></span>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" class="search-input" placeholder="Search by name, phone, or address…" oninput="renderContacts()">
+    <div class="filter-pills" id="lead-pills">
+      <span class="pill active" onclick="setPropFilter('all',this)">All</span>
+      <span class="pill" onclick="setPropFilter('none',this)">No Proposal</span>
+      <span class="pill" onclick="setPropFilter('sent',this)">Proposal Sent</span>
+      <span class="pill" onclick="setPropFilter('approved',this)">Approved ✓</span>
+      <span class="pill" onclick="setPropFilter('archived',this)" style="color:var(--text3)">Archived</span>
+    </div>
+  </div>
+
+  <div id="contacts-table"></div>
+
+  <hr class="section-divider">
+
+  <!-- ── CALENDAR SECTION ─────────────────────────────── -->
+  <div class="section-head" style="margin-bottom:10px">
+    <div class="section-title">Schedule</div>
+  </div>
+
+  <div class="cal-nav">
+    <button class="btn btn-outline btn-sm" onclick="navigateWeek(-1)">← Prev</button>
+    <button class="btn btn-outline btn-sm" onclick="navigateWeek(0)">Today</button>
+    <span class="week-label" id="week-label"></span>
+    <button class="btn btn-outline btn-sm" onclick="navigateWeek(1)">Next →</button>
+  </div>
+
+  <div class="cal-grid" id="cal-grid"></div>
+
+</main>
+</div><!-- /tab-leads -->
+
+<!-- ── QUOTE BUILDER TAB ────────────────────────────────── -->
+<div id="tab-quote" style="display:none">
+  <div class="qb-wrap">
+
+    <div class="qb-mode-bar">
+      <button class="qb-mode-btn active" id="qb-mode-solo" onclick="qbSetMode('solo')">⚡ Solo</button>
+      <button class="qb-mode-btn" id="qb-mode-sub" onclick="qbSetMode('sub')">👥 With Sub</button>
+    </div>
+
+    <div class="qb-card">
+      <div class="qb-price-row">
+        <div>
+          <div class="qb-price-label">Customer Quote</div>
+          <div class="qb-price-big" id="qb-total-sell">$1,197</div>
+          <div class="qb-price-note hidden" id="qb-long-run-note"></div>
+        </div>
+        <div class="qb-profit-box">
+          <div class="qb-profit-label">Your Profit</div>
+          <div class="qb-profit-num" id="qb-profit-num">$807</div>
+          <div class="qb-profit-pct" id="qb-profit-pct">67%</div>
+        </div>
+      </div>
+      <div class="qb-pips">
+        <div class="qb-pip"><div class="qb-pip-label">Your Cost</div><div class="qb-pip-val" id="qb-pip-cost">$390</div></div>
+        <div class="qb-pip accent"><div class="qb-pip-label" id="qb-pip-sub-label">Labor</div><div class="qb-pip-val" id="qb-pip-sub">You</div></div>
+        <div class="qb-pip"><div class="qb-pip-label">Est. Time</div><div class="qb-pip-val" id="qb-pip-time">2.5h</div></div>
+      </div>
+      <button class="qb-breakdown-toggle" onclick="qbToggleBreakdown()">
+        <span class="qb-breakdown-arrow" id="qb-breakdown-arrow">▶</span>
+        <span id="qb-breakdown-label">Show cost breakdown</span>
+      </button>
+      <div id="qb-breakdown-body" class="qb-breakdown-body hidden">
+        <div class="qb-breakdown-row"><span class="qb-breakdown-key">Supplies (inlet, interlock, cord, permit)</span><span class="qb-breakdown-val" id="qb-bd-supplies">$0</span></div>
+        <div class="qb-breakdown-row"><span class="qb-breakdown-key">Adapter (if added)</span><span class="qb-breakdown-val" id="qb-bd-cords">$0</span></div>
+        <div class="qb-breakdown-row hidden" id="qb-bd-sub-row"><span class="qb-breakdown-key" id="qb-bd-sub-label">Sub payout</span><span class="qb-breakdown-val" id="qb-bd-sub">$0</span></div>
+        <div class="qb-breakdown-row"><span class="qb-breakdown-key">Ad cost allocation</span><span class="qb-breakdown-val" id="qb-bd-ad">$150</span></div>
+        <div class="qb-breakdown-total"><span class="qb-breakdown-total-key">Total cost</span><span class="qb-breakdown-total-val" id="qb-bd-total">$390</span></div>
+      </div>
+    </div>
+
+    <div class="qb-section">
+      <div class="qb-section-title">Amperage</div>
+      <div class="qb-amp-grid">
+        <button class="qb-amp-btn active" id="qb-btn-30" onclick="qbSetAmp(30)"><div class="qb-amp-num">30A</div><div class="qb-amp-sub">Most generators</div></button>
+        <button class="qb-amp-btn" id="qb-btn-50" onclick="qbSetAmp(50)"><div class="qb-amp-num">50A</div><div class="qb-amp-sub">Large / future-proof</div></button>
+      </div>
+    </div>
+
+    <div class="qb-section">
+      <div class="qb-section-title">Run Length</div>
+      <div class="qb-slider-wrap">
+        <div class="qb-slider-header"><span class="qb-slider-label">Total run</span><span class="qb-slider-val" id="qb-run-display">5<span>ft</span></span></div>
+        <input type="range" class="qb-range" min="1" max="120" value="5" id="qb-run-slider" oninput="qbOnRunChange(this.value)">
+        <div class="qb-slider-note" id="qb-run-note">No long-run adder</div>
+      </div>
+      <div class="qb-slider-wrap">
+        <div class="qb-slider-header"><span class="qb-slider-label">Exterior portion</span><span class="qb-slider-val" id="qb-ext-display">5<span>ft</span></span></div>
+        <input type="range" class="qb-range" min="0" max="5" value="5" id="qb-ext-slider" oninput="qbOnExtChange(this.value)">
+        <div class="qb-slider-note" id="qb-ext-note">First 5ft exterior included</div>
+      </div>
+    </div>
+
+    <div class="qb-section">
+      <div class="qb-section-title">Panel Work</div>
+      <div class="qb-toggle-grid">
+        <button class="qb-toggle" id="qb-btn-main" onclick="qbToggle('mainBreaker')">
+          <div><div class="qb-toggle-label">Main Breaker</div><div class="qb-toggle-sub">Needs replacement</div></div>
+          <span class="qb-toggle-right">+$225</span>
+        </button>
+        <button class="qb-toggle" id="qb-btn-twin" onclick="qbToggle('twinQuad')">
+          <div><div class="qb-toggle-label">Twin / Quad</div><div class="qb-toggle-sub">Making panel space</div></div>
+          <span class="qb-toggle-right">+$125</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="qb-section">
+      <div class="qb-section-title">Add-Ons</div>
+      <button class="qb-toggle" id="qb-btn-surge" onclick="qbToggle('surge')" style="width:100%;margin-bottom:10px">
+        <div><div class="qb-toggle-label">Whole Home Surge Protector</div><div class="qb-toggle-sub">$75K device warranty · same visit</div></div>
+        <span class="qb-toggle-right">+$375</span>
+      </button>
+      <div class="qb-cord-sub-label">Generator Cord</div>
+      <button class="qb-toggle active" id="qb-btn-cord" onclick="qbToggle('cordIncluded')" style="width:100%;margin-bottom:8px">
+        <div><div class="qb-toggle-label" id="qb-cord-toggle-label">30A Generator Cord</div><div class="qb-toggle-sub" id="qb-cord-toggle-sub">Included · tap to remove</div></div>
+        <span class="qb-toggle-right" id="qb-cord-toggle-right">✓</span>
+      </button>
+      <div class="qb-chips" id="qb-cord-chips"></div>
+      <div class="qb-adapter-note hidden" id="qb-adapter-note">50A cord included · Adapter lets their 30A generator plug into the 50A inlet</div>
+    </div>
+
+    <div class="qb-template-box">
+      <div class="qb-template-title">Invoice Line Item</div>
+      <div class="qb-template-row">
+        <span class="qb-template-key">Inlet installation</span>
+        <span class="qb-template-num" id="qb-inlet-line-item">$1,072</span>
+      </div>
+      <div class="qb-template-note">Cord bundled in base · Permit ($125) separate line item</div>
+    </div>
+
+    <div class="qb-tell-box">
+      <div class="qb-tell-title">Tell the Customer</div>
+      <div class="qb-tell-total" id="qb-tell-total">$1,197</div>
+      <div class="qb-tell-items" id="qb-tell-items"></div>
+      <div class="qb-tell-divider">
+        <span class="qb-tell-divider-key">Total</span>
+        <span class="qb-tell-divider-val" id="qb-tell-divider-val">$1,197</span>
+      </div>
+    </div>
+
+    <div class="qb-market-note">
+      Market range: <strong>$700–$1,400</strong> for interlock install in Upstate SC<br>
+      Your price includes cord, permit, inspection &amp; guarantees
+    </div>
+    <div style="text-align:right;margin-top:10px">
+      <button class="btn btn-outline btn-sm" onclick="qbResetAll()">↺ Reset</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── PERMITS TAB ───────────────────────────────────────── -->
+<div id="tab-permits" style="display:none">
+  <div class="permit-wrap">
+    <iframe id="permit-iframe" class="permit-iframe" src="/permit-app/client/dist/" title="Permit Manager" allow="same-origin"></iframe>
+  </div>
+</div>
+
+<!-- ── CONTACT MODAL ────────────────────────────────────── -->
+<div class="modal-overlay" id="contact-overlay" onclick="if(event.target===this)closeModal('contact-overlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="contact-modal-title">Add Lead</div>
+      <button class="modal-close" onclick="closeModal('contact-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="c-id">
+      <div class="form-row">
+        <label>Name *</label>
+        <input class="form-input" id="c-name" placeholder="Full name" onkeydown="if(event.key==='Enter')document.getElementById('c-phone').focus()">
+      </div>
+      <div class="form-row">
+        <label>Phone</label>
+        <input class="form-input" id="c-phone" type="tel" placeholder="(864) 000-0000">
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        <input class="form-input" id="c-email" type="email" placeholder="email@example.com">
+      </div>
+      <div class="form-row">
+        <label>Address</label>
+        <div class="addr-wrap">
+          <input class="form-input" id="c-address" placeholder="Start typing address…" autocomplete="off"
+            oninput="addrInput(this.value)" onkeydown="addrKeydown(event)" onblur="setTimeout(addrHide,200)">
+          <span class="addr-change" id="addr-change-btn" onclick="clearAddressField()">✕ Change</span>
+          <ul class="addr-dropdown" id="addr-dropdown"></ul>
+        </div>
+        <div class="form-hint" id="addr-hint">Start typing — pick from the list to confirm the address.</div>
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea class="form-textarea" id="c-notes" placeholder="Generator model, special instructions, anything useful…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('contact-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveContact()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROPOSAL MODAL ────────────────────────────────────── -->
+<div class="modal-overlay" id="proposal-overlay" onclick="if(event.target===this)closeModal('proposal-overlay')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div class="modal-title" id="proposal-modal-title">Create Proposal</div>
+      <button class="modal-close" onclick="closeModal('proposal-overlay')">✕</button>
+    </div>
+    <div class="modal-body" id="proposal-modal-body">
+      <input type="hidden" id="p-contact-id">
+
+      <!-- Before creation: pricing form -->
+      <div id="p-form">
+        <div style="background:#f0f4ff;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--navy)">
+          <strong id="p-contact-name"></strong>
+          <div id="p-contact-addr" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
+        </div>
+
+        <div class="line-items">
+          <div class="line-item">
+            <input type="checkbox" id="p-base-check" checked disabled>
+            <label for="p-base-check">Base install — inlet box + interlock kit + permit + inspection</label>
+          </div>
+          <div class="line-item" style="margin-bottom:0;border:none">
+            <span style="font-size:12px;color:var(--text3);flex:1">Base price</span>
+            <div style="display:flex;align-items:center;gap:4px">
+              <span style="font-size:13px;color:var(--text3)">$</span>
+              <input id="p-base-price" type="number" min="0" value="1295"
+                style="width:80px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;text-align:right;outline:none;font-family:'Outfit',sans-serif"
+                onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
+                oninput="calcTotal()">
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--border);margin:10px 0"></div>
+
+          <div class="line-item">
+            <input type="checkbox" id="p-cord-check" checked onchange="calcTotal()">
+            <label for="p-cord-check" style="cursor:pointer">30A compatible power cord</label>
+            <span class="line-price" id="p-cord-price-lbl">+$150</span>
+          </div>
+
+          <div class="line-item">
+            <input type="checkbox" id="p-surge-check" onchange="calcTotal()">
+            <label for="p-surge-check" style="cursor:pointer">Whole-house surge protector</label>
+            <span class="line-price" id="p-surge-price-lbl">+$450</span>
+          </div>
+
+          <div style="border-top:1.5px solid var(--border);margin:10px 0"></div>
+          <div class="line-item" style="border:none;padding-top:0;margin-bottom:0">
+            <span class="total-label">Total</span>
+            <span class="total-amount" id="p-total">$1,295</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Notes <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+          <textarea class="form-textarea" id="p-notes" placeholder="Special instructions visible on the proposal…" style="min-height:64px"></textarea>
+        </div>
+      </div>
+
+      <!-- After creation: link ready -->
+      <div id="p-created" style="display:none">
+        <div style="text-align:center;padding:10px 0 16px">
+          <div style="font-size:28px;margin-bottom:6px">🔗</div>
+          <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--navy)">Proposal link ready</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">Send it via text or email</div>
+        </div>
+        <div class="link-box">
+          <div class="link-url" id="p-link-url"></div>
+          <div class="link-actions">
+            <button class="btn btn-outline btn-sm" style="flex:1" onclick="copyProposalLink()">📋 Copy Link</button>
+            <a id="p-email-link" class="btn btn-outline btn-sm" style="flex:1;text-decoration:none;justify-content:center" href="#">✉️ Email</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot" id="proposal-modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('proposal-overlay')">Cancel</button>
+      <button class="btn btn-primary" id="p-create-btn" style="background:var(--navy);color:#fff" onclick="saveProposal()">Create &amp; Get Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── JOB / EVENT MODAL ─────────────────────────────────── -->
+<div class="modal-overlay" id="job-overlay" onclick="if(event.target===this)closeModal('job-overlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="job-modal-title">Add Event</div>
+      <button class="modal-close" onclick="closeModal('job-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="j-id">
+      <div class="form-row">
+        <label>Linked Lead <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <select class="form-select" id="j-contact" onchange="onJobContactChange()">
+          <option value="">— No contact —</option>
+        </select>
+      </div>
+      <div class="form-row" id="j-title-row">
+        <label>Event Title</label>
+        <input class="form-input" id="j-title" placeholder="e.g. Site visit, Call, Block time…">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-row">
+          <label>Date</label>
+          <input class="form-input" id="j-date" type="date">
+        </div>
+        <div class="form-row">
+          <label>Time <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+          <input class="form-input" id="j-time" type="time">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-row">
+          <label>Type</label>
+          <select class="form-select" id="j-type">
+            <option value="Install">Install</option>
+            <option value="Assessment">Assessment</option>
+            <option value="Follow-up">Follow-up</option>
+            <option value="Block">Block Time</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Status</label>
+          <select class="form-select" id="j-status">
+            <option value="Scheduled">Scheduled</option>
+            <option value="Complete">Complete</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Price <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <input class="form-input" id="j-price" type="number" min="0" placeholder="0">
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea class="form-textarea" id="j-notes" style="min-height:64px" placeholder="Notes for this event…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="j-delete-btn" onclick="deleteJob()" style="display:none;margin-right:auto;color:var(--red);border-color:#fecaca">Delete</button>
+      <button class="btn btn-outline" onclick="closeModal('job-overlay')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--navy);color:#fff" onclick="saveJob()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SIDE PANEL ────────────────────────────────────────── -->
+<div class="panel-backdrop" id="panel-backdrop" onclick="closePanel()"></div>
+<div class="side-panel" id="side-panel">
+  <div class="panel-head">
+    <div class="panel-name" id="panel-name">Lead</div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body">
+    <input type="hidden" id="panel-id">
+
+    <!-- Proposal action -->
+    <div id="panel-prop-section"></div>
+
+    <div class="panel-section-label">Details</div>
+    <div class="form-row">
+      <label>Name *</label>
+      <div class="field-row">
+        <input class="form-input" id="panel-name-input" placeholder="Full name">
+        <button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Phone</label>
+      <div class="field-row">
+        <input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000">
+        <button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Email</label>
+      <div class="field-row">
+        <input class="form-input" id="panel-email" type="email" placeholder="email@example.com">
+        <button class="fld-btn" onclick="copyField('panel-email')" title="Copy email">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Address</label>
+      <div class="field-row">
+        <div class="addr-wrap" style="flex:1;min-width:0">
+          <input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off"
+            oninput="panelAddrInput(this.value)" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%">
+          <ul class="addr-dropdown" id="panel-addr-dropdown"></ul>
+        </div>
+        <button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Notes</label>
+      <textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…"></textarea>
+    </div>
+  </div>
+  <div class="panel-foot">
+    <button class="btn btn-danger btn-sm" id="panel-delete-btn" onclick="panelDelete()" style="margin-right:auto">Delete</button>
+    <button class="btn btn-outline btn-sm" id="panel-archive-btn" onclick="panelArchive()">Archive</button>
+    <button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" onclick="panelSave()">Save</button>
+  </div>
+</div>
+
+<!-- ── TOAST ─────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────── -->
+<script>
+
+// ── CONFIG ────────────────────────────────────────────────
+const SUPABASE_URL      = 'https://reowtzedjflwmlptupbk.supabase.co';
+const SUPABASE_KEY      = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
+const CRM_PASSWORD      = 'bpp2026';
+const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── STATE ─────────────────────────────────────────────────
+let allContacts  = [];
+let allJobs      = [];
+let allProposals = [];
+let proposalMap  = {};   // contact_id → latest proposal
+let propFilter   = 'all';
+let contactsShown = 5;
+let searchTerm   = '';
+let weekStart    = getMonday(new Date());
+
+// ── PASSWORD GATE ─────────────────────────────────────────
+function checkPass() {
+  const val = document.getElementById('gate-input').value;
+  if (val === CRM_PASSWORD) {
+    sessionStorage.setItem('crm_auth', '1');
+    showApp();
+  } else {
+    const err = document.getElementById('gate-err');
+    const inp = document.getElementById('gate-input');
+    err.textContent = 'Incorrect password';
+    inp.style.borderColor = 'var(--red)';
+    inp.value = '';
+    setTimeout(() => { err.textContent = ''; inp.style.borderColor = 'var(--border)'; }, 2500);
+  }
+}
+
+function showApp() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('main-nav').style.display = 'flex';
+  document.getElementById('tab-bar').style.display = 'flex';
+  document.getElementById('tab-leads').style.display = 'block';
+  init();
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────
+function switchTab(name) {
+  ['leads','quote','permits'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = t === name ? 'block' : 'none';
+    const btn = document.getElementById('tab-btn-' + t);
+    if (btn) btn.classList.toggle('active', t === name);
+  });
+  const addLeadBtn = document.getElementById('nav-add-lead');
+  if (addLeadBtn) addLeadBtn.style.display = name === 'leads' ? '' : 'none';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem('crm_auth') === '1') {
+    showApp();
+  } else {
+    setTimeout(() => document.getElementById('gate-input').focus(), 100);
+  }
+});
+
+// ── INIT ──────────────────────────────────────────────────
+async function init() {
+  renderCalendar(); // render empty calendar immediately
+  await Promise.all([loadContacts(), loadJobs(), loadProposals()]);
+}
+
+// ══════════════════════════════════════════════════════════
+// CONTACTS
+// ══════════════════════════════════════════════════════════
+
+async function loadContacts() {
+  const { data, error } = await db.from('contacts').select('*').order('created_at', { ascending: false });
+  if (error) { showToast('Failed to load leads', 'error'); return; }
+  allContacts = data || [];
+  renderContacts();
+}
+
+function renderContacts() {
+  searchTerm = (document.getElementById('search').value || '').toLowerCase();
+
+  let list = allContacts.filter(c => {
+    const isArchived = c.status === 'Archived';
+    // Archived filter
+    if (propFilter === 'archived') return isArchived;
+    if (isArchived) return false; // hide archived in all other views
+    // Proposal filter
+    const p = proposalMap[c.id];
+    if (propFilter === 'none'     && p) return false;
+    if (propFilter === 'sent'     && (!p || p.status === 'Approved')) return false;
+    if (propFilter === 'approved' && (!p || p.status !== 'Approved')) return false;
+    // Search filter
+    if (searchTerm) {
+      const hay = ((c.name||'')+(c.phone||'')+(c.address||'')+(c.email||'')+(c.notes||'')).toLowerCase();
+      if (!hay.includes(searchTerm)) return false;
+    }
+    return true;
+  });
+
+  const total = list.length;
+  const visible = list.slice(0, contactsShown);
+  document.getElementById('leads-count').textContent = total === 0 ? '' : `${Math.min(contactsShown, total)} of ${total}`;
+
+  const wrap = document.getElementById('contacts-table');
+
+  if (total === 0) {
+    wrap.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads match your filter.'}</p>
+    </div>`;
+    return;
+  }
+
+  const rows = visible.map(c => {
+    const p = proposalMap[c.id];
+    const propBadge = p
+      ? p.status === 'Approved'
+        ? `<span class="prop-badge prop-approved">✓ Approved</span>`
+        : `<span class="prop-badge prop-sent">Sent ↗</span>`
+      : `<span class="prop-badge prop-none">No Proposal</span>`;
+
+    const addrCell = c.address
+      ? `<a href="https://maps.google.com/?q=${encodeURIComponent(c.address)}" target="_blank" onclick="event.stopPropagation()" title="${esc(c.address)}">
+           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+           ${esc(c.address.split(',')[0])}
+         </a>`
+      : '<span style="color:var(--text3);font-size:12px">—</span>';
+
+    const isArchived = c.status === 'Archived';
+    return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
+      <td class="name">${esc(c.name)}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</td>
+      <td class="phone"><a href="tel:${esc(c.phone||'')}" onclick="event.stopPropagation()">${esc(c.phone||'—')}</a></td>
+      <td class="addr">${addrCell}</td>
+      <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,55)+(c.notes.length>55?'…':'') : '—'}</td>
+      <td>${propBadge}</td>
+    </tr>`;
+  }).join('');
+
+  let showMoreHTML = '';
+  if (total > contactsShown) {
+    const next = Math.min(contactsShown + 5, total);
+    showMoreHTML = `<div class="show-more-bar">
+      <div class="contact-count">Showing ${contactsShown} of ${total}</div>
+      <button class="btn btn-outline btn-sm" onclick="showMoreContacts()">Show ${next - contactsShown} more</button>
+    </div>`;
+  }
+
+  wrap.innerHTML = `<div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Name</th><th>Phone</th><th>Address</th>
+        <th class="col-notes">Notes</th><th>Proposal</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${showMoreHTML}
+  </div>`;
+}
+
+function showMoreContacts() {
+  contactsShown = Math.min(contactsShown + 5, 9999);
+  renderContacts();
+}
+
+function setPropFilter(val, el) {
+  propFilter = val;
+  contactsShown = 5;
+  document.querySelectorAll('#lead-pills .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderContacts();
+}
+
+function openContactModal(id) {
+  clearAddressField();
+  const inp = document.getElementById('c-id');
+  inp.value = '';
+  ['c-name','c-phone','c-email','c-address','c-notes'].forEach(x => document.getElementById(x).value = '');
+
+  if (id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('contact-modal-title').textContent = 'Edit Lead';
+    document.getElementById('c-id').value    = c.id;
+    document.getElementById('c-name').value  = c.name  || '';
+    document.getElementById('c-phone').value = c.phone || '';
+    document.getElementById('c-email').value = c.email || '';
+    document.getElementById('c-notes').value = c.notes || '';
+    if (c.address) {
+      const ai = document.getElementById('c-address');
+      ai.value = c.address;
+      ai.readOnly = true;
+      ai.classList.add('locked');
+      document.getElementById('addr-change-btn').style.display = 'block';
+      document.getElementById('addr-hint').textContent = 'Address confirmed. Click ✕ Change to update.';
+    }
+  } else {
+    document.getElementById('contact-modal-title').textContent = 'Add Lead';
+  }
+  document.getElementById('contact-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('c-name').focus(), 60);
+}
+
+async function saveContact() {
+  const id   = document.getElementById('c-id').value;
+  const name = document.getElementById('c-name').value.trim();
+  if (!name) { showToast('Name is required', 'error'); return; }
+  const payload = {
+    name,
+    phone:   document.getElementById('c-phone').value.trim(),
+    email:   document.getElementById('c-email').value.trim(),
+    address: document.getElementById('c-address').value.trim(),
+    notes:   document.getElementById('c-notes').value.trim(),
+  };
+  let error;
+  if (id) {
+    ({ error } = await db.from('contacts').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('contacts').insert([payload]));
+  }
+  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  showToast(id ? 'Lead updated' : 'Lead added', 'success');
+  closeModal('contact-overlay');
+  loadContacts();
+}
+
+// ══════════════════════════════════════════════════════════
+// SIDE PANEL
+// ══════════════════════════════════════════════════════════
+
+let panelDeletePending = false;
+let panelDeleteTimer;
+let panelArchivePending = false;
+let panelArchiveTimer;
+let panelAddrFocusedIdx = -1;
+let panelAddrDebounce;
+
+function openPanel(id) {
+  const c = allContacts.find(x => x.id === id);
+  if (!c) return;
+
+  // Reset two-step states
+  panelDeletePending = false;
+  panelArchivePending = false;
+  clearTimeout(panelDeleteTimer);
+  clearTimeout(panelArchiveTimer);
+  const delBtn = document.getElementById('panel-delete-btn');
+  const arcBtn = document.getElementById('panel-archive-btn');
+  delBtn.textContent = 'Delete';
+  delBtn.classList.remove('delete-btn-confirm');
+  const isArchived = c.status === 'Archived';
+  arcBtn.textContent = isArchived ? 'Unarchive' : 'Archive';
+  arcBtn.classList.remove('delete-btn-confirm');
+
+  // Fill fields
+  document.getElementById('panel-id').value          = c.id;
+  document.getElementById('panel-name').textContent  = c.name;
+  document.getElementById('panel-name-input').value  = c.name  || '';
+  document.getElementById('panel-phone').value       = c.phone || '';
+  document.getElementById('panel-email').value       = c.email || '';
+  document.getElementById('panel-notes').value       = c.notes || '';
+
+  // Address — plain, no locking
+  document.getElementById('panel-address').value = c.address || '';
+  panelAddrHide();
+
+  // Proposal section
+  const p = proposalMap[c.id];
+  const propSection = document.getElementById('panel-prop-section');
+  if (p) {
+    const url = `${PROPOSAL_BASE_URL}?token=${p.token}`;
+    const statusLabel = p.status === 'Approved' ? '✓ Approved' : 'Sent';
+    propSection.innerHTML = `
+      <a href="${url}" target="_blank" class="prop-action-btn prop-action-view" style="text-decoration:none;margin-bottom:12px">
+        View Proposal — ${statusLabel} ↗
+      </a>`;
+  } else {
+    propSection.innerHTML = `
+      <button class="prop-action-btn prop-action-create" onclick="closePanel();openProposalModal('${c.id}')">
+        + Create Proposal
+      </button>`;
+  }
+
+  document.getElementById('panel-backdrop').classList.add('open');
+  document.getElementById('side-panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel-backdrop').classList.remove('open');
+  document.getElementById('side-panel').classList.remove('open');
+  panelAddrHide();
+}
+
+async function panelSave() {
+  const id   = document.getElementById('panel-id').value;
+  const name = document.getElementById('panel-name-input').value.trim();
+  if (!name) { showToast('Name is required', 'error'); return; }
+  const c = allContacts.find(x => x.id === id);
+  const payload = {
+    name,
+    phone:   document.getElementById('panel-phone').value.trim(),
+    email:   document.getElementById('panel-email').value.trim(),
+    address: document.getElementById('panel-address').value.trim(),
+    notes:   document.getElementById('panel-notes').value.trim(),
+    status:  c?.status || null,
+  };
+  const { error } = await db.from('contacts').update(payload).eq('id', id);
+  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  showToast('Lead saved', 'success');
+  closePanel();
+  loadContacts();
+}
+
+function panelDelete() {
+  if (!panelDeletePending) {
+    panelDeletePending = true;
+    const btn = document.getElementById('panel-delete-btn');
+    btn.textContent = 'Really delete? Click again';
+    btn.classList.add('delete-btn-confirm');
+    panelDeleteTimer = setTimeout(() => {
+      panelDeletePending = false;
+      btn.textContent = 'Delete';
+      btn.classList.remove('delete-btn-confirm');
+    }, 3500);
+  } else {
+    clearTimeout(panelDeleteTimer);
+    const id = document.getElementById('panel-id').value;
+    deleteContact(id);
+    closePanel();
+  }
+}
+
+function panelArchive() {
+  if (!panelArchivePending) {
+    panelArchivePending = true;
+    const btn = document.getElementById('panel-archive-btn');
+    const c = allContacts.find(x => x.id === document.getElementById('panel-id').value);
+    const isArchived = c?.status === 'Archived';
+    btn.textContent = isArchived ? 'Confirm Unarchive' : 'Confirm Archive';
+    btn.classList.add('delete-btn-confirm');
+    panelArchiveTimer = setTimeout(() => {
+      panelArchivePending = false;
+      btn.textContent = isArchived ? 'Unarchive' : 'Archive';
+      btn.classList.remove('delete-btn-confirm');
+    }, 3500);
+  } else {
+    clearTimeout(panelArchiveTimer);
+    const id = document.getElementById('panel-id').value;
+    const c = allContacts.find(x => x.id === id);
+    const newStatus = c?.status === 'Archived' ? null : 'Archived';
+    db.from('contacts').update({ status: newStatus }).eq('id', id).then(({ error }) => {
+      if (error) { showToast('Failed', 'error'); return; }
+      showToast(newStatus === 'Archived' ? 'Lead archived' : 'Lead restored', 'success');
+      closePanel();
+      loadContacts();
+    });
+  }
+}
+
+// Panel address autocomplete (mirrors main one)
+function panelAddrInput(val) {
+  clearTimeout(panelAddrDebounce);
+  if (val.length < 3) { panelAddrHide(); return; }
+  panelAddrDebounce = setTimeout(async () => {
+    try {
+      const url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'
+        + encodeURIComponent(val)
+        + '.json?access_token=' + MAPBOX_TOKEN
+        + '&country=us&types=address&autocomplete=true&limit=5'
+        + '&proximity=' + MAPBOX_PROXIMITY;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      const features = data.features || [];
+      const dd = document.getElementById('panel-addr-dropdown');
+      dd.innerHTML = '';
+      panelAddrFocusedIdx = -1;
+      if (!features.length) { panelAddrHide(); return; }
+      features.forEach(f => {
+        const label = f.place_name || '';
+        const li = document.createElement('li');
+        li.textContent = label;
+        li.addEventListener('mousedown', e => { e.preventDefault(); panelAddrSelect(label); });
+        dd.appendChild(li);
+      });
+      dd.style.display = 'block';
+    } catch(e) { panelAddrHide(); }
+  }, 250);
+}
+
+function panelAddrKeydown(e) {
+  const items = document.querySelectorAll('#panel-addr-dropdown li');
+  if (!items.length || document.getElementById('panel-addr-dropdown').style.display === 'none') return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); panelAddrSetFocus(Math.min(panelAddrFocusedIdx+1, items.length-1)); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); panelAddrSetFocus(Math.max(panelAddrFocusedIdx-1, 0)); }
+  else if (e.key === 'Enter' && panelAddrFocusedIdx >= 0) { e.preventDefault(); items[panelAddrFocusedIdx].dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); }
+  else if (e.key === 'Escape') panelAddrHide();
+}
+
+function panelAddrSetFocus(idx) {
+  const items = document.querySelectorAll('#panel-addr-dropdown li');
+  items.forEach(li => li.classList.remove('focused'));
+  if (idx >= 0 && idx < items.length) { items[idx].classList.add('focused'); panelAddrFocusedIdx = idx; }
+}
+
+function panelAddrSelect(label) {
+  document.getElementById('panel-address').value = label;
+  panelAddrHide();
+}
+
+function panelAddrHide() {
+  const dd = document.getElementById('panel-addr-dropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function clearPanelAddress() {
+  const input = document.getElementById('panel-address');
+  if (!input) return;
+  input.value = '';
+  input.readOnly = false;
+  input.classList.remove('locked');
+  const changeBtn = document.getElementById('panel-addr-change');
+  if (changeBtn) changeBtn.style.display = 'none';
+  panelAddrHide();
+  input.focus();
+}
+
+function confirmDeleteContact(id) {
+  const c = allContacts.find(x => x.id === id);
+  if (!confirm(`Delete ${c?.name || 'this lead'}? This cannot be undone.`)) return;
+  deleteContact(id);
+}
+
+async function deleteContact(id) {
+  const { error } = await db.from('contacts').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  showToast('Lead deleted', 'success');
+  loadContacts();
+}
+
+// ── MAPBOX ADDRESS AUTOCOMPLETE ───────────────────────────
+
+const MAPBOX_TOKEN = 'pk.eyJ1Ijoia2V5ZWxlY3RyaWN1cHN0YXRlIiwiYSI6ImNtbWsyYzlybzFpbWwycW9pc2R2eW1wZ3UifQ.Y2nGIeYV6l57CMbf3sqbqw';
+const MAPBOX_PROXIMITY = '-82.3940,34.8526';
+let addrDebounce;
+let addrFocusedIdx = -1;
+
+function addrInput(val) {
+  clearTimeout(addrDebounce);
+  if (val.length < 3) { addrHide(); return; }
+  addrDebounce = setTimeout(async () => {
+    try {
+      const url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'
+        + encodeURIComponent(val)
+        + '.json?access_token=' + MAPBOX_TOKEN
+        + '&country=us&types=address&autocomplete=true&limit=5'
+        + '&proximity=' + MAPBOX_PROXIMITY;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      const features = data.features || [];
+      const dd = document.getElementById('addr-dropdown');
+      dd.innerHTML = '';
+      addrFocusedIdx = -1;
+      if (!features.length) { addrHide(); return; }
+      features.forEach(f => {
+        const label = f.place_name || '';
+        const li = document.createElement('li');
+        li.textContent = label;
+        li.addEventListener('mousedown', e => { e.preventDefault(); addrSelect(label); });
+        dd.appendChild(li);
+      });
+      dd.style.display = 'block';
+    } catch(e) { addrHide(); }
+  }, 250);
+}
+
+function addrKeydown(e) {
+  const items = document.querySelectorAll('#addr-dropdown li');
+  if (!items.length || document.getElementById('addr-dropdown').style.display === 'none') return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); addrSetFocus(Math.min(addrFocusedIdx+1, items.length-1)); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); addrSetFocus(Math.max(addrFocusedIdx-1, 0)); }
+  else if (e.key === 'Enter' && addrFocusedIdx >= 0) { e.preventDefault(); items[addrFocusedIdx].dispatchEvent(new MouseEvent('mousedown',{bubbles:true})); }
+  else if (e.key === 'Escape') addrHide();
+}
+
+function addrSetFocus(idx) {
+  const items = document.querySelectorAll('#addr-dropdown li');
+  items.forEach(li => li.classList.remove('focused'));
+  if (idx >= 0 && idx < items.length) { items[idx].classList.add('focused'); addrFocusedIdx = idx; }
+}
+
+function addrSelect(label) {
+  const input = document.getElementById('c-address');
+  input.value = label;
+  input.readOnly = true;
+  input.classList.add('locked');
+  document.getElementById('addr-change-btn').style.display = 'block';
+  document.getElementById('addr-hint').textContent = 'Address confirmed. Click ✕ Change to update.';
+  addrHide();
+}
+
+function addrHide() {
+  const dd = document.getElementById('addr-dropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function clearAddressField() {
+  const input = document.getElementById('c-address');
+  input.value = '';
+  input.readOnly = false;
+  input.classList.remove('locked');
+  document.getElementById('addr-change-btn').style.display = 'none';
+  document.getElementById('addr-hint').textContent = 'Start typing — pick from the list to confirm the address.';
+  addrHide();
+  input.focus();
+}
+
+// ══════════════════════════════════════════════════════════
+// PROPOSALS
+// ══════════════════════════════════════════════════════════
+
+async function loadProposals() {
+  const { data, error } = await db.from('proposals').select('*').order('created_at', { ascending: false });
+  if (error) return;
+  allProposals = data || [];
+  // Build map: contact_id → most recent proposal
+  proposalMap = {};
+  allProposals.forEach(p => {
+    if (p.contact_id && !proposalMap[p.contact_id]) {
+      proposalMap[p.contact_id] = p;
+    }
+  });
+  renderContacts(); // re-render with proposal badges
+}
+
+function calcTotal() {
+  const base  = parseFloat(document.getElementById('p-base-price').value) || 0;
+  const cord  = document.getElementById('p-cord-check').checked ? 150 : 0;
+  const surge = document.getElementById('p-surge-check').checked ? 450 : 0;
+  const total = base + cord + surge;
+  document.getElementById('p-total').textContent = '$' + total.toLocaleString();
+}
+
+function openProposalModal(contactId) {
+  const c = allContacts.find(x => x.id === contactId);
+  if (!c) return;
+
+  // Reset form state
+  document.getElementById('p-form').style.display = '';
+  document.getElementById('p-created').style.display = 'none';
+  document.getElementById('p-create-btn').style.display = '';
+  document.getElementById('proposal-modal-foot').querySelector('.btn-outline').textContent = 'Cancel';
+
+  document.getElementById('p-contact-id').value  = contactId;
+  document.getElementById('proposal-modal-title').textContent = `Proposal — ${c.name}`;
+  document.getElementById('p-contact-name').textContent = c.name;
+  document.getElementById('p-contact-addr').textContent = c.address || '';
+  document.getElementById('p-base-price').value = '1295';
+  document.getElementById('p-cord-check').checked = true;
+  document.getElementById('p-surge-check').checked = false;
+  document.getElementById('p-notes').value = '';
+  calcTotal();
+
+  document.getElementById('proposal-overlay').classList.add('open');
+}
+
+async function saveProposal() {
+  const contactId = document.getElementById('p-contact-id').value;
+  const c = allContacts.find(x => x.id === contactId);
+  const base  = parseFloat(document.getElementById('p-base-price').value) || 0;
+  const cord  = document.getElementById('p-cord-check').checked;
+  const surge = document.getElementById('p-surge-check').checked;
+  const total = base + (cord ? 150 : 0) + (surge ? 450 : 0);
+
+  const payload = {
+    contact_id:      contactId,
+    contact_name:    c?.name    || '',
+    contact_email:   c?.email   || '',
+    contact_phone:   c?.phone   || '',
+    contact_address: c?.address || '',
+    price_base:      base,
+    include_cord:    cord,
+    price_cord:      cord ? 150 : 0,
+    include_surge:   surge,
+    price_surge:     surge ? 450 : 0,
+    total,
+    notes:           document.getElementById('p-notes').value.trim(),
+    status:          'Draft',
+  };
+
+  const { data, error } = await db.from('proposals').insert([payload]).select().single();
+  if (error) { showToast('Failed to create proposal: ' + error.message, 'error'); return; }
+
+  const link = `${PROPOSAL_BASE_URL}?token=${data.token}`;
+
+  // Show link UI
+  document.getElementById('p-form').style.display = 'none';
+  document.getElementById('p-created').style.display = '';
+  document.getElementById('p-create-btn').style.display = 'none';
+  document.getElementById('p-link-url').textContent = link;
+  document.getElementById('p-email-link').href =
+    `mailto:${encodeURIComponent(c?.email||'')}?subject=${encodeURIComponent('Your Backup Power Pro Proposal')}&body=${encodeURIComponent('Hi '+c?.name+',\n\nHere is your custom proposal:\n\n'+link+'\n\nLet me know if you have any questions!\n\nKey\nBackup Power Pro\n(864) 400-5302')}`;
+
+  // Update proposal map so badge updates
+  proposalMap[contactId] = data;
+  renderContacts();
+  showToast('Proposal created!', 'success');
+}
+
+function copyProposalLink() {
+  const link = document.getElementById('p-link-url').textContent;
+  navigator.clipboard.writeText(link).then(() => showToast('Link copied!', 'success'));
+}
+
+// ══════════════════════════════════════════════════════════
+// SCHEDULE & CALENDAR
+// ══════════════════════════════════════════════════════════
+
+async function loadJobs() {
+  const { data, error } = await db.from('schedule').select('*').order('date', { ascending: true });
+  if (error) { showToast('Failed to load schedule', 'error'); return; }
+  allJobs = data || [];
+  renderCalendar();
+}
+
+function getMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function navigateWeek(delta) {
+  if (delta === 0) {
+    weekStart = getMonday(new Date());
+  } else {
+    weekStart = new Date(weekStart);
+    weekStart.setDate(weekStart.getDate() + delta * 7);
+  }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Week label
+  const ws = new Date(weekStart);
+  const we = new Date(ws); we.setDate(we.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  document.getElementById('week-label').textContent = `${fmt(ws)} – ${fmt(we)}`;
+
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(ws);
+    day.setDate(day.getDate() + i);
+    const dateStr = day.toISOString().split('T')[0];
+    const isToday = dateStr === todayStr;
+    const dayJobs = allJobs.filter(j => j.date === dateStr);
+
+    const events = dayJobs.map(j => {
+      const label = j.contact_name || j.title || 'Event';
+      const time  = j.time ? fmt12(j.time) + ' · ' : '';
+      return `<div class="cal-event ${j.status==='Complete'?'complete':''}" onclick="event.stopPropagation();openJobModal('${j.id}',null)">${time}${esc(label)}</div>`;
+    }).join('');
+
+    html += `
+    <div class="cal-day ${isToday ? 'today' : ''}">
+      <div class="cal-day-head">
+        <span class="cal-day-name">${days[i]}</span>
+        <span class="cal-day-num">${day.getDate()}</span>
+      </div>
+      <div class="cal-day-body" onclick="openJobModal(null,'${dateStr}')">
+        ${events}
+        <div class="cal-add-hint">+ Add event</div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function onJobContactChange() {
+  const sel = document.getElementById('j-contact');
+  const titleRow = document.getElementById('j-title-row');
+  titleRow.style.display = sel.value ? 'none' : '';
+}
+
+function openJobModal(id, preDate) {
+  // Reset
+  ['j-id','j-title','j-notes'].forEach(x => document.getElementById(x).value = '');
+  document.getElementById('j-price').value = '';
+  document.getElementById('j-type').value = 'Install';
+  document.getElementById('j-status').value = 'Scheduled';
+  document.getElementById('j-delete-btn').style.display = 'none';
+
+  // Populate contact dropdown
+  const sel = document.getElementById('j-contact');
+  sel.innerHTML = '<option value="">— No contact linked —</option>';
+  [...allContacts].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+  sel.value = '';
+
+  if (id) {
+    const j = allJobs.find(x => x.id === id);
+    if (!j) return;
+    document.getElementById('job-modal-title').textContent = 'Edit Event';
+    document.getElementById('j-id').value     = j.id;
+    document.getElementById('j-date').value   = j.date   || '';
+    document.getElementById('j-time').value   = j.time   || '';
+    document.getElementById('j-type').value   = j.type   || 'Install';
+    document.getElementById('j-status').value = j.status || 'Scheduled';
+    document.getElementById('j-price').value  = j.price  || '';
+    document.getElementById('j-notes').value  = j.notes  || '';
+    document.getElementById('j-title').value  = j.title  || '';
+    sel.value = j.contact_id || '';
+    document.getElementById('j-delete-btn').style.display = '';
+  } else {
+    document.getElementById('job-modal-title').textContent = 'Add Event';
+    if (preDate) document.getElementById('j-date').value = preDate;
+  }
+  onJobContactChange();
+  document.getElementById('job-overlay').classList.add('open');
+}
+
+async function saveJob() {
+  const id   = document.getElementById('j-id').value;
+  const date = document.getElementById('j-date').value;
+  const selContact = document.getElementById('j-contact').value;
+  const c = selContact ? allContacts.find(x => x.id === selContact) : null;
+
+  const payload = {
+    date:         date || null,
+    time:         document.getElementById('j-time').value   || null,
+    contact_id:   selContact || null,
+    contact_name: c?.name || null,
+    title:        document.getElementById('j-title').value.trim() || null,
+    type:         document.getElementById('j-type').value,
+    status:       document.getElementById('j-status').value,
+    price:        parseFloat(document.getElementById('j-price').value) || null,
+    notes:        document.getElementById('j-notes').value.trim() || null,
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await db.from('schedule').update(payload).eq('id', id));
+  } else {
+    ({ error } = await db.from('schedule').insert([payload]));
+  }
+  if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  showToast(id ? 'Event updated' : 'Event added', 'success');
+  closeModal('job-overlay');
+  loadJobs();
+}
+
+async function deleteJob() {
+  const id = document.getElementById('j-id').value;
+  if (!id) return;
+  if (!confirm('Delete this event?')) return;
+  const { error } = await db.from('schedule').delete().eq('id', id);
+  if (error) { showToast('Delete failed', 'error'); return; }
+  showToast('Event deleted', 'success');
+  closeModal('job-overlay');
+  loadJobs();
+}
+
+function copyField(id) {
+  const val = (document.getElementById(id).value || '').trim();
+  if (!val) { showToast('Nothing to copy', 'error'); return; }
+  navigator.clipboard.writeText(val).then(() => showToast('Copied!', 'success'));
+}
+
+function openMapsFromPanel() {
+  const addr = (document.getElementById('panel-address').value || '').trim();
+  if (!addr) { showToast('No address entered', 'error'); return; }
+  window.open('https://maps.google.com/?q=' + encodeURIComponent(addr), '_blank');
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+
+function fmt12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════════════════
+// QUOTE BUILDER
+// ══════════════════════════════════════════════════════════
+
+const QB_C = {
+  inlet30: 55, inlet50: 85, interlock: 25,
+  permitActual: 75, permitCustomer: 125, licenseAmortized: 25,
+  mainBreaker: 125, twinQuad: 35, surgeProtector: 85,
+  cord30Cost: 60, cord50Cost: 125, adapterCost: 65,
+  sub30: 350, sub50: 400,
+  subLongRun30per30ft: 100, subLongRun50per30ft: 120, subExtAdderPer5ft: 25,
+  adCost: 150, minProfitSolo: 500, minProfitSub: 350,
+};
+const QB_S = {
+  base30: 1197, base50: 1497,
+  longRun30perFt: 12, longRun50perFt: 14,
+  mainBreaker: 225, twinQuad: 125, surge: 375, adapter: 150,
+  cordValue30: 120, cordValue50: 200,
+};
+let qbState = { mode:'solo', amp:30, runFt:5, extFt:5, mainBreaker:false, twinQuad:false, surge:false, cordType:null, cordIncluded:true };
+let qbBreakdownOpen = false;
+
+function qbCalc(s) {
+  const is50 = s.amp === 50, isSub = s.mode === 'sub';
+  const extraFt = Math.max(0, s.runFt - 20);
+  const extraInc = Math.ceil(extraFt / 30);
+  const hours = 2.5 + extraInc * 1.25;
+  const baseCordCost = is50 ? QB_C.cord50Cost : QB_C.cord30Cost;
+  const cordValue = is50 ? QB_S.cordValue50 : QB_S.cordValue30;
+  const yourSupplies =
+    (is50 ? QB_C.inlet50 : QB_C.inlet30) + QB_C.interlock + QB_C.permitActual + QB_C.licenseAmortized +
+    (s.cordIncluded ? baseCordCost : 0) +
+    (s.mainBreaker ? QB_C.mainBreaker : 0) + (s.twinQuad ? QB_C.twinQuad : 0) + (s.surge ? QB_C.surgeProtector : 0);
+  let cordAdapterCost = s.cordType === 'adapterOnly' ? QB_C.adapterCost : 0;
+  let subTotal = 0;
+  if (isSub) {
+    const subBase = is50 ? QB_C.sub50 : QB_C.sub30;
+    const subLR = extraInc * (is50 ? QB_C.subLongRun50per30ft : QB_C.subLongRun30per30ft);
+    const subExt = Math.floor(Math.max(0, s.extFt - 5) / 5) * QB_C.subExtAdderPer5ft;
+    subTotal = subBase + subLR + subExt;
+  }
+  const subExt = isSub ? Math.floor(Math.max(0, s.extFt - 5) / 5) * QB_C.subExtAdderPer5ft : 0;
+  const totalCost = yourSupplies + cordAdapterCost + subTotal + QB_C.adCost;
+  const longRunSell = extraFt * (is50 ? QB_S.longRun50perFt : QB_S.longRun30perFt);
+  const cordSell = s.cordType === 'adapterOnly' ? QB_S.adapter : 0;
+  const cordDiscount = s.cordIncluded ? 0 : cordValue;
+  const addonSell = (s.mainBreaker ? QB_S.mainBreaker : 0) + (s.twinQuad ? QB_S.twinQuad : 0) + (s.surge ? QB_S.surge : 0);
+  const standardSell = (is50 ? QB_S.base50 : QB_S.base30) + longRunSell + addonSell + cordSell - cordDiscount;
+  const minProfit = isSub ? QB_C.minProfitSub : QB_C.minProfitSolo;
+  let totalSell = Math.round(Math.max(standardSell, totalCost + minProfit));
+  if (totalSell % 2 === 0) totalSell += 1;
+  const profit = Math.round(totalSell - totalCost);
+  const margin = Math.round(profit / totalSell * 100);
+  return {
+    totalSell: Math.round(totalSell), totalCost: Math.round(totalCost),
+    profit, margin, subTotal: Math.round(subTotal), subExt: Math.round(subExt),
+    yourSupplies: Math.round(yourSupplies), cordAdapterCost: Math.round(cordAdapterCost),
+    cordSell: Math.round(cordSell), longRunSell: Math.round(longRunSell),
+    inletLineItem: Math.round(totalSell - QB_C.permitCustomer - cordSell),
+    extraFt, hours,
+  };
+}
+
+function qbFmt(n) { return '$' + n.toLocaleString(); }
+
+function qbRender() {
+  const r = qbCalc(qbState);
+  const is50 = qbState.amp === 50, isSub = qbState.mode === 'sub';
+  document.getElementById('qb-total-sell').textContent = qbFmt(r.totalSell);
+  document.getElementById('qb-tell-total').textContent = qbFmt(r.totalSell);
+  document.getElementById('qb-tell-divider-val').textContent = qbFmt(r.totalSell);
+  const lrNote = document.getElementById('qb-long-run-note');
+  if (r.extraFt > 0) { lrNote.classList.remove('hidden'); lrNote.textContent = 'incl. +' + qbFmt(r.longRunSell) + ' long-run (' + r.extraFt + 'ft)'; }
+  else { lrNote.classList.add('hidden'); }
+  const profitEl = document.getElementById('qb-profit-num');
+  profitEl.textContent = qbFmt(r.profit);
+  profitEl.style.color = r.profit >= 700 ? 'var(--green)' : r.profit >= (isSub ? QB_C.minProfitSub : QB_C.minProfitSolo) ? '#d4980b' : 'var(--red)';
+  document.getElementById('qb-profit-pct').textContent = r.margin + '%';
+  document.getElementById('qb-pip-cost').textContent = qbFmt(r.totalCost);
+  document.getElementById('qb-pip-sub-label').textContent = isSub ? 'Sub Payout' : 'Labor';
+  document.getElementById('qb-pip-sub').textContent = isSub ? qbFmt(r.subTotal) : 'You';
+  document.getElementById('qb-pip-time').textContent = r.hours.toFixed(1) + 'h';
+  document.getElementById('qb-bd-supplies').textContent = qbFmt(r.yourSupplies);
+  document.getElementById('qb-bd-cords').textContent = qbFmt(r.cordAdapterCost);
+  document.getElementById('qb-bd-ad').textContent = qbFmt(QB_C.adCost);
+  const subRow = document.getElementById('qb-bd-sub-row');
+  if (isSub) {
+    subRow.classList.remove('hidden');
+    document.getElementById('qb-bd-sub-label').textContent = r.subExt > 0 ? 'Sub payout (incl. ' + qbFmt(r.subExt) + ' ext.)' : 'Sub payout';
+    document.getElementById('qb-bd-sub').textContent = qbFmt(r.subTotal);
+  } else { subRow.classList.add('hidden'); }
+  document.getElementById('qb-bd-total').textContent = qbFmt(r.totalCost);
+  document.getElementById('qb-run-display').innerHTML = qbState.runFt + '<span>ft</span>';
+  document.getElementById('qb-ext-display').innerHTML = qbState.extFt + '<span>ft</span>';
+  document.getElementById('qb-ext-slider').max = qbState.runFt;
+  const runNote = document.getElementById('qb-run-note');
+  const lrRate = is50 ? QB_S.longRun50perFt : QB_S.longRun30perFt;
+  if (qbState.runFt > 20) { runNote.textContent = '+' + (qbState.runFt - 20) + 'ft @ $' + lrRate + '/ft = +' + qbFmt(r.longRunSell); runNote.classList.add('highlight'); }
+  else { runNote.textContent = 'No long-run adder'; runNote.classList.remove('highlight'); }
+  const extNote = document.getElementById('qb-ext-note');
+  if (qbState.extFt > 5 && isSub) { extNote.textContent = (qbState.extFt - 5) + 'ft over first 5ft → +' + qbFmt(r.subExt) + ' sub adder'; extNote.classList.add('highlight'); }
+  else { extNote.textContent = 'First 5ft exterior included'; extNote.classList.remove('highlight'); }
+  document.getElementById('qb-btn-30').classList.toggle('active', qbState.amp === 30);
+  document.getElementById('qb-btn-50').classList.toggle('active', qbState.amp === 50);
+  document.getElementById('qb-btn-main').classList.toggle('active', qbState.mainBreaker);
+  document.getElementById('qb-btn-twin').classList.toggle('active', qbState.twinQuad);
+  document.getElementById('qb-btn-surge').classList.toggle('active', qbState.surge);
+  const cordBtn = document.getElementById('qb-btn-cord');
+  cordBtn.classList.toggle('active', qbState.cordIncluded);
+  document.getElementById('qb-cord-toggle-label').textContent = (is50 ? '50' : '30') + 'A Generator Cord';
+  document.getElementById('qb-cord-toggle-sub').textContent = qbState.cordIncluded ? 'Included · tap to remove' : 'Customer has their own';
+  document.getElementById('qb-cord-toggle-right').textContent = qbState.cordIncluded ? '✓' : '-' + qbFmt(is50 ? QB_S.cordValue50 : QB_S.cordValue30);
+  if (is50) {
+    let h = '<button class="qb-chip' + (qbState.cordType === 'adapterOnly' ? ' active' : '') + '" onclick="qbSetCord(\'adapterOnly\')">30→50A Adapter +$' + QB_S.adapter + '</button>';
+    if (qbState.cordType) h += '<button class="qb-chip" onclick="qbSetCord(null)">✕ Remove</button>';
+    document.getElementById('qb-cord-chips').innerHTML = h;
+  } else { document.getElementById('qb-cord-chips').innerHTML = ''; }
+  document.getElementById('qb-adapter-note').classList.toggle('hidden', !(is50 && qbState.cordType === 'adapterOnly'));
+  document.getElementById('qb-inlet-line-item').textContent = qbFmt(r.inletLineItem);
+  const cordLabel = qbState.cordIncluded ? '(' + (is50 ? '50' : '30') + 'A cord included)' : '(no cord)';
+  const items = [
+    ['Inlet installation ' + cordLabel, qbFmt(r.inletLineItem)],
+    ['Permit & inspection', qbFmt(QB_C.permitCustomer)],
+    qbState.mainBreaker && ['Main breaker replacement', qbFmt(QB_S.mainBreaker)],
+    qbState.twinQuad && ['Panel space (twin/quad)', qbFmt(QB_S.twinQuad)],
+    qbState.surge && ['Whole home surge protector', qbFmt(QB_S.surge)],
+    qbState.cordType === 'adapterOnly' && ['30→50A adapter', qbFmt(QB_S.adapter)],
+  ].filter(Boolean);
+  document.getElementById('qb-tell-items').innerHTML = items.map(i =>
+    '<div class="qb-tell-item"><span class="qb-tell-item-key">' + i[0] + '</span><span class="qb-tell-item-val">' + i[1] + '</span></div>'
+  ).join('');
+}
+function qbSetMode(m) { qbState.mode = m; document.getElementById('qb-mode-solo').classList.toggle('active', m==='solo'); document.getElementById('qb-mode-sub').classList.toggle('active', m==='sub'); qbRender(); }
+function qbSetAmp(a) { qbState.amp = a; qbState.cordType = null; qbRender(); }
+function qbOnRunChange(v) { qbState.runFt = parseInt(v); if (qbState.extFt > qbState.runFt) { qbState.extFt = qbState.runFt; document.getElementById('qb-ext-slider').value = qbState.runFt; } qbRender(); }
+function qbOnExtChange(v) { qbState.extFt = parseInt(v); qbRender(); }
+function qbToggle(key) { qbState[key] = !qbState[key]; qbRender(); }
+function qbSetCord(id) { qbState.cordType = qbState.cordType === id ? null : id; qbRender(); }
+function qbToggleBreakdown() {
+  qbBreakdownOpen = !qbBreakdownOpen;
+  document.getElementById('qb-breakdown-body').classList.toggle('hidden', !qbBreakdownOpen);
+  document.getElementById('qb-breakdown-arrow').style.transform = qbBreakdownOpen ? 'rotate(90deg)' : 'none';
+  document.getElementById('qb-breakdown-label').textContent = qbBreakdownOpen ? 'Hide cost breakdown' : 'Show cost breakdown';
+}
+function qbResetAll() {
+  qbState = { mode:qbState.mode, amp:30, runFt:5, extFt:5, mainBreaker:false, twinQuad:false, surge:false, cordType:null, cordIncluded:true };
+  document.getElementById('qb-run-slider').value = 5;
+  document.getElementById('qb-ext-slider').value = 5;
+  if (qbBreakdownOpen) qbToggleBreakdown();
+  qbRender();
+}
+
+qbRender();
+
+</script>
+</body>
+</html>

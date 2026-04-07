@@ -604,6 +604,8 @@ html.dark #drill-messages{background:var(--card)}
 html.dark #drill-messages>div:first-child{border-color:var(--border)}
 html.dark #drill-messages>div:last-child{border-color:var(--border);background:var(--card)}
 
+/* ── AI TOGGLE ───────────────────────────────────────────── */
+html.dark #panel-ai-toggle{background:#2e2a24}
 /* ── INBOX LIST ─────────────────────────────────────────── */
 .inbox-item{background:var(--card);border-radius:var(--r-md);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .12s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .inbox-item:hover{background:#f8faff}
@@ -678,7 +680,7 @@ html.dark .inbox-item.unread{border-left-color:var(--gold)}
 
   <div id="contacts-view">
     <div class="toolbar">
-      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts()" autocomplete="off">
+      <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
     </div>
     <div id="contacts-table"></div>
   </div>
@@ -996,7 +998,7 @@ html.dark .inbox-item.unread{border-left-color:var(--gold)}
       </div>
       <div class="contact-info-expanded" id="contact-info-expanded">
         <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fld-btn" onclick="(function(){var p=document.getElementById('panel-phone').value;if(p)window.location.href='tel:'+p.replace(/\D/g,'');})()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button></div></div>
         <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-email')" title="Copy email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
         <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value);panelMarkDirty()" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
       </div>
@@ -1024,6 +1026,12 @@ html.dark .inbox-item.unread{border-left-color:var(--gold)}
         </div>
         <div class="form-row"><label>Jurisdiction</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-jurisdiction" style="flex:1" onchange="panelMarkDirty()"></select><button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div></div>
         <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1" onchange="panelMarkDirty()"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
+        <div class="form-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--sp-sm)">
+          <label style="margin:0;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">AI Follow-up</label>
+          <button id="panel-ai-toggle" onclick="toggleAiEnabled()" style="width:44px;height:24px;border-radius:var(--r-pill);border:none;position:relative;cursor:pointer;transition:background .15s;background:var(--border)">
+            <span id="panel-ai-thumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s;display:block;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
+          </button>
+        </div>
         <div style="display:flex;gap:8px;margin-top:var(--sp-md)">
           <button class="btn btn-danger btn-sm" style="flex:1" onclick="panelNameArchive()">Archive</button>
         </div>
@@ -1543,7 +1551,7 @@ function renderContacts() {
     const avatarHtml = _avatarHtml(c, 34);
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
       <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
-      <td class="phone col-phone">${esc(fmtPhone(c.phone)||'—')}</td>
+      <td class="phone col-phone">${c.phone ? `<a href="tel:${c.phone.replace(/\D/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:none;font-weight:500">${esc(fmtPhone(c.phone))}</a>` : '<span style="color:var(--text3)">—</span>'}</td>
       <td class="addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : '—'}</td>
       <td class="col-jur" style="font-size:12px">${jurCell}</td>
@@ -1708,6 +1716,7 @@ function selectProposalAndDrill(idx) {
 function drillTo(level) {
   const levels = ['contact', 'proposal', 'inspection', 'payment', 'messages'];
   const targetIdx = levels.indexOf(level);
+  const prevLevel = currentDrillLevel; // capture before mutating
   levels.forEach(l => {
     const el = document.getElementById('drill-' + l);
     if (!el) return;
@@ -1722,10 +1731,10 @@ function drillTo(level) {
     loadMessageThread(currentMsgContactId || currentPanelContactId);
   } else if (level === 'proposal') renderProposalDrill();
   else if (level === 'inspection') {
-    // Update back button based on where we came from
+    // Update back button based on where we came from (use prevLevel, not currentDrillLevel)
     const inspBackBtn = document.querySelector('#drill-inspection .drill-back');
     if (inspBackBtn) {
-      if (currentDrillLevel === 'payment') {
+      if (prevLevel === 'payment') {
         inspBackBtn.textContent = '← Payment';
         inspBackBtn.setAttribute('onclick', "drillTo('payment')");
       } else {
@@ -1791,7 +1800,14 @@ function openPanel(id) {
 
   // Reset progressive disclosure state
   panelResetDirty();
-  // contact info always expanded
+  // AI toggle
+  _panelAiEnabled = c.ai_enabled !== false;
+  updateAiToggleUI();
+  // contact info always expanded on open, summary always hidden
+  const _ciSummary = document.getElementById('contact-info-summary');
+  const _ciExpanded = document.getElementById('contact-info-expanded');
+  if (_ciSummary) _ciSummary.style.display = 'none';
+  if (_ciExpanded) _ciExpanded.classList.add('open');
   document.getElementById('panel-details-content').classList.remove('open');
   const detailsIcon = document.getElementById('panel-details-icon');
   if (detailsIcon) detailsIcon.style.transform = '';
@@ -2819,12 +2835,32 @@ function panelResetDirty() {
   if (btn) btn.style.display = 'none';
 }
 
+let _panelAiEnabled = true;
+function updateAiToggleUI() {
+  const tog = document.getElementById('panel-ai-toggle');
+  const thumb = document.getElementById('panel-ai-thumb');
+  if (!tog || !thumb) return;
+  tog.style.background = _panelAiEnabled ? 'var(--green)' : 'var(--border)';
+  thumb.style.transform = _panelAiEnabled ? 'translateX(20px)' : '';
+}
+async function toggleAiEnabled() {
+  _panelAiEnabled = !_panelAiEnabled;
+  updateAiToggleUI();
+  const id = document.getElementById('panel-id').value;
+  if (!id) return;
+  const { error } = await db.from('contacts').update({ ai_enabled: _panelAiEnabled }).eq('id', id);
+  if (error) { showToast('Failed to update AI setting', 'error'); _panelAiEnabled = !_panelAiEnabled; updateAiToggleUI(); return; }
+  const c = allContacts.find(x => x.id === id);
+  if (c) c.ai_enabled = _panelAiEnabled;
+  showToast(_panelAiEnabled ? 'AI follow-up enabled' : 'AI follow-up paused', 'success');
+}
+
 function toggleContactInfo() {
   const expanded = document.getElementById('contact-info-expanded');
   const summary = document.getElementById('contact-info-summary');
   if (expanded.classList.contains('open')) {
     expanded.classList.remove('open');
-    summary.style.display = '';
+    summary.style.display = 'flex'; // override CSS display:none
     updateContactInfoPreview();
   } else {
     expanded.classList.add('open');
@@ -4456,12 +4492,58 @@ function openStatsModal() {
   refreshStatsModal();
 }
 
-function refreshStatsModal() {
+async function refreshStatsModal() {
   const body = document.getElementById('stats-modal-body');
   if (!body) return;
   renderTrendAnalytics();
   const src = document.getElementById('trend-analytics');
-  if (src) body.innerHTML = src.innerHTML;
+  // Build stats HTML
+  let statsHtml = src ? src.innerHTML : '';
+
+  // ── Pipeline summary ──────────────────────────────────────
+  const active = allContacts.filter(c => c.status !== 'Archived');
+  const byStage = {};
+  active.forEach(c => { const s = c.stage || 1; byStage[s] = (byStage[s] || 0) + 1; });
+  const stageRows = PERMIT_STAGES.map(s => {
+    const cnt = byStage[s.id] || 0;
+    if (!cnt) return '';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:' + s.color + ';flex-shrink:0"></div><span style="font-size:13px;color:var(--text2)">' + esc(s.label) + '</span></div>'
+      + '<span style="font-size:13px;font-weight:700;color:var(--text)">' + cnt + '</span></div>';
+  }).filter(Boolean).join('');
+  const pipelineSection = stageRows ? '<div style="background:var(--bg);border-radius:var(--r-md);padding:14px 16px;margin-top:16px">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Pipeline Breakdown</div>'
+    + stageRows + '</div>' : '';
+
+  // ── Revenue & $150k goal ──────────────────────────────────
+  const { data: revenueData } = await db.from('payments').select('amount,created_at').eq('status', 'completed');
+  const allRevenue = revenueData || [];
+  const totalRevenue = allRevenue.reduce((s, p) => s + (p.amount || 0), 0);
+  const GOAL = 150000;
+  const PERSONAL_DRAW_MO = 3000;
+  // Monthly revenue (this month)
+  const now = new Date();
+  const moStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const moRevenue = allRevenue.filter(p => new Date(p.created_at) >= moStart).reduce((s, p) => s + (p.amount || 0), 0);
+  // Approximate costs (materials + ads est.)
+  const estCostPerJob = 390; // avg materials+ads
+  const estJobs = allRevenue.length;
+  const estNetProfit = Math.max(0, totalRevenue - (estJobs * estCostPerJob) - (PERSONAL_DRAW_MO * Math.ceil((Date.now() - new Date('2026-01-01').getTime()) / 2592000000)));
+  const pct = Math.min(100, Math.round((estNetProfit / GOAL) * 100));
+  const goalSection = '<div style="background:linear-gradient(135deg,rgba(255,186,0,.06) 0%,var(--card) 100%);border-radius:var(--r-md);padding:16px;margin-top:16px;border:1px solid rgba(255,186,0,.2)">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">$150k Home Payoff Goal</div>'
+    + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">'
+    + '<span style="font-family:Outfit,sans-serif;font-size:28px;font-weight:800;color:var(--navy)">$' + estNetProfit.toLocaleString() + '</span>'
+    + '<span style="font-size:13px;color:var(--text3)">est. accumulated / $150,000</span></div>'
+    + '<div style="height:8px;background:var(--bg);border-radius:var(--r-pill);overflow:hidden;margin-bottom:6px">'
+    + '<div style="height:100%;background:var(--gold);border-radius:var(--r-pill);width:' + pct + '%;transition:width .5s"></div></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">'
+    + '<span>' + pct + '% complete</span>'
+    + '<span>$' + moRevenue.toLocaleString() + ' revenue this month</span></div>'
+    + '<div style="font-size:10px;color:var(--text3);margin-top:6px">Est. net = revenue − materials/ads − $3k/mo draw. Rough estimate only.</div>'
+    + '</div>';
+
+  body.innerHTML = statsHtml + pipelineSection + goalSection;
   const btn = document.getElementById('stats-period-btn');
   if (btn) btn.textContent = trendDays === 7 ? 'Last 7 Days' : 'Last 30 Days';
 }
@@ -4956,13 +5038,21 @@ async function openMessagesPanel(contactId) {
   const threadEl = document.getElementById('msg-thread');
   if (threadEl) threadEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">Loading…</div>';
 
-  // If called from the inbox tab, open the side panel first then drill
+  // If called from the inbox tab, switch to leads tab first so the side panel renders correctly
   if (activeTab === 'messages') {
     if (c) {
+      // Switch to leads tab silently (don't trigger loadInbox)
+      activeTab = 'leads';
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const leadsBtn = document.getElementById('tab-btn-leads');
+      if (leadsBtn) leadsBtn.classList.add('active');
+      const leadsEl = document.getElementById('tab-leads');
+      const msgsEl = document.getElementById('tab-messages');
+      if (leadsEl) leadsEl.style.display = 'block';
+      if (msgsEl) msgsEl.style.display = 'none';
+      const fab = document.getElementById('fab-add-lead');
+      if (fab) fab.style.display = 'flex';
       openPanel(contactId);
-      // resetDrill() sets everything to 'right' except 'contact'.
-      // After openPanel settles, switch the tab back to leads (so panel works),
-      // then drill to messages. Small delay for panel open animation.
       setTimeout(() => {
         currentMsgContactId = contactId;
         drillTo('messages');
@@ -5085,7 +5175,7 @@ async function sendMessage() {
         'Authorization': QUO_API_KEY,
       },
       body: JSON.stringify({
-        from: QUO_PHONE_NUMBER_ID,
+        phoneNumberId: QUO_PHONE_NUMBER_ID,
         to: [toPhone],
         content: body,
       }),
@@ -5145,9 +5235,15 @@ function startMessagePolling() {
         .select('*')
         .eq('contact_id', currentMsgContactId)
         .order('created_at', { ascending: true });
-      if (data && data.length !== allMessages.length) {
-        allMessages = data;
-        renderThread();
+      if (data) {
+        // Refresh if count differs OR the latest message ID changed (catches status updates too)
+        const realMsgs = allMessages.filter(m => !m.id.startsWith('tmp-'));
+        const latestLocal = realMsgs.length ? realMsgs[realMsgs.length - 1].id : null;
+        const latestRemote = data.length ? data[data.length - 1].id : null;
+        if (data.length !== realMsgs.length || latestLocal !== latestRemote) {
+          allMessages = data;
+          renderThread();
+        }
       }
     }
     // Update inbox unread badge if on messages tab
