@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BPP CRM">
@@ -208,9 +208,32 @@ html.dark .pay-row{border-color:var(--border)}
 html.dark .pay-total{color:var(--gold)}
 html.dark .pay-history-item{background:var(--card)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px}
-*{-webkit-user-select:none;user-select:none}
+html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior:none}
+*{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text}
+/* Eliminate 300ms tap delay on all tappable elements — feels instant */
+button,a,[onclick],label{touch-action:manipulation}
+
+/* ── MOBILE: PREVENT INPUT ZOOM + APP-LIKE FEEL ─────────────
+   iOS Safari zooms in when an input has font-size < 16px.
+   This single rule kills that behavior everywhere. */
+@media(max-width:768px){
+  .form-input,.form-select,.form-textarea,
+  .search-input,#msg-compose,.tm-compose,
+  .qa-row input,.qa-row select,.qa-row textarea,
+  #gate-email,#gate-input{font-size:16px!important}
+  /* Tighter panel padding on mobile */
+  .panel-body{padding:16px 16px}
+  /* Tighter section labels on mobile */
+  .panel-section-label{margin-top:var(--sp-4)!important}
+  /* Smaller nav on mobile */
+  .nav{height:52px;padding:0 12px}
+}
+/* Safe area padding for iPhone home indicator */
+.msg-compose-foot{padding-bottom:max(12px,calc(8px + env(safe-area-inset-bottom)))}
+@supports(padding-bottom:env(safe-area-inset-bottom)){
+  .msg-compose-foot{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+}
 h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;letter-spacing:-.01em}
 
 /* NAV */
@@ -283,8 +306,8 @@ td.actions{white-space:nowrap}
 .panel-close:active{transform:scale(.93)}
 .panel-body{flex:1;overflow-y:auto;padding:20px 24px}
 .panel-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--card)}
-.panel-section-label{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);margin:var(--sp-6) 0 10px;font-family:'Outfit',sans-serif;display:flex;align-items:center;gap:8px}
-.panel-section-label::after{content:'';flex:1;height:1px;background:var(--border);opacity:.75}
+.panel-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:var(--sp-5) 0 8px;font-family:'Outfit',sans-serif;display:flex;align-items:center;gap:8px}
+.panel-section-label::after{content:'';flex:1;height:1px;background:var(--border);opacity:.5}
 .panel-section-label:first-child{margin-top:0}
 .prop-action-btn{width:100%;padding:12px 16px;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;transition:background var(--t-fast),box-shadow var(--t-fast),transform var(--t-fast);letter-spacing:.01em}
 .prop-action-create{background:var(--navy);color:#fff;box-shadow:var(--shadow-sm)}
@@ -1116,7 +1139,7 @@ html.dark .tm-msg.user .tm-bubble{background:#3d3830;color:var(--text)}
 @keyframes tmTyping{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 .tm-panel-foot{padding:12px 14px 14px;border-top:1px solid var(--border);background:var(--card);display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
 html.dark .tm-panel-foot{border-top-color:#3d3830}
-.tm-compose{flex:1;resize:none;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:var(--r-md);padding:10px 14px;font-family:'Inter',sans-serif;font-size:13.5px;outline:none;max-height:110px;min-height:40px;line-height:1.4;transition:border-color var(--t-fast),box-shadow var(--t-fast)}
+.tm-compose{flex:1;resize:none;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:var(--r-md);padding:10px 14px;font-family:'Inter',sans-serif;font-size:16px;outline:none;max-height:110px;min-height:40px;line-height:1.4;transition:border-color var(--t-fast),box-shadow var(--t-fast)}
 .tm-compose:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,186,0,.18)}
 html.dark .tm-compose{background:#1e1b17;border-color:#3d3830}
 .tm-send{background:var(--navy);color:#fff;border:none;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast);box-shadow:var(--shadow-sm)}
@@ -1693,18 +1716,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <div class="qa-inline" id="qa-inline">
           <div class="qa-inline-inner" id="qa-inline-inner"></div>
         </div>
-        <div class="quick-replies" id="quick-replies">
-          <button class="qr-chip" onclick="insertQuickReply(this)">Got your request! 👍</button>
-          <button class="qr-chip" onclick="insertQuickReply(this)">What's your address?</button>
-          <button class="qr-chip" onclick="insertQuickReply(this)">Free to chat today?</button>
-          <button class="qr-chip" onclick="insertQuickReply(this)">Sending you the proposal now!</button>
-          <button class="qr-chip" onclick="insertQuickReply(this)">Just following up — any questions?</button>
-        </div>
-        <div style="padding:10px 16px 12px;display:flex;gap:8px;align-items:flex-end">
+        <div class="msg-compose-foot" style="padding:10px 16px;display:flex;gap:8px;align-items:flex-end">
           <button class="ai-suggest-btn" id="ai-suggest-btn" onclick="aiSuggestReply()" title="AI Suggest — generate a smart reply based on the conversation">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/><path d="M5 4l.5 1.5L7 6l-1.5.5L5 8l-.5-1.5L3 6l1.5-.5z"/></svg>
           </button>
-          <textarea id="msg-compose" class="form-textarea" placeholder="Type a message…" style="flex:1;min-height:52px;max-height:120px;resize:none;font-size:14px" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+          <textarea id="msg-compose" class="form-textarea" placeholder="Type a message…" style="flex:1;min-height:48px;max-height:120px;resize:none;font-size:16px" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
           <button class="btn btn-primary" style="background:var(--navy);color:#fff;flex-shrink:0;height:52px;padding:0 18px" onclick="sendMessage()" id="msg-send-btn">Send</button>
         </div>
       </div>
