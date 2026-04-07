@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BPP Daily Briefing — Tue, April 7</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0b1f3b;
+      color: #e8edf5;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .header {
+      padding: 24px 0 8px;
+      border-bottom: 2px solid #ffba00;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffba00;
+      letter-spacing: -0.3px;
+    }
+    .header .subtitle {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .section {
+      background: #132640;
+      border: 1px solid #1e3a5f;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+    .metric-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .metric {
+      flex: 1;
+      min-width: 90px;
+      background: #0b1f3b;
+      border-radius: 8px;
+      padding: 10px 12px;
+      border: 1px solid #1e3a5f;
+    }
+    .metric-label {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+    .metric-value {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .metric-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .green { color: #22c55e; }
+    .red { color: #ef4444; }
+    .yellow { color: #f59e0b; }
+    .gold { color: #ffba00; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-green { background: #15532920; color: #22c55e; border: 1px solid #22c55e40; }
+    .badge-red { background: #7f1d1d20; color: #ef4444; border: 1px solid #ef444440; }
+    .badge-yellow { background: #78350f20; color: #f59e0b; border: 1px solid #f59e0b40; }
+    .badge-gold { background: #78350f20; color: #ffba00; border: 1px solid #ffba0040; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .table th {
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      padding: 4px 8px 6px;
+      border-bottom: 1px solid #1e3a5f;
+    }
+    .table td {
+      padding: 8px 8px;
+      font-size: 13px;
+      border-bottom: 1px solid #1a2e4a;
+    }
+    .table tr:last-child td { border-bottom: none; }
+    .action-card {
+      background: #0b1f3b;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .action-card:last-child { margin-bottom: 0; }
+    .action-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .action-body {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+    .action-impact {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 6px;
+      border-top: 1px solid #1e3a5f;
+      padding-top: 6px;
+    }
+    .action-meta {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .owner-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #1e3a5f;
+      color: #94a3b8;
+    }
+    .owner-claude { background: #1e1b4b; color: #818cf8; }
+    .owner-key { background: #1c1917; color: #fb923c; }
+    .progress-bar-outer {
+      background: #0b1f3b;
+      border-radius: 100px;
+      height: 10px;
+      width: 100%;
+      margin-top: 8px;
+      overflow: hidden;
+      border: 1px solid #1e3a5f;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, #ffba00, #f59e0b);
+    }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 60px;
+      margin-top: 10px;
+    }
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .bar {
+      width: 100%;
+      background: #1e3a5f;
+      border-radius: 3px 3px 0 0;
+      min-height: 2px;
+    }
+    .bar-lead {
+      background: #ffba00;
+      width: 60%;
+      border-radius: 3px 3px 0 0;
+    }
+    .bar-label {
+      font-size: 10px;
+      color: #475569;
+      text-align: center;
+    }
+    .key-action-card {
+      background: #0b1f3b;
+      border: 1px solid #ef444440;
+      border-left: 3px solid #ef4444;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .key-action-card.yellow-border {
+      border: 1px solid #f59e0b40;
+      border-left: 3px solid #f59e0b;
+    }
+    .creative-card {
+      background: #0b1f3b;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .creative-card img {
+      width: 100%;
+      display: block;
+      max-height: 300px;
+      object-fit: cover;
+    }
+    .creative-info {
+      padding: 12px;
+    }
+    .approve-btn {
+      display: block;
+      background: #ffba00;
+      color: #0b1f3b;
+      font-weight: 700;
+      text-align: center;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 14px;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+    }
+    .gbp-card {
+      background: #0b1f3b;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .gbp-post-body {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      background: #0d2139;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #1e3a5f;
+      white-space: pre-wrap;
+    }
+    .divider { height: 1px; background: #1e3a5f; margin: 12px 0; }
+    .footer {
+      text-align: center;
+      color: #334155;
+      font-size: 12px;
+      padding: 20px 0 10px;
+      border-top: 1px solid #1e3a5f;
+      margin-top: 8px;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .dot-green { background: #22c55e; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-red { background: #ef4444; }
+    .big-number {
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>BPP Morning Brief</h1>
+  <div class="subtitle">Tuesday, April 7, 2026 &nbsp;·&nbsp; Generated 8:43 AM</div>
+</div>
+
+<!-- SECTION 1: META ADS SNAPSHOT -->
+<div class="section">
+  <div class="section-title">📊 Meta Ads — Yesterday (Apr 6)</div>
+
+  <div class="metric-row">
+    <div class="metric">
+      <div class="metric-label">Spend</div>
+      <div class="metric-value gold">$64.23</div>
+      <div class="metric-sub">of ~$60 daily</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Leads</div>
+      <div class="metric-value yellow">3</div>
+      <div class="metric-sub">target: 3+/day</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">CPL</div>
+      <div class="metric-value green">$21.41</div>
+      <div class="metric-sub">target &lt; $30 ✓</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">CTR</div>
+      <div class="metric-value green">12.0%</div>
+      <div class="metric-sub">excellent</div>
+    </div>
+  </div>
+
+  <div class="metric-row" style="margin-top:10px;">
+    <div class="metric">
+      <div class="metric-label">Reach</div>
+      <div class="metric-value" style="font-size:18px;">4,831</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Impressions</div>
+      <div class="metric-value" style="font-size:18px;">5,349</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Frequency</div>
+      <div class="metric-value green" style="font-size:18px;">1.11</div>
+      <div class="metric-sub">healthy</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title" style="margin-bottom:8px;">📅 This Week (Mon–Tue)</div>
+
+  <div class="metric-row">
+    <div class="metric">
+      <div class="metric-label">Spend</div>
+      <div class="metric-value gold">$90.61</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Leads</div>
+      <div class="metric-value yellow">5</div>
+      <div class="metric-sub">2 days in</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Week CPL</div>
+      <div class="metric-value green">$18.12</div>
+      <div class="metric-sub">strong ↓</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title" style="margin-bottom:6px;">Active Campaigns</div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Campaign</th>
+        <th>CPL</th>
+        <th>Freq</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color:#e8edf5; font-size:12px;">Advantage+ Prospecting</td>
+        <td class="yellow">$21.21</td>
+        <td class="yellow">2.81 ⚠️</td>
+        <td><span class="badge badge-green">ACTIVE</span></td>
+      </tr>
+      <tr>
+        <td style="color:#e8edf5; font-size:12px;">Manual Targeting Legacy</td>
+        <td class="green">$14.80</td>
+        <td class="green">1.77</td>
+        <td><span class="badge badge-green">ACTIVE</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:10px; font-size:12px; color:#94a3b8;">
+    ⚠️ <strong style="color:#f59e0b;">Advantage+ frequency at 2.81</strong> — approaching the 3.0 warning threshold. When fresh creatives go live, this resets. No action needed today, but flagging.
+  </div>
+</div>
+
+<!-- SECTION 2: WEBSITE -->
+<div class="section">
+  <div class="section-title">🌐 Website — Yesterday (Apr 6)</div>
+
+  <div class="metric-row">
+    <div class="metric">
+      <div class="metric-label">Pageviews</div>
+      <div class="metric-value" style="font-size:20px;">233</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Visitors</div>
+      <div class="metric-value" style="font-size:20px;">218</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Leads</div>
+      <div class="metric-value yellow" style="font-size:20px;">4</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">CVR</div>
+      <div class="metric-value red" style="font-size:20px;">1.8%</div>
+      <div class="metric-sub">target: 3%+</div>
+    </div>
+  </div>
+
+  <div style="margin-top:10px; font-size:12px; color:#ef4444; background:#1a0a0a; border-radius:6px; padding:8px 10px; border: 1px solid #ef444430;">
+    🔴 CVR at 1.8% is below the 3% benchmark. You got 4 leads from 218 visitors — if that were 3%, you'd have 6-7 leads for the same ad spend. This is the highest-leverage fix available right now.
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title" style="margin-bottom:6px;">7-Day Trend</div>
+
+  <div style="display:flex; gap:4px; align-items:flex-end; height:70px; margin-top:4px;">
+    <!-- Max PV = 131, scale bars accordingly -->
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+      <div style="height:22px; width:100%; background:#1e3a5f; border-radius:3px 3px 0 0;"></div>
+      <div style="font-size:9px; color:#475569;">3/31</div>
+      <div style="font-size:9px; color:#475569;">0L</div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+      <div style="height:44px; width:100%; background:#1e3a5f; border-radius:3px 3px 0 0;"></div>
+      <div style="font-size:9px; color:#475569;">4/1</div>
+      <div style="font-size:9px; color:#f59e0b;">1L</div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+      <div style="height:30px; width:100%; background:#1e3a5f; border-radius:3px 3px 0 0;"></div>
+      <div style="font-size:9px; color:#475569;">4/2</div>
+      <div style="font-size:9px; color:#22c55e;">3L</div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+      <div style="height:42px; width:100%; background:#1e3a5f; border-radius:3px 3px 0 0;"></div>
+      <div style="font-size:9px; color:#475569;">4/3</div>
+      <div style="font-size:9px; color:#22c55e;">4L</div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+      <div style="height:42px; width:100%; background:#1e3a5f; border-radius:3px 3px 0 0;"></div>
+      <div style="font-size:9px; color:#475569;">4/4</div>
+      <div style="font-size:9px; color:#22c55e;">4L</div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+      <div style="height:48px; width:100%; background:#1e3a5f; border-radius:3px 3px 0 0;"></div>
+      <div style="font-size:9px; color:#475569;">4/5</div>
+      <div style="font-size:9px; color:#f59e0b;">1L</div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+      <div style="height:53px; width:100%; background:#1e3a5f; border-radius:3px 3px 0 0;"></div>
+      <div style="font-size:9px; color:#475569;">4/6</div>
+      <div style="font-size:9px; color:#f59e0b;">2L</div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+      <div style="height:60px; width:100%; background:#264a70; border-radius:3px 3px 0 0; border: 1px solid #ffba0050;"></div>
+      <div style="font-size:9px; color:#ffba00;">Today</div>
+      <div style="font-size:9px; color:#f59e0b;">2L↑</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px; color:#64748b; margin-top:6px;">Traffic trend is UP. Lead count is volatile (1–4/day range). CVR improvement would compound everything.</div>
+</div>
+
+<!-- SECTION 3: LEADS PIPELINE -->
+<div class="section">
+  <div class="section-title">🔥 Leads Pipeline</div>
+
+  <div style="background:#0b1f3b; border:1px solid #1e3a5f; border-radius:8px; padding:12px; text-align:center;">
+    <div style="font-size:12px; color:#64748b; margin-bottom:4px;">CRM Contacts (Supabase)</div>
+    <div style="font-size:28px; font-weight:700; color:#94a3b8;">0</div>
+    <div style="font-size:12px; color:#475569; margin-top:4px;">Pipeline appears empty — leads may not be routing to CRM yet</div>
+  </div>
+
+  <div style="margin-top:10px; font-size:12px; color:#94a3b8; background:#1a2035; border-radius:6px; padding:8px 10px; border: 1px solid #1e3a5f;">
+    ℹ️ The Supabase contacts table returned 0 records. Meta reported 5 leads this week. Those leads exist somewhere (Meta, Zapier, Quo) but aren't showing up in the CRM. This is worth investigating — if you're not seeing them in Quo, let me know.
+  </div>
+
+  <div class="divider"></div>
+  <div style="font-size:13px; color:#94a3b8;">
+    <strong style="color:#e8edf5;">Week-to-date:</strong> 5 Meta leads (Mon–Tue) &nbsp;·&nbsp;
+    <span class="yellow">Pace: ~2.5/day</span><br>
+    <strong style="color:#e8edf5;">To close 5 installs</strong> this week at 33% close rate → need <strong style="color:#ffba00;">~15 leads total</strong><br>
+    <span style="font-size:12px; color:#64748b;">On pace for ~12 if volume holds — slightly under goal</span>
+  </div>
+</div>
+
+<!-- SECTION 4: QUO INBOX -->
+<div class="section">
+  <div class="section-title">💬 Quo Inbox</div>
+  <div style="color:#94a3b8; font-size:13px; background:#0b1f3b; border-radius:8px; padding:12px; border:1px solid #1e3a5f;">
+    <span class="status-dot dot-yellow"></span>
+    Data unavailable — Quo API request error. Check your Quo inbox manually at <strong>app.openphone.com</strong> for any unread leads.
+  </div>
+</div>
+
+<!-- SECTION 5: KEY UI ACTIONS -->
+<div class="section">
+  <div class="section-title">🔑 Key — Your Actions Today</div>
+
+  <div class="key-action-card yellow-border">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+      <span class="badge badge-yellow">TODAY</span>
+      <strong style="font-size:14px;">Approve + Upload New Ad Creatives</strong>
+    </div>
+    <div class="action-body">
+      You have 5 new ad images in your repo that have never run in Meta Ads Manager. These include real job photos (before-after-cord-real, full-setup-real, inlet-box-brick-real) and 3 AI-generated 1K drafts. Real photos almost always beat AI graphics for home service ads.
+    </div>
+    <div class="action-impact">
+      Impact: Fresh creatives reset the frequency clock on Advantage+ (currently at 2.81 — closing in on 3.0). Each new angle tests a new hook. Getting 1 winner at $11 CPL vs the current $21 CPL = nearly double the leads for the same budget.
+    </div>
+    <div class="action-meta">
+      <span class="owner-badge owner-key">KEY</span>
+      <span class="owner-badge">~20 min in Ads Manager</span>
+    </div>
+  </div>
+
+  <div class="key-action-card yellow-border">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+      <span class="badge badge-yellow">TODAY</span>
+      <strong style="font-size:14px;">Approve GBP Post — "Do I Need a Permit?"</strong>
+    </div>
+    <div class="action-body">
+      A Google Business Profile post is written and waiting. It addresses the #1 objection ("do I need a permit?") with a clear, confidence-building answer. GBP posts signal activity to Google and improve local pack visibility.
+    </div>
+    <div class="action-impact">
+      Impact: Consistent weekly GBP posts correlate with higher local search rankings. This one is evergreen and handles a real objection before it's even asked. Reply "post gbp" and I'll open it for you.
+    </div>
+    <div class="action-meta">
+      <span class="owner-badge owner-key">KEY</span>
+      <span class="owner-badge">~2 min</span>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5B: NEW CREATIVE PENDING APPROVAL -->
+<div class="section">
+  <div class="section-title">🎨 New Creatives — Awaiting Your Approval</div>
+
+  <div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">
+    These images are in your repo but NOT yet live in Meta. Real job photos are highest priority. Review and reply "post [name]" for any you want to run.
+  </div>
+
+  <div class="creative-card">
+    <img src="https://backuppowerpro.com/ads/creative/before-after-cord-real.jpg" alt="Before After Cord Real" onerror="this.style.display='none'">
+    <div class="creative-info">
+      <div style="font-size:13px; font-weight:700;">Before/After — Real Job Photo</div>
+      <div style="font-size:12px; color:#94a3b8; margin-top:3px;">Angle: Social proof — "Here's what it looks like installed"</div>
+      <div style="font-size:12px; color:#64748b; margin-top:3px;">Headline: "Your generator. Your panel. One cord."</div>
+      <span class="badge badge-yellow" style="margin-top:8px; display:inline-block;">AWAITING YOUR APPROVAL</span>
+      <a class="approve-btn" href="#">APPROVE TO POST</a>
+    </div>
+  </div>
+
+  <div class="creative-card">
+    <img src="https://backuppowerpro.com/ads/creative/inlet-box-brick-real.jpg" alt="Inlet Box on Brick" onerror="this.style.display='none'">
+    <div class="creative-info">
+      <div style="font-size:13px; font-weight:700;">Inlet Box on Brick — Real Job Photo</div>
+      <div style="font-size:12px; color:#94a3b8; margin-top:3px;">Angle: Discovery — "Most people don't know this exists"</div>
+      <div style="font-size:12px; color:#64748b; margin-top:3px;">Headline: "Already own a generator? One step left."</div>
+      <span class="badge badge-yellow" style="margin-top:8px; display:inline-block;">AWAITING YOUR APPROVAL</span>
+      <a class="approve-btn" href="#">APPROVE TO POST</a>
+    </div>
+  </div>
+
+  <div class="creative-card">
+    <img src="https://backuppowerpro.com/ads/creative/full-setup-real.jpg" alt="Full Setup Real" onerror="this.style.display='none'">
+    <div class="creative-info">
+      <div style="font-size:13px; font-weight:700;">Full Setup — Real Job Photo</div>
+      <div style="font-size:12px; color:#94a3b8; margin-top:3px;">Angle: Credibility — "Here's the finished install"</div>
+      <div style="font-size:12px; color:#64748b; margin-top:3px;">Headline: "One cord. Full power. Done in a day."</div>
+      <span class="badge badge-yellow" style="margin-top:8px; display:inline-block;">AWAITING YOUR APPROVAL</span>
+      <a class="approve-btn" href="#">APPROVE TO POST</a>
+    </div>
+  </div>
+
+  <div style="font-size:12px; color:#64748b; text-align:center; margin-top:4px;">Also have AI drafts: storm-neighborhood-1k, before-after-cord-1k, inlet-box-brick-1k (1K versions — 4K upscales need to be generated)</div>
+  <div style="margin-top:8px; font-size:13px; color:#ffba00; text-align:center; font-weight:600;">Reply "post [ad name]" to go live</div>
+</div>
+
+<!-- SECTION 5C: GBP POST PENDING -->
+<div class="section">
+  <div class="section-title">📍 Google Business Profile — Post Ready</div>
+
+  <div class="gbp-card">
+    <div style="font-size:13px; font-weight:600; color:#e8edf5; margin-bottom:6px;">Post #2 — "Do I Need a Permit?"</div>
+    <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Type: What's New · Angle: FAQ / Trust-building</div>
+    <div class="gbp-post-body">Do you need a permit to connect your generator to your panel?
+
+Yes — and if your electrician didn't pull one, your homeowner's insurance won't cover it.
+
+We handle the permit, the inspection, and every piece of paperwork. You don't touch any of it.
+
+One day. Licensed. Greenville, Spartanburg, and Pickens County. $1,197 all in.
+
+Get your price in 30 seconds at backuppowerpro.com</div>
+    <div style="font-size:12px; color:#94a3b8;">📎 Suggested photo: Permit paperwork or inspector on-site</div>
+    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">🔗 CTA: Learn more → backuppowerpro.com</div>
+    <div style="margin-top:10px; background:#1c1917; border-radius:6px; padding:10px; text-align:center; font-size:13px; color:#fb923c; font-weight:600;">
+      Reply "post gbp" and I'll open Google Business Profile so you can paste and publish in under 2 minutes.
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6: CLAUDE'S ACTION LIST -->
+<div class="section">
+  <div class="section-title">🤖 Claude's Action List — Today</div>
+
+  <div class="action-card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="action-title">🔴 Investigate CVR Drop — 1.8% vs 3% Target</div>
+    </div>
+    <div class="action-body">Your landing page is converting at 1.8% when it should be 3%+. That gap costs you 2–3 leads per day for free — no extra ad spend. I'll audit the form flow, check if lead_captured events are firing correctly in PostHog, and identify the friction point.</div>
+    <div class="action-impact">💰 Impact: Fixing CVR from 1.8% → 3% = 67% more leads for the same $64/day spend. That's roughly +1.3 leads/day, or +9 leads/week, at zero additional cost.</div>
+    <div class="action-meta">
+      <span class="owner-badge owner-claude">CLAUDE</span>
+      <span class="owner-badge">Queued today</span>
+    </div>
+  </div>
+
+  <div class="action-card">
+    <div class="action-title">🟡 Generate 4K Upscales for AI Draft Creatives</div>
+    <div class="action-body">The 4K upscales were supposed to run overnight Apr 6 but didn't generate. The 1K drafts (storm-neighborhood, before-after-cord, inlet-box-brick) are ready but need 4K versions before upload to Meta for full quality.</div>
+    <div class="action-impact">💰 Impact: Higher resolution = better ad rendering on Retina displays. Prevents blurry ads that kill CTR. These 3 AI images plus the 3 real photos = 6 new ads ready to test.</div>
+    <div class="action-meta">
+      <span class="owner-badge owner-claude">CLAUDE</span>
+      <span class="owner-badge">~10 min per image</span>
+    </div>
+  </div>
+
+  <div class="action-card">
+    <div class="action-title">🟡 Monitor Advantage+ Frequency (Currently 2.81)</div>
+    <div class="action-body">Advantage+ campaign is at 2.81 frequency — 3.0 is the warning threshold where performance typically starts dropping. Once fresh creatives are uploaded, the algorithm will naturally distribute budget to the new ones and frequency will reset on those ads.</div>
+    <div class="action-impact">💰 Impact: Campaigns over 4.0 frequency can see CPL spike 30–50%. Staying proactive here protects the current $21 CPL. Action needed only if creatives aren't uploaded by end of week.</div>
+    <div class="action-meta">
+      <span class="owner-badge owner-claude">CLAUDE</span>
+      <span class="owner-badge">Monitoring daily</span>
+    </div>
+  </div>
+
+  <div class="action-card">
+    <div class="action-title">🟡 Investigate Supabase CRM — 0 Contacts</div>
+    <div class="action-body">The CRM returned 0 contacts. Meta says 5 leads this week. Those leads exist but aren't in the CRM. Either the webhook isn't routing to Supabase or the table has a different schema than expected. I'll diagnose the integration.</div>
+    <div class="action-impact">💰 Impact: Without leads in the CRM, there's no automated follow-up, no 24h no-reply alerts, and no pipeline visibility. This is a silent revenue leak — leads going cold with no system catching them.</div>
+    <div class="action-meta">
+      <span class="owner-badge owner-claude">CLAUDE</span>
+      <span class="owner-badge">Today</span>
+    </div>
+  </div>
+
+  <div class="action-card">
+    <div class="action-title">🟢 Daily Meta Performance Monitoring</div>
+    <div class="action-body">Checking CPL per ad, frequency, spend pacing, and lead count against $30 CPL target and 3/day goal. Current numbers are healthy — $21.41 CPL is well under target. No ad-level pauses needed today.</div>
+    <div class="action-meta">
+      <span class="owner-badge owner-claude">CLAUDE</span>
+      <span class="owner-badge">DONE ✓</span>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 7: WEEK GOAL TRACKER -->
+<div class="section">
+  <div class="section-title">🎯 Week Goal: 5 Installs</div>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+    <span style="font-size:13px; color:#94a3b8;">Installs booked this week</span>
+    <span style="font-size:13px; color:#94a3b8;">Week 2 of April</span>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+    <div class="big-number yellow">0</div>
+    <div style="color:#475569; font-size:18px; font-weight:300;">/ 5</div>
+    <div style="font-size:12px; color:#64748b; line-height:1.4;">CRM empty — update<br>when jobs book</div>
+  </div>
+
+  <div class="progress-bar-outer">
+    <div class="progress-bar-inner" style="width: 0%;"></div>
+  </div>
+
+  <div style="margin-top:10px; font-size:12px; color:#94a3b8; background:#0b1f3b; border-radius:6px; padding:8px 10px; border:1px solid #1e3a5f;">
+    📐 <strong style="color:#e8edf5;">Math to 5 installs:</strong> At 33% close rate → need 15 leads. Week has 5 so far across 2 days. At current pace (~2.5/day × 5 days) = ~12–13 leads. Just under the 15 needed. Every lead counts this week.
+  </div>
+</div>
+
+<!-- SECTION 8: FINANCIAL PULSE -->
+<div class="section">
+  <div class="section-title">💵 Financial Pulse — $150k Goal Tracker</div>
+
+  <div class="metric-row" style="margin-bottom:10px;">
+    <div class="metric">
+      <div class="metric-label">Apr Revenue Est.</div>
+      <div class="metric-value red" style="font-size:18px;">~$171</div>
+      <div class="metric-sub">through Apr 5</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Apr Net Est.</div>
+      <div class="metric-value red" style="font-size:18px;">-$3k+</div>
+      <div class="metric-sub">draw + ad spend</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">$150k Goal</div>
+      <div class="metric-value red" style="font-size:18px;">$0</div>
+      <div class="metric-sub">not accumulating yet</div>
+    </div>
+  </div>
+
+  <div style="font-size:12px; color:#94a3b8; background:#0b1f3b; border-radius:8px; padding:10px 12px; border-left: 3px solid #ef4444;">
+    <strong style="color:#ef4444;">Honest assessment:</strong> The business isn't yet covering the $3k/month draw. Revenue needs to hit $5,000+/month just to break even. At 5 installs/week × $1,347 avg × 4.3 weeks = <strong style="color:#ffba00;">$29k/month</strong> — that's where everything changes. Right now the constraint is leads-to-closes, not ad performance.
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="font-size:12px; color:#94a3b8;">
+    <div style="margin-bottom:4px;">📊 <strong style="color:#e8edf5;">Monthly targets to hit $150k by Oct 2026:</strong></div>
+    <div style="margin-left:12px; line-height:1.8;">
+      Phase 1 (solo): <span class="yellow">$21,600/mo net</span> — requires 5 installs/week<br>
+      Phase 2 (+1 sub): <span class="green">$42,200/mo net</span><br>
+      Phase 3 (+2 subs): <strong class="green">$67,500/mo net</strong>
+    </div>
+    <div style="margin-top:6px; color:#64748b; font-size:11px;">At current pace: Not yet accumulating. Need 1 consistent week of 5 installs to confirm Phase 1 is achievable.</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  Generated Tue Apr 7, 2026 · 8:43 AM<br>
+  Reply to any action item to execute · Reply "post gbp" to publish GBP post<br>
+  Reply "post [ad name]" to approve a creative for Meta upload<br>
+  <br>
+  <span style="color:#1e3a5f;">backuppowerpro.com · Greenville, Spartanburg, Pickens SC</span>
+</div>
+
+</body>
+</html>
