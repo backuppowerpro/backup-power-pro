@@ -998,15 +998,52 @@ html.dark .tm-brief-btn.secondary:hover{background:var(--card)}
 .tm-brief-empty{padding:24px 12px;text-align:center;color:var(--text3);font-size:13px}
 .tm-brief-empty-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px}
 
-/* ── Chat launcher button (floating, bottom-right above FAB) ── */
-.tm-launcher{position:fixed;bottom:96px;right:24px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);border:none;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(255,186,0,.32),0 2px 6px rgba(10,20,40,.15);z-index:59;display:none;align-items:center;justify-content:center;transition:transform var(--t-base),box-shadow var(--t-base);font-family:'Outfit',sans-serif;line-height:1}
-.tm-launcher.visible{display:flex;animation:tmLauncherPop .34s var(--ease)}
+/* ── Sparky launcher button (floating pill, bottom-right above FAB) ── */
+.tm-launcher{position:fixed;bottom:96px;right:24px;height:54px;border-radius:var(--r-pill);background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);border:none;cursor:pointer;box-shadow:0 8px 24px rgba(255,186,0,.36),0 3px 8px rgba(10,20,40,.18);z-index:59;display:none;align-items:center;gap:9px;padding:0 19px 0 14px;transition:transform var(--t-base),box-shadow var(--t-base),padding var(--t-base);font-family:'Outfit',sans-serif;line-height:1;letter-spacing:-.005em}
+.tm-launcher.visible{display:inline-flex;animation:tmLauncherPop .42s var(--ease)}
 @keyframes tmLauncherPop{from{opacity:0;transform:scale(.6) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.tm-launcher:hover{transform:scale(1.06);box-shadow:0 10px 28px rgba(255,186,0,.42),0 4px 10px rgba(10,20,40,.2)}
-.tm-launcher:active{transform:scale(.94)}
-.tm-launcher:focus-visible{outline:3px solid rgba(255,186,0,.4);outline-offset:3px}
-.tm-launcher-badge{position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid var(--bg);font-family:'Outfit',sans-serif;box-shadow:0 2px 4px rgba(0,0,0,.15)}
+.tm-launcher-icon{width:30px;height:30px;border-radius:50%;background:rgba(11,31,59,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);transition:transform var(--t-base)}
+.tm-launcher-icon svg{width:18px;height:18px;display:block}
+.tm-launcher-label{font-weight:800;font-size:14.5px;color:var(--navy);white-space:nowrap}
+.tm-launcher:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 14px 32px rgba(255,186,0,.44),0 5px 12px rgba(10,20,40,.22)}
+.tm-launcher:hover .tm-launcher-icon{transform:rotate(-12deg) scale(1.1)}
+.tm-launcher:active{transform:translateY(0) scale(.96)}
+.tm-launcher:focus-visible{outline:3px solid rgba(255,186,0,.45);outline-offset:3px}
+.tm-launcher.alert{animation:tmLauncherPulse 2.2s ease-in-out infinite}
+@keyframes tmLauncherPulse{0%,100%{box-shadow:0 8px 24px rgba(255,186,0,.36),0 3px 8px rgba(10,20,40,.18)}50%{box-shadow:0 8px 28px rgba(255,186,0,.62),0 0 0 8px rgba(255,186,0,.18),0 3px 8px rgba(10,20,40,.2)}}
+.tm-launcher-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:10px;font-weight:800;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 6px;border:2px solid var(--bg);font-family:'Outfit',sans-serif;box-shadow:0 2px 5px rgba(0,0,0,.18);letter-spacing:0}
 html.dark .tm-launcher-badge{border-color:var(--bg)}
+html.dark .tm-launcher-icon{background:rgba(11,31,59,.18)}
+/* Sparky agent insight bar — lives at the top of the contact panel */
+.sk-insight{display:flex;align-items:center;gap:10px;padding:11px 13px;margin:0 0 var(--sp-md);background:linear-gradient(135deg,rgba(255,186,0,.10) 0%,rgba(255,186,0,.04) 100%);border:1px solid rgba(255,186,0,.28);border-radius:var(--r-md);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;color:var(--text);line-height:1.4;animation:tmMsgIn .32s var(--ease)}
+html.dark .sk-insight{background:linear-gradient(135deg,rgba(230,168,0,.13) 0%,rgba(230,168,0,.05) 100%);border-color:rgba(230,168,0,.32);color:var(--text)}
+.sk-insight-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);box-shadow:0 2px 6px rgba(255,186,0,.32)}
+.sk-insight-av svg{width:14px;height:14px;display:block}
+.sk-insight-text{flex:1;min-width:0;letter-spacing:-.005em}
+.sk-insight-name{font-weight:800;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);display:block;margin-bottom:1px;font-family:'Outfit',sans-serif}
+.sk-insight.loading .sk-insight-text{color:var(--text3);font-style:italic}
+/* Sparky tool action confirmation card (rendered inside chat bubbles) */
+.sk-action-card{margin-top:8px;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r-sm);padding:11px 13px;font-family:'Inter',sans-serif;font-size:12.5px;color:var(--text);animation:tmMsgIn .28s var(--ease)}
+html.dark .sk-action-card{background:#1e1b17;border-color:#3d3830;border-left-color:var(--gold)}
+.sk-action-label{font-family:'Outfit',sans-serif;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--gold);margin-bottom:6px}
+.sk-action-body{font-size:13px;color:var(--text);line-height:1.45;white-space:pre-wrap;word-wrap:break-word;margin-bottom:9px}
+.sk-action-meta{font-size:11px;color:var(--text3);margin-bottom:9px;font-weight:500}
+.sk-action-row{display:flex;gap:6px;flex-wrap:wrap}
+.sk-action-btn{font-family:'Outfit',sans-serif;font-weight:700;font-size:11.5px;padding:7px 13px;border-radius:var(--r-sm);border:1px solid transparent;cursor:pointer;transition:all var(--t-fast);letter-spacing:.005em}
+.sk-action-btn.confirm{background:var(--navy);color:#fff;box-shadow:var(--shadow-sm)}
+.sk-action-btn.confirm:hover{background:#132a4f;transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.sk-action-btn.cancel{background:transparent;color:var(--text2);border-color:var(--border)}
+.sk-action-btn.cancel:hover{color:var(--text);background:var(--card)}
+.sk-action-btn.edit{background:var(--bg);color:var(--text2);border-color:var(--border)}
+.sk-action-btn.edit:hover{color:var(--text);background:var(--card)}
+.sk-action-card.done{border-left-color:var(--green);opacity:.92}
+.sk-action-card.done .sk-action-label{color:var(--green2)}
+.sk-action-card.done .sk-action-row{display:none}
+.sk-action-card.failed{border-left-color:var(--red)}
+.sk-action-card.failed .sk-action-label{color:var(--red)}
+html.dark .sk-action-btn.confirm{background:var(--gold);color:#1e1b17}
+html.dark .sk-action-btn.confirm:hover{background:#ffd166}
+html.dark .sk-action-btn.cancel,html.dark .sk-action-btn.edit{border-color:#3d3830}
 
 /* ── Chat panel (slide-in from right, above everything) ── */
 .tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:310;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
@@ -1073,7 +1110,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
 @media (max-width: 520px){
   .tm-panel{max-width:100%}
-  .tm-launcher{bottom:86px;right:18px;width:48px;height:48px;font-size:20px}
+  .tm-launcher{bottom:86px;right:18px;height:48px;padding:0 16px 0 11px;gap:7px}
+  .tm-launcher-icon{width:26px;height:26px}
+  .tm-launcher-icon svg{width:16px;height:16px}
+  .tm-launcher-label{font-size:13.5px}
   .tm-brief-body{max-height:360px}
 }
 </style>
@@ -1129,26 +1169,31 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <!-- ── FAB (+ Lead) ──────────────────────────────────────── -->
 <button class="fab" id="fab-add-lead" style="display:none" onclick="openContactModal(null)" title="Add Lead">+</button>
 
-<!-- ── PASS 12: AI Taskmaster launcher (sits above the add-lead FAB) ── -->
-<button class="tm-launcher" id="tm-launcher" onclick="tmOpenPanel()" title="Ask your assistant" aria-label="Open assistant">
-  <span style="display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1">&#x2728;</span>
+<!-- ── PASS 13: Sparky launcher (always visible — sits above the add-lead FAB) ── -->
+<button class="tm-launcher" id="tm-launcher" onclick="tmOpenPanel()" title="Ask Sparky" aria-label="Ask Sparky">
+  <span class="tm-launcher-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
+  </span>
+  <span class="tm-launcher-label">Sparky</span>
   <span class="tm-launcher-badge" id="tm-launcher-badge" style="display:none">0</span>
 </button>
 
-<!-- ── PASS 12: AI Taskmaster chat panel ────────────────── -->
+<!-- ── PASS 13: Sparky chat panel ─────────────────────── -->
 <div class="tm-panel-overlay" id="tm-panel-overlay" onclick="tmClosePanel()"></div>
-<aside class="tm-panel" id="tm-panel" role="dialog" aria-label="Taskmaster chat" aria-hidden="true">
+<aside class="tm-panel" id="tm-panel" role="dialog" aria-label="Sparky" aria-hidden="true">
   <div class="tm-panel-head">
-    <div class="tm-panel-avatar">&#x2728;</div>
+    <div class="tm-panel-avatar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
+    </div>
     <div class="tm-panel-title">
-      <h3>Ask your assistant</h3>
-      <p><span class="tm-dot"></span>Knows your pipeline</p>
+      <h3>Sparky</h3>
+      <p><span class="tm-dot"></span>Your CRM colleague &middot; live</p>
     </div>
     <button class="tm-panel-close" onclick="tmClosePanel()" aria-label="Close" title="Close">&times;</button>
   </div>
   <div class="tm-panel-body" id="tm-panel-body"></div>
   <div class="tm-panel-foot">
-    <textarea class="tm-compose" id="tm-compose" rows="1" placeholder="Ask about your leads, permits, or materials..." onkeydown="tmComposeKey(event)" oninput="tmAutosize(this)" maxlength="1000"></textarea>
+    <textarea class="tm-compose" id="tm-compose" rows="1" placeholder="Ask Sparky about leads, permits, or anything..." onkeydown="tmComposeKey(event)" oninput="tmAutosize(this)" maxlength="1000"></textarea>
     <button class="tm-send" id="tm-send" onclick="tmSubmitCompose()" title="Send">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
@@ -1519,6 +1564,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     <!-- LEVEL 1: Contact Details (Progressive Disclosure) -->
     <div class="drill-level active" id="drill-contact">
       <input type="hidden" id="panel-id">
+
+      <!-- 0. SPARKY INSIGHT (rendered by renderSparkyInsight when panel opens) -->
+      <div id="sparky-insight-mount"></div>
 
       <!-- 1. PROPOSALS (always visible, prominent) -->
       <div id="panel-prop-section" style="margin-bottom:var(--sp-md)"></div>
@@ -2522,6 +2570,11 @@ function openPanel(id) {
 
   document.getElementById('side-panel-overlay').classList.add('open');
   lockBody();
+
+  // Sparky insight at the top of the panel — rule-based take
+  if (typeof renderSparkyInsight === 'function') {
+    try { renderSparkyInsight(c.id); } catch(e) {}
+  }
 }
 
 function openMessagesFromPanel() {
@@ -6418,7 +6471,9 @@ async function _qaNoteSave(contactId) {
 }
 
 // ══════════════════════════════════════════════════════════
-// AI SUGGEST REPLY — smart template-based contextual responses
+// AI SUGGEST REPLY — calls Sparky (Claude) via the ai-taskmaster
+// edge function in mode "suggest_reply". Falls back to the
+// rule-based _aiBuildSuggestion if the edge function is unavailable.
 // ══════════════════════════════════════════════════════════
 async function aiSuggestReply() {
   const contactId = currentMsgContactId;
@@ -6429,19 +6484,72 @@ async function aiSuggestReply() {
   const btn = document.getElementById('ai-suggest-btn');
   if (btn) btn.classList.add('loading');
 
-  // Short artificial delay so the spinner is visible (feels intentional)
-  await new Promise(r => setTimeout(r, 320));
+  // Build a compact contact blob + thread for Sparky
+  const scheduled = (typeof getScheduledDate === 'function') ? getScheduledDate(c) : '';
+  const stageDef = (typeof PERMIT_STAGES !== 'undefined') ? PERMIT_STAGES.find(s => s.id === (c.stage || 1)) : null;
+  const jurName = (function() {
+    if (!c.jurisdiction_id || typeof allJurisdictions === 'undefined') return '';
+    const j = allJurisdictions.find(x => x.id === c.jurisdiction_id);
+    return j ? j.name : '';
+  })();
+  // Simple "days since" helpers, inlined to avoid coupling to the IIFE.
+  const daysSince = (ts) => {
+    if (!ts) return null;
+    const t = (typeof ts === 'number') ? ts : new Date(ts).getTime();
+    if (isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+  };
+  const contactPayload = {
+    id: c.id,
+    name: c.name || '',
+    stage: c.stage || 1,
+    stageLabel: stageDef ? stageDef.label : ('Stage ' + (c.stage || 1)),
+    jurisdiction: jurName || '',
+    daysInSystem: daysSince(c.created_at),
+    scheduled: scheduled || '',
+    notes: (c.notes || '').slice(0, 300),
+  };
+  const threadPayload = (allMessages || []).slice(-20).map(m => ({
+    direction: m.direction,
+    body: (m.body || '').slice(0, 600),
+  }));
 
-  const suggestion = _aiBuildSuggestion(c, allMessages || []);
+  let suggestion = '';
+  try {
+    const resp = await fetch(SUPABASE_URL + '/functions/v1/ai-taskmaster', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT,
+        'apikey': SEND_SMS_ANON_JWT,
+      },
+      body: JSON.stringify({
+        mode: 'suggest_reply',
+        contact: contactPayload,
+        thread: threadPayload,
+      }),
+    });
+    if (resp.ok) {
+      const data = await resp.json().catch(() => null);
+      if (data && !data.fallback && data.answer) {
+        suggestion = data.answer.trim();
+      }
+    }
+  } catch (e) {
+    // Network or parse error — drop to fallback
+  }
+
+  // Fallback to the rule-based suggestion if Sparky did not return anything
+  if (!suggestion) {
+    suggestion = _aiBuildSuggestion(c, allMessages || []);
+  }
 
   const composeEl = document.getElementById('msg-compose');
   if (composeEl) {
     composeEl.value = suggestion;
     composeEl.focus();
-    // Trigger autoresize
     composeEl.style.height = 'auto';
     composeEl.style.height = Math.min(120, composeEl.scrollHeight) + 'px';
-    // Move cursor to end
     try { composeEl.setSelectionRange(suggestion.length, suggestion.length); } catch (e) {}
   }
 
@@ -9630,29 +9738,37 @@ setTimeout(() => {
     var history = _chatHistory();
 
     if (!history.length) {
+      var chips = _contextualChips();
+      var chipHtml = chips.map(function(c) {
+        return '<button class="tm-chip" onclick="tmAskPreset(' + JSON.stringify(c).replace(/"/g, '&quot;') + ')">' + _escHtml(c) + '</button>';
+      }).join('');
+      var sparkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>';
       body.innerHTML = ''
         + '<div class="tm-empty">'
-        +   '<div class="tm-empty-avatar">\u2728</div>'
-        +   '<div class="tm-empty-title">Hey Key.</div>'
-        +   '<div class="tm-empty-sub">I know your pipeline, permits, and materials. Ask me what needs attention or start with one of these.</div>'
-        +   '<div class="tm-chips">'
-        +     '<button class="tm-chip" onclick="tmAskPreset(\'What needs my attention today?\')">What needs my attention today?</button>'
-        +     '<button class="tm-chip" onclick="tmAskPreset(\'Who hasn\\u2019t been contacted in 3+ days?\')">Who hasn\u2019t been contacted in 3+ days?</button>'
-        +     '<button class="tm-chip" onclick="tmAskPreset(\'What permits are likely ready to pay?\')">What permits are likely ready to pay?</button>'
-        +     '<button class="tm-chip" onclick="tmAskPreset(\'Which jobs need materials ordered?\')">Which jobs need materials ordered?</button>'
-        +     '<button class="tm-chip" onclick="tmAskPreset(\'What are my hot leads?\')">What are my hot leads?</button>'
-        +   '</div>'
+        +   '<div class="tm-empty-avatar" style="color:var(--navy)">' + sparkSvg + '</div>'
+        +   '<div class="tm-empty-title">Hey Key. Sparky here.</div>'
+        +   '<div class="tm-empty-sub">I read your pipeline, permits, and materials in real time. Ask me what needs attention, draft a text, or tell me to take an action.</div>'
+        +   '<div class="tm-chips">' + chipHtml + '</div>'
         + '</div>';
       return;
     }
 
-    var html = history.map(function(m) {
+    var html = history.map(function(m, idx) {
       var cls = (m.role === 'user') ? 'user' : 'asst';
-      var av = (m.role === 'user') ? 'K' : '\u2728';
+      var av = (m.role === 'user')
+        ? 'K'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>';
       var content = _renderMessageContent(m.content || '');
+      // Tool call action cards (only for assistant messages with pending tool calls)
+      var actionsHtml = '';
+      if (m.role === 'assistant' && Array.isArray(m.tool_calls) && m.tool_calls.length) {
+        actionsHtml = m.tool_calls.map(function(tc, ci) {
+          return _renderToolCallCard(tc, idx, ci);
+        }).join('');
+      }
       return '<div class="tm-msg ' + cls + '">'
         + '<div class="tm-msg-av">' + av + '</div>'
-        + '<div class="tm-bubble">' + content + '</div>'
+        + '<div class="tm-bubble">' + (content || '<span style="color:var(--text3);font-style:italic">(action only)</span>') + actionsHtml + '</div>'
         + '</div>';
     }).join('');
     body.innerHTML = html;
@@ -9671,16 +9787,18 @@ setTimeout(() => {
     body.scrollTop = body.scrollHeight;
   }
 
-  // Convert "(id:abc123)" markers into clickable contact links. When the
-  // preceding run of text ends with the contact's display name we wrap that
-  // name as the link instead of injecting a duplicate. This keeps lines like
+  // Convert "(id:abc123)" or "[id:abc123]" markers into clickable contact links.
+  // When the preceding run of text ends with the contact's display name we wrap
+  // that name as the link instead of injecting a duplicate. This keeps lines like
   // "Michelle Torres (id:abc)" rendering as a single clickable "Michelle Torres"
   // token. Text is escaped first so this is XSS-safe.
   function _renderMessageContent(text) {
     var escText = _escHtml(text || '');
     var contacts = (typeof allContacts !== 'undefined' && Array.isArray(allContacts)) ? allContacts : [];
 
-    escText = escText.replace(/(\S[^\n]*?)?\s?\(id:([a-zA-Z0-9\-]+)\)/g, function(full, prefix, cid) {
+    // Match (id:abc) AND [id:abc] AND \[id:abc\] forms — Claude sometimes echoes
+    // back the bracket form it saw in the contextSummary.
+    escText = escText.replace(/(\S[^\n]*?)?\s?[\(\[]id:([a-zA-Z0-9\-]+)[\)\]]/g, function(full, prefix, cid) {
       var c = contacts.find(function(x) { return x.id === cid; });
       if (!c) return (prefix || '') + ' ';
       var name = _shortName(c);
@@ -9700,6 +9818,73 @@ setTimeout(() => {
     // Newlines → <br>
     escText = escText.replace(/\n/g, '<br>');
     return escText;
+  }
+
+  // Render a single tool-call confirmation card. The card lives inside the
+  // assistant bubble and exposes Confirm / Edit / Cancel buttons that route
+  // back to the public window.skExecuteToolCall / skEditToolCall / skCancelToolCall
+  // dispatchers above.
+  function _renderToolCallCard(call, turnIdx, callIdx) {
+    if (!call) return '';
+    var status = call.status || 'pending';
+    var label = '', body = '', meta = '';
+    var contactsList = (typeof allContacts !== 'undefined' && Array.isArray(allContacts)) ? allContacts : [];
+    var resolveContact = function(cid) {
+      return contactsList.find(function(x) { return x.id === cid; });
+    };
+
+    if (call.name === 'send_sms_to_contact') {
+      var c = resolveContact(call.input && call.input.contactId);
+      label = 'Send SMS' + (c ? ' \u2192 ' + _shortName(c) : '');
+      body = (call.input && call.input.message) || '';
+      meta = c && c.phone ? c.phone : '';
+    } else if (call.name === 'change_contact_stage') {
+      var c2 = resolveContact(call.input && call.input.contactId);
+      var stage = call.input && call.input.newStage;
+      var stageDef = (typeof PERMIT_STAGES !== 'undefined') ? PERMIT_STAGES.find(function(s) { return s.id === stage; }) : null;
+      var stageLabel = stageDef ? stageDef.label : ('Stage ' + stage);
+      label = 'Change stage';
+      body = (c2 ? _shortName(c2) : 'Contact') + ' \u2192 ' + stageLabel;
+    } else if (call.name === 'add_note_to_contact') {
+      var c3 = resolveContact(call.input && call.input.contactId);
+      label = 'Add note' + (c3 ? ' \u2192 ' + _shortName(c3) : '');
+      body = (call.input && call.input.noteText) || '';
+    } else if (call.name === 'lookup_contact') {
+      label = 'Lookup contact';
+      body = (call.input && call.input.query) || '';
+    } else {
+      label = call.name || 'Action';
+      try { body = JSON.stringify(call.input || {}); } catch(e) { body = ''; }
+    }
+
+    var classes = 'sk-action-card';
+    var statusBadge = '';
+    if (status === 'done') { classes += ' done'; statusBadge = '\u2713 ' + (call.resultMessage || 'Done'); }
+    else if (status === 'failed') { classes += ' failed'; statusBadge = '\u2715 ' + (call.resultMessage || 'Failed'); }
+    else if (status === 'cancelled') { classes += ' done'; statusBadge = 'Cancelled'; }
+    else if (status === 'running') { statusBadge = 'Running\u2026'; }
+
+    var headLabel = (status === 'done' || status === 'cancelled' || status === 'failed')
+      ? statusBadge
+      : label;
+    var rowHtml = '';
+    if (status === 'pending') {
+      var canEdit = (call.name === 'send_sms_to_contact');
+      rowHtml = '<div class="sk-action-row">'
+        + '<button class="sk-action-btn confirm" onclick="skExecuteToolCall(' + turnIdx + ',' + callIdx + ')">Confirm</button>'
+        + (canEdit ? '<button class="sk-action-btn edit" onclick="skEditToolCall(' + turnIdx + ',' + callIdx + ')">Edit</button>' : '')
+        + '<button class="sk-action-btn cancel" onclick="skCancelToolCall(' + turnIdx + ',' + callIdx + ')">Cancel</button>'
+        + '</div>';
+    } else if (status === 'running') {
+      rowHtml = '<div class="sk-action-row"><span style="color:var(--text3);font-size:11px">Running\u2026</span></div>';
+    }
+
+    return '<div class="' + classes + '">'
+      + '<div class="sk-action-label">' + _escHtml(headLabel) + '</div>'
+      + (body ? '<div class="sk-action-body">' + _escHtml(body) + '</div>' : '')
+      + (meta ? '<div class="sk-action-meta">' + _escHtml(meta) + '</div>' : '')
+      + rowHtml
+      + '</div>';
   }
 
   window.tmOpenPanel = function() {
@@ -9754,17 +9939,18 @@ setTimeout(() => {
     _showTyping();
 
     // Build a local, rule-based answer FIRST — this is our fallback and the
-    // "context" we also hand to Claude so it does not have to re-derive
+    // "context" we also hand to Sparky so the model does not have to re-derive
     // everything from the raw contact list.
     var localAnswer = _ruleBasedAnswer(question);
     var contextSummary = _buildContextSummary();
     var history = _chatHistory().slice(-6).map(function(m) {
-      return { role: m.role, content: m.content };
+      return { role: m.role, content: typeof m.content === 'string' ? m.content : '' };
     });
     // Drop the latest user turn from history — we send it as the question
     if (history.length && history[history.length - 1].role === 'user') history.pop();
 
     var finalAnswer = localAnswer;
+    var toolCalls = [];
     try {
       if (TM_ENDPOINT && TM_ANON_JWT) {
         var resp = await fetch(TM_ENDPOINT, {
@@ -9774,12 +9960,18 @@ setTimeout(() => {
             'Authorization': 'Bearer ' + TM_ANON_JWT,
             'apikey': TM_ANON_JWT,
           },
-          body: JSON.stringify({ question: question, contextSummary: contextSummary, history: history }),
+          body: JSON.stringify({
+            mode: 'chat',
+            question: question,
+            contextSummary: contextSummary,
+            history: history,
+          }),
         });
         if (resp.ok) {
           var data = await resp.json().catch(function() { return null; });
-          if (data && !data.fallback && data.answer) {
-            finalAnswer = data.answer;
+          if (data && !data.fallback && (data.answer || (data.tool_calls && data.tool_calls.length))) {
+            finalAnswer = data.answer || '';
+            toolCalls = Array.isArray(data.tool_calls) ? data.tool_calls : [];
           } else if (data && data.fallback && data.answer) {
             // Prefer our rich local answer over the plain server fallback message
             finalAnswer = localAnswer;
@@ -9791,9 +9983,370 @@ setTimeout(() => {
     }
 
     _hideTyping();
-    _appendChatTurn('assistant', finalAnswer);
+
+    // Save the assistant turn — if there are pending tool calls, attach them
+    // so renderChatPanel can paint a confirmation card next to the message.
+    var assistantTurn = { role: 'assistant', content: finalAnswer || '', ts: Date.now() };
+    if (toolCalls.length) {
+      assistantTurn.tool_calls = toolCalls.map(function(tc) {
+        return { id: tc.id, name: tc.name, input: tc.input, status: 'pending' };
+      });
+    }
+    var arr = _chatHistory();
+    arr.push(assistantTurn);
+    _saveChatHistory(arr);
     renderChatPanel();
   }
+
+  // ══════════════════════════════════════════════════════════
+  // CONTEXTUAL CHIPS — pre-populated chat suggestions adapt
+  // to whatever Key is currently looking at.
+  // ══════════════════════════════════════════════════════════
+  function _contextualChips() {
+    // Default set
+    var defaults = [
+      'What needs my attention today?',
+      'Who hasn\u2019t been contacted in 3+ days?',
+      'What are my hot leads?',
+      'What permits are likely ready to pay?',
+      'How is progress toward $150k?',
+    ];
+    try {
+      // Active tab + leadsView take precedence
+      var tab = (typeof activeTab !== 'undefined') ? activeTab : null;
+      var view = (typeof leadsView !== 'undefined') ? leadsView : null;
+
+      // If a contact panel is open, show contact-scoped questions
+      if (typeof currentPanelContactId !== 'undefined' && currentPanelContactId) {
+        var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === currentPanelContactId; }) : null;
+        if (c) {
+          var fname = _firstName(c.name) || 'them';
+          return [
+            'What should I say to ' + fname + ' next?',
+            'Draft a follow-up text for ' + fname + '.',
+            'What\u2019s the status on ' + fname + '?',
+            'Move ' + fname + ' to the next stage.',
+            'Add a quick note about ' + fname + '.',
+          ];
+        }
+      }
+
+      // Messages tab
+      if (tab === 'messages') {
+        return [
+          'Help me reply to the latest message.',
+          'Who is waiting on a response?',
+          'Draft a check-in for an aging quote.',
+          'What needs my attention today?',
+        ];
+      }
+      // Invoices tab
+      if (tab === 'invoices') {
+        return [
+          'Which invoices are unpaid?',
+          'How much have I billed this week?',
+          'What needs my attention today?',
+          'How is progress toward $150k?',
+        ];
+      }
+      // Leads tab — show view-specific chips
+      if (tab === 'leads' || !tab) {
+        if (view === 'permits') {
+          return [
+            'What permits are likely ready to pay?',
+            'Which permits are stuck in review?',
+            'Any inspections to schedule?',
+            'What needs my attention today?',
+          ];
+        }
+        if (view === 'materials') {
+          return [
+            'Which jobs need materials ordered?',
+            'Anything ready to pick up?',
+            'What needs my attention today?',
+          ];
+        }
+        // List or pipeline (default)
+        return defaults;
+      }
+    } catch(e) {}
+    return defaults;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // TOOL EXECUTION — runs when Sparky asks for an action.
+  // The client uses the same db client and SMS endpoint the
+  // rest of the CRM uses, so the action is real and Key sees
+  // the side-effects everywhere instantly.
+  // ══════════════════════════════════════════════════════════
+  async function _toolChangeStage(input) {
+    var contactId = input && input.contactId;
+    var newStage = input && parseInt(input.newStage, 10);
+    if (!contactId || !newStage || newStage < 1 || newStage > 9) {
+      return { ok: false, message: 'Missing contactId or invalid stage' };
+    }
+    var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === contactId; }) : null;
+    if (!c) return { ok: false, message: 'Contact not found' };
+    try {
+      var res = await db.from('contacts').update({ stage: newStage }).eq('id', contactId);
+      if (res && res.error) return { ok: false, message: res.error.message };
+      c.stage = newStage;
+      var stageDef = (typeof PERMIT_STAGES !== 'undefined') ? PERMIT_STAGES.find(function(s) { return s.id === newStage; }) : null;
+      var stageLabel = stageDef ? stageDef.label : ('Stage ' + newStage);
+      if (typeof touchContact === 'function') touchContact(contactId);
+      // Re-paint surfaces
+      if (typeof renderContacts === 'function') try { renderContacts(); } catch(e) {}
+      if (typeof renderKanban === 'function') try { renderKanban(); } catch(e) {}
+      if (typeof loadPermitAnalytics === 'function') try { loadPermitAnalytics(); } catch(e) {}
+      // If the panel is open for this contact, sync the stage select
+      var panelStageEl = document.getElementById('panel-stage');
+      if (panelStageEl && typeof currentPanelContactId !== 'undefined' && currentPanelContactId === contactId) {
+        panelStageEl.value = newStage;
+      }
+      return { ok: true, message: 'Moved ' + _shortName(c) + ' to ' + stageLabel };
+    } catch(e) {
+      return { ok: false, message: String(e && e.message || e) };
+    }
+  }
+
+  async function _toolSendSms(input) {
+    var contactId = input && input.contactId;
+    var message = (input && input.message || '').toString().trim();
+    if (!contactId || !message) return { ok: false, message: 'Missing contactId or message' };
+    var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === contactId; }) : null;
+    if (!c) return { ok: false, message: 'Contact not found' };
+    if (!c.phone) return { ok: false, message: 'No phone on file for ' + _shortName(c) };
+    try {
+      var resp = await fetch(SUPABASE_URL + '/functions/v1/send-sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + TM_ANON_JWT,
+        },
+        body: JSON.stringify({ contactId: contactId, body: message }),
+      });
+      var payload = null;
+      try { payload = await resp.json(); } catch(e) { payload = null; }
+      if (resp.ok && payload && payload.success) {
+        if (typeof touchContact === 'function') touchContact(contactId);
+        // If the messages panel is open for this contact, refresh the thread
+        if (typeof currentMsgContactId !== 'undefined' && currentMsgContactId === contactId && typeof loadMessageThread === 'function') {
+          try { loadMessageThread(contactId); } catch(e) {}
+        }
+        return { ok: true, message: 'Sent SMS to ' + _shortName(c) };
+      }
+      return { ok: false, message: (payload && payload.error) || ('HTTP ' + resp.status) };
+    } catch(e) {
+      return { ok: false, message: String(e && e.message || e) };
+    }
+  }
+
+  async function _toolAddNote(input) {
+    var contactId = input && input.contactId;
+    var noteText = (input && input.noteText || '').toString().trim();
+    if (!contactId || !noteText) return { ok: false, message: 'Missing contactId or noteText' };
+    var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === contactId; }) : null;
+    if (!c) return { ok: false, message: 'Contact not found' };
+    try {
+      var stamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      var prefixed = '[' + stamp + ' \u2728] ' + noteText;
+      var combined = c.notes ? (prefixed + '\n' + c.notes) : prefixed;
+      var res = await db.from('contacts').update({ notes: combined }).eq('id', contactId);
+      if (res && res.error) return { ok: false, message: res.error.message };
+      c.notes = combined;
+      if (typeof touchContact === 'function') touchContact(contactId);
+      // Sync the panel notes textarea if open
+      var notesEl = document.getElementById('panel-notes');
+      if (notesEl && typeof currentPanelContactId !== 'undefined' && currentPanelContactId === contactId) {
+        notesEl.value = combined;
+      }
+      return { ok: true, message: 'Added note to ' + _shortName(c) };
+    } catch(e) {
+      return { ok: false, message: String(e && e.message || e) };
+    }
+  }
+
+  function _toolLookupContact(input) {
+    var query = (input && input.query || '').toString().toLowerCase().trim();
+    if (!query) return { ok: false, message: 'No query' };
+    var contacts = (typeof allContacts !== 'undefined') ? allContacts : [];
+    var matches = contacts.filter(function(c) {
+      if (!c) return false;
+      var name = (c.name || '').toLowerCase();
+      var phone = (c.phone || '').replace(/\D/g, '');
+      var qPhone = query.replace(/\D/g, '');
+      if (name.indexOf(query) !== -1) return true;
+      if (qPhone && phone.indexOf(qPhone) !== -1) return true;
+      return false;
+    }).slice(0, 5);
+    return {
+      ok: true,
+      message: matches.length ? (matches.length + ' match' + (matches.length === 1 ? '' : 'es')) : 'No matches',
+      matches: matches.map(function(c) {
+        return { id: c.id, name: _shortName(c), stage: c.stage || 1 };
+      }),
+    };
+  }
+
+  // Public dispatcher — invoked by the confirmation card buttons
+  window.skExecuteToolCall = async function(turnIdx, callIdx) {
+    var arr = _chatHistory();
+    var turn = arr[turnIdx];
+    if (!turn || !turn.tool_calls || !turn.tool_calls[callIdx]) return;
+    var call = turn.tool_calls[callIdx];
+    if (call.status === 'done' || call.status === 'failed' || call.status === 'cancelled') return;
+
+    call.status = 'running';
+    _saveChatHistory(arr);
+    renderChatPanel();
+
+    var result = { ok: false, message: 'Unknown tool' };
+    try {
+      if (call.name === 'change_contact_stage') result = await _toolChangeStage(call.input);
+      else if (call.name === 'send_sms_to_contact') result = await _toolSendSms(call.input);
+      else if (call.name === 'add_note_to_contact') result = await _toolAddNote(call.input);
+      else if (call.name === 'lookup_contact') result = _toolLookupContact(call.input);
+    } catch(e) {
+      result = { ok: false, message: String(e && e.message || e) };
+    }
+
+    call.status = result.ok ? 'done' : 'failed';
+    call.resultMessage = result.message || (result.ok ? 'Done' : 'Failed');
+    _saveChatHistory(arr);
+    renderChatPanel();
+
+    if (typeof showToast === 'function') {
+      showToast((result.ok ? '\u2713 ' : '\u2715 ') + call.resultMessage, result.ok ? 'success' : 'error');
+    }
+  };
+
+  // Public dispatcher — cancel a queued tool call
+  window.skCancelToolCall = function(turnIdx, callIdx) {
+    var arr = _chatHistory();
+    var turn = arr[turnIdx];
+    if (!turn || !turn.tool_calls || !turn.tool_calls[callIdx]) return;
+    var call = turn.tool_calls[callIdx];
+    if (call.status === 'done' || call.status === 'failed') return;
+    call.status = 'cancelled';
+    call.resultMessage = 'Cancelled';
+    _saveChatHistory(arr);
+    renderChatPanel();
+  };
+
+  // Public dispatcher — edit the message body before sending an SMS
+  window.skEditToolCall = function(turnIdx, callIdx) {
+    var arr = _chatHistory();
+    var turn = arr[turnIdx];
+    if (!turn || !turn.tool_calls || !turn.tool_calls[callIdx]) return;
+    var call = turn.tool_calls[callIdx];
+    if (call.name !== 'send_sms_to_contact') return;
+    var current = (call.input && call.input.message) || '';
+    var edited = window.prompt('Edit the message before sending:', current);
+    if (edited === null) return;
+    call.input = call.input || {};
+    call.input.message = edited.trim();
+    _saveChatHistory(arr);
+    renderChatPanel();
+  };
+
+  // ══════════════════════════════════════════════════════════
+  // SPARKY INSIGHT — single one-line take that lives at the
+  // top of every contact panel. Rule-based for v1; the same
+  // function is called from openPanel.
+  // ══════════════════════════════════════════════════════════
+  function _buildSparkyInsight(c) {
+    if (!c) return null;
+    var stage = c.stage || 1;
+    var fname = _firstName(c.name) || 'them';
+    var ageDays = _daysSinceTs(c.created_at);
+    var touchedDays = _daysSinceLastTouch(c);
+    var sched = _getScheduledISO(c);
+    var pd = _getPermitData(c);
+    var md = _getMaterialsData(c);
+    var jurName = _getJurName(c);
+
+    // Brand-new lead (today)
+    if (stage <= 2 && ageDays === 0) {
+      return { tone: 'good', text: '\u2728 New lead today \u2014 reply within 15 min for best close.' };
+    }
+    // Cold first-touch
+    if (stage <= 2 && (touchedDays === null || touchedDays >= 1)) {
+      return { tone: 'urgent', text: '\ud83d\udd25 No first contact yet \u2014 text ' + fname + ' now.' };
+    }
+    // Quote sent + aging
+    if (stage === 3) {
+      var d = touchedDays !== null ? touchedDays : ageDays;
+      if (d !== null && d >= 5) {
+        return { tone: 'urgent', text: '\u23f0 Quote ' + d + 'd quiet \u2014 nudge today before they shop.' };
+      }
+      if (d === 2 || d === 3) {
+        return { tone: 'today', text: '\ud83d\udcc5 Quote sent ' + d + 'd ago \u2014 perfect nudge day.' };
+      }
+      return { tone: 'normal', text: 'Quote out \u2014 give it a couple days, then check in.' };
+    }
+    // Booked but no install date
+    if (stage === 4 && !sched) {
+      return { tone: 'urgent', text: '\ud83d\udcb0 Booked but no install date \u2014 lock a day this week.' };
+    }
+    // Install today
+    if (sched && sched === _todayKey()) {
+      return { tone: 'today', text: '\ud83d\udcc5 Install today \u2014 bring inlet + interlock kit.' };
+    }
+    // Booked, materials picked but not ordered
+    if (stage >= 4 && stage <= 5 && md && md.inlet && md.interlock && !md.ordered_at) {
+      return { tone: 'mat', text: '\ud83d\udce6 Materials picked but not ordered \u2014 add to next bulk run.' };
+    }
+    if (stage >= 4 && stage <= 5 && md && (!md.inlet || !md.interlock)) {
+      return { tone: 'mat', text: '\ud83d\udce6 Materials not picked \u2014 choose inlet + interlock.' };
+    }
+    // Permit submitted long enough that it should be ready
+    if (pd && pd.submitted_at && !pd.ready_to_pay_at) {
+      var flow = _getJurFlowLocal(jurName);
+      var dPerm = _daysSinceISO(pd.submitted_at);
+      if (dPerm !== null && dPerm > flow.submit_to_pay) {
+        return { tone: 'urgent', text: '\u23f0 Permit submitted ' + dPerm + 'd ago in ' + (jurName || 'jurisdiction') + ' \u2014 likely ready to pay.' };
+      }
+      if (dPerm !== null && dPerm === flow.submit_to_pay) {
+        return { tone: 'today', text: '\ud83d\udcc5 Permit at day ' + dPerm + ' \u2014 check the portal today.' };
+      }
+      return { tone: 'normal', text: 'Permit submitted \u2014 jurisdiction window not up yet.' };
+    }
+    // Permit ready to pay but unpaid
+    if (pd && pd.ready_to_pay_at && !pd.paid_at) {
+      var dPay = _daysSinceISO(pd.ready_to_pay_at);
+      return { tone: 'urgent', text: '\ud83d\udcb0 Permit ready to pay' + (dPay !== null && dPay >= 1 ? ' (' + dPay + 'd)' : '') + ' \u2014 pay it today.' };
+    }
+    // Inspection scheduled
+    if (pd && pd.inspect_sched_at && !pd.inspect_passed_at) {
+      return { tone: 'today', text: '\ud83d\udcc5 Inspection booked ' + pd.inspect_sched_at + ' \u2014 confirm with ' + fname + '.' };
+    }
+    // Complete
+    if (stage === 9) {
+      return { tone: 'good', text: '\u2705 Job complete \u2014 send the Google review ask.' };
+    }
+    // Default — generic helpful line by stage
+    var stageDef = (typeof PERMIT_STAGES !== 'undefined') ? PERMIT_STAGES.find(function(s) { return s.id === stage; }) : null;
+    return {
+      tone: 'normal',
+      text: (stageDef && stageDef.nextAction ? stageDef.nextAction : 'On track') + '.',
+    };
+  }
+
+  function renderSparkyInsight(contactId) {
+    var mount = document.getElementById('sparky-insight-mount');
+    if (!mount) return;
+    var contacts = (typeof allContacts !== 'undefined') ? allContacts : [];
+    var c = contacts.find(function(x) { return x.id === contactId; });
+    if (!c) { mount.innerHTML = ''; return; }
+    var ins = _buildSparkyInsight(c);
+    if (!ins || !ins.text) { mount.innerHTML = ''; return; }
+    var avSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>';
+    mount.innerHTML = '<div class="sk-insight" title="Sparky\u2019s take">'
+      + '<div class="sk-insight-av">' + avSvg + '</div>'
+      + '<div class="sk-insight-text"><span class="sk-insight-name">Sparky\u2019s take</span>' + _escHtml(ins.text) + '</div>'
+      + '</div>';
+  }
+  window.renderSparkyInsight = renderSparkyInsight;
 
   function _showTyping() {
     var body = document.getElementById('tm-panel-body');
@@ -10200,6 +10753,31 @@ setTimeout(() => {
   }
 
   // ══════════════════════════════════════════════════════════
+  // LAUNCHER ALERT PULSE — when there are urgent items, the
+  // Sparky launcher pulses gold and shows a count badge.
+  // ══════════════════════════════════════════════════════════
+  function refreshLauncherAlert() {
+    try {
+      var launcher = document.getElementById('tm-launcher');
+      var badge = document.getElementById('tm-launcher-badge');
+      if (!launcher) return;
+      var b = buildBriefing();
+      var urgentCount = (b.urgent && b.urgent.length) || 0;
+      if (urgentCount > 0) {
+        launcher.classList.add('alert');
+        if (badge) {
+          badge.textContent = urgentCount > 9 ? '9+' : String(urgentCount);
+          badge.style.display = '';
+        }
+      } else {
+        launcher.classList.remove('alert');
+        if (badge) badge.style.display = 'none';
+      }
+    } catch(e) {}
+  }
+  window.refreshLauncherAlert = refreshLauncherAlert;
+
+  // ══════════════════════════════════════════════════════════
   // WIRE INTO loadContacts — render the briefing after data loads
   // ══════════════════════════════════════════════════════════
   var _tmOrigLoadContacts = window.loadContacts;
@@ -10209,6 +10787,7 @@ setTimeout(() => {
       try {
         // Show the briefing once per day, unless Key asked for "remind me later"
         generateBriefing(false);
+        refreshLauncherAlert();
       } catch(e) { console.warn('generateBriefing failed', e); }
       return result;
     };
@@ -10218,12 +10797,15 @@ setTimeout(() => {
   function _scheduleFirstBriefing() {
     if (typeof allContacts !== 'undefined' && Array.isArray(allContacts) && allContacts.length > 0) {
       generateBriefing(false);
+      refreshLauncherAlert();
     } else {
       setTimeout(_scheduleFirstBriefing, 1500);
     }
   }
   // Kick off after the app loads
   setTimeout(_scheduleFirstBriefing, 2500);
+  // And keep the pulse fresh on a slow timer (matches the briefing cadence)
+  setInterval(function() { try { refreshLauncherAlert(); } catch(e) {} }, 90000);
 
   // Close the panel with Escape
   document.addEventListener('keydown', function(e) {
