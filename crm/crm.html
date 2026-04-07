@@ -881,8 +881,8 @@ html.dark .view-toggle-btn.active{background:var(--gold);color:#1e1b17}
 /* Kanban breakout: escape the main 1140px container so the board can use the full viewport,
    and add a soft right-edge fade to telegraph that you can scroll horizontally. */
 .kanban-shell{position:relative;margin-left:calc(50% - 50vw + 20px);margin-right:calc(50% - 50vw + 20px);margin-top:16px;animation:tabFade .2s var(--ease)}
-.kanban-shell::after{content:'';position:absolute;top:0;right:0;bottom:14px;width:48px;pointer-events:none;background:linear-gradient(to right, transparent, var(--bg));border-radius:0 var(--r-md) var(--r-md) 0;opacity:var(--kfade-opacity,1);transition:opacity .2s var(--ease)}
-html.dark .kanban-shell::after{background:linear-gradient(to right, transparent, var(--bg))}
+.kanban-shell::after{content:'';position:absolute;top:0;right:0;bottom:14px;width:64px;pointer-events:none;background:linear-gradient(to right, rgba(248,249,251,0) 0%, rgba(248,249,251,.6) 50%, rgba(248,249,251,1) 100%);opacity:var(--kfade-opacity,1);transition:opacity .2s var(--ease);z-index:5}
+html.dark .kanban-shell::after{background:linear-gradient(to right, rgba(30,27,23,0) 0%, rgba(30,27,23,.6) 50%, rgba(30,27,23,1) 100%)}
 .kanban-wrap{display:grid;grid-template-columns:repeat(9,minmax(232px,1fr));gap:12px;overflow-x:auto;padding:0 4px 6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .kanban-wrap > .kanban-col{scroll-snap-align:start}
 .kanban-wrap::-webkit-scrollbar{height:8px}
