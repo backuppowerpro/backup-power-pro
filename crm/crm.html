@@ -5292,8 +5292,16 @@ function switchTab(tab) {
 // ══════════════════════════════════════════════════════════
 // MESSAGES / SMS
 // ══════════════════════════════════════════════════════════
-const QUO_API_KEY = '87685f5bc254cdea0113c1868f7e4d447e1871cdeb1e2f863ba9b4836983c1a4';
-const QUO_PHONE_NUMBER_ID = 'PNTZHfvSsh';
+// SMS sending is routed through the `send-sms` Supabase edge function so the
+// OpenPhone API key never ships to the browser. The edge function also fixes a
+// previous bug where the browser was sending `phoneNumberId` as the field name —
+// OpenPhone's /v1/messages endpoint requires the field to be named `from`.
+const SEND_SMS_URL = `${SUPABASE_URL}/functions/v1/send-sms`;
+// Anon JWT for invoking edge functions. The CRM normally uses the publishable
+// `sb_publishable_*` key for PostgREST, but edge functions reject that format
+// — they require a JWT-shaped anon key. This key has no DB privileges; the edge
+// function uses the service role internally.
+const SEND_SMS_ANON_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NzExMDYsImV4cCI6MjA5MDI0NzEwNn0.srmz3lm08HW7MRGIRA8zAgglTcSrjBwxJ7LDYsEwveE';
 
 let currentMsgContactId = null;
 let allMessages = []; // all messages for the current thread
@@ -5525,12 +5533,7 @@ async function sendMessage() {
   composeEl.value = '';
   composeEl.style.height = '';
 
-  // Normalize phone to E.164
-  let toPhone = (c.phone || '').replace(/\D/g, '');
-  if (toPhone.length === 10) toPhone = '1' + toPhone;
-  if (!toPhone.startsWith('+')) toPhone = '+' + toPhone;
-
-  // Optimistically add to thread
+  // Optimistically add to thread so the bubble appears instantly.
   const optimisticMsg = {
     id: 'tmp-' + Date.now(),
     contact_id: contactId,
@@ -5543,58 +5546,51 @@ async function sendMessage() {
   allMessages.push(optimisticMsg);
   renderThread();
 
-  let quoMessageId = null;
-  let status = 'sent';
-  let quoError = null;
+  let savedMsg = null;
+  let errMsg = null;
+  let failureStatus = 'failed';
 
   try {
-    const quoRes = await fetch('https://api.openphone.com/v1/messages', {
+    const res = await fetch(SEND_SMS_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': QUO_API_KEY,
+        'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT,
       },
-      body: JSON.stringify({
-        phoneNumberId: QUO_PHONE_NUMBER_ID,
-        to: [toPhone],
-        content: body,
-      }),
+      body: JSON.stringify({ contactId, body }),
     });
 
-    if (!quoRes.ok) {
-      const errBody = await quoRes.text();
-      console.error('[QUO] Send failed:', quoRes.status, errBody);
-      quoError = 'Send failed (' + quoRes.status + ')';
-      status = 'failed';
+    let payload = null;
+    try { payload = await res.json(); } catch { payload = null; }
+
+    if (res.ok && payload?.success && payload.message) {
+      savedMsg = payload.message;
     } else {
-      const quoData = await quoRes.json();
-      quoMessageId = quoData.data?.id || null;
+      // Edge function reached us but the send (or DB insert) failed.
+      // It still returns a saved row in some failure modes — surface it if present.
+      if (payload?.message) savedMsg = payload.message;
+      errMsg = payload?.error || ('HTTP ' + res.status);
+      console.error('[send-sms] failed:', res.status, payload);
     }
-  } catch(e) {
-    console.error('[QUO] Network error:', e);
-    quoError = 'Network error';
-    status = 'failed';
+  } catch (e) {
+    errMsg = 'network error';
+    console.error('[send-sms] network error:', e);
   }
 
-  // Save to Supabase regardless
-  const { data: savedMsg, error: saveErr } = await db.from('messages').insert([{
-    contact_id: contactId,
-    direction: 'outbound',
-    body,
-    sender: 'key',
-    quo_message_id: quoMessageId,
-    status,
-  }]).select().single();
-
-  // Replace optimistic message with real one
+  // Replace the optimistic bubble with the real row (if we got one) or mark
+  // it failed in place so Key can see what didn't go through.
   const idx = allMessages.findIndex(m => m.id === optimisticMsg.id);
   if (idx >= 0) {
-    allMessages[idx] = savedMsg || { ...optimisticMsg, status };
+    if (savedMsg) {
+      allMessages[idx] = savedMsg;
+    } else {
+      allMessages[idx] = { ...optimisticMsg, status: failureStatus };
+    }
   }
   renderThread();
 
-  if (quoError) {
-    showToast('SMS failed: ' + quoError, 'error');
+  if (errMsg) {
+    showToast('SMS failed: ' + errMsg, 'error');
   } else {
     showToast('Message sent', 'success');
   }
