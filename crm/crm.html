@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2/dist/twilio.min.js"></script>
 <style>
 :root {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
@@ -280,11 +281,59 @@ h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;lett
 /* Search wrapper — groups the search input + inline add-lead button */
 .search-wrap{flex:1;min-width:200px;display:flex;align-items:stretch;gap:8px}
 .search-wrap .search-input{flex:1;min-width:0}
-.search-add{flex-shrink:0;width:40px;border:none;border-radius:var(--r-sm);background:var(--navy);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),transform var(--t-fast),box-shadow var(--t-fast);box-shadow:var(--shadow-sm)}
+.search-add-wrap{position:relative;flex-shrink:0}
+.search-add{width:40px;height:100%;min-height:42px;border:none;border-radius:var(--r-sm);background:var(--navy);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),transform var(--t-fast),box-shadow var(--t-fast);box-shadow:var(--shadow-sm)}
 .search-add:hover{background:#132a4f;box-shadow:0 4px 14px rgba(11,31,59,.22),var(--shadow-sm);transform:translateY(-1px)}
 .search-add:active{transform:translateY(0) scale(.95)}
+.search-add svg{transition:transform var(--t-base)}
+.search-add[aria-expanded="true"] svg{transform:rotate(45deg)}
 html.dark .search-add{background:var(--gold);color:#1e1b17}
 html.dark .search-add:hover{background:#cca000}
+/* Add action menu — popover that opens below the + button */
+.search-add-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:200px;background:var(--card);border:1px solid var(--border-strong);border-radius:var(--r-md);box-shadow:0 24px 60px rgba(10,20,40,.22),0 8px 20px rgba(10,20,40,.12);padding:6px;display:none;flex-direction:column;gap:2px;z-index:200;animation:addMenuPop .18s var(--ease)}
+@keyframes addMenuPop{from{opacity:0;transform:translateY(-6px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.search-add-menu.open{display:flex}
+.search-add-menu button{background:none;border:none;display:flex;align-items:center;gap:10px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;color:var(--text);cursor:pointer;border-radius:var(--r-sm);text-align:left;transition:background var(--t-fast)}
+.search-add-menu button:hover{background:var(--bg);color:var(--navy)}
+.search-add-menu button svg{flex-shrink:0;color:var(--text3)}
+.search-add-menu button:hover svg{color:var(--navy)}
+html.dark .search-add-menu{background:var(--card);border-color:#3d3830}
+html.dark .search-add-menu button:hover{background:#1e1b17;color:var(--gold)}
+html.dark .search-add-menu button:hover svg{color:var(--gold)}
+
+/* ══════════════════════════════════════════════════════════
+   DIALER — compact numeric keypad for cold-calling
+   ══════════════════════════════════════════════════════════ */
+.dialer-overlay{position:fixed;inset:0;z-index:350;display:none;align-items:center;justify-content:center;background:rgba(10,20,40,.56);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px;animation:callRingFadeIn .22s var(--ease)}
+.dialer-overlay.open{display:flex}
+.dialer{position:relative;width:100%;max-width:320px;background:var(--card);border-radius:var(--r-xl);padding:22px 22px 26px;box-shadow:0 40px 100px rgba(0,0,0,.5);animation:callRingPop .32s var(--ease)}
+html.dark .dialer{background:var(--card);border:1px solid #3d3830}
+.dialer-display{display:flex;align-items:center;gap:6px;margin-bottom:18px;padding-right:10px}
+.dialer-display input{flex:1;min-width:0;background:transparent;border:none;outline:none;font-family:'Outfit',sans-serif;font-weight:700;font-size:26px;color:var(--text);text-align:center;letter-spacing:.02em;font-variant-numeric:tabular-nums;padding:10px 0}
+.dialer-display input::placeholder{color:var(--text3);font-weight:500}
+.dialer-backspace{background:none;border:none;color:var(--text3);cursor:pointer;padding:8px;border-radius:var(--r-sm);transition:background var(--t-fast),color var(--t-fast)}
+.dialer-backspace:hover{background:var(--bg);color:var(--text)}
+html.dark .dialer-backspace:hover{background:#1e1b17}
+.dialer-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.dialer-key{background:var(--bg);border:none;border-radius:var(--r-md);padding:12px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:background var(--t-fast),transform var(--t-fast);font-family:'Outfit',sans-serif;min-height:56px}
+.dialer-key:hover{background:var(--border)}
+.dialer-key:active{transform:scale(.94)}
+.dialer-key .k{font-size:24px;font-weight:700;color:var(--text);line-height:1}
+.dialer-key .l{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-top:2px}
+html.dark .dialer-key{background:#1e1b17}
+html.dark .dialer-key:hover{background:#2d2823}
+.dialer-actions{display:flex;gap:10px}
+.dialer-text,.dialer-call{flex:1;height:54px;border-radius:var(--r-md);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;letter-spacing:.01em;transition:background var(--t-fast),transform var(--t-fast),box-shadow var(--t-fast)}
+.dialer-text{background:var(--navy);color:#fff;box-shadow:0 6px 18px rgba(11,31,59,.3)}
+.dialer-text:hover{background:#132a4f;transform:translateY(-1px);box-shadow:0 10px 24px rgba(11,31,59,.38)}
+.dialer-text:active{transform:translateY(0) scale(.97)}
+.dialer-call{background:var(--green);color:#fff;box-shadow:0 6px 18px rgba(16,185,129,.32)}
+.dialer-call:hover{background:var(--green2);transform:translateY(-1px);box-shadow:0 10px 24px rgba(16,185,129,.4)}
+.dialer-call:active{transform:translateY(0) scale(.97)}
+.dialer-text:disabled,.dialer-call:disabled{background:var(--border-strong);color:var(--text3);box-shadow:none;cursor:not-allowed;transform:none}
+html.dark .dialer-text{background:#1e1b17;color:var(--gold);box-shadow:0 6px 18px rgba(0,0,0,.4)}
+html.dark .dialer-text:hover{background:#2a2520}
+html.dark .dialer-text:disabled,html.dark .dialer-call:disabled{background:#2a2520;color:var(--text3)}
 .search-input{flex:1;min-width:180px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-family:'Inter',sans-serif;background:var(--card);color:var(--text);outline:none;transition:border-color var(--t-fast),box-shadow var(--t-fast);box-shadow:var(--shadow-sm)}
 .search-input:hover{border-color:var(--border-strong)}
 .search-input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(11,31,59,.1)}
@@ -1079,6 +1128,66 @@ html.dark .tm-brief-btn.secondary:hover{background:var(--card)}
 .tm-launcher-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:10px;font-weight:800;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 6px;border:2px solid var(--bg);font-family:'Outfit',sans-serif;box-shadow:0 2px 5px rgba(0,0,0,.18);letter-spacing:0}
 html.dark .tm-launcher-badge{border-color:var(--bg)}
 html.dark .tm-launcher-icon{background:rgba(11,31,59,.18)}
+
+/* ══════════════════════════════════════════════════════════
+   TWILIO VOICE — incoming ring modal + active call bar
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Incoming call ring (modal-style) ─────────────────────── */
+.call-ring{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(10,20,40,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:24px;animation:callRingFadeIn .22s var(--ease)}
+.call-ring.open{display:flex}
+@keyframes callRingFadeIn{from{opacity:0}to{opacity:1}}
+.call-ring-inner{position:relative;width:100%;max-width:340px;background:var(--card);border-radius:var(--r-xl);padding:36px 28px 28px;text-align:center;box-shadow:0 40px 100px rgba(0,0,0,.5);animation:callRingPop .42s var(--ease)}
+@keyframes callRingPop{from{transform:scale(.9) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+html.dark .call-ring-inner{background:var(--card);border:1px solid #3d3830}
+.call-ring-pulse{position:absolute;top:40px;left:50%;transform:translateX(-50%);width:100px;height:100px;border-radius:50%;background:var(--gold);opacity:.18;animation:callPulse 1.6s ease-out infinite;pointer-events:none}
+@keyframes callPulse{0%{transform:translateX(-50%) scale(.9);opacity:.28}100%{transform:translateX(-50%) scale(1.5);opacity:0}}
+.call-ring-avatar{position:relative;width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);margin:0 auto 18px;display:flex;align-items:center;justify-content:center;color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:34px;box-shadow:0 12px 28px rgba(255,186,0,.36);z-index:1}
+.call-ring-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;color:var(--text);margin-bottom:4px;letter-spacing:-.015em}
+.call-ring-number{font-family:'Outfit',sans-serif;font-size:14px;color:var(--text2);margin-bottom:6px;font-variant-numeric:tabular-nums}
+.call-ring-label{font-size:13px;color:var(--text3);font-weight:500;margin-bottom:28px}
+.call-ring-actions{display:flex;gap:24px;justify-content:center}
+.call-ring-btn{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform var(--t-fast),box-shadow var(--t-fast);box-shadow:0 8px 24px rgba(10,20,40,.28)}
+.call-ring-btn svg{width:28px;height:28px;color:#fff}
+.call-ring-btn.decline{background:var(--red)}
+.call-ring-btn.decline:hover{background:#b91c1c;transform:scale(1.06);box-shadow:0 12px 32px rgba(220,38,38,.45)}
+.call-ring-btn.accept{background:var(--green);animation:callAccept 1.8s ease-in-out infinite}
+.call-ring-btn.accept:hover{background:var(--green2);transform:scale(1.06);box-shadow:0 12px 32px rgba(16,185,129,.45);animation:none}
+.call-ring-btn:active{transform:scale(.94)}
+@keyframes callAccept{0%,100%{box-shadow:0 8px 24px rgba(16,185,129,.45),0 0 0 0 rgba(16,185,129,.6)}50%{box-shadow:0 8px 24px rgba(16,185,129,.45),0 0 0 14px rgba(16,185,129,0)}}
+
+/* ── Active call bar (sticky, bottom of screen) ─────────────── */
+.call-bar{position:fixed;left:16px;right:16px;bottom:16px;z-index:59;display:none;align-items:center;gap:12px;background:var(--navy);color:#fff;border-radius:var(--r-lg);padding:12px 14px;box-shadow:0 16px 44px rgba(10,20,40,.44),0 4px 12px rgba(10,20,40,.24);animation:callBarSlideUp .32s var(--ease);max-width:540px;margin:0 auto}
+.call-bar.open{display:flex}
+html.dark .call-bar{background:#1a1410;border:1px solid #3d3830}
+@keyframes callBarSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.call-bar-pulse{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:callBarPulse 2s ease-out infinite}
+@keyframes callBarPulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.6)}50%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
+.call-bar-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.call-bar-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.01em}
+.call-bar-meta{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(255,255,255,.7);font-family:'Outfit',sans-serif;font-weight:600;font-variant-numeric:tabular-nums}
+.call-bar-dot{display:none}
+.call-bar-btn{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast)}
+.call-bar-btn svg{width:18px;height:18px;color:#fff}
+.call-bar-btn.mute{background:rgba(255,255,255,.12)}
+.call-bar-btn.mute:hover{background:rgba(255,255,255,.2)}
+.call-bar-btn.mute.active{background:var(--gold);color:var(--navy)}
+.call-bar-btn.mute.active svg{color:var(--navy)}
+.call-bar-btn.hangup{background:var(--red)}
+.call-bar-btn.hangup:hover{background:#b91c1c;transform:scale(1.06)}
+.call-bar-btn:active{transform:scale(.92)}
+
+/* When call bar is visible, push Sparky up so they don't overlap */
+body.call-active .tm-launcher{bottom:88px}
+@media(max-width:480px){
+  body.call-active .tm-launcher{bottom:82px}
+  .call-bar{left:10px;right:10px;bottom:10px;padding:10px 12px}
+  .call-ring-inner{padding:30px 22px 24px}
+  .call-ring-avatar{width:78px;height:78px;font-size:30px}
+  .call-ring-name{font-size:20px}
+  .call-ring-btn{width:60px;height:60px}
+  .call-ring-btn svg{width:26px;height:26px}
+}
 /* Sparky agent insight bar — lives at the top of the contact panel */
 .sk-insight{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;margin:0 0 var(--sp-md);background:linear-gradient(135deg,rgba(255,186,0,.12) 0%,rgba(255,186,0,.04) 100%);border:1px solid rgba(255,186,0,.32);border-radius:var(--r-md);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;color:var(--text);line-height:1.45;animation:tmMsgIn .32s var(--ease);box-shadow:0 1px 3px rgba(255,186,0,.08)}
 html.dark .sk-insight{background:linear-gradient(135deg,rgba(230,168,0,.14) 0%,rgba(230,168,0,.05) 100%);border-color:rgba(230,168,0,.34);color:var(--text)}
@@ -1245,6 +1354,47 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   </button>
 </nav>
 
+<!-- ── DIALER MODAL ─────────────────────────────────────────
+     Compact number pad for dialing numbers that aren't in the CRM.
+     Opens from the nav phone icon. Minimal — just a display, a keypad,
+     and a call button. Closes when call connects (call bar takes over).
+-->
+<div class="dialer-overlay" id="dialer-overlay" onclick="if(event.target===this)closeDialer()">
+  <div class="dialer">
+    <button class="modal-close" onclick="closeDialer()" style="position:absolute;top:14px;right:14px">&#10005;</button>
+    <div class="dialer-display" id="dialer-display">
+      <input type="tel" id="dialer-input" placeholder="(864) 000-0000" autocomplete="off" inputmode="tel">
+      <button class="dialer-backspace" id="dialer-backspace" onclick="dialerBackspace()" title="Delete" aria-label="Delete">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+      </button>
+    </div>
+    <div class="dialer-pad">
+      <button class="dialer-key" onclick="dialerKey('1')"><span class="k">1</span></button>
+      <button class="dialer-key" onclick="dialerKey('2')"><span class="k">2</span><span class="l">ABC</span></button>
+      <button class="dialer-key" onclick="dialerKey('3')"><span class="k">3</span><span class="l">DEF</span></button>
+      <button class="dialer-key" onclick="dialerKey('4')"><span class="k">4</span><span class="l">GHI</span></button>
+      <button class="dialer-key" onclick="dialerKey('5')"><span class="k">5</span><span class="l">JKL</span></button>
+      <button class="dialer-key" onclick="dialerKey('6')"><span class="k">6</span><span class="l">MNO</span></button>
+      <button class="dialer-key" onclick="dialerKey('7')"><span class="k">7</span><span class="l">PQRS</span></button>
+      <button class="dialer-key" onclick="dialerKey('8')"><span class="k">8</span><span class="l">TUV</span></button>
+      <button class="dialer-key" onclick="dialerKey('9')"><span class="k">9</span><span class="l">WXYZ</span></button>
+      <button class="dialer-key" onclick="dialerKey('*')"><span class="k">*</span></button>
+      <button class="dialer-key" onclick="dialerKey('0')"><span class="k">0</span><span class="l">+</span></button>
+      <button class="dialer-key" onclick="dialerKey('#')"><span class="k">#</span></button>
+    </div>
+    <div class="dialer-actions">
+      <button class="dialer-text" onclick="dialerText()" id="dialer-text-btn" aria-label="Text this number">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Text</span>
+      </button>
+      <button class="dialer-call" onclick="dialerCall()" id="dialer-call-btn" aria-label="Call this number">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span>Call</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ── NOTIFICATION POPOVER ──────────────────────────────── -->
 <div class="notif-pop" id="notif-pop" onclick="event.stopPropagation()">
   <div class="notif-head">
@@ -1252,6 +1402,51 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     <button class="notif-mark-read" onclick="notifMarkAllRead()">Mark all read</button>
   </div>
   <div class="notif-list" id="notif-list"></div>
+</div>
+
+<!-- ── TWILIO VOICE: Incoming Call Ring ─────────────────────────────
+     Pops up when someone calls the BPP Twilio number. Contains caller
+     info + Accept/Decline buttons. Auto-hides when the call is answered
+     or declined. Slides up from the bottom on mobile, centered modal on
+     desktop. -->
+<div class="call-ring" id="call-ring" aria-hidden="true" role="dialog">
+  <div class="call-ring-inner">
+    <div class="call-ring-pulse"></div>
+    <div class="call-ring-avatar" id="call-ring-avatar">?</div>
+    <div class="call-ring-name" id="call-ring-name">Incoming call</div>
+    <div class="call-ring-number" id="call-ring-number"></div>
+    <div class="call-ring-label">Ringing…</div>
+    <div class="call-ring-actions">
+      <button class="call-ring-btn decline" onclick="voiceDeclineIncoming()" aria-label="Decline call">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" transform="rotate(135 12 12)"/></svg>
+      </button>
+      <button class="call-ring-btn accept" onclick="voiceAcceptIncoming()" aria-label="Accept call">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TWILIO VOICE: Active Call Bar ──────────────────────────────
+     Sticky bar at the bottom of the screen during an active call.
+     Shows who you're talking to, call duration, mute toggle, hangup.
+     Fits in above the Sparky launcher without obscuring the CRM. -->
+<div class="call-bar" id="call-bar" aria-hidden="true">
+  <div class="call-bar-pulse"></div>
+  <div class="call-bar-info">
+    <div class="call-bar-name" id="call-bar-name">—</div>
+    <div class="call-bar-meta">
+      <span class="call-bar-dot"></span>
+      <span id="call-bar-status">Connecting…</span>
+      <span id="call-bar-duration" style="display:none"></span>
+    </div>
+  </div>
+  <button class="call-bar-btn mute" id="call-bar-mute" onclick="voiceToggleMute()" title="Mute" aria-label="Mute">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+  </button>
+  <button class="call-bar-btn hangup" onclick="voiceHangup()" title="End call" aria-label="End call">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" transform="rotate(135 12 12)"/></svg>
+  </button>
 </div>
 
 <!-- ── PASS 13: Sparky launcher (only floating element — add-lead lives in the toolbar) ── -->
@@ -1328,9 +1523,29 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <div id="contacts-view">
     <div class="toolbar">
       <div class="search-wrap">
-        <button class="search-add" onclick="openContactModal(null)" title="New lead" aria-label="New lead">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
+        <div class="search-add-wrap">
+          <button class="search-add" onclick="toggleAddMenu(event)" title="Add" aria-label="Add" id="search-add-btn" aria-haspopup="true" aria-expanded="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="search-add-menu" id="search-add-menu" role="menu" aria-hidden="true">
+            <button role="menuitem" onclick="closeAddMenu();openContactModal(null)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
+              New lead
+            </button>
+            <button role="menuitem" onclick="closeAddMenu();openDialer()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              Call or text a number
+            </button>
+            <button role="menuitem" onclick="closeAddMenu();if(typeof openJobModal==='function')openJobModal(null)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+              Schedule an event
+            </button>
+            <button role="menuitem" onclick="closeAddMenu();if(typeof tmOpenPanel==='function')tmOpenPanel()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
+              Ask Sparky
+            </button>
+          </div>
+        </div>
         <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
       </div>
       <div class="view-toggle">
@@ -1670,7 +1885,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       </div>
       <div class="contact-info-expanded" id="contact-info-expanded">
         <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fld-btn" onclick="(function(){var p=document.getElementById('panel-phone').value;if(p)window.location.href='tel:'+p.replace(/\D/g,'');})()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button></div></div>
+        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fld-btn" onclick="panelCallContact()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button></div></div>
         <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-email')" title="Copy email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
         <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value);panelMarkDirty()" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
       </div>
@@ -1732,7 +1947,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div class="msg-thread-head">
         <button class="drill-back" onclick="drillTo('contact')" style="margin-bottom:0">&larr; Contact</button>
         <span class="msg-thread-title">Messages</span>
-        <a id="msg-thread-phone" class="msg-thread-phone" href="#" onclick="(function(el){var p=el.textContent.replace(/\D/g,'');if(p)window.location.href='tel:'+p;return false})(this)"></a>
+        <a id="msg-thread-phone" class="msg-thread-phone" href="#" onclick="threadCallContact();return false"></a>
       </div>
       <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
       <div style="flex-shrink:0;background:var(--card);border-top:1px solid var(--border)">
@@ -10914,6 +11129,678 @@ setTimeout(() => {
     if (e.key === 'Escape') {
       var p = document.getElementById('tm-panel');
       if (p && p.classList.contains('open')) window.tmClosePanel();
+    }
+  });
+})();
+
+// ══════════════════════════════════════════════════════════
+// TWILIO VOICE — Click-to-call + incoming calls
+// ══════════════════════════════════════════════════════════
+// The Twilio Voice browser SDK uses WebRTC + short-lived Access Tokens.
+// This module:
+//   1. Requests an Access Token from `twilio-token` edge function
+//   2. Creates a `Device` and registers it (enables incoming calls)
+//   3. Auto-refreshes the token ~5 minutes before expiry
+//   4. Exposes: voiceCallContact, voiceHangup, voiceToggleMute,
+//      voiceAcceptIncoming, voiceDeclineIncoming
+//   5. Manages the call bar + incoming ring UI
+//
+// Architecture note: we DON'T call Device.connect() until the first
+// outbound call (browsers require a user gesture before playing audio),
+// but we DO pre-register the device so incoming calls fire instantly.
+(function() {
+  if (typeof Twilio === 'undefined' || !Twilio.Device) {
+    console.warn('[voice] Twilio SDK not loaded — voice features disabled');
+    return;
+  }
+
+  const TOKEN_URL = SUPABASE_URL + '/functions/v1/twilio-token';
+  const TOKEN_ANON = SEND_SMS_ANON_JWT; // same JWT used by send-sms
+
+  let device = null;
+  let activeCall = null;      // currently connected or connecting call
+  let incomingCall = null;    // pending incoming call waiting for accept
+  let callTimer = null;       // interval for updating duration display
+  let callStartTs = null;
+  let ringTone = null;        // incoming ringtone audio loop
+  let refreshTimer = null;
+  let currentContactId = null; // contact being called (outbound) or identified caller (inbound)
+
+  // ── TOKEN FETCH ─────────────────────────────────────────
+  async function fetchToken() {
+    const res = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + TOKEN_ANON,
+      },
+    });
+    if (!res.ok) throw new Error('token fetch ' + res.status);
+    return await res.json();
+  }
+
+  // ── DEVICE SETUP ────────────────────────────────────────
+  async function initDevice() {
+    if (device) return device;
+    try {
+      const { token, expires } = await fetchToken();
+      device = new Twilio.Device(token, {
+        logLevel: 1,
+        // Faster reconnection on network hiccups
+        closeProtection: true,
+        // Prefer better audio codecs
+        codecPreferences: ['opus', 'pcmu'],
+      });
+
+      device.on('registered', () => {
+        console.log('[voice] device registered');
+      });
+
+      device.on('error', (err) => {
+        console.error('[voice] device error:', err);
+        if (typeof showToast === 'function') {
+          showToast('Voice error: ' + (err.message || 'unknown'), 'error');
+        }
+      });
+
+      device.on('incoming', (call) => {
+        handleIncoming(call);
+      });
+
+      // Token refresh (tokens live 1hr; refresh with ~5min buffer)
+      device.on('tokenWillExpire', async () => {
+        try {
+          const { token: fresh } = await fetchToken();
+          device.updateToken(fresh);
+          console.log('[voice] token refreshed');
+        } catch (e) {
+          console.error('[voice] token refresh failed:', e);
+        }
+      });
+
+      await device.register();
+
+      // Schedule manual refresh as a belt-and-suspenders fallback
+      scheduleTokenRefresh(expires);
+
+      return device;
+    } catch (err) {
+      console.error('[voice] init failed:', err);
+      if (typeof showToast === 'function') {
+        showToast('Voice unavailable: ' + err.message, 'error');
+      }
+      device = null;
+      throw err;
+    }
+  }
+
+  function scheduleTokenRefresh(expires) {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    const msUntilRefresh = (expires * 1000) - Date.now() - (5 * 60 * 1000); // 5 min buffer
+    if (msUntilRefresh <= 0) return;
+    refreshTimer = setTimeout(async () => {
+      try {
+        const { token, expires: newExp } = await fetchToken();
+        if (device) device.updateToken(token);
+        scheduleTokenRefresh(newExp);
+      } catch (e) {
+        console.error('[voice] scheduled refresh failed:', e);
+      }
+    }, msUntilRefresh);
+  }
+
+  // ── OUTBOUND CALL ───────────────────────────────────────
+  async function callContact(contactId) {
+    const c = (typeof allContacts !== 'undefined' ? allContacts : []).find(x => x.id === contactId);
+    if (!c) return;
+    if (!c.phone) {
+      if (typeof showToast === 'function') showToast('No phone number on file', 'error');
+      return;
+    }
+
+    // Normalize to E.164
+    const digits = String(c.phone).replace(/\D/g, '');
+    let toPhone;
+    if (digits.length === 10) toPhone = '+1' + digits;
+    else if (digits.length >= 11) toPhone = '+' + digits;
+    else {
+      if (typeof showToast === 'function') showToast('Invalid phone number', 'error');
+      return;
+    }
+
+    try {
+      // Initialize device on first call (needs user gesture for audio)
+      if (!device) await initDevice();
+      if (!device) return;
+
+      currentContactId = contactId;
+      const displayName = (typeof dispName === 'function' ? dispName(c.name, 'Unknown') : (c.name || 'Unknown'));
+      showCallBar(displayName, 'Calling…');
+
+      // Kick off the outbound connection — Twilio will POST twilio-voice
+      // with From=client:key and To=<toPhone>, which returns <Dial><Number>
+      const call = await device.connect({ params: { To: toPhone } });
+      activeCall = call;
+      wireCallEvents(call, displayName);
+    } catch (err) {
+      console.error('[voice] call failed:', err);
+      if (typeof showToast === 'function') showToast('Call failed: ' + err.message, 'error');
+      hideCallBar();
+      activeCall = null;
+      currentContactId = null;
+    }
+  }
+
+  // ── INCOMING CALL ───────────────────────────────────────
+  function handleIncoming(call) {
+    incomingCall = call;
+    const from = call.parameters.From || 'Unknown';
+    const friendlyFrom = formatPhoneForDisplay(from);
+
+    // Try to match the caller to an existing contact
+    let contactName = 'Unknown caller';
+    let contactId = null;
+    if (typeof allContacts !== 'undefined') {
+      const last10 = from.replace(/\D/g, '').slice(-10);
+      const match = allContacts.find(c => (c.phone || '').replace(/\D/g, '').includes(last10));
+      if (match) {
+        contactName = (typeof dispName === 'function' ? dispName(match.name, 'Caller') : (match.name || 'Caller'));
+        contactId = match.id;
+      }
+    }
+
+    showRingUI(contactName, friendlyFrom);
+    playRingtone();
+    currentContactId = contactId;
+
+    // If the call is cancelled before we answer, hide the UI
+    call.on('cancel', () => {
+      hideRingUI();
+      stopRingtone();
+      incomingCall = null;
+    });
+    call.on('disconnect', () => {
+      hideRingUI();
+      hideCallBar();
+      stopRingtone();
+      stopCallTimer();
+      incomingCall = null;
+      activeCall = null;
+    });
+  }
+
+  function acceptIncoming() {
+    if (!incomingCall) return;
+    const from = incomingCall.parameters.From || 'Unknown';
+    const displayName = (document.getElementById('call-ring-name')?.textContent || formatPhoneForDisplay(from)).trim();
+    incomingCall.accept();
+    activeCall = incomingCall;
+    incomingCall = null;
+    hideRingUI();
+    stopRingtone();
+    showCallBar(displayName, 'Connected');
+    startCallTimer();
+    wireCallEvents(activeCall, displayName);
+  }
+
+  function declineIncoming() {
+    if (!incomingCall) return;
+    incomingCall.reject();
+    incomingCall = null;
+    hideRingUI();
+    stopRingtone();
+  }
+
+  // ── SHARED CALL-IN-PROGRESS WIRING ──────────────────────
+  function wireCallEvents(call, displayName) {
+    call.on('accept', () => {
+      updateCallStatus('Connected');
+      startCallTimer();
+    });
+    call.on('disconnect', () => {
+      hideCallBar();
+      stopCallTimer();
+      activeCall = null;
+      currentContactId = null;
+    });
+    call.on('cancel', () => {
+      hideCallBar();
+      stopCallTimer();
+      activeCall = null;
+      currentContactId = null;
+    });
+    call.on('error', (err) => {
+      console.error('[voice] call error:', err);
+      if (typeof showToast === 'function') showToast('Call error: ' + err.message, 'error');
+      hideCallBar();
+      stopCallTimer();
+      activeCall = null;
+      currentContactId = null;
+    });
+  }
+
+  function hangup() {
+    if (activeCall) {
+      activeCall.disconnect();
+    } else if (incomingCall) {
+      incomingCall.reject();
+    }
+    hideCallBar();
+    hideRingUI();
+    stopCallTimer();
+    stopRingtone();
+    activeCall = null;
+    incomingCall = null;
+    currentContactId = null;
+  }
+
+  function toggleMute() {
+    if (!activeCall) return;
+    const nowMuted = !activeCall.isMuted();
+    activeCall.mute(nowMuted);
+    const btn = document.getElementById('call-bar-mute');
+    if (btn) btn.classList.toggle('active', nowMuted);
+  }
+
+  // ── UI HELPERS ──────────────────────────────────────────
+  function showCallBar(name, status) {
+    const bar = document.getElementById('call-bar');
+    const nameEl = document.getElementById('call-bar-name');
+    const statusEl = document.getElementById('call-bar-status');
+    if (nameEl) nameEl.textContent = name || 'Call';
+    if (statusEl) statusEl.textContent = status || 'Connecting…';
+    if (bar) {
+      bar.classList.add('open');
+      bar.setAttribute('aria-hidden', 'false');
+    }
+    document.body.classList.add('call-active');
+  }
+
+  function updateCallStatus(status) {
+    const el = document.getElementById('call-bar-status');
+    if (el) el.textContent = status;
+  }
+
+  function hideCallBar() {
+    const bar = document.getElementById('call-bar');
+    if (bar) {
+      bar.classList.remove('open');
+      bar.setAttribute('aria-hidden', 'true');
+    }
+    document.body.classList.remove('call-active');
+    // Reset mute button state
+    const btn = document.getElementById('call-bar-mute');
+    if (btn) btn.classList.remove('active');
+  }
+
+  function showRingUI(name, numberDisplay) {
+    const modal = document.getElementById('call-ring');
+    const avatar = document.getElementById('call-ring-avatar');
+    const nameEl = document.getElementById('call-ring-name');
+    const numberEl = document.getElementById('call-ring-number');
+    if (avatar) {
+      const initial = (name || '?').trim().charAt(0).toUpperCase();
+      avatar.textContent = initial;
+    }
+    if (nameEl) nameEl.textContent = name || 'Incoming call';
+    if (numberEl) numberEl.textContent = numberDisplay || '';
+    if (modal) {
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  function hideRingUI() {
+    const modal = document.getElementById('call-ring');
+    if (modal) {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function startCallTimer() {
+    callStartTs = Date.now();
+    const el = document.getElementById('call-bar-duration');
+    if (el) el.style.display = '';
+    if (callTimer) clearInterval(callTimer);
+    callTimer = setInterval(() => {
+      if (!callStartTs) return;
+      const secs = Math.floor((Date.now() - callStartTs) / 1000);
+      const m = Math.floor(secs / 60);
+      const s = String(secs % 60).padStart(2, '0');
+      if (el) el.textContent = ' · ' + m + ':' + s;
+    }, 500);
+  }
+
+  function stopCallTimer() {
+    if (callTimer) clearInterval(callTimer);
+    callTimer = null;
+    callStartTs = null;
+    const el = document.getElementById('call-bar-duration');
+    if (el) {
+      el.style.display = 'none';
+      el.textContent = '';
+    }
+  }
+
+  // ── RINGTONE ────────────────────────────────────────────
+  // Simple sine-wave ring using the Web Audio API so we don't ship an MP3
+  function playRingtone() {
+    try {
+      if (ringTone) stopRingtone();
+      const AudioContextCls = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContextCls();
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      gain.connect(ctx.destination);
+
+      const tones = [480, 620];
+      const oscs = tones.map(f => {
+        const o = ctx.createOscillator();
+        o.frequency.value = f;
+        o.connect(gain);
+        o.start();
+        return o;
+      });
+
+      let on = true;
+      const interval = setInterval(() => {
+        const now = ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        if (on) {
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.08, now + 0.02);
+          gain.gain.setValueAtTime(0.08, now + 1.8);
+          gain.gain.linearRampToValueAtTime(0, now + 1.82);
+        }
+        on = !on;
+      }, 2000);
+
+      // Kick off the first ring immediately
+      const now = ctx.currentTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.02);
+      gain.gain.setValueAtTime(0.08, now + 1.8);
+      gain.gain.linearRampToValueAtTime(0, now + 1.82);
+
+      ringTone = { ctx, oscs, interval };
+    } catch (e) {
+      console.warn('[voice] ringtone init failed:', e);
+    }
+  }
+
+  function stopRingtone() {
+    if (!ringTone) return;
+    try {
+      clearInterval(ringTone.interval);
+      ringTone.oscs.forEach(o => { try { o.stop(); } catch(e){} });
+      ringTone.ctx.close();
+    } catch(e) {}
+    ringTone = null;
+  }
+
+  // ── UTILS ───────────────────────────────────────────────
+  function formatPhoneForDisplay(e164) {
+    const digits = String(e164 || '').replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('1')) {
+      return '(' + digits.slice(1,4) + ') ' + digits.slice(4,7) + '-' + digits.slice(7);
+    }
+    if (digits.length === 10) {
+      return '(' + digits.slice(0,3) + ') ' + digits.slice(3,6) + '-' + digits.slice(6);
+    }
+    return e164;
+  }
+
+  // ── EXPOSE API ──────────────────────────────────────────
+  window.voiceCallContact = callContact;
+  window.voiceHangup = hangup;
+  window.voiceToggleMute = toggleMute;
+  window.voiceAcceptIncoming = acceptIncoming;
+  window.voiceDeclineIncoming = declineIncoming;
+  window.voiceInitDevice = initDevice; // for manual pre-init if ever needed
+
+  // Convenience helpers: call the currently-open contact from the side panel
+  // or from the active message thread header. These read the live IDs so we
+  // don't have to pass them as onclick params.
+  window.panelCallContact = function() {
+    const id = (typeof currentPanelContactId !== 'undefined') ? currentPanelContactId : null;
+    if (id) callContact(id);
+  };
+  window.threadCallContact = function() {
+    const id = (typeof currentMsgContactId !== 'undefined' && currentMsgContactId)
+      ? currentMsgContactId
+      : ((typeof currentPanelContactId !== 'undefined') ? currentPanelContactId : null);
+    if (id) callContact(id);
+  };
+
+  // ── DIAL-A-NUMBER (dialer modal) ─────────────────────────
+  // For calling phone numbers that aren't saved as contacts (cold calls,
+  // one-offs, etc). Uses the same underlying Twilio Device as contact calls.
+  async function callRawNumber(rawInput) {
+    const digits = String(rawInput || '').replace(/\D/g, '');
+    if (digits.length < 10) {
+      if (typeof showToast === 'function') showToast('Enter a full phone number', 'error');
+      return;
+    }
+    const toPhone = digits.length === 10 ? '+1' + digits : '+' + digits;
+    try {
+      if (!device) await initDevice();
+      if (!device) return;
+
+      const displayName = (digits.length === 10 || digits.length === 11)
+        ? '(' + digits.slice(-10, -7) + ') ' + digits.slice(-7, -4) + '-' + digits.slice(-4)
+        : toPhone;
+
+      currentContactId = null;
+      showCallBar(displayName, 'Calling…');
+      const call = await device.connect({ params: { To: toPhone } });
+      activeCall = call;
+      wireCallEvents(call, displayName);
+    } catch (err) {
+      console.error('[voice] raw dial failed:', err);
+      if (typeof showToast === 'function') showToast('Call failed: ' + err.message, 'error');
+      hideCallBar();
+      activeCall = null;
+    }
+  }
+  window.voiceCallRawNumber = callRawNumber;
+
+  // ── AUTO-INIT ─────────────────────────────────────────────
+  // Auto-init device shortly after auth so incoming calls work without
+  // requiring Key to click anything first. Wrapped in a timeout so it
+  // doesn't block the initial render.
+  function autoInit() {
+    const mainNav = document.getElementById('main-nav');
+    if (!mainNav || mainNav.style.display === 'none') {
+      setTimeout(autoInit, 500);
+      return;
+    }
+    initDevice().catch(err => {
+      console.warn('[voice] auto-init deferred — will retry on first call:', err.message);
+    });
+  }
+  setTimeout(autoInit, 1500);
+
+  console.log('[voice] module loaded');
+})();
+
+// ══════════════════════════════════════════════════════════
+// TOOLBAR "+" ACTION MENU (New lead / Dial a number)
+// ══════════════════════════════════════════════════════════
+window.toggleAddMenu = function(ev) {
+  if (ev) ev.stopPropagation();
+  const menu = document.getElementById('search-add-menu');
+  const btn = document.getElementById('search-add-btn');
+  if (!menu || !btn) return;
+  const open = menu.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  menu.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (open) {
+    // Dismiss on outside click
+    setTimeout(() => {
+      document.addEventListener('click', _addMenuOutside, { once: true });
+    }, 0);
+  }
+};
+function _addMenuOutside(e) {
+  const wrap = document.querySelector('.search-add-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    window.closeAddMenu();
+  } else {
+    // Click was inside — re-arm the listener (unless we clicked an item which closes itself)
+    setTimeout(() => {
+      const menu = document.getElementById('search-add-menu');
+      if (menu && menu.classList.contains('open')) {
+        document.addEventListener('click', _addMenuOutside, { once: true });
+      }
+    }, 0);
+  }
+}
+window.closeAddMenu = function() {
+  const menu = document.getElementById('search-add-menu');
+  const btn = document.getElementById('search-add-btn');
+  if (menu) { menu.classList.remove('open'); menu.setAttribute('aria-hidden', 'true'); }
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+};
+
+// ══════════════════════════════════════════════════════════
+// DIALER MODAL
+// ══════════════════════════════════════════════════════════
+(function() {
+  const overlayId = 'dialer-overlay';
+  const inputId   = 'dialer-input';
+
+  function formatForDisplay(digits) {
+    if (!digits) return '';
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return '(' + digits.slice(0,3) + ') ' + digits.slice(3);
+    if (digits.length <= 10) return '(' + digits.slice(0,3) + ') ' + digits.slice(3,6) + '-' + digits.slice(6);
+    // 11 digits (with country code)
+    return '+' + digits.slice(0,1) + ' (' + digits.slice(1,4) + ') ' + digits.slice(4,7) + '-' + digits.slice(7);
+  }
+
+  function getDigits() {
+    const inp = document.getElementById(inputId);
+    return String(inp?.value || '').replace(/\D/g, '').slice(0, 15);
+  }
+
+  function render() {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const d = String(inp.value || '').replace(/\D/g, '').slice(0, 15);
+    inp.value = formatForDisplay(d);
+    // Enable/disable action buttons based on minimum digits
+    const ok = d.length >= 10;
+    const callBtn = document.getElementById('dialer-call-btn');
+    const textBtn = document.getElementById('dialer-text-btn');
+    if (callBtn) callBtn.disabled = !ok;
+    if (textBtn) textBtn.disabled = !ok;
+  }
+
+  window.openDialer = function() {
+    const overlay = document.getElementById(overlayId);
+    if (!overlay) return;
+    overlay.classList.add('open');
+    // Clear the input fresh
+    const inp = document.getElementById(inputId);
+    if (inp) inp.value = '';
+    render();
+    setTimeout(() => inp?.focus(), 50);
+  };
+
+  window.closeDialer = function() {
+    const overlay = document.getElementById(overlayId);
+    if (overlay) overlay.classList.remove('open');
+  };
+
+  window.dialerKey = function(k) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const d = String(inp.value || '').replace(/\D/g, '');
+    if (d.length >= 15) return;
+    inp.value = d + k;
+    render();
+  };
+
+  window.dialerBackspace = function() {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const d = String(inp.value || '').replace(/\D/g, '');
+    inp.value = d.slice(0, -1);
+    render();
+  };
+
+  window.dialerCall = function() {
+    const digits = getDigits();
+    if (digits.length < 10) return;
+    if (typeof window.voiceCallRawNumber === 'function') {
+      window.voiceCallRawNumber(digits);
+    }
+    window.closeDialer();
+  };
+
+  // Text a raw number — look for an existing contact first (by phone last-10),
+  // and if there's no match, create a minimal "Unknown" contact so the message
+  // thread has somewhere to live. Then open the message panel for that contact.
+  window.dialerText = async function() {
+    const digits = getDigits();
+    if (digits.length < 10) return;
+    const normalized = digits.length === 10 ? '+1' + digits : '+' + digits;
+    const last10 = digits.slice(-10);
+
+    try {
+      // 1. Look for an existing contact with this number
+      let contact = null;
+      if (typeof allContacts !== 'undefined') {
+        contact = allContacts.find(c => (c.phone || '').replace(/\D/g, '').includes(last10));
+      }
+
+      // 2. If no match, create a minimal one
+      if (!contact && typeof db !== 'undefined') {
+        const { data, error } = await db.from('contacts').insert({
+          name: 'Unknown',
+          phone: normalized,
+          ai_enabled: false,
+          status: 'New Lead',
+        }).select().single();
+        if (error) {
+          console.error('[dialer] create contact failed:', error);
+          if (typeof showToast === 'function') showToast('Could not start thread: ' + error.message, 'error');
+          return;
+        }
+        contact = data;
+        if (typeof allContacts !== 'undefined') allContacts.push(contact);
+        if (typeof showToast === 'function') showToast('New contact created — add a name later', 'info');
+      }
+
+      // 3. Close the dialer and open the message thread
+      window.closeDialer();
+      if (contact && typeof openMessagesPanel === 'function') {
+        openMessagesPanel(contact.id);
+      } else if (contact && typeof openPanel === 'function') {
+        openPanel(contact.id);
+      }
+    } catch (err) {
+      console.error('[dialer] text failed:', err);
+      if (typeof showToast === 'function') showToast('Text failed: ' + err.message, 'error');
+    }
+  };
+
+  // Let the user type or paste into the input directly, and keep it formatted
+  document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === inputId) render();
+  });
+
+  // Enter key in the input fires the call
+  document.addEventListener('keydown', (e) => {
+    if (e.target && e.target.id === inputId && e.key === 'Enter') {
+      e.preventDefault();
+      window.dialerCall();
+    }
+    // Escape closes the dialer
+    if (e.key === 'Escape') {
+      const overlay = document.getElementById(overlayId);
+      if (overlay && overlay.classList.contains('open')) window.closeDialer();
     }
   });
 })();
