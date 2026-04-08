@@ -6109,6 +6109,17 @@ function getLastCheckedAt() {
 function updateLastCheckedAt() {
   localStorage.setItem('bpp_crm_last_checked_at', new Date().toISOString());
 }
+// Per-contact read tracking — clears unread dot when a thread is opened
+const PER_CONTACT_READ_KEY = 'bpp_contact_read_at';
+function getContactReadAt(contactId) {
+  try { const map = JSON.parse(localStorage.getItem(PER_CONTACT_READ_KEY) || '{}'); return map[contactId] || new Date(0).toISOString(); } catch(e) { return new Date(0).toISOString(); }
+}
+function markContactRead(contactId) {
+  if (!contactId) return;
+  try { const map = JSON.parse(localStorage.getItem(PER_CONTACT_READ_KEY) || '{}'); map[contactId] = new Date().toISOString(); localStorage.setItem(PER_CONTACT_READ_KEY, JSON.stringify(map)); } catch(e) {}
+}
+// Refresh badge + inbox after marking a thread read (fires silently behind the side panel)
+function refreshMsgTabBadge() { loadInbox(); }
 async function loadRecentPaidInvoices() {
   const lastChecked = getLastCheckedAt();
   const { data } = await db.from('invoices').select('contact_id').eq('status', 'paid').gt('paid_at', lastChecked);
@@ -6389,8 +6400,9 @@ async function loadInbox() {
     const c = allContacts.find(x => x.id === m.contact_id);
     const name = c ? dispName(c.name, c.phone || 'Unknown') : (m.contact_id ? 'Unknown' : 'Unknown');
     const isMuted = mutedIds.includes(m.contact_id);
-    // Unread: new inbound message since last check, not muted, not done
-    const isUnread = !isDone && !isMuted && m.direction === 'inbound' && m.created_at > lastChecked;
+    // Unread: new inbound message since last check, not muted, not done, not yet opened
+    const contactReadAt = getContactReadAt(m.contact_id);
+    const isUnread = !isDone && !isMuted && m.direction === 'inbound' && m.created_at > lastChecked && m.created_at > contactReadAt;
     const timeStr = _relativeTime(m.created_at);
     // Preview: calls get phone icon
     let preview;
@@ -6452,8 +6464,8 @@ async function loadInbox() {
     }
   }
 
-  // Tab badge — only count non-muted, non-done unread
-  const unreadCount = active.filter(m => !mutedIds.includes(m.contact_id) && m.direction === 'inbound' && m.created_at > lastChecked).length;
+  // Tab badge — only count non-muted, non-done unread (respects per-contact read timestamp)
+  const unreadCount = active.filter(m => !mutedIds.includes(m.contact_id) && m.direction === 'inbound' && m.created_at > lastChecked && m.created_at > getContactReadAt(m.contact_id)).length;
   const tabBadge = document.getElementById('tab-msg-badge');
   if (tabBadge) {
     tabBadge.textContent = unreadCount > 0 ? unreadCount : '';
@@ -6569,6 +6581,9 @@ async function loadMessageThread(contactId) {
   }
 
   allMessages = data || [];
+  // Mark this contact's thread as read — clears the unread dot in inbox
+  markContactRead(contactId);
+  refreshMsgTabBadge();
   renderThread();
 }
 
