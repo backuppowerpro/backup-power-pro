@@ -2184,7 +2184,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     <!-- LEVEL 2b: SMS Messages -->
     <div class="drill-level right" id="drill-messages" style="display:flex;flex-direction:column;padding:0;overflow:hidden;position:relative"
       ondragover="event.preventDefault();document.getElementById('msg-drop-overlay').style.display='flex'"
-      ondragleave="if(!event.currentTarget.contains(event.relatedTarget))document.getElementById('msg-drop-overlay').style.display='none'"
+      ondragleave="if(!event.relatedTarget||!event.currentTarget.contains(event.relatedTarget))document.getElementById('msg-drop-overlay').style.display='none'"
       ondrop="event.preventDefault();document.getElementById('msg-drop-overlay').style.display='none';var f=event.dataTransfer.files[0];if(f&&(f.type.startsWith('image/')||f.type.startsWith('video/')))msgSendPhoto(f);else if(f)showToast('Only images and videos supported','error')">
       <div id="msg-drop-overlay" style="display:none;position:absolute;inset:0;background:rgba(11,31,59,.88);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px;pointer-events:none">
         <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(255,186,0,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -9863,9 +9863,11 @@ setTimeout(() => {
     }
 
     // ── Activity only — all action prompts live in Sparky's Take card ──
-    host.innerHTML = `<details id="panel-activity-details" style="margin-top:20px">
-      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;list-style:none;display:flex;align-items:center;gap:6px;padding:6px 0;user-select:none">
-        <svg id="panel-act-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
+    const _wasOpen = document.getElementById('panel-activity-details')?.open;
+    host.innerHTML = `<details id="panel-activity-details" style="margin-top:20px"${_wasOpen ? ' open' : ''}>
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;list-style:none;display:flex;align-items:center;gap:6px;padding:6px 0;user-select:none"
+        onclick="setTimeout(function(){var d=document.getElementById('panel-activity-details');var c=document.getElementById('panel-act-chev');if(c)c.style.transform=d&&d.open?'rotate(-180deg)':'rotate(0deg)'},0)">
+        <svg id="panel-act-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;transform:${_wasOpen ? 'rotate(-180deg)' : 'rotate(0deg)'}"><polyline points="6 9 12 15 18 9"/></svg>
         Activity
       </summary>
       <div id="panel-activity-feed" style="margin-top:8px"><div style="color:var(--text3);font-size:12px;padding:6px 0">Loading…</div></div>
@@ -12991,6 +12993,18 @@ setTimeout(() => {
     if (stage === 1) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendIntro(\''+cid+'\')">Draft intro text</button>';
     else if (stage === 2) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2CreateQuote(\''+cid+'\')">Create quote</button>';
     else if (stage === 3) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendCheckin(\''+cid+'\')">Draft check-in</button>';
+    else if (stage === 4) {
+      var sch4 = _getScheduledISO(c);
+      if (!sch4) {
+        ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();bookEventFromPanel()">Book install date</button>';
+      } else {
+        var todayK = _todayKey();
+        var tmrDate = new Date(todayK+'T00:00:00'); tmrDate.setDate(tmrDate.getDate()+1);
+        var tomorrowK = tmrDate.toISOString().slice(0,10);
+        if (sch4 === todayK) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendOnMyWay(\''+cid+'\')">Draft \'on my way\'</button>';
+        else if (sch4 === tomorrowK) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendDayBefore(\''+cid+'\')">Draft day-before text</button>';
+      }
+    }
     else if (stage === 5) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendPermitUpdate(\''+cid+'\',5)">Draft update text</button>';
     else if (stage === 6) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendPermitUpdate(\''+cid+'\',6)">Draft update text</button>';
     else if (stage === 7) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendPermitUpdate(\''+cid+'\',7)">Draft approval text</button>';
