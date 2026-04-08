@@ -583,10 +583,7 @@ html.dark .approval-notif-amount{color:var(--gold)}
   #inbox-sparky-btn{display:none!important}
   /* Inbox header: don't right-align on mobile, let 3 buttons sit naturally */
   .inbox-hdr-actions{justify-content:flex-start}
-  /* Action bar urgency chips: full-width on mobile for clean tap targets */
-  .action-bar{flex-direction:column;align-items:stretch;gap:5px}
-  .action-bar-chip{width:100%;justify-content:flex-start;padding:9px 12px;font-size:13px}
-  .action-bar-label{margin-bottom:2px}
+  /* (action-bar removed) */
 }
 
 /* ── FAB (Floating Action Button) ────────────────────── */
@@ -726,15 +723,14 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stat:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .pa-stat-num{font-family:'Outfit',sans-serif;font-size:28px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .pa-stat-label{font-size:11px;color:var(--text3);margin-top:6px;font-family:'Outfit',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
-.pa-stage-wrap{position:relative;margin-bottom:14px}
+.pa-stage-wrap{position:relative;margin-bottom:14px;-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 56px),transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 56px),transparent 100%)}
 .pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:4px 4px 6px;scroll-behavior:smooth}
 .pa-stage-list::-webkit-scrollbar{display:none}
-.pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--card);border-radius:var(--r-pill);border:1px solid var(--border);cursor:pointer;transition:all var(--t-fast);white-space:nowrap}
-.pa-stage-chip:hover{background:#f5f7fb;border-color:var(--border-strong);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--card);border-radius:var(--r-pill);border:1px solid var(--border);cursor:pointer;transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast);white-space:nowrap}
+.pa-stage-chip:hover{background:#f5f7fb;border-color:var(--border-strong)}
 html.dark .pa-stage-chip:hover{background:#302b25;border-color:var(--border-strong)}
-.pa-stage-chip:active{transform:translateY(0)}
-.pa-stage-chip.active{background:var(--navy);border-color:var(--navy);box-shadow:0 4px 12px rgba(11,31,59,.22)}
-.pa-stage-chip.active:hover{background:#132a4f;transform:translateY(-1px)}
+.pa-stage-chip.active{background:var(--navy);border-color:var(--navy)}
+.pa-stage-chip.active:hover{background:#132a4f;border-color:#132a4f}
 .pa-stage-chip.active .pa-stage-name{color:#fff}
 .pa-stage-chip.active .pa-stage-count{color:rgba(255,255,255,.7)}
 .pa-stage-chip.active .pa-stage-dot{box-shadow:0 0 0 2px rgba(255,255,255,.15)}
@@ -1169,24 +1165,7 @@ html.dark .tm-brief-btn.secondary:hover{background:var(--card)}
 .tm-brief-empty-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px}
 
 /* ── Needs-action bar ────────────────────────────────────── */
-.action-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:10px 14px;margin-bottom:var(--sp-sm);position:relative}
-html.dark .action-bar{border-color:#3d3830}
-.action-bar-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.action-bar-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);flex-shrink:0;white-space:nowrap}
-.action-bar-chips{display:flex;flex-wrap:wrap;gap:6px}
-.action-bar-chips.is-expanded{max-height:156px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));padding-right:2px}
-.action-bar-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);border:1.5px solid var(--border);background:var(--bg);font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;transition:background var(--t-fast),border-color var(--t-fast);white-space:nowrap;font-family:'Outfit',sans-serif}
-.action-bar-chip:hover{background:var(--navy);border-color:var(--navy);color:#fff}
-html.dark .action-bar-chip:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
-.action-bar-chip.chip-unread{border-color:var(--red);color:var(--red)}
-.action-bar-chip.chip-unread:hover{background:var(--red);border-color:var(--red);color:#fff}
-.action-bar-chip.chip-hot{border-color:#f97316;color:#f97316}
-.action-bar-chip.chip-hot:hover{background:#f97316;border-color:#f97316;color:#fff}
-.action-bar-dismiss{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px;margin-left:auto}
-.action-bar-dismiss:hover{color:var(--text)}
-html.dark .action-bar-dismiss{color:var(--text2)}
-.action-bar-more{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-pill);border:1.5px dashed var(--border);background:transparent;font-size:11.5px;font-weight:700;color:var(--text3);cursor:pointer;font-family:'Outfit',sans-serif;transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast);margin-top:6px}
-.action-bar-more:hover{background:var(--bg);border-color:var(--text3);color:var(--text)}
+/* (action-bar removed — replaced by Urgent view toggle) */
 
 /* ── Row context menu ─────────────────────────────────── */
 #ctx-menu{position:fixed;z-index:9000;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-xl);padding:5px;min-width:170px;display:none}
@@ -1306,6 +1285,10 @@ html.dark .sk-insight{background:linear-gradient(135deg,rgba(230,168,0,.14) 0%,r
 .sk-insight-av svg{width:15px;height:15px;display:block}
 .sk-insight-text{flex:1;min-width:0;letter-spacing:-.005em}
 .sk-insight-name{font-weight:800;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);display:block;margin-bottom:2px;font-family:'Outfit',sans-serif}
+.sk-insight-btn{padding:6px 13px;border-radius:var(--r-sm);background:var(--navy);color:#fff;border:none;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:transform .12s,box-shadow .15s}
+.sk-insight-btn:hover{box-shadow:0 4px 10px rgba(11,31,59,.3);transform:translateY(-1px)}
+.sk-insight-btn:active{transform:scale(.97)}
+html.dark .sk-insight-btn{background:var(--gold);color:#1e1b17}
 .sk-insight.loading .sk-insight-text{color:var(--text3);font-style:italic}
 /* Sparky tool action confirmation card (rendered inside chat bubbles) */
 .sk-action-card{margin-top:8px;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:var(--r-sm);padding:11px 13px;font-family:'Inter',sans-serif;font-size:12.5px;color:var(--text);animation:tmMsgIn .28s var(--ease)}
@@ -1822,16 +1805,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
           Pipeline
         </button>
-        <div style="width:1px;background:var(--border-strong);height:18px;margin:0 3px;flex-shrink:0"></div>
-        <button class="view-toggle-btn view-toggle-work" id="view-permits-btn" onclick="setLeadsView('permits')" title="Permit tracker">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M9 17h1"/><path d="M14 9h1"/><path d="M14 13h1"/><path d="M14 17h1"/></svg>
-          Permits
-        </button>
-        <button class="view-toggle-btn view-toggle-work" id="view-materials-btn" onclick="setLeadsView('materials')" title="Materials checklist">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-          Materials
-        </button>
-        <button class="view-toggle-btn" id="view-sort-urgent-btn" onclick="toggleUrgentSort()" title="Sort by urgency — hot contacts first" style="display:none">
+        <button class="view-toggle-btn" id="view-sort-urgent-btn" onclick="toggleUrgentSort()" title="Urgent contacts first">
           🔥 Urgent
         </button>
       </div>
@@ -2208,7 +2182,14 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div id="drill-payment-content"></div>
     </div>
     <!-- LEVEL 2b: SMS Messages -->
-    <div class="drill-level right" id="drill-messages" style="display:flex;flex-direction:column;padding:0;overflow:hidden">
+    <div class="drill-level right" id="drill-messages" style="display:flex;flex-direction:column;padding:0;overflow:hidden;position:relative"
+      ondragover="event.preventDefault();document.getElementById('msg-drop-overlay').style.display='flex'"
+      ondragleave="if(!event.currentTarget.contains(event.relatedTarget))document.getElementById('msg-drop-overlay').style.display='none'"
+      ondrop="event.preventDefault();document.getElementById('msg-drop-overlay').style.display='none';var f=event.dataTransfer.files[0];if(f&&(f.type.startsWith('image/')||f.type.startsWith('video/')))msgSendPhoto(f);else if(f)showToast('Only images and videos supported','error')">
+      <div id="msg-drop-overlay" style="display:none;position:absolute;inset:0;background:rgba(11,31,59,.88);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px;pointer-events:none">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(255,186,0,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;letter-spacing:-.01em">Drop to send</span>
+      </div>
       <div class="msg-thread-head" style="padding:8px 14px 8px 6px;gap:6px">
         <button onclick="drillTo('contact')" style="width:36px;height:36px;border-radius:50%;background:none;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;transition:background .15s" title="Back to contact" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -6128,6 +6109,11 @@ function _renderPipelineHeader() {
 }
 
 function renderActionBar() {
+  // Banner removed — urgent contacts surface via 🔥 Urgent view toggle
+  const mount = document.getElementById('tm-briefing-mount');
+  if (mount) mount.innerHTML = '';
+}
+function _renderActionBar_unused() {
   const mount = document.getElementById('tm-briefing-mount');
   if (!mount) return;
   if (sessionStorage.getItem('bpp_actionbar_dismissed')) { mount.innerHTML = ''; return; }
@@ -7713,8 +7699,8 @@ window._stopCallRecording = function() {
 
 // ── MMS PHOTO SEND ────────────────────────────────────────
 async function msgSendPhoto(input) {
-  const file = input.files?.[0];
-  input.value = ''; // reset so same file can be re-selected
+  const file = (input instanceof File) ? input : input.files?.[0];
+  if (!(input instanceof File)) input.value = ''; // reset so same file can be re-selected
   if (!file || !currentMsgContactId) return;
 
   if (file.size > 5 * 1024 * 1024) {
@@ -9033,12 +9019,17 @@ function setLeadsView(v) {
     // 'list'
     if (tableEl) tableEl.style.display = '';
   }
-  // Show "Urgent first" sort toggle only in list view
+  // Urgent toggle: always visible; active state only meaningful in list view
   const sortBtn = document.getElementById('view-sort-urgent-btn');
-  if (sortBtn) { sortBtn.style.display = v === 'list' ? '' : 'none'; sortBtn.classList.toggle('active', contactsSortUrgent); }
+  if (sortBtn) { sortBtn.style.display = ''; sortBtn.classList.toggle('active', v === 'list' && contactsSortUrgent); }
+  // Stage filter chips: only useful in list view
+  const stageWrap = document.querySelector('.pa-stage-wrap');
+  if (stageWrap) stageWrap.style.display = v === 'list' ? '' : 'none';
 }
 
 function toggleUrgentSort() {
+  // Switch to list view if not already there, then toggle urgent sort
+  if (leadsView !== 'list') setLeadsView('list');
   contactsSortUrgent = !contactsSortUrgent;
   const btn = document.getElementById('view-sort-urgent-btn');
   if (btn) btn.classList.toggle('active', contactsSortUrgent);
@@ -9869,236 +9860,14 @@ setTimeout(() => {
       }
     }
 
-    const stage = c.stage || 1;
-    const scheduled = getScheduledDate(c);
-    const dismissed = JSON.parse(localStorage.getItem('bpp_crm_prompt_dismiss') || '{}');
-    const dismissKey = id + ':' + stage;
-    const showPrompt = !dismissed[dismissKey];
-
-    let html = '';
-
-    // ── Days-in-stage status strip ────────────────────────
-    if (c.status !== 'Archived' && stage !== 9) {
-      const stageDef = PERMIT_STAGES.find(s => s.id === stage);
-      if (stageDef) {
-        const urg = _kanbanUrgency(c, stageDef);
-        if (urg.level !== 'cool' || urg.days > 0) {
-          const urgBg    = urg.level === 'hot'  ? 'rgba(220,38,38,.08)'   : urg.level === 'warm' ? 'rgba(249,115,22,.06)' : 'rgba(148,163,184,.06)';
-          const urgBorder= urg.level === 'hot'  ? 'rgba(220,38,38,.22)'   : urg.level === 'warm' ? 'rgba(249,115,22,.2)'  : 'rgba(148,163,184,.18)';
-          const urgColor = urg.level === 'hot'  ? 'var(--red)'            : urg.level === 'warm' ? '#f97316'              : 'var(--text3)';
-          const urgIcon  = urg.level === 'hot'  ? '🔥'                    : urg.level === 'warm' ? '⚠️'                   : '⏱';
-          const urgMsg   = urg.level === 'hot'  ? `${urg.days}d overdue — follow up now`
-                         : urg.level === 'warm' ? `${urg.days}d waiting in ${stageDef.label}`
-                         : urg.days > 0         ? `${urg.days}d in ${stageDef.label}`  : `In ${stageDef.label}`;
-          html += `<div style="display:flex;align-items:center;gap:7px;padding:7px 11px;background:${urgBg};border:1px solid ${urgBorder};border-radius:var(--r-sm);margin-bottom:10px;font-size:12px;font-weight:600;color:${urgColor}">
-            <span style="font-size:13px">${urgIcon}</span>
-            <span>${esc(urgMsg)}</span>
-          </div>`;
-        }
-      }
-    }
-
-    // ── Quick stage advance + Not Interested ─────────────────
-    if (c.status !== 'Archived') {
-      const nextStageDef = PERMIT_STAGES.find(s => s.id === stage + 1);
-      if (nextStageDef && stage < 9) {
-        html += `<button onclick="panelQuickAdvanceStage('${id}',${nextStageDef.id})" class="panel-advance-btn">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          Advance to ${esc(nextStageDef.label)}
-        </button>`;
-      }
-      html += `<div style="text-align:right;margin-bottom:10px">
-        <button id="panel-not-interested-btn" onclick="panelNotInterested('${id}')"
-          style="background:none;border:none;cursor:pointer;font-size:11.5px;font-weight:600;color:var(--text3);padding:2px 0;font-family:'Outfit',sans-serif;letter-spacing:.01em;transition:color .15s"
-          onmouseover="this.style.color='var(--red)'" onmouseout="if(!this.dataset.pending)this.style.color='var(--text3)'">
-          Not interested — archive
-        </button>
-      </div>`;
-    }
-
-    // Smart prompt by stage
-    if (showPrompt) {
-      if (stage === 1) {
-        html += `<div class="smart-prompt">
-          <div class="smart-prompt-icon">💬</div>
-          <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Send intro text</div>
-            <div class="smart-prompt-sub">New lead — reach out now while interest is fresh.</div>
-            <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2SendIntro('${id}')">Draft intro text</button>
-            </div>
-          </div>
-          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-        </div>`;
-      } else if (stage === 2) {
-        html += `<div class="smart-prompt">
-          <div class="smart-prompt-icon">📋</div>
-          <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Create a quote</div>
-            <div class="smart-prompt-sub">They responded — send pricing while they're engaged.</div>
-            <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2CreateQuote('${id}')">Create quote</button>
-              <button class="smart-prompt-btn" style="background:transparent;border:1.5px solid var(--border);color:var(--text)" onclick="pass2SendQuoteOffer('${id}')">Draft quote text</button>
-            </div>
-          </div>
-          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-        </div>`;
-      } else if (stage === 3) {
-        html += `<div class="smart-prompt">
-          <div class="smart-prompt-icon">!</div>
-          <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Follow up on the quote</div>
-            <div class="smart-prompt-sub">Quote is out — a quick check-in doubles conversion rate.</div>
-            <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2SendCheckin('${id}')">Draft check-in</button>
-              <button class="smart-prompt-btn" style="background:transparent;border:1.5px solid var(--border);color:var(--text)" onclick="pass2ResendQuote('${id}')">Resend quote link</button>
-            </div>
-          </div>
-          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-        </div>`;
-      } else if (stage === 4 && !scheduled) {
-        html += `<div class="smart-prompt">
-          <div class="smart-prompt-icon">📅</div>
-          <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Add an install date</div>
-            <div class="smart-prompt-sub">Pick a day for this booking so it shows on the kanban and list.</div>
-            <div class="smart-prompt-actions">
-              <input type="date" class="smart-prompt-date" id="install-date-input" value="">
-              <button class="smart-prompt-btn" onclick="pass2SaveInstallDate('${id}')">Save</button>
-            </div>
-          </div>
-          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-        </div>`;
-      } else if (stage === 4 && scheduled) {
-        // Calculate days to install
-        const installDate = new Date(scheduled + 'T12:00:00');
-        const today = new Date(); today.setHours(0,0,0,0);
-        const daysUntil = Math.round((installDate - today) / 86400000);
-        const dayKey = id + ':sched-' + scheduled;
-        if (!dismissed[dayKey]) {
-          if (daysUntil === 0) {
-            html += `<div class="smart-prompt" style="background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.03));border-color:rgba(34,197,94,.35)">
-              <div class="smart-prompt-icon" style="background:var(--green);font-size:18px">🔧</div>
-              <div class="smart-prompt-body">
-                <div class="smart-prompt-title">Install day — today!</div>
-                <div class="smart-prompt-sub">Send an "on my way" text when you're heading over.</div>
-                <div class="smart-prompt-actions">
-                  <button class="smart-prompt-btn" style="background:var(--green)" onclick="pass2SendOnMyWay('${id}')">Draft "on my way"</button>
-                </div>
-              </div>
-              <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dayKey}')" title="Dismiss">×</button>
-            </div>`;
-          } else if (daysUntil === 1) {
-            html += `<div class="smart-prompt">
-              <div class="smart-prompt-icon">⏰</div>
-              <div class="smart-prompt-body">
-                <div class="smart-prompt-title">Install is tomorrow</div>
-                <div class="smart-prompt-sub">Send a day-before reminder so they can prep.</div>
-                <div class="smart-prompt-actions">
-                  <button class="smart-prompt-btn" onclick="pass2SendDayBefore('${id}')">Draft reminder</button>
-                </div>
-              </div>
-              <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dayKey}')" title="Dismiss">×</button>
-            </div>`;
-          }
-        }
-      } else if (stage === 5) {
-        html += `<div class="smart-prompt">
-          <div class="smart-prompt-icon">📄</div>
-          <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Update the customer</div>
-            <div class="smart-prompt-sub">Permit submitted — let them know it's in review with the jurisdiction.</div>
-            <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2SendPermitUpdate('${id}', 5)">Draft update text</button>
-            </div>
-          </div>
-          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-        </div>`;
-      } else if (stage === 6) {
-        html += `<div class="smart-prompt">
-          <div class="smart-prompt-icon">💰</div>
-          <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Permit paid — next step</div>
-            <div class="smart-prompt-sub">Permit fee is paid. Let the customer know and set inspection expectations.</div>
-            <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2SendPermitUpdate('${id}', 6)">Draft update text</button>
-            </div>
-          </div>
-          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-        </div>`;
-      } else if (stage === 7) {
-        html += `<div class="smart-prompt">
-          <div class="smart-prompt-icon">✅</div>
-          <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Permit approved!</div>
-            <div class="smart-prompt-sub">Great news to share — confirm the install date with the customer.</div>
-            <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2SendPermitUpdate('${id}', 7)">Draft approval text</button>
-            </div>
-          </div>
-          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-        </div>`;
-      } else if (stage === 8) {
-        html += `<div class="smart-prompt">
-          <div class="smart-prompt-icon">🔍</div>
-          <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Inspection scheduled</div>
-            <div class="smart-prompt-sub">Send a day-before reminder so they know what to expect.</div>
-            <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2SendPermitUpdate('${id}', 8)">Draft reminder text</button>
-            </div>
-          </div>
-          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-        </div>`;
-      }
-      if (stage === 9) {
-        // Check for unpaid invoice -> show "Record payment" prompt
-        // NOTE: allInvoices is a top-level `let`, not on window — reference it directly
-        const invs = (Array.isArray(allInvoices) ? allInvoices : []).filter(i => i.contact_id === id && i.status !== 'paid');
-        if (invs.length) {
-          html += `<div class="smart-prompt">
-            <div class="smart-prompt-icon">$</div>
-            <div class="smart-prompt-body">
-              <div class="smart-prompt-title">Record payment?</div>
-              <div class="smart-prompt-sub">There's an unpaid invoice on this contact. Tap to open the payment screen.</div>
-              <div class="smart-prompt-actions">
-                <button class="smart-prompt-btn" onclick="try{drillTo('payment')}catch(e){}">Open payment</button>
-              </div>
-            </div>
-            <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
-          </div>`;
-        }
-        // Review request prompt (separate dismiss key so it's independent of payment)
-        const reviewKey = id + ':review';
-        const reviewDismissed = JSON.parse(localStorage.getItem('bpp_crm_prompt_dismiss') || '{}');
-        if (!reviewDismissed[reviewKey]) {
-          html += `<div class="smart-prompt" style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.03));border-color:rgba(34,197,94,.3)">
-            <div class="smart-prompt-icon" style="background:var(--green)">⭐</div>
-            <div class="smart-prompt-body">
-              <div class="smart-prompt-title">Ask for a review</div>
-              <div class="smart-prompt-sub">Job's done — a Google review from a happy customer is worth its weight in gold.</div>
-              <div class="smart-prompt-actions">
-                <button class="smart-prompt-btn" style="background:var(--green)" onclick="pass2SendReviewAsk('${id}')">Draft review text</button>
-              </div>
-            </div>
-            <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${reviewKey}')" title="Dismiss">×</button>
-          </div>`;
-        }
-      }
-    }
-
-    // Activity — collapsible, closed by default, at the bottom
-    html += `<details id="panel-activity-details" style="margin-top:20px">
+    // ── Activity only — all action prompts live in Sparky's Take card ──
+    host.innerHTML = `<details id="panel-activity-details" style="margin-top:20px">
       <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;list-style:none;display:flex;align-items:center;gap:6px;padding:6px 0;user-select:none">
         <svg id="panel-act-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
         Activity
       </summary>
       <div id="panel-activity-feed" style="margin-top:8px"><div style="color:var(--text3);font-size:12px;padding:6px 0">Loading…</div></div>
     </details>`;
-
-    host.innerHTML = html;
-
-    // Load activity feed async
     loadActivityFeed(id);
   }
 
@@ -13207,10 +12976,24 @@ setTimeout(() => {
       return (i > 0 ? '<div style="margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,186,0,.18)">' : '<div>') + _escHtml(l) + '</div>';
     }).join('');
 
-    mount.innerHTML = '<div class="sk-insight" style="cursor:pointer" onclick="window.tmOpenPanel();window.tmAskPreset(\'Tell me about this contact\')" title="Open Sparky">'
+    // One CTA button per stage
+    var stage = c.stage || 1;
+    var cid = contactId;
+    var ctaHtml = '';
+    if (stage === 1) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendIntro(\''+cid+'\')">Draft intro text</button>';
+    else if (stage === 2) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2CreateQuote(\''+cid+'\')">Create quote</button>';
+    else if (stage === 3) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendCheckin(\''+cid+'\')">Draft check-in</button>';
+    else if (stage === 5) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendPermitUpdate(\''+cid+'\',5)">Draft update text</button>';
+    else if (stage === 6) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendPermitUpdate(\''+cid+'\',6)">Draft update text</button>';
+    else if (stage === 7) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendPermitUpdate(\''+cid+'\',7)">Draft approval text</button>';
+    else if (stage === 8) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendPermitUpdate(\''+cid+'\',8)">Draft reminder text</button>';
+    else if (stage === 9) ctaHtml = '<button class="sk-insight-btn" onclick="event.stopPropagation();pass2SendReviewAsk(\''+cid+'\')">Draft review ask</button>';
+    var ctaRow = ctaHtml ? '<div style="margin-top:10px">' + ctaHtml + '</div>' : '';
+
+    mount.innerHTML = '<div class="sk-insight">'
       + '<div class="sk-insight-av">' + avSvg + '</div>'
-      + '<div class="sk-insight-text"><span class="sk-insight-name">Sparky\u2019s take</span>' + body + '</div>'
-      + '<button onclick="event.stopPropagation();this.closest(\'.sk-insight\').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px;flex-shrink:0;margin-left:4px" title="Dismiss">\u00d7</button>'
+      + '<div class="sk-insight-text"><span class="sk-insight-name">Sparky\u2019s take</span>' + body + ctaRow + '</div>'
+      + '<button onclick="event.stopPropagation();this.closest(\'.sk-insight\').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px;flex-shrink:0;margin-left:4px;align-self:flex-start" title="Dismiss">\u00d7</button>'
       + '</div>';
   }
   window.renderSparkyInsight = renderSparkyInsight;
