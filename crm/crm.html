@@ -1140,6 +1140,8 @@ html.dark .action-bar-chip:hover{background:var(--gold);border-color:var(--gold)
 .action-bar-chip.chip-hot:hover{background:#f97316;border-color:#f97316;color:#fff}
 .action-bar-dismiss{position:absolute;top:7px;right:10px;background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px}
 .action-bar-dismiss:hover{color:var(--text)}
+.action-bar-more{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:var(--r-pill);border:1.5px dashed var(--border);background:transparent;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;font-family:'Outfit',sans-serif;transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast)}
+.action-bar-more:hover{background:var(--bg);border-color:var(--text3);color:var(--text)}
 
 /* ── Row context menu ─────────────────────────────────── */
 #ctx-menu{position:fixed;z-index:9000;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-xl);padding:5px;min-width:170px;display:none}
@@ -2802,7 +2804,7 @@ function renderContacts() {
     }
     const avatarHtml = _avatarHtml(c, 34);
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
-      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dispName(c.name, 'Unknown'))}${unreadMsgDot}${activityDot}${staleIndicator}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
+      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead'))}${unreadMsgDot}${activityDot}${staleIndicator}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
       <td class="phone col-phone">${c.phone ? `<a href="tel:${c.phone.replace(/\D/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:none;font-weight:500">${esc(fmtPhone(c.phone))}</a>` : empty}</td>
       <td class="addr col-addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : empty}</td>
@@ -5680,6 +5682,10 @@ function dispName(s, fallback) {
   if (!s) return fallback || '';
   let str = String(s).trim();
   if (!str) return fallback || '';
+  // Treat "Unknown" (any case) as missing name — these are real leads where
+  // the intake form didn't capture a name. Fall back to phone/placeholder
+  // rather than showing the scary-looking "Unknown" label in the pipeline.
+  if (/^unknown$/i.test(str)) return fallback || '';
   // Split CamelCase or PascalCase tokens that have no whitespace (e.g. "CarlosRuiz")
   if (!/\s/.test(str)) {
     const split = str.replace(/([a-z])([A-Z])/g, '$1 $2');
@@ -5689,6 +5695,18 @@ function dispName(s, fallback) {
   return str.toLowerCase().replace(/(^|[\s\-'])(\w)/g, (m, sep, c) => sep + c.toUpperCase());
 }
 window.dispName = dispName;
+
+// Phone formatter — accepts "(864) 787-6291", "18647876291", "+18647876291",
+// returns a normalized display like "(864) 787-6291". Used as a name fallback
+// when an intake form didn't capture a real name.
+function fmtPhoneShort(raw) {
+  if (!raw) return '';
+  const digits = String(raw).replace(/\D/g, '');
+  if (digits.length === 10) return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `(${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+  return String(raw).trim();
+}
+window.fmtPhoneShort = fmtPhoneShort;
 
 function esc(s) {
   if (!s) return '';
@@ -5743,6 +5761,9 @@ async function loadJurisdictions() {
   const { data, error } = await db.from('permit_jurisdictions').select('*').order('name');
   if (error) return;
   allJurisdictions = data || [];
+  // If the permits board rendered before jurisdictions finished loading,
+  // re-render now so "No jurisdiction" stops showing for contacts that actually have one.
+  try { if (typeof renderPermitsBoard === 'function') renderPermitsBoard(); } catch(e) {}
   // One-time migration: move portal_url into link1 (shift existing links down)
   for (const j of allJurisdictions) {
     if (j.portal_url && !j.link1_url) {
@@ -6021,9 +6042,22 @@ function renderActionBar() {
 
   if (urgent.length === 0) { mount.innerHTML = ''; return; }
 
-  const show = urgent.slice(0, 5);
+  // Collapsed shows fewer chips on mobile vs desktop; expanded shows all.
+  // Mobile stacks chips vertically (CSS), so each chip adds ~44px — keep
+  // collapsed count tight so the banner doesn't dominate the viewport.
+  const expanded = !!window._actionBarExpanded;
+  const isMobile = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
+  const collapsedCount = isMobile ? 2 : 5;
+  const show = expanded ? urgent : urgent.slice(0, collapsedCount);
   const chips = show.map(({ c, type, days }) => {
-    const fname = (c.name || '').split(' ')[0] || 'Lead';
+    // Prefer first name, but if the name is missing or literally "Unknown"
+    // (intake didn't capture it), use the last-4 of the phone so Key can ID
+    // the lead without seeing a scary "Unknown" chip.
+    const rawName = (c.name || '').trim();
+    const hasRealName = rawName && !/^unknown$/i.test(rawName);
+    const phoneDigits = (c.phone || '').replace(/\D/g, '');
+    const phoneLast4 = phoneDigits.slice(-4);
+    const fname = hasRealName ? rawName.split(' ')[0] : (phoneLast4 ? `#${phoneLast4}` : 'Lead');
     const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
     const stageLabel = stageDef ? stageDef.label : '';
     const sub = type === 'unread' ? 'New message' : `${days}d in ${stageLabel}`;
@@ -6034,7 +6068,13 @@ function renderActionBar() {
     return `<button class="${chipClass}" onclick="openPanel('${c.id}')">${icon}${esc(fname)} <span style="font-weight:500;opacity:.75;font-size:11.5px">· ${esc(sub)}</span></button>`;
   }).join('');
 
-  const extra = urgent.length > 5 ? `<span style="font-size:12px;color:var(--text3);padding-left:2px">+${urgent.length - 5} more</span>` : '';
+  // Expand/collapse toggle — "+N more" becomes a real button instead of dead text.
+  let extra = '';
+  if (urgent.length > collapsedCount) {
+    extra = expanded
+      ? `<button class="action-bar-more" onclick="window._actionBarExpanded=false;renderActionBar()">Show less</button>`
+      : `<button class="action-bar-more" onclick="window._actionBarExpanded=true;renderActionBar()">+${urgent.length - collapsedCount} more</button>`;
+  }
 
   mount.innerHTML = `<div class="action-bar">
     <span class="action-bar-label">Needs action</span>
@@ -6785,7 +6825,7 @@ async function inboxSparkyScan() {
     const now = new Date();
     const summaries = activeItems.map(m => {
       const c = allContacts.find(x => x.id === m.contact_id);
-      const name = c ? dispName(c.name, 'Unknown') : 'Unknown';
+      const name = c ? dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead') : 'New Lead';
       const stageLabel = stageLabels[c?.stage || 1] || `Stage ${c?.stage || 1}`;
       const daysSince = Math.floor((now - new Date(m.created_at)) / 86400000);
       const lastFrom = m.direction === 'outbound' ? 'Key' : name;
@@ -7060,7 +7100,7 @@ async function loadMessageThread(contactId) {
     phoneEl.style.display = ph ? '' : 'none';
   }
   const nameEl = document.getElementById('msg-thread-name');
-  if (nameEl) nameEl.textContent = c ? dispName(c.name, 'Unknown') : 'Unknown';
+  if (nameEl) nameEl.textContent = c ? dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead') : 'New Lead';
   // Sparky insight strip
   const insightEl = document.getElementById('msg-thread-insight');
   if (insightEl && c && typeof window._buildSparkyInsight === 'function') {
@@ -8432,7 +8472,7 @@ function renderDocsQuotes() {
 
   const rows = active.map(p => {
     const c = (allContacts || []).find(x => x.id === p.contact_id);
-    const name = c ? dispName(c.name, 'Unknown') : 'Unknown';
+    const name = c ? dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead') : 'New Lead';
     const s = statusStyle[p.status] || { bg: '#f3f4f6', color: '#374151', label: p.status };
     const amount = p.total ? '$' + Number(p.total).toLocaleString() : '—';
     const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
@@ -8738,7 +8778,7 @@ function renderKanban() {
         : '';
       return `<div class="kanban-card" style="${styleVar}" onclick="openPanel('${c.id}')">
         ${callBtnKanban}
-        <div class="kanban-card-name">${esc(dispName(c.name, 'New Lead'))}${unreadDot}</div>
+        <div class="kanban-card-name">${esc(dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead'))}${unreadDot}</div>
         <div class="kanban-card-meta">
           <span class="urg-${urg.level}">${staleHint}</span>
           ${amt ? `<span class="kanban-card-amount">${amt}</span>` : ''}
@@ -8900,7 +8940,7 @@ async function checkSmartEvents() {
         // Only fire once we've seeded — avoid spamming on first poll
         if (!checkSmartEvents._seeded) return;
         const c = allContacts.find(x => x.id === m.contact_id);
-        const name = c ? dispName(c.name, 'Unknown') : 'Unknown';
+        const name = c ? dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead') : 'New Lead';
         notifAdd('message', 'New message from ' + name, (m.body || '').slice(0, 60), m.contact_id);
         playChime();
         showBrowserNotif('New message from ' + name, (m.body || '').slice(0, 80), m.contact_id);
@@ -10421,6 +10461,18 @@ setTimeout(() => {
   html.dark .pm-pill{background:#1e1b17;border-color:#3d3830}
   html.dark .pm-pill:hover{border-color:var(--gold);color:var(--gold)}
   html.dark .pm-pill.on{background:var(--green);border-color:var(--green);color:#fff}
+  /* Amp selector: visual segmented control so 30A|50A read as one choice, not two separate pills next to the Ordered? status. */
+  .pm-amp-group{display:inline-flex;border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden;background:var(--bg)}
+  .pm-amp-btn{padding:8px 14px;border:none;background:transparent;color:var(--text2);font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background var(--t-fast),color var(--t-fast)}
+  .pm-amp-btn + .pm-amp-btn{border-left:1.5px solid var(--border)}
+  .pm-amp-btn:hover{background:var(--card);color:var(--navy)}
+  .pm-amp-btn.on{background:var(--navy);color:#fff}
+  .pm-amp-btn.on:hover{background:#132a4f}
+  html.dark .pm-amp-group{border-color:#3d3830;background:#1e1b17}
+  html.dark .pm-amp-btn + .pm-amp-btn{border-left-color:#3d3830}
+  html.dark .pm-amp-btn{color:var(--text2)}
+  html.dark .pm-amp-btn.on{background:var(--gold);color:var(--navy)}
+  html.dark .pm-amp-btn.on:hover{background:#ffd166}
 
   .pm-checkbox-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;user-select:none;font-size:12.5px;color:var(--text);font-weight:600;transition:background .15s}
   .pm-checkbox-row:hover{background:var(--border)}
@@ -10456,6 +10508,18 @@ setTimeout(() => {
   .pm-board-action:active{transform:translateY(0)}
   html.dark .pm-board-action{background:var(--gold);color:#1e1b17}
   html.dark .pm-board-action:hover{background:#ffd166}
+  /* Permit blocked on jurisdiction: action becomes amber, row gets left-bar */
+  .pm-board-row-blocked{background:#fffbeb}
+  .pm-board-row-blocked:hover{background:#fef3c7}
+  html.dark .pm-board-row-blocked{background:rgba(234,179,8,.06)}
+  html.dark .pm-board-row-blocked:hover{background:rgba(234,179,8,.11)}
+  .pm-board-row-blocked{box-shadow:inset 3px 0 0 #f59e0b}
+  .pm-board-action-blocked{background:#f59e0b;color:#78350f}
+  .pm-board-action-blocked:hover{background:#eab308;box-shadow:0 4px 12px rgba(234,179,8,.30),var(--shadow-sm)}
+  html.dark .pm-board-action-blocked{background:#f59e0b;color:#78350f}
+  html.dark .pm-board-action-blocked:hover{background:#fbbf24}
+  .pm-board-jur-warn{display:inline-flex;align-items:center;gap:4px;color:#b45309;font-weight:700}
+  html.dark .pm-board-jur-warn{color:#f59e0b}
 
   /* Materials board — interactive card layout */
   .pm-mboard-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -11017,10 +11081,13 @@ setTimeout(() => {
       return { rank: 2, label: 'On track', class: '', days, typical, cur };
     }
 
-    const enriched = eligible.map(c => ({ c, u: urgencyOf(c) }));
-    // Sort: action needed first, then warn, then on track
+    const enriched = eligible.map(c => ({ c, u: urgencyOf(c), blocked: !c.jurisdiction_id }));
+    // Sort: action needed first, then warn, then on track.
+    // Within "Not started" (rank 4): blocked-on-jurisdiction rows come first
+    // because they can't move until a jurisdiction is picked.
     enriched.sort((a, b) => {
       if (a.u.rank !== b.u.rank) return a.u.rank - b.u.rank;
+      if (a.u.rank === 4 && a.blocked !== b.blocked) return a.blocked ? -1 : 1;
       const ad = a.u.days || 0; const bd = b.u.days || 0;
       return bd - ad;
     });
@@ -11045,7 +11112,7 @@ setTimeout(() => {
           ${esc(g.label)}
           <span class="pm-board-section-count">${items.length}</span>
         </div>`;
-      items.forEach(({ c, u }) => {
+      items.forEach(({ c, u, blocked }) => {
         const pd = getPermitData(c);
         const jur = c.jurisdiction_id ? allJurisdictions.find(j => j.id === c.jurisdiction_id) : null;
         const jurName = jur ? jur.name : '';
@@ -11059,7 +11126,13 @@ setTimeout(() => {
           : '';
         // Action button text per current step
         let actionText = 'Open';
-        if (cur === 'submitted')        actionText = 'Mark paid';
+        let actionClass = 'pm-board-action';
+        if (blocked) {
+          // Can't move a permit forward without knowing where to file it.
+          actionText = 'Set jurisdiction';
+          actionClass = 'pm-board-action pm-board-action-blocked';
+        }
+        else if (cur === 'submitted')        actionText = 'Mark paid';
         else if (cur === 'ready_to_pay')actionText = 'Mark paid';
         else if (cur === 'paid')        actionText = 'Mark printed';
         else if (cur === 'ready_to_print') actionText = 'Mark printed';
@@ -11073,15 +11146,18 @@ setTimeout(() => {
         const sectionLabel = (g.label || '').toLowerCase();
         const chipLabel = (stepLabel || '').toLowerCase();
         const showStepChip = chipLabel && chipLabel !== sectionLabel;
-        // Row click → open panel and jump to the permit section.
-        html += `<div class="pm-board-row" onclick="window.pmBoardOpenAndPickPermit('${c.id}')">
+        const jurCellHtml = jurName
+          ? esc(jurName)
+          : '<span class="pm-board-jur-warn"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>No jurisdiction</span>';
+        // Row click → open panel; blocked rows go straight to the jurisdiction picker via pmBoardOpenAndPickPermit (the jur select is at the top of the permit section).
+        html += `<div class="pm-board-row${blocked ? ' pm-board-row-blocked' : ''}" onclick="window.pmBoardOpenAndPickPermit('${c.id}')">
           <div style="display:flex;flex-direction:column;min-width:0;flex:1">
             <div class="pm-board-name">${esc(dispName(c.name, 'New Lead'))}</div>
-            <div class="pm-board-jur">${jurName ? esc(jurName) : '<span style="color:var(--text3)">No jurisdiction</span>'}${pd.number ? ' · ' + esc(pd.number) : ''}</div>
+            <div class="pm-board-jur">${jurCellHtml}${pd.number ? ' · ' + esc(pd.number) : ''}</div>
           </div>
           ${showStepChip ? `<div class="pm-board-step" style="background:${stepBg}1a;color:${stepBg}">${esc(stepLabel)}</div>` : ''}
-          <div class="pm-board-days ${daysCls}">${esc(daysText)}</div>
-          <button class="pm-board-action" onclick="event.stopPropagation();window.pmBoardQuickAdvance('${c.id}','${cur || 'submitted'}')">${esc(actionText)}</button>
+          ${daysText ? `<div class="pm-board-days ${daysCls}">${esc(daysText)}</div>` : ''}
+          <button class="${actionClass}" onclick="event.stopPropagation();${blocked ? `window.pmBoardOpenAndPickPermit('${c.id}')` : `window.pmBoardQuickAdvance('${c.id}','${cur || 'submitted'}')`}">${esc(actionText)}</button>
         </div>`;
       });
       html += '</div>';
@@ -11211,19 +11287,27 @@ setTimeout(() => {
           <button class="pm-pill ${md.received_at?'on':''}" onclick="event.stopPropagation();window.pmMarkReceived('${c.id}')">${md.received_at?'Received \u2713':'Mark Received'}</button>
         </div>`;
 
+      // "Booked" label + "booked Mar 28" was redundant. Use the stage label only when
+      // it's not literally "Booked"; otherwise just show the date.
+      const metaLine = /^booked$/i.test(stageLabel)
+        ? `Booked ${bookedDate}`
+        : `${esc(stageLabel)} &middot; booked ${bookedDate}`;
+
       html += `<div class="pm-mboard-card" onclick="if(!event.target.closest('button'))window.pmBoardOpenAndPick('${c.id}')">
         <div class="pm-mboard-card-top">
           <div>
             <div class="pm-mboard-name">${esc(dispName(c.name, 'New Lead'))}</div>
-            <div class="pm-mboard-meta">${esc(stageLabel)} &middot; booked ${bookedDate}</div>
+            <div class="pm-mboard-meta">${metaLine}</div>
           </div>
           <span class="pm-mboard-status ${status}">${esc(statusLabel)}</span>
         </div>
         <div class="pm-mboard-card-body">
           <div class="pm-mboard-field">
             <span class="pm-mboard-field-lbl">Inlet</span>
-            <button class="pm-pill ${md.inlet==='30A'?'on':''}" onclick="event.stopPropagation();window.pmSetInlet('${c.id}','30A')">30A</button>
-            <button class="pm-pill ${md.inlet==='50A'?'on':''}" onclick="event.stopPropagation();window.pmSetInlet('${c.id}','50A')">50A</button>
+            <div class="pm-amp-group" role="radiogroup" aria-label="Inlet amperage">
+              <button class="pm-amp-btn ${md.inlet==='30A'?'on':''}" role="radio" aria-checked="${md.inlet==='30A'}" onclick="event.stopPropagation();window.pmSetInlet('${c.id}','30A')">30A</button>
+              <button class="pm-amp-btn ${md.inlet==='50A'?'on':''}" role="radio" aria-checked="${md.inlet==='50A'}" onclick="event.stopPropagation();window.pmSetInlet('${c.id}','50A')">50A</button>
+            </div>
             <button class="pm-pill ${md.inlet_ord?'on':''}" onclick="event.stopPropagation();window.pmToggleOrd('${c.id}','minlet_ord')">${md.inlet_ord?'Ordered \u2713':'Ordered?'}</button>
           </div>
           ${panelRow}
@@ -13324,10 +13408,33 @@ setTimeout(() => {
         console.log('[voice] device registered');
       });
 
+      // Error codes that are transient during init/reconnect and self-heal.
+      // Twilio emits these while the WebSocket is still establishing, then
+      // recovers automatically — Key doesn't need to see a red banner.
+      const TRANSIENT_CODES = new Set([
+        20101, // Invalid Access Token (fires during token refresh race)
+        31005, // Connection disconnected, retrying
+        53000, // General signaling transport error
+        53001, // Signaling connection disconnected
+        53002, // Signaling connection closed by remote
+        53405, // Media connection failure, will retry
+      ]);
+
       device.on('error', (err) => {
-        console.error('[voice] device error:', err);
+        const code = err?.code;
+        const isTransient = TRANSIENT_CODES.has(code);
+        const isRegistered = device && device.state === 'registered';
+        console[isTransient ? 'warn' : 'error']('[voice] device error:', err);
+        // Suppress transient errors if the device is (or becomes) registered
+        if (isTransient || isRegistered) return;
+        // Only show banner for real errors that leave the device unusable
         if (typeof showToast === 'function') {
-          showToast('Voice error: ' + (err.message || 'unknown'), 'error');
+          const friendly = code === 31201
+            ? 'Mic permission denied — allow microphone access to make calls'
+            : code === 31003
+            ? 'Connection lost — check your internet and try again'
+            : 'Voice error: ' + (err.message || 'unknown');
+          showToast(friendly, 'error');
         }
       });
 
@@ -13402,7 +13509,7 @@ setTimeout(() => {
       if (!device) return;
 
       currentContactId = contactId;
-      const displayName = (typeof dispName === 'function' ? dispName(c.name, 'Unknown') : (c.name || 'Unknown'));
+      const displayName = (typeof dispName === 'function' ? dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead') : (c.name || fmtPhoneShort(c.phone) || 'New Lead'));
       showCallBar(displayName, 'Calling…');
 
       // Kick off the outbound connection — Twilio will POST twilio-voice
