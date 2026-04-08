@@ -3564,7 +3564,7 @@ function generateInvoicePDF() {
 // UPDATE the return address below when your business address changes.
 const MAILING_RETURN_ADDRESS = {
   name: 'Key Goodson',
-  company: 'Key Electric LLC',
+  company: 'Backup Power Pro',
   line1: '22 Kimbell Ct',
   city: 'Greenville, SC 29617',
   phone: '(864) 863-7800'
@@ -3635,6 +3635,7 @@ window.generateMailingInsert = function(contactId) {
 
   <div class="return-addr">
     ${ra.name}<br>
+    ${ra.company}<br>
     ${ra.line1}<br>
     ${ra.city}
   </div>
@@ -3669,6 +3670,7 @@ window.generateMailingInsert = function(contactId) {
       <p>Best,</p>
       <p>
         Key Goodson<br>
+        Backup Power Pro<br>
         ${ra.phone}
       </p>
     </div>
