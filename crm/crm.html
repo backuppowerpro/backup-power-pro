@@ -1587,6 +1587,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="inboxToggleUnreadFilter()" id="inbox-unread-filter-btn" style="display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s" title="Show unread only">
+          Unread
+        </button>
         <button onclick="inboxNewConversation()" style="display:flex;align-items:center;gap:5px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New
@@ -6294,6 +6297,17 @@ let allMessages = []; // all messages for the current thread
 // ── INBOX STATE (done/muted stored in localStorage) ───────
 const INBOX_DONE_KEY  = 'bpp_inbox_done';
 const INBOX_MUTE_KEY  = 'bpp_inbox_muted';
+let _inboxUnreadOnly = false;
+function inboxToggleUnreadFilter() {
+  _inboxUnreadOnly = !_inboxUnreadOnly;
+  const btn = document.getElementById('inbox-unread-filter-btn');
+  if (btn) {
+    btn.style.background = _inboxUnreadOnly ? 'var(--red)' : 'var(--bg)';
+    btn.style.color = _inboxUnreadOnly ? '#fff' : 'var(--text2)';
+    btn.style.borderColor = _inboxUnreadOnly ? 'var(--red)' : 'var(--border)';
+  }
+  loadInbox();
+}
 function _inboxDone()    { try { return JSON.parse(localStorage.getItem(INBOX_DONE_KEY) || '[]'); } catch(e) { return []; } }
 function _inboxMuted()   { try { return JSON.parse(localStorage.getItem(INBOX_MUTE_KEY) || '[]'); } catch(e) { return []; } }
 function inboxMarkDone(contactId) {
@@ -6531,9 +6545,17 @@ async function loadInbox() {
   const active = sorted.filter(m => !doneIds.includes(m.contact_id));
   const done   = sorted.filter(m =>  doneIds.includes(m.contact_id));
 
-  const activeHtml = active.length
-    ? active.map(m => buildRow(m, false)).join('')
+  // Unread filter: show only conversations with unread messages
+  const activeFiltered = _inboxUnreadOnly
+    ? active.filter(m => !mutedIds.includes(m.contact_id) && m.direction === 'inbound' && m.created_at > lastChecked && m.created_at > getContactReadAt(m.contact_id))
+    : active;
+
+  const emptyMsg = _inboxUnreadOnly
+    ? '<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">No unread messages</div>'
     : '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px">No active conversations</div>';
+  const activeHtml = activeFiltered.length
+    ? activeFiltered.map(m => buildRow(m, false)).join('')
+    : emptyMsg;
 
   if (listEl.innerHTML.trim() !== activeHtml.trim()) {
     listEl.innerHTML = activeHtml;
