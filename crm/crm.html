@@ -1113,6 +1113,20 @@ html.dark .tm-brief-btn.secondary:hover{background:var(--card)}
 .tm-brief-empty{padding:24px 12px;text-align:center;color:var(--text3);font-size:13px}
 .tm-brief-empty-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px}
 
+/* ── Needs-action bar ────────────────────────────────────── */
+.action-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:9px 12px;margin-bottom:var(--sp-sm);box-shadow:var(--shadow-sm);position:relative}
+html.dark .action-bar{border-color:#3d3830}
+.action-bar-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);flex-shrink:0;white-space:nowrap}
+.action-bar-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);border:1.5px solid var(--border);background:var(--bg);font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;transition:background var(--t-fast),border-color var(--t-fast);white-space:nowrap;font-family:'Outfit',sans-serif}
+.action-bar-chip:hover{background:var(--navy);border-color:var(--navy);color:#fff}
+html.dark .action-bar-chip:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.action-bar-chip.chip-unread{border-color:var(--red);color:var(--red)}
+.action-bar-chip.chip-unread:hover{background:var(--red);border-color:var(--red);color:#fff}
+.action-bar-chip.chip-hot{border-color:#f97316;color:#f97316}
+.action-bar-chip.chip-hot:hover{background:#f97316;border-color:#f97316;color:#fff}
+.action-bar-dismiss{position:absolute;top:7px;right:10px;background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px}
+.action-bar-dismiss:hover{color:var(--text)}
+
 /* ── Inline briefing inside Sparky panel — hides when typing ── */
 .tm-brief-inline{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px;max-height:800px;overflow:hidden;transition:opacity .22s ease,max-height .32s ease,padding-bottom .32s ease,margin-bottom .32s ease}
 .tm-brief-inline.collapsed{opacity:0;max-height:0;padding-bottom:0;margin-bottom:0;pointer-events:none}
@@ -2740,6 +2754,8 @@ function renderContacts() {
   if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
     try { renderKanban(); } catch(e) {}
   }
+  // Refresh the needs-action bar
+  try { renderActionBar(); } catch(e) {}
 }
 
 
@@ -5773,6 +5789,60 @@ function _renderPipelineHeader() {
   // bar gets cleaned up on next render.
   const el = document.getElementById('pipeline-header-bar');
   if (el && el.parentNode) el.parentNode.removeChild(el);
+}
+
+function renderActionBar() {
+  const mount = document.getElementById('tm-briefing-mount');
+  if (!mount) return;
+  if (sessionStorage.getItem('bpp_actionbar_dismissed')) { mount.innerHTML = ''; return; }
+
+  const activeContacts = allContacts.filter(c => c.status !== 'Archived' && (c.stage || 1) !== 9);
+  const seen = new Set();
+  const urgent = [];
+
+  // Unread first (top priority)
+  activeContacts.forEach(c => {
+    if (_unreadContactIds && _unreadContactIds.has(c.id)) {
+      seen.add(c.id);
+      urgent.push({ c, type: 'unread' });
+    }
+  });
+
+  // Hot urgency contacts (haven't replied in 2× their stage's expected window)
+  activeContacts.forEach(c => {
+    if (seen.has(c.id)) return;
+    const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
+    if (!stageDef) return;
+    const urg = _kanbanUrgency(c, stageDef);
+    if (urg.level === 'hot') {
+      seen.add(c.id);
+      urgent.push({ c, type: 'hot', days: urg.days });
+    }
+  });
+
+  if (urgent.length === 0) { mount.innerHTML = ''; return; }
+
+  const show = urgent.slice(0, 5);
+  const chips = show.map(({ c, type, days }) => {
+    const fname = (c.name || '').split(' ')[0] || 'Lead';
+    const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
+    const stageLabel = stageDef ? stageDef.label : '';
+    const sub = type === 'unread' ? 'New message' : `${days}d in ${stageLabel}`;
+    const chipClass = type === 'unread' ? 'action-bar-chip chip-unread' : 'action-bar-chip chip-hot';
+    const icon = type === 'unread'
+      ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>`
+      : `<span style="font-size:11px">🔥</span>`;
+    return `<button class="${chipClass}" onclick="openPanel('${c.id}')">${icon}${esc(fname)} <span style="font-weight:500;opacity:.75;font-size:11.5px">· ${esc(sub)}</span></button>`;
+  }).join('');
+
+  const extra = urgent.length > 5 ? `<span style="font-size:12px;color:var(--text3);padding-left:2px">+${urgent.length - 5} more</span>` : '';
+
+  mount.innerHTML = `<div class="action-bar">
+    <span class="action-bar-label">Needs action</span>
+    ${chips}
+    ${extra}
+    <button class="action-bar-dismiss" onclick="sessionStorage.setItem('bpp_actionbar_dismissed','1');this.closest('.action-bar').remove()" title="Dismiss for this session">×</button>
+  </div>`;
 }
 
 function loadPermitAnalytics() {
@@ -9023,6 +9093,7 @@ setTimeout(() => {
             <div class="smart-prompt-sub">Quote is out — a quick check-in doubles conversion rate.</div>
             <div class="smart-prompt-actions">
               <button class="smart-prompt-btn" onclick="pass2SendCheckin('${id}')">Draft check-in</button>
+              <button class="smart-prompt-btn" style="background:transparent;border:1.5px solid var(--border);color:var(--text)" onclick="pass2ResendQuote('${id}')">Resend quote link</button>
             </div>
           </div>
           <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
@@ -9183,6 +9254,30 @@ setTimeout(() => {
         }
       }, 200);
     }
+  };
+
+  window.pass2ResendQuote = function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const proposals = proposalMap[id];
+    const p = proposals && proposals[0];
+    if (!p || !p.token) { showToast('No proposal found for this contact', 'error'); return; }
+    const url = PROPOSAL_BASE_URL + '?token=' + p.token;
+    navigator.clipboard.writeText(url).catch(() => {});
+    if (typeof openMessagesFromPanel === 'function') {
+      openMessagesFromPanel();
+      setTimeout(() => {
+        const compose = document.getElementById('msg-compose');
+        if (compose) {
+          const fname = (c.name || '').split(' ')[0] || 'there';
+          compose.value = `Hey ${fname}, wanted to make sure you got your quote — here's the link: ${url}`;
+          compose.focus();
+          compose.style.height = 'auto';
+          compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+        }
+      }, 200);
+    }
+    showToast('Quote link copied + text drafted', 'success');
   };
 
   window.pass2SendReviewAsk = function(id) {
