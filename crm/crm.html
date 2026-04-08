@@ -7104,8 +7104,10 @@ function _qaQuoteCalc() {
 }
 
 function _qaRenderQuote(c) {
-  // Reset defaults per open (keep notes blank)
-  _qaQuoteState = { amp: '30', extraFt: 0, cordIncluded: true, includePom: false, includeSurge: false, notes: '' };
+  // Pre-fill amp from existing materials data if available
+  const md = (typeof getMaterialsData === 'function') ? getMaterialsData(c) : {};
+  const prefilledAmp = (md.inlet === '50A') ? '50' : '30';
+  _qaQuoteState = { amp: prefilledAmp, extraFt: 0, cordIncluded: true, includePom: false, includeSurge: !!(md.surge), notes: '' };
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">Quick Quote</div>
@@ -7114,8 +7116,8 @@ function _qaRenderQuote(c) {
     <div class="qa-row">
       <span class="qa-row-label">Amp type</span>
       <select onchange="_qaQuoteState.amp=this.value;_qaRefreshQuote()">
-        <option value="30">30A — $${QB_S.base30.toLocaleString()}</option>
-        <option value="50">50A — $${QB_S.base50.toLocaleString()}</option>
+        <option value="30" ${prefilledAmp==='30'?'selected':''}>30A — $${QB_S.base30.toLocaleString()}</option>
+        <option value="50" ${prefilledAmp==='50'?'selected':''}>50A — $${QB_S.base50.toLocaleString()}</option>
       </select>
     </div>
     <div class="qa-row">
@@ -7128,6 +7130,13 @@ function _qaRenderQuote(c) {
         <div class="qa-toggle-sub" id="qa-cord-sub">Included in price</div>
       </div>
       <div class="qa-check on" id="qa-check-cord" onclick="_qaToggleQuote('cordIncluded')"></div>
+    </div>
+    <div class="qa-toggle-row">
+      <div class="qa-toggle-main">
+        <div class="qa-toggle-name">Whole-home Surge Protection</div>
+        <div class="qa-toggle-sub">+$${QB_S.surge.toLocaleString()}</div>
+      </div>
+      <div class="qa-check ${_qaQuoteState.includeSurge?'on':''}" id="qa-check-surge" onclick="_qaToggleQuote('includeSurge')"></div>
     </div>
     <div class="qa-toggle-row">
       <div class="qa-toggle-main">
@@ -7161,7 +7170,7 @@ function _qaRefreshQuote() {
 }
 function _qaToggleQuote(key) {
   _qaQuoteState[key] = !_qaQuoteState[key];
-  const map = { cordIncluded: 'qa-check-cord', includePom: 'qa-check-pom' };
+  const map = { cordIncluded: 'qa-check-cord', includePom: 'qa-check-pom', includeSurge: 'qa-check-surge' };
   const chk = document.getElementById(map[key]);
   if (chk) chk.classList.toggle('on', !!_qaQuoteState[key]);
   _qaRefreshQuote();
