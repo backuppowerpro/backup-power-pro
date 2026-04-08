@@ -3576,6 +3576,9 @@ window.generateMailingInsert = function(contactId) {
 
   var firstName = (c.name || 'Homeowner').split(' ')[0];
   var ra = MAILING_RETURN_ADDRESS;
+  var addrParts = (c.address || '').split(',');
+  var addrLine1 = addrParts[0].trim();
+  var addrLine2 = addrParts.slice(1).join(',').trim();
 
   var html = `<!DOCTYPE html>
 <html>
@@ -3594,14 +3597,14 @@ window.generateMailingInsert = function(contactId) {
   /* ── Return address (shows through top envelope window) ── */
   .return-addr {
     position: absolute;
-    top: 0.45in; left: 0.45in;
+    top: 0.3in; left: 0.7in;
     width: 2.4in;
     font-size: 8.5pt; line-height: 1.35;
   }
   /* ── Mailing address (shows through bottom envelope window) ── */
   .mail-addr {
     position: absolute;
-    top: 1.78in; left: 0.45in;
+    top: 2.0in; left: 0.7in;
     width: 3.25in;
     font-size: 10.5pt; line-height: 1.55;
   }
@@ -3642,11 +3645,12 @@ window.generateMailingInsert = function(contactId) {
 
   <div class="mail-addr">
     ${c.name || ''}<br>
-    ${c.address || ''}
+    ${addrLine1}<br>
+    ${addrLine2}
   </div>
 
-  <div class="fold fold-1"><span class="fold-label">— fold here —</span></div>
-  <div class="fold fold-2"><span class="fold-label">— fold here —</span></div>
+  <div class="fold fold-1"></div>
+  <div class="fold fold-2"></div>
 
   <div class="letter">
     <p>Hey ${firstName}!</p>
@@ -3655,9 +3659,9 @@ window.generateMailingInsert = function(contactId) {
     we installed at your home. Please keep this document for your records — it is
     your official proof that the work was permitted and approved by the county.</p>
 
-    <p><strong>About your upcoming inspection:</strong> You do not need to be home.
-    The inspector will verify the inlet box and wiring from outside and at your
-    electrical panel. They will not need to enter your living space.</p>
+    <p><strong>About your upcoming inspection:</strong> You will most likely need
+    to be home when the inspector arrives to verify the work. Unfortunately, we are
+    not able to choose a specific time of day — only the weekday.</p>
 
     <p><strong>We recommend</strong> placing the enclosed permit copy inside your
     electrical panel door. When the inspector opens the panel, they will find it
