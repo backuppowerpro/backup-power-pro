@@ -2140,10 +2140,13 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </label>
           <div style="flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:22px;padding:8px 8px 8px 14px;gap:6px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
-            <textarea id="msg-compose" placeholder="Message…" style="flex:1;background:none;border:none;outline:none;resize:none;font-size:15px;min-height:22px;max-height:120px;line-height:1.5;padding:0;font-family:inherit;color:var(--text)" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
-            <button id="msg-send-btn" onclick="sendMessage()" title="Send" style="width:32px;height:32px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,transform .1s">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
+            <textarea id="msg-compose" placeholder="Message…" style="flex:1;background:none;border:none;outline:none;resize:none;font-size:15px;min-height:22px;max-height:120px;line-height:1.5;padding:0;font-family:inherit;color:var(--text)" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px';(function(t){var n=t.value.length,el=document.getElementById('msg-char-count');if(!el)return;var segs=n<=160?1:Math.ceil(n/153);el.textContent=n>0?(n<=140?'':(n+'/'+segs+'×')):'';el.style.color=n>160?'var(--red)':n>140?'#f97316':'var(--text3)';el.style.display=n>0?'':'none'})(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0">
+              <span id="msg-char-count" style="display:none;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;color:var(--text3);line-height:1;min-width:28px;text-align:center"></span>
+              <button id="msg-send-btn" onclick="sendMessage()" title="Send (Enter)" style="width:32px;height:32px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -7195,6 +7198,8 @@ async function sendMessage() {
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '…'; }
   composeEl.value = '';
   composeEl.style.height = '';
+  const cc = document.getElementById('msg-char-count');
+  if (cc) { cc.textContent = ''; cc.style.display = 'none'; }
 
   // Optimistically add to thread so the bubble appears instantly.
   const optimisticMsg = {
