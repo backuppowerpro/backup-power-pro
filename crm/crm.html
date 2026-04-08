@@ -2119,6 +2119,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <div id="msg-search-count" style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600"></div>
       </div>
       <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
+      <!-- SMS opt-out warning — shown if contact texted STOP -->
+      <div id="msg-optout-banner" style="display:none;background:#fef2f2;border-top:1px solid rgba(220,38,38,.2);padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);flex-shrink:0;text-align:center"></div>
       <div style="flex-shrink:0;background:var(--card);border-top:1px solid var(--border)">
         <!-- Quick actions toolbar — expandable inline panels for in-chat actions -->
         <div class="qa-bar" id="qa-bar">
@@ -7177,6 +7179,17 @@ function renderThread() {
   threadEl.innerHTML = bubbles;
   // Scroll to bottom
   setTimeout(() => { threadEl.scrollTop = threadEl.scrollHeight; }, 50);
+
+  // ── SMS opt-out detection ──────────────────────────────────
+  // If the most recent inbound message is STOP/STOPALL/UNSUBSCRIBE, show a warning
+  const lastInbound = [...allMessages].reverse().find(m => m.direction === 'inbound');
+  const optOutWords = ['STOP','STOPALL','UNSUBSCRIBE','CANCEL','END','QUIT'];
+  const isOptOut = lastInbound && optOutWords.includes((lastInbound.body || '').trim().toUpperCase());
+  const optOutBanner = document.getElementById('msg-optout-banner');
+  if (optOutBanner) {
+    optOutBanner.style.display = isOptOut ? '' : 'none';
+    if (isOptOut) optOutBanner.textContent = '⚠️ This contact texted STOP — Twilio will block outbound messages. Do not send.';
+  }
 }
 
 // ── THREAD SEARCH ─────────────────────────────────────────

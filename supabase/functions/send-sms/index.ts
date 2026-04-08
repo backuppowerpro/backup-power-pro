@@ -118,7 +118,12 @@ Deno.serve(async (req) => {
       console.error('[send-sms] Twilio error:', res.status, errBody)
       try {
         const errJson = JSON.parse(errBody)
-        sendError = errJson.message || `Twilio ${res.status}`
+        // Error 21610 = recipient has opted out (texted STOP)
+        if (errJson.code === 21610) {
+          sendError = 'Contact has opted out — they texted STOP. Cannot send.'
+        } else {
+          sendError = errJson.message || `Twilio ${res.status}`
+        }
       } catch {
         sendError = `Twilio ${res.status}`
       }
