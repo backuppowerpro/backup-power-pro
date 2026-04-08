@@ -2330,7 +2330,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       </div>
       <div class="form-row">
         <label>Password</label>
-        <input class="form-input" id="jur-password" placeholder="Portal password">
+        <input class="form-input" id="jur-password" type="password" placeholder="Portal password" autocomplete="current-password">
       </div>
       <div class="form-row">
         <label>Notes</label>
@@ -8798,16 +8798,16 @@ function renderDocsQuotes() {
   }
 
   const statusStyle = {
-    'Approved':  { bg: '#d1fae5', color: '#065f46', label: 'Approved' },
-    'Viewed':    { bg: '#fef3c7', color: '#92400e', label: 'Viewed' },
-    'Created':   { bg: '#dbeafe', color: '#1d4ed8', label: 'Sent' },
-    'Copied':    { bg: '#dbeafe', color: '#1d4ed8', label: 'Sent' },
+    'Approved':  { bg: 'rgba(16,185,129,.15)', color: 'var(--green)', label: 'Approved' },
+    'Viewed':    { bg: 'rgba(245,158,11,.15)',  color: '#d97706',      label: 'Viewed' },
+    'Created':   { bg: 'rgba(59,130,246,.15)',  color: 'var(--blue)',  label: 'Sent' },
+    'Copied':    { bg: 'rgba(59,130,246,.15)',  color: 'var(--blue)',  label: 'Sent' },
   };
 
   const rows = active.map(p => {
     const c = (allContacts || []).find(x => x.id === p.contact_id);
     const name = c ? dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead') : 'New Lead';
-    const s = statusStyle[p.status] || { bg: '#f3f4f6', color: '#374151', label: p.status };
+    const s = statusStyle[p.status] || { bg: 'var(--bg)', color: 'var(--text2)', label: p.status };
     const amount = p.total ? '$' + Number(p.total).toLocaleString() : '—';
     const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
     const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
