@@ -6083,8 +6083,19 @@ function loadPermitAnalytics() {
       ${valHtml}
     </div>`;
   }).join('');
+  // Pipeline summary line
+  const totalPipeline = Object.values(_chipValMap).reduce((a,b)=>a+b,0);
+  const activeLeads   = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) < 9).length;
+  const pipelineBar = totalPipeline > 0
+    ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 6px;font-family:'Outfit',sans-serif">
+        <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${activeLeads} active lead${activeLeads===1?'':'s'}</span>
+        <span style="font-size:13px;font-weight:800;color:var(--green);letter-spacing:-.01em;font-variant-numeric:tabular-nums">💰 ${_fmtChipVal(totalPipeline)}</span>
+      </div>`
+    : '';
+
   el.innerHTML = `
     <div class="pa-stage-wrap">
+      ${pipelineBar}
       <div class="pa-stage-list">
         ${filterChips}
       </div>
