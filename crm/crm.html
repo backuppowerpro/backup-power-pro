@@ -2092,6 +2092,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
       </div>
+      <!-- Sparky context strip — compact insight below header -->
+      <div id="msg-thread-insight" style="display:none;padding:6px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);flex-shrink:0;cursor:pointer" onclick="window.tmOpenPanel&&window.tmOpenPanel()" title="Open Sparky for more"></div>
       <!-- Thread search bar (hidden by default) -->
       <div id="msg-search-bar" style="display:none;padding:7px 12px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0">
         <div style="display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-pill);padding:5px 12px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
@@ -6941,6 +6943,21 @@ async function loadMessageThread(contactId) {
   }
   const nameEl = document.getElementById('msg-thread-name');
   if (nameEl) nameEl.textContent = c ? dispName(c.name, 'Unknown') : 'Unknown';
+  // Sparky insight strip
+  const insightEl = document.getElementById('msg-thread-insight');
+  if (insightEl && c && typeof window._buildSparkyInsight === 'function') {
+    try {
+      const ins = window._buildSparkyInsight(c);
+      if (ins && ins.text) {
+        const toneColors = { urgent: 'var(--red)', today: '#f97316', good: 'var(--green)', mat: '#8b5cf6' };
+        insightEl.style.color = toneColors[ins.tone] || 'var(--text2)';
+        insightEl.style.display = '';
+        insightEl.textContent = ins.text;
+      } else {
+        insightEl.style.display = 'none';
+      }
+    } catch(e) { insightEl.style.display = 'none'; }
+  } else if (insightEl) { insightEl.style.display = 'none'; }
   const stageBadgeEl = document.getElementById('msg-thread-stage');
   if (stageBadgeEl && c) {
     const stDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
@@ -12385,6 +12402,7 @@ setTimeout(() => {
       + '</div>';
   }
   window.renderSparkyInsight = renderSparkyInsight;
+  window._buildSparkyInsight = _buildSparkyInsight;
 
   function _showTyping() {
     var body = document.getElementById('tm-panel-body');
