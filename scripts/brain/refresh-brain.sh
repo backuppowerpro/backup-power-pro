@@ -14,8 +14,8 @@ START=$(date +%s)
 echo "=== brain refresh @ $TODAY $TS ===" > "$LOG_FILE"
 
 # Run each fetcher, capture the one-line summary it prints
-META_OUT=""; POSTHOG_OUT=""; CRM_OUT=""
-META_STATUS="OK"; POSTHOG_STATUS="OK"; CRM_STATUS="OK"
+META_OUT=""; POSTHOG_OUT=""; CRM_OUT=""; QUO_OUT=""
+META_STATUS="OK"; POSTHOG_STATUS="OK"; CRM_STATUS="OK"; QUO_STATUS="OK"
 
 if META_OUT=$(bash "$BRAIN_DIR/fetch-meta.sh" 2>&1); then
   echo "$META_OUT" >> "$LOG_FILE"
@@ -38,6 +38,13 @@ else
   echo "CRM FAILED: $CRM_OUT" >> "$LOG_FILE"
 fi
 
+if QUO_OUT=$(bash "$BRAIN_DIR/fetch-quo.sh" 2>&1); then
+  echo "$QUO_OUT" >> "$LOG_FILE"
+else
+  QUO_STATUS="FAIL"
+  echo "QUO FAILED: $QUO_OUT" >> "$LOG_FILE"
+fi
+
 END=$(date +%s)
 DURATION=$((END - START))
 
@@ -46,6 +53,7 @@ DURATION=$((END - START))
 META_LINE=$(echo "$META_OUT" | tail -1)
 POSTHOG_LINE=$(echo "$POSTHOG_OUT" | tail -1)
 CRM_LINE=$(echo "$CRM_OUT" | tail -1)
+QUO_LINE=$(echo "$QUO_OUT" | tail -1)
 
 # Append to 00 Log.md (create if needed)
 if [ ! -f "$WIKI_LOG" ]; then
@@ -73,11 +81,12 @@ cat >> "$WIKI_LOG" <<EOF
 - **Meta**: $META_STATUS — $META_LINE
 - **PostHog**: $POSTHOG_STATUS — $POSTHOG_LINE
 - **CRM**: $CRM_STATUS — $CRM_LINE
-- See [[Ads/Meta Performance]], [[Website/Site Analytics]], [[CRM/CRM Usage]]
+- **Quo**: $QUO_STATUS — $QUO_LINE
+- See [[Ads/Meta Performance]], [[Website/Site Analytics]], [[CRM/CRM Usage]], [[CRM/Quo Conversations]]
 EOF
 
 echo "=== refresh complete in ${DURATION}s ===" >> "$LOG_FILE"
-echo "[refresh-brain] done in ${DURATION}s (meta=$META_STATUS posthog=$POSTHOG_STATUS crm=$CRM_STATUS)"
+echo "[refresh-brain] done in ${DURATION}s (meta=$META_STATUS posthog=$POSTHOG_STATUS crm=$CRM_STATUS quo=$QUO_STATUS)"
 
 # Exit 0 even if some fetchers failed — we want launchd to keep scheduling
 exit 0
