@@ -6456,6 +6456,7 @@ async function inboxSparkyScan() {
 
 // Global set of contact IDs with unread messages — updated by loadInbox(), read by renderContacts()
 let _unreadContactIds = new Set();
+let _unreadContactIdsKey = ''; // stringified to detect changes without re-rendering unnecessarily
 
 // ── INBOX ─────────────────────────────────────────────────
 async function loadInbox() {
@@ -6577,7 +6578,11 @@ async function loadInbox() {
   const unreadMessages = active.filter(m => !mutedIds.includes(m.contact_id) && m.direction === 'inbound' && m.created_at > lastChecked && m.created_at > getContactReadAt(m.contact_id));
   const unreadCount = unreadMessages.length;
   // Update global set so contact list can show unread dots without re-fetching
-  _unreadContactIds = new Set(unreadMessages.map(m => m.contact_id));
+  const newUnreadIds = unreadMessages.map(m => m.contact_id).sort();
+  const newKey = newUnreadIds.join(',');
+  const changed = newKey !== _unreadContactIdsKey;
+  _unreadContactIds = new Set(newUnreadIds);
+  _unreadContactIdsKey = newKey;
   const tabBadge = document.getElementById('tab-msg-badge');
   if (tabBadge) {
     tabBadge.textContent = unreadCount > 0 ? unreadCount : '';
@@ -6585,8 +6590,8 @@ async function loadInbox() {
   }
   // Update browser tab title so Key knows he has messages even in background tabs
   document.title = unreadCount > 0 ? `(${unreadCount}) BPP CRM` : 'BPP CRM';
-  // Refresh contacts list so unread dots appear/disappear on contact rows
-  if (typeof renderContacts === 'function') try { renderContacts(); } catch(e) {}
+  // Refresh contacts list ONLY if unread set changed (avoids re-render on every 15s poll)
+  if (changed && typeof renderContacts === 'function') try { renderContacts(); } catch(e) {}
   // Also auto-restore done conversations that received a new inbound message
   const toRestore = done.filter(m => m.direction === 'inbound' && m.created_at > lastChecked).map(m => m.contact_id);
   if (toRestore.length > 0) {
