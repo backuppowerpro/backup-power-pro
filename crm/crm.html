@@ -12483,6 +12483,7 @@ setTimeout(() => {
     p.classList.add('open');
     o.classList.add('open');
     p.setAttribute('aria-hidden', 'false');
+    if (typeof lockBody === 'function') lockBody(); else document.body.style.overflow = 'hidden';
     if (typeof _skRenderQueueBadge === 'function') _skRenderQueueBadge();
     setTimeout(function() {
       var ta = document.getElementById('tm-compose');
@@ -12534,6 +12535,7 @@ setTimeout(() => {
     var o = document.getElementById('tm-panel-overlay');
     if (p) { p.classList.remove('open'); p.setAttribute('aria-hidden', 'true'); }
     if (o) o.classList.remove('open');
+    if (typeof unlockBody === 'function') unlockBody(); else document.body.style.overflow = '';
   };
   window.tmAskPreset = function(q) {
     var ta = document.getElementById('tm-compose');
