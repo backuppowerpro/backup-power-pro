@@ -3352,7 +3352,7 @@ async function renderProposalDrill() {
   let unapprovedActions = '';
   if (!isApproved && !isCancelled) {
     const editLink = canEdit ? '<button onclick="editProposal(\'' + p.id + '\')" style="background:none;border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Edit</button>' : '';
-    unapprovedActions = '<button class="prop-action-btn prop-action-create" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')" style="font-size:15px;padding:13px">Copy Link</button>'
+    unapprovedActions = '<button class="prop-action-btn prop-action-create" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')" style="font-size:15px;padding:13px">Copy Quote Link</button>'
       + '<div style="display:flex;justify-content:center;gap:4px;margin-top:6px;margin-bottom:4px">'
       + editLink
       + '<a href="' + esc(previewUrl) + '" target="_blank" style="color:var(--text2);font-size:13px;font-weight:600;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Preview</a>'
@@ -3441,6 +3441,7 @@ const INSPECTION_ITEMS = [
 ];
 let inspectionState = {};
 let inspectionNotes = '';
+let _currentInspId = '';
 
 async function renderInspectionDrill() {
   const contactId = currentPanelContactId;
@@ -3449,7 +3450,8 @@ async function renderInspectionDrill() {
   const existing = data && data[0];
   inspectionState = existing?.checklist || {};
   inspectionNotes = existing?.notes || '';
-  renderInspectionUI(el, existing?.id || '');
+  _currentInspId = existing?.id || '';
+  renderInspectionUI(el, _currentInspId);
 }
 
 function renderInspectionUI(el, inspId) {
@@ -3474,10 +3476,7 @@ function setInspItem(idx, val) {
   if (inspectionState[idx] === val) delete inspectionState[idx];
   else inspectionState[idx] = val;
   const el = document.getElementById('drill-inspection-content');
-  // Extract inspId from save button
-  const btn = el.querySelector('button[onclick*="saveInspection"]');
-  const m = btn ? btn.getAttribute('onclick').match(/'([^']*)'/): null;
-  renderInspectionUI(el, m ? m[1] : '');
+  renderInspectionUI(el, _currentInspId);
 }
 
 async function saveInspection(existingId) {
@@ -3488,10 +3487,12 @@ async function saveInspection(existingId) {
   if (answered === total) { status = Object.values(inspectionState).includes('no') ? 'failed' : 'passed'; }
   else if (answered > 0) { status = 'in_progress'; }
   const payload = { contact_id: contactId, checklist: inspectionState, status, items_total: total, items_completed: answered, notes: inspectionNotes || null };
-  let error;
+  let error, newData;
   if (existingId) { ({ error } = await db.from('inspections').update(payload).eq('id', existingId)); }
-  else { ({ error } = await db.from('inspections').insert([payload])); }
+  else { ({ error, data: newData } = await db.from('inspections').insert([payload]).select('id').single()); }
   if (error) { showToast('Save failed: ' + error.message, 'error'); return; }
+  // Keep _currentInspId in sync so subsequent setInspItem calls update, not insert.
+  if (newData?.id) _currentInspId = newData.id;
   touchContact(contactId);
   showToast('Inspection saved', 'success');
 }
@@ -3584,25 +3585,33 @@ async function renderPaymentDrill() {
 
 let _selectedPayMethod = null;
 
+// Returns the currently active drill container — used to scope getElementById calls
+// when the same IDs exist in both the proposal and payment drill levels.
+function _drillCtx() {
+  return document.getElementById('drill-' + currentDrillLevel) || document;
+}
+
 function selectPayMethod(method) {
   _selectedPayMethod = method;
+  const ctx = _drillCtx();
   ['Cash','Check','Tap to Pay'].forEach(function(m) {
-    const btn = document.getElementById('pay-method-' + m.toLowerCase().replace(/ /g,'-').replace('tap-to-pay','tap'));
+    const id = 'pay-method-' + m.toLowerCase().replace(/ /g,'-').replace('tap-to-pay','tap');
+    const btn = ctx.querySelector('#' + id);
     if (!btn) return;
     const isActive = m === method;
     btn.style.borderColor = isActive ? 'var(--navy)' : 'var(--border)';
     btn.style.background = isActive ? 'var(--navy)' : 'var(--bg)';
     btn.style.color = isActive ? '#fff' : '';
   });
-  const amountRow = document.getElementById('pay-amount-row');
-  const confirmBtn = document.getElementById('pay-confirm-btn');
+  const amountRow = ctx.querySelector('#pay-amount-row');
+  const confirmBtn = ctx.querySelector('#pay-confirm-btn');
   if (amountRow) amountRow.style.display = '';
   if (confirmBtn) { confirmBtn.style.display = ''; confirmBtn.textContent = 'Confirm ' + method + ' Payment'; }
-  setTimeout(function() { var inp = document.getElementById('pay-amount-input'); if(inp) inp.focus(); }, 50);
+  setTimeout(function() { var inp = ctx.querySelector('#pay-amount-input'); if(inp) inp.focus(); }, 50);
 }
 
 async function loadInvoiceSection(contactId) {
-  const el = document.getElementById('pay-invoice-section');
+  const el = _drillCtx().querySelector('#pay-invoice-section');
   if (!el) return;
   const { data } = await db.from('invoices').select('token,viewed_at,view_count,status').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(1);
   const inv = data && data[0];
@@ -3661,20 +3670,21 @@ function getInvoiceTotal() {
 
 function updatePayTotal() {
   const total = getInvoiceTotal();
-  const el = document.getElementById('pay-total-display');
+  const ctx = _drillCtx();
+  const el = ctx.querySelector('#pay-total-display');
   if (el) el.textContent = '$' + total.toLocaleString();
-  const inp = document.getElementById('pay-amount-input');
+  const inp = ctx.querySelector('#pay-amount-input');
   if (inp) inp.value = total;
 }
 
 function addInvoiceLine() {
   invoiceLineItems.push({ name: '', amount: 0 });
-  renderProposalDrill();
+  if (currentDrillLevel === 'payment') renderPaymentDrill(); else renderProposalDrill();
 }
 
 function removeInvoiceLine(idx) {
   invoiceLineItems.splice(idx, 1);
-  renderProposalDrill();
+  if (currentDrillLevel === 'payment') renderPaymentDrill(); else renderProposalDrill();
 }
 
 
@@ -3682,7 +3692,7 @@ async function confirmPayment() {
   const method = _selectedPayMethod;
   if (!method) { showToast('Select a payment method', 'error'); return; }
   const contactId = currentPanelContactId;
-  const amount = parseFloat(document.getElementById('pay-amount-input')?.value) || 0;
+  const amount = parseFloat(_drillCtx().querySelector('#pay-amount-input')?.value) || 0;
   if (amount <= 0) { showToast('Enter an amount', 'error'); return; }
   _selectedPayMethod = null;
   const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: method, status: 'completed' }]);
@@ -3699,7 +3709,8 @@ async function confirmPayment() {
   // Auto-advance to Complete (9)
   await autoProgressStage(contactId, 9);
   showToast(method + ' payment of $' + amount.toLocaleString() + ' recorded — job complete!', 'success');
-  renderProposalDrill();
+  // Navigate to proposal view to show "Paid in full" state; if already on proposal, re-render in place.
+  if (currentDrillLevel === 'payment') drillTo('proposal'); else renderProposalDrill();
   // Fire post-install review + referral text (non-blocking)
   fetch(`${SUPABASE_URL}/functions/v1/quo-ai-review`, {
     method: 'POST',
@@ -3725,7 +3736,7 @@ function undoPayment(paymentId) {
     if (btn) { btn.textContent = 'Sure?'; btn.style.color = 'var(--red)'; btn.style.fontWeight = '700'; }
     _undoPayTimer = setTimeout(function() {
       _undoPayPending = null;
-      renderPaymentDrill(); // Reset UI
+      if (currentDrillLevel === 'payment') renderPaymentDrill(); else renderProposalDrill();
     }, 3000);
   }
 }
@@ -3734,7 +3745,7 @@ async function doUndoPayment(paymentId) {
   const { error } = await db.from('payments').delete().eq('id', paymentId);
   if (error) { showToast('Failed: ' + error.message, 'error'); return; }
   showToast('Payment removed', 'success');
-  renderPaymentDrill();
+  if (currentDrillLevel === 'payment') renderPaymentDrill(); else renderProposalDrill();
 }
 
 async function collectPayment(contactId, amount) {
@@ -8489,7 +8500,7 @@ function renderDocsQuotes() {
         <div class="inv-row-meta">${ampLabel} &middot; ${dateStr}</div>
       </div>
       <div class="inv-row-amount">${amount}</div>
-      <span class="status-dot" style="font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:var(--r-pill);background:${s.bg};color:${s.color};white-space:nowrap;flex-shrink:0">${s.label}</span>
+      <span class="prop-badge" style="background:${s.bg};color:${s.color};flex-shrink:0">${s.label}</span>
     </div>`;
   }).join('');
 
