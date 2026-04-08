@@ -2473,6 +2473,12 @@ function showApp() {
   const tml = document.getElementById('tm-launcher');
   if (tml) tml.classList.add('visible');
   init();
+  // Request browser notification permission after a short delay (not during sign-in gesture)
+  if ('Notification' in window && Notification.permission === 'default') {
+    setTimeout(() => {
+      Notification.requestPermission().catch(() => {});
+    }, 3000);
+  }
 }
 
 
@@ -7207,14 +7213,69 @@ function threadClearSearch() {
 
 // ── CALL RECORDING PLAYBACK ───────────────────────────────
 let _callAudio = null;
+let _callAudioBar = null;
+
 function playCallRecording(url) {
+  // If same URL is already playing, toggle pause/play
+  if (_callAudio && _callAudio.src === url) {
+    if (_callAudio.paused) {
+      _callAudio.play().catch(() => {});
+      _updateRecordingBar(false);
+    } else {
+      _callAudio.pause();
+      _updateRecordingBar(true);
+    }
+    return;
+  }
+  // Stop previous
   if (_callAudio) { _callAudio.pause(); _callAudio = null; }
+  if (_callAudioBar) { _callAudioBar.remove(); _callAudioBar = null; }
+
   _callAudio = new Audio(url);
-  _callAudio.controls = true;
-  // Simple playback toast with pause button
-  showToast('Playing call recording…', 'success');
-  _callAudio.play().catch(e => showToast('Could not play recording', 'error'));
+
+  // Build persistent playback bar above msg-compose-foot
+  const bar = document.createElement('div');
+  bar.id = 'recording-playback-bar';
+  bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--navy);color:#fff;font-size:12px;font-weight:600;font-family:"Outfit",sans-serif;gap:10px;border-top:1px solid rgba(255,255,255,.1)';
+  bar.innerHTML = `
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    <span style="flex:1">Call Recording</span>
+    <span id="rec-bar-time" style="font-variant-numeric:tabular-nums;color:rgba(255,255,255,.65)">0:00</span>
+    <button id="rec-bar-toggle" onclick="playCallRecording('${url.replace(/'/g, "\\'")}')" style="background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">Pause</button>
+    <button onclick="_stopCallRecording()" style="background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.6);border-radius:6px;padding:4px 8px;font-size:14px;cursor:pointer;line-height:1">×</button>
+  `;
+  const compose = document.getElementById('msg-compose-foot');
+  if (compose && compose.parentNode) compose.parentNode.insertBefore(bar, compose);
+  _callAudioBar = bar;
+
+  // Update timer
+  _callAudio.addEventListener('timeupdate', () => {
+    const t = document.getElementById('rec-bar-time');
+    if (t) {
+      const s = Math.floor(_callAudio.currentTime);
+      t.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+    }
+  });
+  _callAudio.addEventListener('ended', () => {
+    _stopCallRecording();
+  });
+
+  _callAudio.play().catch(() => showToast('Could not play recording', 'error'));
 }
+
+function _updateRecordingBar(isPaused) {
+  const btn = document.getElementById('rec-bar-toggle');
+  const icon = _callAudioBar?.querySelector('svg');
+  if (btn) btn.textContent = isPaused ? 'Play' : 'Pause';
+  if (icon) icon.innerHTML = isPaused
+    ? '<polygon points="5 3 19 12 5 21 5 3"/>'
+    : '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+}
+
+window._stopCallRecording = function() {
+  if (_callAudio) { _callAudio.pause(); _callAudio = null; }
+  if (_callAudioBar) { _callAudioBar.remove(); _callAudioBar = null; }
+};
 
 // ── MMS PHOTO SEND ────────────────────────────────────────
 async function msgSendPhoto(input) {
@@ -13749,10 +13810,11 @@ window.closeAddMenu = function() {
     _ctxContactId = contactId;
     const c = (typeof allContacts !== 'undefined' ? allContacts : []).find(x => x.id === contactId);
     if (!c) return;
-    const fname = (c.name || '').split(' ')[0] || 'Lead';
+    // Always escape user-provided data before inserting into innerHTML
+    const _e = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const fname = _e((c.name || '').split(' ')[0] || 'Lead');
     const isArchived = c.status === 'Archived';
     const hasPhone = !!c.phone;
-    const phoneNorm = (c.phone || '').replace(/\D/g, '');
 
     menu.innerHTML = `
       <button class="ctx-item" onclick="_ctxOpen()">
