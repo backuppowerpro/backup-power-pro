@@ -575,6 +575,14 @@ html.dark .approval-notif-amount{color:var(--gold)}
   .view-toggle{margin-left:0;align-self:stretch;justify-content:center}
   .modal{max-height:95vh}
   .modal-body{-webkit-overflow-scrolling:touch}
+  /* Inbox: hide Sparky scan button — use floating Sparky launcher instead */
+  #inbox-sparky-btn{display:none!important}
+  /* Inbox header: don't right-align on mobile, let 3 buttons sit naturally */
+  .inbox-hdr-actions{justify-content:flex-start}
+  /* Action bar urgency chips: full-width on mobile for clean tap targets */
+  .action-bar{flex-direction:column;align-items:stretch;gap:5px}
+  .action-bar-chip{width:100%;justify-content:flex-start;padding:9px 12px;font-size:13px}
+  .action-bar-label{margin-bottom:2px}
 }
 
 /* ── FAB (Floating Action Button) ────────────────────── */
@@ -1154,7 +1162,9 @@ html.dark .ctx-sep{background:#3d3830}
 html.dark .panel-advance-btn:hover{background:#1a2540;border-color:var(--gold);color:var(--gold)}
 
 /* ── Inbox header pill buttons ───────────────────────── */
-.inbox-hdr-pill{display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;white-space:nowrap}
+.inbox-hdr-actions{display:flex;gap:6px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;justify-content:flex-end}
+.inbox-hdr-actions::-webkit-scrollbar{display:none}
+.inbox-hdr-pill{display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;white-space:nowrap;flex-shrink:0}
 .inbox-hdr-pill:hover{background:var(--bg);border-color:var(--text3)}
 
 /* ── Inline briefing inside Sparky panel — hides when typing ── */
@@ -1630,11 +1640,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <div id="tab-messages" style="display:none">
   <main class="main" style="max-width:700px">
     <div class="section-head" style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         <div class="section-title">Inbox</div>
         <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
+      <div class="inbox-hdr-actions">
         <button onclick="inboxToggleSearch()" id="inbox-search-btn" class="inbox-hdr-pill" title="Search conversations">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           Search
