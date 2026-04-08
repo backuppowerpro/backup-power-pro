@@ -713,8 +713,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stat:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .pa-stat-num{font-family:'Outfit',sans-serif;font-size:28px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .pa-stat-label{font-size:11px;color:var(--text3);margin-top:6px;font-family:'Outfit',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
-.pa-stage-wrap{position:relative;-webkit-mask-image:linear-gradient(to right,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(to right,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
-.pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0 20px 4px;scroll-behavior:smooth}
+.pa-stage-wrap{position:relative;margin-bottom:14px}
+.pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:4px 4px 6px;scroll-behavior:smooth}
 .pa-stage-list::-webkit-scrollbar{display:none}
 .pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--card);border-radius:var(--r-pill);border:1px solid var(--border);cursor:pointer;transition:all var(--t-fast);white-space:nowrap;box-shadow:var(--shadow-sm)}
 .pa-stage-chip:hover{background:#f5f7fb;border-color:var(--border-strong);transform:translateY(-1px);box-shadow:var(--shadow-md)}
@@ -843,19 +843,15 @@ html.dark .qa-btn-secondary:hover{background:#302b25;color:var(--gold);border-co
 .qa-btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
 
 /* AI suggest button beside send — Sparky-branded gold accent */
-.ai-suggest-btn{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:var(--r-sm);background:linear-gradient(135deg,rgba(255,186,0,.10) 0%,rgba(255,186,0,.04) 100%);border:1.5px solid rgba(255,186,0,.35);color:var(--gold);cursor:pointer;flex-shrink:0;transition:all var(--t-fast);position:relative}
-.ai-suggest-btn:hover{background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);border-color:var(--gold);transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,186,0,.36)}
-.ai-suggest-btn:active{transform:translateY(0) scale(.95)}
-.ai-suggest-btn svg{width:20px;height:20px;transition:transform var(--t-fast)}
-.ai-suggest-btn:hover svg{transform:rotate(-8deg) scale(1.12)}
-.ai-suggest-btn.loading{pointer-events:none}
+.ai-suggest-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:none;border:none;color:var(--gold);cursor:pointer;flex-shrink:0;transition:opacity var(--t-fast),transform var(--t-fast);opacity:.7}
+.ai-suggest-btn:hover{opacity:1;transform:scale(1.12)}
+.ai-suggest-btn:active{transform:scale(.9)}
+.ai-suggest-btn svg{width:17px;height:17px}
+.ai-suggest-btn.loading{pointer-events:none;opacity:.4}
 .ai-suggest-btn.loading svg{display:none}
-.ai-suggest-btn.loading::after{content:'';width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:aiSpin .7s linear infinite}
+.ai-suggest-btn.loading::after{content:'';width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:aiSpin .7s linear infinite}
 @keyframes aiSpin{to{transform:rotate(360deg)}}
-html.dark .ai-suggest-btn{background:linear-gradient(135deg,rgba(230,168,0,.14) 0%,rgba(230,168,0,.05) 100%);border-color:rgba(230,168,0,.36);color:var(--gold)}
-html.dark .ai-suggest-btn:hover{background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:#1e1b17;border-color:var(--gold);box-shadow:0 6px 18px rgba(230,168,0,.36)}
-html.dark .ai-suggest-btn:hover svg{color:#1e1b17}
-.ai-suggest-btn:disabled{opacity:.5;cursor:not-allowed}
+.ai-suggest-btn:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:480px){
   .ai-suggest-btn{width:44px;height:52px}
   .ai-suggest-btn svg{width:18px;height:18px}
@@ -1408,8 +1404,15 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <div class="notif-pop" id="notif-pop" onclick="event.stopPropagation()">
   <div class="notif-head">
     <div class="notif-head-title">Notifications</div>
-    <button class="notif-mark-read" onclick="notifMarkAllRead()">Mark all read</button>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button onclick="notifSparkySummary()" style="display:flex;align-items:center;gap:4px;background:var(--gold);color:var(--navy);border:none;border-radius:var(--r-pill);padding:4px 9px;font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;cursor:pointer" title="Sparky summarizes your notifications">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg>
+        Ask Sparky
+      </button>
+      <button class="notif-mark-read" onclick="notifMarkAllRead()">Mark all read</button>
+    </div>
   </div>
+  <div id="notif-sparky-summary" style="display:none;margin:8px 10px 0;background:rgba(255,186,0,.1);border:1px solid rgba(255,186,0,.3);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;line-height:1.5;color:var(--text)"></div>
   <div class="notif-list" id="notif-list"></div>
 </div>
 
@@ -1511,11 +1514,27 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <!-- ── MESSAGES INBOX TAB ────────────────────────────────── -->
 <div id="tab-messages" style="display:none">
   <main class="main" style="max-width:700px">
-    <div class="section-head">
-      <div class="section-title">Inbox</div>
-      <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
+    <div class="section-head" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="section-title">Inbox</div>
+        <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="inboxNewConversation()" style="display:flex;align-items:center;gap:5px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New
+        </button>
+        <button onclick="inboxSparkyScan()" id="inbox-sparky-btn" style="display:flex;align-items:center;gap:5px;background:var(--gold);color:var(--navy);border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer" title="Sparky scans conversations and archives done ones">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg>
+          Sparky
+        </button>
+      </div>
     </div>
     <div id="inbox-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    <div id="inbox-done-section" style="display:none;margin-top:18px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;padding:0 2px">Archived</div>
+      <div id="inbox-done-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
   </main>
 </div>
 
@@ -1577,7 +1596,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       </div>
     </div>
     <!-- Single, unified stage filter — drives BOTH list and kanban -->
-    <div id="permit-analytics" style="margin-top:6px"></div>
+    <div id="permit-analytics" style="margin-top:10px"></div>
     <div id="contacts-table"></div>
     <div id="kanban-board" style="display:none"></div>
     <div id="permits-board" style="display:none"></div>
@@ -1949,10 +1968,16 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     </div>
     <!-- LEVEL 2b: SMS Messages -->
     <div class="drill-level right" id="drill-messages" style="display:flex;flex-direction:column;padding:0;overflow:hidden">
-      <div class="msg-thread-head">
-        <button class="drill-back" onclick="drillTo('contact')" style="margin-bottom:0">&larr; Contact</button>
-        <span class="msg-thread-title">Messages</span>
-        <a id="msg-thread-phone" class="msg-thread-phone" href="#" onclick="threadCallContact();return false"></a>
+      <div class="msg-thread-head" style="padding:10px 14px;gap:8px">
+        <button class="drill-back" onclick="drillTo('contact')" style="margin-bottom:0;font-size:13px">&larr;</button>
+        <div id="msg-thread-avatar" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#fff"></div>
+        <div style="flex:1;min-width:0">
+          <div id="msg-thread-name" class="msg-thread-title" style="font-size:14px"></div>
+          <a id="msg-thread-phone" class="msg-thread-phone" href="#" onclick="threadCallContact();return false" style="font-size:11px;padding:2px 7px;margin-top:1px;display:inline-flex"></a>
+        </div>
+        <button onclick="threadCallContact()" style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s" title="Call">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </button>
       </div>
       <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
       <div style="flex-shrink:0;background:var(--card);border-top:1px solid var(--border)">
@@ -1983,12 +2008,20 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <div class="qa-inline" id="qa-inline">
           <div class="qa-inline-inner" id="qa-inline-inner"></div>
         </div>
-        <div class="msg-compose-foot" style="padding:10px 16px;display:flex;gap:8px;align-items:flex-end">
-          <button class="ai-suggest-btn" id="ai-suggest-btn" onclick="aiSuggestReply()" title="AI Suggest — generate a smart reply based on the conversation">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/><path d="M5 4l.5 1.5L7 6l-1.5.5L5 8l-.5-1.5L3 6l1.5-.5z"/></svg>
+        <div class="msg-compose-foot" style="padding:8px 12px;display:flex;gap:8px;align-items:flex-end">
+          <button class="ai-suggest-btn" id="ai-suggest-btn" onclick="aiSuggestReply()" title="Suggest a reply">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
           </button>
-          <textarea id="msg-compose" class="form-textarea" placeholder="Type a message…" style="flex:1;min-height:48px;max-height:120px;resize:none;font-size:16px" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
-          <button class="btn btn-primary" style="background:var(--navy);color:#fff;flex-shrink:0;height:52px;padding:0 18px" onclick="sendMessage()" id="msg-send-btn">Send</button>
+          <label title="Send photo" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;cursor:pointer;color:var(--text3);opacity:.7;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">
+            <input type="file" accept="image/*" style="display:none" onchange="msgSendPhoto(this)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </label>
+          <div style="flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:22px;padding:8px 8px 8px 14px;gap:6px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
+            <textarea id="msg-compose" placeholder="Message…" style="flex:1;background:none;border:none;outline:none;resize:none;font-size:15px;min-height:22px;max-height:120px;line-height:1.5;padding:0;font-family:inherit;color:var(--text)" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+            <button id="msg-send-btn" onclick="sendMessage()" title="Send" style="width:32px;height:32px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,transform .1s">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2721,6 +2754,9 @@ function drillTo(level) {
     else el.classList.add('right');
   });
   currentDrillLevel = level;
+  // Show/hide the street-view banner — hide it in messages to maximize thread space
+  const panelBanner = document.getElementById('panel-banner');
+  if (panelBanner) panelBanner.style.display = level === 'messages' ? 'none' : '';
   // When leaving the messages drill, collapse any open quick-action panel
   if (prevLevel === 'messages' && level !== 'messages') {
     try { if (typeof qaClose === 'function') qaClose(); } catch(e) {}
@@ -6157,18 +6193,94 @@ const SEND_SMS_ANON_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let currentMsgContactId = null;
 let allMessages = []; // all messages for the current thread
 
+// ── INBOX STATE (done/muted stored in localStorage) ───────
+const INBOX_DONE_KEY  = 'bpp_inbox_done';
+const INBOX_MUTE_KEY  = 'bpp_inbox_muted';
+function _inboxDone()    { try { return JSON.parse(localStorage.getItem(INBOX_DONE_KEY) || '[]'); } catch(e) { return []; } }
+function _inboxMuted()   { try { return JSON.parse(localStorage.getItem(INBOX_MUTE_KEY) || '[]'); } catch(e) { return []; } }
+function inboxMarkDone(contactId) {
+  const done = _inboxDone(); if (!done.includes(contactId)) { done.push(contactId); localStorage.setItem(INBOX_DONE_KEY, JSON.stringify(done)); }
+  loadInbox();
+}
+function inboxUnarchive(contactId) {
+  const done = _inboxDone().filter(id => id !== contactId);
+  localStorage.setItem(INBOX_DONE_KEY, JSON.stringify(done));
+  loadInbox();
+}
+function inboxToggleMute(contactId) {
+  const muted = _inboxMuted();
+  const idx = muted.indexOf(contactId);
+  if (idx === -1) muted.push(contactId); else muted.splice(idx, 1);
+  localStorage.setItem(INBOX_MUTE_KEY, JSON.stringify(muted));
+  loadInbox();
+}
+
+// ── NEW CONVERSATION ───────────────────────────────────────
+function inboxNewConversation() {
+  // Open contact search: reuse lead search or just switch to leads and open palette
+  if (typeof openCommandPalette === 'function') openCommandPalette();
+  else showToast('Search for a contact in Leads to start a conversation', 'info');
+}
+
+// ── SPARKY SMART ARCHIVE ───────────────────────────────────
+async function inboxSparkyScan() {
+  const btn = document.getElementById('inbox-sparky-btn');
+  if (btn) { btn.textContent = '⏳ Scanning…'; btn.disabled = true; }
+  try {
+    // Build a summary of recent conversations for Sparky to evaluate
+    const done = _inboxDone();
+    const activeItems = Object.values((() => {
+      const byContact = {};
+      (allMessages || []).forEach(m => { if (!byContact[m.contact_id]) byContact[m.contact_id] = m; });
+      return byContact;
+    })()).filter(m => !done.includes(m.contact_id));
+
+    // Ask ai-taskmaster to identify done conversations
+    const summaries = activeItems.slice(0, 20).map(m => {
+      const c = allContacts.find(x => x.id === m.contact_id);
+      return `Contact: ${c ? dispName(c.name, 'Unknown') : 'Unknown'} | ID: ${m.contact_id} | Last: ${m.direction === 'outbound' ? 'You' : 'Them'}: ${(m.body || '').slice(0, 60)}`;
+    }).join('\n');
+
+    const { data: fnData, error: fnErr } = await db.functions.invoke('ai-taskmaster', {
+      body: {
+        messages: [
+          { role: 'user', content: `You are scanning an SMS inbox for a generator installation business. For each conversation below, decide if it appears DONE (no response needed — job completed, quote rejected, ghosted after many follow-ups, etc.) or ACTIVE (still needs attention). Reply ONLY with a JSON array of contact IDs that are DONE. If none, return []. Conversations:\n\n${summaries}` }
+        ],
+        contactId: null
+      }
+    });
+
+    let toArchive = [];
+    try {
+      const resp = fnData?.reply || fnData?.content || '';
+      const match = resp.match(/\[[\s\S]*\]/);
+      if (match) toArchive = JSON.parse(match[0]).filter(id => typeof id === 'string');
+    } catch(e) {}
+
+    if (toArchive.length > 0) {
+      const newDone = [...new Set([..._inboxDone(), ...toArchive])];
+      localStorage.setItem(INBOX_DONE_KEY, JSON.stringify(newDone));
+      showToast(`Sparky archived ${toArchive.length} done conversation${toArchive.length > 1 ? 's' : ''}`, 'success');
+      loadInbox();
+    } else {
+      showToast('Sparky found no done conversations to archive', 'info');
+    }
+  } catch(e) {
+    showToast('Sparky scan failed', 'error');
+  } finally {
+    if (btn) { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg> Sparky'; btn.disabled = false; }
+  }
+}
+
 // ── INBOX ─────────────────────────────────────────────────
 async function loadInbox() {
   const listEl = document.getElementById('inbox-list');
   if (!listEl) return;
-  // Only show the "Loading…" placeholder on the FIRST load — not on every
-  // 15-second poll refresh. Polling was causing the inbox to flicker.
   const firstLoad = !listEl.querySelector('.inbox-item') && !listEl.querySelector('.empty');
   if (firstLoad) {
     listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3)">Loading…</div>';
   }
 
-  // Get most recent message per contact
   const { data, error } = await db
     .from('messages')
     .select('*')
@@ -6190,51 +6302,89 @@ async function loadInbox() {
     if (!byContact[m.contact_id]) byContact[m.contact_id] = m;
   });
 
-  // Check last-checked time for unread detection
   const lastChecked = getLastCheckedAt();
+  const doneIds  = _inboxDone();
+  const mutedIds = _inboxMuted();
 
-  const rows = Object.values(byContact)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .map(m => {
-      const c = allContacts.find(x => x.id === m.contact_id);
-      const name = c ? dispName(c.name, 'New Lead') : 'New Lead';
-      const phone = c ? (c.phone || '') : '';
-      const isUnread = m.direction === 'inbound' && m.created_at > lastChecked;
-      const timeStr = _relativeTime(m.created_at);
-      const preview = (m.direction === 'outbound' ? 'You: ' : '') + (m.body || '').slice(0, 80);
-      const avatar = c ? _avatarHtml(c, 40) : `<div style="width:40px;height:40px;border-radius:50%;background:var(--border);flex-shrink:0"></div>`;
-      return `<div class="inbox-item${isUnread ? ' unread' : ''}" onclick="openMessagesPanel('${m.contact_id}')">
-        ${avatar}
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span class="inbox-name">${esc(name)}</span>
-            ${isUnread ? '<span class="inbox-unread-dot"></span>' : ''}
-          </div>
-          <div class="inbox-preview">${esc(preview)}</div>
+  function buildRow(m, isDone) {
+    const c = allContacts.find(x => x.id === m.contact_id);
+    const name = c ? dispName(c.name, c.phone || 'Unknown') : (m.contact_id ? 'Unknown' : 'Unknown');
+    const isMuted = mutedIds.includes(m.contact_id);
+    // Unread: new inbound message since last check, not muted, not done
+    const isUnread = !isDone && !isMuted && m.direction === 'inbound' && m.created_at > lastChecked;
+    const timeStr = _relativeTime(m.created_at);
+    // Preview: calls get phone icon
+    let preview;
+    if (m.status === 'call') {
+      const callIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:2px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+      preview = callIcon + (m.body || 'Call').replace(/📞\s*/,'');
+    } else {
+      preview = (m.direction === 'outbound' ? 'You: ' : '') + esc(m.body || '').slice(0, 80);
+    }
+    const avatar = c ? _avatarHtml(c, 40) : `<div style="width:40px;height:40px;border-radius:50%;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3)">?</div>`;
+    const mutedBadge = isMuted ? `<span style="font-size:10px;font-weight:700;color:var(--text3);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1px 5px;margin-left:4px">Muted</span>` : '';
+
+    const actionMenu = `<div class="inbox-actions" style="display:flex;flex-direction:column;gap:2px;opacity:0;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
+      ${isDone
+        ? `<button onclick="event.stopPropagation();inboxUnarchive('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">↑ Restore</button>`
+        : `<button onclick="event.stopPropagation();inboxMarkDone('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">✓ Done</button>
+           <button onclick="event.stopPropagation();inboxToggleMute('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">${isMuted ? '🔔' : '🔕'} ${isMuted ? 'Unmute' : 'Mute'}</button>`
+      }
+    </div>`;
+
+    return `<div class="inbox-item${isUnread ? ' unread' : ''}" style="${isDone || isMuted ? 'opacity:.45;' : ''}" onmouseenter="this.querySelector('.inbox-actions').style.opacity=1" onmouseleave="this.querySelector('.inbox-actions').style.opacity=0" onclick="openMessagesPanel('${m.contact_id}')">
+      ${avatar}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="inbox-name">${esc(name)}</span>
+          ${isUnread ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block"></span>' : ''}
+          ${mutedBadge}
         </div>
+        <div class="inbox-preview">${preview}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
         <div class="inbox-time">${timeStr}</div>
-      </div>`;
-    }).join('');
-
-  // Skip re-render if the output is byte-identical to what's there — this
-  // prevents the 15-second poller from wiping the user's scroll position.
-  if (listEl.innerHTML.trim() !== rows.trim()) {
-    const scrollParent = listEl.parentElement || listEl;
-    const savedScroll = scrollParent.scrollTop;
-    listEl.innerHTML = rows;
-    scrollParent.scrollTop = savedScroll;
+        ${actionMenu}
+      </div>
+    </div>`;
   }
 
-  // Update tab badge with unread count
-  const unreadCount = Object.values(byContact).filter(m => m.direction === 'inbound' && m.created_at > lastChecked).length;
+  const sorted = Object.values(byContact).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const active = sorted.filter(m => !doneIds.includes(m.contact_id));
+  const done   = sorted.filter(m =>  doneIds.includes(m.contact_id));
+
+  const activeHtml = active.length
+    ? active.map(m => buildRow(m, false)).join('')
+    : '<div style="text-align:center;padding:30px 0;color:var(--text3);font-size:13px">No active conversations</div>';
+
+  if (listEl.innerHTML.trim() !== activeHtml.trim()) {
+    listEl.innerHTML = activeHtml;
+  }
+
+  // Done section
+  const doneSec  = document.getElementById('inbox-done-section');
+  const doneList = document.getElementById('inbox-done-list');
+  if (doneSec && doneList) {
+    if (done.length > 0) {
+      doneSec.style.display = '';
+      doneList.innerHTML = done.map(m => buildRow(m, true)).join('');
+    } else {
+      doneSec.style.display = 'none';
+    }
+  }
+
+  // Tab badge — only count non-muted, non-done unread
+  const unreadCount = active.filter(m => !mutedIds.includes(m.contact_id) && m.direction === 'inbound' && m.created_at > lastChecked).length;
   const tabBadge = document.getElementById('tab-msg-badge');
   if (tabBadge) {
-    if (unreadCount > 0) {
-      tabBadge.textContent = unreadCount;
-      tabBadge.style.display = '';
-    } else {
-      tabBadge.style.display = 'none';
-    }
+    tabBadge.textContent = unreadCount > 0 ? unreadCount : '';
+    tabBadge.style.display = unreadCount > 0 ? '' : 'none';
+  }
+  // Also auto-restore done conversations that received a new inbound message
+  const toRestore = done.filter(m => m.direction === 'inbound' && m.created_at > lastChecked).map(m => m.contact_id);
+  if (toRestore.length > 0) {
+    const newDone = _inboxDone().filter(id => !toRestore.includes(id));
+    localStorage.setItem(INBOX_DONE_KEY, JSON.stringify(newDone));
   }
 }
 
@@ -6298,13 +6448,23 @@ async function loadMessageThread(contactId) {
   const threadEl = document.getElementById('msg-thread');
   if (!threadEl) return;
 
-  // Update phone display
+  // Update compact header: avatar + name + phone
   const c = allContacts.find(x => x.id === contactId);
   const phoneEl = document.getElementById('msg-thread-phone');
   if (phoneEl) {
     const ph = c?.phone || '';
-    phoneEl.textContent = ph;
+    phoneEl.textContent = ph ? fmtPhone(ph) : '';
     phoneEl.style.display = ph ? '' : 'none';
+  }
+  const nameEl = document.getElementById('msg-thread-name');
+  if (nameEl) nameEl.textContent = c ? dispName(c.name, 'Unknown') : 'Unknown';
+  const avatarEl = document.getElementById('msg-thread-avatar');
+  if (avatarEl && c) {
+    const initials = (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const colors = ['#0b1f3b','#1d4ed8','#0f766e','#7c3aed','#b45309','#c2410c'];
+    const ci = (c.name || '').split('').reduce((s, ch) => s + ch.charCodeAt(0), 0) % colors.length;
+    avatarEl.style.background = colors[ci];
+    avatarEl.textContent = initials;
   }
 
   threadEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;padding:20px">' +
@@ -6344,6 +6504,21 @@ function renderThread() {
   };
 
   const bubbles = allMessages.map(m => {
+    // Call events render as a centered chip, not a bubble
+    if (m.status === 'call') {
+      const isOut = m.direction === 'outbound';
+      const icon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+      const recordingBtn = m.recording_url
+        ? `<button onclick="event.stopPropagation();playCallRecording('${esc(m.recording_url)}')" style="display:inline-flex;align-items:center;gap:3px;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play</button>`
+        : '';
+      return `<div style="display:flex;align-items:center;justify-content:center;margin:4px 0">
+        <div style="display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text3);font-family:'Outfit',sans-serif;font-weight:600">
+          ${icon} ${esc(m.body || (isOut ? 'Outbound call' : 'Incoming call'))}${recordingBtn}
+          <span style="margin-left:4px;font-weight:400;font-size:11px">${fmtTime(m.created_at)}</span>
+        </div>
+      </div>`;
+    }
+
     const isOut = m.direction === 'outbound';
     const byAI = m.sender === 'ai';
     const byKey = m.sender === 'key';
@@ -6354,7 +6529,7 @@ function renderThread() {
     const failedNote = isFailed ? `<span style="font-size:9px;color:var(--red);font-weight:700;margin-left:4px">✕ failed</span>` : '';
     const bubbleClass = `msg-bubble ${isOut ? 'outbound ' + (byAI ? 'by-ai' : 'by-key') : 'inbound'}${m.status === 'pending' ? ' pending' : ''}`;
     return `<div class="msg-row ${isOut ? 'outbound' : 'inbound'}">
-      <div class="${bubbleClass}">${esc(m.body || '')}</div>
+      <div class="${bubbleClass}" style="user-select:text">${esc(m.body || '')}</div>
       <div class="msg-meta">${senderBadge ? senderBadge + '&nbsp;' : ''}<span class="msg-timestamp">${fmtTime(m.created_at)}</span>${failedNote}</div>
     </div>`;
   }).join('');
@@ -6362,6 +6537,17 @@ function renderThread() {
   threadEl.innerHTML = bubbles;
   // Scroll to bottom
   setTimeout(() => { threadEl.scrollTop = threadEl.scrollHeight; }, 50);
+}
+
+// ── CALL RECORDING PLAYBACK ───────────────────────────────
+let _callAudio = null;
+function playCallRecording(url) {
+  if (_callAudio) { _callAudio.pause(); _callAudio = null; }
+  _callAudio = new Audio(url);
+  _callAudio.controls = true;
+  // Simple playback toast with pause button
+  showToast('Playing call recording…', 'success');
+  _callAudio.play().catch(e => showToast('Could not play recording', 'error'));
 }
 
 function insertQuickReply(btn) {
@@ -7162,6 +7348,23 @@ function notifRender() {
       <div class="notif-time">${_relativeTime(new Date(n.ts).toISOString())}</div>
     </div>
   `).join('');
+}
+
+async function notifSparkySummary() {
+  const box = document.getElementById('notif-sparky-summary');
+  if (!box) return;
+  box.style.display = '';
+  box.textContent = '⏳ Sparky is reading your notifications…';
+  try {
+    const recent = notifications.slice(0, 15).map(n => `${n.type.toUpperCase()}: ${n.title}${n.sub ? ' — ' + n.sub : ''}`).join('\n');
+    const { data } = await db.functions.invoke('ai-taskmaster', {
+      body: { messages: [{ role: 'user', content: `You are Sparky, the AI assistant for Backup Power Pro. Summarize these recent notifications in 2-3 short sentences. Focus on what needs action right now. Be direct and specific — mention names.\n\n${recent}` }], contactId: null }
+    });
+    const reply = data?.reply || data?.content || 'Nothing urgent right now.';
+    box.innerHTML = `<strong style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.05em">Sparky's Take</strong><br>${esc(reply.trim())}`;
+  } catch(e) {
+    box.textContent = 'Could not reach Sparky right now.';
+  }
 }
 
 function toggleNotifPop(e) {
@@ -11821,7 +12024,10 @@ setTimeout(() => {
   // don't have to pass them as onclick params.
   window.panelCallContact = function() {
     const id = (typeof currentPanelContactId !== 'undefined') ? currentPanelContactId : null;
-    if (id) callContact(id);
+    if (id) {
+      closePanel(); // close panel so call bar is visible
+      callContact(id);
+    }
   };
   window.threadCallContact = function() {
     const id = (typeof currentMsgContactId !== 'undefined' && currentMsgContactId)
