@@ -33,3 +33,8 @@ private-docs/
 
 # Local CRM backups — large, not for git
 _backups/
+
+# Brain refresh runtime logs (data snapshots, not source)
+scripts/brain/.last-refresh.log
+scripts/brain/.stdout.log
+scripts/brain/.stderr.log
