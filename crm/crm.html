@@ -2893,6 +2893,16 @@ async function saveContact() {
   if (cPhoneRaw && cPhoneRaw.length !== 10) { saving = false; showToast('Phone must be 10 digits', 'error'); return; }
   const cEmailVal = document.getElementById('c-email').value.trim();
   if (cEmailVal && !isValidEmail(cEmailVal)) { saving = false; showToast('Invalid email format', 'error'); return; }
+  // Duplicate phone check for new contacts
+  if (!id && cPhoneRaw.length === 10) {
+    const existing = allContacts.find(c => c.status !== 'Archived' && c.phone && c.phone.replace(/\D/g, '') === cPhoneRaw);
+    if (existing) {
+      saving = false;
+      const existName = dispName(existing.name, 'Unknown');
+      if (!confirm(`Phone already on file for "${existName}". Create a duplicate?`)) return;
+      saving = true;
+    }
+  }
   const name = capName(fname) + ' ' + capName(lname);
   const payload = {
     name,
