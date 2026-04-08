@@ -8858,7 +8858,31 @@ setTimeout(() => {
 
     // Smart prompt by stage
     if (showPrompt) {
-      if (stage === 3) {
+      if (stage === 1) {
+        html += `<div class="smart-prompt">
+          <div class="smart-prompt-icon">💬</div>
+          <div class="smart-prompt-body">
+            <div class="smart-prompt-title">Send intro text</div>
+            <div class="smart-prompt-sub">New lead — reach out now while interest is fresh.</div>
+            <div class="smart-prompt-actions">
+              <button class="smart-prompt-btn" onclick="pass2SendIntro('${id}')">Draft intro text</button>
+            </div>
+          </div>
+          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+        </div>`;
+      } else if (stage === 2) {
+        html += `<div class="smart-prompt">
+          <div class="smart-prompt-icon">📋</div>
+          <div class="smart-prompt-body">
+            <div class="smart-prompt-title">Send the quote?</div>
+            <div class="smart-prompt-sub">They responded — time to send pricing while they're engaged.</div>
+            <div class="smart-prompt-actions">
+              <button class="smart-prompt-btn" onclick="pass2SendCheckin('${id}')">Draft follow-up</button>
+            </div>
+          </div>
+          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+        </div>`;
+      } else if (stage === 3) {
         html += `<div class="smart-prompt">
           <div class="smart-prompt-icon">!</div>
           <div class="smart-prompt-body">
@@ -8928,6 +8952,24 @@ setTimeout(() => {
       localStorage.setItem('bpp_crm_prompt_dismiss', JSON.stringify(d));
     } catch (e) {}
     renderPanelExtras();
+  };
+
+  window.pass2SendIntro = function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    if (typeof openMessagesFromPanel === 'function') {
+      openMessagesFromPanel();
+      setTimeout(() => {
+        const compose = document.getElementById('msg-compose');
+        if (compose) {
+          const fname = (c.name || '').split(' ')[0] || 'there';
+          compose.value = `Hey ${fname}, this is Key with Backup Power Pro — saw your request come in. I install generator inlets that connect your generator directly to your panel, all permitted and inspected, usually done in one day for $1,197. Happy to answer any questions. What size generator do you have?`;
+          compose.focus();
+          compose.style.height = 'auto';
+          compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+        }
+      }, 200);
+    }
   };
 
   window.pass2SendCheckin = function(id) {
