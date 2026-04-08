@@ -1112,6 +1112,15 @@ html.dark .tm-brief-btn.secondary:hover{background:var(--card)}
 .tm-brief-empty{padding:24px 12px;text-align:center;color:var(--text3);font-size:13px}
 .tm-brief-empty-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px}
 
+/* ── Inline briefing inside Sparky panel — hides when typing ── */
+.tm-brief-inline{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px;max-height:800px;overflow:hidden;transition:opacity .22s ease,max-height .32s ease,padding-bottom .32s ease,margin-bottom .32s ease}
+.tm-brief-inline.collapsed{opacity:0;max-height:0;padding-bottom:0;margin-bottom:0;pointer-events:none}
+html.dark .tm-brief-inline{border-bottom-color:#3d3830}
+.tm-brief-inline-head{display:flex;align-items:center;gap:6px;padding:0 0 6px;font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.tm-brief-inline-count{background:var(--navy);color:#fff;font-size:10px;font-weight:800;padding:1px 7px;border-radius:var(--r-pill)}
+html.dark .tm-brief-inline-count{background:var(--gold);color:#1e1b17}
+.tm-brief-inline-count.zero{background:#d1fae5;color:var(--green2)}
+
 /* ── Sparky launcher button (floating pill, bottom-right — the ONLY floating element) ── */
 .tm-launcher{position:fixed;bottom:24px;right:24px;height:54px;border-radius:var(--r-pill);background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);border:none;cursor:pointer;box-shadow:0 8px 24px rgba(255,186,0,.36),0 3px 8px rgba(10,20,40,.18);z-index:59;display:none;align-items:center;gap:9px;padding:0 19px 0 14px;transition:transform var(--t-base),box-shadow var(--t-base),padding var(--t-base);font-family:'Outfit',sans-serif;line-height:1;letter-spacing:-.005em}
 .tm-launcher.visible{display:inline-flex;animation:tmLauncherPop .42s var(--ease)}
@@ -10126,22 +10135,69 @@ setTimeout(() => {
     if (mount) mount.innerHTML = '';
   }
 
-  // Public generateBriefing — shows the card unless Key already dismissed today
-  // OR asked to be reminded later and the delay hasn't elapsed yet.
-  function generateBriefing(force) {
-    if (!force) {
-      if (_briefingSeenToday()) return;
-      var remindUntil = _remindLaterUntil();
-      if (remindUntil && Date.now() < remindUntil) return;
-    }
-    try {
-      var data = buildBriefing();
-      renderBriefingCard(data);
-    } catch(e) {
-      console.warn('Briefing generation failed:', e);
-    }
-  }
+  // Briefing now lives inside the Sparky panel — not as a standalone popup.
+  function generateBriefing(force) { return; }
   window.generateBriefing = generateBriefing;
+
+  function renderInlineBriefing() {
+    var body = document.getElementById('tm-panel-body');
+    if (!body) return;
+    var existing = document.getElementById('tm-brief-inline');
+    if (existing) existing.remove();
+    var data;
+    try { data = buildBriefing(); } catch(e) { return; }
+
+    function _sec(kind, title, items) {
+      if (!items || !items.length) return '';
+      var classMap = { urgent:'urgent', today:'today', msg:'msg', mat:'mat', good:'good' };
+      var rows = items.map(function(it) {
+        var cid = it.contactId ? String(it.contactId).replace(/"/g, '&quot;') : '';
+        return '<div class="tm-brief-item ' + classMap[kind] + '" data-contact-id="' + cid + '" role="button" tabindex="0">'
+          + '<span class="tm-brief-item-dot"></span>'
+          + '<div class="tm-brief-item-body">'
+          + '<div class="tm-brief-item-name">' + _escHtml(it.name) + ' <span style="color:var(--text3);font-weight:500;font-size:11.5px;margin-left:4px">' + _escHtml(it.meta || '') + '</span></div>'
+          + '<div class="tm-brief-item-meta">' + _escHtml(it.note || '') + '</div>'
+          + '</div></div>';
+      }).join('');
+      return '<div class="tm-brief-section">'
+        + '<div class="tm-brief-sec-head ' + classMap[kind] + '">' + title + '<span class="tm-brief-sec-count">' + items.length + '</span></div>'
+        + rows + '</div>';
+    }
+
+    var bodyHtml = '';
+    bodyHtml += _sec('urgent', '\uD83D\uDD25 Overdue',              data.urgent);
+    bodyHtml += _sec('today',  '\uD83D\uDCC5 Today',                data.today);
+    bodyHtml += _sec('mat',    '\uD83D\uDCE6 Materials this week',   data.materials);
+    bodyHtml += _sec('good',   '\u2728 Good news',                  data.goodNews);
+    if (!bodyHtml) return;
+
+    var total = data.counts.total;
+    var countHtml = total === 0
+      ? '<span class="tm-brief-inline-count zero">All clear</span>'
+      : '<span class="tm-brief-inline-count">' + total + ' to act on</span>';
+
+    var html = '<div class="tm-brief-inline" id="tm-brief-inline">'
+      + '<div class="tm-brief-inline-head">Briefing ' + countHtml + '</div>'
+      + bodyHtml + '</div>';
+
+    body.insertAdjacentHTML('afterbegin', html);
+
+    Array.prototype.forEach.call(
+      body.querySelectorAll('#tm-brief-inline .tm-brief-item[data-contact-id]'),
+      function(el) {
+        var cid = el.getAttribute('data-contact-id');
+        if (!cid) return;
+        el.addEventListener('click', function() {
+          if (typeof openPanel === 'function') openPanel(cid);
+        });
+      }
+    );
+  }
+
+  window.tmHideInlineBriefing = function() {
+    var el = document.getElementById('tm-brief-inline');
+    if (el) el.classList.add('collapsed');
+  };
 
   // Handlers bound from the card HTML
   window.tmDismissBriefing = function() {
@@ -10342,6 +10398,7 @@ setTimeout(() => {
     var o = document.getElementById('tm-panel-overlay');
     if (!p || !o) return;
     renderChatPanel();
+    renderInlineBriefing();
     p.classList.add('open');
     o.classList.add('open');
     p.setAttribute('aria-hidden', 'false');
@@ -10365,6 +10422,7 @@ setTimeout(() => {
     if (!ta) return;
     ta.style.height = 'auto';
     ta.style.height = Math.min(110, ta.scrollHeight) + 'px';
+    if (ta.value.trim()) window.tmHideInlineBriefing();
   };
   window.tmComposeKey = function(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
