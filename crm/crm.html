@@ -12003,26 +12003,20 @@ setTimeout(() => {
 
       if (!draft) { if (typeof showToast === 'function') showToast('Sparky couldn\'t draft — try again', 'error'); return; }
 
-      // Open messages thread and fill compose
-      if (typeof switchTab === 'function') switchTab('messages');
-      if (typeof openMessageThread === 'function') {
-        await openMessageThread(contactId);
-      } else if (typeof openPanel === 'function') {
-        openPanel(contactId);
-        setTimeout(function() {
-          var threadBtn = document.querySelector('[onclick*="openMessagesFromPanel"]');
-          if (threadBtn) threadBtn.click();
-        }, 300);
-      }
+      // Open panel → switch to messages drill → fill compose
+      if (typeof openPanel === 'function') openPanel(contactId);
       setTimeout(function() {
-        var compose = document.getElementById('msg-compose');
-        if (compose) {
-          compose.value = draft;
-          compose.focus();
-          compose.dispatchEvent(new Event('input'));
-          if (typeof showToast === 'function') showToast('Sparky drafted a follow-up — review and send', 'success');
-        }
-      }, 600);
+        if (typeof openMessagesFromPanel === 'function') openMessagesFromPanel();
+        setTimeout(function() {
+          var compose = document.getElementById('msg-compose');
+          if (compose) {
+            compose.value = draft;
+            compose.focus();
+            compose.dispatchEvent(new Event('input'));
+            if (typeof showToast === 'function') showToast('Sparky drafted a follow-up — review and send', 'success');
+          }
+        }, 500);
+      }, 350);
 
     } catch(e) {
       if (typeof showToast === 'function') showToast('Draft failed', 'error');
