@@ -2669,9 +2669,19 @@ function renderContacts() {
     const actColors = { approved: 'var(--gold)', paid: 'var(--green)', viewed: '#3b82f6' };
     const actTitles = { approved: 'Proposal approved', paid: 'Invoice paid', viewed: 'Proposal viewed' };
     const activityDot = actType ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + actColors[actType] + ';margin-left:6px;vertical-align:middle;flex-shrink:0" title="' + actTitles[actType] + '"></span>' : '';
+    // Stale indicator: show flame icon if contact is overdue for action in current stage
+    let staleIndicator = '';
+    if (!isArchived && (c.stage || 1) !== 9) {
+      const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
+      if (stageDef) {
+        const urg = _kanbanUrgency(c, stageDef);
+        if (urg.level === 'hot') staleIndicator = `<span style="font-size:10px;margin-left:5px;vertical-align:middle" title="${urg.days}d overdue — needs action now">🔥</span>`;
+        else if (urg.level === 'warm') staleIndicator = `<span style="font-size:10px;margin-left:5px;vertical-align:middle;opacity:.7" title="${urg.days}d waiting">⚠️</span>`;
+      }
+    }
     const avatarHtml = _avatarHtml(c, 34);
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
-      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dispName(c.name, 'Unknown'))}${unreadMsgDot}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
+      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dispName(c.name, 'Unknown'))}${unreadMsgDot}${activityDot}${staleIndicator}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
       <td class="phone col-phone">${c.phone ? `<a href="tel:${c.phone.replace(/\D/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:none;font-weight:500">${esc(fmtPhone(c.phone))}</a>` : empty}</td>
       <td class="addr col-addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : empty}</td>
@@ -8945,10 +8955,11 @@ setTimeout(() => {
         html += `<div class="smart-prompt">
           <div class="smart-prompt-icon">📋</div>
           <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Send the quote?</div>
-            <div class="smart-prompt-sub">They responded — time to send pricing while they're engaged.</div>
+            <div class="smart-prompt-title">Create a quote</div>
+            <div class="smart-prompt-sub">They responded — send pricing while they're engaged.</div>
             <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2SendCheckin('${id}')">Draft follow-up</button>
+              <button class="smart-prompt-btn" onclick="pass2CreateQuote('${id}')">Create quote</button>
+              <button class="smart-prompt-btn" style="background:transparent;border:1.5px solid var(--border);color:var(--text)" onclick="pass2SendCheckin('${id}')">Draft text</button>
             </div>
           </div>
           <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
@@ -8957,10 +8968,10 @@ setTimeout(() => {
         html += `<div class="smart-prompt">
           <div class="smart-prompt-icon">!</div>
           <div class="smart-prompt-body">
-            <div class="smart-prompt-title">Send a follow-up text?</div>
-            <div class="smart-prompt-sub">Customers who get a check-in within 24h convert 2x more.</div>
+            <div class="smart-prompt-title">Follow up on the quote</div>
+            <div class="smart-prompt-sub">Quote is out — a quick check-in doubles conversion rate.</div>
             <div class="smart-prompt-actions">
-              <button class="smart-prompt-btn" onclick="pass2SendCheckin('${id}')">Send check-in</button>
+              <button class="smart-prompt-btn" onclick="pass2SendCheckin('${id}')">Draft check-in</button>
             </div>
           </div>
           <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
@@ -8978,8 +8989,54 @@ setTimeout(() => {
           </div>
           <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
         </div>`;
-      } else if (stage >= 4 && stage <= 8) {
-        // Already booked but no payment recorded? subtle nudge to record install date if absent
+      } else if (stage === 5) {
+        html += `<div class="smart-prompt">
+          <div class="smart-prompt-icon">📄</div>
+          <div class="smart-prompt-body">
+            <div class="smart-prompt-title">Update the customer</div>
+            <div class="smart-prompt-sub">Permit submitted — let them know it's in review with the jurisdiction.</div>
+            <div class="smart-prompt-actions">
+              <button class="smart-prompt-btn" onclick="pass2SendPermitUpdate('${id}', 5)">Draft update text</button>
+            </div>
+          </div>
+          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+        </div>`;
+      } else if (stage === 6) {
+        html += `<div class="smart-prompt">
+          <div class="smart-prompt-icon">💰</div>
+          <div class="smart-prompt-body">
+            <div class="smart-prompt-title">Permit paid — next step</div>
+            <div class="smart-prompt-sub">Permit fee is paid. Let the customer know and set inspection expectations.</div>
+            <div class="smart-prompt-actions">
+              <button class="smart-prompt-btn" onclick="pass2SendPermitUpdate('${id}', 6)">Draft update text</button>
+            </div>
+          </div>
+          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+        </div>`;
+      } else if (stage === 7) {
+        html += `<div class="smart-prompt">
+          <div class="smart-prompt-icon">✅</div>
+          <div class="smart-prompt-body">
+            <div class="smart-prompt-title">Permit approved!</div>
+            <div class="smart-prompt-sub">Great news to share — confirm the install date with the customer.</div>
+            <div class="smart-prompt-actions">
+              <button class="smart-prompt-btn" onclick="pass2SendPermitUpdate('${id}', 7)">Draft approval text</button>
+            </div>
+          </div>
+          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+        </div>`;
+      } else if (stage === 8) {
+        html += `<div class="smart-prompt">
+          <div class="smart-prompt-icon">🔍</div>
+          <div class="smart-prompt-body">
+            <div class="smart-prompt-title">Inspection scheduled</div>
+            <div class="smart-prompt-sub">Send a day-before reminder so they know what to expect.</div>
+            <div class="smart-prompt-actions">
+              <button class="smart-prompt-btn" onclick="pass2SendPermitUpdate('${id}', 8)">Draft reminder text</button>
+            </div>
+          </div>
+          <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
+        </div>`;
       }
       if (stage === 9) {
         // Check for unpaid invoice -> show "Record payment" prompt
@@ -9053,6 +9110,40 @@ setTimeout(() => {
         if (compose) {
           const fname = (c.name || '').split(' ')[0] || 'there';
           compose.value = `Hey ${fname}, just checking in — any questions about the proposal? Happy to walk through it.`;
+          compose.focus();
+          compose.style.height = 'auto';
+          compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+        }
+      }, 200);
+    }
+  };
+
+  window.pass2CreateQuote = function(id) {
+    // Close the panel and open the proposal modal for this contact
+    if (typeof openProposalModal === 'function') {
+      closePanel();
+      openProposalModal(id);
+    }
+  };
+
+  window.pass2SendPermitUpdate = function(id, stage) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const fname = (c.name || '').split(' ')[0] || 'there';
+    const msgs = {
+      5: `Hey ${fname}, just wanted to let you know — your permit has been submitted to the jurisdiction and is under review. These typically take a few business days. I'll update you as soon as it's approved!`,
+      6: `Hey ${fname}, quick update — the permit fee has been paid and we're now waiting on the official approval. I'll reach out as soon as we get the green light to schedule the inspection.`,
+      7: `Great news, ${fname}! Your permit has been approved. I'll reach out shortly to confirm the install date. Everything is on track!`,
+      8: `Hey ${fname}, just a heads up — the inspection is scheduled for tomorrow. Everything should go smoothly. I'll let you know how it goes!`,
+    };
+    const text = msgs[stage] || '';
+    if (!text) return;
+    if (typeof openMessagesFromPanel === 'function') {
+      openMessagesFromPanel();
+      setTimeout(() => {
+        const compose = document.getElementById('msg-compose');
+        if (compose) {
+          compose.value = text;
           compose.focus();
           compose.style.height = 'auto';
           compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
