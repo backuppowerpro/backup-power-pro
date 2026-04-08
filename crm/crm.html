@@ -4011,6 +4011,8 @@ function closePanel() {
   document.getElementById('side-panel-overlay').classList.remove('open');
   unlockBody();
   panelAddrHide();
+  // Cancel any pending autosave so it doesn't fire after panel closes
+  if (typeof _panelAutosaveTimer !== 'undefined') clearTimeout(_panelAutosaveTimer);
   // Clear message-thread context so the 15s poller doesn't keep fetching for a closed panel
   currentMsgContactId = null;
   allMessages = [];
