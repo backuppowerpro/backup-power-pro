@@ -51,8 +51,8 @@ Use `Agent` with `subagent_type: "general-purpose"` in the background. Give it t
 
 **After it finishes:**
 - Filter out anything trivial or stylistic
-- Present Key a short punch list: "Critic flagged X things — [list]. Fix now or skip?"
-- Fix the ones Key approves
+- Fix everything that's a real bug, clear UX failure, or broken edge case — no need to ask
+- Tell Key what was fixed in one line ("Critic caught 2 things, both fixed") — don't list every detail unless something was surprising
 
 **Skip the critic pass when:**
 - The change is a one-line fix or purely internal (no user-facing output)
