@@ -1,44 +1,49 @@
-# BPP — AI Agent Entry Point
+# BPP — AI Entry Point
 
 You are working on **Backup Power Pro**, a generator inlet installation business in Upstate SC owned by Key Goodson.
 
-## Start here — every session
+---
 
-1. **Read `BPP_BRAIN.md`** — master context file. Full business, tech stack, what's running, what's pending, and the change log.
+## Step 1 — Read the Second Brain
 
-2. **Read `/Users/keygoodson/.claude/projects/-Users-keygoodson-Desktop-CLAUDE/memory/MEMORY.md`** — Claude Code auto-memory. Current account state, credentials locations, session notes.
+**The knowledge base for this project lives at `wiki/`.**
 
-3. **Check `PENDING UPDATES` section at the top of `BPP_BRAIN.md`**. If it contains anything other than `*— No pending updates —*`:
-   - Read each update entry carefully
-   - Apply the changes to the relevant sections of `BPP_BRAIN.md`
-   - Add entries to the Change Log for each one
-   - Replace the pending content with `*— No pending updates —*`
-   - `git add BPP_BRAIN.md && git commit -m "Apply pending brain updates from other AI sessions" && git push`
-   - Tell Key what you processed so he knows it landed
+Start here, in this order:
+1. `wiki/CLAUDE.md` — rules for how the wiki works and how you maintain it
+2. `wiki/00 Home.md` — full business overview, current status, tech stack, what's running
 
-## Before you finish any session
+After reading those two files you will have enough context to work. Then read whichever branch pages are relevant to what Key needs.
 
-**If you made meaningful changes**, add an entry to the Change Log in `BPP_BRAIN.md`:
-```
-- [YYYY-MM-DD] What you changed — why you changed it
-```
-Update the relevant section too. Then `git add BPP_BRAIN.md && git commit -m "Update brain" && git push`.
+---
 
-This is how the brain grows. Every AI builds on what the last one figured out.
+## Step 2 — Check for Pending Updates
+
+In `BPP_BRAIN.md`, check the `PENDING UPDATES` section at the top. If it contains anything other than `*— No pending updates —*`:
+- Apply the changes to the relevant sections of `BPP_BRAIN.md` and the wiki
+- Add entries to the Change Log
+- Replace the pending content with `*— No pending updates —*`
+- `git add BPP_BRAIN.md && git commit -m "Apply pending brain updates" && git push`
+- Tell Key what you processed
+
+---
 
 ## Credentials
 
-All API keys, tokens, and passwords are in:
+All API keys, tokens, and passwords:
 `/Users/keygoodson/.claude/credentials.md`
 
-This file is gitignored and never pushed to GitHub. Read it when you need a key. Never hardcode secrets in frontend files.
+Gitignored. Never pushed. Never hardcoded in frontend files.
+
+---
 
 ## Deployment
 
-The repo at `/Users/keygoodson/Desktop/CLAUDE` deploys automatically to backuppowerpro.com via GitHub Pages.
-Deploy: `git add [files] && git commit -m "message" && git push`
+Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.com via GitHub Pages.
+`git add [files] && git commit -m "message" && git push`
 
-## Key rules
+---
+
+## Hard Rules
 
 - Never touch `CNAME`, never modify `.gitignore` rules (only add)
 - Never move `ads/creative/`, `img/`, `assets/`, `supabase/functions/`
@@ -46,3 +51,13 @@ Deploy: `git add [files] && git commit -m "message" && git push`
 - Never post to GBP without Key's explicit approval
 - When Key needs to do a UI action: open Chrome first, navigate to exact page, THEN tell him what to click
 - Geography: Greenville, Spartanburg, Pickens counties only — NO Anderson County
+
+---
+
+## End of Session
+
+If you made meaningful changes during the session:
+1. Update the relevant wiki pages
+2. Append to `wiki/00 Log.md` with date + what changed
+3. Update `BPP_BRAIN.md` change log
+4. `git add BPP_BRAIN.md && git commit -m "Update brain" && git push`
