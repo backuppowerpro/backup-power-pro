@@ -2471,6 +2471,7 @@ async function init() {
   await loadRecentPaidInvoices();
   startApprovalPolling();
   startMessagePolling();
+  startRealtimeMessages();
   // Update last_checked_at after rendering so activity dots show on this load, clear on next
   setTimeout(updateLastCheckedAt, 2000);
 }
@@ -6959,6 +6960,48 @@ async function sendMessage() {
 
 // ── POLL FOR NEW INBOUND MESSAGES ─────────────────────────
 let msgPollTimer = null;
+
+// ── SUPABASE REAL-TIME — instant inbound message detection ────
+// Subscribes to the messages table for new inbound rows.
+// Falls back gracefully if real-time isn't enabled on the Supabase project
+// (requires Database → Replication → messages table set to Full replica).
+function startRealtimeMessages() {
+  try {
+    db.channel('crm-inbound')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        const msg = payload.new;
+        if (!msg) return;
+        // Only notify on inbound — outbound we just sent ourselves
+        if (msg.direction !== 'inbound') return;
+
+        const c = allContacts.find(x => x.id === msg.contact_id);
+        const name = c ? dispName(c.name, fmtPhone(c.phone || '')) : 'New message';
+        const preview = (msg.body || '').replace(/\[media:[^\]]+\]/g, '[photo]').slice(0, 55);
+        const toastText = preview ? (name + ': ' + preview) : (name + ' sent a message');
+        showToast(toastText, 'info');
+
+        // Refresh inbox + badge
+        loadInbox();
+
+        // If this thread is currently open, append the message live
+        if (currentMsgContactId === msg.contact_id) {
+          const exists = allMessages.some(m => m.id === msg.id);
+          if (!exists) { allMessages.push(msg); renderThread(); }
+        }
+
+        // Add to notification panel
+        if (typeof notifAdd === 'function') {
+          notifAdd('message', name, preview || 'New message', msg.contact_id);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') console.log('[realtime] messages: live');
+        else if (status === 'CHANNEL_ERROR') console.warn('[realtime] messages: channel error — polling covers it');
+      });
+  } catch (e) {
+    console.warn('[realtime] not available, polling only:', e);
+  }
+}
 
 function startMessagePolling() {
   // Poll every 15 seconds when messages panel is open
