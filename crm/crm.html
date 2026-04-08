@@ -8685,6 +8685,7 @@ setTimeout(() => {
       { name: 'Go to Materials Board', sub: 'Order + receive tracking', icon: '📦', match: 'materials board order received', action: () => { closeCmdk(); switchTab('leads'); if (typeof setLeadsView === 'function') setLeadsView('materials'); } },
       { name: 'New Contact', sub: 'Add a lead · N', icon: '+', match: 'new contact lead add create', action: () => { closeCmdk(); openContactModal(null); } },
       { name: 'Call Contact', sub: 'Active panel · K', icon: '📞', match: 'call phone dial contact', action: () => { closeCmdk(); if (typeof window.panelCallContact === 'function') window.panelCallContact(); } },
+      { name: 'Open Messages Thread', sub: 'Active panel · M', icon: '💬', match: 'messages thread text sms', action: () => { closeCmdk(); const panelOpen = document.getElementById('side-panel-overlay')?.classList.contains('open'); if (panelOpen && typeof openMessagesFromPanel === 'function') openMessagesFromPanel(); } },
       { name: 'Open Dialer', sub: 'Call any number', icon: '☎', match: 'dialer call number phone dial', action: () => { closeCmdk(); if (typeof openDialer === 'function') openDialer(); } },
       { name: 'Open Sparky', sub: 'AI assistant · S', icon: '⚡', match: 'sparky ai assistant chat help', action: () => { closeCmdk(); if (typeof window.tmOpenPanel === 'function') window.tmOpenPanel(); } },
       { name: 'Show Unread Messages', sub: 'Inbox filter', icon: '●', match: 'unread messages inbox filter', action: () => { closeCmdk(); switchTab('messages'); if (typeof inboxToggleUnreadFilter === 'function' && !_inboxUnreadOnly) inboxToggleUnreadFilter(); } },
@@ -8828,6 +8829,12 @@ setTimeout(() => {
       const notesEl = document.getElementById('panel-notes');
       const panelOpen = document.getElementById('side-panel-overlay')?.classList.contains('open');
       if (panelOpen && notesEl) { e.preventDefault(); notesEl.focus(); notesEl.setSelectionRange(notesEl.value.length, notesEl.value.length); }
+      return;
+    }
+    // M -> open Messages thread for current panel contact
+    if (e.key === 'm' || e.key === 'M') {
+      const panelOpen = document.getElementById('side-panel-overlay')?.classList.contains('open');
+      if (panelOpen && typeof openMessagesFromPanel === 'function') { e.preventDefault(); openMessagesFromPanel(); }
       return;
     }
   });
