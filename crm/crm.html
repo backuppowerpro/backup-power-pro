@@ -2300,6 +2300,14 @@ function _bannerHtml(c) {
       <button onclick="openMapsFromPanel()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Maps"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Maps</button>
     </div>
   </div>`;
+  const stage = c.stage || 1;
+  const stageDef = (typeof PERMIT_STAGES !== 'undefined') ? PERMIT_STAGES.find(s => s.id === stage) : null;
+  const stageLabel = stageDef ? stageDef.label : ('Stage ' + stage);
+  const stageColor = stageDef ? stageDef.color : '#9aa3b8';
+  const stageBadge = `<div style="position:absolute;top:12px;left:14px;z-index:3;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:4px 10px">
+    <div style="width:7px;height:7px;border-radius:50%;background:${stageColor};flex-shrink:0"></div>
+    <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:#fff;letter-spacing:.02em">${esc(stageLabel)}</span>
+  </div>`;
   const closeBtn = `<button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.48);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:3;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 12px rgba(0,0,0,.25)">&#10005;</button>`;
   const bannerId = 'bnr-' + c.id;
   if (c.address) {
@@ -2319,7 +2327,7 @@ function _bannerHtml(c) {
       el.insertBefore(img, el.firstChild);
     });
   }
-  return `<div id="${bannerId}" style="position:relative;width:100%;height:100%;background:${color};overflow:hidden">${fallbackInitials}${gradient}${nameGrad}${nameLabel}${closeBtn}</div>`;
+  return `<div id="${bannerId}" style="position:relative;width:100%;height:100%;background:${color};overflow:hidden">${fallbackInitials}${gradient}${nameGrad}${nameLabel}${stageBadge}${closeBtn}</div>`;
 }
 // ───────────────────────────────────────────────────────────
 const _LS_TOUCH_KEY = 'bpp_crm_touched';
