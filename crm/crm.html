@@ -6442,10 +6442,12 @@ async function loadInbox() {
     listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3)">Loading…</div>';
   }
 
+  // Fetch the most recent 1000 messages — enough to get latest per contact without loading entire history
   const { data, error } = await db
     .from('messages')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .select('contact_id,id,direction,body,created_at,status,sender,recording_url')
+    .order('created_at', { ascending: false })
+    .limit(1000);
 
   if (error) {
     listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red)">Failed to load messages</div>';
