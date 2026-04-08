@@ -6728,11 +6728,13 @@ function renderThread() {
     const isOut = m.direction === 'outbound';
     const byAI = m.sender === 'ai';
     const byKey = m.sender === 'key';
-    const isFailed = m.status === 'failed';
+    const isFailed    = m.status === 'failed';
+    const isDelivered = m.status === 'delivered';
     const senderBadge = isOut && (byAI || byKey)
       ? `<span class="msg-sender-badge ${byAI ? 'ai' : 'key'}">${byAI ? 'AI' : 'Key'}</span>`
       : '';
-    const failedNote = isFailed ? `<span style="font-size:9px;color:var(--red);font-weight:700;margin-left:4px">✕ failed</span>` : '';
+    const failedNote    = isFailed    ? `<span style="font-size:9px;color:var(--red);font-weight:700;margin-left:4px">✕ failed</span>` : '';
+    const deliveredNote = isDelivered && isOut ? `<span style="font-size:9px;color:var(--green,#059669);font-weight:600;margin-left:4px">✓ delivered</span>` : '';
     const bubbleClass = `msg-bubble ${isOut ? 'outbound ' + (byAI ? 'by-ai' : 'by-key') : 'inbound'}${m.status === 'pending' ? ' pending' : ''}`;
 
     // Detect [media:URL] prefix — render inline image for MMS
@@ -6757,7 +6759,7 @@ function renderThread() {
 
     return dateSepFor(m.created_at) + `<div class="msg-row ${isOut ? 'outbound' : 'inbound'}">
       <div class="${bubbleClass}" style="user-select:text">${bubbleInner}</div>
-      <div class="msg-meta">${senderBadge ? senderBadge + '&nbsp;' : ''}<span class="msg-timestamp">${fmtTime(m.created_at)}</span>${failedNote}</div>
+      <div class="msg-meta">${senderBadge ? senderBadge + '&nbsp;' : ''}<span class="msg-timestamp">${fmtTime(m.created_at)}</span>${failedNote}${deliveredNote}</div>
     </div>`;
   }).join('');
 

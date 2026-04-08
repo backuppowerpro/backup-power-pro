@@ -97,7 +97,8 @@ Deno.serve(async (req) => {
   let sendError: string | null = null
 
   try {
-    const formData = new URLSearchParams({ From: TWILIO_FROM, To: toPhone, Body: body })
+    const statusCbUrl = (Deno.env.get('SUPABASE_URL') || '') + '/functions/v1/twilio-status-callback'
+    const formData = new URLSearchParams({ From: TWILIO_FROM, To: toPhone, Body: body, StatusCallback: statusCbUrl })
     if (mediaUrl) formData.set('MediaUrl', mediaUrl)
 
     const res = await fetch(
