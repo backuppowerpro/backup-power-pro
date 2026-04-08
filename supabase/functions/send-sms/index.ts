@@ -1,7 +1,7 @@
 /**
  * send-sms
  *
- * Server-side SMS sender for the BPP CRM. Routes through Twilio.
+ * Server-side SMS/MMS sender for the BPP CRM. Routes through Twilio.
  *
  * Architecture decision (Apr 7 2026): The CRM is Twilio-only. The legacy Quo
  * (OpenPhone) auto-lead-response flow continues running independently from
@@ -10,8 +10,12 @@
  * flows get migrated and Quo retires entirely. Until then, the CRM sends from
  * the Twilio test number (864) 863-7800.
  *
- * Request:  POST { contactId: uuid, body: string }
+ * Request:  POST { contactId: uuid, body: string, mediaUrl?: string }
  *           Authorization: Bearer <SUPABASE_ANON_KEY>
+ *
+ * MMS: if mediaUrl is provided, Twilio sends a picture message.
+ *      Body can be empty when sending media-only.
+ *      The saved message body is prefixed: "[media:URL] optional caption"
  *
  * Response (success, 200):
  *   { success: true, message: { ... } }
@@ -51,7 +55,7 @@ Deno.serve(async (req) => {
     return json(500, { success: false, error: 'twilio not configured' })
   }
 
-  let payload: { contactId?: string; body?: string }
+  let payload: { contactId?: string; body?: string; mediaUrl?: string }
   try {
     payload = await req.json()
   } catch {
@@ -60,9 +64,11 @@ Deno.serve(async (req) => {
 
   const contactId = (payload.contactId || '').trim()
   const body      = (payload.body || '').trim()
-  if (!contactId) return json(400, { success: false, error: 'contactId required' })
-  if (!body)      return json(400, { success: false, error: 'body required' })
-  if (body.length > 1600) return json(400, { success: false, error: 'body exceeds 1600 chars' })
+  const mediaUrl  = (payload.mediaUrl || '').trim()
+
+  if (!contactId)           return json(400, { success: false, error: 'contactId required' })
+  if (!body && !mediaUrl)   return json(400, { success: false, error: 'body or mediaUrl required' })
+  if (body.length > 1600)   return json(400, { success: false, error: 'body exceeds 1600 chars' })
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -92,6 +98,8 @@ Deno.serve(async (req) => {
 
   try {
     const formData = new URLSearchParams({ From: TWILIO_FROM, To: toPhone, Body: body })
+    if (mediaUrl) formData.set('MediaUrl', mediaUrl)
+
     const res = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
       {
@@ -107,7 +115,6 @@ Deno.serve(async (req) => {
     if (!res.ok) {
       const errBody = await res.text()
       console.error('[send-sms] Twilio error:', res.status, errBody)
-      // Twilio returns useful JSON on error — try to surface a clean message
       try {
         const errJson = JSON.parse(errBody)
         sendError = errJson.message || `Twilio ${res.status}`
@@ -125,13 +132,18 @@ Deno.serve(async (req) => {
 
   const status: 'sent' | 'failed' = sendError ? 'failed' : 'sent'
 
+  // DB body: prefix with [media:URL] so CRM can render inline image
+  const dbBody = mediaUrl
+    ? `[media:${mediaUrl}]${body ? ' ' + body : ''}`
+    : body
+
   // ── PERSIST (always — including failures) ─────────────────────────────────────
   const { data: savedMsg, error: insertErr } = await supabase
     .from('messages')
     .insert({
       contact_id:     contact.id,
       direction:      'outbound',
-      body,
+      body:           dbBody,
       sender:         'key',
       quo_message_id: twilioSid,   // column reused for Twilio SID
       status,

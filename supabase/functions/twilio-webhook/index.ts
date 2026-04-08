@@ -1,14 +1,15 @@
 /**
  * twilio-webhook
  *
- * Receives inbound SMS from Twilio for the BPP test number (864) 863-7800.
+ * Receives inbound SMS/MMS from Twilio for the BPP test number (864) 863-7800.
  * Twilio sends form-encoded POST data (not JSON):
- *   From, To, Body, MessageSid, NumMedia, AccountSid, etc.
+ *   From, To, Body, MessageSid, NumMedia, MediaUrl0, AccountSid, etc.
  *
  * This function:
  * 1. Parses the inbound message
- * 2. Looks up the sender's contact by phone number
+ * 2. Looks up the sender's contact by phone number (digit-normalized match)
  * 3. Saves the message to the `messages` table
+ *    - MMS: body stored as "[media:URL] optional text" for inline image rendering
  * 4. Returns a valid TwiML <Response/> so Twilio marks delivery success
  *
  * Webhook URL to configure in Twilio console:
@@ -52,6 +53,7 @@ Deno.serve(async (req) => {
   const body       = params.get('Body') || ''
   const messageSid = params.get('MessageSid') || ''
   const numMedia   = parseInt(params.get('NumMedia') || '0', 10)
+  const mediaUrl0  = numMedia > 0 ? (params.get('MediaUrl0') || '') : ''
 
   console.log(`[twilio-webhook] from=${from} sid=${messageSid} media=${numMedia}`)
 
@@ -61,33 +63,39 @@ Deno.serve(async (req) => {
     return twiml()
   }
 
-  // Normalize phone to E.164
+  // Normalize phone — strip non-digits, compare last 10
   const digits = from.replace(/\D/g, '')
-  const normalizedFrom = digits.length === 10 ? `+1${digits}` : `+${digits}`
-  const last10 = normalizedFrom.slice(-10)
+  const last10 = digits.slice(-10)
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  // ── LOOK UP CONTACT ────────────────────────────────────────────────────────
-  const { data: contacts } = await supabase
+  // ── LOOK UP CONTACT (digit-normalized match) ──────────────────────────────
+  // ilike('%digits%') fails for formatted numbers like "(941) 441-7996"
+  // because the digit run doesn't appear as a substring. Fetch all and match in JS.
+  const { data: allContacts } = await supabase
     .from('contacts')
     .select('id, name, phone')
-    .ilike('phone', `%${last10}%`)
-    .limit(1)
 
-  const contact = contacts?.[0] ?? null
+  const contact = allContacts?.find(
+    (c: any) => (c.phone || '').replace(/\D/g, '').slice(-10) === last10
+  ) ?? null
+
+  // Build the stored body — MMS gets [media:URL] prefix for inline rendering
+  const msgBody = mediaUrl0
+    ? `[media:${mediaUrl0}]${body ? ' ' + body : ''}`
+    : (body || '[Empty message]')
 
   if (!contact) {
     // Unknown number — still save the message with no contact_id
     // so Key can see it in the inbox and match it manually
-    console.log(`[twilio-webhook] unknown sender ${normalizedFrom} — saving as orphan`)
+    console.log(`[twilio-webhook] unknown sender ${from} — saving as orphan`)
     await supabase.from('messages').insert({
       contact_id:     null,
       direction:      'inbound',
-      body:           body || (numMedia > 0 ? '[Media message]' : '[Empty message]'),
+      body:           msgBody,
       sender:         'lead',
       quo_message_id: messageSid,
       status:         'received',
@@ -96,8 +104,6 @@ Deno.serve(async (req) => {
   }
 
   // ── SAVE INBOUND MESSAGE ───────────────────────────────────────────────────
-  const msgBody = body || (numMedia > 0 ? '[Media message]' : '[Empty message]')
-
   const { error: insertErr } = await supabase.from('messages').insert({
     contact_id:     contact.id,
     direction:      'inbound',

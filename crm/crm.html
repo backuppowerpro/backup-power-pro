@@ -1560,7 +1560,15 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <!-- ── INVOICES TAB ──────────────────────────────────────── -->
 <div id="tab-invoices" style="display:none">
   <main class="main" style="max-width:920px">
-    <div class="section-head">
+    <!-- Quotes section -->
+    <div id="docs-quotes-section" style="margin-bottom:28px">
+      <div class="section-head" style="margin-bottom:12px">
+        <div class="section-title">Quotes</div>
+      </div>
+      <div id="docs-quotes-list"></div>
+    </div>
+    <!-- Invoices section -->
+    <div class="section-head" style="margin-bottom:0">
       <div class="section-title">Invoices</div>
     </div>
     <div class="inv-summary" id="inv-summary"></div>
@@ -2071,7 +2079,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
           </button>
           <label title="Send photo" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;cursor:pointer;color:var(--text3);opacity:.7;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">
-            <input type="file" accept="image/*" style="display:none" onchange="msgSendPhoto(this)">
+            <input type="file" accept="image/*,video/*" style="display:none" onchange="msgSendPhoto(this)">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </label>
           <div style="flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:22px;padding:8px 8px 8px 14px;gap:6px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
@@ -6586,8 +6594,21 @@ function renderThread() {
       : '';
     const failedNote = isFailed ? `<span style="font-size:9px;color:var(--red);font-weight:700;margin-left:4px">✕ failed</span>` : '';
     const bubbleClass = `msg-bubble ${isOut ? 'outbound ' + (byAI ? 'by-ai' : 'by-key') : 'inbound'}${m.status === 'pending' ? ' pending' : ''}`;
+
+    // Detect [media:URL] prefix — render inline image for MMS
+    const rawBody = m.body || '';
+    let bubbleInner;
+    const mediaMatch = rawBody.match(/^\[media:([^\]]+)\]([\s\S]*)/);
+    if (mediaMatch) {
+      const mUrl = mediaMatch[1];
+      const caption = mediaMatch[2].trim();
+      bubbleInner = `<img src="${esc(mUrl)}" style="max-width:220px;max-height:280px;border-radius:10px;display:block;${caption ? 'margin-bottom:5px' : ''}" onerror="this.style.display='none'" loading="lazy">${caption ? `<span>${esc(caption)}</span>` : ''}`;
+    } else {
+      bubbleInner = esc(rawBody);
+    }
+
     return `<div class="msg-row ${isOut ? 'outbound' : 'inbound'}">
-      <div class="${bubbleClass}" style="user-select:text">${esc(m.body || '')}</div>
+      <div class="${bubbleClass}" style="user-select:text">${bubbleInner}</div>
       <div class="msg-meta">${senderBadge ? senderBadge + '&nbsp;' : ''}<span class="msg-timestamp">${fmtTime(m.created_at)}</span>${failedNote}</div>
     </div>`;
   }).join('');
@@ -6606,6 +6627,61 @@ function playCallRecording(url) {
   // Simple playback toast with pause button
   showToast('Playing call recording…', 'success');
   _callAudio.play().catch(e => showToast('Could not play recording', 'error'));
+}
+
+// ── MMS PHOTO SEND ────────────────────────────────────────
+async function msgSendPhoto(input) {
+  const file = input.files?.[0];
+  input.value = ''; // reset so same file can be re-selected
+  if (!file || !currentMsgContactId) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('File too large — Twilio MMS limit is 5MB', 'error');
+    return;
+  }
+
+  const sendBtn = document.getElementById('msg-send-btn');
+  if (sendBtn) sendBtn.disabled = true;
+  showToast('Uploading…');
+
+  try {
+    // Upload to Supabase Storage (bucket: message-media, must be public)
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const fileName = `${currentMsgContactId}/${Date.now()}.${ext}`;
+    const { error: uploadErr } = await db.storage
+      .from('message-media')
+      .upload(fileName, file, { contentType: file.type, upsert: false });
+
+    if (uploadErr) throw new Error(uploadErr.message);
+
+    const { data: urlData } = db.storage.from('message-media').getPublicUrl(fileName);
+    const publicUrl = urlData.publicUrl;
+
+    // Send via edge function (stores [media:URL] in DB body)
+    const res = await fetch(SEND_SMS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT,
+      },
+      body: JSON.stringify({ contactId: currentMsgContactId, body: '', mediaUrl: publicUrl }),
+    });
+
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(result.error || 'Send failed');
+
+    showToast('Photo sent', 'success');
+    if (result.message) {
+      allMessages.push(result.message);
+      renderThread();
+    } else {
+      await loadMessageThread(currentMsgContactId);
+    }
+  } catch (err) {
+    showToast('Photo failed: ' + err.message, 'error');
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+  }
 }
 
 function insertQuickReply(btn) {
@@ -7505,7 +7581,48 @@ async function loadInvoicesTab(silent) {
   renderInvoicesTab();
 }
 
+function renderDocsQuotes() {
+  const el = document.getElementById('docs-quotes-list');
+  if (!el) return;
+
+  // Show active (non-cancelled) proposals, newest first
+  const active = (allProposals || []).filter(p => p.status !== 'Cancelled');
+
+  if (!active.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md)">No active quotes</div>';
+    return;
+  }
+
+  const statusStyle = {
+    'Approved':  { bg: '#d1fae5', color: '#065f46', label: 'Approved' },
+    'Viewed':    { bg: '#fef3c7', color: '#92400e', label: 'Viewed' },
+    'Created':   { bg: '#dbeafe', color: '#1d4ed8', label: 'Sent' },
+    'Copied':    { bg: '#dbeafe', color: '#1d4ed8', label: 'Sent' },
+  };
+
+  const rows = active.map(p => {
+    const c = (allContacts || []).find(x => x.id === p.contact_id);
+    const name = c ? dispName(c.name, 'Unknown') : 'Unknown';
+    const s = statusStyle[p.status] || { bg: '#f3f4f6', color: '#374151', label: p.status };
+    const amount = p.total ? '$' + Number(p.total).toLocaleString() : '—';
+    const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+    const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
+    return `<div class="inv-row" onclick="${c ? `openPanel('${c.id}')` : ''}" style="cursor:${c ? 'pointer' : 'default'}">
+      <div class="inv-avatar" style="background:var(--navy)">${esc(name.charAt(0).toUpperCase())}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:13.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
+        <div style="font-size:11px;color:var(--text3);font-weight:500;margin-top:1px">${ampLabel} &middot; ${dateStr}</div>
+      </div>
+      <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;color:var(--text);white-space:nowrap">${amount}</div>
+      <div style="font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:var(--r-pill);background:${s.bg};color:${s.color};white-space:nowrap">${s.label}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="inv-list">${rows}</div>`;
+}
+
 function renderInvoicesTab() {
+  renderDocsQuotes();
   const summaryEl = document.getElementById('inv-summary');
   const filterEl = document.getElementById('inv-filters');
   const list = document.getElementById('inv-list');
@@ -9026,30 +9143,25 @@ setTimeout(() => {
   html.dark .pm-board-action{background:var(--gold);color:#1e1b17}
   html.dark .pm-board-action:hover{background:#ffd166}
 
-  /* Materials board */
-  .pm-mboard-row{display:grid;grid-template-columns:1fr 130px 130px 100px;gap:10px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
-  .pm-mboard-row:hover{background:rgba(11,31,59,.025)}
-  html.dark .pm-mboard-row:hover{background:rgba(255,255,255,.025)}
-  .pm-mboard-row:last-child{border-bottom:none}
+  /* Materials board — interactive card layout */
   .pm-mboard-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .pm-mboard-name small{display:block;font-family:'Inter',sans-serif;font-weight:500;font-size:11px;color:var(--text3);margin-top:1px}
-  .pm-mboard-cell{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .pm-mboard-cell.muted{color:var(--text3);font-style:italic}
-  .pm-mboard-pick{font-weight:600;color:var(--text)}
-  .pm-mboard-todo{display:inline-flex;align-items:center;gap:4px;font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:var(--r-pill);border:1px dashed var(--border-strong)}
-  .pm-mboard-todo::before{content:'+';font-weight:800;font-size:13px;line-height:1;color:var(--text3)}
-  html.dark .pm-mboard-todo{border-color:#3d3830}
-  .pm-mboard-status{font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;border-radius:var(--r-pill);text-align:center;white-space:nowrap}
+  .pm-mboard-status{font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;border-radius:var(--r-pill);text-align:center;white-space:nowrap;flex-shrink:0}
   .pm-mboard-status.todo{background:#fef3c7;color:#92400e}
   .pm-mboard-status.ordered{background:#dbeafe;color:#1d4ed8}
   .pm-mboard-status.received{background:#d1fae5;color:var(--green)}
   html.dark .pm-mboard-status.todo{background:rgba(234,179,8,.18);color:#facc15}
   html.dark .pm-mboard-status.ordered{background:rgba(59,130,246,.18);color:#7cb3f0}
   html.dark .pm-mboard-status.received{background:rgba(5,150,105,.18);color:#4ade80}
-  @media(max-width:720px){
-    .pm-mboard-row{grid-template-columns:1fr 100px 80px;gap:8px}
-    .pm-mboard-row .pm-mboard-cell:nth-child(3){display:none}
-  }
+  .pm-mboard-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+  .pm-mboard-card:hover{border-color:rgba(11,31,59,.25);box-shadow:0 2px 14px rgba(10,20,50,.07)}
+  html.dark .pm-mboard-card:hover{border-color:#4d4840;box-shadow:0 2px 14px rgba(0,0,0,.15)}
+  .pm-mboard-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .pm-mboard-meta{font-size:11px;color:var(--text3);margin-top:2px;font-weight:500}
+  .pm-mboard-card-body{display:flex;flex-direction:column;gap:7px;border-top:1px solid var(--border);padding-top:9px}
+  .pm-mboard-field{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:26px}
+  .pm-mboard-field-lbl{font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;width:50px;flex-shrink:0}
+  .pm-mboard-field-val{font-size:12px;font-weight:600;color:var(--text2)}
+  .pm-mboard-cards{display:flex;flex-direction:column;gap:8px}
   `;
   const _pass9StyleEl = document.createElement('style');
   _pass9StyleEl.textContent = _pass9CSS;
@@ -9745,36 +9857,69 @@ setTimeout(() => {
 
     let html = '<div class="pm-board"><div class="pm-board-section">'
       + '<div class="pm-board-section-head"><div class="pm-board-dot" style="background:#eab308"></div>'
-      + 'Materials needed for booked jobs<span style="color:var(--text3);font-weight:700;margin-left:auto">' + eligible.length + '</span></div>';
+      + 'Materials needed for booked jobs<span style="color:var(--text3);font-weight:700;margin-left:auto">' + eligible.length + '</span></div>'
+      + '<div style="padding:12px 14px"><div class="pm-mboard-cards">';
+
+    const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
 
     eligible.forEach(c => {
       const md = getMaterialsData(c);
-      // Real, helpful columns. If the user hasn't picked materials yet, show
-      // "Pick inlet" / "Pick interlock" prompts (not silent em-dashes).
-      const inletDisp = md.inlet
-        ? `<span class="pm-mboard-pick">${esc(md.inlet)}</span>`
-        : `<span class="pm-mboard-todo">Pick inlet</span>`;
       const intlkResolved = md.interlock || (md.panel_brand ? _suggestInterlock(md.panel_brand) : '');
-      const intlkDisp = intlkResolved
-        ? `<span class="pm-mboard-pick">${esc(intlkResolved)}</span>${md.interlock ? '' : ' <small style="color:var(--text3);font-weight:500">(suggested)</small>'}`
-        : `<span class="pm-mboard-todo">Pick interlock</span>`;
-      let status = 'todo';
-      let statusLabel = 'Not ordered';
-      if (md.ordered_at) { status = 'ordered'; statusLabel = 'Ordered'; }
+      let status = 'todo'; let statusLabel = 'Not ordered';
+      if (md.received_at) { status = 'received'; statusLabel = 'Received'; }
+      else if (md.ordered_at) { status = 'ordered'; statusLabel = 'Ordered ' + fmtDate(md.ordered_at); }
       const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
       const stageLabel = stageDef ? stageDef.label : ('Stage ' + (c.stage || 1));
-      // Row click → open panel and jump straight to materials section.
-      // One-click flow from "row needs materials" to "edit materials" — no
-      // intermediate banner click. The PICK MATERIALS banner inside the
-      // panel is still there for users who land on the panel some other way.
-      html += `<div class="pm-mboard-row" onclick="window.pmBoardOpenAndPick('${c.id}')">
-        <div class="pm-mboard-name">${esc(dispName(c.name, 'New Lead'))}<small>${esc(stageLabel)} \u00b7 booked ${new Date(c.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })}</small></div>
-        <div class="pm-mboard-cell">${inletDisp}</div>
-        <div class="pm-mboard-cell">${intlkDisp}</div>
-        <div class="pm-mboard-status ${status}">${esc(statusLabel)}</div>
+      const bookedDate = new Date(c.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+
+      // Panel/interlock row — only if panel brand known
+      const panelRow = md.panel_brand ? `
+        <div class="pm-mboard-field">
+          <span class="pm-mboard-field-lbl">Panel</span>
+          <span class="pm-mboard-field-val">${esc(md.panel_brand)}</span>
+          <button class="pm-pill ${md.panel_ord?'on':''}" onclick="event.stopPropagation();window.pmToggleOrd('${c.id}','mpb_ord')" title="Ordered?">${md.panel_ord?'Ord \u2713':'Ordered?'}</button>
+          <button class="pm-pill ${md.surge?'on':''}" onclick="event.stopPropagation();window.pmToggleSurge('${c.id}')">WHSP?</button>
+          ${md.surge ? `<button class="pm-pill ${md.surge_ord?'on':''}" onclick="event.stopPropagation();window.pmToggleOrd('${c.id}','msurge_ord')">${md.surge_ord?'Ord \u2713':'Ordered?'}</button>` : ''}
+        </div>` : '';
+
+      const intlkRow = intlkResolved ? `
+        <div class="pm-mboard-field">
+          <span class="pm-mboard-field-lbl">Intlk</span>
+          <span class="pm-mboard-field-val">${esc(intlkResolved)}</span>
+          ${!md.interlock ? '<span style="font-size:10px;color:var(--text3);font-style:italic">suggested</span>' : ''}
+        </div>` : '';
+
+      // Action buttons row
+      const actionRow = `
+        <div class="pm-mboard-field" style="margin-top:2px">
+          <span class="pm-mboard-field-lbl"></span>
+          <button class="pm-pill ${md.ordered_at?'on':''}" onclick="event.stopPropagation();window.pmMarkOrdered('${c.id}')">${md.ordered_at?'Ordered \u2713':'Mark Ordered'}</button>
+          <button class="pm-pill ${md.received_at?'on':''}" onclick="event.stopPropagation();window.pmMarkReceived('${c.id}')">${md.received_at?'Received \u2713':'Mark Received'}</button>
+        </div>`;
+
+      html += `<div class="pm-mboard-card" onclick="if(!event.target.closest('button'))window.pmBoardOpenAndPick('${c.id}')">
+        <div class="pm-mboard-card-top">
+          <div>
+            <div class="pm-mboard-name">${esc(dispName(c.name, 'New Lead'))}</div>
+            <div class="pm-mboard-meta">${esc(stageLabel)} &middot; booked ${bookedDate}</div>
+          </div>
+          <span class="pm-mboard-status ${status}">${esc(statusLabel)}</span>
+        </div>
+        <div class="pm-mboard-card-body">
+          <div class="pm-mboard-field">
+            <span class="pm-mboard-field-lbl">Inlet</span>
+            <button class="pm-pill ${md.inlet==='30A'?'on':''}" onclick="event.stopPropagation();window.pmSetInlet('${c.id}','30A')">30A</button>
+            <button class="pm-pill ${md.inlet==='50A'?'on':''}" onclick="event.stopPropagation();window.pmSetInlet('${c.id}','50A')">50A</button>
+            <button class="pm-pill ${md.inlet_ord?'on':''}" onclick="event.stopPropagation();window.pmToggleOrd('${c.id}','minlet_ord')">${md.inlet_ord?'Ordered \u2713':'Ordered?'}</button>
+          </div>
+          ${panelRow}
+          ${intlkRow}
+          ${actionRow}
+        </div>
       </div>`;
     });
-    html += '</div></div>';
+
+    html += '</div></div></div></div>';
     wrap.innerHTML = html;
   };
 
