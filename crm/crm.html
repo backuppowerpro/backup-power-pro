@@ -9070,6 +9070,22 @@ setTimeout(() => {
             <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
           </div>`;
         }
+        // Review request prompt (separate dismiss key so it's independent of payment)
+        const reviewKey = id + ':review';
+        const reviewDismissed = JSON.parse(localStorage.getItem('bpp_crm_prompt_dismiss') || '{}');
+        if (!reviewDismissed[reviewKey]) {
+          html += `<div class="smart-prompt" style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.03));border-color:rgba(34,197,94,.3)">
+            <div class="smart-prompt-icon" style="background:var(--green)">⭐</div>
+            <div class="smart-prompt-body">
+              <div class="smart-prompt-title">Ask for a review</div>
+              <div class="smart-prompt-sub">Job's done — a Google review from a happy customer is worth its weight in gold.</div>
+              <div class="smart-prompt-actions">
+                <button class="smart-prompt-btn" style="background:var(--green)" onclick="pass2SendReviewAsk('${id}')">Draft review text</button>
+              </div>
+            </div>
+            <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${reviewKey}')" title="Dismiss">×</button>
+          </div>`;
+        }
       }
     }
 
@@ -9128,6 +9144,26 @@ setTimeout(() => {
           compose.focus();
           compose.style.height = 'auto';
           compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+        }
+      }, 200);
+    }
+  };
+
+  window.pass2SendReviewAsk = function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    if (typeof openMessagesFromPanel === 'function') {
+      openMessagesFromPanel();
+      setTimeout(() => {
+        const compose = document.getElementById('msg-compose');
+        if (compose) {
+          const fname = (c.name || '').split(' ')[0] || 'there';
+          compose.value = `Hey ${fname}, really glad we could get you set up! If you have a minute, an honest Google review goes a long way for a small business like mine. Here's the direct link: https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID — thanks so much, truly appreciate it!`;
+          compose.focus();
+          compose.style.height = 'auto';
+          compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+          // Remind Key to update the review link
+          showToast('Update the Google review link before sending!', 'info');
         }
       }, 200);
     }
