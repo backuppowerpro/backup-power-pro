@@ -6485,10 +6485,14 @@ async function loadInbox() {
     const avatar = c ? _avatarHtml(c, 40) : `<div style="width:40px;height:40px;border-radius:50%;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3)">?</div>`;
     const mutedBadge = isMuted ? `<span style="font-size:10px;font-weight:700;color:var(--text3);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1px 5px;margin-left:4px">Muted</span>` : '';
 
+    const hasPhone = !!(c && c.phone);
+    const callBtn = hasPhone
+      ? `<button onclick="event.stopPropagation();window.voiceCallContact&&window.voiceCallContact('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">📞</button>`
+      : '';
     const actionMenu = `<div class="inbox-actions" style="display:flex;flex-direction:column;gap:2px;opacity:0;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
       ${isDone
         ? `<button onclick="event.stopPropagation();inboxUnarchive('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">↑ Restore</button>`
-        : `<button onclick="event.stopPropagation();inboxMarkDone('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">✓ Done</button>
+        : `${callBtn}<button onclick="event.stopPropagation();inboxMarkDone('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">✓ Done</button>
            <button onclick="event.stopPropagation();inboxToggleMute('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">${isMuted ? '🔔' : '🔕'} ${isMuted ? 'Unmute' : 'Mute'}</button>`
       }
     </div>`;
@@ -11630,6 +11634,27 @@ setTimeout(() => {
     fmtSection('TODAY', b.today);
     fmtSection('MATERIALS', b.materials);
     fmtSection('GOOD NEWS', b.goodNews);
+
+    // Include the currently-open contact so "this customer" questions work
+    var focusId = (typeof currentMsgContactId !== 'undefined' && currentMsgContactId)
+      ? currentMsgContactId
+      : (typeof currentPanelContactId !== 'undefined' ? currentPanelContactId : null);
+    if (focusId) {
+      var fc = contacts.find(function(x) { return x.id === focusId; });
+      if (fc) {
+        var fStageDef = (typeof PERMIT_STAGES !== 'undefined') ? PERMIT_STAGES.find(function(s) { return s.id === (fc.stage || 1); }) : null;
+        var fJur = (fc.jurisdiction_id && typeof allJurisdictions !== 'undefined')
+          ? (allJurisdictions.find(function(j) { return j.id === fc.jurisdiction_id; }) || null)
+          : null;
+        lines.push('');
+        lines.push('CURRENTLY VIEWING: ' + (_shortName(fc) || 'Unknown') + ' [id:' + fc.id + ']');
+        lines.push('Stage: ' + (fStageDef ? fStageDef.label : ('Stage ' + (fc.stage || 1))));
+        if (fc.phone) lines.push('Phone: ' + fc.phone);
+        if (fJur) lines.push('Jurisdiction: ' + fJur.name);
+        if (fc.notes) lines.push('Notes: ' + fc.notes.slice(0, 200));
+      }
+    }
+
     return lines.join('\n').slice(0, 4000);
   }
 
