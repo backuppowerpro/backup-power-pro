@@ -2637,6 +2637,9 @@ function renderContacts() {
     const dupIds = getDupIds(c.id);
     const dupBadge = dupIds.length ? `<span style="font-size:9px;background:#fef2f2;color:#dc2626;padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;cursor:pointer" onclick="event.stopPropagation();openMergeModal('${c.id}','${dupIds[0]}')">DUP</span>` : '';
 
+    const hasUnreadMsg = _unreadContactIds.has(c.id);
+    const unreadMsgDot = hasUnreadMsg ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:middle;flex-shrink:0" title="Unread message"></span>' : '';
+
     const isArchived = c.status === 'Archived';
     const actType = !isArchived ? contactActivityType(c.id) : null;
     const actColors = { approved: 'var(--gold)', paid: 'var(--green)', viewed: '#3b82f6' };
@@ -2644,7 +2647,7 @@ function renderContacts() {
     const activityDot = actType ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + actColors[actType] + ';margin-left:6px;vertical-align:middle;flex-shrink:0" title="' + actTitles[actType] + '"></span>' : '';
     const avatarHtml = _avatarHtml(c, 34);
     return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer${isArchived ? ';opacity:.5' : ''}">
-      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dispName(c.name, 'Unknown'))}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
+      <td class="name"><div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dispName(c.name, 'Unknown'))}${unreadMsgDot}${activityDot}${dupBadge}${isArchived ? '<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">archived</span>' : ''}</span></div></td>
       <td class="phone col-phone">${c.phone ? `<a href="tel:${c.phone.replace(/\D/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:none;font-weight:500">${esc(fmtPhone(c.phone))}</a>` : empty}</td>
       <td class="addr col-addr">${addrCell}</td>
       <td class="notes-cell col-notes" style="color:var(--text3);font-size:12px">${c.notes ? esc(c.notes).slice(0,80)+(c.notes.length>80?'…':'') : empty}</td>
@@ -6433,6 +6436,9 @@ async function inboxSparkyScan() {
   }
 }
 
+// Global set of contact IDs with unread messages — updated by loadInbox(), read by renderContacts()
+let _unreadContactIds = new Set();
+
 // ── INBOX ─────────────────────────────────────────────────
 async function loadInbox() {
   const listEl = document.getElementById('inbox-list');
@@ -6542,7 +6548,10 @@ async function loadInbox() {
   }
 
   // Tab badge — only count non-muted, non-done unread (respects per-contact read timestamp)
-  const unreadCount = active.filter(m => !mutedIds.includes(m.contact_id) && m.direction === 'inbound' && m.created_at > lastChecked && m.created_at > getContactReadAt(m.contact_id)).length;
+  const unreadMessages = active.filter(m => !mutedIds.includes(m.contact_id) && m.direction === 'inbound' && m.created_at > lastChecked && m.created_at > getContactReadAt(m.contact_id));
+  const unreadCount = unreadMessages.length;
+  // Update global set so contact list can show unread dots without re-fetching
+  _unreadContactIds = new Set(unreadMessages.map(m => m.contact_id));
   const tabBadge = document.getElementById('tab-msg-badge');
   if (tabBadge) {
     tabBadge.textContent = unreadCount > 0 ? unreadCount : '';
@@ -6550,6 +6559,8 @@ async function loadInbox() {
   }
   // Update browser tab title so Key knows he has messages even in background tabs
   document.title = unreadCount > 0 ? `(${unreadCount}) BPP CRM` : 'BPP CRM';
+  // Refresh contacts list so unread dots appear/disappear on contact rows
+  if (typeof renderContacts === 'function') try { renderContacts(); } catch(e) {}
   // Also auto-restore done conversations that received a new inbound message
   const toRestore = done.filter(m => m.direction === 'inbound' && m.created_at > lastChecked).map(m => m.contact_id);
   if (toRestore.length > 0) {
@@ -8481,7 +8492,9 @@ setTimeout(() => {
       { name: 'Go to Messages', sub: 'Press 2', icon: '2', match: 'messages inbox sms', action: () => { closeCmdk(); switchTab('messages'); } },
       { name: 'Go to Invoices', sub: 'Press 3', icon: '3', match: 'invoices billing payments', action: () => { closeCmdk(); switchTab('invoices'); } },
       { name: 'Go to Pipeline', sub: 'Kanban view', icon: '◫', match: 'pipeline kanban board view', action: () => { closeCmdk(); switchTab('leads'); if (typeof setLeadsView === 'function') setLeadsView('pipeline'); } },
-      { name: 'New Contact', sub: 'Add a lead', icon: '+', match: 'new contact lead add create', action: () => { closeCmdk(); openContactModal(null); } },
+      { name: 'New Contact', sub: 'Add a lead · N', icon: '+', match: 'new contact lead add create', action: () => { closeCmdk(); openContactModal(null); } },
+      { name: 'Call Contact', sub: 'Active panel · K', icon: '📞', match: 'call phone dial contact', action: () => { closeCmdk(); if (typeof window.panelCallContact === 'function') window.panelCallContact(); } },
+      { name: 'Open Sparky', sub: 'AI assistant · S', icon: '⚡', match: 'sparky ai assistant chat help', action: () => { closeCmdk(); if (typeof window.tmOpenPanel === 'function') window.tmOpenPanel(); } },
       { name: 'Toggle Dark Mode', sub: 'Switch theme', icon: '☾', match: 'dark mode theme toggle light', action: () => { closeCmdk(); document.documentElement.classList.toggle('dark'); try { localStorage.setItem('bpp_crm_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {} } },
     ];
     const matchedActions = actions.filter(a => !q || a.match.includes(q) || a.name.toLowerCase().includes(q));
@@ -8572,6 +8585,15 @@ setTimeout(() => {
       if (cmdkOverlay.classList.contains('open')) closeCmdk(); else openCmdk();
       return;
     }
+    // Cmd/Ctrl+S -> save contact panel if dirty
+    if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')) {
+      const sp = document.getElementById('side-panel-overlay');
+      if (sp && sp.classList.contains('open') && typeof panelDirty !== 'undefined' && panelDirty) {
+        e.preventDefault();
+        if (typeof panelSave === 'function') panelSave();
+      }
+      return;
+    }
     if (cmdkOverlay.classList.contains('open')) return;
     // Skip if typing
     if (isInput) return;
@@ -8595,6 +8617,25 @@ setTimeout(() => {
     // N -> new contact
     if (e.key === 'n' || e.key === 'N') {
       if (typeof openContactModal === 'function') { e.preventDefault(); openContactModal(null); }
+      return;
+    }
+    // K -> call current contact (if panel open)
+    if (e.key === 'k' || e.key === 'K') {
+      const panelOpen = document.getElementById('side-panel-overlay')?.classList.contains('open');
+      if (panelOpen && typeof window.panelCallContact === 'function') { e.preventDefault(); window.panelCallContact(); }
+      return;
+    }
+    // S -> open Sparky
+    if (e.key === 's' || e.key === 'S') {
+      if (typeof window.tmOpenPanel === 'function') { e.preventDefault(); window.tmOpenPanel(); }
+      return;
+    }
+    // A -> focus Notes textarea (if panel open)
+    if (e.key === 'a' || e.key === 'A') {
+      const notesEl = document.getElementById('panel-notes');
+      const panelOpen = document.getElementById('side-panel-overlay')?.classList.contains('open');
+      if (panelOpen && notesEl) { e.preventDefault(); notesEl.focus(); notesEl.setSelectionRange(notesEl.value.length, notesEl.value.length); }
+      return;
     }
   });
 
