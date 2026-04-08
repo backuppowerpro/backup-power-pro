@@ -1587,6 +1587,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="inboxToggleSearch()" id="inbox-search-btn" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--bg);color:var(--text3);border:1.5px solid var(--border);border-radius:50%;cursor:pointer;transition:background .15s,color .15s,border-color .15s" title="Search conversations">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
         <button onclick="inboxToggleUnreadFilter()" id="inbox-unread-filter-btn" style="display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s" title="Show unread only">
           Unread
         </button>
@@ -1599,6 +1602,12 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           Sparky
         </button>
       </div>
+    </div>
+    <div id="inbox-search-bar" style="display:none;padding-bottom:10px">
+      <input id="inbox-search-input" type="text" placeholder="Search conversations…" autocomplete="off"
+        style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;box-sizing:border-box"
+        onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
+        oninput="inboxFilterSearch(this.value)">
     </div>
     <div id="inbox-list" style="display:flex;flex-direction:column;gap:6px"></div>
     <div id="inbox-done-section" style="display:none;margin-top:18px">
@@ -6298,6 +6307,30 @@ let allMessages = []; // all messages for the current thread
 const INBOX_DONE_KEY  = 'bpp_inbox_done';
 const INBOX_MUTE_KEY  = 'bpp_inbox_muted';
 let _inboxUnreadOnly = false;
+let _inboxSearchOpen = false;
+function inboxToggleSearch() {
+  _inboxSearchOpen = !_inboxSearchOpen;
+  const bar = document.getElementById('inbox-search-bar');
+  const btn = document.getElementById('inbox-search-btn');
+  if (bar) bar.style.display = _inboxSearchOpen ? '' : 'none';
+  if (_inboxSearchOpen) {
+    const inp = document.getElementById('inbox-search-input');
+    if (inp) { inp.focus(); inp.value = ''; inboxFilterSearch(''); }
+    if (btn) { btn.style.background = 'var(--navy)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--navy)'; }
+  } else {
+    inboxFilterSearch('');
+    if (btn) { btn.style.background = 'var(--bg)'; btn.style.color = 'var(--text3)'; btn.style.borderColor = 'var(--border)'; }
+  }
+}
+function inboxFilterSearch(q) {
+  const term = (q || '').toLowerCase().trim();
+  const items = document.querySelectorAll('#inbox-list .inbox-item[data-name]');
+  items.forEach(el => {
+    const name = (el.getAttribute('data-name') || '').toLowerCase();
+    const preview = (el.getAttribute('data-preview') || '').toLowerCase();
+    el.style.display = (!term || name.includes(term) || preview.includes(term)) ? '' : 'none';
+  });
+}
 function inboxToggleUnreadFilter() {
   _inboxUnreadOnly = !_inboxUnreadOnly;
   const btn = document.getElementById('inbox-unread-filter-btn');
@@ -6525,7 +6558,8 @@ async function loadInbox() {
       }
     </div>`;
 
-    return `<div class="inbox-item${isUnread ? ' unread' : ''}" style="${isDone || isMuted ? 'opacity:.45;' : ''}" onmouseenter="this.querySelector('.inbox-actions').style.opacity=1" onmouseleave="this.querySelector('.inbox-actions').style.opacity=0" onclick="openMessagesPanel('${m.contact_id}')">
+    const _previewText = (m.body || '').replace(/\[media:[^\]]+\]/g, '[photo]').slice(0, 80);
+    return `<div class="inbox-item${isUnread ? ' unread' : ''}" style="${isDone || isMuted ? 'opacity:.45;' : ''}" data-name="${esc(name.toLowerCase())}" data-preview="${esc(_previewText.toLowerCase())}" onmouseenter="this.querySelector('.inbox-actions').style.opacity=1" onmouseleave="this.querySelector('.inbox-actions').style.opacity=0" onclick="openMessagesPanel('${m.contact_id}')">
       ${avatar}
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px">
