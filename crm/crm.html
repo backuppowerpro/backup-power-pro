@@ -2082,6 +2082,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Note
           </button>
+          <button class="qa-btn" data-qa="templates" onclick="qaToggle('templates')" title="Message templates">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
+            Templates
+          </button>
         </div>
         <!-- Inline accordion that expands below the toolbar when a quick action is picked -->
         <div class="qa-inline" id="qa-inline">
@@ -7088,11 +7092,12 @@ function qaToggle(which) {
     return;
   }
 
-  if (which === 'quote')     inner.innerHTML = _qaRenderQuote(c);
+  if (which === 'quote')         inner.innerHTML = _qaRenderQuote(c);
   else if (which === 'schedule')  inner.innerHTML = _qaRenderSchedule(c);
   else if (which === 'materials') inner.innerHTML = _qaRenderMaterials(c);
   else if (which === 'status')    inner.innerHTML = _qaRenderStatus(c);
   else if (which === 'note')      inner.innerHTML = _qaRenderNote(c);
+  else if (which === 'templates') inner.innerHTML = _qaRenderTemplates(c);
 
   panel.classList.add('open');
 
@@ -7475,6 +7480,69 @@ async function _qaNoteSave(contactId) {
   showToast('Note saved', 'success');
   touchContact(contactId);
   renderContacts();
+  qaClose();
+}
+
+// ── QUICK TEMPLATES ───────────────────────────────────────
+function _qaRenderTemplates(c) {
+  const fname = (c.name || '').split(' ')[0] || 'there';
+  const md = (typeof getMaterialsData === 'function') ? getMaterialsData(c) : {};
+  const sched = (typeof getScheduledDate === 'function') ? getScheduledDate(c) : '';
+  const schedLabel = sched ? new Date(sched + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) : '[date]';
+  const templates = [
+    {
+      label: 'Price anchor',
+      text: `Hey ${fname} — following up on your quote. Just wanted to mention: most homeowners compare us to standby generators, which run $10–20K installed. Our $1,197 all-in installation gives you the same directly-connected result at a fraction of the cost. Happy to answer any questions!`,
+    },
+    {
+      label: 'Install confirmed',
+      text: `Hi ${fname}! Just confirming your installation for ${schedLabel}. I'll plan to arrive around 8–9 AM and we'll be wrapped up in a few hours. Feel free to text me if anything comes up beforehand.`,
+    },
+    {
+      label: 'Post-install',
+      text: `Hey ${fname}, great meeting you today! Quick reminder for when the power goes out: 1) Roll your generator outside (at least 20 ft from windows), 2) Start it up, 3) Plug the cord into the inlet we installed, 4) Flip your transfer switch on the breaker panel. You're all set — feel free to reach out with any questions!`,
+    },
+    {
+      label: 'No response follow-up',
+      text: `Hey ${fname}, just checking in — still have your spot available if you're still interested. Happy to answer any questions or adjust anything on the quote. No pressure at all!`,
+    },
+    {
+      label: 'Permit update',
+      text: `Hey ${fname}, quick update — your permit is moving along. I'll keep you posted as we get closer to your install date. Let me know if you have any questions!`,
+    },
+    {
+      label: 'Day-before reminder',
+      text: `Hey ${fname}, just a heads up — I'll be there tomorrow for your generator inlet installation. No prep needed on your end. See you in the morning!`,
+    },
+  ];
+  const rows = templates.map((t, i) => `
+    <div style="padding:10px 12px;border-radius:var(--r-sm);background:var(--bg);border:1px solid var(--border);cursor:pointer;transition:border-color .15s"
+         onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'"
+         onclick="_qaUseTemplate(${i})">
+      <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;color:var(--text2);margin-bottom:2px">${esc(t.label)}</div>
+      <div style="font-size:11.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.text.slice(0, 70))}…</div>
+    </div>`).join('');
+  // Store templates on window so _qaUseTemplate can access them
+  window._qaCurrentTemplates = templates;
+  return `
+    <div class="qa-inline-head">
+      <div class="qa-inline-title">Templates</div>
+      <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">${rows}</div>
+  `;
+}
+
+function _qaUseTemplate(idx) {
+  const t = (window._qaCurrentTemplates || [])[idx];
+  if (!t) return;
+  const compose = document.getElementById('msg-compose');
+  if (!compose) { qaClose(); return; }
+  compose.value = t.text;
+  compose.style.height = 'auto';
+  compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+  compose.focus();
+  compose.setSelectionRange(compose.value.length, compose.value.length);
   qaClose();
 }
 
