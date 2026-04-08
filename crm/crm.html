@@ -810,6 +810,7 @@ html.dark .qa-btn{background:#1e1b17;border-color:#3d3830;color:var(--text2)}
 html.dark .qa-btn:hover,html.dark .qa-btn.active{background:var(--gold);color:#1e1b17;border-color:var(--gold)}
 .qa-inline{max-height:0;overflow:hidden;transition:max-height .22s var(--ease);background:var(--bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .qa-inline.open{max-height:min(52vh,520px);overflow-y:auto}
+@media (pointer:coarse) and (max-height:750px){.qa-inline.open{max-height:38vh}}
 .qa-inline-inner{padding:14px 16px}
 .qa-inline-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .qa-inline-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:12px;color:var(--text);flex:1;text-transform:uppercase;letter-spacing:.05em}
@@ -1463,7 +1464,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .main{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}
 
   /* View toggle: icon-only on mobile */
-  .view-toggle-btn{padding:7px 9px!important;font-size:0!important;line-height:0!important;gap:0!important;min-width:34px}
+  .view-toggle-btn{padding:7px 9px!important;font-size:0!important;line-height:0!important;gap:0!important;min-width:34px;min-height:44px}
   .view-toggle-btn svg{display:block!important}
   .view-toggle{gap:2px}
 
@@ -3829,7 +3830,9 @@ async function confirmPayment() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
     body: JSON.stringify({ contactId }),
-  }).catch(() => {});
+  }).then(r => {
+    if (!r.ok) r.text().then(t => console.error('[review] send failed:', r.status, t));
+  }).catch(err => console.error('[review] fetch error:', err));
 }
 
 let _undoPayPending = null;
