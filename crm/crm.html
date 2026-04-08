@@ -9023,9 +9023,7 @@ function setLeadsView(v) {
   }
   // Show "Urgent first" sort toggle only in list view
   const sortBtn = document.getElementById('view-sort-urgent-btn');
-  const sortSep = sortBtn && sortBtn.previousElementSibling;
   if (sortBtn) { sortBtn.style.display = v === 'list' ? '' : 'none'; sortBtn.classList.toggle('active', contactsSortUrgent); }
-  if (sortSep) { sortSep.style.display = v === 'list' ? '' : 'none'; }
 }
 
 function toggleUrgentSort() {
