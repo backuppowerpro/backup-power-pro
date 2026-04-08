@@ -3101,6 +3101,11 @@ function openPanel(id) {
           <span style="font-size:10px;color:var(--text3)">${dateStr}</span>
         </div>`;
       } else {
+        const propUrl = p.token ? (PROPOSAL_BASE_URL + '?token=' + p.token) : '';
+        const copyLinkBtn = propUrl ? `<button onclick="event.stopPropagation();navigator.clipboard.writeText('${propUrl}').then(()=>showToast('Link copied','success')).catch(()=>{})" style="background:none;border:none;cursor:pointer;color:var(--blue);font-size:11px;font-weight:700;padding:0;display:flex;align-items:center;gap:3px;white-space:nowrap" title="Copy proposal link">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy link
+          </button>` : '';
         cardsHtml += `
         <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer" onclick="selectProposalAndDrill(${idx})">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
@@ -3108,7 +3113,10 @@ function openPanel(id) {
             <span style="font-size:11px;color:var(--text3)">${ampLabel}${surgeLabel}${pomLabel}</span>
             <span style="font-size:13px;font-weight:700;color:var(--text);margin-left:auto">$${displayTotal.toLocaleString()}</span>
           </div>
-          <div style="font-size:11px;color:var(--text3)">${dateStr}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text3)">${dateStr}</span>
+            ${copyLinkBtn}
+          </div>
         </div>`;
       }
     });
@@ -9374,6 +9382,17 @@ setTimeout(() => {
       }
     }
 
+    // ── Quick stage advance button ─────────────────────────
+    if (c.status !== 'Archived') {
+      const nextStageDef = PERMIT_STAGES.find(s => s.id === stage + 1);
+      if (nextStageDef && stage < 9) {
+        html += `<button onclick="panelQuickAdvanceStage('${id}',${nextStageDef.id})" style="width:100%;margin-bottom:14px;padding:8px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,border-color .15s,color .15s" onmouseover="this.style.background='#f0f4ff';this.style.borderColor='var(--navy)';this.style.color='var(--navy)'" onmouseout="this.style.background='var(--bg)';this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          Advance to ${esc(nextStageDef.label)}
+        </button>`;
+      }
+    }
+
     // Smart prompt by stage
     if (showPrompt) {
       if (stage === 1) {
@@ -9753,6 +9772,15 @@ setTimeout(() => {
     touchContact(id);
     renderContacts();
     if (typeof renderKanban === 'function') renderKanban();
+    renderPanelExtras();
+  };
+
+  // ── PANEL QUICK STAGE ADVANCE ──────────────────────────
+  window.panelQuickAdvanceStage = async function(id, nextStage) {
+    if (typeof quickAdvanceStage === 'function') {
+      await quickAdvanceStage(id, nextStage);
+    }
+    // Re-render extras so the button updates and smart prompt changes
     renderPanelExtras();
   };
 
