@@ -8274,8 +8274,10 @@ function renderKanban() {
       // Only shown for stage 9 (Complete) as a "Job complete ✓" celebration.
       const styleVar = `--urgcolor:${urg.color}`;
       const doneHint = isDone ? `<div class="kanban-card-next done">Job complete</div>` : '';
+      const hasUnread = _unreadContactIds.has(c.id);
+      const unreadDot = hasUnread ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:middle;flex-shrink:0" title="Unread message"></span>` : '';
       return `<div class="kanban-card" style="${styleVar}" onclick="openPanel('${c.id}')">
-        <div class="kanban-card-name">${esc(dispName(c.name, 'New Lead'))}</div>
+        <div class="kanban-card-name">${esc(dispName(c.name, 'New Lead'))}${unreadDot}</div>
         <div class="kanban-card-meta">
           <span class="urg-${urg.level}">${staleHint}</span>
           ${amt ? `<span class="kanban-card-amount">${amt}</span>` : ''}
