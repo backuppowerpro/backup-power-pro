@@ -6546,6 +6546,8 @@ async function loadInbox() {
     tabBadge.textContent = unreadCount > 0 ? unreadCount : '';
     tabBadge.style.display = unreadCount > 0 ? '' : 'none';
   }
+  // Update browser tab title so Key knows he has messages even in background tabs
+  document.title = unreadCount > 0 ? `(${unreadCount}) BPP CRM` : 'BPP CRM';
   // Also auto-restore done conversations that received a new inbound message
   const toRestore = done.filter(m => m.direction === 'inbound' && m.created_at > lastChecked).map(m => m.contact_id);
   if (toRestore.length > 0) {
