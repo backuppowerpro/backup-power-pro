@@ -774,6 +774,8 @@ html.dark .msg-thread-phone:hover{background:rgba(59,130,246,.22)}
 .msg-sender-badge.ai{background:rgba(255,186,0,.18);color:#92400e;border:1px solid rgba(255,186,0,.3)}
 .msg-sender-badge.key{background:rgba(11,31,59,.1);color:var(--navy);border:1px solid rgba(11,31,59,.15)}
 .msg-timestamp{font-size:10px;color:var(--text3)}
+mark.msg-search-mark{background:#fef08a;color:#713f12;border-radius:2px;padding:0 1px}
+html.dark mark.msg-search-mark{background:rgba(234,179,8,.35);color:#fde68a}
 html.dark .msg-bubble.inbound{background:#2e2a24;color:var(--text)}
 html.dark .msg-bubble.outbound{background:#1a3a5c}
 html.dark .msg-bubble.outbound.by-key{background:var(--navy2)}
@@ -3112,7 +3114,7 @@ function openPanel(id) {
   // Proposal section — show ALL proposals as tappable cards
   const proposals = proposalMap[c.id] || [];
   const propSection = document.getElementById('panel-prop-section');
-  if (proposals.length > 0) {
+  if (!propSection) { /* panel not yet in DOM, skip */ } else if (proposals.length > 0) {
     let cardsHtml = '';
     proposals.forEach((p, idx) => {
       let badge = '', badgeStyle = '';
@@ -3158,7 +3160,7 @@ function openPanel(id) {
       <button class="prop-action-btn prop-action-create" onclick="closePanel();openProposalModal('${c.id}')" style="font-size:13px;padding:8px 12px">
         + New Proposal
       </button>`;
-  } else {
+  } else if (propSection) {
     propSection.innerHTML = `
       <button class="prop-action-btn prop-action-create" onclick="closePanel();openProposalModal('${c.id}')">
         + Create Proposal
@@ -7260,7 +7262,7 @@ function renderThread() {
       if (searchTerm && rawBody.toLowerCase().includes(searchTerm)) {
         const idx = rawBody.toLowerCase().indexOf(searchTerm);
         bubbleInner = esc(rawBody.slice(0, idx))
-          + `<mark style="background:#fef08a;color:#713f12;border-radius:2px;padding:0 1px">${esc(rawBody.slice(idx, idx + searchTerm.length))}</mark>`
+          + `<mark class="msg-search-mark">${esc(rawBody.slice(idx, idx + searchTerm.length))}</mark>`
           + esc(rawBody.slice(idx + searchTerm.length));
       } else {
         bubbleInner = esc(rawBody);
