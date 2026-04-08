@@ -9127,11 +9127,23 @@ setTimeout(() => {
       if (typeof window.tmOpenPanel === 'function') { e.preventDefault(); window.tmOpenPanel(); }
       return;
     }
-    // A -> focus Notes textarea (if panel open)
+    // A -> focus Notes textarea (if panel open) — auto-expands Details section
     if (e.key === 'a' || e.key === 'A') {
       const notesEl = document.getElementById('panel-notes');
       const panelOpen = document.getElementById('side-panel-overlay')?.classList.contains('open');
-      if (panelOpen && notesEl) { e.preventDefault(); notesEl.focus(); notesEl.setSelectionRange(notesEl.value.length, notesEl.value.length); }
+      if (panelOpen && notesEl) {
+        e.preventDefault();
+        // Expand details section if collapsed
+        const detailsContent = document.getElementById('panel-details-content');
+        if (detailsContent && !detailsContent.classList.contains('open')) {
+          if (typeof togglePanelDetails === 'function') togglePanelDetails();
+        }
+        // Small delay so the expand animation completes before focusing
+        setTimeout(() => {
+          notesEl.focus();
+          notesEl.setSelectionRange(notesEl.value.length, notesEl.value.length);
+        }, 80);
+      }
       return;
     }
     // M -> open Messages thread for current panel contact
