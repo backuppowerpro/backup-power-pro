@@ -7331,6 +7331,7 @@ function startRealtimeMessages() {
         const toastText = preview ? (name + ': ' + preview) : (name + ' sent a message');
         showToast(toastText, 'info');
         if (typeof playChime === 'function') playChime();
+        showBrowserNotif('New message from ' + name, preview || 'Sent a message', msg.contact_id);
 
         // Refresh inbox + badge
         loadInbox();
@@ -8666,6 +8667,7 @@ async function checkSmartEvents() {
             const name = p.contact_name || 'Customer';
             notifAdd('viewed', name + ' viewed their proposal', 'Tap to follow up', p.contact_id);
             if (typeof playChime === 'function') playChime();
+            showBrowserNotif('Proposal viewed — ' + name, 'Follow up while they\'re reading!', p.contact_id);
             smartToast('Customer viewed their proposal! Consider following up.', {
               kind: 'success',
               onClick: () => p.contact_id && openPanel(p.contact_id),
@@ -8694,6 +8696,7 @@ async function checkSmartEvents() {
           const amt = '$' + Number(inv.total || 0).toLocaleString();
           notifAdd('paid', 'Payment received from ' + name, amt, inv.contact_id);
           if (typeof playChime === 'function') { playChime(); setTimeout(playChime, 300); } // double chime for $$$
+          showBrowserNotif('💰 Payment received — ' + name, amt + ' invoice paid!', inv.contact_id);
           smartToast('Payment received from ' + name + '!', {
             kind: 'success',
             onClick: () => inv.contact_id && openPanel(inv.contact_id),
@@ -8726,6 +8729,7 @@ async function checkSmartEvents() {
         const name = c ? dispName(c.name, 'Unknown') : 'Unknown';
         notifAdd('message', 'New message from ' + name, (m.body || '').slice(0, 60), m.contact_id);
         playChime();
+        showBrowserNotif('New message from ' + name, (m.body || '').slice(0, 80), m.contact_id);
         smartToast('New message from ' + name, {
           kind: 'success',
           onClick: () => m.contact_id && openMessagesPanel(m.contact_id),
@@ -8733,6 +8737,42 @@ async function checkSmartEvents() {
       });
     }
     checkSmartEvents._seeded = true;
+  } catch(e) {}
+}
+
+// ── BROWSER PUSH NOTIFICATIONS ───────────────────────────────
+// Shows system-level notifications even when the CRM tab is in background.
+// Permission is requested lazily on first user interaction.
+let _notifPermRequested = false;
+function _requestNotifPermission() {
+  if (_notifPermRequested) return;
+  _notifPermRequested = true;
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+// Request on first click so it's not a cold popup
+document.addEventListener('click', _requestNotifPermission, { once: true });
+
+function showBrowserNotif(title, body, contactId) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  // Don't show if tab is focused and visible
+  if (!document.hidden) return;
+  try {
+    const n = new Notification(title, {
+      body,
+      icon: '/img/icon-192.png',
+      tag: contactId || title,
+      requireInteraction: false,
+    });
+    if (contactId) {
+      n.addEventListener('click', () => {
+        window.focus();
+        if (typeof openPanel === 'function') openPanel(contactId);
+        n.close();
+      });
+    }
+    setTimeout(() => n.close(), 8000);
   } catch(e) {}
 }
 
