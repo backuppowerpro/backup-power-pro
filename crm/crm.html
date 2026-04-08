@@ -2709,11 +2709,16 @@ function renderContacts() {
     const p = proposalMap[c.id]?.[0];
     const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
     const currentStageId = c.stage || 1;
+    const isArchived = c.status === 'Archived'; // declare first — used by advanceBtn below
     const nextStageInfo = PERMIT_STAGES.find(s => s.id === currentStageId + 1);
     const advanceBtn = (!isArchived && nextStageInfo)
       ? `<button class="stage-advance-btn" onclick="event.stopPropagation();quickAdvanceStage('${c.id}',${nextStageInfo.id})" title="Advance to ${nextStageInfo.label}">→ ${esc(nextStageInfo.label)}</button>`
       : '';
-    const stageBadge = `<div class="stage-cell"><span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}">${currentStageId === 9 ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>` : ''}${esc(stageInfo.label)}</span>${advanceBtn}</div>`;
+    // Show proposal amount next to stage badge if a non-cancelled proposal exists
+    const propAmount = (p && p.status !== 'cancelled' && p.total)
+      ? `<span style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:-.01em;font-family:'Outfit',sans-serif" title="Proposal total">$${Number(p.total).toLocaleString()}</span>`
+      : '';
+    const stageBadge = `<div class="stage-cell">${propAmount}<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}">${currentStageId === 9 ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>` : ''}${esc(stageInfo.label)}</span>${advanceBtn}</div>`;
 
     // Empty placeholder: a dimmed em-dash — scannable, clearly "no value here".
     const empty = '<span style="color:var(--text3);opacity:.35;font-weight:500">\u2014</span>';
@@ -2730,8 +2735,6 @@ function renderContacts() {
 
     const hasUnreadMsg = _unreadContactIds.has(c.id);
     const unreadMsgDot = hasUnreadMsg ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:middle;flex-shrink:0" title="Unread message"></span>' : '';
-
-    const isArchived = c.status === 'Archived';
     const actType = !isArchived ? contactActivityType(c.id) : null;
     const actColors = { approved: 'var(--gold)', paid: 'var(--green)', viewed: '#3b82f6' };
     const actTitles = { approved: 'Proposal approved', paid: 'Invoice paid', viewed: 'Proposal viewed' };
