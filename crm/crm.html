@@ -1492,7 +1492,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <!-- ── TAB BAR ───────────────────────────────────────────── -->
 <div class="tab-bar" id="main-tab-bar" style="display:none">
   <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">Leads</button>
-  <button class="tab-btn" id="tab-btn-invoices" onclick="switchTab('invoices')">Invoices<span class="tab-badge" id="tab-inv-badge" style="display:none"></span></button>
+  <button class="tab-btn" id="tab-btn-invoices" onclick="switchTab('invoices')">Docs<span class="tab-badge" id="tab-inv-badge" style="display:none"></span></button>
   <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')">Messages<span class="tab-badge tab-badge-red" id="tab-msg-badge" style="display:none"></span></button>
 </div>
 
@@ -1872,7 +1872,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <div class="panel-head" style="padding:0;overflow:visible;flex-direction:column;align-items:stretch;gap:0">
     <!-- Full-width Street View banner. Inner contents (gradient, name, close button)
          are populated by _bannerHtml() each time the panel opens. -->
-    <div id="panel-banner" style="position:relative;width:100%;height:200px;background:var(--navy);overflow:hidden;flex-shrink:0"></div>
+    <div id="panel-banner" style="position:relative;width:100%;height:120px;background:var(--navy);overflow:hidden;flex-shrink:0"></div>
   </div>
   <div class="drill-container">
     <!-- LEVEL 1: Contact Details (Progressive Disclosure) -->
@@ -1884,9 +1884,6 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
       <!-- 1. PROPOSALS (always visible, prominent) -->
       <div id="panel-prop-section" style="margin-bottom:var(--sp-md)"></div>
-
-      <!-- 1b. MESSAGES BUTTON -->
-      <div id="panel-msg-section" style="margin-bottom:var(--sp-md)"></div>
 
       <!-- 2. CONTACT INFO (compact summary, expandable) -->
       <div class="contact-info-summary" id="contact-info-summary" onclick="toggleContactInfo()">
@@ -1920,7 +1917,6 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           </label>
           <textarea class="form-textarea" id="panel-install-notes" placeholder="AI assessment notes…" oninput="panelMarkDirty()" style="font-size:12px;color:var(--text2);background:var(--bg)"></textarea>
         </div>
-        <div class="form-row"><label>Jurisdiction</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-jurisdiction" style="flex:1" onchange="panelMarkDirty()"></select><button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div></div>
         <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1" onchange="panelMarkDirty()"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
         <div class="form-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--sp-sm)">
           <label style="margin:0;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">AI Follow-up</label>
@@ -2168,7 +2164,14 @@ function _bannerHtml(c) {
   // Soft top-to-bottom gradient + a stronger bottom gradient under the name for legibility on any photo
   const gradient = `<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.18) 0%,rgba(0,0,0,0.05) 35%,rgba(0,0,0,0.05) 55%,rgba(0,0,0,0.45) 100%);pointer-events:none;z-index:1"></div>`;
   const nameGrad = `<div style="position:absolute;inset:auto 0 0 0;height:118px;background:linear-gradient(to top,rgba(6,12,24,0.92) 0%,rgba(6,12,24,0.72) 30%,rgba(6,12,24,0.34) 65%,rgba(6,12,24,0) 100%);pointer-events:none;z-index:2"></div>`;
-  const nameLabel = `<div class="panel-name" style="position:absolute;left:20px;right:64px;bottom:16px;color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:24px;letter-spacing:-.018em;text-shadow:0 2px 14px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);z-index:3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.15">${displayName}</div>`;
+  const nameLabel = `<div style="position:absolute;left:16px;right:64px;bottom:10px;z-index:3">
+    <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.018em;text-shadow:0 2px 14px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;margin-bottom:8px">${displayName}</div>
+    <div style="display:flex;gap:7px">
+      <button onclick="openMessagesFromPanel()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Text"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Text</button>
+      <button onclick="panelCallContact()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Call"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Call</button>
+      <button onclick="openMapsFromPanel()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Maps"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Maps</button>
+    </div>
+  </div>`;
   const closeBtn = `<button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.48);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:3;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 12px rgba(0,0,0,.25)">&#10005;</button>`;
   const bannerId = 'bnr-' + c.id;
   if (c.address) {
@@ -2787,11 +2790,7 @@ function openPanel(id) {
   }
   // Load photos async
   loadContactPhotos(c.id);
-  // Populate jurisdiction dropdown from allJurisdictions
-  const jurSelect = document.getElementById('panel-jurisdiction');
-  jurSelect.innerHTML = '<option value="">— None —</option>' +
-    allJurisdictions.map(j => `<option value="${j.id}">${esc(j.name)}</option>`).join('');
-  jurSelect.value = c.jurisdiction_id || '';
+  // jurisdiction is now in the permit section (pm-permit-jur) — no separate dropdown here
 
   // Address — plain, no locking
   document.getElementById('panel-address').value = c.address || '';
@@ -2836,8 +2835,16 @@ function openPanel(id) {
       const pomLabel = p.include_pom ? ' + Protection Pkg' : '';
       const displayTotal = (p.total || 0) + (p.include_pom ? (p.pom_price || 447) : 0);
       const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
-      cardsHtml += `
-        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer${p.status === 'Cancelled' ? ';opacity:.5' : ''}" onclick="selectProposalAndDrill(${idx})">
+      if (p.status === 'Cancelled') {
+        cardsHtml += `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;margin-bottom:3px;cursor:pointer;opacity:.45;border-radius:var(--r-xs)" onclick="selectProposalAndDrill(${idx})">
+          <span style="font-size:10px;font-weight:700;color:var(--text3);background:#f3f4f6;border:1px solid #e5e7eb;border-radius:var(--r-pill);padding:1px 7px">Cancelled</span>
+          <span style="font-size:11px;color:var(--text3)">${ampLabel}</span>
+          <span style="font-size:11px;color:var(--text3);margin-left:auto">$${displayTotal.toLocaleString()}</span>
+          <span style="font-size:10px;color:var(--text3)">${dateStr}</span>
+        </div>`;
+      } else {
+        cardsHtml += `
+        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer" onclick="selectProposalAndDrill(${idx})">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
             <span class="prop-badge" style="${badgeStyle};padding:3px 8px;border-radius:var(--r-pill);font-size:11px;font-weight:700">${badge}</span>
             <span style="font-size:11px;color:var(--text3)">${ampLabel}${surgeLabel}${pomLabel}</span>
@@ -2845,6 +2852,7 @@ function openPanel(id) {
           </div>
           <div style="font-size:11px;color:var(--text3)">${dateStr}</div>
         </div>`;
+      }
     });
     propSection.innerHTML = cardsHtml + `
       <button class="prop-action-btn prop-action-create" onclick="closePanel();openProposalModal('${c.id}')" style="font-size:13px;padding:8px 12px">
@@ -3846,7 +3854,7 @@ async function panelSave() {
     notes:         document.getElementById('panel-notes').value.trim(),
     install_notes: installNotesVal || null,
     stage:         parseInt(document.getElementById('panel-stage').value) || 1,
-    jurisdiction_id: document.getElementById('panel-jurisdiction').value || null,
+    jurisdiction_id: (allContacts.find(x => x.id === id) || {}).jurisdiction_id || null,
     status:        c?.status || null,
   };
   // Check if anything actually changed — skip save if nothing changed
@@ -8174,17 +8182,14 @@ setTimeout(() => {
       }
     }
 
-    // Persistent install date row when stage >= booked
-    if (stage >= 4) {
-      html += `<div class="install-date-row">
-        <label>Install Date</label>
-        <input type="date" class="smart-prompt-date" id="panel-install-date" value="${esc(scheduled)}" style="flex:1" onchange="pass2InlineSaveInstallDate('${id}', this.value)">
-      </div>`;
-    }
-
-    // Activity feed section label + content
-    html += `<div class="panel-section-label" style="margin-top:18px">Activity</div>
-      <div id="panel-activity-feed"><div style="color:var(--text3);font-size:12px;padding:6px 0">Loading…</div></div>`;
+    // Activity — collapsible, closed by default, at the bottom
+    html += `<details id="panel-activity-details" style="margin-top:20px">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;list-style:none;display:flex;align-items:center;gap:6px;padding:6px 0;user-select:none">
+        <svg id="panel-act-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
+        Activity
+      </summary>
+      <div id="panel-activity-feed" style="margin-top:8px"><div style="color:var(--text3);font-size:12px;padding:6px 0">Loading…</div></div>
+    </details>`;
 
     host.innerHTML = html;
 
@@ -8597,6 +8602,9 @@ setTimeout(() => {
       panel_model:  _readPmField(c, 'mpm'),
       interlock:    _readPmField(c, 'mintlk'),
       surge:        _readPmField(c, 'msurge') === '1',
+      inlet_ord:    _readPmField(c, 'minlet_ord') === '1',
+      panel_ord:    _readPmField(c, 'mpb_ord') === '1',
+      surge_ord:    _readPmField(c, 'msurge_ord') === '1',
       ordered_at:   _readPmField(c, 'mord'),
       received_at:  _readPmField(c, 'mrcv'),
       notes:        _readPmField(c, 'mnotes'),
@@ -8943,13 +8951,20 @@ setTimeout(() => {
       : '';
 
     const jurNote = flow && flow.notes
-      ? `<div style="font-size:11px;color:var(--text3);margin:8px 0 4px;line-height:1.4">${esc(flow.notes)}</div>`
+      ? `<div style="font-size:11px;color:var(--text3);margin:4px 0 8px;line-height:1.4">${esc(flow.notes)}</div>`
       : '';
-    const jurMissing = !c.jurisdiction_id
-      ? `<div style="background:#fef3c7;border-radius:var(--r-sm);padding:9px 11px;font-size:11.5px;color:#92400e;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:7px">
-          <span>\u26a0\ufe0f</span> Pick a jurisdiction in Details to enable timing reminders.
-        </div>`
-      : '';
+    const jurMissing = '';
+    const jurList = (typeof allJurisdictions !== 'undefined' && Array.isArray(allJurisdictions)) ? allJurisdictions : [];
+    const jurOpts = '<option value="">— Select jurisdiction —</option>' +
+      jurList.map(j => `<option value="${esc(j.id)}" ${c.jurisdiction_id === j.id ? 'selected' : ''}>${esc(j.name)}</option>`).join('');
+    const jurRow = `<div class="pm-row" style="margin-bottom:10px">
+      <label>Jurisdiction</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select class="form-select" id="pm-permit-jur" style="flex:1" onchange="window.pmSaveJurisdiction('${id}',this.value)">${jurOpts}</select>
+        <button class="fld-btn" onclick="openPanelJurisdiction()" title="View jurisdiction details" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+      </div>
+      ${jurNote}
+    </div>`;
 
     const permitSection = `<div class="pm-section ${permitOpen ? 'open' : ''}" id="pm-section-permit">
       <div class="pm-section-head" onclick="window.pmToggleSection('permit','${id}')">
@@ -8959,7 +8974,7 @@ setTimeout(() => {
         <svg class="pm-section-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="pm-section-body">
-        ${jurMissing}
+        ${jurRow}
         <div class="pm-row">
           <label>Permit Number</label>
           <input class="form-input" type="text" id="pm-permit-num" value="${esc(pd.number)}" placeholder="e.g. ABC-12345" oninput="window.pmDebounceSave('${id}','pnum',this.value)">
@@ -9001,27 +9016,30 @@ setTimeout(() => {
         <svg class="pm-section-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="pm-section-body">
-        <div class="pm-row">
-          <label>Inlet Box</label>
-          <select class="form-select" id="pm-mat-inlet" onchange="window.pmSavePmField('${id}','minlet',this.value)">${inletOpts}</select>
+        <div class="pm-row-inline" style="align-items:flex-end;gap:8px;margin-bottom:10px">
+          <div class="pm-row" style="flex:1;margin-bottom:0">
+            <label>Inlet Box</label>
+            <div style="display:flex;gap:6px">
+              <button class="pm-pill ${md.inlet==='30A'?'on':''}" style="flex:1" onclick="window.pmSetInlet('${id}','30A')">30A</button>
+              <button class="pm-pill ${md.inlet==='50A'?'on':''}" style="flex:1" onclick="window.pmSetInlet('${id}','50A')">50A</button>
+            </div>
+          </div>
+          <button class="pm-pill ${md.inlet_ord?'on':''}" style="white-space:nowrap;padding:9px 12px" onclick="window.pmToggleOrd('${id}','minlet_ord')">${md.inlet_ord?'Ordered \u2713':'Ordered?'}</button>
         </div>
-        <div class="pm-row-inline">
-          <div class="pm-row">
+        <div class="pm-row-inline" style="align-items:flex-end;gap:8px;margin-bottom:10px">
+          <div class="pm-row" style="flex:1;margin-bottom:0">
             <label>Panel Brand</label>
             <select class="form-select" id="pm-mat-pb" onchange="window.pmOnPanelBrandChange('${id}',this.value)">${panelOpts}</select>
           </div>
-          <div class="pm-row">
-            <label>Panel Model</label>
-            <input class="form-input" type="text" id="pm-mat-pm" value="${esc(md.panel_model)}" placeholder="e.g. QO 200A" oninput="window.pmDebounceSave('${id}','mpm',this.value)">
-          </div>
+          <button class="pm-pill ${md.panel_ord?'on':''}" style="white-space:nowrap;padding:9px 12px" onclick="window.pmToggleOrd('${id}','mpb_ord')">${md.panel_ord?'Ordered \u2713':'Ordered?'}</button>
         </div>
         <div class="pm-row">
           <label>Interlock Kit</label>
           <select class="form-select" id="pm-mat-intlk" onchange="window.pmSavePmField('${id}','mintlk',this.value)">${interlockOpts}</select>
         </div>
-        <div class="pm-checkbox-row ${md.surge ? 'checked' : ''}" onclick="window.pmToggleSurge('${id}')">
-          <div class="pm-checkbox-box">${md.surge ? '\u2713' : ''}</div>
-          <span>Whole-home surge protector included</span>
+        <div class="pm-pill-row" style="margin-bottom:6px">
+          <button class="pm-pill ${md.surge?'on':''}" onclick="window.pmToggleSurge('${id}')">WHSP?</button>
+          <button class="pm-pill ${md.surge_ord?'on':''}" onclick="window.pmToggleOrd('${id}','msurge_ord')">${md.surge_ord?'Ordered \u2713':'Ordered?'}</button>
         </div>
         <div class="pm-pill-row">
           <button class="pm-pill ${md.ordered_at ? 'on' : ''}" onclick="window.pmMarkOrdered('${id}')">${md.ordered_at ? 'Ordered \u2713 ' + fmtDate(md.ordered_at) : 'Mark Ordered'}</button>
@@ -9168,6 +9186,30 @@ setTimeout(() => {
     renderPmPanelSections();
   };
 
+  window.pmSaveJurisdiction = async function(id, jurId) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    c.jurisdiction_id = jurId || null;
+    await db.from('contacts').update({ jurisdiction_id: jurId || null }).eq('id', id);
+    renderPmPanelSections();
+  };
+  window.pmSetInlet = async function(id, val) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const cur = _readPmField(c, 'minlet');
+    _writePmFieldLocal(c, 'minlet', cur === val ? '' : val);
+    await _persistInstallNotes(c);
+    renderPmPanelSections();
+    if (typeof renderMaterialsBoard === 'function') try { renderMaterialsBoard(); } catch(e) {}
+  };
+  window.pmToggleOrd = async function(id, field) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    const cur = _readPmField(c, field) === '1';
+    _writePmFieldLocal(c, field, cur ? '' : '1');
+    await _persistInstallNotes(c);
+    renderPmPanelSections();
+  };
   window.pmToggleSurge = async function(id) {
     const c = allContacts.find(x => x.id === id);
     if (!c) return;
@@ -10847,11 +10889,35 @@ setTimeout(() => {
     var c = contacts.find(function(x) { return x.id === contactId; });
     if (!c) { mount.innerHTML = ''; return; }
     var ins = _buildSparkyInsight(c);
-    if (!ins || !ins.text) { mount.innerHTML = ''; return; }
+
+    // Check if materials banner should append a note
+    var matMsg = '';
+    try {
+      var stage = parseInt(c.stage || 1, 10);
+      if (stage >= 4 && typeof getMaterialsData === 'function') {
+        var md = getMaterialsData(c);
+        if (!md.received_at) {
+          matMsg = (md.inlet || md.panel_brand || md.interlock)
+            ? 'Materials picked — order or update status in Materials section.'
+            : 'Materials needed — choose inlet + interlock in Materials section.';
+        }
+      }
+    } catch(e) {}
+
+    var lines = [];
+    if (ins && ins.text) lines.push(ins.text);
+    if (matMsg) lines.push(matMsg);
+    if (!lines.length) { mount.innerHTML = ''; return; }
+
     var avSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>';
-    mount.innerHTML = '<div class="sk-insight" title="Sparky\u2019s take">'
+    var body = lines.map(function(l, i) {
+      return (i > 0 ? '<div style="margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,186,0,.18)">' : '<div>') + _escHtml(l) + '</div>';
+    }).join('');
+
+    mount.innerHTML = '<div class="sk-insight" style="cursor:pointer" onclick="window.tmOpenPanel();window.tmAskPreset(\'Tell me about this contact\')" title="Open Sparky">'
       + '<div class="sk-insight-av">' + avSvg + '</div>'
-      + '<div class="sk-insight-text"><span class="sk-insight-name">Sparky\u2019s take</span>' + _escHtml(ins.text) + '</div>'
+      + '<div class="sk-insight-text"><span class="sk-insight-name">Sparky\u2019s take</span>' + body + '</div>'
+      + '<button onclick="event.stopPropagation();this.closest(\'.sk-insight\').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px;flex-shrink:0;margin-left:4px" title="Dismiss">\u00d7</button>'
       + '</div>';
   }
   window.renderSparkyInsight = renderSparkyInsight;

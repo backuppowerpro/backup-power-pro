@@ -23,6 +23,8 @@ function isAppropriateTime(): boolean {
 }
 
 Deno.serve(async (_req) => {
+  // AUTO-SEND DISABLED — Key manages all outbound texts manually via Twilio
+  return new Response(JSON.stringify({ skipped: 'auto-send disabled' }))
   if (!isAppropriateTime()) {
     return new Response(JSON.stringify({ skipped: 'outside appropriate hours' }))
   }
