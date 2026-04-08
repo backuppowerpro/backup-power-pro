@@ -4173,17 +4173,71 @@ function resetNameArchive() {
 
 // ── PROGRESSIVE DISCLOSURE PANEL FUNCTIONS ──────────────
 let panelDirty = false;
+let _panelAutosaveTimer = null;
 
 function panelMarkDirty() {
   panelDirty = true;
   const btn = document.getElementById('panel-save-btn');
-  if (btn) btn.style.display = '';
+  if (btn) { btn.style.display = ''; btn.textContent = 'Save Changes'; }
+  // Schedule autosave 2s after last keystroke
+  clearTimeout(_panelAutosaveTimer);
+  _panelAutosaveTimer = setTimeout(panelAutosave, 2000);
 }
 
 function panelResetDirty() {
   panelDirty = false;
+  clearTimeout(_panelAutosaveTimer);
   const btn = document.getElementById('panel-save-btn');
   if (btn) btn.style.display = 'none';
+}
+
+async function panelAutosave() {
+  if (_panelSaving) return;
+  if (currentDrillLevel && currentDrillLevel !== 'contact') return;
+  const id   = document.getElementById('panel-id')?.value;
+  const name = document.getElementById('panel-name-input')?.value.trim();
+  if (!id || !name) return; // don't autosave invalid state
+  const c = allContacts.find(x => x.id === id);
+  if (!c) return;
+  const installNotesVal = (document.getElementById('panel-install-notes')?.value || '').trim();
+  const payload = {
+    name,
+    phone:         fmtPhone(document.getElementById('panel-phone').value),
+    email:         document.getElementById('panel-email').value.trim(),
+    address:       document.getElementById('panel-address').value.trim(),
+    notes:         document.getElementById('panel-notes').value.trim(),
+    install_notes: installNotesVal || null,
+    stage:         parseInt(document.getElementById('panel-stage').value) || 1,
+    jurisdiction_id: c.jurisdiction_id || null,
+    status:        c.status || null,
+  };
+  const oldDigits = (c.phone || '').replace(/\D/g, '');
+  const newDigits = (payload.phone || '').replace(/\D/g, '');
+  const changed = (
+    (c.name || '') !== payload.name ||
+    oldDigits !== newDigits ||
+    (c.email || '').trim() !== payload.email ||
+    (c.address || '').trim() !== payload.address ||
+    (c.notes || '').trim() !== payload.notes ||
+    (c.install_notes || '') !== (installNotesVal || '')
+  );
+  if (!changed) { panelResetDirty(); return; }
+  _panelSaving = true;
+  const btn = document.getElementById('panel-save-btn');
+  if (btn) btn.textContent = 'Saving…';
+  const { error } = await db.from('contacts').update(payload).eq('id', id);
+  _panelSaving = false;
+  if (error) { if (btn) btn.textContent = 'Save'; return; }
+  if (c) Object.assign(c, payload);
+  touchContact(id);
+  panelResetDirty();
+  // Brief "Saved" flash on the button before hiding it
+  if (btn) {
+    btn.textContent = 'Saved ✓';
+    btn.style.display = '';
+    setTimeout(() => { if (btn) btn.style.display = 'none'; }, 1200);
+  }
+  renderContacts();
 }
 
 let _panelAiEnabled = true;
