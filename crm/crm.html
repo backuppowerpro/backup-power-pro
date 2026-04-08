@@ -1148,6 +1148,15 @@ html.dark .ctx-sep{background:#3d3830}
 .pa-stage-val{font-size:10px;font-weight:700;color:var(--green);margin-left:1px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .pa-stage-chip.active .pa-stage-val{color:rgba(255,255,255,.75)}
 
+/* ── Panel quick-advance button ─────────────────────── */
+.panel-advance-btn{width:100%;margin-bottom:14px;padding:8px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,border-color .15s,color .15s;font-family:'Outfit',sans-serif}
+.panel-advance-btn:hover{background:#f0f4ff;border-color:var(--navy);color:var(--navy)}
+html.dark .panel-advance-btn:hover{background:#1a2540;border-color:var(--gold);color:var(--gold)}
+
+/* ── Inbox header pill buttons ───────────────────────── */
+.inbox-hdr-pill{display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;white-space:nowrap}
+.inbox-hdr-pill:hover{background:var(--bg);border-color:var(--text3)}
+
 /* ── Inline briefing inside Sparky panel — hides when typing ── */
 .tm-brief-inline{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px;max-height:800px;overflow:hidden;transition:opacity .22s ease,max-height .32s ease,padding-bottom .32s ease,margin-bottom .32s ease}
 .tm-brief-inline.collapsed{opacity:0;max-height:0;padding-bottom:0;margin-bottom:0;pointer-events:none}
@@ -1626,10 +1635,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
-        <button onclick="inboxToggleSearch()" id="inbox-search-btn" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--bg);color:var(--text3);border:1.5px solid var(--border);border-radius:50%;cursor:pointer;transition:background .15s,color .15s,border-color .15s" title="Search conversations">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <button onclick="inboxToggleSearch()" id="inbox-search-btn" class="inbox-hdr-pill" title="Search conversations">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
         </button>
-        <button onclick="inboxToggleUnreadFilter()" id="inbox-unread-filter-btn" style="display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s" title="Show unread only">
+        <button onclick="inboxToggleUnreadFilter()" id="inbox-unread-filter-btn" class="inbox-hdr-pill" title="Show unread only">
           Unread
         </button>
         <button onclick="inboxNewConversation()" style="display:flex;align-items:center;gap:5px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">
@@ -6614,13 +6624,18 @@ function inboxToggleSearch() {
   const bar = document.getElementById('inbox-search-bar');
   const btn = document.getElementById('inbox-search-btn');
   if (bar) bar.style.display = _inboxSearchOpen ? '' : 'none';
+  if (btn) {
+    if (_inboxSearchOpen) {
+      btn.style.background = 'var(--navy)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--navy)';
+    } else {
+      btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
+    }
+  }
   if (_inboxSearchOpen) {
     const inp = document.getElementById('inbox-search-input');
     if (inp) { inp.focus(); inp.value = ''; inboxFilterSearch(''); }
-    if (btn) { btn.style.background = 'var(--navy)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--navy)'; }
   } else {
     inboxFilterSearch('');
-    if (btn) { btn.style.background = 'var(--bg)'; btn.style.color = 'var(--text3)'; btn.style.borderColor = 'var(--border)'; }
   }
 }
 function inboxFilterSearch(q) {
@@ -9460,7 +9475,7 @@ setTimeout(() => {
     if (c.status !== 'Archived') {
       const nextStageDef = PERMIT_STAGES.find(s => s.id === stage + 1);
       if (nextStageDef && stage < 9) {
-        html += `<button onclick="panelQuickAdvanceStage('${id}',${nextStageDef.id})" style="width:100%;margin-bottom:14px;padding:8px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,border-color .15s,color .15s" onmouseover="this.style.background='#f0f4ff';this.style.borderColor='var(--navy)';this.style.color='var(--navy)'" onmouseout="this.style.background='var(--bg)';this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+        html += `<button onclick="panelQuickAdvanceStage('${id}',${nextStageDef.id})" class="panel-advance-btn">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           Advance to ${esc(nextStageDef.label)}
         </button>`;

@@ -30,3 +30,6 @@ bpp-claude-code-context.md
 # Obsidian second brain — private, not deployed to website
 wiki/
 private-docs/
+
+# Local CRM backups — large, not for git
+_backups/
