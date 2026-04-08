@@ -6317,34 +6317,53 @@ async function inboxSparkyScan() {
   const btn = document.getElementById('inbox-sparky-btn');
   if (btn) { btn.textContent = '⏳ Scanning…'; btn.disabled = true; }
   try {
-    // Build a summary of recent conversations for Sparky to evaluate
-    const done = _inboxDone();
-    const activeItems = Object.values((() => {
-      const byContact = {};
-      (allMessages || []).forEach(m => { if (!byContact[m.contact_id]) byContact[m.contact_id] = m; });
-      return byContact;
-    })()).filter(m => !done.includes(m.contact_id));
+    const done  = _inboxDone();
+    const muted = _inboxMuted();
 
-    // Ask ai-taskmaster to identify done conversations
-    const summaries = activeItems.slice(0, 20).map(m => {
+    // Fetch fresh message data (never rely on allMessages which is only the current thread)
+    const { data: msgData } = await db
+      .from('messages')
+      .select('contact_id, direction, body, created_at, status')
+      .order('created_at', { ascending: false });
+
+    if (!msgData || !msgData.length) { showToast('No conversations to scan', 'info'); return; }
+
+    // Latest message per contact, skip already-archived/muted
+    const byContact = {};
+    msgData.forEach(m => { if (m.contact_id && !byContact[m.contact_id]) byContact[m.contact_id] = m; });
+    const activeItems = Object.values(byContact)
+      .filter(m => !done.includes(m.contact_id) && !muted.includes(m.contact_id))
+      .slice(0, 25);
+
+    if (!activeItems.length) { showToast('All conversations are already archived', 'info'); return; }
+
+    // Rich summaries with stage + recency context
+    const stageLabels = ['','Form Submitted','Responded','Quote Sent','Booked','Permit Submitted','Permit Paid','Permit Approved','Inspection Scheduled','Complete'];
+    const now = new Date();
+    const summaries = activeItems.map(m => {
       const c = allContacts.find(x => x.id === m.contact_id);
-      return `Contact: ${c ? dispName(c.name, 'Unknown') : 'Unknown'} | ID: ${m.contact_id} | Last: ${m.direction === 'outbound' ? 'You' : 'Them'}: ${(m.body || '').slice(0, 60)}`;
+      const name = c ? dispName(c.name, 'Unknown') : 'Unknown';
+      const stageLabel = stageLabels[c?.stage || 1] || `Stage ${c?.stage || 1}`;
+      const daysSince = Math.floor((now - new Date(m.created_at)) / 86400000);
+      const lastFrom = m.direction === 'outbound' ? 'Key' : name;
+      const preview = (m.body || '').replace(/\[media:[^\]]+\]/g, '[photo]').slice(0, 80);
+      return `ID:${m.contact_id} | ${name} | ${stageLabel} | Last msg ${daysSince}d ago from ${lastFrom}: "${preview}"`;
     }).join('\n');
 
-    const { data: fnData, error: fnErr } = await db.functions.invoke('ai-taskmaster', {
+    const { data: fnData } = await db.functions.invoke('ai-taskmaster', {
       body: {
-        messages: [
-          { role: 'user', content: `You are scanning an SMS inbox for a generator installation business. For each conversation below, decide if it appears DONE (no response needed — job completed, quote rejected, ghosted after many follow-ups, etc.) or ACTIVE (still needs attention). Reply ONLY with a JSON array of contact IDs that are DONE. If none, return []. Conversations:\n\n${summaries}` }
-        ],
-        contactId: null
+        mode: 'chat',
+        question: `Scan these inbox conversations and identify which are DONE — no action needed (job complete at stage 9, explicitly rejected, ghosted 14+ days with no reply, or said not interested). Return ONLY a JSON array of contact IDs for DONE conversations, like: ["id1","id2"]. If none are done, return []. No other text.\n\nConversations:\n${summaries}`,
+        contextSummary: '',
+        history: [],
       }
     });
 
     let toArchive = [];
     try {
-      const resp = fnData?.reply || fnData?.content || '';
-      const match = resp.match(/\[[\s\S]*\]/);
-      if (match) toArchive = JSON.parse(match[0]).filter(id => typeof id === 'string');
+      const resp = (fnData && fnData.answer) || '';
+      const match = resp.match(/\[[\s\S]*?\]/);
+      if (match) toArchive = JSON.parse(match[0]).filter(id => typeof id === 'string' && id.length > 10);
     } catch(e) {}
 
     if (toArchive.length > 0) {
@@ -6357,8 +6376,12 @@ async function inboxSparkyScan() {
     }
   } catch(e) {
     showToast('Sparky scan failed', 'error');
+    console.error('[inboxSparkyScan]', e);
   } finally {
-    if (btn) { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg> Sparky'; btn.disabled = false; }
+    if (btn) {
+      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg> Sparky';
+      btn.disabled = false;
+    }
   }
 }
 
@@ -6622,6 +6645,18 @@ function renderThread() {
     return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
   };
 
+  // Date separator helpers
+  const todayDs = new Date().toDateString();
+  const yestDs  = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toDateString(); })();
+  let prevDateStr = '';
+  function dateSepFor(ts) {
+    const d = new Date(ts); const ds = d.toDateString();
+    if (ds === prevDateStr) return '';
+    prevDateStr = ds;
+    const label = ds === todayDs ? 'Today' : ds === yestDs ? 'Yesterday' : d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    return `<div style="display:flex;align-items:center;margin:12px 0 4px;gap:8px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:10.5px;font-weight:700;color:var(--text3);white-space:nowrap;letter-spacing:.04em">${esc(label)}</span><div style="flex:1;height:1px;background:var(--border)"></div></div>`;
+  }
+
   const bubbles = messages.map(m => {
     // Call events render as a centered chip, not a bubble
     if (m.status === 'call') {
@@ -6630,7 +6665,7 @@ function renderThread() {
       const recordingBtn = m.recording_url
         ? `<button onclick="event.stopPropagation();playCallRecording('${esc(m.recording_url)}')" style="display:inline-flex;align-items:center;gap:3px;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play</button>`
         : '';
-      return `<div style="display:flex;align-items:center;justify-content:center;margin:4px 0">
+      return dateSepFor(m.created_at) + `<div style="display:flex;align-items:center;justify-content:center;margin:4px 0">
         <div style="display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text3);font-family:'Outfit',sans-serif;font-weight:600">
           ${icon} ${esc(m.body || (isOut ? 'Outbound call' : 'Incoming call'))}${recordingBtn}
           <span style="margin-left:4px;font-weight:400;font-size:11px">${fmtTime(m.created_at)}</span>
@@ -6668,7 +6703,7 @@ function renderThread() {
       }
     }
 
-    return `<div class="msg-row ${isOut ? 'outbound' : 'inbound'}">
+    return dateSepFor(m.created_at) + `<div class="msg-row ${isOut ? 'outbound' : 'inbound'}">
       <div class="${bubbleClass}" style="user-select:text">${bubbleInner}</div>
       <div class="msg-meta">${senderBadge ? senderBadge + '&nbsp;' : ''}<span class="msg-timestamp">${fmtTime(m.created_at)}</span>${failedNote}</div>
     </div>`;
