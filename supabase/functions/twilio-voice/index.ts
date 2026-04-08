@@ -1,7 +1,7 @@
 /**
  * twilio-voice
  *
- * TwiML webhook for the BPP CRM Voice integration. Handles TWO flows:
+ * TwiML webhook for the BPP CRM Voice integration. Handles these flows:
  *
  *   OUTBOUND (browser → real phone):
  *     - Device.connect({ params: { To: '+18641234567' } })
@@ -12,9 +12,18 @@
  *     - Someone calls (864) 863-7800
  *     - Returns <Dial><Client>key</Client></Dial> with voicemail fallback
  *
- *   RECORDING STATUS CALLBACK (?event=recording-complete):
- *     - Twilio posts after recording finishes with RecordingUrl + CallSid
+ *   ?event=recording-complete — answered call recording
+ *     - Twilio posts after a Dial recording finishes with RecordingUrl + CallSid
  *     - We update the matching messages row with the recording URL
+ *
+ *   ?event=voicemail-complete — voicemail recording
+ *     - Twilio posts after the <Record> voicemail finishes
+ *     - We update the messages row: attach recording URL, mark as voicemail,
+ *       store transcription text if available
+ *
+ *   ?event=call-status — call end status (answered vs missed)
+ *     - Twilio posts when the <Dial> ends with DialCallStatus
+ *     - We mark unanswered calls as missed in the DB
  *
  * Deploy with --no-verify-jwt so Twilio can POST without Authorization.
  */
@@ -23,6 +32,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER') || '+18648637800'
 const TWILIO_ACCOUNT_SID  = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
 const TWILIO_AUTH_TOKEN   = Deno.env.get('TWILIO_AUTH_TOKEN') || ''
+
+// Voicemail greeting — override via Supabase secret VOICEMAIL_GREETING
+const VOICEMAIL_GREETING = Deno.env.get('VOICEMAIL_GREETING')
+  || "You've reached Backup Power Pro. We're unavailable right now. Please leave your name and number and we'll call you back shortly. Beep."
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -40,9 +53,6 @@ function xesc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
 }
 
-// Fetch ALL contacts and match by last-10 normalized digits.
-// ilike('%digits%') fails when phone is formatted "(864) 863-7800" because
-// the literal digit run "8648637800" doesn't appear as a substring.
 async function findContactByPhone(supabase: any, phone: string): Promise<any | null> {
   const digits = phone.replace(/\D/g, '')
   if (digits.length < 10) return null
@@ -58,6 +68,7 @@ async function logCall(
   direction: 'outbound' | 'inbound',
   body: string,
   callSid: string,
+  callType: string = 'call',
 ) {
   try {
     await supabase.from('messages').insert({
@@ -66,7 +77,7 @@ async function logCall(
       body,
       sender: direction === 'outbound' ? 'key' : 'lead',
       quo_message_id: callSid,
-      status: 'call',
+      status: callType, // 'call' | 'missed' | 'voicemail'
     })
   } catch (err) {
     console.error('[twilio-voice] log failed:', err)
@@ -93,16 +104,14 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  // ── RECORDING STATUS CALLBACK ────────────────────────────
-  // Twilio posts this after a call recording finishes.
-  // We find the matching message by CallSid and attach the recording URL.
+  // ── ANSWERED CALL RECORDING ──────────────────────────────
+  // Twilio posts this after a Dial recording finishes.
   if (event === 'recording-complete') {
     const callSid      = params.get('CallSid') || ''
     const recordingSid = params.get('RecordingSid') || ''
     const duration     = params.get('RecordingDuration') || ''
 
-    if (callSid && recordingSid && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
-      // Construct the MP3 URL — append .mp3 so browsers can play it directly
+    if (callSid && recordingSid && TWILIO_ACCOUNT_SID) {
       const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Recordings/${recordingSid}.mp3`
       try {
         await supabase
@@ -110,11 +119,97 @@ Deno.serve(async (req) => {
           .update({ recording_url: recordingUrl, duration_seconds: parseInt(duration) || null })
           .eq('quo_message_id', callSid)
           .eq('status', 'call')
-        console.log(`[twilio-voice] Recording attached: ${recordingSid} → callSid ${callSid}`)
+        console.log(`[twilio-voice] Call recording attached: ${recordingSid}`)
       } catch (err) {
         console.error('[twilio-voice] recording update failed:', err)
       }
     }
+    return new Response('OK', { status: 200, headers: CORS_HEADERS })
+  }
+
+  // ── VOICEMAIL RECORDING ──────────────────────────────────
+  // Twilio posts after the <Record> voicemail finishes.
+  // We store the recording URL and transcription, mark as voicemail.
+  if (event === 'voicemail-complete') {
+    const callSid         = params.get('CallSid') || ''
+    const recordingSid    = params.get('RecordingSid') || ''
+    const duration        = params.get('RecordingDuration') || ''
+    const transcription   = params.get('TranscriptionText') || ''
+    const transStatus     = params.get('TranscriptionStatus') || ''
+
+    if (callSid && recordingSid && TWILIO_ACCOUNT_SID) {
+      const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Recordings/${recordingSid}.mp3`
+
+      // Find the call to get contact name for the body label
+      const { data: msg } = await supabase
+        .from('messages')
+        .select('contact_id')
+        .eq('quo_message_id', callSid)
+        .in('status', ['call', 'missed'])
+        .maybeSingle()
+
+      let callerName = 'Unknown caller'
+      if (msg?.contact_id) {
+        const { data: contact } = await supabase
+          .from('contacts').select('name').eq('id', msg.contact_id).single()
+        if (contact?.name) callerName = contact.name
+      }
+
+      const transcriptText = (transStatus === 'completed' && transcription)
+        ? transcription
+        : null
+
+      try {
+        await supabase
+          .from('messages')
+          .update({
+            recording_url: recordingUrl,
+            duration_seconds: parseInt(duration) || null,
+            status: 'voicemail',
+            body: `Voicemail from ${callerName}`,
+            ...(transcriptText ? { notes: transcriptText } : {}),
+          })
+          .eq('quo_message_id', callSid)
+          .in('status', ['call', 'missed'])
+        console.log(`[twilio-voice] Voicemail stored: ${recordingSid} from ${callerName}`)
+      } catch (err) {
+        console.error('[twilio-voice] voicemail update failed:', err)
+      }
+    }
+    return new Response('OK', { status: 200, headers: CORS_HEADERS })
+  }
+
+  // ── CALL STATUS (answered vs missed) ─────────────────────
+  // Twilio posts when the <Dial> ends. DialCallStatus tells us if it was answered.
+  if (event === 'call-status') {
+    const callSid        = params.get('CallSid') || ''
+    const dialCallStatus = (params.get('DialCallStatus') || '').toLowerCase()
+
+    // If not answered and we already logged the call → mark as missed
+    if (callSid && (dialCallStatus === 'no-answer' || dialCallStatus === 'busy' || dialCallStatus === 'failed')) {
+      try {
+        await supabase
+          .from('messages')
+          .update({ status: 'missed' })
+          .eq('quo_message_id', callSid)
+          .eq('status', 'call')
+          .eq('direction', 'inbound')
+        console.log(`[twilio-voice] Marked missed: ${callSid} (${dialCallStatus})`)
+      } catch (err) {
+        console.error('[twilio-voice] missed call update failed:', err)
+      }
+      // Fall through to return voicemail TwiML
+      return twiml(
+        `<Say voice="alice">${xesc(VOICEMAIL_GREETING)}</Say>` +
+        `<Record maxLength="120" playBeep="true" finishOnKey="#" trim="trim-silence" ` +
+          `transcribe="true" ` +
+          `recordingStatusCallback="${xesc(url.origin + url.pathname + '?event=voicemail-complete')}" ` +
+          `recordingStatusCallbackMethod="POST"/>` +
+        `<Say voice="alice">Thank you. Goodbye.</Say>` +
+        `<Hangup/>`
+      )
+    }
+
     return new Response('OK', { status: 200, headers: CORS_HEADERS })
   }
 
@@ -125,8 +220,11 @@ Deno.serve(async (req) => {
 
   console.log(`[twilio-voice] CallSid=${callSid} From=${from} To=${to}`)
 
-  // Build the recording status callback URL (same function, ?event=recording-complete)
-  const recordingCallback = `${url.origin}${url.pathname}?event=recording-complete`
+  // Build callback URLs
+  const baseUrl          = `${url.origin}${url.pathname}`
+  const recordingCallback = `${baseUrl}?event=recording-complete`
+  const callStatusCallback = `${baseUrl}?event=call-status`
+  const voicemailCallback  = `${baseUrl}?event=voicemail-complete`
 
   // ── OUTBOUND (browser → real phone) ─────────────────────
   if (from.startsWith('client:')) {
@@ -152,14 +250,14 @@ Deno.serve(async (req) => {
   const name = contact?.name || from
   logCall(supabase, contact?.id ?? null, 'inbound', `Incoming call from ${name}`, callSid).catch(() => {})
 
+  // Use action callback to detect missed calls cleanly.
+  // When the <Dial> ends (answered or not), Twilio POSTs to ?event=call-status
+  // with DialCallStatus. If no-answer/busy/failed, that handler returns voicemail TwiML.
+  // If answered (completed), it returns empty <Response/> and we're done.
   return twiml(
-    `<Dial timeout="25" answerOnBridge="true" ` +
+    `<Dial timeout="25" answerOnBridge="true" action="${xesc(callStatusCallback)}" method="POST" ` +
       `record="record-from-answer" recordingStatusCallback="${xesc(recordingCallback)}" recordingStatusCallbackMethod="POST">` +
       `<Client>key</Client>` +
-    `</Dial>` +
-    `<Say voice="alice">Sorry, we missed your call. Please leave a message after the beep.</Say>` +
-    `<Record maxLength="90" playBeep="true" finishOnKey="#" trim="trim-silence"/>` +
-    `<Say voice="alice">Thanks. We'll call you back soon. Goodbye.</Say>` +
-    `<Hangup/>`
+    `</Dial>`
   )
 })

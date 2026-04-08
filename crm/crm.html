@@ -895,6 +895,33 @@ html.dark .inbox-item.unread{border-left-color:var(--gold)}
 .tab-pane{animation:tabFade .18s ease}
 @keyframes tabFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
+/* ── CALL LOG ─────────────────────────────────────────── */
+.call-filter-chip{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--r-pill);border:1.5px solid var(--border);background:var(--bg);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.call-filter-chip:hover{border-color:var(--navy);color:var(--navy)}
+.call-filter-chip.active{background:var(--navy);border-color:var(--navy);color:#fff}
+html.dark .call-filter-chip.active{background:var(--gold);border-color:var(--gold);color:#1e1b17}
+html.dark .call-filter-chip:hover{border-color:var(--gold);color:var(--gold)}
+.call-row{background:var(--card);border-radius:var(--r-md);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base),background var(--t-fast);box-shadow:var(--shadow-sm);border:1px solid var(--border)}
+.call-row:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);background:var(--bg)}
+html.dark .call-row:hover{background:#302b25}
+.call-row.missed{border-left:3px solid var(--red)}
+.call-row.voicemail{border-left:3px solid var(--gold)}
+html.dark .call-row.voicemail{border-left-color:var(--gold)}
+.call-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.call-icon.answered{background:#dcfce7;color:#16a34a}
+.call-icon.missed-icon{background:#fee2e2;color:var(--red)}
+.call-icon.voicemail-icon{background:#fef9c3;color:#a16207}
+.call-icon.outbound-icon{background:#eff6ff;color:var(--blue)}
+html.dark .call-icon.answered{background:#1a3328;color:#4ade80}
+html.dark .call-icon.missed-icon{background:#3d1e1e;color:#f87171}
+html.dark .call-icon.voicemail-icon{background:#3d3520;color:#e6a800}
+html.dark .call-icon.outbound-icon{background:#1e2a3d;color:#7cb3f0}
+.call-play-btn{display:inline-flex;align-items:center;gap:4px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-pill);padding:4px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:background .15s;flex-shrink:0}
+.call-play-btn:hover{background:var(--navy2)}
+html.dark .call-play-btn{background:var(--gold);color:#1e1b17}
+html.dark .call-play-btn:hover{background:#cca000}
+.call-transcript{font-size:12px;color:var(--text2);margin-top:4px;font-style:italic;line-height:1.4}
+
 /* ── NAV BELL / NOTIFICATION CENTER ────────────────────── */
 .bell-wrap{position:relative}
 .bell-badge{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;line-height:1;pointer-events:none;box-shadow:0 0 0 2px var(--navy)}
@@ -1655,40 +1682,86 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <!-- ── MESSAGES INBOX TAB ────────────────────────────────── -->
 <div id="tab-messages" style="display:none">
   <main class="main" style="max-width:700px">
-    <div class="section-head" style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <div class="section-title">Inbox</div>
-        <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
+
+    <!-- Sub-tab toggle: Messages | Calls -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px">
+      <button id="msgtab-btn-inbox" onclick="setMsgSubTab('inbox')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text);cursor:pointer;border-bottom:2.5px solid var(--navy);margin-bottom:-2px;transition:color .15s">Messages</button>
+      <button id="msgtab-btn-calls" onclick="setMsgSubTab('calls')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:color .15s;display:flex;align-items:center;gap:6px">Calls<span id="msgtab-calls-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif"></span></button>
+    </div>
+
+    <!-- ── INBOX sub-tab ─────────────────────────────────── -->
+    <div id="msgtab-inbox">
+      <div class="section-head" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <div class="section-title">Inbox</div>
+          <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
+        </div>
+        <div class="inbox-hdr-actions">
+          <button onclick="inboxToggleSearch()" id="inbox-search-btn" class="inbox-hdr-pill" title="Search conversations">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search
+          </button>
+          <button onclick="inboxToggleUnreadFilter()" id="inbox-unread-filter-btn" class="inbox-hdr-pill" title="Show unread only">
+            Unread
+          </button>
+          <button onclick="inboxNewConversation()" style="display:flex;align-items:center;gap:5px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New
+          </button>
+          <button onclick="inboxSparkyScan()" id="inbox-sparky-btn" style="display:flex;align-items:center;gap:5px;background:var(--gold);color:var(--navy);border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer" title="Sparky scans conversations and archives done ones">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg>
+            Sparky
+          </button>
+        </div>
       </div>
-      <div class="inbox-hdr-actions">
-        <button onclick="inboxToggleSearch()" id="inbox-search-btn" class="inbox-hdr-pill" title="Search conversations">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Search
-        </button>
-        <button onclick="inboxToggleUnreadFilter()" id="inbox-unread-filter-btn" class="inbox-hdr-pill" title="Show unread only">
-          Unread
-        </button>
-        <button onclick="inboxNewConversation()" style="display:flex;align-items:center;gap:5px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New
-        </button>
-        <button onclick="inboxSparkyScan()" id="inbox-sparky-btn" style="display:flex;align-items:center;gap:5px;background:var(--gold);color:var(--navy);border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer" title="Sparky scans conversations and archives done ones">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg>
-          Sparky
-        </button>
+      <div id="inbox-search-bar" style="display:none;padding-bottom:10px">
+        <input id="inbox-search-input" type="text" placeholder="Search conversations…" autocomplete="off"
+          style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-size:16px;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;box-sizing:border-box"
+          onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
+          oninput="inboxFilterSearch(this.value)">
+      </div>
+      <div id="inbox-list" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div id="inbox-done-section" style="display:none;margin-top:18px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;padding:0 2px">Archived</div>
+        <div id="inbox-done-list" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
     </div>
-    <div id="inbox-search-bar" style="display:none;padding-bottom:10px">
-      <input id="inbox-search-input" type="text" placeholder="Search conversations…" autocomplete="off"
-        style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-size:16px;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;box-sizing:border-box"
-        onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
-        oninput="inboxFilterSearch(this.value)">
+
+    <!-- ── CALLS sub-tab ─────────────────────────────────── -->
+    <div id="msgtab-calls" style="display:none">
+      <div class="section-head" style="margin-bottom:16px">
+        <div class="section-title">Call Log</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="openVoicemailGreetingEditor()" class="inbox-hdr-pill" title="Edit voicemail greeting">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Greeting
+          </button>
+        </div>
+      </div>
+      <!-- Filter chips -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="call-filter-chip active" id="call-filter-all" onclick="setCallFilter('all')">All</button>
+        <button class="call-filter-chip" id="call-filter-missed" onclick="setCallFilter('missed')">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:4px;vertical-align:middle"></span>Missed
+        </button>
+        <button class="call-filter-chip" id="call-filter-voicemail" onclick="setCallFilter('voicemail')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>Voicemails
+        </button>
+      </div>
+      <div id="calls-log-list" style="display:flex;flex-direction:column;gap:8px"></div>
+
+      <!-- Voicemail greeting editor (hidden inline panel) -->
+      <div id="voicemail-greeting-panel" style="display:none;margin-top:24px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:20px">
+        <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:var(--text);margin-bottom:6px">Voicemail Greeting</div>
+        <p style="font-size:12px;color:var(--text3);margin:0 0 14px;line-height:1.5">This is read aloud when a caller reaches voicemail. Edit it here, then save — the text is copied to your clipboard so you can paste it into <strong>Supabase → Settings → Secrets → VOICEMAIL_GREETING</strong> to make it live.</p>
+        <textarea id="voicemail-greeting-text" rows="4" class="form-textarea" style="width:100%;font-size:14px;line-height:1.5;resize:vertical;box-sizing:border-box" placeholder="You've reached Backup Power Pro. Please leave your name and number and we'll call you back."></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button onclick="document.getElementById('voicemail-greeting-panel').style.display='none'" class="btn btn-outline btn-sm">Cancel</button>
+          <button onclick="saveVoicemailGreeting()" class="btn btn-primary btn-sm">Save Greeting</button>
+        </div>
+      </div>
     </div>
-    <div id="inbox-list" style="display:flex;flex-direction:column;gap:6px"></div>
-    <div id="inbox-done-section" style="display:none;margin-top:18px">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;padding:0 2px">Archived</div>
-      <div id="inbox-done-list" style="display:flex;flex-direction:column;gap:6px"></div>
-    </div>
+
   </main>
 </div>
 
@@ -6691,8 +6764,223 @@ function switchTab(tab) {
   });
 
   // Load content for the active tab
-  if (tab === 'messages') loadInbox();
+  if (tab === 'messages') {
+    loadInbox();
+    // Quietly update missed-calls badge in background
+    if (!_callLogLoaded) loadCallLog().catch(() => {});
+  }
   if (tab === 'invoices') loadInvoicesTab();
+}
+
+// ── MESSAGES SUB-TAB (Inbox vs Calls) ───────────────────
+let _msgSubTab = 'inbox';
+let _callFilter = 'all';
+
+function setMsgSubTab(sub) {
+  _msgSubTab = sub;
+  const inboxDiv = document.getElementById('msgtab-inbox');
+  const callsDiv = document.getElementById('msgtab-calls');
+  const inboxBtn = document.getElementById('msgtab-btn-inbox');
+  const callsBtn = document.getElementById('msgtab-btn-calls');
+  if (!inboxDiv || !callsDiv) return;
+
+  if (sub === 'calls') {
+    inboxDiv.style.display = 'none';
+    callsDiv.style.display = 'block';
+    if (inboxBtn) { inboxBtn.style.borderBottomColor = 'transparent'; inboxBtn.style.color = 'var(--text3)'; }
+    if (callsBtn) { callsBtn.style.borderBottomColor = 'var(--navy)'; callsBtn.style.color = 'var(--text)'; }
+    loadCallLog();
+  } else {
+    inboxDiv.style.display = 'block';
+    callsDiv.style.display = 'none';
+    if (inboxBtn) { inboxBtn.style.borderBottomColor = 'var(--navy)'; inboxBtn.style.color = 'var(--text)'; }
+    if (callsBtn) { callsBtn.style.borderBottomColor = 'transparent'; callsBtn.style.color = 'var(--text3)'; }
+    loadInbox();
+  }
+}
+
+// Dark mode sync for sub-tab underline
+function _syncCallSubTabDark() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const activeColor = isDark ? 'var(--gold)' : 'var(--navy)';
+  const inboxBtn = document.getElementById('msgtab-btn-inbox');
+  const callsBtn = document.getElementById('msgtab-btn-calls');
+  if (!inboxBtn || !callsBtn) return;
+  if (_msgSubTab === 'inbox') {
+    inboxBtn.style.borderBottomColor = activeColor;
+    callsBtn.style.borderBottomColor = 'transparent';
+  } else {
+    inboxBtn.style.borderBottomColor = 'transparent';
+    callsBtn.style.borderBottomColor = activeColor;
+  }
+}
+
+// Hook into toggleDarkMode to keep sub-tab underline correct
+const _origToggleDark = window.toggleDarkMode;
+window.toggleDarkMode = function() {
+  if (typeof _origToggleDark === 'function') _origToggleDark();
+  _syncCallSubTabDark();
+};
+
+function setCallFilter(filter) {
+  _callFilter = filter;
+  ['all', 'missed', 'voicemail'].forEach(f => {
+    const btn = document.getElementById('call-filter-' + f);
+    if (btn) btn.classList.toggle('active', f === filter);
+  });
+  renderCallLog(window._callLogData || []);
+}
+
+let _callLogLoaded = false;
+async function loadCallLog() {
+  const listEl = document.getElementById('calls-log-list');
+  if (!listEl) return;
+
+  if (!_callLogLoaded) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3)">Loading…</div>';
+  }
+
+  const { data, error } = await db
+    .from('messages')
+    .select('id,contact_id,direction,body,created_at,status,recording_url,duration_seconds')
+    .in('status', ['call', 'missed', 'voicemail'])
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red)">Failed to load calls</div>';
+    return;
+  }
+
+  _callLogLoaded = true;
+  window._callLogData = data || [];
+
+  // Update missed calls badge on tab
+  const missedCount = (data || []).filter(m => m.status === 'missed').length;
+  const badge = document.getElementById('msgtab-calls-badge');
+  if (badge) { badge.textContent = missedCount; badge.style.display = missedCount ? '' : 'none'; }
+
+  renderCallLog(data || []);
+}
+
+function renderCallLog(data) {
+  const listEl = document.getElementById('calls-log-list');
+  if (!listEl) return;
+
+  const filtered = _callFilter === 'all' ? data
+    : data.filter(m => m.status === _callFilter);
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">'
+      + (_callFilter === 'missed' ? 'No missed calls' : _callFilter === 'voicemail' ? 'No voicemails' : 'No calls yet')
+      + '</div>';
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(m => {
+    const c = allContacts.find(x => x.id === m.contact_id);
+    const name = c ? dispName(c.name, fmtPhone(c.phone) || 'Unknown') : (m.contact_id ? 'Unknown' : fmtPhone(''));
+    const isInbound  = m.direction === 'inbound';
+    const isMissed   = m.status === 'missed';
+    const isVoicemail = m.status === 'voicemail';
+    const isAnswered = !isMissed && !isVoicemail;
+    const timeStr    = _relativeTime(m.created_at);
+    const dur        = m.duration_seconds ? _fmtDuration(m.duration_seconds) : '';
+
+    let iconClass, iconSvg, rowClass = 'call-row';
+    if (isMissed) {
+      rowClass += ' missed'; iconClass = 'call-icon missed-icon';
+      iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    } else if (isVoicemail) {
+      rowClass += ' voicemail'; iconClass = 'call-icon voicemail-icon';
+      iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>`;
+    } else if (!isInbound) {
+      iconClass = 'call-icon outbound-icon';
+      iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+    } else {
+      iconClass = 'call-icon answered';
+      iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+    }
+
+    const label = isMissed ? 'Missed call' : isVoicemail ? 'Voicemail' : (isInbound ? 'Answered call' : 'Outbound call');
+    const meta  = [label, dur].filter(Boolean).join(' · ');
+
+    const playBtn = m.recording_url
+      ? `<button class="call-play-btn" onclick="event.stopPropagation();playCallRecording('${esc(m.recording_url)}')" title="Play recording">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play
+        </button>`
+      : '';
+
+    // Voicemail transcription is stored in the body after "Voicemail from Name: " — check for colon
+    const transcriptRow = (isVoicemail && m.body && m.body.includes(': '))
+      ? `<div class="call-transcript">"${esc(m.body.split(': ').slice(1).join(': '))}"</div>` : '';
+
+    const clickAction = m.contact_id
+      ? (isVoicemail || isMissed ? `openMessagesPanel('${m.contact_id}')` : `openPanel('${m.contact_id}')`)
+      : '';
+
+    return `<div class="${rowClass}" onclick="${clickAction}">
+      <div class="${iconClass}">${iconSvg}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text)">${esc(name)}</span>
+          ${isMissed ? '<span style="font-size:11px;font-weight:700;color:var(--red);background:#fee2e2;padding:1px 7px;border-radius:var(--r-pill)">Missed</span>' : ''}
+          ${isVoicemail ? '<span style="font-size:11px;font-weight:700;color:#a16207;background:#fef9c3;padding:1px 7px;border-radius:var(--r-pill)">Voicemail</span>' : ''}
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">${esc(meta)} · ${esc(timeStr)}</div>
+        ${transcriptRow}
+      </div>
+      ${playBtn}
+    </div>`;
+  }).join('');
+}
+
+function _fmtDuration(seconds) {
+  if (!seconds || seconds < 1) return '';
+  if (seconds < 60) return seconds + 's';
+  const m = Math.floor(seconds / 60), s = seconds % 60;
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+// ── VOICEMAIL GREETING EDITOR ────────────────────────────
+const _VM_GREETING_KEY = 'bpp_voicemail_greeting';
+const _VM_GREETING_DEFAULT = "You've reached Backup Power Pro. We're unavailable right now. Please leave your name and number and we'll call you back shortly.";
+
+function openVoicemailGreetingEditor() {
+  const panel = document.getElementById('voicemail-greeting-panel');
+  if (!panel) return;
+  const textarea = document.getElementById('voicemail-greeting-text');
+
+  // Load saved greeting or default
+  try {
+    const saved = localStorage.getItem(_VM_GREETING_KEY);
+    if (textarea) textarea.value = saved || _VM_GREETING_DEFAULT;
+  } catch(e) {
+    if (textarea) textarea.value = _VM_GREETING_DEFAULT;
+  }
+
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block' && textarea) {
+    textarea.focus();
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function saveVoicemailGreeting() {
+  const textarea = document.getElementById('voicemail-greeting-text');
+  if (!textarea) return;
+  const greeting = textarea.value.trim();
+  if (!greeting) { showToast('Greeting cannot be empty', 'error'); return; }
+
+  try {
+    localStorage.setItem(_VM_GREETING_KEY, greeting);
+    // Copy to clipboard so Key can paste it into Supabase secret VOICEMAIL_GREETING
+    navigator.clipboard.writeText(greeting).catch(() => {});
+    showToast('Greeting saved — also copied to clipboard. Paste into Supabase → Settings → Secrets → VOICEMAIL_GREETING to go live.', 'success');
+    document.getElementById('voicemail-greeting-panel').style.display = 'none';
+  } catch(e) {
+    showToast('Failed to save greeting', 'error');
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -6951,9 +7239,13 @@ async function loadInbox() {
     const contactReadAt = getContactReadAt(m.contact_id);
     const isUnread = !isDone && !isMuted && m.direction === 'inbound' && m.created_at > lastChecked && m.created_at > contactReadAt;
     const timeStr = _relativeTime(m.created_at);
-    // Preview: calls get phone icon
+    // Preview: calls/missed/voicemail get appropriate icons
     let preview;
-    if (m.status === 'call') {
+    if (m.status === 'voicemail') {
+      preview = `🎤 ${esc((m.body || 'Voicemail').slice(0, 60))}`;
+    } else if (m.status === 'missed') {
+      preview = `<span style="color:var(--red);font-weight:700">Missed call</span>`;
+    } else if (m.status === 'call') {
       const callIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:2px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
       preview = callIcon + (m.body || 'Call').replace(/📞\s*/,'');
     } else {
