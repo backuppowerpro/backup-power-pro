@@ -8673,9 +8673,13 @@ setTimeout(() => {
       { name: 'Go to Messages', sub: 'Press 2', icon: '2', match: 'messages inbox sms', action: () => { closeCmdk(); switchTab('messages'); } },
       { name: 'Go to Invoices', sub: 'Press 3', icon: '3', match: 'invoices billing payments', action: () => { closeCmdk(); switchTab('invoices'); } },
       { name: 'Go to Pipeline', sub: 'Kanban view', icon: '◫', match: 'pipeline kanban board view', action: () => { closeCmdk(); switchTab('leads'); if (typeof setLeadsView === 'function') setLeadsView('pipeline'); } },
+      { name: 'Go to Permits Board', sub: 'Track permit steps', icon: '📄', match: 'permits board permit tracking', action: () => { closeCmdk(); switchTab('leads'); if (typeof setLeadsView === 'function') setLeadsView('permits'); } },
+      { name: 'Go to Materials Board', sub: 'Order + receive tracking', icon: '📦', match: 'materials board order received', action: () => { closeCmdk(); switchTab('leads'); if (typeof setLeadsView === 'function') setLeadsView('materials'); } },
       { name: 'New Contact', sub: 'Add a lead · N', icon: '+', match: 'new contact lead add create', action: () => { closeCmdk(); openContactModal(null); } },
       { name: 'Call Contact', sub: 'Active panel · K', icon: '📞', match: 'call phone dial contact', action: () => { closeCmdk(); if (typeof window.panelCallContact === 'function') window.panelCallContact(); } },
+      { name: 'Open Dialer', sub: 'Call any number', icon: '☎', match: 'dialer call number phone dial', action: () => { closeCmdk(); if (typeof openDialer === 'function') openDialer(); } },
       { name: 'Open Sparky', sub: 'AI assistant · S', icon: '⚡', match: 'sparky ai assistant chat help', action: () => { closeCmdk(); if (typeof window.tmOpenPanel === 'function') window.tmOpenPanel(); } },
+      { name: 'Show Unread Messages', sub: 'Inbox filter', icon: '●', match: 'unread messages inbox filter', action: () => { closeCmdk(); switchTab('messages'); if (typeof inboxToggleUnreadFilter === 'function' && !_inboxUnreadOnly) inboxToggleUnreadFilter(); } },
       { name: 'Toggle Dark Mode', sub: 'Switch theme', icon: '☾', match: 'dark mode theme toggle light', action: () => { closeCmdk(); document.documentElement.classList.toggle('dark'); try { localStorage.setItem('bpp_crm_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {} } },
     ];
     const matchedActions = actions.filter(a => !q || a.match.includes(q) || a.name.toLowerCase().includes(q));
