@@ -6305,11 +6305,58 @@ function inboxToggleMute(contactId) {
   loadInbox();
 }
 
-// ── NEW CONVERSATION ───────────────────────────────────────
+// ── NEW CONVERSATION — inline contact picker ───────────────
 function inboxNewConversation() {
-  // Open contact search: reuse lead search or just switch to leads and open palette
-  if (typeof openCommandPalette === 'function') openCommandPalette();
-  else showToast('Search for a contact in Leads to start a conversation', 'info');
+  const listEl = document.getElementById('inbox-list');
+  const doneEl = document.getElementById('inbox-done-section');
+  if (!listEl) return;
+  if (doneEl) doneEl.style.display = 'none';
+
+  const colors = ['#0b1f3b','#1d4ed8','#0f766e','#7c3aed','#b45309','#c2410c'];
+  const contacts = (allContacts || [])
+    .filter(c => c && c.status !== 'Archived' && c.phone)
+    .slice(0, 60);
+
+  const rows = contacts.map(c => {
+    const name = dispName(c.name, fmtPhone(c.phone || ''));
+    const ph = c.phone ? fmtPhone(c.phone) : '';
+    const initials = (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const ci = (c.name || '').split('').reduce((s, ch) => s + ch.charCodeAt(0), 0) % colors.length;
+    const searchKey = ((c.name || '') + ' ' + (c.phone || '')).toLowerCase();
+    return `<div class="inbox-item nc-row" data-nc="${esc(searchKey)}" onclick="openMessagesPanel('${c.id}');window.inboxNcClose()" style="cursor:pointer">
+      <div style="width:36px;height:36px;border-radius:50%;background:${colors[ci]};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${esc(initials)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
+        ${ph ? `<div style="font-size:11.5px;color:var(--text3);margin-top:1px">${esc(ph)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">No contacts with phone numbers</div>';
+
+  listEl.setAttribute('data-nc', '1');
+  listEl.innerHTML = `<div style="padding:10px 12px 6px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-pill);padding:8px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="inbox-nc-inp" type="text" placeholder="Search contacts…" oninput="window.inboxNcFilter(this.value)" style="flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:inherit">
+      </div>
+      <button onclick="window.inboxNcClose()" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:4px 8px;line-height:1" title="Cancel">&times;</button>
+    </div>
+  </div>
+  <div id="nc-rows" style="overflow-y:auto;max-height:calc(100% - 80px)">${rows}</div>`;
+
+  setTimeout(() => { const inp = document.getElementById('inbox-nc-inp'); if (inp) inp.focus(); }, 60);
+
+  window.inboxNcFilter = function(term) {
+    const t = term.toLowerCase();
+    document.querySelectorAll('.nc-row').forEach(el => {
+      el.style.display = !t || (el.getAttribute('data-nc') || '').includes(t) ? '' : 'none';
+    });
+  };
+  window.inboxNcClose = function() {
+    const el = document.getElementById('inbox-list');
+    if (el) el.removeAttribute('data-nc');
+    loadInbox();
+  };
 }
 
 // ── SPARKY SMART ARCHIVE ───────────────────────────────────
