@@ -724,9 +724,11 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stat:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
 .pa-stat-num{font-family:'Outfit',sans-serif;font-size:28px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .pa-stat-label{font-size:11px;color:var(--text3);margin-top:6px;font-family:'Outfit',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
-.pa-stage-wrap{position:relative;margin-bottom:14px;-webkit-mask-image:linear-gradient(to right,black 0%,black calc(100% - 56px),transparent 100%);mask-image:linear-gradient(to right,black 0%,black calc(100% - 56px),transparent 100%)}
-.pa-stage-wrap.scrolled-left{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 56px),transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 56px),transparent 100%)}
-.pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:4px 4px 6px;scroll-behavior:smooth}
+.pa-stage-wrap{position:relative;margin-bottom:14px;-webkit-mask-image:linear-gradient(to right,black 0%,black calc(100% - 32px),transparent 100%);mask-image:linear-gradient(to right,black 0%,black calc(100% - 32px),transparent 100%)}
+.pa-stage-wrap.scrolled-left{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 32px),transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 32px),transparent 100%)}
+.pa-stage-wrap.scrolled-end{-webkit-mask-image:none;mask-image:none}
+.pa-stage-wrap.scrolled-left.scrolled-end{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black 100%)}
+.pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:4px 36px 6px 4px;scroll-behavior:smooth}
 .pa-stage-list::-webkit-scrollbar{display:none}
 .pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--card);border-radius:var(--r-pill);border:1px solid var(--border);cursor:pointer;transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast);white-space:nowrap}
 .pa-stage-chip:hover{background:#f5f7fb;border-color:var(--border-strong)}
@@ -6287,12 +6289,15 @@ function loadPermitAnalytics() {
     </div>
   `;
 
-  // Fade left edge only when scrolled away from start
+  // Fade edges dynamically: left only when scrolled, right only when more content exists
   const stageList = el.querySelector('.pa-stage-list');
   const stageWrap = el.querySelector('.pa-stage-wrap');
   if (stageList && stageWrap) {
     const updateFade = () => {
-      stageWrap.classList.toggle('scrolled-left', stageList.scrollLeft > 8);
+      const atStart = stageList.scrollLeft <= 8;
+      const atEnd   = stageList.scrollLeft + stageList.clientWidth >= stageList.scrollWidth - 8;
+      stageWrap.classList.toggle('scrolled-left', !atStart);
+      stageWrap.classList.toggle('scrolled-end',   atEnd);
     };
     stageList.addEventListener('scroll', updateFade, { passive: true });
     updateFade();
