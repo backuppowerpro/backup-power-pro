@@ -231,8 +231,6 @@ button,a,[onclick],label{touch-action:manipulation}
   .panel-foot{padding:12px 16px}
   /* Tighter section labels on mobile */
   .panel-section-label{margin-top:var(--sp-4)!important}
-  /* Smaller nav on mobile */
-  .nav{height:52px;padding:0 12px}
   /* Larger tap targets on mobile — WCAG 44px min */
   .qa-btn,.qr-chip,.btn-sm{min-height:36px}
 }
@@ -241,10 +239,11 @@ button,a,[onclick],label{touch-action:manipulation}
 @supports(padding-bottom:env(safe-area-inset-bottom)){
   .msg-compose-foot{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
 }
+
 h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;letter-spacing:-.01em}
 
-/* NAV */
-.nav{background:var(--navy);display:flex;align-items:center;padding:0 16px;height:56px;gap:8px;position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 4px 16px rgba(10,20,40,.18)}
+/* NAV — Dynamic Island / notch safe area */
+.nav{background:var(--navy);display:flex;align-items:center;padding:0 16px;gap:8px;position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 4px 16px rgba(10,20,40,.18);height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);padding-left:max(16px,calc(env(safe-area-inset-left,0px) + 8px));padding-right:max(16px,calc(env(safe-area-inset-right,0px) + 8px))}
 .nav-brand{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:#fff;margin-right:auto;letter-spacing:-.01em}
 .nav-brand span{color:var(--gold)}
 
@@ -626,9 +625,11 @@ html.dark .contact-info-summary:hover{background:#302b25}
 .hidden{display:none!important}
 
 /* ── TAB BAR ──────────────────────────────────────────── */
-.tab-bar{background:var(--card);border-bottom:1px solid var(--border);display:flex;position:sticky;top:56px;z-index:49;padding:0 12px;overflow-x:auto;scrollbar-width:none;box-shadow:0 1px 0 var(--border)}
+.tab-bar{background:var(--card);border-bottom:1px solid var(--border);display:flex;position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:49;padding:0 12px;overflow-x:auto;scrollbar-width:none;box-shadow:0 1px 0 var(--border)}
 .tab-bar::-webkit-scrollbar{display:none}
-.tab-btn{padding:14px 18px;font-family:'Outfit',sans-serif;font-weight:600;font-size:14px;border:none;background:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--t-fast),border-color var(--t-fast);white-space:nowrap;flex-shrink:0;letter-spacing:.005em}
+.tab-icon{display:none}  /* icons shown only on mobile bottom tab */
+.tab-label{display:inline}
+.tab-btn{padding:14px 18px;font-family:'Outfit',sans-serif;font-weight:600;font-size:14px;border:none;background:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--t-fast),border-color var(--t-fast);white-space:nowrap;flex-shrink:0;letter-spacing:.005em;display:flex;align-items:center;gap:6px}
 .tab-btn.active{color:var(--text);border-bottom-color:var(--gold);font-weight:700}
 .tab-btn:hover:not(.active){color:var(--text)}
 .tab-btn:focus-visible{outline:none;color:var(--text)}
@@ -1318,6 +1319,54 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .tm-brief-foot .tm-brief-btn{flex:1 1 0;min-width:0;text-align:center}
   .tm-brief-footer-note{flex-basis:100%;margin-left:0;text-align:center;margin-top:2px}
 }
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE-FIRST: iPhone 17 Pro Max / standalone PWA
+   Bottom tab bar (iOS native), Dynamic Island safe area,
+   icon-only view toggle, Sparky above tab bar.
+   Must be LAST in stylesheet to win cascade.
+   ══════════════════════════════════════════════════════════ */
+@media(max-width:640px){
+  /* Bottom tab bar — iOS native pattern */
+  .tab-bar{
+    position:fixed!important;top:auto!important;bottom:0!important;
+    left:0;right:0;
+    height:calc(56px + env(safe-area-inset-bottom,0px));
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    padding-left:env(safe-area-inset-left,0px);
+    padding-right:env(safe-area-inset-right,0px);
+    justify-content:space-around;overflow-x:visible;
+    border-bottom:none!important;border-top:1px solid var(--border);
+    box-shadow:0 -1px 12px rgba(10,20,40,.06);z-index:51
+  }
+  .tab-btn{
+    flex:1;padding:7px 4px 5px!important;
+    flex-direction:column;align-items:center;justify-content:flex-start;
+    border-bottom:none!important;border-top:2px solid transparent;
+    margin-bottom:0!important;font-size:10px!important;font-weight:600;
+    gap:3px;flex-shrink:1;white-space:nowrap
+  }
+  .tab-btn.active{border-top-color:var(--gold)!important;border-bottom-color:transparent!important;color:var(--navy);font-weight:700}
+  html.dark .tab-btn.active{color:var(--gold)}
+  .tab-icon{display:block!important;width:20px;height:20px;flex-shrink:0}
+
+  /* Push page content up from bottom tab */
+  .main{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}
+
+  /* View toggle: icon-only on mobile */
+  .view-toggle-btn{padding:7px 9px!important;font-size:0!important;line-height:0!important;gap:0!important;min-width:34px}
+  .view-toggle-btn svg{display:block!important}
+  .view-toggle{gap:2px}
+
+  /* Sparky launcher above bottom tab */
+  .tm-launcher{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important;right:16px!important}
+
+  /* Toast above bottom tab */
+  .toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}
+
+  /* Call bar above bottom tab */
+  .call-bar{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+}
 </style>
 </head>
 <body>
@@ -1494,9 +1543,18 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
 <!-- ── TAB BAR ───────────────────────────────────────────── -->
 <div class="tab-bar" id="main-tab-bar" style="display:none">
-  <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">Leads</button>
-  <button class="tab-btn" id="tab-btn-invoices" onclick="switchTab('invoices')">Docs<span class="tab-badge" id="tab-inv-badge" style="display:none"></span></button>
-  <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')">Messages<span class="tab-badge tab-badge-red" id="tab-msg-badge" style="display:none"></span></button>
+  <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">
+    <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span class="tab-label">Leads</span>
+  </button>
+  <button class="tab-btn" id="tab-btn-invoices" onclick="switchTab('invoices')">
+    <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <span class="tab-label">Docs</span><span class="tab-badge" id="tab-inv-badge" style="display:none"></span>
+  </button>
+  <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')">
+    <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="tab-label">Messages</span><span class="tab-badge tab-badge-red" id="tab-msg-badge" style="display:none"></span>
+  </button>
 </div>
 
 <!-- ── INVOICES TAB ──────────────────────────────────────── -->
