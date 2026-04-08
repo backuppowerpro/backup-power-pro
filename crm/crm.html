@@ -9441,12 +9441,14 @@ setTimeout(() => {
   .activity-icon.invoice{background:#d1fae5;color:var(--green)}
   .activity-icon.payment{background:rgba(255,186,0,.2);color:#92400e}
   .activity-icon.message{background:#e0f2fe;color:#0369a1}
+  .activity-icon.call{background:#dcfce7;color:#166534}
   html.dark .activity-icon.created{background:rgba(59,130,246,.18);color:#7cb3f0}
   html.dark .activity-icon.stage{background:rgba(234,179,8,.18);color:#facc15}
   html.dark .activity-icon.proposal{background:rgba(124,58,237,.18);color:#c4b5fd}
   html.dark .activity-icon.invoice{background:rgba(5,150,105,.18);color:#4ade80}
   html.dark .activity-icon.payment{background:rgba(230,168,0,.18);color:#facc15}
   html.dark .activity-icon.message{background:rgba(3,105,161,.2);color:#7dd3fc}
+  html.dark .activity-icon.call{background:rgba(22,163,74,.18);color:#4ade80}
   .activity-body{flex:1;min-width:0;padding-top:3px;padding-bottom:8px}
   .activity-title{font-size:12.5px;color:var(--text);font-weight:600;line-height:1.35}
   .activity-sub{font-size:11px;color:var(--text3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -10170,18 +10172,24 @@ setTimeout(() => {
       });
     });
 
-    // Recent messages
+    // Recent messages + calls
     try {
-      const { data: msgs } = await db.from('messages').select('id,direction,body,created_at').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(8);
+      const { data: msgs } = await db.from('messages').select('id,direction,body,created_at,status,duration_seconds').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(50);
       if (msgs) {
         msgs.forEach(m => {
-          const isOut = m.direction === 'outbound';
-          events.push({
-            kind: 'message', icon: isOut ? '↗' : '↙',
-            title: isOut ? 'Sent message' : 'Received message',
-            sub: (m.body || '').slice(0, 60),
-            ts: new Date(m.created_at).getTime()
-          });
+          if (m.status === 'call' || m.status === 'missed' || m.status === 'voicemail') {
+            const label = m.status === 'missed' ? 'Missed call' : m.status === 'voicemail' ? 'Voicemail left' : (m.direction === 'outbound' ? 'Outbound call' : 'Inbound call');
+            const dur = m.duration_seconds ? Math.floor(m.duration_seconds/60) + 'm ' + (m.duration_seconds%60) + 's' : '';
+            events.push({ kind: 'call', icon: m.status === 'missed' ? '✗' : '☎', title: label, sub: dur, ts: new Date(m.created_at).getTime() });
+          } else {
+            const isOut = m.direction === 'outbound';
+            events.push({
+              kind: 'message', icon: isOut ? '↗' : '↙',
+              title: isOut ? 'Sent text' : 'Received text',
+              sub: (m.body || '').replace(/\[media:[^\]]+\]/g, '[Photo]').slice(0, 60),
+              ts: new Date(m.created_at).getTime()
+            });
+          }
         });
       }
     } catch (e) {}
