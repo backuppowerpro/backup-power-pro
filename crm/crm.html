@@ -986,6 +986,8 @@ html.dark .inv-row:hover{background:#302b25}
 .inv-viewed{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:var(--r-pill)}
 html.dark .inv-viewed{background:rgba(234,179,8,.18);color:#facc15}
 .inv-skeleton{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--card);border-radius:var(--r-md);margin-bottom:8px;box-shadow:0 1px 3px rgba(10,20,40,.05)}
+/* Quote row avatar — matches contact-list avatar style */
+.inv-avatar{width:38px;height:38px;border-radius:50%;color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:-.5px}
 
 /* ── PIPELINE KANBAN ────────────────────────────────────── */
 .view-toggle{display:inline-flex;background:var(--card);border-radius:var(--r-sm);padding:3px;box-shadow:0 1px 3px rgba(10,20,40,.06);margin-left:auto}
@@ -1629,12 +1631,14 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div id="docs-quotes-list"></div>
     </div>
     <!-- Invoices section -->
-    <div class="section-head" style="margin-bottom:0">
-      <div class="section-title">Invoices</div>
+    <div id="docs-invoices-section">
+      <div class="section-head" style="margin-bottom:12px">
+        <div class="section-title">Invoices</div>
+      </div>
+      <div class="inv-summary" id="inv-summary"></div>
+      <div class="inv-filters" id="inv-filters"></div>
+      <div class="inv-list" id="inv-list"></div>
     </div>
-    <div class="inv-summary" id="inv-summary"></div>
-    <div class="inv-filters" id="inv-filters"></div>
-    <div class="inv-list" id="inv-list"></div>
   </main>
 </div>
 
@@ -8477,14 +8481,15 @@ function renderDocsQuotes() {
     const amount = p.total ? '$' + Number(p.total).toLocaleString() : '—';
     const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
     const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
-    return `<div class="inv-row" onclick="${c ? `openPanel('${c.id}')` : ''}" style="cursor:${c ? 'pointer' : 'default'}">
-      <div class="inv-avatar" style="background:var(--navy)">${esc(name.charAt(0).toUpperCase())}</div>
+    const avatarBg = _avatarColor ? _avatarColor(name) : 'var(--navy)';
+    return `<div class="inv-row" onclick="${c ? `openQuoteFromTab('${c.id}','${p.id}')` : ''}" style="cursor:${c ? 'pointer' : 'default'}">
+      <div class="inv-avatar" style="background:${avatarBg}">${esc(name.charAt(0).toUpperCase())}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:13.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
-        <div style="font-size:11px;color:var(--text3);font-weight:500;margin-top:1px">${ampLabel} &middot; ${dateStr}</div>
+        <div class="inv-row-name">${esc(name)}</div>
+        <div class="inv-row-meta">${ampLabel} &middot; ${dateStr}</div>
       </div>
-      <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;color:var(--text);white-space:nowrap">${amount}</div>
-      <div style="font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:var(--r-pill);background:${s.bg};color:${s.color};white-space:nowrap">${s.label}</div>
+      <div class="inv-row-amount">${amount}</div>
+      <span class="status-dot" style="font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:var(--r-pill);background:${s.bg};color:${s.color};white-space:nowrap;flex-shrink:0">${s.label}</span>
     </div>`;
   }).join('');
 
@@ -8600,10 +8605,32 @@ function openInvoiceFromTab(contactId) {
   // active. We preserve the underlying tab so the user returns to
   // Invoices (or wherever they were) when the panel closes.
   openPanel(contactId);
-  // Drill to proposal/payment after panel opens
+  // Drill straight to the payment/invoice screen, not the proposal review.
   setTimeout(() => {
-    try { drillTo('proposal'); } catch(e) {}
-  }, 120);
+    try {
+      // Default to first proposal (index 0) if no specific match.
+      if (typeof currentProposalIdx !== 'undefined') currentProposalIdx = 0;
+      invoiceLineItems = [];
+      drillTo('payment');
+    } catch(e) {}
+  }, 200);
+}
+
+// Open the contact panel pre-drilled to the specific quote (proposal drill).
+function openQuoteFromTab(contactId, proposalId) {
+  if (!contactId) return;
+  openPanel(contactId);
+  setTimeout(() => {
+    try {
+      // Find the index of the target proposal in proposalMap so the correct
+      // quote is shown when multiple proposals exist for a contact.
+      const arr = (typeof proposalMap !== 'undefined' && proposalMap[contactId]) || [];
+      const idx = proposalId ? arr.findIndex(p => p.id === proposalId) : 0;
+      currentProposalIdx = idx >= 0 ? idx : 0;
+      invoiceLineItems = [];
+      drillTo('proposal');
+    } catch(e) {}
+  }, 200);
 }
 
 function refreshInvoiceTabBadge() {
