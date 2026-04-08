@@ -1530,6 +1530,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <h3>Sparky</h3>
       <p><span class="tm-dot"></span>Your CRM colleague &middot; live</p>
     </div>
+    <button onclick="skShowReviewQueue()" title="Review queue" style="position:relative;background:var(--bg);border:1px solid var(--border);color:var(--text3);font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:4px;transition:all .15s" onmouseover="this.style.borderColor='var(--navy)';this.style.color='var(--navy)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">Review<span id="sk-queue-badge" style="display:none;background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px;margin-left:2px"></span></button>
     <button class="tm-panel-close" onclick="tmClosePanel()" aria-label="Close" title="Close">&times;</button>
   </div>
   <div class="tm-panel-body" id="tm-panel-body"></div>
@@ -10806,6 +10807,10 @@ setTimeout(() => {
     } else if (call.name === 'lookup_contact') {
       label = 'Lookup contact';
       body = (call.input && call.input.query) || '';
+    } else if (call.name === 'escalate_question') {
+      label = 'Save to review queue';
+      body = (call.input && call.input.question) || '';
+      meta = (call.input && call.input.reason) || '';
     } else {
       label = call.name || 'Action';
       try { body = JSON.stringify(call.input || {}); } catch(e) { body = ''; }
@@ -10850,10 +10855,51 @@ setTimeout(() => {
     p.classList.add('open');
     o.classList.add('open');
     p.setAttribute('aria-hidden', 'false');
+    if (typeof _skRenderQueueBadge === 'function') _skRenderQueueBadge();
     setTimeout(function() {
       var ta = document.getElementById('tm-compose');
       if (ta) ta.focus();
     }, 260);
+  };
+
+  window.skShowReviewQueue = function() {
+    var SK_QUEUE_KEY = 'bpp_sparky_queue';
+    var queue = [];
+    try { queue = JSON.parse(localStorage.getItem(SK_QUEUE_KEY) || '[]'); } catch(e) { queue = []; }
+    var body = document.getElementById('tm-panel-body');
+    if (!body) return;
+    if (!queue.length) {
+      body.innerHTML = '<div style="padding:24px 0;text-align:center;color:var(--text3);font-size:13px">No escalated questions yet. When Sparky can\'t answer something, it\'ll save it here.</div>';
+      return;
+    }
+    var html = '<div style="margin-bottom:10px;font-family:\'Outfit\',sans-serif;font-weight:700;font-size:13px;color:var(--text)">Review Queue (' + queue.length + ')</div>';
+    queue.forEach(function(item, i) {
+      var ts = item.ts ? new Date(item.ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;margin-bottom:8px;position:relative">'
+        + '<div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:4px">' + ts + '</div>'
+        + '<div style="font-family:\'Outfit\',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px">' + _escHtml(item.question) + '</div>'
+        + (item.reason ? '<div style="font-size:11.5px;color:var(--text2)">' + _escHtml(item.reason) + '</div>' : '')
+        + '<button onclick="skDismissQueueItem(' + i + ')" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px" title="Dismiss">\u00d7</button>'
+        + '</div>';
+    });
+    html += '<button onclick="skClearAllQueue()" style="width:100%;margin-top:4px;padding:8px;background:none;border:1px solid var(--border);border-radius:var(--r-md);color:var(--text3);font-size:12px;cursor:pointer">Clear all</button>';
+    body.innerHTML = html;
+  };
+
+  window.skDismissQueueItem = function(idx) {
+    var SK_QUEUE_KEY = 'bpp_sparky_queue';
+    var queue = [];
+    try { queue = JSON.parse(localStorage.getItem(SK_QUEUE_KEY) || '[]'); } catch(e) { queue = []; }
+    queue.splice(idx, 1);
+    try { localStorage.setItem(SK_QUEUE_KEY, JSON.stringify(queue)); } catch(e) {}
+    if (typeof _skRenderQueueBadge === 'function') _skRenderQueueBadge();
+    window.skShowReviewQueue();
+  };
+
+  window.skClearAllQueue = function() {
+    try { localStorage.removeItem('bpp_sparky_queue'); } catch(e) {}
+    if (typeof _skRenderQueueBadge === 'function') _skRenderQueueBadge();
+    window.skShowReviewQueue();
   };
   window.tmClosePanel = function() {
     var p = document.getElementById('tm-panel');
@@ -11144,6 +11190,33 @@ setTimeout(() => {
     };
   }
 
+  function _toolEscalateQuestion(input) {
+    var question = (input && input.question || '').toString().trim();
+    var reason = (input && input.reason || '').toString().trim();
+    if (!question) return { ok: false, message: 'No question to escalate' };
+    // Save to localStorage queue for Key to review
+    var SK_QUEUE_KEY = 'bpp_sparky_queue';
+    var queue = [];
+    try { queue = JSON.parse(localStorage.getItem(SK_QUEUE_KEY) || '[]'); } catch(e) { queue = []; }
+    queue.unshift({ ts: new Date().toISOString(), question: question, reason: reason });
+    if (queue.length > 20) queue = queue.slice(0, 20); // cap at 20
+    try { localStorage.setItem(SK_QUEUE_KEY, JSON.stringify(queue)); } catch(e) {}
+    // Update the queue badge in Sparky panel if visible
+    _skRenderQueueBadge();
+    return { ok: true, message: 'Saved to your review queue — open Sparky and tap "Review" to see it' };
+  }
+
+  function _skRenderQueueBadge() {
+    var SK_QUEUE_KEY = 'bpp_sparky_queue';
+    var queue = [];
+    try { queue = JSON.parse(localStorage.getItem(SK_QUEUE_KEY) || '[]'); } catch(e) { queue = []; }
+    var badge = document.getElementById('sk-queue-badge');
+    if (badge) {
+      badge.textContent = queue.length > 0 ? queue.length : '';
+      badge.style.display = queue.length > 0 ? '' : 'none';
+    }
+  }
+
   // Public dispatcher — invoked by the confirmation card buttons
   window.skExecuteToolCall = async function(turnIdx, callIdx) {
     var arr = _chatHistory();
@@ -11162,6 +11235,7 @@ setTimeout(() => {
       else if (call.name === 'send_sms_to_contact') result = await _toolSendSms(call.input);
       else if (call.name === 'add_note_to_contact') result = await _toolAddNote(call.input);
       else if (call.name === 'lookup_contact') result = _toolLookupContact(call.input);
+      else if (call.name === 'escalate_question') result = _toolEscalateQuestion(call.input);
     } catch(e) {
       result = { ok: false, message: String(e && e.message || e) };
     }

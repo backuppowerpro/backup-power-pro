@@ -207,6 +207,18 @@ const TOOLS_CHAT = [
       required: ['query'],
     },
   },
+  {
+    name: 'escalate_question',
+    description: 'Call this when you genuinely cannot answer from the CRM data given — for example, when Key asks about something outside your knowledge (legal, technical specs, industry trends) or when you need information not in the snapshot. This saves the question so Key can review it later or ask Claude directly. Include your best partial answer or context in the reason field.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string', description: "Key's original question or the core of what couldn't be answered." },
+        reason: { type: 'string', description: "Brief explanation of why you're escalating + any partial context you do have." },
+      },
+      required: ['question', 'reason'],
+    },
+  },
 ]
 
 // ──────────────────────────────────────────────────────────────────────
