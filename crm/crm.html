@@ -6577,13 +6577,20 @@ async function loadInbox() {
     </div>`;
 
     const _previewText = (m.body || '').replace(/\[media:[^\]]+\]/g, '[photo]').slice(0, 80);
+    // Stage badge for inbox rows
+    const cStage = c ? (c.stage || 1) : 0;
+    const cStageDef = cStage ? PERMIT_STAGES.find(s => s.id === cStage) : null;
+    const inboxStageBadge = cStageDef
+      ? `<span style="font-size:9.5px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.02em;padding:1px 6px;border-radius:var(--r-pill);background:${cStageDef.color}18;color:${cStageDef.color};flex-shrink:0;white-space:nowrap">${esc(cStageDef.label)}</span>`
+      : '';
     return `<div class="inbox-item${isUnread ? ' unread' : ''}" style="${isDone || isMuted ? 'opacity:.45;' : ''}" data-name="${esc(name.toLowerCase())}" data-preview="${esc(_previewText.toLowerCase())}" onmouseenter="this.querySelector('.inbox-actions').style.opacity=1" onmouseleave="this.querySelector('.inbox-actions').style.opacity=0" onclick="openMessagesPanel('${m.contact_id}')">
       ${avatar}
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="inbox-name">${esc(name)}</span>
           ${isUnread ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block"></span>' : ''}
           ${mutedBadge}
+          ${inboxStageBadge}
         </div>
         <div class="inbox-preview">${preview}</div>
       </div>
@@ -7574,12 +7581,24 @@ function _qaRenderTemplates(c) {
       text: `Hey ${fname} — following up on your quote. Just wanted to mention: most homeowners compare us to standby generators, which run $10–20K installed. Our $1,197 all-in installation gives you the same directly-connected result at a fraction of the cost. Happy to answer any questions!`,
     },
     {
+      label: 'Send quote offer',
+      text: `Hey ${fname}, thanks for getting back to me! Based on what you've got, I can get you fully connected — generator inlet, interlock kit, cord, permit, inspection, and cleanup — all in one day for $1,197 all in. Want me to send you a full itemized quote?`,
+    },
+    {
       label: 'Install confirmed',
       text: `Hi ${fname}! Just confirming your installation for ${schedLabel}. I'll plan to arrive around 8–9 AM and we'll be wrapped up in a few hours. Feel free to text me if anything comes up beforehand.`,
     },
     {
-      label: 'Post-install',
+      label: 'Day-before reminder',
+      text: `Hey ${fname}, just a heads up — I'll be there tomorrow for your generator inlet installation. No prep needed on your end. See you in the morning!`,
+    },
+    {
+      label: 'Post-install instructions',
       text: `Hey ${fname}, great meeting you today! Quick reminder for when the power goes out: 1) Roll your generator outside (at least 20 ft from windows), 2) Start it up, 3) Plug the cord into the inlet we installed, 4) Flip your transfer switch on the breaker panel. You're all set — feel free to reach out with any questions!`,
+    },
+    {
+      label: 'Google review ask',
+      text: `Hey ${fname}, really glad we could get you set up! If you have a minute, an honest Google review goes a long way for a small business like mine. Here's the link: https://g.page/r/backuppowerpro/review — thanks so much!`,
     },
     {
       label: 'No response follow-up',
@@ -7588,10 +7607,6 @@ function _qaRenderTemplates(c) {
     {
       label: 'Permit update',
       text: `Hey ${fname}, quick update — your permit is moving along. I'll keep you posted as we get closer to your install date. Let me know if you have any questions!`,
-    },
-    {
-      label: 'Day-before reminder',
-      text: `Hey ${fname}, just a heads up — I'll be there tomorrow for your generator inlet installation. No prep needed on your end. See you in the morning!`,
     },
   ];
   const rows = templates.map((t, i) => `
@@ -8959,7 +8974,7 @@ setTimeout(() => {
             <div class="smart-prompt-sub">They responded — send pricing while they're engaged.</div>
             <div class="smart-prompt-actions">
               <button class="smart-prompt-btn" onclick="pass2CreateQuote('${id}')">Create quote</button>
-              <button class="smart-prompt-btn" style="background:transparent;border:1.5px solid var(--border);color:var(--text)" onclick="pass2SendCheckin('${id}')">Draft text</button>
+              <button class="smart-prompt-btn" style="background:transparent;border:1.5px solid var(--border);color:var(--text)" onclick="pass2SendQuoteOffer('${id}')">Draft quote text</button>
             </div>
           </div>
           <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
@@ -9110,6 +9125,24 @@ setTimeout(() => {
         if (compose) {
           const fname = (c.name || '').split(' ')[0] || 'there';
           compose.value = `Hey ${fname}, just checking in — any questions about the proposal? Happy to walk through it.`;
+          compose.focus();
+          compose.style.height = 'auto';
+          compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+        }
+      }, 200);
+    }
+  };
+
+  window.pass2SendQuoteOffer = function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    if (typeof openMessagesFromPanel === 'function') {
+      openMessagesFromPanel();
+      setTimeout(() => {
+        const compose = document.getElementById('msg-compose');
+        if (compose) {
+          const fname = (c.name || '').split(' ')[0] || 'there';
+          compose.value = `Hey ${fname}, thanks for getting back to me! Based on what you've got, I can get you fully connected — generator inlet, interlock kit, cord, permit, inspection, and cleanup — all in one day for $1,197 all in. Want me to send you a full itemized quote?`;
           compose.focus();
           compose.style.height = 'auto';
           compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
