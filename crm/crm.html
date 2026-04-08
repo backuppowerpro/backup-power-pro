@@ -2045,6 +2045,18 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <button onclick="threadCallContact()" style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s" title="Call">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         </button>
+        <button onclick="threadToggleSearch()" id="msg-search-btn" style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s,border-color .15s" title="Search messages">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
+      <!-- Thread search bar (hidden by default) -->
+      <div id="msg-search-bar" style="display:none;padding:7px 12px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-pill);padding:5px 12px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4;flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="msg-search-input" type="text" placeholder="Search messages…" style="flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:inherit" oninput="renderThread()" autocomplete="off">
+          <button onclick="threadClearSearch()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0;font-size:16px;line-height:1;opacity:.5" title="Clear">&times;</button>
+        </div>
+        <div id="msg-search-count" style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600"></div>
       </div>
       <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
       <div style="flex-shrink:0;background:var(--card);border-top:1px solid var(--border)">
@@ -6512,6 +6524,13 @@ async function openMessagesPanel(contactId) {
 async function loadMessageThread(contactId) {
   if (!contactId) return;
   currentMsgContactId = contactId;
+  // Reset search state for new contact
+  const searchInp = document.getElementById('msg-search-input');
+  if (searchInp) searchInp.value = '';
+  const searchBar = document.getElementById('msg-search-bar');
+  if (searchBar) searchBar.style.display = 'none';
+  const searchBtn = document.getElementById('msg-search-btn');
+  if (searchBtn) { searchBtn.style.background = 'var(--bg)'; searchBtn.style.borderColor = 'var(--border)'; }
   const threadEl = document.getElementById('msg-thread');
   if (!threadEl) return;
 
@@ -6557,8 +6576,26 @@ function renderThread() {
   const threadEl = document.getElementById('msg-thread');
   if (!threadEl) return;
 
-  if (!allMessages.length) {
-    threadEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">No messages yet. Send the first one below.</div>';
+  // Thread search filter
+  const searchInp = document.getElementById('msg-search-input');
+  const searchTerm = (searchInp && searchInp.value || '').toLowerCase().trim();
+  const countEl = document.getElementById('msg-search-count');
+
+  let messages = allMessages;
+  if (searchTerm) {
+    messages = allMessages.filter(m => {
+      const body = (m.body || '').toLowerCase();
+      return body.includes(searchTerm);
+    });
+    if (countEl) countEl.textContent = messages.length + ' of ' + allMessages.length + ' messages';
+  } else {
+    if (countEl) countEl.textContent = '';
+  }
+
+  if (!messages.length) {
+    threadEl.innerHTML = searchTerm
+      ? '<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">No messages match your search.</div>'
+      : '<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px">No messages yet. Send the first one below.</div>';
     return;
   }
 
@@ -6570,7 +6607,7 @@ function renderThread() {
     return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
   };
 
-  const bubbles = allMessages.map(m => {
+  const bubbles = messages.map(m => {
     // Call events render as a centered chip, not a bubble
     if (m.status === 'call') {
       const isOut = m.direction === 'outbound';
@@ -6605,7 +6642,15 @@ function renderThread() {
       const caption = mediaMatch[2].trim();
       bubbleInner = `<img src="${esc(mUrl)}" style="max-width:220px;max-height:280px;border-radius:10px;display:block;${caption ? 'margin-bottom:5px' : ''}" onerror="this.style.display='none'" loading="lazy">${caption ? `<span>${esc(caption)}</span>` : ''}`;
     } else {
-      bubbleInner = esc(rawBody);
+      // Highlight search match in plain text bodies
+      if (searchTerm && rawBody.toLowerCase().includes(searchTerm)) {
+        const idx = rawBody.toLowerCase().indexOf(searchTerm);
+        bubbleInner = esc(rawBody.slice(0, idx))
+          + `<mark style="background:#fef08a;color:#713f12;border-radius:2px;padding:0 1px">${esc(rawBody.slice(idx, idx + searchTerm.length))}</mark>`
+          + esc(rawBody.slice(idx + searchTerm.length));
+      } else {
+        bubbleInner = esc(rawBody);
+      }
     }
 
     return `<div class="msg-row ${isOut ? 'outbound' : 'inbound'}">
@@ -6617,6 +6662,38 @@ function renderThread() {
   threadEl.innerHTML = bubbles;
   // Scroll to bottom
   setTimeout(() => { threadEl.scrollTop = threadEl.scrollHeight; }, 50);
+}
+
+// ── THREAD SEARCH ─────────────────────────────────────────
+function threadToggleSearch() {
+  const bar = document.getElementById('msg-search-bar');
+  const btn = document.getElementById('msg-search-btn');
+  if (!bar) return;
+  const isOpen = bar.style.display !== 'none';
+  bar.style.display = isOpen ? 'none' : 'block';
+  if (btn) {
+    btn.style.background = isOpen ? 'var(--bg)' : 'var(--navy)';
+    btn.style.borderColor = isOpen ? 'var(--border)' : 'var(--navy)';
+    btn.style.color = isOpen ? 'currentColor' : '#fff';
+    // update svg stroke
+    const svg = btn.querySelector('svg');
+    if (svg) svg.style.stroke = isOpen ? 'currentColor' : '#fff';
+  }
+  if (!isOpen) {
+    const inp = document.getElementById('msg-search-input');
+    if (inp) { inp.value = ''; inp.focus(); }
+    renderThread();
+  } else {
+    const inp = document.getElementById('msg-search-input');
+    if (inp) inp.value = '';
+    renderThread();
+  }
+}
+
+function threadClearSearch() {
+  const inp = document.getElementById('msg-search-input');
+  if (inp) { inp.value = ''; inp.focus(); }
+  renderThread();
 }
 
 // ── CALL RECORDING PLAYBACK ───────────────────────────────
