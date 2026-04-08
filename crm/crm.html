@@ -9217,6 +9217,39 @@ setTimeout(() => {
           </div>
           <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dismissKey}')" title="Dismiss">×</button>
         </div>`;
+      } else if (stage === 4 && scheduled) {
+        // Calculate days to install
+        const installDate = new Date(scheduled + 'T12:00:00');
+        const today = new Date(); today.setHours(0,0,0,0);
+        const daysUntil = Math.round((installDate - today) / 86400000);
+        const dayKey = id + ':sched-' + scheduled;
+        if (!dismissed[dayKey]) {
+          if (daysUntil === 0) {
+            html += `<div class="smart-prompt" style="background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.03));border-color:rgba(34,197,94,.35)">
+              <div class="smart-prompt-icon" style="background:var(--green);font-size:18px">🔧</div>
+              <div class="smart-prompt-body">
+                <div class="smart-prompt-title">Install day — today!</div>
+                <div class="smart-prompt-sub">Send an "on my way" text when you're heading over.</div>
+                <div class="smart-prompt-actions">
+                  <button class="smart-prompt-btn" style="background:var(--green)" onclick="pass2SendOnMyWay('${id}')">Draft "on my way"</button>
+                </div>
+              </div>
+              <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dayKey}')" title="Dismiss">×</button>
+            </div>`;
+          } else if (daysUntil === 1) {
+            html += `<div class="smart-prompt">
+              <div class="smart-prompt-icon">⏰</div>
+              <div class="smart-prompt-body">
+                <div class="smart-prompt-title">Install is tomorrow</div>
+                <div class="smart-prompt-sub">Send a day-before reminder so they can prep.</div>
+                <div class="smart-prompt-actions">
+                  <button class="smart-prompt-btn" onclick="pass2SendDayBefore('${id}')">Draft reminder</button>
+                </div>
+              </div>
+              <button class="smart-prompt-dismiss" onclick="pass2DismissPrompt('${dayKey}')" title="Dismiss">×</button>
+            </div>`;
+          }
+        }
       } else if (stage === 5) {
         html += `<div class="smart-prompt">
           <div class="smart-prompt-icon">📄</div>
@@ -9384,6 +9417,42 @@ setTimeout(() => {
       }, 200);
     }
     showToast('Quote link copied + text drafted', 'success');
+  };
+
+  window.pass2SendOnMyWay = function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    if (typeof openMessagesFromPanel === 'function') {
+      openMessagesFromPanel();
+      setTimeout(() => {
+        const compose = document.getElementById('msg-compose');
+        if (compose) {
+          const fname = (c.name || '').split(' ')[0] || 'there';
+          compose.value = `Hey ${fname}, heading your way now — should be there in about 15 minutes!`;
+          compose.focus();
+          compose.style.height = 'auto';
+          compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+        }
+      }, 200);
+    }
+  };
+
+  window.pass2SendDayBefore = function(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    if (typeof openMessagesFromPanel === 'function') {
+      openMessagesFromPanel();
+      setTimeout(() => {
+        const compose = document.getElementById('msg-compose');
+        if (compose) {
+          const fname = (c.name || '').split(' ')[0] || 'there';
+          compose.value = `Hey ${fname}, just a reminder that we're set for tomorrow! I'll text you when I'm on my way. Make sure the area around your generator is accessible. Any questions before then?`;
+          compose.focus();
+          compose.style.height = 'auto';
+          compose.style.height = Math.min(120, compose.scrollHeight) + 'px';
+        }
+      }, 200);
+    }
   };
 
   window.pass2SendReviewAsk = function(id) {
