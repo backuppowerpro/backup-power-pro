@@ -2304,9 +2304,26 @@ function _bannerHtml(c) {
   const stageDef = (typeof PERMIT_STAGES !== 'undefined') ? PERMIT_STAGES.find(s => s.id === stage) : null;
   const stageLabel = stageDef ? stageDef.label : ('Stage ' + stage);
   const stageColor = stageDef ? stageDef.color : '#9aa3b8';
-  const stageBadge = `<div style="position:absolute;top:12px;left:14px;z-index:3;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:4px 10px">
-    <div style="width:7px;height:7px;border-radius:50%;background:${stageColor};flex-shrink:0"></div>
-    <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:#fff;letter-spacing:.02em">${esc(stageLabel)}</span>
+  // Install date chip — show when a date is set
+  const schedISO = (typeof getScheduledDate === 'function') ? getScheduledDate(c) : null;
+  const schedChip = schedISO ? (() => {
+    const d = new Date(schedISO + 'T12:00:00');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.round((d - today) / 86400000);
+    const label = diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : diff === -1 ? 'Yesterday' : d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    const chipColor = diff === 0 ? 'rgba(34,197,94,.85)' : diff < 0 ? 'rgba(220,38,38,.75)' : 'rgba(0,0,0,.42)';
+    return `<div style="display:flex;align-items:center;gap:5px;background:${chipColor};backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:4px 10px">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;color:#fff;letter-spacing:.02em">${esc(label)}</span>
+    </div>`;
+  })() : '';
+  // Stage badge + optional install date chip — stacked horizontally in top-left
+  const stageBadge = `<div style="position:absolute;top:12px;left:14px;z-index:3;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:calc(100% - 60px)">
+    <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:4px 10px">
+      <div style="width:7px;height:7px;border-radius:50%;background:${stageColor};flex-shrink:0"></div>
+      <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:#fff;letter-spacing:.02em">${esc(stageLabel)}</span>
+    </div>
+    ${schedChip}
   </div>`;
   const closeBtn = `<button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.48);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:3;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 12px rgba(0,0,0,.25)">&#10005;</button>`;
   const bannerId = 'bnr-' + c.id;
