@@ -9481,7 +9481,7 @@ setTimeout(() => {
       }
     }
 
-    // ── Quick stage advance button ─────────────────────────
+    // ── Quick stage advance + Not Interested ─────────────────
     if (c.status !== 'Archived') {
       const nextStageDef = PERMIT_STAGES.find(s => s.id === stage + 1);
       if (nextStageDef && stage < 9) {
@@ -9490,6 +9490,13 @@ setTimeout(() => {
           Advance to ${esc(nextStageDef.label)}
         </button>`;
       }
+      html += `<div style="text-align:right;margin-bottom:10px">
+        <button id="panel-not-interested-btn" onclick="panelNotInterested('${id}')"
+          style="background:none;border:none;cursor:pointer;font-size:11.5px;font-weight:600;color:var(--text3);padding:2px 0;font-family:'Outfit',sans-serif;letter-spacing:.01em;transition:color .15s"
+          onmouseover="this.style.color='var(--red)'" onmouseout="if(!this.dataset.pending)this.style.color='var(--text3)'">
+          Not interested — archive
+        </button>
+      </div>`;
     }
 
     // Smart prompt by stage
@@ -9881,6 +9888,34 @@ setTimeout(() => {
     }
     // Re-render extras so the button updates and smart prompt changes
     renderPanelExtras();
+  };
+
+  // ── PANEL "NOT INTERESTED" QUICK ARCHIVE ───────────────
+  let _notInterestedTimer = null;
+  window.panelNotInterested = function(id) {
+    const btn = document.getElementById('panel-not-interested-btn');
+    if (!btn) return;
+    if (btn.dataset.pending === '1') {
+      // Second tap — archive
+      clearTimeout(_notInterestedTimer);
+      delete btn.dataset.pending;
+      db.from('contacts').update({ status: 'Archived' }).eq('id', id).then(({ error }) => {
+        if (error) { showToast('Failed to archive', 'error'); return; }
+        showToast('Lead archived', 'success');
+        closePanel();
+        loadContacts();
+      });
+    } else {
+      // First tap — show confirmation state
+      btn.dataset.pending = '1';
+      btn.textContent = 'Tap again to confirm archive';
+      btn.style.color = 'var(--red)';
+      _notInterestedTimer = setTimeout(() => {
+        delete btn.dataset.pending;
+        btn.textContent = 'Not interested — archive';
+        btn.style.color = 'var(--text3)';
+      }, 3000);
+    }
   };
 
   // ── ACTIVITY FEED ────────────────────────────────────────
