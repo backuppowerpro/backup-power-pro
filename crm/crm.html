@@ -1048,6 +1048,12 @@ html.dark .kanban-card-amount{color:var(--gold)}
 .kanban-card-call:hover{background:var(--navy);border-color:var(--navy);color:#fff}
 html.dark .kanban-card-call:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 .kanban-card-next.done{color:#059669;border-top-color:rgba(5,150,105,.18)}
+/* Quick stage-advance button in list view */
+.stage-cell{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.stage-advance-btn{opacity:0;background:none;border:1.5px solid var(--border);border-radius:var(--r-pill);padding:2px 8px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:opacity .12s,background .12s,border-color .12s,color .12s;white-space:nowrap;font-family:'Outfit',sans-serif;flex-shrink:0}
+tr:hover .stage-advance-btn{opacity:1}
+.stage-advance-btn:hover{background:var(--navy);border-color:var(--navy);color:#fff}
+html.dark .stage-advance-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 .kanban-card-next.done::before{content:'\u2713 ';color:#059669;font-weight:800;font-family:'Outfit',sans-serif}
 .kanban-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:32px 12px;border:1px dashed var(--border);border-radius:var(--r-sm);line-height:1.5;display:flex;flex-direction:column;align-items:center;gap:8px}
 .kanban-empty-icon{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--bg);color:var(--text3);opacity:.65;font-style:normal}
@@ -2679,9 +2685,12 @@ function renderContacts() {
   const rows = visible.map(c => {
     const p = proposalMap[c.id]?.[0];
     const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
-    const stageBadge = (c.stage || 1) === 9
-      ? `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>${esc(stageInfo.label)}</span>`
-      : `<span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}">${esc(stageInfo.label)}</span>`;
+    const currentStageId = c.stage || 1;
+    const nextStageInfo = PERMIT_STAGES.find(s => s.id === currentStageId + 1);
+    const advanceBtn = (!isArchived && nextStageInfo)
+      ? `<button class="stage-advance-btn" onclick="event.stopPropagation();quickAdvanceStage('${c.id}',${nextStageInfo.id})" title="Advance to ${nextStageInfo.label}">→ ${esc(nextStageInfo.label)}</button>`
+      : '';
+    const stageBadge = `<div class="stage-cell"><span class="prop-badge" style="background:${stageInfo.color}18;color:${stageInfo.color}">${currentStageId === 9 ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>` : ''}${esc(stageInfo.label)}</span>${advanceBtn}</div>`;
 
     // Empty placeholder: a dimmed em-dash — scannable, clearly "no value here".
     const empty = '<span style="color:var(--text3);opacity:.35;font-weight:500">\u2014</span>';
@@ -4085,6 +4094,23 @@ async function panelSave() {
   showToast('Lead saved', 'success');
   _panelSaving = false;
   closePanel();
+  renderContacts();
+  loadPermitAnalytics();
+}
+
+// One-click stage advance from list view — no panel required
+async function quickAdvanceStage(contactId, nextStage) {
+  const c = allContacts.find(x => x.id === contactId);
+  if (!c) return;
+  const oldStage = c.stage || 1;
+  if (oldStage >= nextStage) return;
+  const nextDef = PERMIT_STAGES.find(s => s.id === nextStage);
+  const { error } = await db.from('contacts').update({ stage: nextStage }).eq('id', contactId);
+  if (error) { showToast('Failed to advance stage', 'error'); return; }
+  db.from('stage_history').insert([{ contact_id: contactId, from_stage: oldStage, to_stage: nextStage }]);
+  c.stage = nextStage;
+  touchContact(contactId);
+  showToast(`Moved to ${nextDef ? nextDef.label : 'next stage'}`, 'success');
   renderContacts();
   loadPermitAnalytics();
 }
