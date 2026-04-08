@@ -729,7 +729,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stage-wrap{position:relative;margin-bottom:14px}
 .pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:4px 4px 6px;scroll-behavior:smooth}
 .pa-stage-list::-webkit-scrollbar{display:none}
-.pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--card);border-radius:var(--r-pill);border:1px solid var(--border);cursor:pointer;transition:all var(--t-fast);white-space:nowrap;box-shadow:var(--shadow-sm)}
+.pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--card);border-radius:var(--r-pill);border:1px solid var(--border);cursor:pointer;transition:all var(--t-fast);white-space:nowrap}
 .pa-stage-chip:hover{background:#f5f7fb;border-color:var(--border-strong);transform:translateY(-1px);box-shadow:var(--shadow-md)}
 html.dark .pa-stage-chip:hover{background:#302b25;border-color:var(--border-strong)}
 .pa-stage-chip:active{transform:translateY(0)}
@@ -1169,9 +1169,12 @@ html.dark .tm-brief-btn.secondary:hover{background:var(--card)}
 .tm-brief-empty-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px}
 
 /* ── Needs-action bar ────────────────────────────────────── */
-.action-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:9px 12px;margin-bottom:var(--sp-sm);box-shadow:var(--shadow-sm);position:relative}
+.action-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:10px 14px;margin-bottom:var(--sp-sm);position:relative}
 html.dark .action-bar{border-color:#3d3830}
+.action-bar-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .action-bar-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);flex-shrink:0;white-space:nowrap}
+.action-bar-chips{display:flex;flex-wrap:wrap;gap:6px}
+.action-bar-chips.is-expanded{max-height:156px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));padding-right:2px}
 .action-bar-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);border:1.5px solid var(--border);background:var(--bg);font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;transition:background var(--t-fast),border-color var(--t-fast);white-space:nowrap;font-family:'Outfit',sans-serif}
 .action-bar-chip:hover{background:var(--navy);border-color:var(--navy);color:#fff}
 html.dark .action-bar-chip:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
@@ -1179,10 +1182,10 @@ html.dark .action-bar-chip:hover{background:var(--gold);border-color:var(--gold)
 .action-bar-chip.chip-unread:hover{background:var(--red);border-color:var(--red);color:#fff}
 .action-bar-chip.chip-hot{border-color:#f97316;color:#f97316}
 .action-bar-chip.chip-hot:hover{background:#f97316;border-color:#f97316;color:#fff}
-.action-bar-dismiss{position:absolute;top:7px;right:10px;background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px}
+.action-bar-dismiss{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px;margin-left:auto}
 .action-bar-dismiss:hover{color:var(--text)}
 html.dark .action-bar-dismiss{color:var(--text2)}
-.action-bar-more{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:var(--r-pill);border:1.5px dashed var(--border);background:transparent;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;font-family:'Outfit',sans-serif;transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast)}
+.action-bar-more{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-pill);border:1.5px dashed var(--border);background:transparent;font-size:11.5px;font-weight:700;color:var(--text3);cursor:pointer;font-family:'Outfit',sans-serif;transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast);margin-top:6px}
 .action-bar-more:hover{background:var(--bg);border-color:var(--text3);color:var(--text)}
 
 /* ── Row context menu ─────────────────────────────────── */
@@ -6192,10 +6195,12 @@ function renderActionBar() {
   }
 
   mount.innerHTML = `<div class="action-bar">
-    <span class="action-bar-label">Needs action</span>
-    ${chips}
+    <div class="action-bar-head">
+      <span class="action-bar-label">🔥 ${urgent.length} need${urgent.length === 1 ? 's' : ''} action</span>
+      <button class="action-bar-dismiss" onclick="sessionStorage.setItem('bpp_actionbar_dismissed','1');this.closest('.action-bar').remove()" title="Dismiss for this session">×</button>
+    </div>
+    <div class="action-bar-chips${expanded ? ' is-expanded' : ''}">${chips}</div>
     ${extra}
-    <button class="action-bar-dismiss" onclick="sessionStorage.setItem('bpp_actionbar_dismissed','1');this.closest('.action-bar').remove()" title="Dismiss for this session">×</button>
   </div>`;
 }
 
