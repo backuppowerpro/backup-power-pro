@@ -340,7 +340,7 @@ html.dark .search-input{border-color:var(--border)}
 html.dark .search-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(230,168,0,.18)}
 
 /* CONTACTS TABLE */
-.table-wrap{overflow-x:auto;border-radius:var(--r-md);box-shadow:var(--shadow-md);background:var(--card);border:1px solid var(--border)}
+.table-wrap{overflow-x:auto;border-radius:var(--r-md);box-shadow:var(--shadow-md);background:var(--card);border:1px solid var(--border);margin-top:12px}
 table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed;font-variant-numeric:tabular-nums}
 thead th{background:var(--bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:1;font-family:'Outfit',sans-serif}
 tbody tr{border-bottom:1px solid var(--border);transition:background var(--t-fast);cursor:pointer;background:var(--card)}
@@ -388,7 +388,7 @@ td.actions{white-space:nowrap}
 .prop-viewed{background:#fef3c7;color:#92400e;border:none}
 
 /* SCROLLABLE CONTACTS */
-.table-scroll{height:265px;overflow-y:auto;border-top:none;scrollbar-color:var(--border) transparent;background:var(--bg);position:relative}
+.table-scroll{height:420px;overflow-y:auto;border-top:none;scrollbar-color:var(--border) transparent;background:var(--bg);position:relative}
 .table-wrap{position:relative}
 .table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(200,205,215,.35));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:var(--grad-opacity,1)}
 /* gradient opacity controlled by JS based on scroll distance from bottom */
