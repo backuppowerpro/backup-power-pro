@@ -11808,14 +11808,19 @@ setTimeout(() => {
     function sectionHtml(kind, title, items) {
       if (!items || !items.length) return '';
       var classMap = { urgent:'urgent', today:'today', msg:'msg', mat:'mat', good:'good' };
+      var canDraft = (kind === 'urgent' || kind === 'today' || kind === 'msg');
       var rows = items.map(function(it) {
         var cid = it.contactId ? String(it.contactId).replace(/"/g, '&quot;') : '';
-        return '<div class="tm-brief-item ' + classMap[kind] + '" data-contact-id="' + cid + '" role="button" tabindex="0">'
-          + '<span class="tm-brief-item-dot"></span>'
-          + '<div class="tm-brief-item-body">'
+        var draftBtn = (canDraft && cid)
+          ? '<button class="tm-brief-draft-btn" data-cid="' + cid + '" title="Sparky drafts a follow-up text" onclick="event.stopPropagation();tmDraftFollowup(\'' + cid + '\')" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:var(--r-pill);font-size:11px;font-weight:700;color:var(--text3);padding:3px 9px;cursor:pointer;font-family:\'Outfit\',sans-serif;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--navy)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.color=\'var(--text3)\'">Draft \u203a</button>'
+          : '';
+        return '<div class="tm-brief-item ' + classMap[kind] + '" data-contact-id="' + cid + '" role="button" tabindex="0" style="display:flex;align-items:center;gap:8px">'
+          + '<span class="tm-brief-item-dot" style="flex-shrink:0"></span>'
+          + '<div class="tm-brief-item-body" style="flex:1;min-width:0">'
           + '<div class="tm-brief-item-name">' + _escHtml(it.name) + ' <span style="color:var(--text3);font-weight:500;font-size:11.5px;margin-left:4px">' + _escHtml(it.meta || '') + '</span></div>'
           + '<div class="tm-brief-item-meta">' + _escHtml(it.note || '') + '</div>'
           + '</div>'
+          + draftBtn
           + '</div>';
       }).join('');
       return '<div class="tm-brief-section">'
@@ -11955,6 +11960,63 @@ setTimeout(() => {
     hideBriefingCard();
     if (typeof showToast === 'function') {
       showToast('I\'ll bring the briefing back in an hour', 'info');
+    }
+  };
+
+  // ── "Draft ›" button on briefing items ─────────────────────
+  // Calls draft_followup mode, opens messages thread, fills compose.
+  window.tmDraftFollowup = async function(contactId) {
+    var c = (typeof allContacts !== 'undefined' ? allContacts : []).find(function(x) { return x.id === contactId; });
+    if (!c) { if (typeof showToast === 'function') showToast('Contact not found', 'error'); return; }
+
+    var btn = document.querySelector('.tm-brief-draft-btn[data-cid="' + contactId + '"]');
+    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+    try {
+      var daysSinceTouch = (typeof _daysSinceLastTouch === 'function') ? _daysSinceLastTouch(c) : null;
+      var stageLabel = (typeof _stageLabel === 'function') ? _stageLabel(c.stage) : ('Stage ' + (c.stage || 1));
+      var contactPayload = {
+        id: c.id, name: c.name || 'New Lead', stage: c.stage || 1, stageLabel: stageLabel,
+        phone: c.phone, jurisdiction: (typeof _getJurName === 'function') ? _getJurName(c) : '',
+        daysInSystem: (typeof _daysSinceTs === 'function') ? _daysSinceTs(c.created_at) : null,
+        daysSinceTouch: daysSinceTouch, notes: (c.install_notes || '').slice(0, 300)
+      };
+
+      var resp = await fetch(TM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TM_ANON_JWT, 'apikey': TM_ANON_JWT },
+        body: JSON.stringify({ mode: 'draft_followup', contact: contactPayload })
+      });
+      var data = await resp.json();
+      var draft = (data && !data.fallback && data.answer) ? data.answer.trim() : null;
+
+      if (!draft) { if (typeof showToast === 'function') showToast('Sparky couldn\'t draft — try again', 'error'); return; }
+
+      // Open messages thread and fill compose
+      if (typeof switchTab === 'function') switchTab('messages');
+      if (typeof openMessageThread === 'function') {
+        await openMessageThread(contactId);
+      } else if (typeof openPanel === 'function') {
+        openPanel(contactId);
+        setTimeout(function() {
+          var threadBtn = document.querySelector('[onclick*="openMessagesFromPanel"]');
+          if (threadBtn) threadBtn.click();
+        }, 300);
+      }
+      setTimeout(function() {
+        var compose = document.getElementById('msg-compose');
+        if (compose) {
+          compose.value = draft;
+          compose.focus();
+          compose.dispatchEvent(new Event('input'));
+          if (typeof showToast === 'function') showToast('Sparky drafted a follow-up — review and send', 'success');
+        }
+      }, 600);
+
+    } catch(e) {
+      if (typeof showToast === 'function') showToast('Draft failed', 'error');
+    } finally {
+      if (btn) { btn.textContent = 'Draft \u203a'; btn.disabled = false; }
     }
   };
 

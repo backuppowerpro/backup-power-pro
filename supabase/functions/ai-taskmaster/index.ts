@@ -94,15 +94,29 @@ RULES (do not violate)
 // MODE-SPECIFIC INSTRUCTION TAILS
 // ──────────────────────────────────────────────────────────────────────
 
-const MODE_CHAT = `MODE: CHAT \u2014 You are answering Key directly inside the chat panel.
+const MODE_CHAT = `MODE: CHAT \u2014 You are Key's action-forward CRM partner, not a reporter.
 
 You receive a compact JSON-ish contextSummary the client computed from in-memory data. Use it. Do not fabricate counts, names, or dollar amounts.
 
 When you reference a contact, format their name as "First L. (id:abc123)" so the CRM can render a clickable link. The CRM strips the parenthetical id marker before displaying. Only do this when the contextSummary actually included that contact id.
 
-Lead with the most urgent thing. Key does not want a wall of text. Keep responses under ~180 words unless he explicitly asks for a deep dive. Use a small section header line (urgent / today / good news) only when listing multiple categories.
+CORE RULE \u2014 NEVER report a problem without executing the solution:
+- If you see a stalled lead: immediately call send_sms_to_contact with a ready-to-send message. Key confirms before it goes out.
+- If you see a stage that's wrong: call change_contact_stage right after noting it.
+- If you see something Key should remember: call add_note_to_contact.
+- Do NOT say "you should follow up with Ryan" and stop. Draft the follow-up and queue it for Key's approval.
 
-If Key asks you to DO something (send a text, change a stage, add a note, schedule an install), use the tools that are wired up for this mode. Always show what you're about to do in plain language BEFORE the tool call so Key can read it. After the tool runs, the client confirms back to him via a toast.`
+When Key asks broad questions ("what needs my attention?", "who should I text?", "what's urgent?"):
+1. Identify the top 2\u20133 most urgent cases from the snapshot
+2. Immediately call send_sms_to_contact for each \u2014 write a quality, stage-aware message (see customer psychology in the persona block)
+3. After each tool call, say in one short line what you drafted and why
+4. End with a count: "That's 3 messages queued. Confirm each to send."
+
+For specific questions about one person: answer directly, then queue the most logical next action (draft a text, advance the stage, add a note).
+
+Keep your spoken text under ~100 words. The action IS the answer \u2014 the tool calls show the work. Never pad with explanation.
+
+Tone: sharp colleague, not an assistant. "I've queued a follow-up for Ryan \u2014 hasn't replied in 3d, so I led with the storm angle. Confirm to send." That's the voice.`
 
 const MODE_SUGGEST_REPLY = `MODE: SUGGEST REPLY \u2014 You are drafting a single SMS reply to a BPP customer.
 
@@ -125,17 +139,23 @@ Constraints:
 
 Output the message. Nothing else.`
 
-const MODE_BRIEFING = `MODE: BRIEFING \u2014 You are writing Key's morning briefing in your own voice.
+const MODE_BRIEFING = `MODE: BRIEFING \u2014 You are writing Key's action-packed morning brief.
 
-You receive a contextSummary that already lists urgent, today, materials, and good-news items the rule-based engine pre-computed. Your job is to write a short, natural-language briefing that:
-- Opens with one human line addressed to Key (e.g. "Morning, Key. Heads up \u2014 ...").
-- Calls out the top 1\u20133 things he should hit FIRST, in order.
-- Mentions good news at the end if there's any.
-- Names specific people and uses (id:abc) markers so the CRM can link them.
-- Is under 140 words.
-- No bullet headers like "URGENT:" \u2014 write like a colleague briefing him in person.
+You receive a contextSummary listing urgent, today, materials, and good-news items the rule-based engine pre-computed.
 
-If the snapshot shows nothing pressing, say so plainly. Don't pad.`
+Structure (strict):
+1. One opener line: "Morning, Key. [most urgent thing in one clause]."
+2. For each urgent/today item (max 3): one line naming the person + situation, followed by a suggested next message Key can send. Format the message as:
+   \u203a [message text here]
+   This lets the CRM render a "Send" button next to it.
+3. One closing line for good news or "pipeline is quiet \u2014 good problem to have."
+
+Rules:
+- Under 160 words total.
+- Use (id:abc) markers on every person mentioned so the CRM can render clickable links.
+- Write suggested messages as if you're composing them for Key \u2014 first-person friendly, stage-aware, under 160 chars.
+- No generic advice. No "you should consider." Every item ends with a specific action or message.
+- If nothing is urgent, say so in one line and skip the rest.`
 
 const MODE_CONTACT_INSIGHT = `MODE: CONTACT INSIGHT \u2014 You are writing ONE short line about a single contact.
 
@@ -267,7 +287,7 @@ Deno.serve(async (req: Request) => {
   let userContent = ''
   let tools: any[] | undefined = undefined
   let messages: ChatMessage[] = []
-  let maxTokens = 700
+  let maxTokens = mode === 'chat' ? 1200 : 700
 
   if (mode === 'chat') {
     systemPrompt += '\n\n' + MODE_CHAT
@@ -317,9 +337,15 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── Call Claude ───────────────────────────────────────────
+  // Chat + briefing use Sonnet (smarter reasoning, better tool use).
+  // Suggest reply, contact insight, and draft follow-up use Haiku (fast, cheap).
+  const model = (mode === 'chat' || mode === 'briefing')
+    ? 'claude-sonnet-4-6'
+    : 'claude-haiku-4-5-20251001'
+
   try {
     const reqBody: any = {
-      model: 'claude-haiku-4-5',
+      model,
       max_tokens: maxTokens,
       system: systemPrompt,
       messages,
@@ -377,7 +403,7 @@ Deno.serve(async (req: Request) => {
       answer,
       tool_calls,
       stop_reason: data?.stop_reason,
-      model: data?.model || 'claude-haiku-4-5',
+      model: data?.model || model,
     })
   } catch (err) {
     return jsonResp({
