@@ -41,6 +41,25 @@ Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.co
 
 ---
 
+## Critic Pass (Auto — runs during active build sessions)
+
+After completing any substantial build — new feature, page redesign, ad copy, edge function, or anything a user would interact with — spin up a background critic agent before closing out. The critic's only job is to find problems: bugs, UX friction, confusing copy, missed edge cases, dark mode gaps, mobile issues, or anything that would make a real user struggle.
+
+**How to run it:**
+Use `Agent` with `subagent_type: "general-purpose"` in the background. Give it the file(s) just built and this exact brief:
+> "You are a harsh critic reviewing this output. Find real problems only — bugs, confusing UX, weak copy, missed edge cases. Do NOT suggest speculative improvements or style preferences. Return a short numbered list of actual issues, prioritized by impact. Be brutal but fair."
+
+**After it finishes:**
+- Filter out anything trivial or stylistic
+- Present Key a short punch list: "Critic flagged X things — [list]. Fix now or skip?"
+- Fix the ones Key approves
+
+**Skip the critic pass when:**
+- The change is a one-line fix or purely internal (no user-facing output)
+- The session was exploratory/conversational with no concrete output
+
+---
+
 ## End of Session
 
 If you made meaningful changes:
