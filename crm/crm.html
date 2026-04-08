@@ -12145,11 +12145,13 @@ setTimeout(() => {
       var cid = el.getAttribute('data-contact-id');
       if (!cid) return;
       el.addEventListener('click', function() {
+        window.tmClosePanel();
         if (typeof openPanel === 'function') openPanel(cid);
       });
       el.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
+          window.tmClosePanel();
           if (typeof openPanel === 'function') openPanel(cid);
         }
       });
@@ -12214,6 +12216,7 @@ setTimeout(() => {
         var cid = el.getAttribute('data-contact-id');
         if (!cid) return;
         el.addEventListener('click', function() {
+          window.tmClosePanel();
           if (typeof openPanel === 'function') openPanel(cid);
         });
       }
@@ -12268,7 +12271,8 @@ setTimeout(() => {
 
       if (!draft) { if (typeof showToast === 'function') showToast('Sparky couldn\'t draft — try again', 'error'); return; }
 
-      // Open panel → switch to messages drill → fill compose
+      // Close Sparky first, then open contact panel → messages drill → fill compose
+      window.tmClosePanel();
       if (typeof openPanel === 'function') openPanel(contactId);
       setTimeout(function() {
         if (typeof openMessagesFromPanel === 'function') openMessagesFromPanel();
