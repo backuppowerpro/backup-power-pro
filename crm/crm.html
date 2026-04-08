@@ -282,7 +282,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;lett
 /* TOOLBAR */
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:var(--sp-5);flex-wrap:wrap}
 /* Search wrapper — groups the search input + inline add-lead button */
-.search-wrap{flex:1;min-width:200px;display:flex;align-items:stretch;gap:8px}
+.search-wrap{flex:1;min-width:200px;display:flex;align-items:stretch;gap:8px;position:relative}
 .search-wrap .search-input{flex:1;min-width:0}
 .search-add-wrap{position:relative;flex-shrink:0}
 .search-add{width:40px;height:100%;min-height:42px;border:none;border-radius:var(--r-sm);background:var(--navy);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),transform var(--t-fast),box-shadow var(--t-fast);box-shadow:var(--shadow-sm)}
@@ -1338,6 +1338,36 @@ html.dark .sk-action-btn.confirm{background:var(--gold);color:#1e1b17}
 html.dark .sk-action-btn.confirm:hover{background:#ffd166}
 html.dark .sk-action-btn.cancel,html.dark .sk-action-btn.edit{border-color:#3d3830}
 
+/* ── Communications Search Panel ────────────────────────── */
+.cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:308;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.cs-overlay.open{opacity:1;pointer-events:auto}
+.cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--card);display:flex;flex-direction:column;box-shadow:14px 0 48px rgba(10,20,40,.22);transform:translateX(-100%);transition:transform .28s var(--ease);z-index:309;border-right:1px solid var(--border)}
+html.dark .cs-panel{box-shadow:14px 0 48px rgba(0,0,0,.55);border-right-color:#3d3830}
+.cs-panel.open{transform:translateX(0)}
+.cs-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cs-input{flex:1;min-width:0;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;font-size:15px;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+.cs-input:focus{border-color:var(--navy)}
+html.dark .cs-input:focus{border-color:var(--gold)}
+.cs-close{width:36px;height:36px;border:none;background:none;font-size:22px;color:var(--text3);cursor:pointer;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,color .15s}
+.cs-close:hover{background:var(--bg);color:var(--text)}
+.cs-body{flex:1;overflow-y:auto;padding:0}
+.cs-empty,.cs-hint{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center}
+.cs-spinner{display:flex;justify-content:center;padding:32px}
+.cs-result{padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.cs-result:hover{background:var(--bg)}
+.cs-result-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text);display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.cs-result-dir{font-size:10px;font-weight:700;padding:1px 6px;border-radius:var(--r-xs)}
+.cs-result-dir.in{background:rgba(11,31,59,.08);color:var(--navy)}
+.cs-result-dir.out{background:rgba(16,185,129,.08);color:#059669}
+html.dark .cs-result-dir.in{background:rgba(255,186,0,.12);color:var(--gold)}
+html.dark .cs-result-dir.out{background:rgba(16,185,129,.12);color:#34d399}
+.cs-result-type{font-size:10px;font-weight:600;color:var(--text3);background:var(--bg);padding:1px 6px;border-radius:var(--r-xs)}
+.cs-result-snippet{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:4px}
+.cs-result-snippet mark{background:rgba(255,186,0,.35);color:var(--text);border-radius:2px;padding:0 1px}
+html.dark .cs-result-snippet mark{background:rgba(255,186,0,.22)}
+.cs-result-meta{font-size:11px;color:var(--text3)}
+.cs-count{padding:10px 18px;font-size:12px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border)}
+
 /* ── Chat panel (slide-in from right, above everything) ── */
 .tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:310;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .tm-panel-overlay.open{opacity:1;pointer-events:auto}
@@ -1636,6 +1666,28 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <span class="tm-launcher-badge" id="tm-launcher-badge" style="display:none">0</span>
 </button>
 
+<!-- ── PASS 13: Communications search panel ──────────── -->
+<div class="cs-overlay" id="cs-overlay" onclick="closeCommSearch()"></div>
+<div class="cs-panel" id="cs-panel" role="dialog" aria-label="Search communications" aria-hidden="true">
+  <div class="cs-head">
+    <input class="cs-input" id="cs-input" type="text" placeholder="Search texts, notes… (e.g. cord length, 30 amp)" autocomplete="off" oninput="debounceCommSearch(this.value)" onkeydown="if(event.key==='Escape')closeCommSearch()">
+    <button class="cs-close" onclick="closeCommSearch()" title="Close">×</button>
+  </div>
+  <div class="cs-body" id="cs-body">
+    <div class="cs-empty" id="cs-empty" style="display:none">
+      <div style="font-size:32px;margin-bottom:10px">🔍</div>
+      <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text)">No matches found</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:4px">Try a different word or phrase</div>
+    </div>
+    <div class="cs-hint" id="cs-hint">
+      <div style="font-size:28px;margin-bottom:10px">💬</div>
+      <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text)">Search your messages</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px;max-width:280px;line-height:1.5">Find any word or phrase from texts with customers — "cord length", "30 amp", "cancel", anything.</div>
+    </div>
+    <div id="cs-results"></div>
+  </div>
+</div>
+
 <!-- ── PASS 13: Sparky chat panel ─────────────────────── -->
 <div class="tm-panel-overlay" id="tm-panel-overlay" onclick="tmClosePanel()"></div>
 <aside class="tm-panel" id="tm-panel" role="dialog" aria-label="Sparky" aria-hidden="true">
@@ -1819,7 +1871,12 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             </button>
           </div>
         </div>
-        <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1" onkeydown="searchKeyNav(event)" autocomplete="off">
+        <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
+        <div id="msg-search-hint" style="display:none;position:absolute;left:50px;right:0;top:calc(100% + 2px);z-index:20">
+          <button onclick="_triggerMsgSearch()" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 12px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;box-shadow:var(--shadow-sm);white-space:nowrap;transition:background .12s">
+            🔍 Search in messages →
+          </button>
+        </div>
       </div>
       <div class="view-toggle">
         <button class="view-toggle-btn" id="view-list-btn" onclick="setLeadsView('list')" title="List view">
@@ -9611,6 +9668,7 @@ setTimeout(() => {
       { name: 'Open Messages Thread', sub: 'Active panel · M', icon: '💬', match: 'messages thread text sms', action: () => { closeCmdk(); const panelOpen = document.getElementById('side-panel-overlay')?.classList.contains('open'); if (panelOpen && typeof openMessagesFromPanel === 'function') openMessagesFromPanel(); } },
       { name: 'Open Dialer', sub: 'Call any number', icon: '☎', match: 'dialer call number phone dial', action: () => { closeCmdk(); if (typeof openDialer === 'function') openDialer(); } },
       { name: 'Open Sparky', sub: 'AI assistant · S', icon: '⚡', match: 'sparky ai assistant chat help', action: () => { closeCmdk(); if (typeof window.tmOpenPanel === 'function') window.tmOpenPanel(); } },
+      { name: 'Search Messages', sub: 'Find any word in texts or notes', icon: '🔍', match: 'search messages texts communications find words phrases', action: () => { closeCmdk(); if (typeof openCommSearch === 'function') openCommSearch(); } },
       { name: 'Show Unread Messages', sub: 'Inbox filter', icon: '●', match: 'unread messages inbox filter', action: () => { closeCmdk(); switchTab('messages'); if (typeof inboxToggleUnreadFilter === 'function' && !_inboxUnreadOnly) inboxToggleUnreadFilter(); } },
       { name: 'Toggle Dark Mode', sub: 'Switch theme', icon: '☾', match: 'dark mode theme toggle light', action: () => { closeCmdk(); document.documentElement.classList.toggle('dark'); try { localStorage.setItem('bpp_crm_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {} } },
     ];
@@ -14397,6 +14455,156 @@ window.closeAddMenu = function() {
   document.addEventListener('touchend',    function() { clearTimeout(_lpTimer); }, { passive: true });
   document.addEventListener('touchmove',   function() { clearTimeout(_lpTimer); }, { passive: true });
   document.addEventListener('touchcancel', function() { clearTimeout(_lpTimer); }, { passive: true });
+})();
+
+// ══════════════════════════════════════════════════════════
+// COMMUNICATIONS SEARCH
+// Full-text search across message bodies and contact notes.
+// Accessible via the search bar hint, CMDK, or Sparky.
+// ══════════════════════════════════════════════════════════
+(function() {
+  const SEARCH_ENDPOINT = SUPABASE_URL + '/functions/v1/search-comms';
+  let _csTimer = null;
+
+  window.openCommSearch = function(initialQuery) {
+    const overlay = document.getElementById('cs-overlay');
+    const panel   = document.getElementById('cs-panel');
+    const input   = document.getElementById('cs-input');
+    if (!overlay || !panel) return;
+    overlay.classList.add('open');
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+    if (typeof lockBody === 'function') lockBody();
+    setTimeout(function() {
+      if (input) {
+        input.focus();
+        if (initialQuery) {
+          input.value = initialQuery;
+          runCommSearch(initialQuery);
+        }
+      }
+    }, 80);
+  };
+
+  window.closeCommSearch = function() {
+    const overlay = document.getElementById('cs-overlay');
+    const panel   = document.getElementById('cs-panel');
+    if (overlay) overlay.classList.remove('open');
+    if (panel)   { panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); }
+    if (typeof unlockBody === 'function') unlockBody();
+    clearTimeout(_csTimer);
+  };
+
+  window.debounceCommSearch = function(q) {
+    clearTimeout(_csTimer);
+    const resultsEl = document.getElementById('cs-results');
+    const emptyEl   = document.getElementById('cs-empty');
+    const hintEl    = document.getElementById('cs-hint');
+    const countEl   = document.getElementById('cs-count');
+    if (!q || q.trim().length < 2) {
+      if (resultsEl) resultsEl.innerHTML = '';
+      if (emptyEl)   emptyEl.style.display = 'none';
+      if (hintEl)    hintEl.style.display  = '';
+      if (countEl)   countEl.style.display = 'none';
+      return;
+    }
+    // Show spinner while waiting
+    if (hintEl) hintEl.style.display = 'none';
+    if (resultsEl) resultsEl.innerHTML = '<div class="cs-spinner"><div style="width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite"></div></div>';
+    _csTimer = setTimeout(function() { runCommSearch(q.trim()); }, 320);
+  };
+
+  window.runCommSearch = async function(q) {
+    const resultsEl = document.getElementById('cs-results');
+    const emptyEl   = document.getElementById('cs-empty');
+    const hintEl    = document.getElementById('cs-hint');
+    if (!resultsEl) return;
+
+    try {
+      const res  = await fetch(`${SEARCH_ENDPOINT}?q=${encodeURIComponent(q)}&limit=50`, {
+        headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY }
+      });
+      const data = await res.json();
+
+      if (!data.results || data.results.length === 0) {
+        resultsEl.innerHTML = '';
+        if (emptyEl) emptyEl.style.display = '';
+        return;
+      }
+      if (emptyEl) emptyEl.style.display = 'none';
+
+      // Deduplicate: show max 3 results per contact, prioritized by score
+      const seen = {};
+      const deduped = [];
+      for (const r of data.results) {
+        seen[r.contact_id] = (seen[r.contact_id] || 0) + 1;
+        if (seen[r.contact_id] <= 3) deduped.push(r);
+      }
+
+      const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+
+      function highlightSnippet(snip) {
+        let out = _escHtml ? _escHtml(snip) : snip.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        words.forEach(function(w) {
+          const re = new RegExp('(' + w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+          out = out.replace(re, '<mark>$1</mark>');
+        });
+        return out;
+      }
+
+      function relDate(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        const diff = Date.now() - d.getTime();
+        const days = Math.floor(diff / 86400000);
+        if (days === 0) return 'Today';
+        if (days === 1) return 'Yesterday';
+        if (days < 7)  return days + 'd ago';
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+
+      const totalContacts = Object.keys(seen).length;
+      let countHtml = `<div class="cs-count" id="cs-count">${deduped.length} result${deduped.length !== 1 ? 's' : ''} across ${totalContacts} contact${totalContacts !== 1 ? 's' : ''}</div>`;
+
+      const rows = deduped.map(function(r) {
+        const dirLabel = r.direction === 'inbound'
+          ? '<span class="cs-result-dir in">Inbound</span>'
+          : r.direction === 'outbound'
+          ? '<span class="cs-result-dir out">Outbound</span>'
+          : '';
+        const typeLabel = r.type === 'note' ? '<span class="cs-result-type">Note</span>' : '';
+        const meta = [relDate(r.created_at), r.contact_status].filter(Boolean).join(' · ');
+        const cid = String(r.contact_id).replace(/"/g, '');
+        return `<div class="cs-result" onclick="closeCommSearch();openPanel('${cid}')">
+          <div class="cs-result-name">${_escHtml ? _escHtml(r.contact_name) : r.contact_name} ${dirLabel}${typeLabel}</div>
+          <div class="cs-result-snippet">${highlightSnippet(r.snippet)}</div>
+          <div class="cs-result-meta">${meta}</div>
+        </div>`;
+      }).join('');
+
+      resultsEl.innerHTML = countHtml + rows;
+    } catch (err) {
+      resultsEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Search unavailable — check your connection</div>';
+    }
+  };
+
+  // Show/hide the "Search in messages" hint below search bar
+  window._updateMsgSearchHint = function(val) {
+    const hint = document.getElementById('msg-search-hint');
+    if (hint) hint.style.display = (val && val.trim().length >= 2) ? '' : 'none';
+  };
+  window._triggerMsgSearch = function() {
+    const q = (document.getElementById('search') || {}).value || '';
+    if (q.trim().length >= 2) openCommSearch(q.trim());
+  };
+
+  // Close on Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const panel = document.getElementById('cs-panel');
+      if (panel && panel.classList.contains('open')) { e.stopPropagation(); closeCommSearch(); }
+    }
+  }, true);
 })();
 
 </script>
