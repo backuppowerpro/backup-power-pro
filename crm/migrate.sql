@@ -42,3 +42,20 @@ create table if not exists payments (
 );
 alter table payments enable row level security;
 create policy "anon all" on payments for all using (true) with check (true);
+
+-- Twilio Voice recording columns on messages (for call recordings)
+alter table messages add column if not exists recording_url text;
+alter table messages add column if not exists duration_seconds integer;
+
+-- Stage history table — logs every stage transition (powers "stages advanced 7d" stat)
+create table if not exists stage_history (
+  id uuid default gen_random_uuid() primary key,
+  changed_at timestamptz default now(),
+  contact_id uuid references contacts(id) on delete cascade,
+  from_stage integer,
+  to_stage integer
+);
+alter table stage_history enable row level security;
+create policy "anon all" on stage_history for all using (true) with check (true);
+create index if not exists stage_history_changed_at_idx on stage_history (changed_at desc);
+create index if not exists stage_history_contact_idx on stage_history (contact_id);

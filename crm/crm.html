@@ -4202,7 +4202,7 @@ async function panelSave() {
   const oldStage = c?.stage || 1;
   const newStage = payload.stage;
   if (newStage !== oldStage) {
-    db.from('stage_history').insert([{ contact_id: id, from_stage: oldStage, to_stage: newStage }]);
+    db.from('stage_history').insert([{ contact_id: id, from_stage: oldStage, to_stage: newStage }]).then(() => {}, () => {});
   }
   // Update local data in place to preserve order
   if (c) Object.assign(c, payload);
@@ -4224,7 +4224,7 @@ async function quickAdvanceStage(contactId, nextStage) {
   const nextDef = PERMIT_STAGES.find(s => s.id === nextStage);
   const { error } = await db.from('contacts').update({ stage: nextStage }).eq('id', contactId);
   if (error) { showToast('Failed to advance stage', 'error'); return; }
-  db.from('stage_history').insert([{ contact_id: contactId, from_stage: oldStage, to_stage: nextStage }]);
+  db.from('stage_history').insert([{ contact_id: contactId, from_stage: oldStage, to_stage: nextStage }]).then(() => {}, () => {});
   c.stage = nextStage;
   touchContact(contactId);
   showToast(`Moved to ${nextDef ? nextDef.label : 'next stage'}`, 'success');
@@ -4240,7 +4240,7 @@ async function autoProgressStage(contactId, targetStage) {
   if (currentStage >= targetStage) return; // already at or past this stage
   const { error } = await db.from('contacts').update({ stage: targetStage }).eq('id', contactId);
   if (error) return;
-  db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: targetStage }]);
+  db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: targetStage }]).then(() => {}, () => {});
   c.stage = targetStage;
   touchContact(contactId);
   renderContacts();
@@ -4259,7 +4259,7 @@ async function setStageFromLatestProposal(contactId, proposalStage) {
   if (currentStage === proposalStage) return;
   const { error } = await db.from('contacts').update({ stage: proposalStage }).eq('id', contactId);
   if (error) return;
-  db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: proposalStage }]);
+  db.from('stage_history').insert([{ contact_id: contactId, from_stage: currentStage, to_stage: proposalStage }]).then(() => {}, () => {});
   c.stage = proposalStage;
   touchContact(contactId);
   renderContacts();
@@ -4640,6 +4640,8 @@ async function loadProposals() {
     }
   });
   renderContacts();
+  // Re-render the pipeline $ bar now that proposal totals are available
+  if (typeof loadPermitAnalytics === 'function') loadPermitAnalytics();
 }
 
 function pBuildPricing(amp) {
@@ -4913,7 +4915,7 @@ async function saveProposal() {
   navigator.clipboard.writeText(link).catch(function(){});
   data.status = 'Copied';
   data.copied_at = new Date().toISOString();
-  db.from('proposals').update({ status: 'Copied', copied_at: new Date().toISOString() }).eq('id', data.id);
+  db.from('proposals').update({ status: 'Copied', copied_at: new Date().toISOString() }).eq('id', data.id).then(() => {}, () => {});
   closeModal('proposal-overlay');
   currentProposalIdx = 0; // New proposal is first in array
   openPanel(contactId);
@@ -6150,7 +6152,9 @@ function openStatsModal() {
 async function refreshStatsModal() {
   const body = document.getElementById('stats-modal-body');
   if (!body) return;
-  renderTrendAnalytics();
+  // Always refetch stage_history so newly-advanced stages show up immediately,
+  // not after a full page reload.
+  await loadTrendAnalytics();
   const src = document.getElementById('trend-analytics');
   // Build stats HTML
   let statsHtml = src ? src.innerHTML : '';
@@ -6854,9 +6858,11 @@ async function loadInbox() {
     return;
   }
 
-  // Group by contact_id, keep most recent per contact
+  // Group by contact_id, keep most recent per contact.
+  // Skip messages with no contact_id — those are Key's own test calls/texts to unassigned numbers and would show as "Unknown".
   const byContact = {};
   data.forEach(m => {
+    if (!m.contact_id) return;
     if (!byContact[m.contact_id]) byContact[m.contact_id] = m;
   });
 
@@ -7932,7 +7938,7 @@ async function _qaStatusSave(contactId) {
   if (newStage === oldStage) { qaClose(); return; }
   const { error } = await db.from('contacts').update({ stage: newStage }).eq('id', contactId);
   if (error) { showToast('Failed to update stage', 'error'); return; }
-  try { db.from('stage_history').insert([{ contact_id: contactId, from_stage: oldStage, to_stage: newStage }]); } catch(e) {}
+  db.from('stage_history').insert([{ contact_id: contactId, from_stage: oldStage, to_stage: newStage }]).then(() => {}, () => {});
   c.stage = newStage;
   // Sync the side panel select if open
   const panelStageEl = document.getElementById('panel-stage');
@@ -9384,7 +9390,7 @@ setTimeout(() => {
         try {
           const { error } = await db.from('contacts').update({ stage: newStage }).eq('id', cid);
           if (error) throw error;
-          db.from('stage_history').insert([{ contact_id: cid, from_stage: oldStage, to_stage: newStage }]);
+          db.from('stage_history').insert([{ contact_id: cid, from_stage: oldStage, to_stage: newStage }]).then(() => {}, () => {});
           touchContact(cid);
           renderContacts();
           if (typeof loadPermitAnalytics === 'function') loadPermitAnalytics();
