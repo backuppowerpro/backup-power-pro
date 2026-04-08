@@ -12,7 +12,7 @@ const QUO_API_KEY        = Deno.env.get('QUO_API_KEY')!
 const QUO_PHONE_ID       = Deno.env.get('QUO_PHONE_NUMBER_ID')!
 const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY')!
 // TODO: Replace with your real Google review short link (get it from Google Business Profile → Ask for reviews → Get more reviews)
-const GOOGLE_REVIEW_URL  = 'https://g.page/r/REPLACE_WITH_REAL_REVIEW_LINK'
+const GOOGLE_REVIEW_URL  = 'https://g.page/r/CVxLI9ZsiZS_EAE/review'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -137,8 +137,8 @@ Rules:
     quo_message_id: quoMsgId,
   })
 
-  // Update contact status
-  await supabase.from('contacts').update({ status: 'Booked' }).eq('id', contactId)
+  // Update contact status to Complete (they paid and review was sent)
+  await supabase.from('contacts').update({ status: 'Complete' }).eq('id', contactId)
 
   return new Response(JSON.stringify({ sent: true, message: reviewMessage }), {
     headers: { ...CORS, 'Content-Type': 'application/json' },

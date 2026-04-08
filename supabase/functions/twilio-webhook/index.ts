@@ -75,9 +75,15 @@ Deno.serve(async (req) => {
   // ── LOOK UP CONTACT (digit-normalized match) ──────────────────────────────
   // ilike('%digits%') fails for formatted numbers like "(941) 441-7996"
   // because the digit run doesn't appear as a substring. Fetch all and match in JS.
-  const { data: allContacts } = await supabase
+  const { data: allContacts, error: contactsErr } = await supabase
     .from('contacts')
     .select('id, name, phone')
+
+  if (contactsErr) {
+    console.error('[twilio-webhook] contacts fetch failed:', contactsErr.message)
+    // Return TwiML without saving — better to lose the message than save as a false orphan
+    return twiml()
+  }
 
   const contact = allContacts?.find(
     (c: any) => (c.phone || '').replace(/\D/g, '').slice(-10) === last10

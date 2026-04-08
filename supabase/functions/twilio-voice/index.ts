@@ -57,7 +57,11 @@ async function findContactByPhone(supabase: any, phone: string): Promise<any | n
   const digits = phone.replace(/\D/g, '')
   if (digits.length < 10) return null
   const last10 = digits.slice(-10)
-  const { data } = await supabase.from('contacts').select('id, name, phone')
+  const { data, error } = await supabase.from('contacts').select('id, name, phone')
+  if (error) {
+    console.error('[twilio-voice] contacts fetch failed:', error.message)
+    return null
+  }
   if (!data) return null
   return data.find((c: any) => (c.phone || '').replace(/\D/g, '').slice(-10) === last10) ?? null
 }
@@ -235,7 +239,7 @@ Deno.serve(async (req) => {
 
     const contact = await findContactByPhone(supabase, target)
     const name = contact?.name || target
-    logCall(supabase, contact?.id ?? null, 'outbound', `Called ${name}`, callSid).catch(() => {})
+    await logCall(supabase, contact?.id ?? null, 'outbound', `Called ${name}`, callSid)
 
     return twiml(
       `<Dial callerId="${xesc(TWILIO_PHONE_NUMBER)}" answerOnBridge="true" timeout="30" ` +
@@ -248,7 +252,7 @@ Deno.serve(async (req) => {
   // ── INBOUND (real phone → browser) ──────────────────────
   const contact = await findContactByPhone(supabase, from)
   const name = contact?.name || from
-  logCall(supabase, contact?.id ?? null, 'inbound', `Incoming call from ${name}`, callSid).catch(() => {})
+  await logCall(supabase, contact?.id ?? null, 'inbound', `Incoming call from ${name}`, callSid)
 
   // Use action callback to detect missed calls cleanly.
   // When the <Dial> ends (answered or not), Twilio POSTs to ?event=call-status

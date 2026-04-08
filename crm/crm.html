@@ -1098,7 +1098,26 @@ html.dark .kanban-card-call:hover{background:var(--gold);border-color:var(--gold
 .stage-cell{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .stage-advance-btn{opacity:0;background:none;border:1.5px solid var(--border);border-radius:var(--r-pill);padding:2px 8px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:opacity .12s,background .12s,border-color .12s,color .12s;white-space:nowrap;font-family:'Outfit',sans-serif;flex-shrink:0}
 tr:hover .stage-advance-btn{opacity:1}
-@media (pointer:coarse){.stage-advance-btn{opacity:.75}}
+@media (pointer:coarse){
+  /* Touch target fixes — WCAG 44×44px minimum */
+  .stage-advance-btn{opacity:.75;min-height:44px;padding:10px 12px}
+  .kanban-card-call{opacity:.65;width:36px;height:36px}
+  .kanban-card:hover .kanban-card-call,.kanban-card .kanban-card-call{opacity:.65}
+  .fld-btn{width:44px;height:44px}
+  .nav-icon-btn{padding:13px}
+  .search-add{min-height:44px}
+  /* Message thread icon buttons — override 32px inline styles */
+  #msg-send-btn{width:44px!important;height:44px!important}
+  #msg-call-btn{width:44px!important;height:44px!important}
+  #msg-search-btn{width:44px!important;height:44px!important}
+  .msg-compose-foot label[title="Send photo"]{width:44px!important;height:44px!important}
+  /* Notif popover — reduce width so left dismiss area is usable */
+  .notif-pop{width:min(360px,calc(100vw - 48px));right:8px}
+}
+/* 320px breakpoint — collapse first/last name grid to single column */
+@media(max-width:360px){
+  .form-row.name-two-col{grid-template-columns:1fr!important}
+}
 .stage-advance-btn:hover{background:var(--navy);border-color:var(--navy);color:#fff}
 html.dark .stage-advance-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 .kanban-card-next.done::before{content:'\u2713 ';color:#059669;font-weight:800;font-family:'Outfit',sans-serif}
@@ -1913,7 +1932,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     </div>
     <div class="modal-body">
       <input type="hidden" id="c-id">
-      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="form-row name-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
           <label>First Name *</label>
           <input class="form-input" id="c-fname" placeholder="First" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-lname').focus()" autocomplete="off">
@@ -2206,7 +2225,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           </div>
           <a id="msg-thread-phone" class="msg-thread-phone" href="#" onclick="threadCallContact();return false" style="font-size:11px;padding:2px 7px;margin-top:1px;display:inline-flex"></a>
         </div>
-        <button onclick="threadCallContact()" style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s" title="Call">
+        <button id="msg-call-btn" onclick="threadCallContact()" style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s" title="Call">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         </button>
         <button onclick="threadToggleSearch()" id="msg-search-btn" style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s,border-color .15s" title="Search messages">
@@ -14331,6 +14350,27 @@ window.closeAddMenu = function() {
     if (e.key === 'Escape') hideCtx();
   });
   document.addEventListener('scroll', hideCtx, true);
+
+  // Long-press (500ms) on touch devices — mirrors contextmenu for mobile
+  var _lpTimer = null;
+  document.addEventListener('touchstart', function(e) {
+    const row = e.target.closest('#contacts-table tr[onclick]');
+    if (!row) return;
+    const touch = e.touches[0];
+    _lpTimer = setTimeout(function() {
+      const onclickAttr = row.getAttribute('onclick') || '';
+      const m = onclickAttr.match(/openPanel\('([^']+)'\)/);
+      if (m) {
+        // Prevent the tap-to-open-panel from also firing
+        row._lpFired = true;
+        setTimeout(function() { row._lpFired = false; }, 400);
+        showCtx(touch.clientX, touch.clientY, m[1]);
+      }
+    }, 500);
+  }, { passive: true });
+  document.addEventListener('touchend',    function() { clearTimeout(_lpTimer); }, { passive: true });
+  document.addEventListener('touchmove',   function() { clearTimeout(_lpTimer); }, { passive: true });
+  document.addEventListener('touchcancel', function() { clearTimeout(_lpTimer); }, { passive: true });
 })();
 
 </script>

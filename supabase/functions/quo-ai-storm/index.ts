@@ -129,12 +129,21 @@ Rules:
         quo_message_id: quoData.data?.id || null,
       })
 
-      // Queue a follow-up in 24hrs if no reply
-      await supabase.from('follow_up_queue').insert({
-        contact_id: contact.id,
-        stage: 1,
-        send_after: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      })
+      // Queue a follow-up in 24hrs if no reply — only if one isn't already pending
+      const { data: existingQueue } = await supabase
+        .from('follow_up_queue')
+        .select('id')
+        .eq('contact_id', contact.id)
+        .is('sent_at', null)
+        .limit(1)
+
+      if (!existingQueue || existingQueue.length === 0) {
+        await supabase.from('follow_up_queue').insert({
+          contact_id: contact.id,
+          stage: 1,
+          send_after: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        })
+      }
 
       results.push({ name: contact.name, phone: contact.phone, status: 'sent', message })
       sent++

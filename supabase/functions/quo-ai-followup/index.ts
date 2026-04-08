@@ -228,9 +228,16 @@ Write a follow-up message that picks up naturally from where this conversation l
     })
 
     // ── MARK THIS FOLLOW-UP AS SENT ───────────────────────────────────────
-    await supabase.from('follow_up_queue')
+    // Must check error: if this fails and the item stays sent_at=null, cron re-sends it next tick
+    const { error: markSentErr } = await supabase.from('follow_up_queue')
       .update({ sent_at: new Date().toISOString() })
       .eq('id', item.id)
+
+    if (markSentErr) {
+      console.error(`[FOLLOWUP] Failed to mark item ${item.id} as sent — message was already sent, skipping next-stage queue to avoid duplicates:`, markSentErr.message)
+      skipped++
+      continue
+    }
 
     // ── QUEUE NEXT STAGE (max 3 follow-ups) ──────────────────────────────
     if (item.stage < 3) {
