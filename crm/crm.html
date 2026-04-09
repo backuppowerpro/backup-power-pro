@@ -731,9 +731,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .stats-ticker::before,.stats-ticker::after{content:'';position:absolute;top:0;bottom:0;width:40px;z-index:2;pointer-events:none}
 .stats-ticker::before{left:0;background:linear-gradient(to right,var(--bg),transparent)}
 .stats-ticker::after{right:0;background:linear-gradient(to left,var(--bg),transparent)}
-.stats-ticker-track{display:flex;align-items:center;animation:tickerScroll 32s linear infinite;width:max-content;will-change:transform}
-.stats-ticker:hover .stats-ticker-track{animation-play-state:paused}
-@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.stats-ticker-track{display:flex;align-items:center;width:max-content;will-change:transform}
 .ticker-item{display:inline-flex;align-items:center;gap:5px;padding:0 8px;white-space:nowrap}
 .ticker-label{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3)}
 .ticker-val{font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
@@ -6492,10 +6490,23 @@ function loadPermitAnalytics() {
   if (tickerEl) {
     const track = tickerEl.querySelector('.stats-ticker-track');
     if (track) {
-      // 4 copies: at any scroll position the viewport is always filled
       track.innerHTML = tickerItems + tickerItems + tickerItems + tickerItems;
     }
     tickerEl.style.display = leadsView === 'list' ? 'flex' : 'none';
+    // Cancel any previous RAF loop before starting a new one
+    if (window._tickerRAF) cancelAnimationFrame(window._tickerRAF);
+    if (leadsView === 'list' && track) {
+      let offset = 0;
+      const loopWidth = track.scrollWidth / 2; // half = 2 copies = seamless reset point
+      const speed = 0.4; // px per frame (~24px/s at 60fps)
+      function tickerStep() {
+        offset += speed;
+        if (offset >= loopWidth) offset -= loopWidth;
+        track.style.transform = 'translateX(-' + offset + 'px)';
+        window._tickerRAF = requestAnimationFrame(tickerStep);
+      }
+      window._tickerRAF = requestAnimationFrame(tickerStep);
+    }
   }
 
   el.innerHTML = `
