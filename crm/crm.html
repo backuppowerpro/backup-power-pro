@@ -1029,10 +1029,7 @@ html.dark .view-toggle-btn.active{background:var(--gold);color:#1e2035;box-shado
 html.dark .view-toggle-work.active{background:var(--gold);color:#1e1b17}
 /* Kanban breakout: escape the main 1140px container so the board can use the full viewport,
    and add a soft right-edge fade to telegraph that you can scroll horizontally. */
-.kanban-shell{position:relative;margin-top:16px;animation:tabFade .2s var(--ease);-webkit-mask-image:linear-gradient(to right,black 0%,black calc(100% - 40px),transparent 100%);mask-image:linear-gradient(to right,black 0%,black calc(100% - 40px),transparent 100%)}
-.kanban-shell.scrolled-left{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 40px,black calc(100% - 40px),transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 40px,black calc(100% - 40px),transparent 100%)}
-.kanban-shell.scrolled-end{-webkit-mask-image:none;mask-image:none}
-.kanban-shell.scrolled-left.scrolled-end{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 40px,black 100%);mask-image:linear-gradient(to right,transparent 0%,black 40px,black 100%)}
+.kanban-shell{position:relative;margin-top:16px;animation:tabFade .2s var(--ease)}
 .kanban-wrap{display:grid;grid-template-columns:repeat(9,minmax(232px,1fr));gap:12px;overflow-x:auto;padding:12px 14px 14px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .kanban-wrap > .kanban-col{scroll-snap-align:start}
 .kanban-wrap::-webkit-scrollbar{display:none}
@@ -2010,7 +2007,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div class="qb-section-title">Run Length</div>
       <div class="qb-slider-row">
         <div class="qb-slider-head"><span class="qb-slider-label">Total run</span><span class="qb-slider-val" id="qb-run-display">5<span>ft</span></span></div>
-        <input type="range" class="qb-range" min="1" max="120" value="5" id="qb-run-slider" oninput="qbOnRunChange(this.value)">
+        <input type="range" class="qb-range" min="5" max="120" value="5" id="qb-run-slider" oninput="qbOnRunChange(this.value)">
         <div class="qb-slider-note" id="qb-run-note">No long-run adder</div>
       </div>
     </div>
@@ -6451,7 +6448,7 @@ function loadPermitAnalytics() {
     : '';
 
   el.innerHTML = `
-    <div class="pa-stage-wrap">
+    <div class="pa-stage-wrap" ${leadsView !== 'list' ? 'style="display:none"' : ''}>
       ${pipelineBar}
       <div class="pa-stage-list">
         ${filterChips}
@@ -6784,7 +6781,7 @@ function qbRender() {
   // Hero
   document.getElementById('qb-total-sell').textContent = qbFmt(r.totalSell);
   const lrNote = document.getElementById('qb-long-run-note');
-  lrNote.textContent = r.extraFt > 0 ? 'incl. +' + qbFmt(r.longRunSell) + ' long-run (' + r.extraFt + 'ft)' : '';
+  lrNote.textContent = r.extraFt > 0 ? 'incl. +' + qbFmt(r.longRunSell) + ' long-run (' + qbState.runFt + 'ft total)' : '';
   const profitEl = document.getElementById('qb-profit-num');
   profitEl.textContent = qbFmt(r.profit);
   profitEl.style.color = r.profit >= 700 ? 'var(--green)' : r.profit >= QB_C.minProfit ? '#d4980b' : 'var(--red)';
@@ -6796,7 +6793,7 @@ function qbRender() {
   document.getElementById('qb-run-display').innerHTML = qbState.runFt + '<span>ft</span>';
   const runNote = document.getElementById('qb-run-note');
   const lrRate = is50 ? QB_S.longRun50perFt : QB_S.longRun30perFt;
-  if (qbState.runFt > 5) { runNote.textContent = '+' + (qbState.runFt - 5) + 'ft @ $' + lrRate + '/ft = +' + qbFmt(r.longRunSell); runNote.classList.add('highlight'); }
+  if (qbState.runFt > 5) { runNote.textContent = qbState.runFt + 'ft total · ' + (qbState.runFt - 5) + 'ft extra @ $' + lrRate + '/ft = +' + qbFmt(r.longRunSell); runNote.classList.add('highlight'); }
   else { runNote.textContent = 'No long-run adder'; runNote.classList.remove('highlight'); }
   // Toggle rows
   document.getElementById('qb-row-cord').classList.toggle('active', qbState.cordIncluded);
