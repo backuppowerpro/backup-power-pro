@@ -2985,10 +2985,16 @@ function renderContacts() {
     const cols = `<colgroup><col style="width:20%"><col class="col-phone" style="width:14%"><col class="col-addr" style="width:16%"><col class="col-notes" style="width:18%"><col class="col-jur" style="width:16%"><col style="width:16%"></colgroup>`;
     const thead = `<tr><th style="width:20%">Name</th><th class="col-phone" style="width:14%">Phone</th><th class="col-addr" style="width:16%">Address</th><th class="col-notes" style="width:18%">Notes</th><th class="col-jur" style="width:16%">Jurisdiction</th><th style="width:16%">Stage</th></tr>`;
     const emptyContent = searchTerm
-      ? `<button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff;padding:10px 20px;font-size:14px" onclick="addFromSearch()">+ Add New Lead</button>`
+      ? `<div class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <p>No contacts match "<strong>${esc(searchTerm)}</strong>"</p>
+          <button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff;padding:8px 18px;font-size:13px;margin-top:8px" onclick="addFromSearch()">Add "${esc(searchTerm)}" as new lead</button>
+          <button class="btn btn-sm" style="padding:8px 14px;font-size:13px;margin-top:6px;color:var(--text3)" onclick="document.getElementById('search').value='';renderContacts()">Clear search</button>
+        </div>`
       : `<div class="empty">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads match your filter.'}</p>
+          <p>${allContacts.length === 0 ? 'No leads yet — add your first one.' : 'No leads in this stage.'}</p>
+          ${allContacts.length > 0 && stageFilter !== 'all' ? '<button class="btn btn-sm" style="padding:8px 14px;font-size:13px;margin-top:8px;color:var(--text3)" onclick="stageFilter=\'all\';renderContacts()">Show all leads</button>' : ''}
         </div>`;
     wrap.innerHTML = `<div class="table-wrap" style="background:var(--bg)">
       <div class="table-scroll" style="display:flex;align-items:center;justify-content:center;height:265px">
@@ -4456,6 +4462,8 @@ async function panelSave() {
   const emailVal = document.getElementById('panel-email').value.trim();
   if (emailVal && !isValidEmail(emailVal)) { showToast('Invalid email format', 'error'); return; }
   _panelSaving = true;
+  const saveBtn = document.getElementById('panel-save-btn');
+  if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
   const c = allContacts.find(x => x.id === id);
   const installNotesVal = (document.getElementById('panel-install-notes')?.value || '').trim();
   const payload = {
@@ -4483,9 +4491,10 @@ async function panelSave() {
     (c.stage || 1) !== payload.stage ||
     String(c.jurisdiction_id || '') !== String(payload.jurisdiction_id || '')
   );
-  if (!changed) { _panelSaving = false; panelResetDirty(); closePanel(); loadContacts(); return; }
+  const _restoreSaveBtn = () => { const b = document.getElementById('panel-save-btn'); if (b) { b.textContent = 'Save Changes'; b.disabled = false; } };
+  if (!changed) { _panelSaving = false; _restoreSaveBtn(); panelResetDirty(); closePanel(); loadContacts(); return; }
   const { error } = await db.from('contacts').update(payload).eq('id', id);
-  if (error) { _panelSaving = false; showToast('Save failed: ' + error.message, 'error'); return; }
+  if (error) { _panelSaving = false; _restoreSaveBtn(); showToast('Save failed: ' + error.message, 'error'); return; }
   // If address changed, sync contact_address on all linked proposals and invoices
   const addressChanged = (c?.address || '').trim() !== payload.address;
   if (addressChanged && payload.address) {
@@ -4518,12 +4527,20 @@ async function quickAdvanceStage(contactId, nextStage) {
   const oldStage = c.stage || 1;
   if (oldStage >= nextStage) return;
   const nextDef = PERMIT_STAGES.find(s => s.id === nextStage);
+  const oldDef  = PERMIT_STAGES.find(s => s.id === oldStage);
   const { error } = await db.from('contacts').update({ stage: nextStage }).eq('id', contactId);
   if (error) { showToast('Failed to advance stage', 'error'); return; }
   db.from('stage_history').insert([{ contact_id: contactId, from_stage: oldStage, to_stage: nextStage }]).then(() => {}, () => {});
   c.stage = nextStage;
   touchContact(contactId);
-  showToast(`Moved to ${nextDef ? nextDef.label : 'next stage'}`, 'success');
+
+  // Show undo toast — tapping it reverses the stage change
+  const t = document.getElementById('toast');
+  t.innerHTML = `Moved to ${nextDef ? nextDef.label : 'next stage'} &nbsp;<button onclick="quickAdvanceStage('${contactId}',${oldStage})" style="background:rgba(255,255,255,.2);border:none;border-radius:4px;color:#fff;font-weight:700;font-size:12px;padding:2px 8px;cursor:pointer;margin-left:4px">Undo</button>`;
+  t.className = 'toast show success';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); t.innerHTML = ''; }, 5000);
+
   renderContacts();
   loadPermitAnalytics();
 }
@@ -6043,12 +6060,12 @@ function closeJurView() {
 }
 
 let toastTimer;
-function showToast(msg, type) {
+function showToast(msg, type, duration) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  toastTimer = setTimeout(() => t.classList.remove('show'), duration || 4500);
 }
 
 // ══════════════════════════════════════════════════════════
