@@ -22,7 +22,7 @@
      bg = #f0f4f8  →  dark shadow #d1d8e2  light shadow #ffffff
      Card bg must match --bg exactly for the illusion to work. */
   --bg:#f0f4f8; --card:#f0f4f8;
-  --neu-dark:#d1d8e2; --neu-light:rgba(255,255,255,0.55);
+  --neu-dark:#e3e7ee; --neu-light:rgba(255,255,255,0.55);
   --neu-d:10px; --neu-blur:20px;   /* raised card — softer, less bleed */
   --neu-d-sm:4px; --neu-blur-sm:8px; /* buttons, chips — tight, won't reach neighbors */
   --shadow-neu: var(--neu-d) var(--neu-d) var(--neu-blur) var(--neu-dark), calc(var(--neu-d) * -1) calc(var(--neu-d) * -1) var(--neu-blur) var(--neu-light);
@@ -394,7 +394,7 @@ td.actions{white-space:nowrap}
 .prop-viewed{background:#fef3c7;color:#92400e;border:none}
 
 /* SCROLLABLE CONTACTS */
-.table-scroll{height:420px;overflow-y:auto;border-top:none;scrollbar-color:var(--neu-dark) transparent;background:var(--bg);position:relative}
+.table-scroll{height:420px;overflow-y:auto;overflow-x:hidden;border-top:none;scrollbar-color:var(--neu-dark) transparent;background:var(--bg);position:relative}
 .table-wrap{position:relative}
 .table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(200,205,215,.35));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:var(--grad-opacity,1)}
 /* gradient opacity controlled by JS based on scroll distance from bottom */
@@ -1067,7 +1067,7 @@ html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04)
 .kanban-cards{display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;max-height:62vh;padding-right:2px}
 .kanban-cards::-webkit-scrollbar{width:6px}
 .kanban-cards::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:6px}
-.kanban-card{background:var(--bg);border-radius:var(--r-sm);padding:12px 13px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none;border-left:3px solid var(--urgcolor,var(--bg));position:relative}
+.kanban-card{background:var(--bg);border-radius:var(--r-sm);padding:12px 13px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:5px 5px 20px var(--neu-dark),-4px -4px 16px var(--neu-light);border:none;border-left:3px solid var(--urgcolor,var(--bg));position:relative}
 .kanban-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu);border-left-color:var(--urgcolor,var(--coldot,var(--gold)))}
 .kanban-card:active{transform:translateY(0);box-shadow:var(--shadow-neu-inset-sm)}
 .kanban-card-name{font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.005em;line-height:1.25}
