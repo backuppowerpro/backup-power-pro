@@ -1099,12 +1099,12 @@ html.dark .kanban-card-amount{color:var(--gold)}
 html.dark .kanban-card-call:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 .kanban-card-next.done{color:#059669;border-top-color:rgba(5,150,105,.18)}
 /* Quick stage-advance button in list view */
-.stage-cell{display:flex;align-items:center;gap:6px;white-space:nowrap}
-.stage-advance-btn{opacity:0;background:none;border:1.5px solid var(--border);border-radius:var(--r-pill);padding:2px 8px;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:opacity .12s,background .12s,border-color .12s,color .12s;white-space:nowrap;font-family:'Outfit',sans-serif;flex-shrink:0}
-tr:hover .stage-advance-btn{opacity:1}
+.stage-cell{display:flex;align-items:center;gap:6px}
+.stage-advance-btn{opacity:0;background:var(--card);border:1.5px solid transparent;border-radius:var(--r-pill);padding:2px 0;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:opacity .15s,max-width .15s,padding .15s,color .15s,background .15s,border-color .15s;white-space:nowrap;font-family:'Outfit',sans-serif;flex-shrink:0;max-width:0;overflow:hidden}
+tr:hover .stage-advance-btn{opacity:1;max-width:110px;border-color:var(--border);padding:2px 8px}
 @media (pointer:coarse){
   /* Touch target fixes — WCAG 44×44px minimum */
-  .stage-advance-btn{opacity:.75;min-height:44px;padding:10px 12px}
+  .stage-advance-btn{opacity:.75;min-height:44px;max-width:110px;padding:10px 12px}
   .kanban-card-call{opacity:.65;width:36px;height:36px}
   .kanban-card:hover .kanban-card-call,.kanban-card .kanban-card-call{opacity:.65}
   .fld-btn{width:44px;height:44px}
