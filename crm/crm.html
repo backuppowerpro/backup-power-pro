@@ -1124,6 +1124,7 @@ html.dark .kanban-card-call:hover{background:var(--gold);box-shadow:var(--shadow
 .urgent-card{background:var(--bg);border:none;border-radius:var(--r-md);padding:14px 16px;cursor:pointer;transition:box-shadow var(--t-fast),transform var(--t-fast);position:relative;overflow:hidden;box-shadow:var(--shadow-neu-sm);display:flex;flex-direction:column;gap:10px}
 .urgent-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red);border-radius:var(--r-md) 0 0 var(--r-md)}
 .urgent-card.warm::before{background:#f97316}
+.urgent-card.cool::before{background:#eab308}
 .urgent-card:hover{box-shadow:var(--shadow-neu);transform:translateY(-1px)}
 .urgent-card-top{display:flex;align-items:center;gap:9px}
 .urgent-card-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3029,7 +3030,8 @@ function renderContacts() {
       const dupBadge = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
       const sparkyIns = (typeof window._buildSparkyInsight === 'function') ? window._buildSparkyInsight(c) : null;
       const sparkyText = sparkyIns ? sparkyIns.text : stageDef.nextAction;
-      return `<div class="urgent-card${urg.level === 'warm' ? ' warm' : ''}" onclick="openPanel('${c.id}')">
+      const urgEmoji = urg.level === 'hot' ? '🔥' : urg.level === 'warm' ? '⚠️' : '🕐';
+      return `<div class="urgent-card${urg.level === 'warm' ? ' warm' : urg.level === 'cool' ? ' cool' : ''}" onclick="openPanel('${c.id}')">
         <div class="urgent-card-top">
           ${avatarHtml}
           <div style="flex:1;min-width:0;overflow:hidden">
@@ -3039,7 +3041,7 @@ function renderContacts() {
             </div>
             <div class="urgent-card-stage" style="color:${stageDef.color}">${esc(stageDef.label)}</div>
           </div>
-          <div class="urgent-card-meta">${urg.level === 'hot' ? '🔥' : '⚠️'} ${daysLabel}</div>
+          <div class="urgent-card-meta">${urgEmoji} ${daysLabel}</div>
         </div>
         <div class="urgent-card-sparky">${esc(sparkyText)}</div>
         <div class="urgent-card-btns" onclick="event.stopPropagation()">
