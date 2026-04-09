@@ -8308,6 +8308,9 @@ async function loadMessageThread(contactId) {
   markContactRead(contactId);
   refreshMsgTabBadge();
   renderThread();
+
+  // Sparky: retroactively scan thread for any contact info not yet on file
+  _sparkyAutoFillFromThread(contactId, allMessages).catch(() => {});
 }
 
 function renderThread() {
@@ -8703,6 +8706,72 @@ async function sendMessage() {
 // ── POLL FOR NEW INBOUND MESSAGES ─────────────────────────
 let msgPollTimer = null;
 
+// ── SPARKY AUTO-FILL — extract contact info from message text ──
+function _sparkyExtractContactInfo(body) {
+  const b = (body || '').replace(/\s+/g, ' ').trim();
+  const found = {};
+
+  // Email
+  const emailM = b.match(/\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/);
+  if (emailM) found.email = emailM[1].toLowerCase();
+
+  // Name — "my name is", "this is", "I'm", "I am", "call me"
+  const nameM = b.match(/(?:my name is|this is|i['']?m|i am|call me)[,\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})/i);
+  if (nameM) found.name = nameM[1].trim();
+
+  // Address — explicit lead phrase OR bare "number + street" pattern
+  const addrPhrase = b.match(/(?:my address is|i live at|i'?m at|address[:\s]+|located at)[,\s]+(\d+[^.\n]{8,60})/i);
+  const addrBare   = b.match(/\b(\d{2,5}\s+[A-Za-z][a-z]+(?:\s+[A-Za-z][a-z]+){0,3}\s+(?:St|Ave|Blvd|Rd|Dr|Ln|Way|Ct|Pl|Hwy|Pike|Cir|Loop|Trail)\.?\b[^.\n]{0,30})/i);
+  if (addrPhrase) found.address = addrPhrase[1].trim();
+  else if (addrBare) found.address = addrBare[1].trim();
+
+  return found;
+}
+
+// Filter to only fields that are actually empty on the contact
+function _sparkyMissingFields(contact, extracted) {
+  const updates = {};
+  if (extracted.email && !contact.email) updates.email = extracted.email;
+  if (extracted.address && !contact.address) updates.address = extracted.address;
+  if (extracted.name) {
+    // Treat as empty if null, blank, or looks like a raw phone number
+    const nameEmpty = !contact.name || contact.name.trim() === '' || /^[\d\s\-().+]+$/.test(contact.name.trim());
+    if (nameEmpty) updates.name = extracted.name;
+  }
+  return updates;
+}
+
+// Apply updates and notify
+async function _sparkyApplyContactUpdates(contactId, updates) {
+  if (!Object.keys(updates).length) return;
+  const { error } = await db.from('contacts').update(updates).eq('id', contactId);
+  if (error) return;
+  // Update local copy
+  const c = allContacts.find(x => x.id === contactId);
+  if (c) Object.assign(c, updates);
+  const fieldNames = Object.keys(updates).join(', ');
+  showToast(`⚡ Sparky filled in: ${fieldNames}`, 'success');
+  // Refresh contact list and panel if open
+  if (typeof renderContacts === 'function') renderContacts();
+  if (typeof currentPanelContactId !== 'undefined' && currentPanelContactId === contactId) {
+    if (typeof openPanel === 'function') openPanel(contactId);
+  }
+}
+
+// Scan a batch of messages for a contact and apply any fills
+async function _sparkyAutoFillFromThread(contactId, messages) {
+  const contact = allContacts.find(x => x.id === contactId);
+  if (!contact) return;
+  const inbound = (messages || []).filter(m => m.direction === 'inbound' && m.body);
+  let merged = {};
+  for (const m of inbound) {
+    const extracted = _sparkyExtractContactInfo(m.body);
+    Object.assign(merged, extracted);
+  }
+  const updates = _sparkyMissingFields(contact, merged);
+  if (Object.keys(updates).length) await _sparkyApplyContactUpdates(contactId, updates);
+}
+
 // ── SUPABASE REAL-TIME — instant inbound message detection ────
 // Subscribes to the messages table for new inbound rows.
 // Falls back gracefully if real-time isn't enabled on the Supabase project
@@ -8736,6 +8805,13 @@ function startRealtimeMessages() {
         // Add to notification panel
         if (typeof notifAdd === 'function') {
           notifAdd('message', name, preview || 'New message', msg.contact_id);
+        }
+
+        // Sparky: auto-fill empty contact fields from message content
+        if (c && msg.body) {
+          const extracted = _sparkyExtractContactInfo(msg.body);
+          const updates = _sparkyMissingFields(c, extracted);
+          if (Object.keys(updates).length) _sparkyApplyContactUpdates(c.id, updates);
         }
       })
       .subscribe((status) => {
