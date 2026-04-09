@@ -1455,7 +1455,7 @@ html.dark .tm-msg.user .tm-bubble{background:#3d3830;color:var(--text)}
 @keyframes tmTyping{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 .tm-panel-foot{padding:12px 14px 14px;border-top:1px solid rgba(0,0,0,.07);background:var(--bg);display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
 html.dark .tm-panel-foot{border-top-color:rgba(255,255,255,.05)}
-.tm-compose{flex:1;resize:none;border:none;background:var(--bg);color:var(--text);border-radius:var(--r-md);padding:10px 14px;font-family:'Inter',sans-serif;font-size:16px;outline:none;max-height:110px;min-height:40px;line-height:1.4;box-shadow:var(--shadow-neu-inset-sm);transition:box-shadow var(--t-fast)}
+.tm-compose{flex:1;resize:none;border:none;background:var(--bg);color:var(--text);border-radius:var(--r-md);padding:12px 14px;font-family:'Inter',sans-serif;font-size:16px;outline:none;max-height:200px;min-height:52px;line-height:1.5;box-shadow:var(--shadow-neu-inset-sm);transition:box-shadow var(--t-fast)}
 .tm-compose:focus{box-shadow:var(--shadow-neu-inset-sm),0 0 0 2px rgba(255,186,0,.3)}
 .tm-send{background:var(--navy);color:#fff;border:none;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast);box-shadow:var(--shadow-sm)}
 .tm-send:hover:not(:disabled){background:#132a4f;transform:translateY(-1px)}
@@ -1768,7 +1768,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   </div>
   <div class="tm-panel-body" id="tm-panel-body"></div>
   <div class="tm-panel-foot">
-    <textarea class="tm-compose" id="tm-compose" rows="1" placeholder="Ask Sparky about leads, permits, or anything..." onkeydown="tmComposeKey(event)" oninput="tmAutosize(this)" maxlength="1000"></textarea>
+    <textarea class="tm-compose" id="tm-compose" rows="2" placeholder="Ask Sparky about leads, permits, or anything..." onkeydown="tmComposeKey(event)" oninput="tmAutosize(this)" maxlength="1000"></textarea>
     <button class="tm-send" id="tm-send" onclick="tmSubmitCompose()" title="Send">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
