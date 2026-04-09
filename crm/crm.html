@@ -881,7 +881,7 @@ html.dark .qa-btn-secondary:hover{color:var(--gold)}
 .skeleton-line{height:10px;border-radius:var(--r-xs)}
 
 /* ── INBOX LIST ─────────────────────────────────────────── */
-.inbox-item{background:var(--bg);border-radius:var(--r-md);padding:16px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none}
+.inbox-item{background:var(--bg);border-radius:var(--r-md);padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none}
 .inbox-item:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu)}
 .inbox-item:active{transform:translateY(0);box-shadow:var(--shadow-neu-inset-sm)}
 .inbox-item.unread{border-left:3px solid var(--gold)}
@@ -1749,7 +1749,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <h3>Sparky</h3>
       <p><span class="tm-dot"></span>Your CRM colleague &middot; live</p>
     </div>
-    <button onclick="skShowReviewQueue()" title="Review queue" style="position:relative;background:var(--bg);border:1px solid var(--border);color:var(--text3);font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:4px;transition:all .15s" onmouseover="this.style.borderColor='var(--navy)';this.style.color='var(--navy)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">Review<span id="sk-queue-badge" style="display:none;background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px;margin-left:2px"></span></button>
+    <button id="sk-review-btn" onclick="skShowReviewQueue()" title="Pending Sparky actions" style="display:none;position:relative;background:var(--bg);border:1px solid var(--border);color:var(--text3);font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer;flex-shrink:0;align-items:center;gap:4px;transition:all .15s" onmouseover="this.style.borderColor='var(--navy)';this.style.color='var(--navy)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'"><span id="sk-queue-badge" style="background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;margin-right:4px"></span>Actions</button>
     <button class="tm-panel-close" onclick="tmClosePanel()" aria-label="Close" title="Close">&times;</button>
   </div>
   <div class="tm-panel-body" id="tm-panel-body"></div>
@@ -1817,10 +1817,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
         </div>
         <div class="inbox-hdr-actions">
-          <button onclick="inboxToggleSearch()" id="inbox-search-btn" class="inbox-hdr-pill" title="Search conversations">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Search
-          </button>
+          <button id="inbox-search-btn" class="inbox-hdr-pill" title="Search conversations" style="display:none">Search</button>
           <button onclick="inboxToggleUnreadFilter()" id="inbox-unread-filter-btn" class="inbox-hdr-pill" title="Show unread only">
             Unread
           </button>
@@ -1834,13 +1831,13 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           </button>
         </div>
       </div>
-      <div id="inbox-search-bar" style="display:none;padding-bottom:10px">
+      <div id="inbox-search-bar" style="padding-bottom:10px">
         <input id="inbox-search-input" type="text" placeholder="Search conversations…" autocomplete="off"
-          style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-size:16px;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;box-sizing:border-box"
-          onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
+          style="width:100%;padding:9px 14px;border:none;border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:box-shadow .15s;box-sizing:border-box;box-shadow:var(--shadow-neu-inset-sm)"
+          onfocus="this.style.boxShadow='var(--shadow-neu-inset-sm),0 0 0 2px rgba(255,186,0,.3)'" onblur="this.style.boxShadow='var(--shadow-neu-inset-sm)'"
           oninput="inboxFilterSearch(this.value)">
       </div>
-      <div id="inbox-list" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div id="inbox-list" style="display:flex;flex-direction:column;gap:4px"></div>
       <div id="inbox-done-section" style="display:none;margin-top:18px">
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;padding:0 2px">Archived</div>
         <div id="inbox-done-list" style="display:flex;flex-direction:column;gap:6px"></div>
@@ -1857,6 +1854,13 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             Greeting
           </button>
         </div>
+      </div>
+      <!-- Call search -->
+      <div style="padding-bottom:12px">
+        <input id="call-search-input" type="text" placeholder="Search calls…" autocomplete="off"
+          style="width:100%;padding:9px 14px;border:none;border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:box-shadow .15s;box-sizing:border-box;box-shadow:var(--shadow-neu-inset-sm)"
+          onfocus="this.style.boxShadow='var(--shadow-neu-inset-sm),0 0 0 2px rgba(255,186,0,.3)'" onblur="this.style.boxShadow='var(--shadow-neu-inset-sm)'"
+          oninput="setCallSearch(this.value)">
       </div>
       <!-- Filter chips -->
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
@@ -2735,31 +2739,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// ── DARK MODE (long-press logo) ──────────────────────────
+// ── DARK MODE ──────────────────────────────────────────────
 function initDarkMode() {
   if (localStorage.getItem('crm_dark') === '1') document.documentElement.classList.add('dark');
   updateDarkToggleIcon();
-  let pressTimer;
-  let didLongPress = false;
   const logo = document.getElementById('nav-logo');
-  if (!logo) return;
-  const longPress = () => {
-    didLongPress = true;
-    document.documentElement.classList.toggle('dark');
-    const isDark = document.documentElement.classList.contains('dark');
-    localStorage.setItem('crm_dark', isDark ? '1' : '0');
-    showToast(isDark ? 'Dark mode on' : 'Light mode on', 'success');
-  };
-  let usedTouch = false;
-  const startPress = (isTouch) => { if (isTouch) usedTouch = true; else if (usedTouch) return; didLongPress = false; pressTimer = setTimeout(longPress, 600); };
-  const cancelPress = () => clearTimeout(pressTimer);
-  logo.addEventListener('mousedown', () => startPress(false));
-  logo.addEventListener('mouseup', cancelPress);
-  logo.addEventListener('mouseleave', cancelPress);
-  logo.addEventListener('touchstart', () => startPress(true), { passive: true });
-  logo.addEventListener('touchend', () => { cancelPress(); setTimeout(() => usedTouch = false, 300); });
-  logo.addEventListener('touchcancel', cancelPress);
-  logo.addEventListener('click', e => { e.preventDefault(); if (!didLongPress) openQuoteBuilder(); });
+  if (logo) logo.addEventListener('click', e => { e.preventDefault(); openQuoteBuilder(); });
 }
 
 function toggleDarkMode() {
@@ -7066,6 +7051,11 @@ function setCallFilter(filter) {
 }
 
 let _callLogLoaded = false;
+let _callSearchTerm = '';
+function setCallSearch(term) {
+  _callSearchTerm = (term || '').toLowerCase().trim();
+  renderCallLog(window._callLogData || []);
+}
 async function loadCallLog() {
   const listEl = document.getElementById('calls-log-list');
   if (!listEl) return;
@@ -7101,8 +7091,15 @@ function renderCallLog(data) {
   const listEl = document.getElementById('calls-log-list');
   if (!listEl) return;
 
-  const filtered = _callFilter === 'all' ? data
-    : data.filter(m => m.status === _callFilter);
+  let filtered = _callFilter === 'all' ? data : data.filter(m => m.status === _callFilter);
+  if (_callSearchTerm) {
+    filtered = filtered.filter(m => {
+      const c = allContacts.find(x => x.id === m.contact_id);
+      const nameMatch = c && ((c.name || '') + ' ' + (c.phone || '')).toLowerCase().includes(_callSearchTerm);
+      const bodyMatch = (m.body || '').toLowerCase().includes(_callSearchTerm);
+      return nameMatch || bodyMatch;
+    });
+  }
 
   if (!filtered.length) {
     listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">'
@@ -7237,6 +7234,7 @@ let allMessages = []; // all messages for the current thread
 // ── INBOX STATE (done/muted stored in localStorage) ───────
 const INBOX_DONE_KEY  = 'bpp_inbox_done';
 const INBOX_MUTE_KEY  = 'bpp_inbox_muted';
+const INBOX_PIN_KEY   = 'bpp_inbox_pinned';
 let _inboxUnreadOnly = false;
 let _inboxSearchOpen = false;
 function inboxToggleSearch() {
@@ -7279,6 +7277,14 @@ function inboxToggleUnreadFilter() {
 }
 function _inboxDone()    { try { return JSON.parse(localStorage.getItem(INBOX_DONE_KEY) || '[]'); } catch(e) { return []; } }
 function _inboxMuted()   { try { return JSON.parse(localStorage.getItem(INBOX_MUTE_KEY) || '[]'); } catch(e) { return []; } }
+function _inboxPinned()  { try { return JSON.parse(localStorage.getItem(INBOX_PIN_KEY)  || '[]'); } catch(e) { return []; } }
+function inboxTogglePin(contactId) {
+  const pinned = _inboxPinned();
+  const idx = pinned.indexOf(contactId);
+  if (idx === -1) pinned.push(contactId); else pinned.splice(idx, 1);
+  localStorage.setItem(INBOX_PIN_KEY, JSON.stringify(pinned));
+  loadInbox();
+}
 function inboxMarkDone(contactId) {
   const done = _inboxDone(); if (!done.includes(contactId)) { done.push(contactId); localStorage.setItem(INBOX_DONE_KEY, JSON.stringify(done)); }
   loadInbox();
@@ -7462,13 +7468,15 @@ async function loadInbox() {
   });
 
   const lastChecked = getLastCheckedAt();
-  const doneIds  = _inboxDone();
-  const mutedIds = _inboxMuted();
+  const doneIds   = _inboxDone();
+  const mutedIds  = _inboxMuted();
+  const pinnedIds = _inboxPinned();
 
   function buildRow(m, isDone) {
     const c = allContacts.find(x => x.id === m.contact_id);
     const name = c ? dispName(c.name, c.phone || 'Unknown') : (m.contact_id ? 'Unknown' : 'Unknown');
-    const isMuted = mutedIds.includes(m.contact_id);
+    const isMuted  = mutedIds.includes(m.contact_id);
+    const isPinned = pinnedIds.includes(m.contact_id);
     // Unread: new inbound message since last check, not muted, not done, not yet opened
     const contactReadAt = getContactReadAt(m.contact_id);
     const isUnread = !isDone && !isMuted && m.direction === 'inbound' && m.created_at > lastChecked && m.created_at > contactReadAt;
@@ -7485,8 +7493,9 @@ async function loadInbox() {
     } else {
       preview = (m.direction === 'outbound' ? 'You: ' : '') + esc(m.body || '').slice(0, 80);
     }
-    const avatar = c ? _avatarHtml(c, 40) : `<div style="width:40px;height:40px;border-radius:50%;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3)">?</div>`;
-    const mutedBadge = isMuted ? `<span style="font-size:10px;font-weight:700;color:var(--text3);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1px 5px;margin-left:4px">Muted</span>` : '';
+    const avatar = c ? _avatarHtml(c, 34) : `<div style="width:34px;height:34px;border-radius:50%;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text3)">?</div>`;
+    const mutedBadge  = isMuted  ? `<span style="font-size:10px;font-weight:700;color:var(--text3);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1px 5px;margin-left:4px">Muted</span>` : '';
+    const pinnedBadge = isPinned ? `<span style="font-size:12px;margin-left:2px" title="Pinned">📌</span>` : '';
 
     const hasPhone = !!(c && c.phone);
     const callBtn = hasPhone
@@ -7496,7 +7505,8 @@ async function loadInbox() {
       ${isDone
         ? `<button onclick="event.stopPropagation();inboxUnarchive('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">↑ Restore</button>`
         : `${callBtn}<button onclick="event.stopPropagation();inboxMarkDone('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">✓ Done</button>
-           <button onclick="event.stopPropagation();inboxToggleMute('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">${isMuted ? '🔔' : '🔕'} ${isMuted ? 'Unmute' : 'Mute'}</button>`
+           <button onclick="event.stopPropagation();inboxTogglePin('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">${isPinned ? '📍 Unpin' : '📌 Pin'}</button>
+           <button onclick="event.stopPropagation();inboxToggleMute('${m.contact_id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);white-space:nowrap">${isMuted ? '🔔 Unmute' : '🔕 Mute'}</button>`
       }
     </div>`;
 
@@ -7513,7 +7523,7 @@ async function loadInbox() {
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="inbox-name">${esc(name)}</span>
           ${isUnread ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block"></span>' : ''}
-          ${mutedBadge}
+          ${pinnedBadge}${mutedBadge}
           ${inboxStageBadge}
         </div>
         <div class="inbox-preview">${preview}</div>
@@ -7525,7 +7535,12 @@ async function loadInbox() {
     </div>`;
   }
 
-  const sorted = Object.values(byContact).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const sorted = Object.values(byContact).sort((a, b) => {
+    const ap = pinnedIds.includes(a.contact_id) ? 1 : 0;
+    const bp = pinnedIds.includes(b.contact_id) ? 1 : 0;
+    if (ap !== bp) return bp - ap; // pinned first
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
   const active = sorted.filter(m => !doneIds.includes(m.contact_id));
   const done   = sorted.filter(m =>  doneIds.includes(m.contact_id));
 
@@ -12731,7 +12746,7 @@ setTimeout(() => {
       + '</div>';
   }
 
-  window.tmOpenPanel = function() {
+  window.tmOpenPanel = function(opts) {
     var p = document.getElementById('tm-panel');
     var o = document.getElementById('tm-panel-overlay');
     if (!p || !o) return;
@@ -12742,6 +12757,16 @@ setTimeout(() => {
     p.setAttribute('aria-hidden', 'false');
     if (typeof lockBody === 'function') lockBody(); else document.body.style.overflow = 'hidden';
     if (typeof _skRenderQueueBadge === 'function') _skRenderQueueBadge();
+    // If a contact panel is open and there's no existing chat, auto-ask about them
+    var cid = (opts && opts.contactId) || (typeof currentPanelContactId !== 'undefined' && currentPanelContactId);
+    if (cid && !_chatHistory().length) {
+      var contact = (typeof allContacts !== 'undefined') ? allContacts.find(function(x){ return x.id === cid; }) : null;
+      if (contact) {
+        var fname = (contact.name || '').split(' ')[0] || 'this lead';
+        setTimeout(function() { window.tmAskPreset('Give me a full briefing on ' + fname + ' — their stage, what we last discussed, and what I should do next.'); }, 320);
+        return; // skip focus on compose since we're auto-submitting
+      }
+    }
     setTimeout(function() {
       var ta = document.getElementById('tm-compose');
       if (ta) ta.focus();
@@ -13098,10 +13123,9 @@ setTimeout(() => {
     var queue = [];
     try { queue = JSON.parse(localStorage.getItem(SK_QUEUE_KEY) || '[]'); } catch(e) { queue = []; }
     var badge = document.getElementById('sk-queue-badge');
-    if (badge) {
-      badge.textContent = queue.length > 0 ? queue.length : '';
-      badge.style.display = queue.length > 0 ? '' : 'none';
-    }
+    var btn   = document.getElementById('sk-review-btn');
+    if (badge) badge.textContent = queue.length > 0 ? queue.length : '';
+    if (btn)   { btn.style.display = queue.length > 0 ? 'flex' : 'none'; }
   }
 
   // Public dispatcher — invoked by the confirmation card buttons
