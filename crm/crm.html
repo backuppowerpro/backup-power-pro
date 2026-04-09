@@ -1120,17 +1120,17 @@ html.dark .kanban-card-call:hover{background:var(--gold);box-shadow:var(--shadow
 .kanban-card-next.done::before{content:'\u2713 ';color:#059669;font-weight:800;font-family:'Outfit',sans-serif}
 
 /* ── URGENT ACTION VIEW ─────────────────────────────────── */
-.urgent-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.urgent-card{background:var(--bg);border:none;border-radius:var(--r-md);padding:16px 18px;cursor:pointer;transition:box-shadow var(--t-fast),transform var(--t-fast);position:relative;overflow:hidden;box-shadow:var(--shadow-neu-sm)}
+.urgent-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:12px}
+.urgent-card{background:var(--bg);border:none;border-radius:var(--r-md);padding:14px 16px;cursor:pointer;transition:box-shadow var(--t-fast),transform var(--t-fast);position:relative;overflow:hidden;box-shadow:var(--shadow-neu-sm);display:flex;flex-direction:column;gap:10px}
 .urgent-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red);border-radius:var(--r-md) 0 0 var(--r-md)}
 .urgent-card.warm::before{background:#f97316}
 .urgent-card:hover{box-shadow:var(--shadow-neu);transform:translateY(-1px)}
-.urgent-card-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.urgent-card-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.urgent-card-meta{font-size:12px;color:var(--text3);white-space:nowrap;flex-shrink:0}
-.urgent-card-action{background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.45;margin-bottom:12px;border-left:2px solid var(--border)}
-.urgent-card-action strong{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
-.urgent-card-btns{display:flex;gap:8px}
+.urgent-card-top{display:flex;align-items:center;gap:9px}
+.urgent-card-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.urgent-card-stage{font-size:11px;font-weight:600;margin-top:1px;opacity:.75}
+.urgent-card-meta{font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0;margin-left:auto}
+.urgent-card-sparky{font-size:12px;color:var(--text2);line-height:1.4;padding:8px 10px;background:var(--shadow-neu-inset);border-radius:var(--r-sm);box-shadow:var(--shadow-neu-inset-sm)}
+.urgent-card-btns{display:flex;gap:6px;margin-top:auto}
 .urgent-act-btn{flex:1;padding:9px 12px;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:background var(--t-fast),transform var(--t-fast)}
 .urgent-act-btn:active{transform:scale(.97)}
 .urgent-act-primary{background:var(--navy);color:#fff}
@@ -3020,21 +3020,21 @@ function renderContacts() {
       const avatarHtml = _avatarHtml(c, 38);
       const dupIds = getDupIds(c.id);
       const dupBadge = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
+      const sparkyIns = (typeof window._buildSparkyInsight === 'function') ? window._buildSparkyInsight(c) : null;
+      const sparkyText = sparkyIns ? sparkyIns.text : stageDef.nextAction;
       return `<div class="urgent-card${urg.level === 'warm' ? ' warm' : ''}" onclick="openPanel('${c.id}')">
         <div class="urgent-card-top">
           ${avatarHtml}
-          <div style="flex:1;min-width:0">
+          <div style="flex:1;min-width:0;overflow:hidden">
             <div class="urgent-card-name">${esc(dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead'))}${dupBadge}</div>
-            <div style="font-size:12px;color:var(--text3);margin-top:1px">${esc(stageDef.label)}</div>
+            <div class="urgent-card-stage" style="color:${stageDef.color}">${esc(stageDef.label)}</div>
           </div>
           <div class="urgent-card-meta">${urg.level === 'hot' ? '🔥' : '⚠️'} ${daysLabel}</div>
         </div>
-        <div class="urgent-card-action">
-          <strong>Next action</strong>
-          ${esc(stageDef.nextAction)}
-        </div>
+        <div class="urgent-card-sparky">${esc(sparkyText)}</div>
         <div class="urgent-card-btns" onclick="event.stopPropagation()">
-          <button class="urgent-act-btn urgent-act-primary" onclick="openUrgModal('${c.id}')">Text →</button>
+          <button class="urgent-act-btn urgent-act-primary" style="flex:1" onclick="openUrgModal('${c.id}')">Text →</button>
+          <button class="urgent-act-btn urgent-act-secondary" onclick="openPanel('${c.id}')">View</button>
         </div>
       </div>`;
     }).join('');
