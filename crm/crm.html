@@ -395,7 +395,7 @@ td.actions{white-space:nowrap}
 .prop-viewed{background:#fef3c7;color:#92400e;border:none}
 
 /* SCROLLABLE CONTACTS */
-.table-scroll{height:420px;overflow-y:auto;overflow-x:hidden;border-top:none;scrollbar-color:var(--neu-dark) transparent;background:var(--bg);position:relative}
+.table-scroll{overflow-x:hidden;border-top:none;background:var(--bg);position:relative}
 .table-wrap{position:relative}
 .table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(200,205,215,.35));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:var(--grad-opacity,1)}
 /* gradient opacity controlled by JS based on scroll distance from bottom */
@@ -5841,6 +5841,15 @@ async function loadCalendarAverages() {
     });
     const weekValues = Object.values(weekBuckets);
     const bestWeek = weekValues.length ? Math.max(...weekValues) : 0;
+    // Find which week the best was and how long ago
+    const bestWeekKey = Object.entries(weekBuckets).sort((a,b) => b[1]-a[1])[0]?.[0] || '';
+    let bestWeekAgo = '';
+    if (bestWeekKey) {
+      const [bYear, bWk] = bestWeekKey.split('-W').map(Number);
+      const [cYear, cWk] = _isoWeekKey(now).split('-W').map(Number);
+      const weeksAgo = (cYear - bYear) * 52 + (cWk - bWk);
+      bestWeekAgo = weeksAgo === 0 ? 'this week' : weeksAgo === 1 ? '1 week ago' : `${weeksAgo} weeks ago`;
+    }
 
     // Compare this week vs average
     const todayKey = _isoWeekKey(now);
@@ -5865,7 +5874,7 @@ async function loadCalendarAverages() {
         ${avgStat('💰', fmt$(avgWeeklyRevenue), 'Avg Revenue', `vs this week ${vsLabel}`)}
         ${avgStat('🔨', avgJobsPerWeek.toFixed(1), 'Avg Jobs', `${completedJobs.length} total completed`)}
         ${avgStat('📋', avgDeal > 0 ? fmt$(avgDeal) : '—', 'Avg Deal', `${allProps.length} proposals`)}
-        ${avgStat('🏆', fmt$(bestWeek), 'Best Week', `of ${weekValues.length} active weeks`)}
+        ${avgStat('🏆', fmt$(bestWeek), 'Best Week', bestWeekAgo ? bestWeekAgo : `of ${weekValues.length} weeks`)}
       </div>`;
 
     _calAvgLoaded = true;
