@@ -8973,7 +8973,7 @@ function _qaRenderQuote(c) {
     </div>
     <div class="qa-footer">
       <button class="qa-btn-secondary" onclick="qaClose()">Cancel</button>
-      <button class="qa-btn-primary" id="qa-quote-send-btn" onclick="_qaQuoteSend('${c.id}')">Create &amp; Send</button>
+      <button class="qa-btn-primary" id="qa-quote-send-btn" onclick="_qaQuoteSend('${c.id}')">Create &amp; Copy</button>
     </div>
   `;
 }
@@ -8997,10 +8997,10 @@ function _qaToggleQuote(key) {
 
 async function _qaQuoteSend(contactId) {
   const btn = document.getElementById('qa-quote-send-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
   const c = allContacts.find(x => x.id === contactId);
-  if (!c) { showToast('Contact not found', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Create & Send'; } return; }
-  if (!c.phone) { showToast('No phone number on file', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Create & Send'; } return; }
+  if (!c) { showToast('Contact not found', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Create & Copy'; } return; }
+  if (!c.phone) { showToast('No phone number on file', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Create & Copy'; } return; }
 
   const amp = _qaQuoteState.amp;
   const extraFt = _qaQuoteState.extraFt || 0;
@@ -9058,7 +9058,7 @@ async function _qaQuoteSend(contactId) {
   const { data, error } = await db.from('proposals').insert([payload]).select().single();
   if (error || !data) {
     showToast('Failed to create quote: ' + (error?.message || 'unknown'), 'error');
-    if (btn) { btn.disabled = false; btn.textContent = 'Create & Send'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Create & Copy'; }
     return;
   }
 
@@ -9068,37 +9068,46 @@ async function _qaQuoteSend(contactId) {
   await db.from('contacts').update({ quote_amount: primary.total || calc.subtotal }).eq('id', contactId);
   c.quote_amount = primary.total || calc.subtotal;
 
-  // Move contact forward to "Quote Sent" if they're not already past it
+  // Move contact forward to "Quote Sent" stage
   try { setStageFromLatestProposal(contactId, 3); } catch(e) {}
 
-  // Send the proposal link via SMS in the same thread
+  // Build message text
   const link = (typeof PROPOSAL_BASE_URL === 'string' ? PROPOSAL_BASE_URL : '') + '?token=' + data.token;
   const fname = (c.name || '').split(' ')[0] || 'there';
   const msgBody = `Hi ${fname}! Here's your quote for the Storm-Ready Connection System — $${(primary.total || calc.subtotal).toLocaleString()} all in. Review & approve here: ${link}`;
 
-  // Mark the proposal as Copied/Sent (sent via SMS counts as "sent")
+  // Mark proposal as Copied
   await db.from('proposals').update({ status: 'Copied', copied_at: new Date().toISOString() }).eq('id', data.id);
   data.status = 'Copied';
 
-  // Drop the message body into the compose area and fire the send handler
+  // Copy message to clipboard
+  try { await navigator.clipboard.writeText(msgBody); } catch(e) {}
+
+  // Pre-fill compose box so Key can review before sending
   const composeEl = document.getElementById('msg-compose');
   if (composeEl) {
     composeEl.value = msgBody;
     composeEl.style.height = 'auto';
     composeEl.style.height = Math.min(120, composeEl.scrollHeight) + 'px';
+    composeEl.focus();
   }
-  qaClose();
-  try { await sendMessage(); } catch (e) { console.error('Quote send failed:', e); }
 
   touchContact(contactId);
   renderContacts();
-  showToast('Quote sent', 'success');
-  if (btn) { btn.disabled = false; btn.textContent = 'Create & Send'; }
+  qaClose();
+  showToast('Quote created — message copied & ready to send', 'success');
+  if (btn) { btn.disabled = false; btn.textContent = 'Create & Copy'; }
 }
 
 // ── QUICK SCHEDULE ────────────────────────────────────────
+function _getInstallNotesText(c) {
+  // Returns the free-text notes portion of install_notes (strips the date prefix line)
+  return (c.install_notes || '').replace(/Scheduled:\s*\d{4}-\d{2}-\d{2}\s*\n?/, '').trim();
+}
+
 function _qaRenderSchedule(c) {
-  const cur = (typeof getScheduledDate === 'function') ? getScheduledDate(c) : '';
+  const cur   = (typeof getScheduledDate === 'function') ? getScheduledDate(c) : '';
+  const notes = _getInstallNotesText(c);
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">Schedule Install</div>
@@ -9108,58 +9117,76 @@ function _qaRenderSchedule(c) {
       <span class="qa-row-label">Install date</span>
       <input type="date" id="qa-sched-date" value="${esc(cur || '')}">
     </div>
+    <div class="qa-row" style="align-items:flex-start;flex-direction:column;gap:6px">
+      <span class="qa-row-label">Notes</span>
+      <textarea id="qa-sched-notes" rows="3" placeholder="Access code, gate instructions, special requests…"
+        style="width:100%;padding:8px 10px;border:none;border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;line-height:1.5;resize:vertical;box-sizing:border-box;box-shadow:var(--shadow-neu-inset-sm);outline:none"
+        onfocus="this.style.boxShadow='var(--shadow-neu-inset-sm),0 0 0 2px rgba(255,186,0,.3)'"
+        onblur="this.style.boxShadow='var(--shadow-neu-inset-sm)'">${esc(notes)}</textarea>
+    </div>
     <div class="qa-footer">
       <button class="qa-btn-secondary" onclick="qaClose()">Cancel</button>
-      <button class="qa-btn-primary" onclick="_qaScheduleSave('${c.id}')">Save date</button>
+      <button class="qa-btn-primary" onclick="_qaScheduleSave('${c.id}')">Save</button>
     </div>
   `;
 }
 
 async function _qaScheduleSave(contactId) {
-  const el = document.getElementById('qa-sched-date');
-  const val = (el && el.value) || '';
-  if (typeof pass2InlineSaveInstallDate === 'function') {
-    await pass2InlineSaveInstallDate(contactId, val);
-  } else {
-    // Fallback direct save
-    const c = allContacts.find(x => x.id === contactId);
-    if (c && typeof setScheduledDateLocal === 'function') {
-      setScheduledDateLocal(c, val);
-      await db.from('contacts').update({ install_notes: c.install_notes }).eq('id', contactId);
-      showToast(val ? 'Install date saved' : 'Date cleared', 'success');
-    }
-  }
+  const dateEl  = document.getElementById('qa-sched-date');
+  const notesEl = document.getElementById('qa-sched-notes');
+  const dateVal  = (dateEl  && dateEl.value.trim())  || '';
+  const notesVal = (notesEl && notesEl.value.trim()) || '';
+
+  const c = allContacts.find(x => x.id === contactId);
+  if (!c) return;
+
+  // Rebuild install_notes: date line first, notes below
+  const parts = [];
+  if (dateVal)  parts.push('Scheduled: ' + dateVal);
+  if (notesVal) parts.push(notesVal);
+  c.install_notes = parts.join('\n') || null;
+
+  const { error } = await db.from('contacts').update({ install_notes: c.install_notes }).eq('id', contactId);
+  if (error) { showToast('Save failed', 'error'); return; }
+  showToast(dateVal ? 'Install date saved' : 'Notes saved', 'success');
+  if (typeof touchContact === 'function') touchContact(contactId);
+  if (typeof renderContacts === 'function') renderContacts();
+  if (typeof renderKanban === 'function') renderKanban();
+  if (typeof renderPanelExtras === 'function') renderPanelExtras();
   qaClose();
 }
 
 // ── QUICK MATERIALS ───────────────────────────────────────
 function _qaRenderMaterials(c) {
-  const md = (typeof getMaterialsData === 'function') ? getMaterialsData(c) : {};
-  const inlets = [
-    { id: 'L5-30', label: 'L5-30 (30A Twist-Lock)' },
-    { id: 'L14-30', label: 'L14-30 (30A, 240V)' },
-    { id: '14-50', label: '14-50 (50A, 240V)' },
-  ];
-  const brands = ['Square D','Eaton','Siemens','GE','Cutler-Hammer','Federal Pacific','Other'];
-  const curInlet = md.inlet || '';
-  const curBrand = md.panel_brand || '';
+  const intlkOrd = (typeof _readPmField === 'function') ? _readPmField(c, 'mintlk_ord') === '1' : false;
+  const cordOrd  = (typeof _readPmField === 'function') ? _readPmField(c, 'mcord_ord')  === '1' : false;
+  const curJurId = c.jurisdiction_id || '';
+  const sorted   = (typeof sortedJurisdictions === 'function') ? sortedJurisdictions() : (allJurisdictions || []);
+
+  const togBtn = (id, label, active) =>
+    `<button id="${id}" onclick="this.classList.toggle('qa-tog-on');this.setAttribute('data-on',this.classList.contains('qa-tog-on')?'1':'')"
+      class="qa-tog-btn${active ? ' qa-tog-on' : ''}" data-on="${active ? '1' : ''}"
+      style="flex:1;padding:10px 8px;border-radius:var(--r-sm);border:2px solid ${active ? 'var(--navy)' : 'var(--border)'};background:${active ? 'var(--navy)' : 'var(--bg)'};color:${active ? '#fff' : 'var(--text2)'};font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s">
+      ${label}
+    </button>`;
+
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">Materials</div>
       <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
     </div>
-    <div class="qa-row">
-      <span class="qa-row-label">Inlet type</span>
-      <select id="qa-mat-inlet">
-        <option value="">— select —</option>
-        ${inlets.map(i => `<option value="${i.id}"${curInlet===i.id?' selected':''}>${esc(i.label)}</option>`).join('')}
-      </select>
+    <div class="qa-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+      <span class="qa-row-label">Ordered?</span>
+      <div style="display:flex;gap:8px;width:100%">
+        ${togBtn('qa-mat-intlk', 'Interlock', intlkOrd)}
+        ${togBtn('qa-mat-cord',  'Cord', cordOrd)}
+      </div>
     </div>
     <div class="qa-row">
-      <span class="qa-row-label">Panel brand</span>
-      <select id="qa-mat-brand">
-        <option value="">— select —</option>
-        ${brands.map(b => `<option value="${esc(b)}"${curBrand===b?' selected':''}>${esc(b)}</option>`).join('')}
+      <span class="qa-row-label">Jurisdiction</span>
+      <select id="qa-mat-jur" style="flex:1">
+        <option value="">— none —</option>
+        ${sorted.map(j => `<option value="${esc(j.id)}"${curJurId === j.id ? ' selected' : ''}>${esc(j.name)}</option>`).join('')}
       </select>
     </div>
     <div class="qa-footer">
@@ -9172,18 +9199,31 @@ function _qaRenderMaterials(c) {
 async function _qaMaterialsSave(contactId) {
   const c = allContacts.find(x => x.id === contactId);
   if (!c) { qaClose(); return; }
-  const inlet = document.getElementById('qa-mat-inlet')?.value || '';
-  const brand = document.getElementById('qa-mat-brand')?.value || '';
+
+  const intlkEl = document.getElementById('qa-mat-intlk');
+  const cordEl  = document.getElementById('qa-mat-cord');
+  const jurEl   = document.getElementById('qa-mat-jur');
+
+  const intlkOrd = intlkEl ? (intlkEl.getAttribute('data-on') === '1' ? '1' : '0') : null;
+  const cordOrd  = cordEl  ? (cordEl.getAttribute('data-on')  === '1' ? '1' : '0') : null;
+  const jurId    = jurEl   ? jurEl.value : null;
+
   if (typeof _writePmFieldLocal === 'function' && typeof _persistInstallNotes === 'function') {
-    _writePmFieldLocal(c, 'minlet', inlet);
-    _writePmFieldLocal(c, 'mpb', brand);
+    if (intlkOrd !== null) _writePmFieldLocal(c, 'mintlk_ord', intlkOrd);
+    if (cordOrd  !== null) _writePmFieldLocal(c, 'mcord_ord',  cordOrd);
     await _persistInstallNotes(c);
-  } else if (typeof pmSavePmField === 'function') {
-    await pmSavePmField(contactId, 'minlet', inlet);
-    await pmSavePmField(contactId, 'mpb', brand);
   }
+
+  // Save jurisdiction separately on the contact row
+  if (jurEl) {
+    const jurUpdate = { jurisdiction_id: jurId || null };
+    await db.from('contacts').update(jurUpdate).eq('id', contactId);
+    c.jurisdiction_id = jurId || null;
+  }
+
   showToast('Materials saved', 'success');
-  touchContact(contactId);
+  if (typeof touchContact === 'function') touchContact(contactId);
+  if (typeof renderContacts === 'function') renderContacts();
   if (typeof renderPmPanelSections === 'function') try { renderPmPanelSections(); } catch(e) {}
   if (typeof renderMaterialsBoard === 'function') try { renderMaterialsBoard(); } catch(e) {}
   qaClose();
