@@ -10943,6 +10943,8 @@ setTimeout(() => {
       surge:        _readPmField(c, 'msurge') === '1',
       inlet_ord:    _readPmField(c, 'minlet_ord') === '1',
       panel_ord:    _readPmField(c, 'mpb_ord') === '1',
+      interlock_ord:_readPmField(c, 'mintlk_ord') === '1',
+      cord_ord:     _readPmField(c, 'mcord_ord') === '1',
       surge_ord:    _readPmField(c, 'msurge_ord') === '1',
       ordered_at:   _readPmField(c, 'mord'),
       received_at:  _readPmField(c, 'mrcv'),
@@ -11379,16 +11381,15 @@ setTimeout(() => {
           </div>
           <button class="pm-pill ${md.inlet_ord?'on':''}" style="white-space:nowrap;padding:9px 12px" onclick="window.pmToggleOrd('${id}','minlet_ord')">${md.inlet_ord?'Ordered \u2713':'Ordered?'}</button>
         </div>
-        <div class="pm-row-inline" style="align-items:flex-end;gap:8px;margin-bottom:10px">
-          <div class="pm-row" style="flex:1;margin-bottom:0">
-            <label>Panel Brand</label>
-            <select class="form-select" id="pm-mat-pb" onchange="window.pmOnPanelBrandChange('${id}',this.value)">${panelOpts}</select>
+        <div class="pm-pill-row" style="margin-bottom:10px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:0">Interlock</label>
+            <button class="pm-pill ${md.interlock_ord?'on':''}" style="width:100%" onclick="window.pmToggleOrd('${id}','mintlk_ord')">${md.interlock_ord?'Ordered \u2713':'Ordered?'}</button>
           </div>
-          <button class="pm-pill ${md.panel_ord?'on':''}" style="white-space:nowrap;padding:9px 12px" onclick="window.pmToggleOrd('${id}','mpb_ord')">${md.panel_ord?'Ordered \u2713':'Ordered?'}</button>
-        </div>
-        <div class="pm-row">
-          <label>Interlock Kit</label>
-          <select class="form-select" id="pm-mat-intlk" onchange="window.pmSavePmField('${id}','mintlk',this.value)">${interlockOpts}</select>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:0">Cord</label>
+            <button class="pm-pill ${md.cord_ord?'on':''}" style="width:100%" onclick="window.pmToggleOrd('${id}','mcord_ord')">${md.cord_ord?'Ordered \u2713':'Ordered?'}</button>
+          </div>
         </div>
         <div class="pm-pill-row" style="margin-bottom:6px">
           <button class="pm-pill ${md.surge?'on':''}" onclick="window.pmToggleSurge('${id}')">WHSP?</button>
