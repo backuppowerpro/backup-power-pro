@@ -9575,15 +9575,44 @@ function _kanbanDaysSinceTouch(c) {
   return Math.floor(diffMs / 86400000);
 }
 
-// Determine urgency for a card based on how stale it is relative to its stage's expectation.
-// Returns one of: 'cool' | 'warm' | 'hot'. Stage 9 (Complete) is always cool.
+// Determine urgency combining time staleness + pipeline position.
+// Further down the pipeline = more money at stake = urgency amplified.
+// Returns { level: 'cool'|'warm'|'hot', color, days }
 function _kanbanUrgency(c, stageDef) {
   if (!stageDef || stageDef.id === 9) return { level:'cool', color:'transparent' };
-  const days = _kanbanDaysSinceTouch(c);
+
+  const stage = stageDef.id;
+  const days  = _kanbanDaysSinceTouch(c);
   const threshold = stageDef.staleDays;
-  if (days >= threshold * 2) return { level:'hot',  color:'#dc2626', days };
-  if (days >= threshold)     return { level:'warm', color:'#f97316', days };
-  return { level:'cool', color:'transparent', days };
+
+  // Hard-coded "always hot" conditions — action is overdue regardless of time
+  const proposals = (typeof proposalMap !== 'undefined' && proposalMap[c.id]) || [];
+  const hasProposal = proposals.some(p => p.status !== 'Cancelled');
+  if (stage === 4 && !hasProposal)         return { level:'hot', color:'#dc2626', days, reason:'Booked — no quote yet' };
+  if (stage === 6) {
+    const pmData = typeof _readPmField === 'function' ? _readPmField(c, 'piinspd') : null;
+    if (!pmData)                            return { level:'hot', color:'#dc2626', days, reason:'Permit paid — schedule inspection' };
+  }
+
+  // Stage weight: how much pipeline position amplifies time urgency.
+  // Scale: 1.0 = neutral, >1 = amplified (more at stake), <1 = dampened (passive wait).
+  const stageWeight = {
+    1: 1.0,  // New lead — needs first contact, but nothing committed yet
+    2: 1.1,  // Responded — in conversation, slight bump
+    3: 1.5,  // Quote sent — competitor risk, money on table
+    4: 1.6,  // Booked — highest stakes, deal at risk if ghosted
+    5: 0.7,  // Permit submitted — jurisdiction is moving it, passive
+    6: 1.4,  // Permit paid — needs inspection, don't let it stall
+    7: 1.7,  // Permit approved — ready to install, nearly done
+    8: 1.3,  // Inspection scheduled — almost there
+  }[stage] || 1.0;
+
+  // Composite score: (days elapsed / threshold) × stage weight
+  const score = (days / Math.max(threshold, 1)) * stageWeight;
+
+  if (score >= 2.0) return { level:'hot',  color:'#dc2626', days };
+  if (score >= 1.0) return { level:'warm', color:'#f97316', days };
+  return                { level:'cool', color:'transparent', days };
 }
 
 function renderKanban() {
