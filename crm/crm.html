@@ -12734,12 +12734,18 @@ setTimeout(() => {
       : label;
     var rowHtml = '';
     if (status === 'pending') {
-      var canEdit = (call.name === 'send_sms_to_contact');
-      rowHtml = '<div class="sk-action-row">'
-        + '<button class="sk-action-btn confirm" onclick="skExecuteToolCall(' + turnIdx + ',' + callIdx + ')">Confirm</button>'
-        + (canEdit ? '<button class="sk-action-btn edit" onclick="skEditToolCall(' + turnIdx + ',' + callIdx + ')">Edit</button>' : '')
-        + '<button class="sk-action-btn cancel" onclick="skCancelToolCall(' + turnIdx + ',' + callIdx + ')">Cancel</button>'
-        + '</div>';
+      var isSms = (call.name === 'send_sms_to_contact');
+      if (isSms) {
+        rowHtml = '<div class="sk-action-row">'
+          + '<button class="sk-action-btn confirm" onclick="skEditToolCall(' + turnIdx + ',' + callIdx + ')">Edit in messages</button>'
+          + '<button class="sk-action-btn cancel" onclick="skCancelToolCall(' + turnIdx + ',' + callIdx + ')">Ignore</button>'
+          + '</div>';
+      } else {
+        rowHtml = '<div class="sk-action-row">'
+          + '<button class="sk-action-btn confirm" onclick="skExecuteToolCall(' + turnIdx + ',' + callIdx + ')">Confirm</button>'
+          + '<button class="sk-action-btn cancel" onclick="skCancelToolCall(' + turnIdx + ',' + callIdx + ')">Ignore</button>'
+          + '</div>';
+      }
     } else if (status === 'running') {
       rowHtml = '<div class="sk-action-row"><span style="color:var(--text3);font-size:11px">Running\u2026</span></div>';
     }
@@ -13180,20 +13186,36 @@ setTimeout(() => {
     renderChatPanel();
   };
 
-  // Public dispatcher — edit the message body before sending an SMS
+  // Public dispatcher — open the contact's conversation and paste the draft into compose
   window.skEditToolCall = function(turnIdx, callIdx) {
     var arr = _chatHistory();
     var turn = arr[turnIdx];
     if (!turn || !turn.tool_calls || !turn.tool_calls[callIdx]) return;
     var call = turn.tool_calls[callIdx];
     if (call.name !== 'send_sms_to_contact') return;
-    var current = (call.input && call.input.message) || '';
-    var edited = window.prompt('Edit the message before sending:', current);
-    if (edited === null) return;
-    call.input = call.input || {};
-    call.input.message = edited.trim();
+    var msg = (call.input && call.input.message) || '';
+    var contactId = call.input && call.input.contactId;
+    // Mark cancelled so the card collapses
+    call.status = 'cancelled';
+    call.resultMessage = 'Editing in messages';
     _saveChatHistory(arr);
     renderChatPanel();
+    // Close Sparky panel
+    var panel = document.getElementById('tm-panel');
+    if (panel) panel.classList.remove('open');
+    // Switch to Messages tab and open the contact's thread
+    if (typeof switchTab === 'function') switchTab('messages');
+    if (contactId && typeof openMessagesPanel === 'function') {
+      openMessagesPanel(contactId).then(function() {
+        // Paste message into compose box
+        var inp = document.getElementById('msg-compose');
+        if (inp) {
+          inp.value = msg;
+          inp.focus();
+          inp.dispatchEvent(new Event('input'));
+        }
+      }).catch(function() {});
+    }
   };
 
   // ══════════════════════════════════════════════════════════
