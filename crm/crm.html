@@ -1029,15 +1029,16 @@ html.dark .view-toggle-btn.active{background:var(--gold);color:#1e2035;box-shado
 html.dark .view-toggle-work.active{background:var(--gold);color:#1e1b17}
 /* Kanban breakout: escape the main 1140px container so the board can use the full viewport,
    and add a soft right-edge fade to telegraph that you can scroll horizontally. */
-.kanban-shell{position:relative;margin-left:calc(50% - 50vw + 20px);margin-right:calc(50% - 50vw + 20px);margin-top:16px;animation:tabFade .2s var(--ease)}
-.kanban-shell::after{content:'';position:absolute;top:0;right:0;bottom:14px;width:64px;pointer-events:none;background:linear-gradient(to right, rgba(248,249,251,0) 0%, rgba(248,249,251,.6) 50%, rgba(248,249,251,1) 100%);opacity:var(--kfade-opacity,1);transition:opacity .2s var(--ease);z-index:5}
-html.dark .kanban-shell::after{background:linear-gradient(to right, rgba(30,27,23,0) 0%, rgba(30,27,23,.6) 50%, rgba(30,27,23,1) 100%)}
+.kanban-shell{position:relative;margin-top:16px;animation:tabFade .2s var(--ease);-webkit-mask-image:linear-gradient(to right,black 0%,black calc(100% - 40px),transparent 100%);mask-image:linear-gradient(to right,black 0%,black calc(100% - 40px),transparent 100%)}
+.kanban-shell.scrolled-left{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 40px,black calc(100% - 40px),transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 40px,black calc(100% - 40px),transparent 100%)}
+.kanban-shell.scrolled-end{-webkit-mask-image:none;mask-image:none}
+.kanban-shell.scrolled-left.scrolled-end{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 40px,black 100%);mask-image:linear-gradient(to right,transparent 0%,black 40px,black 100%)}
 .kanban-wrap{display:grid;grid-template-columns:repeat(9,minmax(232px,1fr));gap:12px;overflow-x:auto;padding:12px 14px 14px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .kanban-wrap > .kanban-col{scroll-snap-align:start}
 .kanban-wrap::-webkit-scrollbar{display:none}
 .kanban-wrap{scrollbar-width:none}
 @media(max-width:1400px){.kanban-wrap{grid-template-columns:repeat(9,260px)}}
-@media(max-width:900px){.kanban-shell{margin-left:0;margin-right:0}}
+@media(max-width:900px){.kanban-shell{margin-top:12px}}
 .kanban-col{background:var(--bg);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-height:280px;border:none;box-shadow:var(--shadow-neu-sm);min-width:0}
 html.dark .kanban-col{background:rgba(255,255,255,.02)}
 .kanban-col-head{display:flex;flex-direction:column;gap:4px;padding:2px 2px 10px;border-bottom:1px solid var(--border);margin-bottom:4px}
@@ -1562,9 +1563,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <button class="nav-icon-btn" onclick="openStatsModal()" title="Stats">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
   </button>
-  <button class="nav-icon-btn" onclick="openQuoteBuilder()" title="Quote Builder" style="font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--gold);gap:3px;flex-direction:column">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-    QUOTE
+  <button class="nav-icon-btn" onclick="openQuoteBuilder()" title="Quote Builder">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
   </button>
   <img id="nav-logo" src="/assets/images/logo-white-v2.png" alt="Backup Power Pro" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="height:28px;flex:1;object-fit:contain;cursor:pointer;-webkit-user-select:none;user-select:none" title="Back to top">
   <div class="bell-wrap">
@@ -5400,7 +5400,7 @@ function calDayUp() {
 
 function renderCalendar() {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  const todayStr = new Date().toISOString().split('T')[0];
+  const _td = new Date(); const todayStr = `${_td.getFullYear()}-${String(_td.getMonth()+1).padStart(2,'0')}-${String(_td.getDate()).padStart(2,'0')}`;
 
   // Week label
   const ws = new Date(weekStart);
@@ -9464,9 +9464,11 @@ function renderKanban() {
   const kanbanShell = wrap.querySelector('.kanban-shell');
   if (kanbanWrap && kanbanShell) {
     const updateFade = () => {
+      const atStart = kanbanWrap.scrollLeft <= 8;
       const remaining = kanbanWrap.scrollWidth - kanbanWrap.clientWidth - kanbanWrap.scrollLeft;
-      const opacity = Math.max(0, Math.min(1, remaining / 60));
-      kanbanShell.style.setProperty('--kfade-opacity', String(opacity));
+      const atEnd = remaining <= 8;
+      kanbanShell.classList.toggle('scrolled-left', !atStart);
+      kanbanShell.classList.toggle('scrolled-end', atEnd);
     };
     kanbanWrap.addEventListener('scroll', updateFade, { passive: true });
     requestAnimationFrame(updateFade);
