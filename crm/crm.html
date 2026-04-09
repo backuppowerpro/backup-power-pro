@@ -22,7 +22,7 @@
      bg = #f0f4f8  →  dark shadow #d1d8e2  light shadow #ffffff
      Card bg must match --bg exactly for the illusion to work. */
   --bg:#f0f4f8; --card:#f0f4f8;
-  --neu-dark:#d1d8e2; --neu-light:rgba(255,255,255,0.18);
+  --neu-dark:#d1d8e2; --neu-light:#ffffff;
   --neu-d:10px; --neu-blur:20px;   /* raised card — softer, less bleed */
   --neu-d-sm:4px; --neu-blur-sm:8px; /* buttons, chips — tight, won't reach neighbors */
   --shadow-neu: var(--neu-d) var(--neu-d) var(--neu-blur) var(--neu-dark), calc(var(--neu-d) * -1) calc(var(--neu-d) * -1) var(--neu-blur) var(--neu-light);
@@ -1037,7 +1037,7 @@ html.dark .view-toggle-work.active{background:var(--gold);color:#1e1b17}
 .kanban-wrap{scrollbar-width:none}
 @media(max-width:1400px){.kanban-wrap{grid-template-columns:repeat(9,260px)}}
 @media(max-width:900px){.kanban-shell{margin-top:12px}}
-.kanban-col{background:var(--bg);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-height:280px;border:none;box-shadow:var(--shadow-neu-sm);min-width:0}
+.kanban-col{background:var(--bg);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-height:280px;border:none;box-shadow:var(--shadow-neu-inset-sm);min-width:0}
 html.dark .kanban-col{background:rgba(255,255,255,.02)}
 .kanban-col-head{display:flex;flex-direction:column;gap:4px;padding:2px 2px 10px;border-bottom:1px solid var(--border);margin-bottom:4px}
 html.dark .kanban-col-head{border-bottom-color:var(--border)}
@@ -1067,7 +1067,7 @@ html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04)
 .kanban-cards{display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;max-height:62vh;padding-right:2px}
 .kanban-cards::-webkit-scrollbar{width:6px}
 .kanban-cards::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:6px}
-.kanban-card{background:var(--bg);border-radius:var(--r-sm);padding:12px 13px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none;border-left:3px solid var(--urgcolor,transparent);position:relative}
+.kanban-card{background:var(--bg);border-radius:var(--r-sm);padding:12px 13px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none;border-left:3px solid var(--urgcolor,var(--bg));position:relative}
 .kanban-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu);border-left-color:var(--urgcolor,var(--coldot,var(--gold)))}
 .kanban-card:active{transform:translateY(0);box-shadow:var(--shadow-neu-inset-sm)}
 .kanban-card-name{font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.005em;line-height:1.25}
@@ -1078,10 +1078,10 @@ html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04)
 .kanban-card-amount{font-family:'Outfit',sans-serif;font-weight:800;color:var(--navy);font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 html.dark .kanban-card-amount{color:var(--gold)}
 .kanban-card-next{margin-top:8px;padding-top:7px;border-top:1px dashed var(--border);font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px;line-height:1.3}
-.kanban-card-call{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s,background .15s,border-color .15s;color:var(--text3)}
+.kanban-card-call{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s,background .15s,box-shadow .15s;color:var(--text3)}
 .kanban-card:hover .kanban-card-call{opacity:1}
-.kanban-card-call:hover{background:var(--navy);border-color:var(--navy);color:#fff}
-html.dark .kanban-card-call:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.kanban-card-call:hover{background:var(--navy);box-shadow:var(--shadow-neu-inset-sm);color:#fff}
+html.dark .kanban-card-call:hover{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
 .kanban-card-next.done{color:#059669;border-top-color:rgba(5,150,105,.18)}
 /* Quick stage-advance button in list view */
 .stage-cell{display:flex;align-items:center;gap:6px}
