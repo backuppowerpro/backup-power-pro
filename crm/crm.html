@@ -1794,22 +1794,29 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <!-- ── INVOICES TAB ──────────────────────────────────────── -->
 <div id="tab-invoices" style="display:none">
   <main class="main" style="max-width:920px">
-    <!-- Proposals section -->
-    <div id="docs-quotes-section" style="margin-bottom:28px">
-      <div class="section-head" style="margin-bottom:12px">
-        <div class="section-title">Proposals</div>
-      </div>
-      <div id="docs-quotes-list"></div>
+
+    <!-- Sub-tab toggle: Proposals | Invoices -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px">
+      <button id="fintab-btn-proposals" onclick="setFinSubTab('proposals')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text);cursor:pointer;border-bottom:2.5px solid var(--navy);margin-bottom:-2px;transition:color .15s">Proposals</button>
+      <button id="fintab-btn-invoices" onclick="setFinSubTab('invoices')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:color .15s">Invoices<span id="fintab-inv-badge" style="display:none;background:var(--navy);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;margin-left:6px"></span></button>
     </div>
-    <!-- Invoices section -->
-    <div id="docs-invoices-section">
-      <div class="section-head" style="margin-bottom:12px">
-        <div class="section-title">Invoices</div>
+
+    <!-- ── PROPOSALS sub-tab ──────────────────────────────── -->
+    <div id="fintab-proposals">
+      <div id="docs-quotes-section">
+        <div id="docs-quotes-list"></div>
       </div>
-      <div class="inv-summary" id="inv-summary"></div>
-      <div class="inv-filters" id="inv-filters"></div>
-      <div class="inv-list" id="inv-list"></div>
     </div>
+
+    <!-- ── INVOICES sub-tab ───────────────────────────────── -->
+    <div id="fintab-invoices" style="display:none">
+      <div id="docs-invoices-section">
+        <div class="inv-summary" id="inv-summary"></div>
+        <div class="inv-filters" id="inv-filters"></div>
+        <div class="inv-list" id="inv-list"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -3019,7 +3026,7 @@ function renderContacts() {
 
   // ── URGENT ACTION VIEW — card-based when urgent sort is active ─────────
   if (contactsSortUrgent) {
-    const urgCards = visible.map(c => {
+    const urgCards = visible.filter(c => !_urgIsIgnored(c.id)).map(c => {
       const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
       const urg = _kanbanUrgency(c, stageDef);
       const days = urg.days || _kanbanDaysSinceTouch(c);
@@ -3046,7 +3053,7 @@ function renderContacts() {
         <div class="urgent-card-sparky">${esc(sparkyText)}</div>
         <div class="urgent-card-btns" onclick="event.stopPropagation()">
           <button class="urgent-act-btn urgent-act-primary" style="flex:1" onclick="openUrgModal('${c.id}')">Text →</button>
-          <button class="urgent-act-btn urgent-act-secondary" onclick="openPanel('${c.id}')">View</button>
+          <button class="urgent-act-btn urgent-act-secondary" onclick="event.stopPropagation();_urgIgnore('${c.id}')">Ignore</button>
         </div>
       </div>`;
     }).join('');
@@ -7211,7 +7218,7 @@ function switchTab(tab) {
     // Quietly update missed-calls badge in background
     if (!_callLogLoaded) loadCallLog().catch(() => {});
   }
-  if (tab === 'invoices') loadInvoicesTab();
+  if (tab === 'invoices') { loadInvoicesTab(); setFinSubTab(_finSubTab); }
 }
 
 // ── MESSAGES SUB-TAB (Inbox vs Calls) ───────────────────
@@ -7257,11 +7264,57 @@ function _syncCallSubTabDark() {
   }
 }
 
+// ── FINANCE SUB-TAB (Proposals vs Invoices) ─────────────
+let _finSubTab = 'proposals';
+
+function setFinSubTab(sub) {
+  _finSubTab = sub;
+  const propDiv  = document.getElementById('fintab-proposals');
+  const invDiv   = document.getElementById('fintab-invoices');
+  const propBtn  = document.getElementById('fintab-btn-proposals');
+  const invBtn   = document.getElementById('fintab-btn-invoices');
+  if (!propDiv || !invDiv) return;
+
+  const isDark = document.documentElement.classList.contains('dark');
+  const activeColor = isDark ? 'var(--gold)' : 'var(--navy)';
+
+  if (sub === 'invoices') {
+    propDiv.style.display = 'none';
+    invDiv.style.display  = 'block';
+    if (propBtn) { propBtn.style.borderBottomColor = 'transparent'; propBtn.style.color = 'var(--text3)'; }
+    if (invBtn)  { invBtn.style.borderBottomColor  = activeColor;   invBtn.style.color  = 'var(--text)'; }
+    // Trigger invoice list render if not already done
+    if (typeof renderInvoiceList === 'function') renderInvoiceList();
+  } else {
+    propDiv.style.display = 'block';
+    invDiv.style.display  = 'none';
+    if (propBtn) { propBtn.style.borderBottomColor = activeColor;   propBtn.style.color = 'var(--text)'; }
+    if (invBtn)  { invBtn.style.borderBottomColor  = 'transparent'; invBtn.style.color  = 'var(--text3)'; }
+    if (typeof renderProposalsList === 'function') renderProposalsList();
+  }
+}
+
+function _syncFinSubTabDark() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const activeColor = isDark ? 'var(--gold)' : 'var(--navy)';
+  const propBtn = document.getElementById('fintab-btn-proposals');
+  const invBtn  = document.getElementById('fintab-btn-invoices');
+  if (!propBtn || !invBtn) return;
+  if (_finSubTab === 'proposals') {
+    propBtn.style.borderBottomColor = activeColor;
+    invBtn.style.borderBottomColor  = 'transparent';
+  } else {
+    propBtn.style.borderBottomColor = 'transparent';
+    invBtn.style.borderBottomColor  = activeColor;
+  }
+}
+
 // Hook into toggleDarkMode to keep sub-tab underline correct
 const _origToggleDark = window.toggleDarkMode;
 window.toggleDarkMode = function() {
   if (typeof _origToggleDark === 'function') _origToggleDark();
   _syncCallSubTabDark();
+  _syncFinSubTabDark();
 };
 
 function setCallFilter(filter) {
@@ -9568,6 +9621,29 @@ const KANBAN_COLS = PERMIT_STAGES.map(s => ({
 }));
 
 // Compute days since last touch for a contact.
+const _URG_IGNORE_KEY = 'bpp_urg_ignore';
+function _urgIgnore(contactId) {
+  try {
+    const data = JSON.parse(localStorage.getItem(_URG_IGNORE_KEY) || '{}');
+    data[contactId] = Date.now() + 24 * 60 * 60 * 1000; // snooze 24h
+    localStorage.setItem(_URG_IGNORE_KEY, JSON.stringify(data));
+  } catch(e) {}
+  renderContacts();
+}
+function _urgIsIgnored(contactId) {
+  try {
+    const data = JSON.parse(localStorage.getItem(_URG_IGNORE_KEY) || '{}');
+    const until = data[contactId];
+    if (until && Date.now() < until) return true;
+    if (until) { // expired — clean up
+      const data2 = JSON.parse(localStorage.getItem(_URG_IGNORE_KEY) || '{}');
+      delete data2[contactId];
+      localStorage.setItem(_URG_IGNORE_KEY, JSON.stringify(data2));
+    }
+  } catch(e) {}
+  return false;
+}
+
 function _kanbanDaysSinceTouch(c) {
   const touched = _loadTouched()[c.id];
   const lastTs = touched || new Date(c.created_at).getTime();
