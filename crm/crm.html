@@ -2323,7 +2323,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div id="drill-payment-content"></div>
     </div>
     <!-- LEVEL 2b: SMS Messages -->
-    <div class="drill-level right" id="drill-messages" style="display:flex;flex-direction:column;padding:0;overflow:hidden;position:relative"
+    <div class="drill-level right" id="drill-messages" style="display:flex;flex-direction:column;padding:0;overflow:hidden"
       ondragover="event.preventDefault();document.getElementById('msg-drop-overlay').style.display='flex'"
       ondragleave="if(!event.relatedTarget||!event.currentTarget.contains(event.relatedTarget))document.getElementById('msg-drop-overlay').style.display='none'"
       ondrop="event.preventDefault();document.getElementById('msg-drop-overlay').style.display='none';var f=event.dataTransfer.files[0];if(f&&(f.type.startsWith('image/')||f.type.startsWith('video/')))msgSendPhoto(f);else if(f)showToast('Only images and videos supported','error')">
