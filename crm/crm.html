@@ -6492,8 +6492,8 @@ function loadPermitAnalytics() {
   if (tickerEl) {
     const track = tickerEl.querySelector('.stats-ticker-track');
     if (track) {
-      // Duplicate for seamless loop
-      track.innerHTML = tickerItems + tickerItems;
+      // 4 copies: at any scroll position the viewport is always filled
+      track.innerHTML = tickerItems + tickerItems + tickerItems + tickerItems;
     }
     tickerEl.style.display = leadsView === 'list' ? 'flex' : 'none';
   }
