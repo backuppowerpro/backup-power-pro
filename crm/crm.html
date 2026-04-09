@@ -5696,24 +5696,43 @@ function renderCalendar() {
     const totalJobs = weekJobs.length;
     const doneJobs  = weekJobs.filter(j => (j.status||'').toLowerCase() === 'complete' || (j.status||'').toLowerCase() === 'completed').length;
     const pendJobs  = weekJobs.filter(j => (j.status||'').toLowerCase() === 'scheduled').length;
-    // Estimate revenue: completed jobs linked to contacts → find their proposals
-    let estRev = 0;
-    weekJobs.filter(j => (j.status||'').toLowerCase() === 'complete' || (j.status||'').toLowerCase() === 'completed').forEach(j => {
-      if (j.contact_id) {
-        const props = (proposalMap[j.contact_id] || []).filter(p => p.status !== 'Cancelled' && p.total);
-        if (props.length) estRev += Number(props[0].total) || 0;
-      }
+
+    // Projected = proposal totals for ALL jobs this week with a linked contact
+    let projRev = 0;
+    weekJobs.filter(j => j.contact_id).forEach(j => {
+      const props = (proposalMap[j.contact_id] || []).filter(p => p.status !== 'Cancelled' && p.total);
+      if (props.length) projRev += Number(props[0].total) || 0;
     });
-    const stat = (icon, val, label, color) =>
-      `<div style="flex:1;min-width:100px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:12px 14px;display:flex;align-items:center;gap:10px">
+
+    const stat = (icon, val, label, color, id) =>
+      `<div style="flex:1;min-width:110px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:12px 14px;display:flex;align-items:center;gap:10px">
         <div style="font-size:20px">${icon}</div>
-        <div><div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:${color}">${val}</div><div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${label}</div></div>
+        <div><div id="${id||''}" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:${color}">${val}</div><div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${label}</div></div>
       </div>`;
+
     statsEl.innerHTML =
       stat('📅', totalJobs, 'This Week', 'var(--text)') +
       stat('✅', doneJobs, 'Complete', 'var(--green)') +
       stat('🕐', pendJobs, 'Scheduled', 'var(--navy)') +
-      (estRev > 0 ? stat('💰', '$' + estRev.toLocaleString(), 'Revenue', '#059669') : '');
+      stat('📊', projRev > 0 ? '$' + projRev.toLocaleString() : '—', 'Projected', '#d97706', 'cal-stat-projected') +
+      stat('💰', '<span style="opacity:.45;font-size:13px">loading…</span>', 'Collected', '#059669', 'cal-stat-actual');
+
+    // Async: fetch actual payments for this week's contacts
+    const weekContactIds = [...new Set(weekJobs.filter(j => j.contact_id).map(j => j.contact_id))];
+    if (weekContactIds.length) {
+      db.from('payments').select('contact_id,amount').in('contact_id', weekContactIds).then(({ data }) => {
+        const actualEl = document.getElementById('cal-stat-actual');
+        if (!actualEl) return;
+        const total = (data || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        actualEl.innerHTML = total > 0 ? '$' + total.toLocaleString() : '$0';
+      }).catch(() => {
+        const actualEl = document.getElementById('cal-stat-actual');
+        if (actualEl) actualEl.innerHTML = '—';
+      });
+    } else {
+      const actualEl = document.getElementById('cal-stat-actual');
+      if (actualEl) actualEl.innerHTML = '$0';
+    }
   }
 
   // ── Chronological job list ───────────────────────────────
