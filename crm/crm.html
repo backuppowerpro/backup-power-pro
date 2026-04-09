@@ -344,7 +344,7 @@ html.dark .search-input{border-color:var(--border)}
 html.dark .search-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(230,168,0,.18)}
 
 /* CONTACTS TABLE */
-.table-wrap{overflow-x:auto;border-radius:var(--r-md);box-shadow:var(--shadow-md);background:var(--card);border:1px solid var(--border);margin-top:12px}
+.table-wrap{overflow-x:hidden;border-radius:var(--r-md);box-shadow:var(--shadow-md);background:var(--card);border:1px solid var(--border);margin-top:12px}
 table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed;font-variant-numeric:tabular-nums}
 thead th{background:var(--bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:1;font-family:'Outfit',sans-serif}
 tbody tr{border-bottom:1px solid var(--border);transition:background var(--t-fast);cursor:pointer;background:var(--card)}
@@ -1125,6 +1125,52 @@ tr:hover .stage-advance-btn{opacity:1;max-width:110px;border-color:var(--border)
 .stage-advance-btn:hover{background:var(--navy);border-color:var(--navy);color:#fff}
 html.dark .stage-advance-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 .kanban-card-next.done::before{content:'\u2713 ';color:#059669;font-weight:800;font-family:'Outfit',sans-serif}
+
+/* ── URGENT ACTION VIEW ─────────────────────────────────── */
+.urgent-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.urgent-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:16px 18px;cursor:pointer;transition:box-shadow var(--t-fast),transform var(--t-fast);position:relative;overflow:hidden}
+.urgent-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red);border-radius:var(--r-md) 0 0 var(--r-md)}
+.urgent-card.warm::before{background:#f97316}
+.urgent-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+html.dark .urgent-card{background:var(--card)}
+.urgent-card-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.urgent-card-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.urgent-card-meta{font-size:12px;color:var(--text3);white-space:nowrap;flex-shrink:0}
+.urgent-card-action{background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.45;margin-bottom:12px;border-left:2px solid var(--border)}
+.urgent-card-action strong{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
+.urgent-card-btns{display:flex;gap:8px}
+.urgent-act-btn{flex:1;padding:9px 12px;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:background var(--t-fast),transform var(--t-fast)}
+.urgent-act-btn:active{transform:scale(.97)}
+.urgent-act-primary{background:var(--navy);color:#fff}
+.urgent-act-primary:hover{background:#132a4f}
+html.dark .urgent-act-primary{background:var(--gold);color:#1e1b17}
+.urgent-act-secondary{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
+.urgent-act-secondary:hover{background:var(--border)}
+
+/* ── URGENT CONFIRM MODAL ───────────────────────────────── */
+.urg-modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.5);z-index:360;display:none;align-items:flex-end;justify-content:center;padding:0;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.urg-modal-overlay.open{display:flex}
+@media(min-width:600px){.urg-modal-overlay{align-items:center;padding:20px}}
+.urg-modal{background:var(--card);border-radius:var(--r-lg) var(--r-lg) 0 0;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:24px 22px 32px;box-shadow:0 -20px 60px rgba(10,20,40,.3)}
+@media(min-width:600px){.urg-modal{border-radius:var(--r-lg);box-shadow:0 30px 80px rgba(10,20,40,.3)}}
+html.dark .urg-modal{background:var(--card);border:1px solid #3d3830}
+.urg-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px}
+.urg-modal-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:var(--text)}
+.urg-modal-sub{font-size:13px;color:var(--text3);margin-top:3px}
+.urg-modal-close{width:32px;height:32px;border:none;background:none;font-size:20px;color:var(--text3);cursor:pointer;flex-shrink:0;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center}
+.urg-modal-close:hover{background:var(--bg)}
+.urg-draft-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.urg-draft-box{width:100%;min-height:90px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-family:'Inter',sans-serif;color:var(--text);background:var(--bg);resize:vertical;outline:none;transition:border-color .15s;line-height:1.5;box-sizing:border-box}
+.urg-draft-box:focus{border-color:var(--navy)}
+html.dark .urg-draft-box:focus{border-color:var(--gold)}
+.urg-modal-actions{display:flex;gap:10px;margin-top:16px}
+.urg-send-btn{flex:1;padding:13px;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;cursor:pointer;border:none;background:var(--navy);color:#fff;transition:background var(--t-fast)}
+.urg-send-btn:hover{background:#132a4f}
+html.dark .urg-send-btn{background:var(--gold);color:#1e1b17}
+.urg-skip-btn{padding:13px 20px;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text2);transition:background var(--t-fast)}
+.urg-skip-btn:hover{background:var(--bg)}
+.urg-generating{display:flex;align-items:center;gap:10px;padding:16px;background:var(--bg);border-radius:var(--r-sm);color:var(--text3);font-size:13px;margin-bottom:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
 .kanban-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:32px 12px;border:1px dashed var(--border);border-radius:var(--r-sm);line-height:1.5;display:flex;flex-direction:column;align-items:center;gap:8px}
 .kanban-empty-icon{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--bg);color:var(--text3);opacity:.65;font-style:normal}
 .kanban-empty-icon svg{width:16px;height:16px;display:block;stroke-width:2}
@@ -1665,6 +1711,33 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <span class="tm-launcher-label">Sparky</span>
   <span class="tm-launcher-badge" id="tm-launcher-badge" style="display:none">0</span>
 </button>
+
+<!-- ── Urgent action confirm modal ───────────────────── -->
+<div class="urg-modal-overlay" id="urg-modal-overlay" onclick="if(event.target===this)closeUrgModal()">
+  <div class="urg-modal" id="urg-modal">
+    <div class="urg-modal-head">
+      <div>
+        <div class="urg-modal-title" id="urg-modal-title">Review action</div>
+        <div class="urg-modal-sub" id="urg-modal-sub"></div>
+      </div>
+      <button class="urg-modal-close" onclick="closeUrgModal()" title="Close">×</button>
+    </div>
+    <div id="urg-draft-area">
+      <div class="urg-generating" id="urg-generating">
+        <div style="width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>
+        Sparky is drafting a message…
+      </div>
+      <div id="urg-draft-ready" style="display:none">
+        <div class="urg-draft-label">Suggested text — edit before sending</div>
+        <textarea class="urg-draft-box" id="urg-draft-text" rows="4"></textarea>
+      </div>
+    </div>
+    <div class="urg-modal-actions">
+      <button class="urg-send-btn" id="urg-send-btn" onclick="sendUrgentText()" disabled>Send Text</button>
+      <button class="urg-skip-btn" onclick="closeUrgModal()">Skip</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── PASS 13: Communications search panel ──────────── -->
 <div class="cs-overlay" id="cs-overlay" onclick="closeCommSearch()"></div>
@@ -2925,6 +2998,40 @@ function renderContacts() {
     if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
       try { renderKanban(); } catch(e) {}
     }
+    return;
+  }
+
+  // ── URGENT ACTION VIEW — card-based when urgent sort is active ─────────
+  if (contactsSortUrgent) {
+    const urgCards = visible.map(c => {
+      const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
+      const urg = _kanbanUrgency(c, stageDef);
+      const days = urg.days || _kanbanDaysSinceTouch(c);
+      const daysLabel = days === 0 ? 'today' : days === 1 ? '1d quiet' : `${days}d quiet`;
+      const firstName = (c.name || '').split(' ')[0] || dispName(c.name, 'New Lead');
+      const avatarHtml = _avatarHtml(c, 38);
+      const dupIds = getDupIds(c.id);
+      const dupBadge = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
+      return `<div class="urgent-card${urg.level === 'warm' ? ' warm' : ''}" onclick="openPanel('${c.id}')">
+        <div class="urgent-card-top">
+          ${avatarHtml}
+          <div style="flex:1;min-width:0">
+            <div class="urgent-card-name">${esc(dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead'))}${dupBadge}</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:1px">${esc(stageDef.label)}</div>
+          </div>
+          <div class="urgent-card-meta">${urg.level === 'hot' ? '🔥' : '⚠️'} ${daysLabel}</div>
+        </div>
+        <div class="urgent-card-action">
+          <strong>Next action</strong>
+          ${esc(stageDef.nextAction)}
+        </div>
+        <div class="urgent-card-btns" onclick="event.stopPropagation()">
+          <button class="urgent-act-btn urgent-act-primary" onclick="openUrgModal('${c.id}')">Draft &amp; Send Text</button>
+          <button class="urgent-act-btn urgent-act-secondary" onclick="openPanel('${c.id}')">Open Contact</button>
+        </div>
+      </div>`;
+    }).join('');
+    wrap.innerHTML = `<div class="urgent-list">${urgCards}</div>`;
     return;
   }
 
@@ -14477,6 +14584,130 @@ window.closeAddMenu = function() {
   document.addEventListener('touchend',    function() { clearTimeout(_lpTimer); }, { passive: true });
   document.addEventListener('touchmove',   function() { clearTimeout(_lpTimer); }, { passive: true });
   document.addEventListener('touchcancel', function() { clearTimeout(_lpTimer); }, { passive: true });
+})();
+
+// ══════════════════════════════════════════════════════════
+// URGENT ACTION MODAL
+// Draft & send a Sparky-generated text from the urgent view.
+// ══════════════════════════════════════════════════════════
+(function() {
+  var _urgContactId = null;
+
+  window.openUrgModal = async function(contactId) {
+    var c = allContacts.find(function(x) { return x.id === contactId; });
+    if (!c) return;
+    _urgContactId = contactId;
+
+    var overlay = document.getElementById('urg-modal-overlay');
+    var titleEl = document.getElementById('urg-modal-title');
+    var subEl   = document.getElementById('urg-modal-sub');
+    var genEl   = document.getElementById('urg-generating');
+    var readyEl = document.getElementById('urg-draft-ready');
+    var textEl  = document.getElementById('urg-draft-text');
+    var sendBtn = document.getElementById('urg-send-btn');
+
+    var firstName = (c.name || '').split(' ')[0] || 'them';
+    var stageDef  = PERMIT_STAGES.find(function(s) { return s.id === (c.stage || 1); }) || PERMIT_STAGES[0];
+    var days      = _kanbanDaysSinceTouch(c);
+
+    if (titleEl) titleEl.textContent = 'Text ' + (c.name || 'Contact');
+    if (subEl)   subEl.textContent   = stageDef.label + ' · ' + days + 'd quiet · ' + (c.phone || '');
+    if (genEl)   genEl.style.display = '';
+    if (readyEl) readyEl.style.display = 'none';
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Send Text'; }
+    if (textEl)  textEl.value = '';
+
+    if (overlay) { overlay.classList.add('open'); lockBody(); }
+
+    // Generate message via Sparky AI taskmaster
+    try {
+      var payload = {
+        mode: 'draft_followup',
+        contact: {
+          id: c.id,
+          name: c.name || 'New Lead',
+          stage: c.stage || 1,
+          stageLabel: stageDef.label,
+          phone: c.phone,
+          daysSinceTouch: days,
+          notes: (c.install_notes || c.notes || '').slice(0, 300),
+        }
+      };
+      var resp = await fetch(SUPABASE_URL + '/functions/v1/ai-taskmaster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
+        body: JSON.stringify(payload)
+      });
+      var data = await resp.json();
+      var draft = (data && !data.fallback && data.answer) ? data.answer.trim() : null;
+
+      if (!draft) {
+        // Fallback: stage-based default
+        draft = days > 7
+          ? 'Hey ' + firstName + ', just wanted to check back in. Still interested in getting the generator connected?'
+          : 'Hey ' + firstName + ', wanted to follow up — any questions I can answer?';
+      }
+
+      // Strip em-dashes from AI output
+      draft = draft.replace(/ — /g, ', ').replace(/— /g, ', ').replace(/ —/g, ',').replace(/—/g, ', ').replace(/  +/g, ' ').trim();
+
+      if (textEl)  { textEl.value = draft; }
+      if (genEl)   genEl.style.display  = 'none';
+      if (readyEl) readyEl.style.display = '';
+      if (sendBtn) { sendBtn.disabled = false; }
+    } catch (err) {
+      // Show editable blank box on failure
+      if (genEl)   genEl.style.display  = 'none';
+      if (readyEl) readyEl.style.display = '';
+      if (textEl)  textEl.placeholder = 'Draft your message here…';
+      if (sendBtn) { sendBtn.disabled = false; }
+    }
+  };
+
+  window.closeUrgModal = function() {
+    var overlay = document.getElementById('urg-modal-overlay');
+    if (overlay) { overlay.classList.remove('open'); unlockBody(); }
+    _urgContactId = null;
+  };
+
+  window.sendUrgentText = async function() {
+    var c = _urgContactId ? allContacts.find(function(x) { return x.id === _urgContactId; }) : null;
+    if (!c || !c.phone) { showToast('No phone number on file', 'error'); return; }
+
+    var textEl  = document.getElementById('urg-draft-text');
+    var sendBtn = document.getElementById('urg-send-btn');
+    var body    = textEl ? textEl.value.trim() : '';
+    if (!body) { showToast('Message is empty', 'error'); return; }
+
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
+
+    try {
+      var resp = await fetch(SUPABASE_URL + '/functions/v1/send-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ to: c.phone, body: body, contactId: c.id })
+      });
+      var result = await resp.json();
+      if (!resp.ok || result.error) throw new Error(result.error || 'Send failed');
+
+      showToast('Text sent to ' + (c.name || c.phone), 'success');
+      _touchContact(c.id);
+      closeUrgModal();
+      // Refresh urgent view
+      renderContacts();
+    } catch (err) {
+      showToast('Send failed — check your connection', 'error');
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send Text'; }
+    }
+  };
+
+  // Close on Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var overlay = document.getElementById('urg-modal-overlay');
+      if (overlay && overlay.classList.contains('open')) { e.stopPropagation(); closeUrgModal(); }
+    }
+  }, true);
 })();
 
 // ══════════════════════════════════════════════════════════
