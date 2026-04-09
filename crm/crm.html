@@ -9723,6 +9723,7 @@ setTimeout(() => {
   .cs-keys{display:flex;gap:4px;align-items:center;flex-shrink:0}
   .cs-key{font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:3px 9px;background:var(--card);border-radius:6px;color:var(--text);box-shadow:var(--shadow-neu-sm);white-space:nowrap;min-width:26px;text-align:center}
   html.dark .cs-key{background:rgba(255,255,255,.08)}
+  .cs-key.cs-key-pressed{background:var(--gold)!important;color:var(--navy)!important;box-shadow:var(--shadow-neu-inset-sm)!important;transform:scale(.93)}
   /* Command palette */
   .cmdk-overlay{position:fixed;inset:0;background:rgba(8,15,30,.55);backdrop-filter:blur(6px);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;opacity:0;transition:opacity .15s}
   .cmdk-overlay.open{display:flex;opacity:1}
@@ -10869,7 +10870,7 @@ setTimeout(() => {
   html.dark .pm-section-status.ok{background:rgba(5,150,105,.18);color:#4ade80}
   .pm-section-chev{transition:transform .2s;color:var(--text3);flex-shrink:0}
   .pm-section.open .pm-section-chev{transform:rotate(180deg)}
-  .pm-section-body{display:none;padding:6px 14px 16px;border-top:1px solid rgba(0,0,0,.06)}
+  .pm-section-body{display:none;padding:6px 14px 16px;border-top:1px solid rgba(0,0,0,.06);background:var(--card)}
   .pm-section.open .pm-section-body{display:block;animation:pmSlideIn .22s var(--ease)}
   @keyframes pmSlideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 
@@ -11272,7 +11273,7 @@ setTimeout(() => {
       </div>
     </div>`;
 
-    bannerHost.innerHTML = banner;
+    bannerHost.innerHTML = ''; // Sparky's Take at panel top already surfaces materials alerts
     host.innerHTML = permitSection + matSection;
   }
 
@@ -14981,10 +14982,10 @@ window.closeAddMenu = function() {
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
   const cmd = isMac ? '⌘' : 'Ctrl';
   function row(desc, ...keys) {
-    return `<div class="cs-row"><span class="cs-desc">${desc}</span><span class="cs-keys">${keys.map(k => `<span class="cs-key">${k}</span>`).join('')}</span></div>`;
+    return `<div class="cs-row"><span class="cs-desc">${desc}</span><span class="cs-keys">${keys.map(k => `<span class="cs-key" data-key="${k}">${k}</span>`).join('')}</span></div>`;
   }
   pop.innerHTML = `
-    <div class="cs-pop-head">Keyboard Shortcuts<button class="cs-pop-close" onclick="toggleCheatsheet()">×</button></div>
+    <div class="cs-pop-head">Keyboard Shortcuts</div>
     <div class="cs-pop-body">
       <div class="cs-group">Global</div>
       ${row('Command palette', cmd, 'K')}
@@ -15014,9 +15015,36 @@ window.closeAddMenu = function() {
     backdrop.classList.remove('open');
     document.body.style.overflow = '';
   }
+
+  // Map e.key → the data-key values shown in the popup
+  function resolveKeys(e) {
+    const mod = e.metaKey || e.ctrlKey;
+    const k = e.key;
+    if (mod && (k === 'k' || k === 'K')) return [cmd, 'K'];
+    if (mod && (k === 's' || k === 'S')) return [cmd, 'S'];
+    if (mod) return null; // modifier combos not in the list
+    const map = { '1':'1','2':'2','3':'3','/':'/',
+      'n':'N','N':'N','s':'S','S':'S','k':'K','K':'K',
+      'm':'M','M':'M','a':'A','A':'A','Escape':'Esc' };
+    return map[k] ? [map[k]] : null;
+  }
+
+  // Capture phase — intercept all keys while cheatsheet is open
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && backdrop.classList.contains('open')) closeCheatsheet();
-  });
+    if (!backdrop.classList.contains('open')) return;
+    e.stopPropagation(); // prevent global shortcuts from firing
+    if (e.key === 'Escape') { closeCheatsheet(); return; }
+    const targets = resolveKeys(e);
+    if (!targets) return;
+    pop.querySelectorAll('.cs-key').forEach(el => {
+      if (targets.includes(el.dataset.key)) el.classList.add('cs-key-pressed');
+    });
+  }, true);
+
+  document.addEventListener('keyup', e => {
+    if (!backdrop.classList.contains('open')) return;
+    pop.querySelectorAll('.cs-key.cs-key-pressed').forEach(el => el.classList.remove('cs-key-pressed'));
+  }, true);
 })();
 
 </script>
