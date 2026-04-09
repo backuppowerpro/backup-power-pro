@@ -2519,7 +2519,7 @@ let proposalMap  = {};   // contact_id → latest proposal
 // Anything that touches a contact (save, new, proposal create/edit) updates this.
 // ── STREET VIEW AVATARS ────────────────────────────────────
 const _SV_KEY = 'AIzaSyB0xWm71ZDzS7ei5-vFx15rNP_lR1ZKbJs';
-const _AVATAR_COLORS = ['#0b1f3b','#1d4ed8','#0891b2','#059669','#7c3aed','#db2777','#b45309','#0f766e'];
+const _AVATAR_COLORS = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#0f766e','#ea580c','#2563eb','#16a34a','#9333ea'];
 function _avatarColor(id) {
   let h = 0; const s = String(id||'');
   for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
@@ -3011,8 +3011,7 @@ function renderContacts() {
           ${esc(stageDef.nextAction)}
         </div>
         <div class="urgent-card-btns" onclick="event.stopPropagation()">
-          <button class="urgent-act-btn urgent-act-primary" onclick="openUrgModal('${c.id}')">Draft &amp; Send Text</button>
-          <button class="urgent-act-btn urgent-act-secondary" onclick="openPanel('${c.id}')">Open Contact</button>
+          <button class="urgent-act-btn urgent-act-primary" onclick="openUrgModal('${c.id}')">Text →</button>
         </div>
       </div>`;
     }).join('');
@@ -14612,70 +14611,53 @@ window.closeAddMenu = function() {
     if (!c) return;
     _urgContactId = contactId;
 
-    var overlay = document.getElementById('urg-modal-overlay');
-    var titleEl = document.getElementById('urg-modal-title');
-    var subEl   = document.getElementById('urg-modal-sub');
-    var genEl   = document.getElementById('urg-generating');
-    var readyEl = document.getElementById('urg-draft-ready');
-    var textEl  = document.getElementById('urg-draft-text');
-    var sendBtn = document.getElementById('urg-send-btn');
-
-    var firstName = (c.name || '').split(' ')[0] || 'them';
+    var firstName = (c.name || '').split(' ')[0] || 'there';
     var stageDef  = PERMIT_STAGES.find(function(s) { return s.id === (c.stage || 1); }) || PERMIT_STAGES[0];
     var days      = _kanbanDaysSinceTouch(c);
 
-    if (titleEl) titleEl.textContent = 'Text ' + (c.name || 'Contact');
-    if (subEl)   subEl.textContent   = stageDef.label + ' · ' + days + 'd quiet · ' + (c.phone || '');
-    if (genEl)   genEl.style.display = '';
-    if (readyEl) readyEl.style.display = 'none';
-    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Send Text'; }
-    if (textEl)  textEl.value = '';
+    // Open the messages thread immediately so Key has full context
+    openMessagesPanel(contactId);
 
-    if (overlay) { overlay.classList.add('open'); lockBody(); }
+    // Generate draft in the background, then inject into compose box
+    var draft = days > 7
+      ? 'Hey ' + firstName + ', just wanted to check back in. Still interested in getting the generator connected?'
+      : 'Hey ' + firstName + ', wanted to follow up — any questions I can answer?';
 
-    // Generate message via Sparky AI taskmaster
+    // Try AI draft; fall back silently to default above
     try {
-      var payload = {
-        mode: 'draft_followup',
-        contact: {
-          id: c.id,
-          name: c.name || 'New Lead',
-          stage: c.stage || 1,
-          stageLabel: stageDef.label,
-          phone: c.phone,
-          daysSinceTouch: days,
-          notes: (c.install_notes || c.notes || '').slice(0, 300),
-        }
-      };
       var resp = await fetch(SUPABASE_URL + '/functions/v1/ai-taskmaster', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          mode: 'draft_followup',
+          contact: {
+            id: c.id, name: c.name || 'New Lead', stage: c.stage || 1,
+            stageLabel: stageDef.label, phone: c.phone,
+            daysSinceTouch: days, notes: (c.install_notes || c.notes || '').slice(0, 300),
+          }
+        })
       });
       var data = await resp.json();
-      var draft = (data && !data.fallback && data.answer) ? data.answer.trim() : null;
-
-      if (!draft) {
-        // Fallback: stage-based default
-        draft = days > 7
-          ? 'Hey ' + firstName + ', just wanted to check back in. Still interested in getting the generator connected?'
-          : 'Hey ' + firstName + ', wanted to follow up — any questions I can answer?';
+      if (data && !data.fallback && data.answer) {
+        draft = data.answer.trim()
+          .replace(/ — /g, ', ').replace(/— /g, ', ').replace(/ —/g, ',').replace(/—/g, ', ').replace(/  +/g, ' ').trim();
       }
+    } catch (e) { /* use fallback draft */ }
 
-      // Strip em-dashes from AI output
-      draft = draft.replace(/ — /g, ', ').replace(/— /g, ', ').replace(/ —/g, ',').replace(/—/g, ', ').replace(/  +/g, ' ').trim();
-
-      if (textEl)  { textEl.value = draft; }
-      if (genEl)   genEl.style.display  = 'none';
-      if (readyEl) readyEl.style.display = '';
-      if (sendBtn) { sendBtn.disabled = false; }
-    } catch (err) {
-      // Show editable blank box on failure
-      if (genEl)   genEl.style.display  = 'none';
-      if (readyEl) readyEl.style.display = '';
-      if (textEl)  textEl.placeholder = 'Draft your message here…';
-      if (sendBtn) { sendBtn.disabled = false; }
-    }
+    // Inject draft into compose box — retry a few times since panel opens async
+    var attempts = 0;
+    var inject = setInterval(function() {
+      var compose = document.getElementById('msg-compose');
+      if (compose && compose.offsetParent !== null) {
+        compose.value = draft;
+        compose.dispatchEvent(new Event('input')); // trigger auto-resize
+        compose.focus();
+        compose.setSelectionRange(draft.length, draft.length);
+        clearInterval(inject);
+      } else if (++attempts > 20) {
+        clearInterval(inject); // give up after 2s
+      }
+    }, 100);
   };
 
   window.closeUrgModal = function() {
