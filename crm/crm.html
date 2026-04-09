@@ -8631,7 +8631,7 @@ async function sendMessage() {
 
   sendingMsg = true;
   const sendBtn = document.getElementById('msg-send-btn');
-  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '…'; }
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'; }
   composeEl.value = '';
   composeEl.style.height = '';
   const cc = document.getElementById('msg-char-count');
@@ -8700,7 +8700,7 @@ async function sendMessage() {
   }
 
   sendingMsg = false;
-  if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send'; }
+  if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'; }
 }
 
 // ── POLL FOR NEW INBOUND MESSAGES ─────────────────────────
@@ -9286,13 +9286,18 @@ async function _qaStatusSave(contactId) {
 
 // ── QUICK NOTE ────────────────────────────────────────────
 function _qaRenderNote(c) {
+  const existing = (c.notes || '').trim();
+  const title = existing ? 'Edit note' : 'Add a note';
   return `
     <div class="qa-inline-head">
-      <div class="qa-inline-title">Add a note</div>
+      <div class="qa-inline-title">${title}</div>
       <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
     </div>
     <div class="qa-row">
-      <textarea id="qa-note-text" placeholder="Quick note — saved to the contact's notes field…" style="min-height:80px"></textarea>
+      <textarea id="qa-note-text" placeholder="Notes about this lead…"
+        style="min-height:120px;width:100%;padding:10px 12px;border:none;border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;line-height:1.5;resize:vertical;box-sizing:border-box;box-shadow:var(--shadow-neu-inset-sm);outline:none"
+        onfocus="this.style.boxShadow='var(--shadow-neu-inset-sm),0 0 0 2px rgba(255,186,0,.3)'"
+        onblur="this.style.boxShadow='var(--shadow-neu-inset-sm)'">${esc(existing)}</textarea>
     </div>
     <div class="qa-footer">
       <button class="qa-btn-secondary" onclick="qaClose()">Cancel</button>
@@ -9306,16 +9311,13 @@ async function _qaNoteSave(contactId) {
   if (!c) { qaClose(); return; }
   const ta = document.getElementById('qa-note-text');
   const txt = (ta && ta.value || '').trim();
-  if (!txt) { qaClose(); return; }
-  const stamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const prefixed = `[${stamp}] ${txt}`;
-  const combined = c.notes ? (prefixed + '\n' + c.notes) : prefixed;
-  const { error } = await db.from('contacts').update({ notes: combined }).eq('id', contactId);
+  // Save as-is (full replace — user saw and edited the existing note)
+  const { error } = await db.from('contacts').update({ notes: txt || null }).eq('id', contactId);
   if (error) { showToast('Failed to save note', 'error'); return; }
-  c.notes = combined;
+  c.notes = txt || null;
   // Sync the panel textarea if open
   const notesEl = document.getElementById('panel-notes');
-  if (notesEl && currentPanelContactId === contactId) notesEl.value = combined;
+  if (notesEl && currentPanelContactId === contactId) notesEl.value = txt;
   showToast('Note saved', 'success');
   touchContact(contactId);
   renderContacts();
