@@ -8932,7 +8932,6 @@ function _qaRenderQuote(c) {
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">Quick Quote</div>
-      <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
     </div>
     <div class="qa-row">
       <span class="qa-row-label">Amp type</span>
@@ -9113,7 +9112,6 @@ function _qaRenderSchedule(c) {
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">Schedule Install</div>
-      <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
     </div>
     <div class="qa-row">
       <span class="qa-row-label">Install date</span>
@@ -9175,7 +9173,6 @@ function _qaRenderMaterials(c) {
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">Materials</div>
-      <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
     </div>
     <div class="qa-row" style="flex-direction:column;align-items:flex-start;gap:6px">
       <span class="qa-row-label">Ordered?</span>
@@ -9248,7 +9245,6 @@ function _qaRenderStatus(c) {
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">Change stage</div>
-      <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
     </div>
     <div class="qa-row">
       <span class="qa-row-label">Current stage</span>
@@ -9293,7 +9289,6 @@ function _qaRenderNote(c) {
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">${title}</div>
-      <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
     </div>
     <div class="qa-row">
       <textarea id="qa-note-text" placeholder="Notes about this lead…"
@@ -9378,7 +9373,6 @@ function _qaRenderTemplates(c) {
   return `
     <div class="qa-inline-head">
       <div class="qa-inline-title">Templates</div>
-      <button class="qa-inline-close" onclick="qaClose()" title="Close">&times;</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px">${rows}</div>
   `;
