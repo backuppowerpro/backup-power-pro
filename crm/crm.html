@@ -413,7 +413,7 @@ td.actions{white-space:nowrap}
 /* ── WEEKLY CALENDAR ──────────────────────────────── */
 .cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-3);flex-wrap:wrap}
 .week-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;text-align:center;letter-spacing:-.005em}
-.cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;min-height:220px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;min-height:220px}
 .cal-day{background:var(--bg);border-radius:var(--r-md);border:none;min-height:120px;display:flex;flex-direction:column;overflow:hidden;transition:box-shadow var(--t-fast);box-shadow:var(--shadow-neu-sm)}
 .cal-day:hover{box-shadow:var(--shadow-neu)}
 .cal-day.today{box-shadow:var(--shadow-neu-sm),0 0 0 2px rgba(255,186,0,.5)}
@@ -551,7 +551,7 @@ html.dark .approval-notif-amount{color:var(--gold)}
 .pay-history-item{background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
 
 @media(max-width:700px){
-  .cal-grid{grid-template-columns:repeat(5,1fr);gap:4px}
+  .cal-grid{grid-template-columns:repeat(7,1fr);gap:4px}
   .cal-day{min-height:160px}
   .cal-event{font-size:10px;padding:2px 5px}
   .cal-day-head{padding:5px 6px 3px}
@@ -1100,11 +1100,22 @@ html.dark .kanban-card-call:hover{background:var(--gold);box-shadow:var(--shadow
 .stage-cell{display:flex;align-items:center;gap:6px}
 @media (pointer:coarse){
   /* Touch target fixes — WCAG 44×44px minimum */
-  .kanban-card-call{opacity:.65;width:36px;height:36px}
+  .kanban-card-call{opacity:.65;width:44px;height:44px}
   .kanban-card:hover .kanban-card-call,.kanban-card .kanban-card-call{opacity:.65}
   .fld-btn{width:44px;height:44px}
   .nav-icon-btn{padding:13px}
   .search-add{min-height:44px}
+  /* Close buttons on panels and modals */
+  .panel-close,.modal-close{width:44px!important;height:44px!important}
+  .urg-modal-close,.cs-close,.tm-panel-close{min-width:44px!important;min-height:44px!important}
+  /* Quick-action toolbar chips */
+  .qa-btn,.qr-chip{min-height:44px!important}
+  /* Filter chips */
+  .call-filter-chip{min-height:44px}
+  /* Finance + Messages sub-tab buttons */
+  #fintab-btn-proposals,#fintab-btn-invoices,#msgtab-btn-inbox,#msgtab-btn-calls{min-height:44px}
+  /* Sparky suggest button */
+  .ai-suggest-btn{width:44px!important;height:44px!important}
   /* Message thread icon buttons — override 32px inline styles */
   #msg-send-btn{width:44px!important;height:44px!important}
   #msg-call-btn{width:44px!important;height:44px!important}
@@ -1251,8 +1262,9 @@ html.dark .panel-advance-btn:hover{color:var(--gold)}
 /* ── Inbox header pill buttons ───────────────────────── */
 .inbox-hdr-actions{display:flex;gap:6px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;justify-content:flex-end}
 .inbox-hdr-actions::-webkit-scrollbar{display:none}
-.inbox-hdr-pill{display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;white-space:nowrap;flex-shrink:0}
-.inbox-hdr-pill:hover{background:var(--bg);border-color:var(--text3)}
+.inbox-hdr-pill{display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:none;box-shadow:var(--shadow-neu-sm);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:box-shadow .15s,color .15s;white-space:nowrap;flex-shrink:0}
+.inbox-hdr-pill:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
+html.dark .inbox-hdr-pill:hover{color:var(--gold)}
 
 /* ── Inline briefing inside Sparky panel — hides when typing ── */
 .tm-brief-inline{border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px;max-height:800px;overflow:hidden;transition:opacity .22s ease,max-height .32s ease,padding-bottom .32s ease,margin-bottom .32s ease}
@@ -1763,16 +1775,17 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <h3>Sparky</h3>
       <p><span class="tm-dot"></span>Your CRM colleague &middot; live</p>
     </div>
-    <button id="sk-review-btn" onclick="skShowReviewQueue()" title="Pending Sparky actions" style="display:none;position:relative;background:var(--bg);border:1px solid var(--border);color:var(--text3);font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer;flex-shrink:0;align-items:center;gap:4px;transition:all .15s" onmouseover="this.style.borderColor='var(--navy)';this.style.color='var(--navy)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'"><span id="sk-queue-badge" style="background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;margin-right:4px"></span>Actions</button>
+    <button id="sk-review-btn" onclick="skShowReviewQueue()" title="Pending Sparky actions" style="display:none;position:relative;background:var(--bg);box-shadow:var(--shadow-neu-sm);border:none;color:var(--text3);font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer;flex-shrink:0;align-items:center;gap:4px;transition:all .15s" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text3)'"><span id="sk-queue-badge" style="background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;margin-right:4px"></span>Actions</button>
     <button class="tm-panel-close" onclick="tmClosePanel()" aria-label="Close" title="Close">&times;</button>
   </div>
   <div class="tm-panel-body" id="tm-panel-body"></div>
   <div class="tm-panel-foot">
-    <textarea class="tm-compose" id="tm-compose" rows="2" placeholder="Ask Sparky about leads, permits, or anything..." onkeydown="tmComposeKey(event)" oninput="tmAutosize(this)" maxlength="1000"></textarea>
+    <textarea class="tm-compose" id="tm-compose" rows="2" placeholder="Ask Sparky about leads, permits, or anything..." onkeydown="tmComposeKey(event)" oninput="tmAutosize(this);document.getElementById('tm-char-count').textContent=this.value.length>900?this.value.length+'/1000':''" maxlength="1000"></textarea>
     <button class="tm-send" id="tm-send" onclick="tmSubmitCompose()" title="Send">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
   </div>
+  <div id="tm-char-count" style="text-align:right;padding:2px 14px 6px;font-size:10px;color:var(--red);font-family:'Outfit',sans-serif;font-weight:700;min-height:16px"></div>
 </aside>
 
 <!-- ── TAB BAR ───────────────────────────────────────────── -->
@@ -1988,9 +2001,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <main class="main" style="max-width:960px">
 
     <div class="cal-nav" style="margin-top:var(--sp-lg)">
-      <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(-1)">←</button>
-      <span class="week-label" id="week-label" onclick="navigateWeek(0)" style="cursor:pointer"></span>
-      <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(1)">→</button>
+      <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(-1)" title="Previous week">←</button>
+      <span class="week-label" id="week-label"></span>
+      <button class="btn btn-outline" style="padding:8px 14px;font-size:12px;font-weight:700" onclick="navigateWeek(0)" title="Jump to current week">Today</button>
+      <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(1)" title="Next week">→</button>
     </div>
 
     <!-- Week stats bar -->
@@ -2801,6 +2815,9 @@ function toggleDarkMode() {
   const isDark = document.documentElement.classList.contains('dark');
   localStorage.setItem('crm_dark', isDark ? '1' : '0');
   updateDarkToggleIcon();
+  // Re-sync sub-tab active indicators so they use gold in dark, navy in light
+  if (typeof _syncFinSubTabDark === 'function') _syncFinSubTabDark();
+  if (typeof _syncCallSubTabDark === 'function') _syncCallSubTabDark();
   showToast(isDark ? 'Dark mode on' : 'Light mode on', 'success');
 }
 
@@ -5672,16 +5689,22 @@ function calDayUp() {
 }
 
 function renderCalendar() {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const _td = new Date(); const todayStr = `${_td.getFullYear()}-${String(_td.getMonth()+1).padStart(2,'0')}-${String(_td.getDate()).padStart(2,'0')}`;
 
-  // Week label
+  // Week label — show date range e.g. "Apr 7 – 13" or "Apr 28 – May 4"
   const ws = new Date(weekStart);
-  const we = new Date(ws); we.setDate(we.getDate() + 4);
-  document.getElementById('week-label').textContent = ws.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const we = new Date(ws); we.setDate(we.getDate() + 6);
+  const sameMonth = ws.getMonth() === we.getMonth();
+  const startLabel = ws.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endLabel = sameMonth
+    ? we.getDate()
+    : we.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const yearSuffix = ws.getFullYear() !== new Date().getFullYear() ? ` ${ws.getFullYear()}` : '';
+  document.getElementById('week-label').textContent = `${startLabel} – ${endLabel}${yearSuffix}`;
 
   let html = '';
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 7; i++) {
     const day = new Date(ws);
     day.setDate(day.getDate() + i);
     const dateStr = day.toISOString().split('T')[0];
@@ -5727,7 +5750,7 @@ function renderCalendar() {
   const statsEl = document.getElementById('cal-week-stats');
   if (statsEl) {
     const weekDates = [];
-    for (let i = 0; i < 5; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates.push(d.toISOString().split('T')[0]); }
+    for (let i = 0; i < 7; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates.push(d.toISOString().split('T')[0]); }
     const weekJobs = allJobs.filter(j => weekDates.includes(j.date) && j.status !== 'Archived');
     const totalJobs = weekJobs.length;
     const doneJobs  = weekJobs.filter(j => (j.status||'').toLowerCase() === 'complete' || (j.status||'').toLowerCase() === 'completed').length;
@@ -5775,7 +5798,7 @@ function renderCalendar() {
   const listEl = document.getElementById('cal-job-list');
   if (listEl) {
     const weekDates2 = [];
-    for (let i = 0; i < 5; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates2.push(d.toISOString().split('T')[0]); }
+    for (let i = 0; i < 7; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates2.push(d.toISOString().split('T')[0]); }
     const weekJobs2 = allJobs
       .filter(j => weekDates2.includes(j.date) && j.status !== 'Archived')
       .sort((a, b) => (a.date + (a.time||'99:99')).localeCompare(b.date + (b.time||'99:99')));
@@ -8070,7 +8093,7 @@ async function loadInbox() {
       preview = `<span style="color:var(--red);font-weight:700">Missed call</span>`;
     } else if (m.status === 'call') {
       const callIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:2px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
-      preview = callIcon + (m.body || 'Call').replace(/📞\s*/,'');
+      preview = callIcon + esc((m.body || 'Call').replace(/📞\s*/,''));
     } else {
       preview = (m.direction === 'outbound' ? 'You: ' : '') + esc(m.body || '').slice(0, 80);
     }
@@ -11672,22 +11695,22 @@ setTimeout(() => {
 
   /* Mark ordered/received pill buttons */
   .pm-pill-row{display:flex;gap:6px;margin-top:6px}
-  .pm-pill{flex:1;padding:9px 8px;border:1.5px solid var(--border);background:var(--card);color:var(--text2);border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:11.5px;cursor:pointer;transition:all .15s;text-align:center}
-  .pm-pill:hover{border-color:var(--navy);color:var(--navy);transform:translateY(-1px)}
-  .pm-pill.on{background:var(--green);border-color:var(--green);color:#fff}
-  .pm-pill.on:hover{background:#047857;color:#fff;border-color:#047857}
-  html.dark .pm-pill{background:#1e1b17;border-color:#3d3830}
-  html.dark .pm-pill:hover{border-color:var(--gold);color:var(--gold)}
-  html.dark .pm-pill.on{background:var(--green);border-color:var(--green);color:#fff}
+  .pm-pill{flex:1;padding:9px 8px;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);color:var(--text2);border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:11.5px;cursor:pointer;transition:box-shadow .15s,color .15s,background .15s;text-align:center}
+  .pm-pill:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
+  .pm-pill.on{background:var(--green);box-shadow:none;color:#fff}
+  .pm-pill.on:hover{background:#047857;color:#fff}
+  html.dark .pm-pill{background:var(--bg)}
+  html.dark .pm-pill:hover{color:var(--gold)}
+  html.dark .pm-pill.on{background:var(--green);color:#fff}
   /* Amp selector: visual segmented control so 30A|50A read as one choice, not two separate pills next to the Ordered? status. */
-  .pm-amp-group{display:inline-flex;border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden;background:var(--bg)}
+  .pm-amp-group{display:inline-flex;border:none;box-shadow:var(--shadow-neu-sm);border-radius:var(--r-sm);overflow:hidden;background:var(--bg)}
   .pm-amp-btn{padding:8px 14px;border:none;background:transparent;color:var(--text2);font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:background var(--t-fast),color var(--t-fast)}
-  .pm-amp-btn + .pm-amp-btn{border-left:1.5px solid var(--border)}
+  .pm-amp-btn + .pm-amp-btn{border-left:1px solid rgba(0,0,0,.07)}
   .pm-amp-btn:hover{background:var(--card);color:var(--navy)}
   .pm-amp-btn.on{background:var(--navy);color:#fff}
   .pm-amp-btn.on:hover{background:#132a4f}
-  html.dark .pm-amp-group{border-color:#3d3830;background:#1e1b17}
-  html.dark .pm-amp-btn + .pm-amp-btn{border-left-color:#3d3830}
+  html.dark .pm-amp-group{background:#1e1b17}
+  html.dark .pm-amp-btn + .pm-amp-btn{border-left-color:rgba(255,255,255,.06)}
   html.dark .pm-amp-btn{color:var(--text2)}
   html.dark .pm-amp-btn.on{background:var(--gold);color:var(--navy)}
   html.dark .pm-amp-btn.on:hover{background:#ffd166}
@@ -15765,9 +15788,9 @@ window.closeAddMenu = function() {
         const meta = [relDate(r.created_at), r.contact_status].filter(Boolean).join(' · ');
         const cid = String(r.contact_id).replace(/"/g, '');
         return `<div class="cs-result" onclick="closeCommSearch();openPanel('${cid}')">
-          <div class="cs-result-name">${_escHtml ? _escHtml(r.contact_name) : r.contact_name} ${dirLabel}${typeLabel}</div>
+          <div class="cs-result-name">${esc(r.contact_name || '')} ${dirLabel}${typeLabel}</div>
           <div class="cs-result-snippet">${highlightSnippet(r.snippet)}</div>
-          <div class="cs-result-meta">${meta}</div>
+          <div class="cs-result-meta">${esc(meta)}</div>
         </div>`;
       }).join('');
 
