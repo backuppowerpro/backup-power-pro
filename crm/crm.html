@@ -1339,9 +1339,9 @@ html.dark .sk-action-btn.confirm:hover{background:#ffd166}
 html.dark .sk-action-btn.cancel,html.dark .sk-action-btn.edit{border-color:#3d3830}
 
 /* ── Communications Search Panel ────────────────────────── */
-.cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:308;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:322;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .cs-overlay.open{opacity:1;pointer-events:auto}
-.cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--card);display:flex;flex-direction:column;box-shadow:14px 0 48px rgba(10,20,40,.22);transform:translateX(-100%);transition:transform .28s var(--ease);z-index:309;border-right:1px solid var(--border)}
+.cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--card);display:flex;flex-direction:column;box-shadow:14px 0 48px rgba(10,20,40,.22);transform:translateX(-100%);transition:transform .28s var(--ease);z-index:323;border-right:1px solid var(--border)}
 html.dark .cs-panel{box-shadow:14px 0 48px rgba(0,0,0,.55);border-right-color:#3d3830}
 .cs-panel.open{transform:translateX(0)}
 .cs-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -1670,7 +1670,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <div class="cs-overlay" id="cs-overlay" onclick="closeCommSearch()"></div>
 <div class="cs-panel" id="cs-panel" role="dialog" aria-label="Search communications" aria-hidden="true">
   <div class="cs-head">
-    <input class="cs-input" id="cs-input" type="text" placeholder="Search texts, notes… (e.g. cord length, 30 amp)" autocomplete="off" oninput="debounceCommSearch(this.value)" onkeydown="if(event.key==='Escape')closeCommSearch()">
+    <input class="cs-input" id="cs-input" type="text" placeholder="Search texts, notes… (e.g. cord length, 30 amp)" autocomplete="off" oninput="debounceCommSearch(this.value)">
     <button class="cs-close" onclick="closeCommSearch()" title="Close">×</button>
   </div>
   <div class="cs-body" id="cs-body">
@@ -1872,8 +1872,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           </div>
         </div>
         <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
-        <div id="msg-search-hint" style="display:none;position:absolute;left:50px;right:0;top:calc(100% + 2px);z-index:20">
-          <button onclick="_triggerMsgSearch()" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 12px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;box-shadow:var(--shadow-sm);white-space:nowrap;transition:background .12s">
+        <div id="msg-search-hint" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:20">
+          <button onclick="_triggerMsgSearch()" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 12px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;box-shadow:var(--shadow-sm);max-width:100%;transition:background .12s">
             🔍 Search in messages →
           </button>
         </div>
@@ -3090,6 +3090,7 @@ function openContactModal(id) {
   clearAddressField();
   document.getElementById('c-id').value = '';
   ['c-fname','c-lname','c-phone','c-email','c-address'].forEach(x => document.getElementById(x).value = '');
+  lockBody();
   document.getElementById('contact-overlay').classList.add('open');
   setTimeout(() => document.getElementById('c-fname').focus(), 60);
 }
@@ -9804,7 +9805,7 @@ setTimeout(() => {
       const sp = document.getElementById('side-panel-overlay');
       if (sp && sp.classList.contains('open')) { closePanel(); return; }
       const openModal = document.querySelector('.modal-overlay.open');
-      if (openModal) { openModal.classList.remove('open'); return; }
+      if (openModal) { closeModal(openModal.id); return; }
     }
     // 1, 2, 3 -> tabs
     if (e.key === '1') { switchTab('leads'); return; }
@@ -13639,11 +13640,11 @@ setTimeout(() => {
   // And keep the pulse fresh on a slow timer (matches the briefing cadence)
   setInterval(function() { try { refreshLauncherAlert(); } catch(e) {} }, 90000);
 
-  // Close the panel with Escape
+  // Close the panel with Escape — stopPropagation so global handler doesn't also fire
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       var p = document.getElementById('tm-panel');
-      if (p && p.classList.contains('open')) window.tmClosePanel();
+      if (p && p.classList.contains('open')) { e.stopPropagation(); window.tmClosePanel(); }
     }
   });
 })();
