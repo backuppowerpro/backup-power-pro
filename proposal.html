@@ -1074,7 +1074,7 @@ function renderPricing() {
         'Step-by-step walkthrough before we leave'
       ]
     );
-    if (longRun) rows += priceRowIncluded('Extended Wire Run', `${(P.run_ft || 5) - 5} extra feet of wire — distance already included in your quote`, null, null);
+    if (longRun) rows += priceRowIncluded('Extended Wire Run', `${P.run_ft || 5}ft of wire run — distance already included in your quote`, null, null);
     rows += priceRow(
       'Permit & County Inspection',
       null,
