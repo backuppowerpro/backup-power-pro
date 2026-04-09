@@ -2433,13 +2433,15 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           <div class="qa-inline-inner" id="qa-inline-inner"></div>
         </div>
         <div class="msg-compose-foot" style="padding:8px 12px;display:flex;gap:8px;align-items:flex-end">
-          <button class="ai-suggest-btn" id="ai-suggest-btn" onclick="aiSuggestReply()" title="Suggest a reply">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
-          </button>
-          <label title="Send photo" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;cursor:pointer;color:var(--text3);opacity:.7;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">
-            <input type="file" accept="image/*,video/*" style="display:none" onchange="msgSendPhoto(this)">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          </label>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+            <button class="ai-suggest-btn" id="ai-suggest-btn" onclick="aiSuggestReply()" title="Suggest a reply">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
+            </button>
+            <label title="Send photo" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;cursor:pointer;color:var(--text3);opacity:.7;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">
+              <input type="file" accept="image/*,video/*" style="display:none" onchange="msgSendPhoto(this)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </label>
+          </div>
           <div style="flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:22px;padding:8px 8px 8px 14px;gap:6px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
             <textarea id="msg-compose" placeholder="Message…" style="flex:1;background:none;border:none;outline:none;resize:none;font-size:15px;min-height:22px;max-height:120px;line-height:1.5;padding:0;font-family:inherit;color:var(--text)" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px';(function(t){var n=t.value.length,el=document.getElementById('msg-char-count');if(!el)return;var segs=n<=160?1:Math.ceil(n/153);el.textContent=n>0?(n<=140?'':(n+'/'+segs+'×')):'';el.style.color=n>160?'var(--red)':n>140?'#f97316':'var(--text3)';el.style.display=n>0?'':'none'})(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
             <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0">
