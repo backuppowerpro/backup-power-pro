@@ -1879,16 +1879,13 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         </div>
       </div>
       <div class="view-toggle">
-        <button class="view-toggle-btn" id="view-list-btn" onclick="setLeadsView('list')" title="List view">
+        <button class="view-toggle-btn" id="view-list-btn" onclick="cycleListView()" title="List view — click again for urgent first">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          List
+          <span id="view-list-label">List</span>
         </button>
         <button class="view-toggle-btn active" id="view-pipe-btn" onclick="setLeadsView('pipeline')" title="Pipeline kanban">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
           Pipeline
-        </button>
-        <button class="view-toggle-btn" id="view-sort-urgent-btn" onclick="toggleUrgentSort()" title="Urgent contacts first">
-          🔥 Urgent
         </button>
       </div>
     </div>
@@ -9129,21 +9126,45 @@ function setLeadsView(v) {
     // 'list'
     if (tableEl) tableEl.style.display = '';
   }
-  // Urgent toggle: always visible; active state only meaningful in list view
-  const sortBtn = document.getElementById('view-sort-urgent-btn');
-  if (sortBtn) { sortBtn.style.display = ''; sortBtn.classList.toggle('active', v === 'list' && contactsSortUrgent); }
   // Stage filter chips: only useful in list view
   const stageWrap = document.querySelector('.pa-stage-wrap');
   if (stageWrap) stageWrap.style.display = v === 'list' ? '' : 'none';
+  _updateListBtnLabel();
+}
+
+function _updateListBtnLabel() {
+  const btn   = document.getElementById('view-list-btn');
+  const label = document.getElementById('view-list-label');
+  if (!btn || !label) return;
+  const isListActive = leadsView === 'list';
+  btn.classList.toggle('active', isListActive);
+  if (isListActive && contactsSortUrgent) {
+    label.textContent = '🔥 Urgent';
+  } else {
+    label.textContent = 'List';
+  }
+}
+
+function cycleListView() {
+  if (leadsView !== 'list') {
+    // Not on list — switch to list, normal sort
+    contactsSortUrgent = false;
+    setLeadsView('list');
+  } else if (!contactsSortUrgent) {
+    // On list normal — switch to urgent
+    contactsSortUrgent = true;
+    _updateListBtnLabel();
+    renderContacts();
+  } else {
+    // On urgent — back to normal list
+    contactsSortUrgent = false;
+    _updateListBtnLabel();
+    renderContacts();
+  }
 }
 
 function toggleUrgentSort() {
-  // Switch to list view if not already there, then toggle urgent sort
-  if (leadsView !== 'list') setLeadsView('list');
-  contactsSortUrgent = !contactsSortUrgent;
-  const btn = document.getElementById('view-sort-urgent-btn');
-  if (btn) btn.classList.toggle('active', contactsSortUrgent);
-  renderContacts();
+  cycleListView();
 }
 
 // KANBAN_COLS is derived from PERMIT_STAGES — single source of truth.
