@@ -12637,6 +12637,19 @@ setTimeout(() => {
   var TM_REMIND_KEY = 'bpp_briefing_remind_until';
   var TM_DAY_MS = 86400000;
   var MAX_BRIEF_ITEMS_PER_SECTION = 5;
+  var TM_INACTIVITY_MS = 90 * 60 * 1000; // 90 minutes
+
+  // ── INACTIVITY CLEAR ─────────────────────────────────────
+  var _sparkyLastActivity = 0;
+  setInterval(function() {
+    if (!_sparkyLastActivity) return;
+    if (Date.now() - _sparkyLastActivity < TM_INACTIVITY_MS) return;
+    // Stale — clear chat history and panel body
+    try { localStorage.removeItem(TM_CHAT_KEY); } catch(e) {}
+    var body = document.getElementById('tm-panel-body');
+    if (body) body.innerHTML = '';
+    _sparkyLastActivity = 0;
+  }, 5 * 60 * 1000); // check every 5 minutes
 
   // ── UTILITIES ────────────────────────────────────────────
   function _todayKey() {
@@ -13524,6 +13537,7 @@ setTimeout(() => {
   }
 
   window.tmOpenPanel = function(opts) {
+    _sparkyLastActivity = Date.now();
     var p = document.getElementById('tm-panel');
     var o = document.getElementById('tm-panel-overlay');
     if (!p || !o) return;
@@ -13618,6 +13632,7 @@ setTimeout(() => {
     if (!ta) return;
     var q = (ta.value || '').trim();
     if (!q) return;
+    _sparkyLastActivity = Date.now();
     ta.value = '';
     window.tmAutosize(ta);
     _askTaskmaster(q);
