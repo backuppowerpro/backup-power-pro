@@ -19,16 +19,16 @@
   --green:#10b981; --green2:#059669; --red:#dc2626; --blue:#3b82f6; --purple:#8b5cf6;
   --gray:#6b7280;
   /* ── Neumorphic surface system (light) ───────────────────
-     bg = #e0e5ec  →  dark shadow #bec4ca  light shadow #ffffff
+     bg = #f0f4f8  →  dark shadow #d1d8e2  light shadow #ffffff
      Card bg must match --bg exactly for the illusion to work. */
-  --bg:#e0e5ec; --card:#e0e5ec;
-  --neu-dark:#bec4ca; --neu-light:#ffffff;
-  --neu-d:20px; --neu-blur:40px;   /* raised card */
-  --neu-d-sm:6px; --neu-blur-sm:14px; /* buttons, chips */
+  --bg:#f0f4f8; --card:#f0f4f8;
+  --neu-dark:#d1d8e2; --neu-light:rgba(255,255,255,0.55);
+  --neu-d:16px; --neu-blur:32px;   /* raised card — softer, less bleed */
+  --neu-d-sm:4px; --neu-blur-sm:8px; /* buttons, chips — tight, won't reach neighbors */
   --shadow-neu: var(--neu-d) var(--neu-d) var(--neu-blur) var(--neu-dark), calc(var(--neu-d) * -1) calc(var(--neu-d) * -1) var(--neu-blur) var(--neu-light);
   --shadow-neu-sm: var(--neu-d-sm) var(--neu-d-sm) var(--neu-blur-sm) var(--neu-dark), calc(var(--neu-d-sm) * -1) calc(var(--neu-d-sm) * -1) var(--neu-blur-sm) var(--neu-light);
-  --shadow-neu-inset: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
-  --shadow-neu-inset-sm: inset 3px 3px 6px var(--neu-dark), inset -3px -3px 6px var(--neu-light);
+  --shadow-neu-inset: inset 3px 3px 7px var(--neu-dark), inset -3px -3px 7px var(--neu-light);
+  --shadow-neu-inset-sm: inset 2px 2px 5px var(--neu-dark), inset -2px -2px 5px var(--neu-light);
   /* Legacy shadow vars — kept for modals/overlays that intentionally float above surface */
   --shadow-sm:var(--shadow-neu-sm);
   --shadow-md:var(--shadow-neu);
@@ -728,7 +728,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stage-wrap.scrolled-left{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 32px),transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 32px),transparent 100%)}
 .pa-stage-wrap.scrolled-end{-webkit-mask-image:none;mask-image:none}
 .pa-stage-wrap.scrolled-left.scrolled-end{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black 100%)}
-.pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:4px 36px 6px 4px;scroll-behavior:smooth}
+.pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:10px 36px 10px 10px;scroll-behavior:smooth}
 .pa-stage-list::-webkit-scrollbar{display:none}
 .pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--bg);border-radius:var(--r-pill);border:none;cursor:pointer;transition:box-shadow var(--t-fast),background var(--t-fast);white-space:nowrap;box-shadow:var(--shadow-neu-sm)}
 .pa-stage-chip:hover{box-shadow:var(--shadow-neu)}
@@ -754,8 +754,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .trend-delta.flat{color:var(--text3)}
 
 /* ── SMS MESSAGES ──────────────────────────────────────── */
-.msg-thread-head{padding:14px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--card)}
-html.dark .msg-thread-head{border-bottom-color:#3d3830}
+.msg-thread-head{padding:14px 20px 12px;border-bottom:none;box-shadow:0 4px 12px rgba(10,20,40,.06);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg)}
+html.dark .msg-thread-head{box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .msg-thread-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:var(--text);flex:1;letter-spacing:-.01em}
 .msg-thread-phone{display:inline-flex;align-items:center;gap:5px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--blue);text-decoration:none;font-weight:700;padding:5px 10px;border-radius:var(--r-pill);background:#eff6ff;transition:background var(--t-fast),transform var(--t-fast);font-variant-numeric:tabular-nums;letter-spacing:-.005em}
 .msg-thread-phone::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--blue);opacity:.6}
@@ -896,11 +896,11 @@ html.dark .inbox-item.unread{border-left-color:var(--gold)}
 @keyframes tabFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── CALL LOG ─────────────────────────────────────────── */
-.call-filter-chip{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--r-pill);border:1.5px solid var(--border);background:var(--bg);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
-.call-filter-chip:hover{border-color:var(--navy);color:var(--navy)}
-.call-filter-chip.active{background:var(--navy);border-color:var(--navy);color:#fff}
-html.dark .call-filter-chip.active{background:var(--gold);border-color:var(--gold);color:#1e1b17}
-html.dark .call-filter-chip:hover{border-color:var(--gold);color:var(--gold)}
+.call-filter-chip{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--r-pill);border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:box-shadow var(--t-fast),color var(--t-fast);white-space:nowrap}
+.call-filter-chip:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
+.call-filter-chip.active{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
+html.dark .call-filter-chip.active{background:var(--gold);color:#1a2035}
+html.dark .call-filter-chip:hover{color:var(--gold)}
 .call-row{background:var(--bg);border-radius:var(--r-md);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none}
 .call-row:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu)}
 html.dark .call-row:hover{box-shadow:var(--shadow-neu)}
@@ -992,12 +992,11 @@ html.dark .status-dot.s-lost{color:#94a3b8}
 html.dark .inv-stat.outstanding .inv-stat-value{color:#f87171}
 html.dark .inv-stat.paid .inv-stat-value{color:#4ade80}
 .inv-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.inv-filter-pill{padding:6px 14px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;border-radius:var(--r-pill);cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s;display:inline-flex;align-items:center;gap:6px}
-.inv-filter-pill:hover{color:var(--navy);border-color:var(--navy)}
-html.dark .inv-filter-pill{background:var(--bg);border-color:rgba(255,255,255,.08)}
-html.dark .inv-filter-pill:hover{color:var(--gold);border-color:var(--gold)}
-.inv-filter-pill.active{background:var(--navy);border-color:var(--navy);color:#fff}
-html.dark .inv-filter-pill.active{background:var(--gold);border-color:var(--gold);color:#1e1b17}
+.inv-filter-pill{padding:6px 14px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;border-radius:var(--r-pill);cursor:pointer;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast);display:inline-flex;align-items:center;gap:6px}
+.inv-filter-pill:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
+html.dark .inv-filter-pill:hover{color:var(--gold)}
+.inv-filter-pill.active{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
+html.dark .inv-filter-pill.active{background:var(--gold);color:#1a2035}
 .inv-filter-pill .pill-cnt{font-weight:800;opacity:.7}
 .inv-filter-pill.active .pill-cnt{opacity:.85}
 .inv-list{display:flex;flex-direction:column;gap:8px}
@@ -2335,10 +2334,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           </div>
           <a id="msg-thread-phone" class="msg-thread-phone" href="#" onclick="threadCallContact();return false" style="font-size:11px;padding:2px 7px;margin-top:1px;display:inline-flex"></a>
         </div>
-        <button id="msg-call-btn" onclick="threadCallContact()" style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s" title="Call">
+        <button id="msg-call-btn" onclick="threadCallContact()" style="width:34px;height:34px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Call" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         </button>
-        <button onclick="threadToggleSearch()" id="msg-search-btn" style="width:32px;height:32px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s,border-color .15s" title="Search messages">
+        <button onclick="threadToggleSearch()" id="msg-search-btn" style="width:34px;height:34px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Search messages" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
       </div>
@@ -2356,7 +2355,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
       <!-- SMS opt-out warning — shown if contact texted STOP -->
       <div id="msg-optout-banner" style="display:none;background:rgba(220,38,38,.08);border-top:1px solid rgba(220,38,38,.2);padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);flex-shrink:0;text-align:center"></div>
-      <div style="flex-shrink:0;background:var(--card);border-top:1px solid var(--border)">
+      <div style="flex-shrink:0;background:var(--bg);box-shadow:0 -4px 12px rgba(10,20,40,.05)">
         <!-- Quick actions toolbar — expandable inline panels for in-chat actions -->
         <div class="qa-bar" id="qa-bar">
           <button class="qa-btn" data-qa="quote" onclick="qaToggle('quote')" title="Build a quick quote and send the proposal link">
