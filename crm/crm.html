@@ -726,6 +726,21 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stat:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu)}
 .pa-stat-num{font-family:'Outfit',sans-serif;font-size:28px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .pa-stat-label{font-size:11px;color:var(--text3);margin-top:6px;font-family:'Outfit',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+/* ── STATS TICKER ──────────────────────────────────────── */
+.stats-ticker{overflow:hidden;margin-bottom:8px;position:relative;height:26px;display:flex;align-items:center}
+.stats-ticker::before,.stats-ticker::after{content:'';position:absolute;top:0;bottom:0;width:40px;z-index:2;pointer-events:none}
+.stats-ticker::before{left:0;background:linear-gradient(to right,var(--bg),transparent)}
+.stats-ticker::after{right:0;background:linear-gradient(to left,var(--bg),transparent)}
+.stats-ticker-track{display:flex;align-items:center;animation:tickerScroll 32s linear infinite;width:max-content;will-change:transform}
+.stats-ticker:hover .stats-ticker-track{animation-play-state:paused}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:5px;padding:0 8px;white-space:nowrap}
+.ticker-label{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3)}
+.ticker-val{font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.ticker-val.is-green{color:var(--green)}
+.ticker-val.is-gold{color:var(--gold)}
+.ticker-val.is-blue{color:var(--blue)}
+.ticker-sep{width:1px;height:14px;background:var(--border);flex-shrink:0;margin:0 6px;opacity:.6}
 .pa-stage-wrap{position:relative;margin-bottom:14px;-webkit-mask-image:linear-gradient(to right,black 0%,black calc(100% - 32px),transparent 100%);mask-image:linear-gradient(to right,black 0%,black calc(100% - 32px),transparent 100%)}
 .pa-stage-wrap.scrolled-left{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 32px),transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 32px),transparent 100%)}
 .pa-stage-wrap.scrolled-end{-webkit-mask-image:none;mask-image:none}
@@ -1905,6 +1920,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <span id="leads-count" style="display:none"></span>
 
   <div id="contacts-view">
+    <div id="stats-ticker" class="stats-ticker" style="display:none"><div class="stats-ticker-track"></div></div>
     <div class="toolbar">
       <div class="search-wrap">
         <div class="search-add-wrap">
@@ -1949,7 +1965,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       </div>
     </div>
     <!-- Single, unified stage filter — drives BOTH list and kanban -->
-    <div id="permit-analytics" style="margin-top:10px"></div>
+    <div id="permit-analytics" style="margin-top:6px"></div>
     <div id="contacts-table"></div>
     <div id="kanban-board" style="display:none"></div>
     <div id="permits-board" style="display:none"></div>
@@ -6441,19 +6457,49 @@ function loadPermitAnalytics() {
       ${valHtml}
     </div>`;
   }).join('');
-  // Pipeline summary line
+  // Ticker stats
   const totalPipeline = Object.values(_chipValMap).reduce((a,b)=>a+b,0);
   const activeLeads   = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) < 9).length;
-  const pipelineBar = totalPipeline > 0
-    ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 6px;font-family:'Outfit',sans-serif">
-        <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${activeLeads} active lead${activeLeads===1?'':'s'}</span>
-        <span style="font-size:13px;font-weight:800;color:var(--green);letter-spacing:-.01em;font-variant-numeric:tabular-nums">💰 ${_fmtChipVal(totalPipeline)}</span>
-      </div>`
-    : '';
+  const bookedCount   = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) === 4).length;
+  const newCount      = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) === 1).length;
+  const quotedCount   = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) === 3).length;
+  const quotedVal     = _chipValMap[3] || 0;
+  const bookedVal     = _chipValMap[4] || 0;
+  const installedCount = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) === 9).length;
+  const allProposals  = Object.values(proposalMap).flat().filter(p => p.status !== 'Cancelled' && p.total);
+  const avgDeal       = allProposals.length ? Math.round(allProposals.reduce((s,p)=>s+Number(p.total),0)/allProposals.length) : 0;
+
+  const _t = (label, val, cls='') =>
+    `<div class="ticker-item"><span class="ticker-label">${label}</span><span class="ticker-val${cls?' is-'+cls:''}">${val}</span></div>`;
+  const _sep = `<div class="ticker-sep"></div>`;
+
+  const tickerItems = [
+    _t('Active', activeLeads, 'blue'),
+    _sep,
+    _t('Pipeline', _fmtChipVal(totalPipeline), 'green'),
+    _sep,
+    _t('New Leads', newCount),
+    _sep,
+    _t('Quoted', `${quotedCount}${quotedVal?' · '+_fmtChipVal(quotedVal):''}`),
+    _sep,
+    _t('Booked', `${bookedCount}${bookedVal?' · '+_fmtChipVal(bookedVal):''}`, 'green'),
+    _sep,
+    ...(avgDeal > 0 ? [_t('Avg Deal', _fmtChipVal(avgDeal), 'gold'), _sep] : []),
+    ...(installedCount > 0 ? [_t('Installed', installedCount), _sep] : []),
+  ].join('');
+
+  const tickerEl = document.getElementById('stats-ticker');
+  if (tickerEl) {
+    const track = tickerEl.querySelector('.stats-ticker-track');
+    if (track) {
+      // Duplicate for seamless loop
+      track.innerHTML = tickerItems + tickerItems;
+    }
+    tickerEl.style.display = leadsView === 'list' ? 'flex' : 'none';
+  }
 
   el.innerHTML = `
     <div class="pa-stage-wrap" ${leadsView !== 'list' ? 'style="display:none"' : ''}>
-      ${pipelineBar}
       <div class="pa-stage-list">
         ${filterChips}
       </div>
