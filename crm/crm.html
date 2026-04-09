@@ -3234,13 +3234,44 @@ function addFromSearch() {
   }
 }
 
-function openContactModal(id) {
+function openContactModal(id, prefill) {
   clearAddressField();
-  document.getElementById('c-id').value = '';
+  document.getElementById('c-id').value = id || '';
   ['c-fname','c-lname','c-phone','c-email','c-address'].forEach(x => document.getElementById(x).value = '');
+
+  // Prefill from search text if provided
+  if (!id && prefill && prefill.text) {
+    const t = prefill.text.trim();
+    const digits = t.replace(/\D/g, '');
+    const streetWords = /\b(st|ave|blvd|rd|dr|ln|way|ct|pl|hwy|pike|cir|loop|trail)\b/i;
+    const looksLikePhone   = digits.length >= 7 && digits.length <= 11 && /^[\d\s\-().+]+$/.test(t);
+    const looksLikeAddress = /^\d+\s/.test(t) || streetWords.test(t);
+
+    if (looksLikePhone) {
+      document.getElementById('c-phone').value = t;
+      setTimeout(() => document.getElementById('c-fname').focus(), 60);
+    } else if (looksLikeAddress) {
+      document.getElementById('c-address').value = t;
+      setTimeout(() => document.getElementById('c-fname').focus(), 60);
+    } else {
+      // Treat as name — split on first space
+      const parts = t.split(/\s+/);
+      document.getElementById('c-fname').value = parts[0] || '';
+      document.getElementById('c-lname').value = parts.slice(1).join(' ') || '';
+      const focusField = parts.length > 1 ? 'c-phone' : 'c-lname';
+      setTimeout(() => document.getElementById(focusField).focus(), 60);
+    }
+  } else {
+    setTimeout(() => document.getElementById('c-fname').focus(), 60);
+  }
+
   lockBody();
   document.getElementById('contact-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('c-fname').focus(), 60);
+  // Clear search so list isn't filtered when modal closes
+  if (!id && prefill && prefill.text) {
+    const s = document.getElementById('search');
+    if (s) { s.value = ''; renderContacts(); }
+  }
 }
 
 let saving = false;
@@ -14999,6 +15030,14 @@ setTimeout(() => {
 // ══════════════════════════════════════════════════════════
 window.toggleAddMenu = function(ev) {
   if (ev) ev.stopPropagation();
+
+  // If search box has text, skip the menu and go straight to new lead with prefill
+  const searchVal = (document.getElementById('search')?.value || '').trim();
+  if (searchVal) {
+    openContactModal(null, { text: searchVal });
+    return;
+  }
+
   const menu = document.getElementById('search-add-menu');
   const btn = document.getElementById('search-add-btn');
   if (!menu || !btn) return;
