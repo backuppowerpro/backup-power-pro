@@ -1993,7 +1993,13 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(1)">→</button>
     </div>
 
+    <!-- Week stats bar -->
+    <div id="cal-week-stats" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"></div>
+
     <div class="cal-grid" id="cal-grid"></div>
+
+    <!-- Chronological job list for this week -->
+    <div id="cal-job-list" style="margin-top:20px"></div>
 
   </main>
 </div><!-- /tab-calendar -->
@@ -3851,7 +3857,21 @@ function renderInvoiceBuilderDrill() {
 
     const total = invoiceLineItems.reduce((s, li) => s + (li.amount || 0), 0);
 
+    const _mainB = invoiceLineItems[0];
+    const _cur30B = _mainB && _mainB.name.includes('30A');
+    const _cur50B = _mainB && _mainB.name.includes('50A');
+    const _hasPOMB = invoiceLineItems.some(li => li.name.toLowerCase().includes('peace of mind') || li.name.toLowerCase().includes('protection'));
+    const _qpBtnB = (lbl, active, fn) => `<button onclick="${fn}" style="padding:6px 14px;border-radius:var(--r-pill);border:2px solid ${active?'var(--navy)':'var(--border)'};background:${active?'var(--navy)':'var(--bg)'};color:${active?'#fff':'var(--text2)'};font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap">${lbl}</button>`;
     el.innerHTML = `
+      <div style="margin-bottom:12px;padding:10px 0 8px;border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px">Quick Edit</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${_qpBtnB('30A', _cur30B, "_setAmpType('30A')")}
+          ${_qpBtnB('50A', _cur50B, "_setAmpType('50A')")}
+          <div style="width:1px;background:var(--border);margin:0 2px;align-self:stretch"></div>
+          ${_qpBtnB((_hasPOMB?'✓ ':'+ ')+'Protection Pkg', _hasPOMB, '_togglePOM()')}
+        </div>
+      </div>
       <div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Line Items</div>
         <div id="inv-builder-items">${itemsHtml}</div>
@@ -3967,8 +3987,25 @@ async function renderPaymentDrill() {
     ? '<div id="inv-signed-warn" style="background:#fef9c3;border:1px solid #fde047;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;font-size:12px;color:#854d0e;line-height:1.45"><strong style="display:block;margin-bottom:2px">⚠️ Signed proposal</strong>Editing line items will void the client\'s signature — they\'ll need to re-sign the proposal.</div>'
     : '';
 
+  // ── Quick-picks: amp type + add-ons ──────────────────────
+  const mainItem = invoiceLineItems[0];
+  const cur30 = mainItem && mainItem.name.includes('30A');
+  const cur50 = mainItem && mainItem.name.includes('50A');
+  const hasPOMLine = invoiceLineItems.some(li => li.name.toLowerCase().includes('peace of mind') || li.name.toLowerCase().includes('protection'));
+  const qpBtn = (label, active, onclick) =>
+    `<button onclick="${onclick}" style="padding:6px 14px;border-radius:var(--r-pill);border:2px solid ${active?'var(--navy)':'var(--border)'};background:${active?'var(--navy)':'var(--bg)'};color:${active?'#fff':'var(--text2)'};font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap">${label}</button>`;
+  const quickPicks = '<div style="padding:10px 12px 8px;border-bottom:1px solid var(--border)">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px">Quick Edit</div>'
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+    + qpBtn('30A', cur30, "_setAmpType('30A')")
+    + qpBtn('50A', cur50, "_setAmpType('50A')")
+    + '<div style="width:1px;background:var(--border);margin:0 2px;align-self:stretch"></div>'
+    + qpBtn((hasPOMLine ? '✓ ' : '+ ') + 'Protection Pkg', hasPOMLine, '_togglePOM()')
+    + '</div></div>';
+
   el.innerHTML = signedWarn
     + '<div class="pay-summary" style="padding:0;overflow:hidden">'
+    + quickPicks
     + '<div style="padding:10px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between"><span>Line Items</span><span style="font-weight:400;font-size:10px;color:var(--text3)">tap to edit</span></div>'
     + lineItemsHtml
     + '<div class="pay-total" id="pay-total-display" style="padding:12px">$' + totalAmount.toLocaleString() + '</div>'
@@ -4083,6 +4120,28 @@ function addInvoiceLine() {
 function removeInvoiceLine(idx) {
   invoiceLineItems.splice(idx, 1);
   if (currentDrillLevel === 'payment') renderPaymentDrill(); else renderProposalDrill();
+}
+
+function _setAmpType(amp) {
+  if (!invoiceLineItems.length) return;
+  invoiceLineItems[0].name = invoiceLineItems[0].name
+    .replace(/\b(30A|50A)\b/, amp)
+    .replace(/Generator Inlet Installation$/, 'Generator Inlet Installation (' + amp + ')');
+  if (!invoiceLineItems[0].name.includes(amp)) invoiceLineItems[0].name += ' (' + amp + ')';
+  if (currentDrillLevel === 'invoice-builder') renderInvoiceBuilderDrill(); else renderPaymentDrill();
+}
+
+function _togglePOM() {
+  const idx = invoiceLineItems.findIndex(li => li.name.toLowerCase().includes('peace of mind') || li.name.toLowerCase().includes('protection'));
+  if (idx >= 0) {
+    invoiceLineItems.splice(idx, 1);
+  } else {
+    const contactId = currentPanelContactId;
+    const p = proposalMap[contactId]?.[currentProposalIdx];
+    const pomPrice = (p && p.pom_price) ? Number(p.pom_price) : 447;
+    invoiceLineItems.push({ name: 'Peace of Mind Protection Package', amount: pomPrice });
+  }
+  if (currentDrillLevel === 'invoice-builder') renderInvoiceBuilderDrill(); else renderPaymentDrill();
 }
 
 
@@ -5627,6 +5686,73 @@ function renderCalendar() {
     </div>`;
   }
   document.getElementById('cal-grid').innerHTML = html;
+
+  // ── Week stats bar ───────────────────────────────────────
+  const statsEl = document.getElementById('cal-week-stats');
+  if (statsEl) {
+    const weekDates = [];
+    for (let i = 0; i < 5; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates.push(d.toISOString().split('T')[0]); }
+    const weekJobs = allJobs.filter(j => weekDates.includes(j.date) && j.status !== 'Archived');
+    const totalJobs = weekJobs.length;
+    const doneJobs  = weekJobs.filter(j => (j.status||'').toLowerCase() === 'complete' || (j.status||'').toLowerCase() === 'completed').length;
+    const pendJobs  = weekJobs.filter(j => (j.status||'').toLowerCase() === 'scheduled').length;
+    // Estimate revenue: completed jobs linked to contacts → find their proposals
+    let estRev = 0;
+    weekJobs.filter(j => (j.status||'').toLowerCase() === 'complete' || (j.status||'').toLowerCase() === 'completed').forEach(j => {
+      if (j.contact_id) {
+        const props = (proposalMap[j.contact_id] || []).filter(p => p.status !== 'Cancelled' && p.total);
+        if (props.length) estRev += Number(props[0].total) || 0;
+      }
+    });
+    const stat = (icon, val, label, color) =>
+      `<div style="flex:1;min-width:100px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <div style="font-size:20px">${icon}</div>
+        <div><div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:${color}">${val}</div><div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${label}</div></div>
+      </div>`;
+    statsEl.innerHTML =
+      stat('📅', totalJobs, 'This Week', 'var(--text)') +
+      stat('✅', doneJobs, 'Complete', 'var(--green)') +
+      stat('🕐', pendJobs, 'Scheduled', 'var(--navy)') +
+      (estRev > 0 ? stat('💰', '$' + estRev.toLocaleString(), 'Revenue', '#059669') : '');
+  }
+
+  // ── Chronological job list ───────────────────────────────
+  const listEl = document.getElementById('cal-job-list');
+  if (listEl) {
+    const weekDates2 = [];
+    for (let i = 0; i < 5; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates2.push(d.toISOString().split('T')[0]); }
+    const weekJobs2 = allJobs
+      .filter(j => weekDates2.includes(j.date) && j.status !== 'Archived')
+      .sort((a, b) => (a.date + (a.time||'99:99')).localeCompare(b.date + (b.time||'99:99')));
+    if (!weekJobs2.length) {
+      listEl.innerHTML = '';
+    } else {
+      const _td2 = new Date(); const todayStr2 = `${_td2.getFullYear()}-${String(_td2.getMonth()+1).padStart(2,'0')}-${String(_td2.getDate()).padStart(2,'0')}`;
+      const rows = weekJobs2.map(j => {
+        const st = (j.status || 'Scheduled').toLowerCase();
+        const isDone = st === 'complete' || st === 'completed';
+        const isCan  = st === 'cancelled' || st === 'canceled';
+        const badgeBg    = isDone ? 'rgba(16,185,129,.15)' : isCan ? 'rgba(220,38,38,.1)' : 'rgba(59,130,246,.12)';
+        const badgeColor = isDone ? 'var(--green)' : isCan ? 'var(--red)' : 'var(--blue)';
+        const badgeLabel = isDone ? 'Done' : isCan ? 'Cancelled' : 'Scheduled';
+        const label = j.contact_name || j.title || 'Event';
+        const timeStr = j.time ? fmt12(j.time) : '';
+        const dayLabel = j.date === todayStr2 ? 'Today' : new Date(j.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+        const contact = j.contact_id ? allContacts.find(c => c.id === j.contact_id) : null;
+        const addr = contact ? (contact.address || '') : '';
+        const avatarBg = typeof _avatarColor === 'function' ? _avatarColor(label) : 'var(--navy)';
+        return `<div onclick="${j.contact_id ? `openPanel('${j.contact_id}')` : `openJobModal('${j.id}',null)`}" style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);cursor:pointer;transition:box-shadow .15s;margin-bottom:8px" onmouseover="this.style.boxShadow='var(--shadow-neu)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)'">
+          <div style="width:40px;height:40px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:#fff;flex-shrink:0">${esc(label.charAt(0).toUpperCase())}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(label)}</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:1px">${dayLabel}${timeStr ? ' · ' + timeStr : ''}${addr ? ' · ' + esc(addr) : ''}</div>
+          </div>
+          <span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 9px;border-radius:var(--r-pill);background:${badgeBg};color:${badgeColor}">${badgeLabel}</span>
+        </div>`;
+      }).join('');
+      listEl.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">This Week</div>${rows}`;
+    }
+  }
 }
 
 function onJobContactChange() {
