@@ -2318,6 +2318,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       </div><!-- end drill-contact-scroll -->
       <div class="panel-foot" style="flex-shrink:0">
         <button class="btn btn-danger btn-sm" style="flex:1" onclick="panelNameArchive()">Archive</button>
+        <button class="btn btn-sm" id="panel-lost-btn" style="flex:1;background:var(--bg);color:var(--text2);box-shadow:var(--shadow-neu-sm)" onclick="panelMarkLost()">Lost</button>
         <button class="btn btn-primary" id="panel-save-btn" style="display:none;background:var(--navy);color:#fff" onclick="panelSave()">Save Changes</button>
       </div>
     </div>
@@ -2877,12 +2878,32 @@ function _showContactsSkeleton() {
   wrap.innerHTML = `<div class="table-wrap" style="background:var(--bg)"><div style="padding:8px 0">${rows}</div></div>`;
 }
 
+// Auto-move stage-1 leads inactive for 30+ days to Lost (runs silently on load)
+async function _autoMarkStaleLost(contacts) {
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const stale = contacts.filter(c => {
+    if (c.status === 'Archived' || c.status === 'Lost') return false;
+    if ((c.stage || 1) !== 1) return false; // Only move stage-1 (new leads) automatically
+    const lastActivity = new Date(c.updated_at || c.created_at).getTime();
+    return lastActivity < thirtyDaysAgo;
+  });
+  if (!stale.length) return;
+  const ids = stale.map(c => c.id);
+  const { error } = await db.from('contacts').update({ status: 'Lost' }).in('id', ids);
+  if (!error) {
+    stale.forEach(c => { const found = allContacts.find(x => x.id === c.id); if (found) found.status = 'Lost'; });
+    showToast(`${stale.length} stale lead${stale.length > 1 ? 's' : ''} moved to Lost`, 'warning');
+  }
+}
+
 async function loadContacts() {
   _showContactsSkeleton();
   const { data, error } = await db.from('contacts').select('*').order('created_at', { ascending: false });
   if (error) { showToast('Failed to load leads', 'error'); return; }
   allContacts = data || [];
   buildDuplicateMap();
+  // Auto-move stage-1 leads with no activity in 30+ days to Lost
+  _autoMarkStaleLost(allContacts);
   renderContacts();
   loadPermitAnalytics();
   loadTrendAnalytics();
@@ -2912,8 +2933,10 @@ function renderContacts() {
 
   let list = allContacts.filter(c => {
     const isArchived = c.status === 'Archived';
+    const isLost = c.status === 'Lost';
     if (stageFilter === 'archived') return isArchived;
-    if (isArchived) return false;
+    if (stageFilter === 'lost') return isLost;
+    if (isArchived || isLost) return false;
     if (stageFilter !== 'all') {
       const pf = PIPELINE_FILTERS.find(f => f.id === stageFilter);
       if (pf && !pf.stages.includes(c.stage || 1)) return false;
@@ -3320,8 +3343,11 @@ function openPanel(id) {
   currentMsgContactId = id;
   allMessages = [];
   resetDrill();
-  // Reset archive state
+  // Reset archive + lost state
   resetNameArchive();
+  _lostPending = false; clearTimeout(_lostTimer);
+  const _lostBtn = document.getElementById('panel-lost-btn');
+  if (_lostBtn) { _lostBtn.textContent = c.status === 'Lost' ? 'Restore' : 'Lost'; _lostBtn.style.color = c.status === 'Lost' ? 'var(--green)' : ''; }
 
   // Fill fields
   document.getElementById('panel-id').value          = c.id;
@@ -4594,6 +4620,35 @@ function panelNameArchive() {
     db.from('contacts').update({ status: newStatus }).eq('id', id).then(({ error }) => {
       if (error) { showToast('Failed', 'error'); return; }
       showToast(newStatus === 'Archived' ? 'Lead archived' : 'Lead restored', 'success');
+      closePanel();
+      loadContacts();
+    });
+  }
+}
+
+let _lostPending = false;
+let _lostTimer = null;
+function panelMarkLost() {
+  const c = allContacts.find(x => x.id === document.getElementById('panel-id').value);
+  if (!c) return;
+  const isLost = c.status === 'Lost';
+  const btn = document.getElementById('panel-lost-btn');
+
+  if (!_lostPending) {
+    _lostPending = true;
+    if (btn) { btn.textContent = isLost ? 'Tap again to restore' : 'Tap again to confirm'; btn.style.color = 'var(--gold)'; }
+    _lostTimer = setTimeout(() => {
+      _lostPending = false;
+      if (btn) { btn.textContent = 'Lost'; btn.style.color = ''; }
+    }, 3000);
+  } else {
+    clearTimeout(_lostTimer);
+    _lostPending = false;
+    const id = document.getElementById('panel-id').value;
+    const newStatus = isLost ? null : 'Lost';
+    db.from('contacts').update({ status: newStatus }).eq('id', id).then(({ error }) => {
+      if (error) { showToast('Failed', 'error'); return; }
+      showToast(newStatus === 'Lost' ? 'Marked as lost' : 'Lead restored', newStatus === 'Lost' ? 'warning' : 'success');
       closePanel();
       loadContacts();
     });
@@ -6322,6 +6377,7 @@ const PIPELINE_FILTERS = [
   { id:'permit_paid',      label:'Permit Paid',      stages:[6],                 color:'#f97316'      },
   { id:'ready_to_install', label:'Ready to Install', stages:[7,8],               color:'#14b8a6'      },
   { id:'completed',        label:'Completed',        stages:[9],                 color:'#059669'      },
+  { id:'lost',             label:'Lost / No Sale',   stages:[],                  color:'#94a3b8'      },
 ];
 
 function _renderPipelineHeader() {
@@ -6440,10 +6496,11 @@ function loadPermitAnalytics() {
   const el = document.getElementById('permit-analytics');
   if (!el) return;
   const total     = allContacts.length;
-  const active    = allContacts.filter(c => c.status !== 'Archived').length;
+  const active    = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost').length;
   const completed = allContacts.filter(c => (c.stage || 1) === 9).length;
+  const lostCount = allContacts.filter(c => c.status === 'Lost').length;
   const stageCounts = {};
-  allContacts.filter(c => c.status !== 'Archived').forEach(c => {
+  allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost').forEach(c => {
     const s = c.stage || 1;
     stageCounts[s] = (stageCounts[s] || 0) + 1;
   });
@@ -6453,7 +6510,7 @@ function loadPermitAnalytics() {
   const inactiveAll = isDark ? 'var(--gold)' : 'var(--navy)';
   // Build a proposal value map for pipeline chip totals
   const _chipValMap = {};
-  allContacts.filter(c => c.status !== 'Archived').forEach(c => {
+  allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost').forEach(c => {
     const s = c.stage || 1;
     const p = (proposalMap[c.id] || []).find(x => x.status !== 'Cancelled');
     if (p && p.total) _chipValMap[s] = (_chipValMap[s] || 0) + Number(p.total);
@@ -6463,7 +6520,9 @@ function loadPermitAnalytics() {
   const filterChips = PIPELINE_FILTERS.map(f => {
     const count = f.id === 'all'
       ? active
-      : allContacts.filter(c => c.status !== 'Archived' && f.stages.includes(c.stage || 1)).length;
+      : f.id === 'lost'
+        ? lostCount
+        : allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost' && f.stages.includes(c.stage || 1)).length;
     const isActive = stageFilter === f.id;
     // Pipeline $ value for this filter
     const chipVal = f.id === 'all'
@@ -6479,13 +6538,13 @@ function loadPermitAnalytics() {
   }).join('');
   // Ticker stats
   const totalPipeline = Object.values(_chipValMap).reduce((a,b)=>a+b,0);
-  const activeLeads   = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) < 9).length;
-  const bookedCount   = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) === 4).length;
-  const newCount      = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) === 1).length;
-  const quotedCount   = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) === 3).length;
+  const activeLeads   = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost' && (c.stage||1) < 9).length;
+  const bookedCount   = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost' && (c.stage||1) === 4).length;
+  const newCount      = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost' && (c.stage||1) === 1).length;
+  const quotedCount   = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost' && (c.stage||1) === 3).length;
   const quotedVal     = _chipValMap[3] || 0;
   const bookedVal     = _chipValMap[4] || 0;
-  const installedCount = allContacts.filter(c => c.status !== 'Archived' && (c.stage||1) === 9).length;
+  const installedCount = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost' && (c.stage||1) === 9).length;
   const allProposals  = Object.values(proposalMap).flat().filter(p => p.status !== 'Cancelled' && p.total);
   const avgDeal       = allProposals.length ? Math.round(allProposals.reduce((s,p)=>s+Number(p.total),0)/allProposals.length) : 0;
 
@@ -9440,8 +9499,8 @@ function renderKanban() {
 
   const term = (document.getElementById('search')?.value || '').toLowerCase();
   // Respect the global stage filter — same chip row drives both views.
-  let active = allContacts.filter(c => c.status !== 'Archived');
-  if (stageFilter !== 'all' && stageFilter !== 'archived') {
+  let active = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost');
+  if (stageFilter !== 'all' && stageFilter !== 'archived' && stageFilter !== 'lost') {
     const pf = PIPELINE_FILTERS.find(f => f.id === stageFilter);
     if (pf) active = active.filter(c => pf.stages.includes(c.stage || 1));
   }
