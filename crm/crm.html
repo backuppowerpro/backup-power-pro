@@ -2937,7 +2937,9 @@ function renderContacts() {
     if (stageFilter === 'archived') return isArchived;
     if (stageFilter === 'lost') return isLost;
     if (isArchived || isLost) return false;
-    if (stageFilter !== 'all') {
+    if (stageFilter === 'all') {
+      if ((c.stage || 1) === 9) return false; // completed out of All
+    } else {
       const pf = PIPELINE_FILTERS.find(f => f.id === stageFilter);
       if (pf && !pf.stages.includes(c.stage || 1)) return false;
     }
@@ -6496,7 +6498,7 @@ function loadPermitAnalytics() {
   const el = document.getElementById('permit-analytics');
   if (!el) return;
   const total     = allContacts.length;
-  const active    = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost').length;
+  const active    = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost' && (c.stage||1) !== 9).length;
   const completed = allContacts.filter(c => (c.stage || 1) === 9).length;
   const lostCount = allContacts.filter(c => c.status === 'Lost').length;
   const stageCounts = {};
@@ -9499,7 +9501,7 @@ function renderKanban() {
 
   const term = (document.getElementById('search')?.value || '').toLowerCase();
   // Respect the global stage filter — same chip row drives both views.
-  let active = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost');
+  let active = allContacts.filter(c => c.status !== 'Archived' && c.status !== 'Lost' && (stageFilter === 'completed' || (c.stage||1) !== 9));
   if (stageFilter !== 'all' && stageFilter !== 'archived' && stageFilter !== 'lost') {
     const pf = PIPELINE_FILTERS.find(f => f.id === stageFilter);
     if (pf) active = active.filter(c => pf.stages.includes(c.stage || 1));
