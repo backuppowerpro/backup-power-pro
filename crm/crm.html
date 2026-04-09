@@ -2001,6 +2001,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     <!-- Chronological job list for this week -->
     <div id="cal-job-list" style="margin-top:20px"></div>
 
+    <!-- Weekly averages section -->
+    <div id="cal-averages" style="margin-top:28px"></div>
+
   </main>
 </div><!-- /tab-calendar -->
 
@@ -5774,6 +5777,112 @@ function renderCalendar() {
   }
 }
 
+// ── Weekly averages (async, loads once per session) ──────
+let _calAvgLoaded = false;
+async function loadCalendarAverages() {
+  const el = document.getElementById('cal-averages');
+  if (!el) return;
+
+  // Only show on calendar tab
+  if (document.getElementById('tab-calendar')?.style.display === 'none') return;
+
+  // Skeleton
+  el.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Weekly Averages</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${Array(4).fill(0).map(() => `<div style="flex:1;min-width:110px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:14px;height:64px;display:flex;align-items:center;gap:10px"><div class="skeleton" style="width:100%;height:20px;border-radius:var(--r-sm)"></div></div>`).join('')}
+    </div>`;
+
+  try {
+    // Fetch all payments and all completed jobs in parallel
+    const [{ data: payments }, { data: jobs }] = await Promise.all([
+      db.from('payments').select('amount,created_at').order('created_at', { ascending: true }),
+      db.from('jobs').select('date,status,contact_id').neq('status', 'Archived').neq('status', 'Cancelled')
+    ]);
+
+    const allPay  = payments || [];
+    const allJ    = jobs || [];
+
+    if (!allPay.length && !allJ.length) {
+      el.innerHTML = '';
+      return;
+    }
+
+    // Find the earliest anchor date (first payment or first job)
+    const firstPayDate = allPay.length ? new Date(allPay[0].created_at) : null;
+    const jobDates = allJ.filter(j => j.date).map(j => new Date(j.date + 'T12:00:00'));
+    const firstJobDate = jobDates.length ? new Date(Math.min(...jobDates)) : null;
+    const anchor = firstPayDate && firstJobDate
+      ? new Date(Math.min(firstPayDate, firstJobDate))
+      : (firstPayDate || firstJobDate || new Date());
+
+    // Weeks elapsed since anchor (min 1 to avoid div/0)
+    const now = new Date();
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weeksElapsed = Math.max(1, Math.round((now - anchor) / msPerWeek));
+
+    // Total revenue
+    const totalRevenue = allPay.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+    const avgWeeklyRevenue = totalRevenue / weeksElapsed;
+
+    // Completed jobs
+    const completedJobs = allJ.filter(j => (j.status||'').toLowerCase() === 'complete' || (j.status||'').toLowerCase() === 'completed');
+    const avgJobsPerWeek = completedJobs.length / weeksElapsed;
+
+    // Avg deal size from proposals
+    const allProps = Object.values(proposalMap).flat().filter(p => p.status !== 'Cancelled' && p.total);
+    const avgDeal = allProps.length ? allProps.reduce((s, p) => s + Number(p.total), 0) / allProps.length : 0;
+
+    // Best week revenue (bucket payments by ISO week)
+    const weekBuckets = {};
+    allPay.forEach(p => {
+      const d = new Date(p.created_at);
+      const wk = _isoWeekKey(d);
+      weekBuckets[wk] = (weekBuckets[wk] || 0) + (Number(p.amount) || 0);
+    });
+    const weekValues = Object.values(weekBuckets);
+    const bestWeek = weekValues.length ? Math.max(...weekValues) : 0;
+
+    // Compare this week vs average
+    const todayKey = _isoWeekKey(now);
+    const thisWeekActual = weekBuckets[todayKey] || 0;
+    const vsAvg = avgWeeklyRevenue > 0 ? Math.round(((thisWeekActual - avgWeeklyRevenue) / avgWeeklyRevenue) * 100) : null;
+    const vsLabel = vsAvg === null ? '' : vsAvg >= 0
+      ? `<span style="font-size:10px;color:var(--green);font-weight:700;margin-left:4px">▲ ${vsAvg}% vs avg</span>`
+      : `<span style="font-size:10px;color:var(--red);font-weight:700;margin-left:4px">▼ ${Math.abs(vsAvg)}% vs avg</span>`;
+
+    const fmt$ = n => n >= 1000 ? '$' + (n/1000).toFixed(1) + 'k' : '$' + Math.round(n).toLocaleString();
+
+    const avgStat = (icon, val, label, sub) =>
+      `<div style="flex:1;min-width:110px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:12px 14px">
+        <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${icon} ${label}</div>
+        <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:20px;color:var(--text);line-height:1">${val}</div>
+        ${sub ? `<div style="font-size:11px;color:var(--text3);margin-top:3px;display:flex;align-items:center">${sub}</div>` : ''}
+      </div>`;
+
+    el.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Weekly Averages <span style="font-weight:400;opacity:.6">· last ${weeksElapsed} weeks</span></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${avgStat('💰', fmt$(avgWeeklyRevenue), 'Avg Revenue', `vs this week ${vsLabel}`)}
+        ${avgStat('🔨', avgJobsPerWeek.toFixed(1), 'Avg Jobs', `${completedJobs.length} total completed`)}
+        ${avgStat('📋', avgDeal > 0 ? fmt$(avgDeal) : '—', 'Avg Deal', `${allProps.length} proposals`)}
+        ${avgStat('🏆', fmt$(bestWeek), 'Best Week', `of ${weekValues.length} active weeks`)}
+      </div>`;
+
+    _calAvgLoaded = true;
+  } catch(e) {
+    const el2 = document.getElementById('cal-averages');
+    if (el2) el2.innerHTML = '';
+  }
+}
+
+function _isoWeekKey(d) {
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  dt.setUTCDate(dt.getUTCDate() + 4 - (dt.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const wk = Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+  return `${dt.getUTCFullYear()}-W${String(wk).padStart(2,'0')}`;
+}
+
 function onJobContactChange() {
   const val = document.getElementById('j-contact').value;
   const jumpBtn = document.getElementById('j-contact-jump');
@@ -7371,7 +7480,7 @@ function switchTab(tab) {
     // Quietly update missed-calls badge in background
     if (!_callLogLoaded) loadCallLog().catch(() => {});
   }
-  if (tab === 'calendar') renderCalendar();
+  if (tab === 'calendar') { renderCalendar(); loadCalendarAverages(); }
   if (tab === 'invoices') { loadInvoicesTab(); setFinSubTab(_finSubTab); }
 }
 
