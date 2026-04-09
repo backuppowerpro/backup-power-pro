@@ -6414,6 +6414,28 @@ function _renderActionBar_unused() {
   </div>`;
 }
 
+// ── TICKER RAF ─────────────────────────────────────────────
+// Idempotent: call as often as you like — only one loop runs at a time.
+// Self-stops when ticker is hidden; restarts when shown again.
+let _tickerOffset = 0;
+function _startTickerRAF() {
+  if (window._tickerRAF) return; // already running
+  function _tickerStep() {
+    const el = document.getElementById('stats-ticker');
+    const track = el && el.querySelector('.stats-ticker-track');
+    if (!el || !track || el.style.display === 'none') {
+      window._tickerRAF = null;
+      return; // hidden — stop loop; _startTickerRAF() will restart it when shown
+    }
+    _tickerOffset += 0.4;
+    const half = track.scrollWidth / 2;
+    if (half > 0 && _tickerOffset >= half) _tickerOffset -= half;
+    track.style.transform = 'translateX(-' + _tickerOffset + 'px)';
+    window._tickerRAF = requestAnimationFrame(_tickerStep);
+  }
+  window._tickerRAF = requestAnimationFrame(_tickerStep);
+}
+
 function loadPermitAnalytics() {
   const el = document.getElementById('permit-analytics');
   if (!el) return;
@@ -6493,20 +6515,7 @@ function loadPermitAnalytics() {
       track.innerHTML = tickerItems + tickerItems + tickerItems + tickerItems;
     }
     tickerEl.style.display = leadsView === 'list' ? 'flex' : 'none';
-    // Cancel any previous RAF loop before starting a new one
-    if (window._tickerRAF) cancelAnimationFrame(window._tickerRAF);
-    if (leadsView === 'list' && track) {
-      let offset = 0;
-      const loopWidth = track.scrollWidth / 2; // half = 2 copies = seamless reset point
-      const speed = 0.4; // px per frame (~24px/s at 60fps)
-      function tickerStep() {
-        offset += speed;
-        if (offset >= loopWidth) offset -= loopWidth;
-        track.style.transform = 'translateX(-' + offset + 'px)';
-        window._tickerRAF = requestAnimationFrame(tickerStep);
-      }
-      window._tickerRAF = requestAnimationFrame(tickerStep);
-    }
+    if (leadsView === 'list') _startTickerRAF();
   }
 
   el.innerHTML = `
