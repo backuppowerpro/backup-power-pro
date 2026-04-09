@@ -733,7 +733,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stage-list::-webkit-scrollbar{display:none}
 .pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--bg);border-radius:var(--r-pill);border:none;cursor:pointer;transition:box-shadow var(--t-fast),background var(--t-fast);white-space:nowrap;box-shadow:var(--shadow-neu-sm)}
 .pa-stage-chip:hover{box-shadow:var(--shadow-neu)}
-.pa-stage-chip.active{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm)}
+.pa-stage-chip.active{background:var(--gold);box-shadow:none}
 .pa-stage-chip.active:hover{background:#e6a800}
 .pa-stage-chip.active .pa-stage-name{color:var(--navy);font-weight:700}
 .pa-stage-chip.active .pa-stage-count{color:rgba(11,31,59,.7)}
@@ -899,7 +899,7 @@ html.dark .inbox-item.unread{border-left-color:var(--gold)}
 /* ── CALL LOG ─────────────────────────────────────────── */
 .call-filter-chip{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--r-pill);border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:box-shadow var(--t-fast),color var(--t-fast);white-space:nowrap}
 .call-filter-chip:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
-.call-filter-chip.active{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
+.call-filter-chip.active{background:var(--gold);box-shadow:none;color:var(--navy)}
 html.dark .call-filter-chip.active{background:var(--gold);color:#1a2035}
 html.dark .call-filter-chip:hover{color:var(--gold)}
 .call-row{background:var(--bg);border-radius:var(--r-md);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none}
@@ -996,7 +996,7 @@ html.dark .inv-stat.paid .inv-stat-value{color:#4ade80}
 .inv-filter-pill{padding:6px 14px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;border-radius:var(--r-pill);cursor:pointer;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast);display:inline-flex;align-items:center;gap:6px}
 .inv-filter-pill:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
 html.dark .inv-filter-pill:hover{color:var(--gold)}
-.inv-filter-pill.active{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
+.inv-filter-pill.active{background:var(--gold);box-shadow:none;color:var(--navy)}
 html.dark .inv-filter-pill.active{background:var(--gold);color:#1a2035}
 .inv-filter-pill .pill-cnt{font-weight:800;opacity:.7}
 .inv-filter-pill.active .pill-cnt{opacity:.85}
@@ -1034,10 +1034,8 @@ html.dark .view-toggle-work.active{background:var(--gold);color:#1e1b17}
 html.dark .kanban-shell::after{background:linear-gradient(to right, rgba(30,27,23,0) 0%, rgba(30,27,23,.6) 50%, rgba(30,27,23,1) 100%)}
 .kanban-wrap{display:grid;grid-template-columns:repeat(9,minmax(232px,1fr));gap:12px;overflow-x:auto;padding:0 4px 6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .kanban-wrap > .kanban-col{scroll-snap-align:start}
-.kanban-wrap::-webkit-scrollbar{height:8px}
-.kanban-wrap::-webkit-scrollbar-track{background:transparent}
-.kanban-wrap::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px}
-.kanban-wrap::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+.kanban-wrap::-webkit-scrollbar{display:none}
+.kanban-wrap{scrollbar-width:none}
 @media(max-width:1400px){.kanban-wrap{grid-template-columns:repeat(9,260px)}}
 @media(max-width:900px){.kanban-shell{margin-left:0;margin-right:0}}
 .kanban-col{background:var(--bg);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-height:280px;border:none;box-shadow:var(--shadow-neu-sm);min-width:0}
@@ -1235,7 +1233,7 @@ html.dark .ctx-item.ctx-danger:hover{background:#3d1e1e}
 html.dark .ctx-sep{background:#3d3830}
 /* ── pipeline chip $ value ────────────────────────────── */
 .pa-stage-val{font-size:10px;font-weight:700;color:var(--green);margin-left:1px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.pa-stage-chip.active .pa-stage-val{color:rgba(255,255,255,.75)}
+.pa-stage-chip.active .pa-stage-val{color:rgba(11,31,59,.7)}
 
 /* ── Panel quick-advance button ─────────────────────── */
 .panel-advance-btn{width:100%;margin-bottom:14px;padding:8px 12px;background:var(--bg);border:none;border-radius:var(--r-sm);font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:box-shadow .15s,color .15s;font-family:'Outfit',sans-serif;box-shadow:var(--shadow-neu-sm)}
@@ -2201,6 +2199,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           </div>
           <ul id="j-contact-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1.5px solid var(--navy);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);z-index:999;list-style:none;max-height:200px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.12);margin:0;padding:0"></ul>
         </div>
+        <div id="j-materials-preview" style="display:none;margin-top:8px;background:var(--bg);border-radius:var(--r-sm);padding:8px 12px;box-shadow:var(--shadow-neu-inset-sm)"></div>
       </div>
       <div class="form-row" id="j-title-row" style="display:none">
         <input class="form-input" id="j-title" type="hidden">
@@ -5518,6 +5517,26 @@ function selectJobContact(contactId) {
   document.getElementById('j-contact-selected-name').textContent = c.name;
   jobContactHideResults();
   onJobContactChange();
+  // Show materials summary for this contact
+  const matEl = document.getElementById('j-materials-preview');
+  if (matEl && typeof _readPmField === 'function') {
+    const inlet = _readPmField(c, 'minlet');
+    const brand = _readPmField(c, 'mpb');
+    const model = _readPmField(c, 'mpm');
+    const intlk = _readPmField(c, 'mintlk');
+    if (inlet || brand || intlk) {
+      const chips = [
+        inlet && `<span style="background:var(--gold);color:var(--navy);font-weight:700;font-size:11px;padding:2px 8px;border-radius:var(--r-pill)">${esc(inlet)}</span>`,
+        brand && `<span style="font-size:12px;font-weight:600;color:var(--text)">${esc(brand)}${model ? ' ' + esc(model) : ''}</span>`,
+        intlk && `<span style="font-size:11px;color:var(--text2)">${esc(intlk)}</span>`,
+      ].filter(Boolean).join('<span style="color:var(--text3);margin:0 4px">·</span>');
+      matEl.innerHTML = `<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-family:'Outfit',sans-serif">${chips}</div>`;
+      matEl.style.display = 'block';
+    } else {
+      matEl.innerHTML = `<span style="font-size:12px;color:var(--text3);font-style:italic">No materials selected for this lead</span>`;
+      matEl.style.display = 'block';
+    }
+  }
 }
 
 function clearJobContact() {
@@ -5525,6 +5544,8 @@ function clearJobContact() {
   document.getElementById('j-contact-search').value = '';
   document.getElementById('j-contact-search-wrap').style.display = 'flex';
   document.getElementById('j-contact-selected').style.display = 'none';
+  const matEl = document.getElementById('j-materials-preview');
+  if (matEl) { matEl.style.display = 'none'; matEl.innerHTML = ''; }
   onJobContactChange();
   document.getElementById('j-contact-search').focus();
 }
@@ -5594,6 +5615,8 @@ function openJobModal(id, preDate) {
   document.getElementById('j-contact-search').value = '';
   document.getElementById('j-contact-search-wrap').style.display = 'flex';
   document.getElementById('j-contact-selected').style.display = 'none';
+  const _matPrev = document.getElementById('j-materials-preview');
+  if (_matPrev) { _matPrev.style.display = 'none'; _matPrev.innerHTML = ''; }
   jobContactHideResults();
 
   const titleEl = document.getElementById('job-modal-title');
@@ -5623,6 +5646,7 @@ function openJobModal(id, preDate) {
         document.getElementById('j-contact-selected').style.display = 'flex';
         document.getElementById('j-contact-selected-name').textContent = jc.name;
         jobContactHideResults();
+        selectJobContact(j.contact_id); // shows materials preview
       }
     }
     jobOriginal = {
@@ -9427,6 +9451,18 @@ function renderKanban() {
     };
     kanbanWrap.addEventListener('scroll', updateFade, { passive: true });
     requestAnimationFrame(updateFade);
+    // Click a column header to center that column in view
+    wrap.querySelectorAll('.kanban-col-head').forEach(head => {
+      head.style.cursor = 'default';
+      head.addEventListener('click', function(e) {
+        if (e.target.closest('.kanban-card')) return;
+        const col = head.closest('.kanban-col');
+        if (!col || !kanbanWrap) return;
+        const colCenter = col.offsetLeft + col.offsetWidth / 2;
+        const wrapCenter = kanbanWrap.offsetWidth / 2;
+        kanbanWrap.scrollTo({ left: colCenter - wrapCenter, behavior: 'smooth' });
+      });
+    });
   }
 }
 
