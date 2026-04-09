@@ -7845,10 +7845,12 @@ function threadClearSearch() {
 // ── CALL RECORDING PLAYBACK ───────────────────────────────
 let _callAudio = null;
 let _callAudioBar = null;
+let _callAudioRawUrl = null;  // tracks which recording is loaded
+let _callAudioBlobUrl = null; // blob URL to revoke on stop
 
-function playCallRecording(url) {
-  // If same URL is already playing, toggle pause/play
-  if (_callAudio && _callAudio.src === url) {
+function playCallRecording(rawUrl) {
+  // Toggle pause/play if same recording is already loaded
+  if (_callAudio && _callAudioRawUrl === rawUrl) {
     if (_callAudio.paused) {
       _callAudio.play().catch(() => {});
       _updateRecordingBar(false);
@@ -7858,40 +7860,60 @@ function playCallRecording(url) {
     }
     return;
   }
-  // Stop previous
-  if (_callAudio) { _callAudio.pause(); _callAudio = null; }
-  if (_callAudioBar) { _callAudioBar.remove(); _callAudioBar = null; }
+  // Stop any previous playback
+  _stopCallRecording();
+  _callAudioRawUrl = rawUrl;
 
-  _callAudio = new Audio(url);
+  // Extract SID and fetch through proxy with auth header.
+  // new Audio() can't send custom headers, so we fetch as blob first.
+  const sidMatch = rawUrl.match(/Recordings\/(RE[a-f0-9]+)(?:\.mp3)?/i);
+  if (!sidMatch) { showToast('Invalid recording URL', 'error'); return; }
+  const proxyUrl = 'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/get-recording?sid=' + sidMatch[1];
 
-  // Build persistent playback bar above msg-compose-foot
+  // Show loading state in playback bar immediately
   const bar = document.createElement('div');
   bar.id = 'recording-playback-bar';
   bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--navy);color:#fff;font-size:12px;font-weight:600;font-family:"Outfit",sans-serif;gap:10px;border-top:1px solid rgba(255,255,255,.1)';
   bar.innerHTML = `
     <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-    <span style="flex:1">Call Recording</span>
-    <span id="rec-bar-time" style="font-variant-numeric:tabular-nums;color:rgba(255,255,255,.65)">0:00</span>
-    <button id="rec-bar-toggle" onclick="playCallRecording('${url.replace(/'/g, "\\'")}')" style="background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">Pause</button>
+    <span style="flex:1">Loading recording…</span>
     <button onclick="_stopCallRecording()" style="background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.6);border-radius:6px;padding:4px 8px;font-size:14px;cursor:pointer;line-height:1">×</button>
   `;
   const compose = document.getElementById('msg-compose-foot');
   if (compose && compose.parentNode) compose.parentNode.insertBefore(bar, compose);
   _callAudioBar = bar;
 
-  // Update timer
-  _callAudio.addEventListener('timeupdate', () => {
-    const t = document.getElementById('rec-bar-time');
-    if (t) {
-      const s = Math.floor(_callAudio.currentTime);
-      t.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
-    }
-  });
-  _callAudio.addEventListener('ended', () => {
-    _stopCallRecording();
-  });
+  fetch(proxyUrl, { headers: { Authorization: 'Bearer ' + SEND_SMS_ANON_JWT } })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+    .then(blob => {
+      if (_callAudioRawUrl !== rawUrl) return; // user cancelled while loading
+      _callAudioBlobUrl = URL.createObjectURL(blob);
+      _callAudio = new Audio(_callAudioBlobUrl);
 
-  _callAudio.play().catch(() => showToast('Could not play recording', 'error'));
+      // Replace loading bar content with full controls
+      bar.innerHTML = `
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span style="flex:1">Call Recording</span>
+        <span id="rec-bar-time" style="font-variant-numeric:tabular-nums;color:rgba(255,255,255,.65)">0:00</span>
+        <button id="rec-bar-toggle" onclick="playCallRecording('${rawUrl.replace(/'/g, "\\'")}')" style="background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">Pause</button>
+        <button onclick="_stopCallRecording()" style="background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.6);border-radius:6px;padding:4px 8px;font-size:14px;cursor:pointer;line-height:1">×</button>
+      `;
+
+      _callAudio.addEventListener('timeupdate', () => {
+        const t = document.getElementById('rec-bar-time');
+        if (t) {
+          const s = Math.floor(_callAudio.currentTime);
+          t.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+        }
+      });
+      _callAudio.addEventListener('ended', () => { _stopCallRecording(); });
+
+      _callAudio.play().catch(() => showToast('Could not play recording', 'error'));
+    })
+    .catch(() => {
+      _stopCallRecording();
+      showToast('Could not load recording', 'error');
+    });
 }
 
 function _updateRecordingBar(isPaused) {
@@ -7906,6 +7928,8 @@ function _updateRecordingBar(isPaused) {
 window._stopCallRecording = function() {
   if (_callAudio) { _callAudio.pause(); _callAudio = null; }
   if (_callAudioBar) { _callAudioBar.remove(); _callAudioBar = null; }
+  if (_callAudioBlobUrl) { URL.revokeObjectURL(_callAudioBlobUrl); _callAudioBlobUrl = null; }
+  _callAudioRawUrl = null;
 };
 
 // ── MMS PHOTO SEND ────────────────────────────────────────

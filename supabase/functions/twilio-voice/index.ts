@@ -170,8 +170,9 @@ Deno.serve(async (req) => {
             recording_url: recordingUrl,
             duration_seconds: parseInt(duration) || null,
             status: 'voicemail',
-            body: `Voicemail from ${callerName}`,
-            ...(transcriptText ? { notes: transcriptText } : {}),
+            body: transcriptText
+              ? `Voicemail from ${callerName}: ${transcriptText}`
+              : `Voicemail from ${callerName}`,
           })
           .eq('quo_message_id', callSid)
           .in('status', ['call', 'missed'])
