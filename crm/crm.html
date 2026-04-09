@@ -2249,7 +2249,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 </div>
 
 <!-- ── SIDE PANEL ────────────────────────────────────────── -->
-<div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this)panelSave()">
+<div class="side-panel-overlay" id="side-panel-overlay" onclick="if(event.target===this){if(panelDirty)panelSave();else closePanel();}">
 <div class="side-panel" id="side-panel">
   <div class="panel-head" style="padding:0;overflow:visible;flex-direction:column;align-items:stretch;gap:0">
     <!-- Full-width Street View banner. Inner contents (gradient, name, close button)
@@ -4484,7 +4484,7 @@ async function panelSave() {
   const oldDigits = (c?.phone || '').replace(/\D/g, '');
   const newDigits = (payload.phone || '').replace(/\D/g, '');
   const changed = c && (
-    (c.name || '') !== payload.name ||
+    dispName(c.name || '') !== payload.name ||
     oldDigits !== newDigits ||
     (c.email || '').trim() !== payload.email ||
     (c.address || '').trim() !== payload.address ||
