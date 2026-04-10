@@ -864,7 +864,7 @@ html.dark .pa-stage-chip.pa-chip-urgent{background:var(--red)!important}
 .trend-delta.flat{color:var(--text3)}
 
 /* ── SMS MESSAGES ──────────────────────────────────────── */
-.msg-thread-head{padding:14px 20px 12px;border-bottom:none;box-shadow:0 4px 12px rgba(10,20,40,.06);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg)}
+.msg-thread-head{padding:14px 20px 12px;border-bottom:1px solid var(--border);box-shadow:0 2px 8px rgba(10,20,40,.06);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg);z-index:2;position:relative}
 html.dark .msg-thread-head{box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .msg-thread-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:var(--text);flex:1;letter-spacing:-.01em}
 .msg-thread-phone{display:inline-flex;align-items:center;gap:5px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--blue);text-decoration:none;font-weight:700;padding:5px 10px;border-radius:var(--r-pill);background:#eff6ff;transition:background var(--t-fast),transform var(--t-fast);font-variant-numeric:tabular-nums;letter-spacing:-.005em}
@@ -993,13 +993,13 @@ html.dark .qa-btn-secondary:hover{color:var(--gold)}
 .skeleton-line{height:10px;border-radius:var(--r-xs)}
 
 /* ── INBOX LIST ─────────────────────────────────────────── */
-.inbox-item{background:var(--bg);border-radius:var(--r-md);padding:9px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none}
+.inbox-item{background:var(--bg);border-radius:var(--r-md);padding:13px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none}
 .inbox-item:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu)}
 .inbox-item:active{transform:translateY(0);box-shadow:var(--shadow-neu-inset-sm)}
 .inbox-item.unread{border-left:3px solid var(--gold)}
-.inbox-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text)}
+.inbox-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text)}
 .inbox-item.unread .inbox-name{font-weight:800}
-.inbox-preview{font-size:13px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.inbox-preview{font-size:13px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
 .inbox-item.unread .inbox-preview{color:var(--text2);font-weight:500}
 .inbox-time{font-size:11px;color:var(--text3);flex-shrink:0;text-align:right}
 .inbox-item.unread .inbox-time{color:var(--gold);font-weight:700}
@@ -2794,10 +2794,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         </div>
         <div id="msg-search-count" style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600"></div>
       </div>
-      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;overscroll-behavior:none"></div>
+      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;overscroll-behavior:contain"></div>
       <!-- SMS opt-out warning — shown if contact texted STOP -->
       <div id="msg-optout-banner" style="display:none;background:rgba(220,38,38,.08);border-top:1px solid rgba(220,38,38,.2);padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);flex-shrink:0;text-align:center"></div>
-      <div style="flex-shrink:0;background:var(--bg);box-shadow:0 -4px 12px rgba(10,20,40,.05)">
+      <div style="flex-shrink:0;background:var(--bg);border-top:1px solid var(--border);box-shadow:0 -2px 12px rgba(10,20,40,.06)">
         <!-- Quick actions toolbar — expandable inline panels for in-chat actions -->
         <div class="qa-bar" id="qa-bar">
           <button class="qa-btn" data-qa="quote" onclick="qaToggle('quote')" title="Build a quick quote and send the proposal link">
