@@ -212,8 +212,8 @@ html.dark .pay-total{color:var(--gold)}
 html.dark .pay-history-item{background:var(--card)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior-x:none}
-/* Both html AND body need overflow-x:hidden — body alone doesn't stop iOS rubber-band horizontal scroll */
-html{overflow-x:clip;background:#0b1f3b}
+/* overflow-x:clip on body prevents horizontal rubber-band; html must NOT have it — it breaks position:fixed on iOS */
+html{background:#0b1f3b}
 html.dark{background:#0d1520}
 /* Prevent iOS rubber-band scroll bleed through overlays */
 body:has(#side-panel-overlay.open,.tm-panel-overlay.open,.modal-overlay.open,.fq-overlay.open,#urg-modal-overlay.open,.cs-overlay.open){overflow:hidden!important}
@@ -374,7 +374,7 @@ td.actions{white-space:nowrap}
 .panel-close{width:36px;height:36px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:18px;color:var(--text3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),color var(--t-fast)}
 .panel-close:hover{background:var(--bg);color:var(--text)}
 .panel-close:active{transform:scale(.93)}
-.panel-body{flex:1;overflow-y:auto;padding:20px 24px;overscroll-behavior:contain}
+.panel-body{flex:1;overflow-y:auto;padding:20px 24px;overscroll-behavior:none;background:var(--bg)}
 .panel-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--bg)}
 .panel-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:var(--sp-5) 0 8px;font-family:'Outfit',sans-serif;display:flex;align-items:center;gap:8px}
 .panel-section-label::after{content:'';flex:1;height:1px;background:var(--border);opacity:.5}
@@ -523,7 +523,7 @@ html.dark .approval-notif-amount{color:var(--gold)}
 
 /* ── DRILL-DOWN PANEL ────────────────────────────────────── */
 .drill-container{position:relative;overflow:hidden;flex:1;display:flex;flex-direction:column}
-.drill-level{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .2s ease;will-change:transform;overflow-y:auto;padding:18px 20px}
+.drill-level{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .2s ease;will-change:transform;overflow-y:auto;padding:18px 20px;overscroll-behavior:none}
 .drill-level.active{position:relative;transform:translateX(0);flex:1;min-height:0}
 .drill-level.left{transform:translateX(-100%)}
 .drill-level.right{transform:translateX(100%)}
@@ -1658,6 +1658,12 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
   /* Call bar above bottom tab */
   .call-bar{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+
+  /* Message thread header: on mobile, hide call/search/phone/stage — just back + avatar + name */
+  .msg-hdr-desktop{display:none!important}
+
+  /* Hide qa-bar when keyboard is open (js adds kbd-open to body via visualViewport) */
+  body.kbd-open #qa-bar,body.kbd-open #qa-inline{display:none!important}
 }
 
 :root{--kb:0px}
@@ -2651,7 +2657,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <div class="drill-container">
     <!-- LEVEL 1: Contact Details (Progressive Disclosure) -->
     <div class="drill-level active" id="drill-contact" style="overflow:hidden;padding:0">
-      <div id="drill-contact-scroll" style="flex:1;overflow-y:auto;padding:18px 20px;-webkit-overflow-scrolling:touch;min-height:0">
+      <div id="drill-contact-scroll" style="flex:1;overflow-y:auto;padding:18px 20px;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:none">
       <input type="hidden" id="panel-id">
 
       <!-- 0. SPARKY INSIGHT (rendered by renderSparkyInsight when panel opens) -->
@@ -2758,21 +2764,22 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <span style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;letter-spacing:-.01em">Drop to send</span>
       </div>
       <div class="msg-thread-head" style="padding:8px 14px 8px 6px;gap:6px">
-        <button onclick="drillTo('contact')" style="width:36px;height:36px;border-radius:50%;background:none;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;transition:background .15s" title="Back to contact" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
+        <button onclick="drillTo(window._msgReturnLevel||'contact')" style="width:36px;height:36px;border-radius:50%;background:none;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;transition:background .15s" title="Back" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <div id="msg-thread-avatar" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#fff"></div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px">
+        <!-- Avatar + name: tapping opens contact page. On mobile: only these are shown. -->
+        <div onclick="drillTo('contact')" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer" title="View contact">
+          <div id="msg-thread-avatar" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#fff"></div>
+          <div style="min-width:0;flex:1">
             <div id="msg-thread-name" class="msg-thread-title" style="font-size:14px"></div>
-            <span id="msg-thread-stage" style="display:none;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.04em;padding:2px 7px;border-radius:var(--r-pill)"></span>
+            <span id="msg-thread-stage" class="msg-hdr-desktop" style="display:none;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.04em;padding:2px 7px;border-radius:var(--r-pill)"></span>
+            <a id="msg-thread-phone" class="msg-thread-phone msg-hdr-desktop" href="#" onclick="event.stopPropagation();threadCallContact();return false" style="font-size:11px;padding:2px 7px;margin-top:1px;display:none"></a>
           </div>
-          <a id="msg-thread-phone" class="msg-thread-phone" href="#" onclick="threadCallContact();return false" style="font-size:11px;padding:2px 7px;margin-top:1px;display:inline-flex"></a>
         </div>
-        <button id="msg-call-btn" onclick="threadCallContact()" style="width:34px;height:34px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Call" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
+        <button id="msg-call-btn" class="msg-hdr-desktop" onclick="threadCallContact()" style="width:34px;height:34px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Call" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         </button>
-        <button onclick="threadToggleSearch()" id="msg-search-btn" style="width:34px;height:34px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Search messages" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
+        <button onclick="threadToggleSearch()" id="msg-search-btn" class="msg-hdr-desktop" style="width:34px;height:34px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Search messages" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
       </div>
@@ -2787,7 +2794,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         </div>
         <div id="msg-search-count" style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600"></div>
       </div>
-      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px"></div>
+      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;overscroll-behavior:none"></div>
       <!-- SMS opt-out warning — shown if contact texted STOP -->
       <div id="msg-optout-banner" style="display:none;background:rgba(220,38,38,.08);border-top:1px solid rgba(220,38,38,.2);padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);flex-shrink:0;text-align:center"></div>
       <div style="flex-shrink:0;background:var(--bg);box-shadow:0 -4px 12px rgba(10,20,40,.05)">
@@ -2829,9 +2836,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             </label>
           </div>
           <div style="flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:22px;padding:8px 8px 8px 14px;gap:6px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
-            <textarea id="msg-compose" placeholder="Message…" style="flex:1;background:none;border:none;outline:none;resize:none;font-size:15px;min-height:22px;max-height:120px;line-height:1.5;padding:0;font-family:inherit;color:var(--text)" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px';(function(t){var n=t.value.length,el=document.getElementById('msg-char-count');if(!el)return;var segs=n<=160?1:Math.ceil(n/153);el.textContent=n>0?(n<=140?'':(n+'/'+segs+'×')):'';el.style.color=n>160?'var(--red)':n>140?'#f97316':'var(--text3)';el.style.display=n>0?'':'none'})(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+            <textarea id="msg-compose" placeholder="Message…" style="flex:1;background:none;border:none;outline:none;resize:none;font-size:15px;min-height:22px;max-height:120px;line-height:1.5;padding:0;font-family:inherit;color:var(--text)" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
             <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0">
-              <span id="msg-char-count" style="display:none;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;color:var(--text3);line-height:1;min-width:28px;text-align:center"></span>
               <button id="msg-send-btn" onclick="sendMessage()" title="Send (Enter)" style="width:32px;height:32px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
@@ -3800,6 +3806,7 @@ function drillTo(level) {
     try { if (typeof qaClose === 'function') qaClose(); } catch(e) {}
   }
   if (level === 'messages') {
+    window._msgReturnLevel = prevLevel || 'contact'; // smart back remembers where we came from
     // Use currentMsgContactId if set, otherwise fall back to panel contact
     loadMessageThread(currentMsgContactId || currentPanelContactId);
   } else if (level === 'proposal') renderProposalDrill();
@@ -5911,7 +5918,7 @@ async function saveProposal() {
   closeModal('proposal-overlay');
   currentProposalIdx = 0; // New proposal is first in array
   openPanel(contactId);
-  setTimeout(function() { drillTo('proposal'); }, 100);
+  drillTo('proposal');
   touchContact(contactId);
   showToast('Proposal created — link copied!', 'success');
 }
@@ -8889,11 +8896,9 @@ async function openMessagesPanel(contactId) {
 
   if (!panelAlreadyOpen) {
     openPanel(contactId);
-    // Give openPanel a tick to finish its setup before drilling
-    setTimeout(() => {
-      currentMsgContactId = contactId;
-      drillTo('messages');
-    }, 60);
+    // drillTo immediately — both run before browser paints, no flash
+    currentMsgContactId = contactId;
+    drillTo('messages');
   } else {
     drillTo('messages');
   }
@@ -8949,11 +8954,8 @@ async function loadMessageThread(contactId) {
   } else if (stageBadgeEl) { stageBadgeEl.style.display = 'none'; }
   const avatarEl = document.getElementById('msg-thread-avatar');
   if (avatarEl && c) {
-    const initials = (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    const colors = ['#0b1f3b','#1d4ed8','#0f766e','#7c3aed','#b45309','#c2410c'];
-    const ci = (c.name || '').split('').reduce((s, ch) => s + ch.charCodeAt(0), 0) % colors.length;
-    avatarEl.style.background = colors[ci];
-    avatarEl.textContent = initials;
+    avatarEl.style.background = _avatarColor(c.id);
+    avatarEl.textContent = _avatarInitials(c.name);
   }
 
   threadEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;padding:20px">' +
@@ -10594,32 +10596,26 @@ function openInvoiceFromTab(contactId) {
   // active. We preserve the underlying tab so the user returns to
   // Invoices (or wherever they were) when the panel closes.
   openPanel(contactId);
-  // Drill straight to the payment/invoice screen, not the proposal review.
-  setTimeout(() => {
-    try {
-      // Default to first proposal (index 0) if no specific match.
-      if (typeof currentProposalIdx !== 'undefined') currentProposalIdx = 0;
-      invoiceLineItems = [];
-      drillTo('payment');
-    } catch(e) {}
-  }, 200);
+  // Drill straight to the payment/invoice screen — synchronous, no flash
+  try {
+    if (typeof currentProposalIdx !== 'undefined') currentProposalIdx = 0;
+    invoiceLineItems = [];
+    drillTo('payment');
+  } catch(e) {}
 }
 
 // Open the contact panel pre-drilled to the specific quote (proposal drill).
 function openQuoteFromTab(contactId, proposalId) {
   if (!contactId) return;
   openPanel(contactId);
-  setTimeout(() => {
-    try {
-      // Find the index of the target proposal in proposalMap so the correct
-      // quote is shown when multiple proposals exist for a contact.
-      const arr = (typeof proposalMap !== 'undefined' && proposalMap[contactId]) || [];
-      const idx = proposalId ? arr.findIndex(p => p.id === proposalId) : 0;
-      currentProposalIdx = idx >= 0 ? idx : 0;
-      invoiceLineItems = [];
-      drillTo('proposal');
-    } catch(e) {}
-  }, 200);
+  // Synchronous drill — no setTimeout flash
+  try {
+    const arr = (typeof proposalMap !== 'undefined' && proposalMap[contactId]) || [];
+    const idx = proposalId ? arr.findIndex(p => p.id === proposalId) : 0;
+    currentProposalIdx = idx >= 0 ? idx : 0;
+    invoiceLineItems = [];
+    drillTo('proposal');
+  } catch(e) {}
 }
 
 // ── REMIND FROM FINANCE TAB ─────────────────────────────────────────────────
@@ -16760,7 +16756,8 @@ window.closeAddMenu = function() {
   var ptr = document.createElement('div');
   ptr.id = 'ptr-indicator';
   ptr.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg><span>Refreshing…</span>';
-  ptr.style.cssText='position:fixed;top:calc(-48px + env(safe-area-inset-top,0px));left:0;right:0;height:48px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text2);background:var(--bg);z-index:40;transition:transform .2s ease,opacity .2s ease;opacity:0;transform:translateY(0)';
+  // Positioned just below the sticky nav header (~56px + safe-area), slides down on pull
+  ptr.style.cssText='position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:0;right:0;height:48px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text2);background:var(--bg);z-index:40;transition:transform .2s ease,opacity .2s ease;opacity:0;transform:translateY(-48px)';
   document.body.appendChild(ptr);
 
   var startY=0, pulling=false, triggered=false;
@@ -16782,7 +16779,8 @@ window.closeAddMenu = function() {
     if(window.scrollY>4){startY=0;return;}
     pulling=true;
     var progress=Math.min(1, dy/THRESHOLD);
-    var translateY=Math.min(dy*0.4, THRESHOLD*0.6);
+    // translateY from -48 (hidden behind header) toward 0 (fully visible below header)
+    var translateY=Math.max(-48, -48 + Math.min(dy*0.5, 48));
     ptr.style.opacity=String(progress);
     ptr.style.transform='translateY('+translateY+'px)';
     var svgEl=ptr.querySelector('svg');
@@ -16796,20 +16794,20 @@ window.closeAddMenu = function() {
     if(dy>=THRESHOLD && !triggered){
       triggered=true;
       ptr.style.opacity='1';
-      ptr.style.transform='translateY('+THRESHOLD*0.6+'px)';
+      ptr.style.transform='translateY(0px)';
       var svgEl=ptr.querySelector('svg');
       if(svgEl){svgEl.style.transition='transform .6s linear';svgEl.style.transform='rotate(720deg)';}
       // Trigger reload
       if(typeof loadContacts==='function') loadContacts();
       setTimeout(function(){
         ptr.style.opacity='0';
-        ptr.style.transform='translateY(0)';
+        ptr.style.transform='translateY(-48px)';
         if(svgEl){svgEl.style.transition='';svgEl.style.transform='';}
         triggered=false;
       },800);
     } else {
       ptr.style.opacity='0';
-      ptr.style.transform='translateY(0)';
+      ptr.style.transform='translateY(-48px)';
     }
     startY=0;
   },{passive:true});
@@ -16843,6 +16841,8 @@ window.closeAddMenu = function() {
     // kb = gap between layout viewport and visual viewport bottom
     var kb=Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     root.style.setProperty('--kb', kb > 10 ? kb+'px' : '0px');
+    // Hide quick-action bar when keyboard is open (keeps compose area clean)
+    document.body.classList.toggle('kbd-open', kb > 150);
   }
   window.visualViewport.addEventListener('resize',  _updateKb, {passive:true});
   window.visualViewport.addEventListener('scroll',   _updateKb, {passive:true});
