@@ -591,6 +591,33 @@ html.dark .approval-notif-amount{color:var(--gold)}
 .fab:focus-visible{outline:3px solid rgba(255,186,0,.4);outline-offset:3px}
 html.dark .fab{background:var(--gold);color:#1e1b17}
 
+/* ── Follow-up Queue ─────────────────────────────────── */
+.fq-overlay{position:fixed;inset:0;z-index:320;background:rgba(10,20,40,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center}
+.fq-overlay.open{display:flex;animation:fqSlideIn .22s var(--ease)}
+@keyframes fqSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fq-panel{width:100%;max-width:540px;max-height:82vh;background:var(--bg);border-radius:var(--r-xl) var(--r-xl) 0 0;box-shadow:var(--shadow-neu);display:flex;flex-direction:column;overflow:hidden}
+.fq-head{padding:18px 20px 14px;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.fq-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--text)}
+.fq-scan-btn{background:var(--gold);color:var(--navy);border:none;border-radius:var(--r-pill);padding:7px 14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.fq-scan-btn:disabled{opacity:.5;cursor:default}
+.fq-close{background:none;border:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:20px;flex-shrink:0;margin-top:-2px}
+.fq-close:hover{background:var(--border)}
+.fq-body{flex:1;overflow-y:auto;padding:14px 16px 24px;-webkit-overflow-scrolling:touch}
+.fq-item{background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:14px 16px;margin-bottom:12px}
+.fq-item-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.fq-item-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fq-stage-chip{font-size:10px;font-weight:800;font-family:'Outfit',sans-serif;padding:2px 8px;border-radius:var(--r-pill);background:rgba(11,31,59,.07);flex-shrink:0}
+html.dark .fq-stage-chip{background:rgba(255,255,255,.07)}
+.fq-reason{font-size:11px;color:var(--text3);margin-bottom:9px;line-height:1.4}
+.fq-draft{width:100%;box-sizing:border-box;background:var(--bg);border:none;border-radius:var(--r-sm);box-shadow:var(--shadow-neu-inset-sm);padding:10px 12px;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);resize:vertical;min-height:70px;outline:none;line-height:1.5}
+.fq-actions{display:flex;gap:8px;margin-top:10px}
+.fq-send-btn{flex:1;padding:10px 0;background:var(--navy);color:#fff;border:none;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s}
+html.dark .fq-send-btn{background:var(--gold);color:#1e1b17}
+.fq-send-btn:disabled{opacity:.5;cursor:default}
+.fq-skip-btn{padding:10px 16px;background:none;border:1px solid var(--border);border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;color:var(--text3);cursor:pointer;white-space:nowrap}
+.fq-empty{text-align:center;padding:44px 20px;color:var(--text3);font-family:'Outfit',sans-serif;font-size:14px;line-height:1.6}
+.fq-empty-icon{font-size:36px;margin-bottom:10px}
+
 /* ── GEAR MENU ──────────────────────────────────────── */
 .nav-icon-btn{background:none;border:none;cursor:pointer;padding:8px;color:rgba(255,255,255,.6);transition:color .15s,background .15s;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm)}
 .nav-icon-btn:hover{color:#fff;background:rgba(255,255,255,.1)}
@@ -1742,6 +1769,23 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   </div>
 </div>
 
+<!-- ── Follow-up Queue overlay ────────────────────────── -->
+<div class="fq-overlay" id="fq-overlay" onclick="if(event.target===this)closeFollowupQueue()">
+  <div class="fq-panel">
+    <div class="fq-head">
+      <div>
+        <div class="fq-title">⚡ Follow-up Queue</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">Sparky-drafted texts for overdue leads — edit before sending</div>
+      </div>
+      <button class="fq-scan-btn" id="fq-scan-btn" onclick="runFollowupScan()">Re-scan</button>
+      <button class="fq-close" onclick="closeFollowupQueue()">×</button>
+    </div>
+    <div class="fq-body" id="fq-body">
+      <div class="fq-empty"><div class="fq-empty-icon">⚡</div><div>Tap Re-scan to check your pipeline</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── PASS 13: Communications search panel ──────────── -->
 <div class="cs-overlay" id="cs-overlay" onclick="closeCommSearch()"></div>
 <div class="cs-panel" id="cs-panel" role="dialog" aria-label="Search communications" aria-hidden="true">
@@ -1972,6 +2016,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         </div>
         <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
       </div>
+      <button id="fq-launch-btn" onclick="openFollowupQueue()" title="Follow-up queue — Sparky drafts texts for overdue leads" style="display:flex;align-items:center;gap:5px;background:var(--bg);border:none;border-radius:var(--r-pill);padding:6px 12px 6px 10px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;color:var(--text2);cursor:pointer;box-shadow:var(--shadow-neu-sm);transition:box-shadow .15s,color .15s;flex-shrink:0">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Follow-ups
+        <span id="fq-launch-badge" style="display:none;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;padding:0 6px;border-radius:var(--r-pill);line-height:18px">0</span>
+      </button>
       <div class="view-toggle">
         <button class="view-toggle-btn" id="view-list-btn" onclick="cycleListView()" title="List view — click again for urgent first">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -6357,6 +6406,135 @@ function renderPanelEvents() {
 
   listEl.innerHTML = activeJobs.map(j => renderJobRow(j, false)).join('')
     + (archivedJobs.length ? archivedJobs.map(j => renderJobRow(j, true)).join('') : '');
+}
+
+// ── Follow-up Queue ──────────────────────────────────────────────────────────
+const FQ_ENDPOINT = SUPABASE_URL + '/functions/v1/auto-followup';
+let _fqItems  = [];
+let _fqLoading = false;
+
+function openFollowupQueue() {
+  document.getElementById('fq-overlay').classList.add('open');
+  if (!_fqItems.length && !_fqLoading) runFollowupScan();
+  else renderFqItems();
+}
+
+function closeFollowupQueue() {
+  document.getElementById('fq-overlay').classList.remove('open');
+}
+
+async function runFollowupScan() {
+  if (_fqLoading) return;
+  _fqLoading = true;
+  _fqItems = [];
+  const scanBtn = document.getElementById('fq-scan-btn');
+  if (scanBtn) { scanBtn.disabled = true; scanBtn.textContent = 'Scanning…'; }
+
+  const body = document.getElementById('fq-body');
+  if (body) body.innerHTML = `<div class="fq-empty">
+    <div style="width:26px;height:26px;border:2.5px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px"></div>
+    <div>Sparky is scanning your pipeline…</div>
+  </div>`;
+
+  try {
+    const resp = await fetch(FQ_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT,
+        'apikey': SEND_SMS_ANON_JWT,
+      },
+      body: JSON.stringify({ mode: 'preview', maxItems: 6 }),
+    });
+    const data = await resp.json();
+    _fqItems = (data.items || []).map(item => ({ ...item, done: false, sending: false }));
+    renderFqItems();
+    _updateFqBadge();
+  } catch (e) {
+    if (body) body.innerHTML = `<div class="fq-empty"><div class="fq-empty-icon">⚠️</div><div>Couldn't reach Sparky. Check your connection and try again.</div></div>`;
+  } finally {
+    _fqLoading = false;
+    if (scanBtn) { scanBtn.disabled = false; scanBtn.textContent = 'Re-scan'; }
+  }
+}
+
+function renderFqItems() {
+  const body = document.getElementById('fq-body');
+  if (!body) return;
+  const active = _fqItems.filter(i => !i.done);
+  if (!active.length) {
+    body.innerHTML = `<div class="fq-empty"><div class="fq-empty-icon">✅</div><div style="font-weight:700;color:var(--text);font-size:15px;margin-bottom:6px">All caught up</div><div>No overdue follow-ups right now.<br>Re-scan anytime or come back tomorrow.</div></div>`;
+    _updateFqBadge();
+    return;
+  }
+  const stageColors = { 1: '#f59e0b', 2: '#3b82f6', 3: '#8b5cf6' };
+  body.innerHTML = active.map(item => {
+    const idx = _fqItems.indexOf(item);
+    const color = stageColors[item.stage] || 'var(--text2)';
+    return `<div class="fq-item" id="fq-item-${idx}">
+      <div class="fq-item-head">
+        <div class="fq-item-name">${esc(item.name || item.phone || 'Unknown')}</div>
+        <span class="fq-stage-chip" style="color:${color}">${esc(item.stageLabel || '')}</span>
+      </div>
+      <div class="fq-reason">${esc(item.reason || '')}</div>
+      <textarea class="fq-draft" id="fq-draft-${idx}" rows="3">${esc(item.draft || '')}</textarea>
+      <div class="fq-actions">
+        <button class="fq-send-btn" id="fq-send-${idx}" onclick="fqSend(${idx})"${item.sending ? ' disabled' : ''}>
+          ${item.sending ? 'Sending…' : 'Send Text'}
+        </button>
+        <button class="fq-skip-btn" onclick="fqSkip(${idx})">Skip</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _updateFqBadge() {
+  const badge = document.getElementById('fq-launch-badge');
+  const count = _fqItems.filter(i => !i.done).length;
+  if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
+}
+
+async function fqSend(idx) {
+  const item = _fqItems[idx];
+  if (!item || item.sending) return;
+  const draftEl = document.getElementById('fq-draft-' + idx);
+  const draft = (draftEl ? draftEl.value : item.draft || '').trim();
+  if (!draft) { showToast('Draft is empty', 'error'); return; }
+
+  item.sending = true;
+  renderFqItems();
+
+  try {
+    const resp = await fetch(SEND_SMS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT,
+        'apikey': SEND_SMS_ANON_JWT,
+      },
+      body: JSON.stringify({ contactId: item.contactId, body: draft }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      item.done = true;
+      showToast('Sent to ' + (item.name || 'contact') + ' ✓', 'success');
+      if (typeof loadInbox === 'function') setTimeout(loadInbox, 1500);
+    } else {
+      showToast('Failed: ' + (data.error || 'unknown error'), 'error');
+    }
+  } catch (e) {
+    showToast('Send failed — check connection', 'error');
+  } finally {
+    item.sending = false;
+    renderFqItems();
+    _updateFqBadge();
+  }
+}
+
+function fqSkip(idx) {
+  if (_fqItems[idx]) { _fqItems[idx].done = true; }
+  renderFqItems();
+  _updateFqBadge();
 }
 
 function togglePanelEvents() {
