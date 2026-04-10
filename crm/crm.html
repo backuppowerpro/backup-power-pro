@@ -527,7 +527,11 @@ html.dark .approval-notif-amount{color:var(--gold)}
 .drill-level.active{position:relative;transform:translateX(0);flex:1;min-height:0}
 .drill-level.left{transform:translateX(-100%)}
 .drill-level.right{transform:translateX(100%)}
-.drill-back{display:inline-flex;align-items:center;gap:6px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;padding:6px 10px;border-radius:var(--r-sm);transition:all .15s;margin-bottom:12px;min-height:44px}
+/* Fixed header + scrollable body inside each drill level */
+.drill-head{flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border);padding:4px 8px 0;position:relative;z-index:2}
+html.dark .drill-head{border-bottom-color:rgba(255,255,255,.06)}
+.drill-body{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 20px 24px}
+.drill-back{display:inline-flex;align-items:center;gap:6px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;padding:10px 10px;border-radius:var(--r-sm);transition:all .15s;margin-bottom:0;min-height:44px}
 .drill-back:hover{color:var(--navy);background:var(--bg)}
 .drill-back:active{background:var(--border)}
 /* Inspection checklist */
@@ -2657,7 +2661,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <div class="drill-container">
     <!-- LEVEL 1: Contact Details (Progressive Disclosure) -->
     <div class="drill-level active" id="drill-contact" style="overflow:hidden;padding:0">
-      <div id="drill-contact-scroll" style="flex:1;overflow-y:auto;padding:18px 20px;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:none">
+      <div id="drill-contact-scroll" style="flex:1;overflow-y:auto;padding:18px 20px;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:contain">
       <input type="hidden" id="panel-id">
 
       <!-- 0. SPARKY INSIGHT (rendered by renderSparkyInsight when panel opens) -->
@@ -2735,24 +2739,24 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       </div>
     </div>
     <!-- LEVEL 2: Proposal View -->
-    <div class="drill-level right" id="drill-proposal">
-      <button class="drill-back" onclick="drillTo('contact')">&larr; Contact</button>
-      <div id="drill-proposal-content"></div>
+    <div class="drill-level right" id="drill-proposal" style="padding:0;overflow:hidden">
+      <div class="drill-head"><button class="drill-back" onclick="drillTo('contact')">&larr; Contact</button></div>
+      <div id="drill-proposal-content" class="drill-body"></div>
     </div>
     <!-- LEVEL INV: Invoice Builder (direct invoice, no proposal) -->
-    <div class="drill-level right" id="drill-invoice-builder">
-      <button class="drill-back" onclick="drillTo('contact')">&larr; Contact</button>
-      <div id="drill-invoice-builder-content"></div>
+    <div class="drill-level right" id="drill-invoice-builder" style="padding:0;overflow:hidden">
+      <div class="drill-head"><button class="drill-back" onclick="drillTo('contact')">&larr; Contact</button></div>
+      <div id="drill-invoice-builder-content" class="drill-body"></div>
     </div>
     <!-- LEVEL 3a: Inspection -->
-    <div class="drill-level right" id="drill-inspection">
-      <button class="drill-back" onclick="drillTo('proposal')">&larr; Proposal</button>
-      <div id="drill-inspection-content"></div>
+    <div class="drill-level right" id="drill-inspection" style="padding:0;overflow:hidden">
+      <div class="drill-head"><button class="drill-back" onclick="drillTo('proposal')">&larr; Proposal</button></div>
+      <div id="drill-inspection-content" class="drill-body"></div>
     </div>
     <!-- LEVEL 3b: Payment -->
-    <div class="drill-level right" id="drill-payment">
-      <button class="drill-back" id="payment-back-btn" onclick="drillTo('proposal')">&larr; Proposal</button>
-      <div id="drill-payment-content"></div>
+    <div class="drill-level right" id="drill-payment" style="padding:0;overflow:hidden">
+      <div class="drill-head"><button class="drill-back" id="payment-back-btn" onclick="drillTo('proposal')">&larr; Proposal</button></div>
+      <div id="drill-payment-content" class="drill-body"></div>
     </div>
     <!-- LEVEL 2b: SMS Messages -->
     <div class="drill-level right" id="drill-messages" style="display:flex;flex-direction:column;padding:0;overflow:hidden"
