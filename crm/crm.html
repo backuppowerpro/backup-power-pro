@@ -2279,9 +2279,12 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <label>Notes</label>
         <textarea class="form-textarea" id="j-notes" style="min-height:64px" placeholder="Notes for this event…"></textarea>
       </div>
-      <div id="j-actions" style="display:none;gap:8px;margin-top:12px">
-        <button class="btn btn-sm" style="flex:1;background:#10b981;color:#fff;font-weight:700;border:none" onclick="setEventStatus('Complete')">✓ Mark Complete</button>
-        <button class="btn btn-sm" style="flex:1;background:#ef4444;color:#fff;font-weight:700;border:none" onclick="setEventStatus('Cancelled')">✕ Cancel Event</button>
+      <div id="j-actions" style="display:none;gap:8px;margin-top:12px;flex-direction:column">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" style="flex:1;background:#10b981;color:#fff;font-weight:700;border:none" onclick="setEventStatus('Complete')">✓ Mark Complete</button>
+          <button class="btn btn-sm" style="flex:1;background:#ef4444;color:#fff;font-weight:700;border:none" onclick="setEventStatus('Cancelled')">✕ Cancel Event</button>
+        </div>
+        <button class="btn btn-sm" style="width:100%;background:none;border:1px solid var(--border);color:var(--text3);font-size:11px;font-weight:600" onclick="archiveJob()">Archive Event</button>
       </div>
     </div>
     <div class="modal-foot" style="display:none"></div>
@@ -6313,40 +6316,47 @@ function renderPanelEvents() {
   const listEl  = document.getElementById('panel-events-list');
   if (!countEl || !listEl) return;
 
-  const jobs = (typeof allJobs !== 'undefined' ? allJobs : [])
-    .filter(j => j.contact_id === contactId && j.status !== 'Archived')
+  const allContactJobs = (typeof allJobs !== 'undefined' ? allJobs : [])
+    .filter(j => j.contact_id === contactId)
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-  countEl.textContent = jobs.length || '0';
-  countEl.style.display = jobs.length ? '' : 'none';
+  const activeJobs   = allContactJobs.filter(j => j.status !== 'Archived');
+  const archivedJobs = allContactJobs.filter(j => j.status === 'Archived');
 
-  if (!jobs.length) {
+  countEl.textContent = activeJobs.length || '0';
+  countEl.style.display = activeJobs.length ? '' : 'none';
+
+  if (!allContactJobs.length) {
     listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0 6px">No events yet</div>';
     return;
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  listEl.innerHTML = jobs.map(j => {
+  function renderJobRow(j, isArchived) {
     const isPast = j.date < today;
     const st = (j.status || 'Scheduled').toLowerCase();
     const isComplete  = st === 'complete' || st === 'completed';
     const isCancelled = st === 'cancelled' || st === 'canceled';
-    const dotColor = isComplete ? 'var(--green)' : isCancelled ? '#94a3b8' : isPast ? '#f97316' : 'var(--blue)';
-    const statusLabel = isComplete ? 'Done' : isCancelled ? 'Cancelled' : isPast ? 'Missed?' : 'Scheduled';
+    const dotColor = isArchived ? '#94a3b8' : isComplete ? 'var(--green)' : isCancelled ? '#94a3b8' : isPast ? '#f97316' : 'var(--blue)';
+    const statusLabel = isArchived ? 'Archived' : isComplete ? 'Done' : isCancelled ? 'Cancelled' : isPast ? 'Missed?' : 'Scheduled';
     const label = j.title || j.contact_name || 'Install';
     const dateStr = j.date ? new Date(j.date + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
     const timeStr = j.time ? (' · ' + j.time.replace(/^(\d+):(\d+)$/, (_, h, m) => {
       const hr = parseInt(h); return (hr > 12 ? hr - 12 : hr || 12) + ':' + m + (hr >= 12 ? ' PM' : ' AM');
     })) : '';
-    return `<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--border);opacity:${isPast && !isComplete ? '.7' : '1'}">
+    const rowOpacity = isArchived ? '.4' : (isPast && !isComplete && !isCancelled ? '.7' : '1');
+    return `<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--border);opacity:${rowOpacity}">
       <div style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap${isArchived ? ';text-decoration:line-through' : ''}">${esc(label)}</div>
         <div style="font-size:11px;color:var(--text3)">${dateStr}${timeStr}</div>
       </div>
       <span style="font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;color:${dotColor};flex-shrink:0">${statusLabel}</span>
     </div>`;
-  }).join('');
+  }
+
+  listEl.innerHTML = activeJobs.map(j => renderJobRow(j, false)).join('')
+    + (archivedJobs.length ? archivedJobs.map(j => renderJobRow(j, true)).join('') : '');
 }
 
 function togglePanelEvents() {
@@ -14395,6 +14405,28 @@ setTimeout(() => {
     fmtSection('TODAY', b.today);
     fmtSection('MATERIALS', b.materials);
     fmtSection('GOOD NEWS', b.goodNews);
+
+    // Unresolved past events — flag for Sparky to remind Key
+    var todayStr = new Date().toISOString().slice(0, 10);
+    var jobs = (typeof allJobs !== 'undefined' && Array.isArray(allJobs)) ? allJobs : [];
+    var unresolved = jobs.filter(function(j) {
+      return j.date && j.date < todayStr
+        && j.status !== 'Complete' && j.status !== 'Completed'
+        && j.status !== 'Cancelled' && j.status !== 'Canceled'
+        && j.status !== 'Archived';
+    });
+    if (unresolved.length) {
+      lines.push('');
+      lines.push('UNRESOLVED PAST EVENTS (' + unresolved.length + ') — needs follow-up:');
+      unresolved.slice(0, 6).forEach(function(j) {
+        var contactName = '';
+        if (j.contact_id && typeof allContacts !== 'undefined') {
+          var c = allContacts.find(function(x) { return x.id === j.contact_id; });
+          if (c) contactName = ' — ' + (_shortName(c) || c.name || '');
+        }
+        lines.push('- ' + (j.date || '?') + ': ' + (j.title || 'Install') + contactName + ' [still Scheduled]');
+      });
+    }
 
     // Include the currently-open contact so "this customer" questions work
     var focusId = (typeof currentMsgContactId !== 'undefined' && currentMsgContactId)
