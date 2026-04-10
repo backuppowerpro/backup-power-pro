@@ -2315,8 +2315,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         Follow-ups
         <span id="fq-launch-badge" style="display:none;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;padding:0 6px;border-radius:var(--r-pill);line-height:18px">0</span>
       </button>
-      <div class="view-toggle">
-        <button class="view-toggle-btn active" id="view-pipe-btn" onclick="setLeadsView('pipeline')" title="Pipeline kanban">
+      <div class="view-toggle" id="view-toggle-wrap">
+        <button class="view-toggle-btn" id="view-pipe-btn" onclick="setLeadsView(leadsView==='pipeline'?'list':'pipeline')" title="Toggle pipeline view">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
           Pipeline
         </button>
@@ -10828,40 +10828,6 @@ function setLeadsView(v) {
   _updateListBtnLabel();
 }
 
-function _updateListBtnLabel() {
-  const btn   = document.getElementById('view-list-btn');
-  const label = document.getElementById('view-list-label');
-  if (!btn || !label) return;
-  const isListActive = leadsView === 'list';
-  btn.classList.toggle('active', isListActive);
-  if (isListActive && contactsSortUrgent) {
-    label.textContent = '🔥 Urgent';
-  } else {
-    label.textContent = 'List';
-  }
-}
-
-function cycleListView() {
-  if (leadsView !== 'list') {
-    // Not on list — switch to list, normal sort
-    contactsSortUrgent = false;
-    setLeadsView('list');
-  } else if (!contactsSortUrgent) {
-    // On list normal — switch to urgent
-    contactsSortUrgent = true;
-    _updateListBtnLabel();
-    renderContacts();
-  } else {
-    // On urgent — back to normal list
-    contactsSortUrgent = false;
-    _updateListBtnLabel();
-    renderContacts();
-  }
-}
-
-function toggleUrgentSort() {
-  cycleListView();
-}
 
 // KANBAN_COLS is derived from PERMIT_STAGES — single source of truth.
 // Each column maps 1:1 to a real DB stage (1-9). No fake buckets.
@@ -16393,7 +16359,7 @@ window.closeAddMenu = function() {
   };
 
   // ── Inbox conversation long-press action sheet ───────────────────────────
-  window.showInboxCtx = function(contactId) {
+  window.showInboxCtx = function(contactId, x, y) {
     _ctxContactId = contactId;
     const c = (typeof allContacts !== 'undefined' ? allContacts : []).find(x => x.id === contactId);
     const isDone    = (typeof _inboxDone   === 'function') && _inboxDone().includes(contactId);
@@ -16426,13 +16392,32 @@ window.closeAddMenu = function() {
         ${isMuted ? 'Unmute' : 'Mute'}
       </button>
     `;
-    _showCtxSheet();
+    if (_isMobileCtx()) {
+      _showCtxSheet();
+    } else {
+      menu.style.display = 'block';
+      requestAnimationFrame(() => {
+        const r = menu.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight;
+        menu.style.left = (Math.min(x || 0, vw - r.width - 8)) + 'px';
+        menu.style.top  = (Math.min(y || 0, vh - r.height - 8)) + 'px';
+      });
+    }
   };
   // Expose hideCtx for inline onclick use in inbox sheet
   window.hideCtx = hideCtx;
 
-  // Wire up — event delegation on contacts-table
+  // Wire up — event delegation on contacts-table and inbox
   document.addEventListener('contextmenu', function(e) {
+    // Inbox conversation rows
+    const inboxItem = e.target.closest('.inbox-item[data-cid]');
+    if (inboxItem) {
+      e.preventDefault();
+      const cid = inboxItem.getAttribute('data-cid');
+      if (cid) window.showInboxCtx(cid, e.clientX, e.clientY);
+      return;
+    }
+    // Leads table rows
     const row = e.target.closest('#contacts-table tr[onclick]');
     if (!row) { hideCtx(); return; }
     e.preventDefault();
