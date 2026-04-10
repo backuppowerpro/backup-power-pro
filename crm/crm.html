@@ -1634,6 +1634,159 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* Call bar above bottom tab */
   .call-bar{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
 }
+
+/* ══════════════════════════════════════════════════════════
+   NATIVE iPHONE OVERHAUL
+   Every touch target 44px+, modals as bottom sheets,
+   context menus as action sheets, native feel throughout.
+   ══════════════════════════════════════════════════════════ */
+@media(max-width:480px){
+
+  /* ── BUTTONS: 44px minimum tap target everywhere ────────── */
+  .btn,.btn-primary,.btn-outline,.btn-danger,.btn-ghost{
+    min-height:48px;padding-left:16px;padding-right:16px;font-size:15px}
+  .btn-sm{min-height:44px;padding:0 14px;font-size:14px;border-radius:var(--r-sm)}
+  .panel-foot .btn{min-height:50px;font-size:15px;flex:1}
+  .modal-close{width:44px!important;height:44px!important;font-size:20px!important}
+  .fq-close{width:44px!important;height:44px!important}
+  .fld-btn{width:44px!important;height:44px!important}
+  .fld-btn svg{width:17px!important;height:17px!important}
+  .prop-action-btn{min-height:52px!important;font-size:16px!important}
+  .drill-back{min-height:48px;font-size:15px;padding:12px 16px}
+  .nav-icon-btn{min-width:44px;min-height:44px}
+  .search-add{min-height:46px!important;width:46px!important}
+  .sk-insight-btn{min-height:42px;padding:10px 16px;font-size:14px}
+  .urgent-act-btn{min-height:48px!important;font-size:15px!important}
+  .qa-btn{min-height:44px!important;padding:9px 14px!important;font-size:13px!important}
+  .fq-send-btn{min-height:48px;font-size:15px;border-radius:var(--r-md)}
+  .fq-skip-btn{min-height:48px;font-size:15px;border-radius:var(--r-md)}
+  .fq-scan-btn{min-height:40px;padding:9px 18px;font-size:13px}
+  .inbox-hdr-pill{min-height:40px!important;padding:9px 16px!important;font-size:13px!important}
+  .view-toggle-btn{min-height:44px}
+  /* Panel action quick-buttons in banner */
+  .panel-quick-btns button{min-height:38px!important;font-size:13px!important;padding:8px 14px!important}
+  #panel-banner{height:170px!important}
+
+  /* ── FORM INPUTS & SELECTS: 48px, no iOS zoom ───────────── */
+  .form-input,.form-select{min-height:48px!important;padding:14px 14px!important;font-size:16px!important;border-radius:var(--r-md)}
+  .form-textarea{font-size:16px!important;min-height:90px}
+  .form-row label{font-size:12px;margin-bottom:8px}
+  .addr-dropdown li{padding:14px 16px!important;min-height:50px;font-size:15px;line-height:1.4}
+
+  /* ── MODALS → BOTTOM SHEETS ─────────────────────────────── */
+  .modal-overlay{align-items:flex-end!important;padding:0!important}
+  .modal{
+    border-radius:24px 24px 0 0!important;
+    max-height:93vh!important;max-width:100%!important;
+    transform:translateY(100%)!important;
+    transition:transform .32s cubic-bezier(.32,0,.67,0)!important
+  }
+  .modal-overlay.open .modal{
+    transform:translateY(0)!important;
+    transition:transform .38s cubic-bezier(.16,1,.3,1)!important
+  }
+  /* Drag handle */
+  .modal::before{
+    content:'';display:block;width:36px;height:4px;
+    border-radius:2px;background:rgba(0,0,0,.12);
+    margin:10px auto 0;flex-shrink:0
+  }
+  html.dark .modal::before{background:rgba(255,255,255,.18)}
+  .modal-head{padding:14px 20px 0!important}
+  .modal-title{font-size:18px!important}
+  .modal-body{padding:14px 20px!important}
+  .modal-foot{
+    padding:12px 20px calc(16px + env(safe-area-inset-bottom))!important;
+    flex-direction:column-reverse!important;gap:10px!important
+  }
+  .modal-foot .btn{width:100%!important;min-height:52px!important;font-size:16px!important;justify-content:center!important}
+
+  /* ── CONTEXT MENU → ACTION SHEET ────────────────────────── */
+  #ctx-menu{
+    bottom:0!important;left:0!important;right:0!important;top:auto!important;
+    border-radius:20px 20px 0 0!important;
+    padding:8px 0 env(safe-area-inset-bottom,16px)!important;
+    min-width:unset!important;box-shadow:0 -4px 32px rgba(10,20,40,.22)!important;
+    z-index:9001!important
+  }
+  #ctx-menu .ctx-item{
+    min-height:56px!important;padding:14px 24px!important;
+    font-size:17px!important;font-weight:500!important;
+    border-bottom:1px solid rgba(0,0,0,.06)!important;
+    border-radius:0!important;justify-content:flex-start!important;gap:16px!important
+  }
+  html.dark #ctx-menu .ctx-item{border-bottom-color:rgba(255,255,255,.05)!important}
+  #ctx-menu .ctx-item:last-child{border-bottom:none!important}
+  #ctx-menu .ctx-sep{display:none!important}
+  #ctx-menu .ctx-item svg{width:20px!important;height:20px!important}
+  /* Backdrop for action sheet */
+  #ctx-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.4);
+    z-index:9000;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    display:none;animation:ctxBdIn .2s ease
+  }
+  #ctx-backdrop.visible{display:block}
+  @keyframes ctxBdIn{from{opacity:0}to{opacity:1}}
+
+  /* ── FOLLOW-UP QUEUE PANEL ───────────────────────────────── */
+  .fq-panel{border-radius:24px 24px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .fq-panel::before{
+    content:'';display:block;width:36px;height:4px;
+    border-radius:2px;background:rgba(0,0,0,.12);
+    margin:10px auto 0;flex-shrink:0
+  }
+  html.dark .fq-panel::before{background:rgba(255,255,255,.18)}
+  .fq-body{padding:12px 16px calc(20px + env(safe-area-inset-bottom))}
+
+  /* ── LINE ITEMS IN PROPOSALS ─────────────────────────────── */
+  .line-item{min-height:48px;padding:6px 0}
+  .line-item input[type=checkbox]{width:22px!important;height:22px!important;flex-shrink:0}
+  .line-item label{font-size:15px}
+
+  /* ── STAGE/FILTER CHIPS ──────────────────────────────────── */
+  .qr-chip{min-height:40px;padding:8px 14px;font-size:13px}
+
+  /* ── KANBAN CALL BUTTON ──────────────────────────────────── */
+  .kanban-card-call{width:44px!important;height:44px!important}
+
+  /* ── CALENDAR ────────────────────────────────────────────── */
+  .cal-add-hint{width:44px!important;height:44px!important;opacity:.45!important}
+
+  /* ── STATS MODAL ─────────────────────────────────────────── */
+  #stats-modal{max-width:100%!important}
+
+  /* ── TOGGLE SWITCHES: iOS-size ───────────────────────────── */
+  .qb-row-toggle{width:51px!important;height:31px!important;flex-shrink:0}
+  .qb-row-toggle::after{width:27px!important;height:27px!important;top:2px!important;left:2px!important}
+  .qb-row-toggle.on::after{transform:translateX(20px)!important}
+
+  /* ── TAB BAR IMPROVEMENTS ────────────────────────────────── */
+  .tab-btn{min-height:50px!important}
+  .tab-label{font-size:11px!important;font-weight:600}
+
+  /* ── PANEL SECTION LABELS ────────────────────────────────── */
+  .panel-section-label{font-size:11px;min-height:36px;align-items:center}
+
+  /* ── URGENT MODAL ────────────────────────────────────────── */
+  .urg-modal-inner{border-radius:20px 20px 0 0!important;padding-bottom:calc(20px + env(safe-area-inset-bottom))!important}
+
+  /* ── SEARCH ADD MENU ─────────────────────────────────────── */
+  .search-add-menu button{min-height:48px;font-size:15px;padding:12px 16px}
+
+  /* ── ADDR DROPDOWN ITEMS ─────────────────────────────────── */
+  .addr-dropdown{border-radius:0 0 var(--r-md) var(--r-md)}
+
+  /* ── MAIN LAYOUT ─────────────────────────────────────────── */
+  .main{padding-left:12px!important;padding-right:12px!important}
+  .section-head{gap:8px;margin-bottom:12px}
+
+  /* ── PROPOSAL LINK ACTIONS ───────────────────────────────── */
+  .link-actions .btn{min-height:44px}
+
+  /* ── PERMISSION-STYLE SHEETS FOR DEEP PANELS ─────────────── */
+  .drill-level{padding:14px 16px!important}
+  #drill-contact-scroll{padding:16px 16px calc(80px + env(safe-area-inset-bottom)) 16px!important}
+}
 </style>
 </head>
 <body>
@@ -15974,12 +16127,29 @@ window.closeAddMenu = function() {
   const menu = document.createElement('div');
   menu.id = 'ctx-menu';
   document.body.appendChild(menu);
+  // Backdrop for mobile action-sheet style
+  const _ctxBd = document.createElement('div');
+  _ctxBd.id = 'ctx-backdrop';
+  _ctxBd.onclick = () => hideCtx();
+  document.body.appendChild(_ctxBd);
 
   let _ctxContactId = null;
+  const _isMobileCtx = () => window.innerWidth <= 480;
 
   function hideCtx() {
     menu.style.display = 'none';
+    _ctxBd.classList.remove('visible');
     _ctxContactId = null;
+  }
+
+  function _showCtxSheet() {
+    menu.style.display = 'block';
+    if (_isMobileCtx()) {
+      // Bottom sheet: don't set left/top — CSS handles position
+      menu.style.left = '';
+      menu.style.top = '';
+      _ctxBd.classList.add('visible');
+    }
   }
 
   function showCtx(x, y, contactId) {
@@ -16015,14 +16185,17 @@ window.closeAddMenu = function() {
         ${isArchived ? 'Unarchive' : 'Archive'}
       </button>
     `;
-    menu.style.display = 'block';
-    // Position — keep inside viewport
-    requestAnimationFrame(() => {
-      const r = menu.getBoundingClientRect();
-      const vw = window.innerWidth, vh = window.innerHeight;
-      menu.style.left = (Math.min(x, vw - r.width - 8)) + 'px';
-      menu.style.top  = (Math.min(y, vh - r.height - 8)) + 'px';
-    });
+    if (_isMobileCtx()) {
+      _showCtxSheet();
+    } else {
+      menu.style.display = 'block';
+      requestAnimationFrame(() => {
+        const r = menu.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight;
+        menu.style.left = (Math.min(x, vw - r.width - 8)) + 'px';
+        menu.style.top  = (Math.min(y, vh - r.height - 8)) + 'px';
+      });
+    }
   }
 
   window._showPhoneMenu = function(e, contactId) {
@@ -16044,13 +16217,17 @@ window.closeAddMenu = function() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy Phone
       </button>`;
-    menu.style.display = 'block';
-    requestAnimationFrame(() => {
-      const r = menu.getBoundingClientRect();
-      const vw = window.innerWidth, vh = window.innerHeight;
-      menu.style.left = (Math.min(e.clientX, vw - r.width - 8)) + 'px';
-      menu.style.top  = (Math.min(e.clientY, vh - r.height - 8)) + 'px';
-    });
+    if (_isMobileCtx()) {
+      _showCtxSheet();
+    } else {
+      menu.style.display = 'block';
+      requestAnimationFrame(() => {
+        const r = menu.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight;
+        menu.style.left = (Math.min(e.clientX, vw - r.width - 8)) + 'px';
+        menu.style.top  = (Math.min(e.clientY, vh - r.height - 8)) + 'px';
+      });
+    }
   };
 
   window._showAddressMenu = function(e, contactId) {
@@ -16067,13 +16244,17 @@ window.closeAddMenu = function() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy Address
       </button>`;
-    menu.style.display = 'block';
-    requestAnimationFrame(() => {
-      const r = menu.getBoundingClientRect();
-      const vw = window.innerWidth, vh = window.innerHeight;
-      menu.style.left = (Math.min(e.clientX, vw - r.width - 8)) + 'px';
-      menu.style.top  = (Math.min(e.clientY, vh - r.height - 8)) + 'px';
-    });
+    if (_isMobileCtx()) {
+      _showCtxSheet();
+    } else {
+      menu.style.display = 'block';
+      requestAnimationFrame(() => {
+        const r = menu.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight;
+        menu.style.left = (Math.min(e.clientX, vw - r.width - 8)) + 'px';
+        menu.style.top  = (Math.min(e.clientY, vh - r.height - 8)) + 'px';
+      });
+    }
   };
 
   window._ctxOpenMaps = function() {
