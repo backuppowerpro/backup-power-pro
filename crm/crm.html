@@ -729,6 +729,13 @@ html.dark .tab-btn:focus-visible{outline-color:var(--gold)}
 .tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;line-height:1;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;vertical-align:1px;font-variant-numeric:tabular-nums}
 .tab-badge.tab-badge-red{background:var(--red);color:#fff;font-weight:700}
 html.dark .tab-badge{background:var(--gold);color:#1e1b17}
+/* Sparky tab — gold tint, never gets the regular active underline */
+.tab-btn-sparky{color:#d4920a}
+.tab-btn-sparky:hover:not(.active){color:var(--gold)}
+.tab-btn-sparky .tab-icon{color:var(--gold)}
+html.dark .tab-btn-sparky{color:var(--gold)}
+/* Hide the floating launcher — Sparky is now in the tab bar */
+.tm-launcher{display:none!important}
 @media(max-width:480px){.tab-btn{padding:13px 14px;font-size:13px}}
 
 /* ── QUOTE BUILDER ────────────────────────────────────── */
@@ -1623,7 +1630,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* Push page content up from bottom tab + extra thumb room */
   .main{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
 
-  /* View toggle: icon-only on mobile */
+  /* View toggle: hide pipeline btn on mobile (list-only on iPhone) */
+  #view-pipe-btn{display:none!important}
   .view-toggle-btn{padding:7px 9px!important;font-size:0!important;line-height:0!important;gap:0!important;min-width:34px;min-height:44px}
   .view-toggle-btn svg{display:block!important}
   .view-toggle{gap:2px}
@@ -2111,6 +2119,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')">
     <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     <span class="tab-label">Messages</span><span class="tab-badge tab-badge-red" id="tab-msg-badge" style="display:none"></span>
+  </button>
+  <button class="tab-btn tab-btn-sparky" id="tab-btn-sparky" onclick="if(typeof tmOpenPanel==='function')tmOpenPanel()" title="Ask Sparky">
+    <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+    <span class="tab-label">Sparky</span><span class="tab-badge tab-badge-red" id="tab-sparky-badge" style="display:none"></span>
   </button>
 </div>
 
@@ -10748,14 +10760,18 @@ function refreshInvoiceTabBadge() {
 // has explicitly chosen one before.
 let leadsView = (function() {
   try {
+    const onPhone = typeof window !== 'undefined' && window.matchMedia('(max-width:480px)').matches;
+    if (onPhone) return 'list'; // pipeline is desktop-only — always list on iPhone
     const saved = localStorage.getItem('bpp_crm_leads_view');
     if (saved === 'list' || saved === 'pipeline' || saved === 'permits' || saved === 'materials') return saved;
-    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width:768px)').matches;
+    const isMobile = window.matchMedia('(max-width:768px)').matches;
     return isMobile ? 'list' : 'pipeline';
   } catch(e) { return 'pipeline'; }
 })();
 
 function setLeadsView(v) {
+  // Pipeline is desktop-only — force list on iPhone
+  if (window.matchMedia('(max-width:480px)').matches && v === 'pipeline') v = 'list';
   leadsView = v;
   try { localStorage.setItem('bpp_crm_leads_view', v); } catch(e) {}
   const listBtn = document.getElementById('view-list-btn');
@@ -15412,18 +15428,20 @@ setTimeout(() => {
     try {
       var launcher = document.getElementById('tm-launcher');
       var badge = document.getElementById('tm-launcher-badge');
-      if (!launcher) return;
+      var tabBadge = document.getElementById('tab-sparky-badge');
+      var tabBtn = document.getElementById('tab-btn-sparky');
       var b = buildBriefing();
       var urgentCount = (b.urgent && b.urgent.length) || 0;
       if (urgentCount > 0) {
-        launcher.classList.add('alert');
-        if (badge) {
-          badge.textContent = urgentCount > 9 ? '9+' : String(urgentCount);
-          badge.style.display = '';
-        }
+        if (launcher) launcher.classList.add('alert');
+        if (badge) { badge.textContent = urgentCount > 9 ? '9+' : String(urgentCount); badge.style.display = ''; }
+        if (tabBadge) { tabBadge.textContent = urgentCount > 9 ? '9+' : String(urgentCount); tabBadge.style.display = ''; }
+        if (tabBtn) tabBtn.style.color = 'var(--gold)';
       } else {
-        launcher.classList.remove('alert');
+        if (launcher) launcher.classList.remove('alert');
         if (badge) badge.style.display = 'none';
+        if (tabBadge) tabBadge.style.display = 'none';
+        if (tabBtn) tabBtn.style.color = '';
       }
     } catch(e) {}
   }
