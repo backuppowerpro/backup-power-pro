@@ -582,7 +582,56 @@ html.dark .approval-notif-amount{color:var(--gold)}
   /* Inbox header: don't right-align on mobile, let 3 buttons sit naturally */
   .inbox-hdr-actions{justify-content:flex-start}
   /* (action-bar removed) */
+
+  /* ── MOBILE CONTACT PANEL ─────────────────────────────── */
+  /* Banner: taller to fit wrapped action buttons */
+  #panel-banner{height:160px!important}
+  /* Name in banner: slightly tighter */
+  #panel-banner .panel-name{font-size:20px!important;margin-bottom:6px!important}
+  /* Action buttons: wrap to 2 rows, bigger tap targets */
+  .panel-quick-btns{flex-wrap:wrap!important;gap:6px!important}
+  .panel-quick-btns button{font-size:12px!important;padding:6px 13px!important;min-height:34px!important}
+  /* Close button: proper 44px tap target */
+  #panel-banner .modal-close{width:44px!important;height:44px!important;font-size:18px!important;top:8px!important;right:8px!important}
+  /* Panel scroll: ensure last content isn't hidden under safe area */
+  #drill-contact-scroll{padding-bottom:max(80px,calc(70px + env(safe-area-inset-bottom)))!important}
+  /* Panel foot: safe area */
+  .panel-foot{padding-bottom:max(16px,calc(12px + env(safe-area-inset-bottom)))}
+  /* Drill back button: full-width tap zone */
+  .drill-back{min-height:44px;padding:10px 14px}
+
+  /* ── MOBILE LEADS LIST ────────────────────────────────── */
+  /* Replace table with native-feeling card list (handled by .mobile-lead-list in JS) */
+  /* When mobile card list is active, table-wrap sits in it, hide its chrome */
+  .mobile-lead-list .table-wrap,.mobile-lead-list table,
+  .mobile-lead-list thead,.mobile-lead-list .table-scroll{all:unset;display:contents}
+
+  /* ── MOBILE TOOLBAR ───────────────────────────────────── */
+  /* On mobile, collapse toolbar row but keep search usable */
+  .toolbar{gap:8px}
+  /* Follow-up queue button: full width on mobile */
+  #fq-launch-btn{flex:1;justify-content:center}
 }
+
+/* ── MOBILE LEAD CARDS (≤480px card list) ────────────── */
+.mobile-lead-list{display:flex;flex-direction:column;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu);overflow:hidden;margin-top:12px}
+.mlc{display:flex;align-items:center;gap:12px;padding:13px 16px;min-height:64px;border-bottom:1px solid rgba(0,0,0,.055);cursor:pointer;background:var(--bg);transition:background .1s;-webkit-tap-highlight-color:transparent;text-decoration:none}
+.mlc:last-child{border-bottom:none}
+.mlc:active{background:rgba(11,31,59,.055)}
+html.dark .mlc{border-bottom-color:rgba(255,255,255,.06)}
+html.dark .mlc:active{background:rgba(255,255,255,.04)}
+.mlc-body{flex:1;min-width:0;overflow:hidden}
+.mlc-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:15.5px;color:var(--text);letter-spacing:-.018em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px;display:flex;align-items:center;gap:5px}
+.mlc-stage{font-size:12px;font-weight:600;letter-spacing:-.005em}
+.mlc-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.mlc-chevron{color:var(--text3);font-size:18px;font-weight:300;line-height:1;margin-right:-2px}
+.mlc-urg{font-size:15px;line-height:1}
+/* Mobile unread dot in name row */
+.mlc-unread{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;box-shadow:0 0 0 2px rgba(220,38,38,.2)}
+.mlc-archived{opacity:.5}
+/* Mobile pipeline header pill strip — horizontal scroll */
+.mobile-pipeline-strip{display:flex;gap:6px;overflow-x:auto;padding:0 0 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.mobile-pipeline-strip::-webkit-scrollbar{display:none}
 
 /* ── FAB (Floating Action Button) ────────────────────── */
 .fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--navy);border:none;font-size:28px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(255,186,0,.32),0 2px 6px rgba(10,20,40,.18);z-index:60;display:flex;align-items:center;justify-content:center;transition:transform var(--t-base),box-shadow var(--t-base);font-family:'Outfit',sans-serif;line-height:1}
@@ -633,16 +682,19 @@ html.dark .fq-send-btn{background:var(--gold);color:#1e1b17}
 html.dark .gear-menu{background:var(--bg)}
 
 /* ── CONTACT INFO SUMMARY (compact one-line) ────────── */
-.contact-info-summary{display:none;align-items:center;gap:6px;padding:8px 10px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s;margin-bottom:var(--sp-md);font-size:12.5px;color:var(--text2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.contact-info-summary{display:none;align-items:center;gap:6px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s;margin-bottom:var(--sp-md);font-size:13px;color:var(--text2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:var(--shadow-neu-sm);min-height:44px}
 .contact-info-summary:hover{background:var(--border)}
+.contact-info-summary:active{background:rgba(11,31,59,.06)}
 .contact-info-summary .info-sep{color:var(--text3);margin:0 2px}
-.contact-info-expanded{display:block}
+.contact-info-summary::before{content:'Contact';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);flex-shrink:0;font-family:'Outfit',sans-serif}
+.contact-info-summary::after{content:'›';margin-left:auto;color:var(--text3);font-size:20px;font-weight:300;flex-shrink:0;line-height:1}
+.contact-info-expanded{display:none}
 .contact-info-expanded.open{display:block}
 html.dark .contact-info-summary{background:var(--bg)}
 html.dark .contact-info-summary:hover{background:rgba(255,255,255,.04)}
 
 /* ── DETAILS SECTION (collapsed by default) ─────────── */
-.panel-details-toggle{display:flex;align-items:center;gap:6px;padding:8px 0;cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;width:100%;transition:color .15s}
+.panel-details-toggle{display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;width:100%;transition:color .15s;min-height:44px}
 .panel-details-toggle:hover{color:var(--text2)}
 .panel-details-toggle svg{transition:transform .2s}
 .panel-details-content{display:none}
@@ -2718,7 +2770,7 @@ function _bannerHtml(c) {
   const textBtnDot = _hasUnread ? '<span style="width:7px;height:7px;border-radius:50%;background:#dc2626;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)"></span>' : '';
   const nameLabel = `<div style="position:absolute;left:16px;right:64px;bottom:10px;z-index:3">
     <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.018em;text-shadow:0 2px 14px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;margin-bottom:8px">${displayName}</div>
-    <div style="display:flex;gap:7px">
+    <div class="panel-quick-btns" style="display:flex;gap:7px">
       <button onclick="openMessagesFromPanel()" style="${textBtnStyle}" title="Text">${textBtnDot}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Text</button>
       ${c.phone ? `<button onclick="panelCallContact()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Call"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Call</button>` : ''}
       <button onclick="openMapsFromPanel()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Maps"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Maps</button>
@@ -3045,6 +3097,31 @@ async function loadContacts() {
   }
 }
 
+// ── Mobile card renderer (≤480px) ────────────────────────────
+function _renderMobileCard(c) {
+  const stageInfo = PERMIT_STAGES.find(s => s.id === (c.stage || 1)) || PERMIT_STAGES[0];
+  const urg = _kanbanUrgency(c, stageInfo);
+  const urgEl = urg.level === 'hot' ? '<span class="mlc-urg">🔥</span>' : urg.level === 'warm' ? '<span class="mlc-urg" style="opacity:.75">⚠️</span>' : '';
+  const hasUnread = _unreadContactIds.has(c.id);
+  const unreadEl = hasUnread ? '<span class="mlc-unread"></span>' : '';
+  const actType = contactActivityType(c.id);
+  const actColors = { approved:'var(--gold)', paid:'var(--green)', viewed:'#3b82f6' };
+  const actEl = actType ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${actColors[actType]};flex-shrink:0"></span>` : '';
+  const avatarHtml = _avatarHtml(c, 40);
+  const displayName = esc(dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead'));
+  const isArchived = c.status === 'Archived';
+  const dupIds = getDupIds(c.id);
+  const dupEl = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:1px 5px;border-radius:var(--r-pill);font-weight:700;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
+  return `<div class="mlc${isArchived?' mlc-archived':''}" onclick="openPanel('${c.id}')">
+    ${avatarHtml}
+    <div class="mlc-body">
+      <div class="mlc-name">${displayName}${unreadEl}${actEl}${dupEl}</div>
+      <div class="mlc-stage" style="color:${stageInfo.color}">${esc(stageInfo.label)}${isArchived?'<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px">archived</span>':''}</div>
+    </div>
+    <div class="mlc-right">${urgEl}<span class="mlc-chevron">›</span></div>
+  </div>`;
+}
+
 function renderContacts() {
   const searchEl = document.getElementById('search');
   searchTerm = ((searchEl && searchEl.value) || '').toLowerCase();
@@ -3166,6 +3243,18 @@ function renderContacts() {
       </div>`;
     }).join('');
     wrap.innerHTML = `<div class="urgent-list">${urgCards}</div>`;
+    return;
+  }
+
+  // ── MOBILE CARD LIST — native-feeling on phones ────────────────────────────
+  if (window.innerWidth <= 480) {
+    const cards = visible.map(c => _renderMobileCard(c)).join('');
+    wrap.innerHTML = `<div class="mobile-lead-list">${cards}</div>`;
+    // Sync kanban if needed
+    if (typeof leadsView !== 'undefined' && leadsView === 'pipeline' && typeof renderKanban === 'function') {
+      try { renderKanban(); } catch(e) {}
+    }
+    try { renderActionBar(); } catch(e) {}
     return;
   }
 
@@ -3539,14 +3628,26 @@ function openPanel(id) {
   if (_evChev)   _evChev.style.transform = '';
   setTimeout(renderPanelEvents, 0); // populate count badge while collapsed
   setTimeout(_initNeighborPanel, 0); // show neighbor card section + history
-  // contact info always expanded on open, summary always hidden
+  // On mobile: start with contact info collapsed (show summary) so first thing visible is
+  // Sparky insight + proposals. On desktop: always expand.
   const _ciSummary = document.getElementById('contact-info-summary');
   const _ciExpanded = document.getElementById('contact-info-expanded');
-  if (_ciSummary) _ciSummary.style.display = 'none';
-  if (_ciExpanded) _ciExpanded.classList.add('open');
-  document.getElementById('panel-details-content').classList.add('open');
-  const detailsIcon = document.getElementById('panel-details-icon');
-  if (detailsIcon) detailsIcon.style.transform = 'rotate(-180deg)';
+  const _isMobile = window.innerWidth <= 480;
+  if (_isMobile) {
+    // Collapsed: show summary, hide form fields
+    if (_ciExpanded) _ciExpanded.classList.remove('open');
+    if (_ciSummary) _ciSummary.style.display = 'flex';
+    // Also collapse details section on mobile
+    document.getElementById('panel-details-content').classList.remove('open');
+    const detailsIcon = document.getElementById('panel-details-icon');
+    if (detailsIcon) detailsIcon.style.transform = '';
+  } else {
+    if (_ciSummary) _ciSummary.style.display = 'none';
+    if (_ciExpanded) _ciExpanded.classList.add('open');
+    document.getElementById('panel-details-content').classList.add('open');
+    const detailsIcon = document.getElementById('panel-details-icon');
+    if (detailsIcon) detailsIcon.style.transform = 'rotate(-180deg)';
+  }
   updateContactInfoPreview();
   // Notes preview in collapsed details toggle
   const notesPreview = document.getElementById('panel-notes-preview');
