@@ -1690,9 +1690,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .tab-bar.mini{min-height:46px;padding:4px 6px!important;
     box-shadow:0 8px 24px rgba(10,20,40,.14),0 2px 6px rgba(10,20,40,.08),inset 0 1px 0 rgba(255,255,255,.9)!important}
   html.dark .tab-bar.mini{box-shadow:0 8px 24px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06)!important}
+  /* Badges: always pinned top-right of icon area (Apple HIG — never below label) */
+  .tab-badge{position:absolute!important;top:0px;right:4px;margin-left:0!important;vertical-align:unset!important}
   .tab-bar.mini .tab-label{opacity:0;height:0;overflow:hidden;pointer-events:none;transition:opacity .18s ease,height .18s ease}
-  .tab-bar.mini .tab-btn{padding:8px 4px!important;gap:0;position:relative}
-  .tab-bar.mini .tab-badge{position:absolute;top:2px;right:2px;margin-left:0}
+  .tab-bar.mini .tab-btn{padding:8px 4px!important;gap:0}
+  /* position:relative already on .tab-btn — badges sit in icon area */
 
   /* Tab buttons — pill-shaped, no border lines */
   .tab-btn{
@@ -1703,15 +1705,25 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     gap:3px;flex-shrink:1;white-space:nowrap;
     position:relative;transition:background .2s ease,color .18s ease,transform .1s ease
   }
-  /* Active tab — pill capsule fill (the Liquid Glass active indicator) */
+  /* Active tab — compact capsule indicator (Apple HIG: never full-width fill) */
   .tab-btn.active{
-    background:rgba(11,31,59,.11)!important;
+    background:transparent!important;
     color:var(--navy)!important;font-weight:700;
     border-top-color:transparent!important;border-bottom-color:transparent!important
   }
+  /* ::before creates the contained capsule — inset keeps it proportional to content */
+  .tab-btn.active::before{
+    content:'';position:absolute;inset:2px 6px;
+    background:rgba(11,31,59,.11);
+    border-radius:20px;
+    pointer-events:none
+  }
   html.dark .tab-btn.active{
-    background:rgba(255,186,0,.16)!important;
+    background:transparent!important;
     color:var(--gold)!important
+  }
+  html.dark .tab-btn.active::before{
+    background:rgba(255,186,0,.16)
   }
   /* Press scale */
   .tab-btn:active{transform:scale(.92)!important}
@@ -2304,7 +2316,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     </div>
 
     <!-- ── INBOX sub-tab ─────────────────────────────────── -->
-    <div id="msgtab-inbox">
+    <div id="msgtab-inbox" style="padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))">
       <div class="section-head" style="margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <div class="section-title">Inbox</div>
@@ -2831,7 +2843,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       </div>
     </div>
     <!-- LEVEL 2: Proposal View -->
-    <div class="drill-level right" id="drill-proposal" style="padding:0;overflow:hidden">
+    <div class="drill-level right" id="drill-proposal" style="padding:0;overflow:hidden;display:flex;flex-direction:column;min-height:0">
       <div class="drill-head"><button class="drill-back" onclick="drillTo('contact')">&larr; Contact</button></div>
       <div id="drill-proposal-content" class="drill-body"></div>
     </div>
@@ -2891,7 +2903,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         </div>
         <div id="msg-search-count" style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600"></div>
       </div>
-      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;overscroll-behavior:contain" ontouchstart="if(!event.target.closest('button,a,input,textarea,.msg-bubble'))document.getElementById('msg-compose')?.blur()"></div>
+      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;overscroll-behavior:contain" ontouchstart="if(!event.target.closest('button,a,input,textarea,.msg-bubble'))document.getElementById('msg-compose')?.blur()"></div>
       <!-- SMS opt-out warning — shown if contact texted STOP -->
       <div id="msg-optout-banner" style="display:none;background:rgba(220,38,38,.08);border-top:1px solid rgba(220,38,38,.2);padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);flex-shrink:0;text-align:center"></div>
       <div style="flex-shrink:0;background:var(--bg);border-top:1px solid var(--border);box-shadow:0 -2px 12px rgba(10,20,40,.06)">
@@ -16966,7 +16978,7 @@ window.closeAddMenu = function() {
 // Sets --kb CSS variable to the keyboard height in real time.
 // CSS transitions on panels/modals use this to ride above the keyboard.
 (function(){
-  if(window.innerWidth > 480) return;
+  if(window.innerWidth > 640) return;
   if(!window.visualViewport) return;
   var root=document.documentElement;
   function _updateKb(){
