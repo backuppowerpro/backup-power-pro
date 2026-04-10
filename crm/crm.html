@@ -16746,7 +16746,7 @@ window.closeAddMenu = function() {
   var ptr = document.createElement('div');
   ptr.id = 'ptr-indicator';
   ptr.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg><span>Refreshing…</span>';
-  ptr.style.cssText='position:fixed;top:calc(-48px + env(safe-area-inset-top,0px));left:0;right:0;height:48px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--text2);background:var(--bg);z-index:40;transition:transform .2s ease,opacity .2s ease;opacity:0;transform:translateY(0)';
+  ptr.style.cssText='position:fixed;top:calc(-48px + env(safe-area-inset-top,0px));left:0;right:0;height:48px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text2);background:var(--bg);z-index:40;transition:transform .2s ease,opacity .2s ease;opacity:0;transform:translateY(0)';
   document.body.appendChild(ptr);
 
   var startY=0, pulling=false, triggered=false;
