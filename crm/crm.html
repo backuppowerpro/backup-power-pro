@@ -1625,31 +1625,75 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
    Must be LAST in stylesheet to win cascade.
    ══════════════════════════════════════════════════════════ */
 @media(max-width:640px){
-  /* Bottom tab bar — iOS native pattern */
+  /* ── LIQUID GLASS floating pill tab bar (iOS 26) ─────────── */
   .tab-bar{
-    position:fixed!important;top:auto!important;bottom:0!important;
-    left:0;right:0;
-    height:calc(56px + env(safe-area-inset-bottom,0px));
-    padding-bottom:env(safe-area-inset-bottom,0px);
-    padding-left:env(safe-area-inset-left,0px);
-    padding-right:env(safe-area-inset-right,0px);
-    justify-content:space-around;overflow-x:visible;
-    border-bottom:none!important;border-top:1px solid var(--border);
-    box-shadow:0 -1px 12px rgba(10,20,40,.06);z-index:51
+    position:fixed!important;top:auto!important;
+    bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;
+    left:16px!important;right:16px!important;width:auto!important;
+    height:auto;min-height:52px;
+    padding:5px 6px!important;
+    border-radius:40px!important;
+    /* Frosted glass material */
+    background:rgba(232,237,246,.87)!important;
+    -webkit-backdrop-filter:blur(28px) saturate(180%) brightness(1.04);
+    backdrop-filter:blur(28px) saturate(180%) brightness(1.04);
+    /* Glass border — top highlight + subtle surround */
+    border:none!important;
+    outline:0.5px solid rgba(255,255,255,.75)!important;
+    /* Floating shadow — layered for depth */
+    box-shadow:
+      0 12px 40px rgba(10,20,40,.18),
+      0 3px 10px rgba(10,20,40,.10),
+      inset 0 1px 0 rgba(255,255,255,.95),
+      inset 0 -1px 0 rgba(0,0,0,.04)!important;
+    justify-content:space-around;overflow:visible;z-index:51;
+    transition:transform .28s cubic-bezier(0.34,1.12,0.64,1),opacity .2s ease
   }
-  .tab-btn{
-    flex:1;padding:7px 4px 5px!important;
-    flex-direction:column;align-items:center;justify-content:flex-start;
-    border-bottom:none!important;border-top:2px solid transparent;
-    margin-bottom:0!important;font-size:10px!important;font-weight:600;
-    gap:3px;flex-shrink:1;white-space:nowrap
+  /* Dark mode glass */
+  html.dark .tab-bar{
+    background:rgba(13,17,28,.84)!important;
+    outline-color:rgba(255,255,255,.10)!important;
+    box-shadow:
+      0 12px 40px rgba(0,0,0,.50),
+      0 3px 10px rgba(0,0,0,.30),
+      inset 0 1px 0 rgba(255,255,255,.07),
+      inset 0 -1px 0 rgba(0,0,0,.2)!important
   }
-  .tab-btn.active{border-top-color:var(--gold)!important;border-bottom-color:transparent!important;color:var(--navy);font-weight:700}
-  html.dark .tab-btn.active{color:var(--gold)}
-  .tab-icon{display:block!important;width:20px;height:20px;flex-shrink:0}
+  /* Mini state — tab bar shrinks to icon-only when scrolling down */
+  .tab-bar.mini{min-height:46px;padding:4px 6px!important;
+    box-shadow:0 8px 24px rgba(10,20,40,.14),0 2px 6px rgba(10,20,40,.08),inset 0 1px 0 rgba(255,255,255,.9)!important}
+  html.dark .tab-bar.mini{box-shadow:0 8px 24px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06)!important}
+  .tab-bar.mini .tab-label{opacity:0;height:0;overflow:hidden;pointer-events:none;transition:opacity .18s ease,height .18s ease}
+  .tab-bar.mini .tab-btn{padding:8px 4px!important;gap:0}
 
-  /* Push page content up from bottom tab + extra thumb room */
-  .main{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
+  /* Tab buttons — pill-shaped, no border lines */
+  .tab-btn{
+    flex:1;padding:6px 4px 5px!important;
+    flex-direction:column;align-items:center;justify-content:center;
+    border:none!important;border-radius:32px;
+    margin:0!important;font-size:10px!important;font-weight:600;
+    gap:3px;flex-shrink:1;white-space:nowrap;
+    position:relative;transition:background .2s ease,color .18s ease,transform .1s ease
+  }
+  /* Active tab — pill capsule fill (the Liquid Glass active indicator) */
+  .tab-btn.active{
+    background:rgba(11,31,59,.11)!important;
+    color:var(--navy)!important;font-weight:700;
+    border-top-color:transparent!important;border-bottom-color:transparent!important
+  }
+  html.dark .tab-btn.active{
+    background:rgba(255,186,0,.16)!important;
+    color:var(--gold)!important
+  }
+  /* Press scale */
+  .tab-btn:active{transform:scale(.92)!important}
+  .tab-icon{display:block!important;width:22px;height:22px;flex-shrink:0}
+  /* Sparky gets a subtle visual separation (like Apple's trailing search tab) */
+  #tab-btn-sparky{border-left:1px solid rgba(0,0,0,.09);margin-left:3px;padding-left:8px!important}
+  html.dark #tab-btn-sparky{border-left-color:rgba(255,255,255,.09)}
+
+  /* Push page content up above floating pill + gap */
+  .main{padding-bottom:calc(108px + env(safe-area-inset-bottom,0px))!important}
 
   /* View toggle: hide pipeline btn on mobile (list-only on iPhone) */
   #view-pipe-btn{display:none!important}
@@ -1657,14 +1701,14 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .view-toggle-btn svg{display:block!important}
   .view-toggle{gap:2px}
 
-  /* Sparky launcher above bottom tab */
-  .tm-launcher{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important;right:16px!important}
+  /* Sparky launcher above floating pill */
+  .tm-launcher{bottom:calc(90px + env(safe-area-inset-bottom,0px))!important;right:16px!important}
 
-  /* Toast above bottom tab */
-  .toast{bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}
+  /* Toast above floating pill */
+  .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
 
-  /* Call bar above bottom tab */
-  .call-bar{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+  /* Call bar above floating pill */
+  .call-bar{bottom:calc(90px + env(safe-area-inset-bottom,0px))!important}
 
   /* Message thread header: on mobile, hide call/search/phone/stage — just back + avatar + name */
   .msg-hdr-desktop{display:none!important}
@@ -17213,6 +17257,30 @@ document.addEventListener('focusin', function(e) {
     if (dx < 0 && idx < TABS.length - 1) switchTab(TABS[idx + 1]); // swipe left → next
     else if (dx > 0 && idx > 0) switchTab(TABS[idx - 1]);           // swipe right → prev
   }, { passive: true });
+})();
+
+// ── Liquid Glass tab bar: minimize on scroll down, expand on scroll up ────────
+(function() {
+  var _tabEl = document.getElementById('main-tab-bar');
+  var _lastY = 0, _ticking = false;
+  function _onScroll(el) {
+    var sy = el.scrollTop !== undefined ? el.scrollTop : (window.pageYOffset || 0);
+    if (!_ticking) {
+      requestAnimationFrame(function() {
+        if (window.innerWidth > 640 || !_tabEl) { _ticking = false; return; }
+        if (sy > _lastY + 10 && sy > 80) {
+          _tabEl.classList.add('mini');
+        } else if (sy < _lastY - 6 || sy < 30) {
+          _tabEl.classList.remove('mini');
+        }
+        _lastY = sy;
+        _ticking = false;
+      });
+      _ticking = true;
+    }
+  }
+  // Listen on all scrollable content containers
+  document.addEventListener('scroll', function(e) { _onScroll(e.target); }, { capture: true, passive: true });
 })();
 
 // ── Prevent pinch-zoom and double-tap-zoom on iOS ─────────────────────────────
