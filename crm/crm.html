@@ -89,14 +89,10 @@ html.dark .cal-day-head{border-bottom-color:rgba(255,255,255,.05);background:rgb
 html.dark .cal-day.today .cal-day-num{color:var(--gold)}
 html.dark .cal-day.locked .cal-day-body{background:rgba(255,255,255,.03)}
 html.dark .week-label{color:var(--text)}
-html.dark .cal-event.evt-contact{background:#3d3520;color:#e6a800}
-html.dark .cal-event.evt-contact:hover{background:#4d4228}
-html.dark .cal-event.evt-nocontact{background:#1e2a3d;color:#7cb3f0}
-html.dark .cal-event.evt-nocontact:hover{background:#2a3a52}
-html.dark .cal-event.complete{background:#1a3328;color:#4ade80}
-html.dark .cal-event.complete:hover{background:#254d38}
-html.dark .cal-event.cancelled{background:#3d1e1e;color:#f87171}
-html.dark .cal-event.cancelled:hover{background:#4d2828}
+html.dark .cal-event.evt-contact{background:#d97706;color:#fff}
+html.dark .cal-event.evt-nocontact{background:#2563eb;color:#fff}
+html.dark .cal-event.complete{background:#059669;color:#fff}
+html.dark .cal-event.cancelled{background:#dc2626;color:#fff}
 /* Danger button dark mode */
 html.dark .btn-danger{background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.25)}
 html.dark .btn-danger:hover{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.4)}
@@ -428,15 +424,15 @@ td.actions{white-space:nowrap}
 .cal-day-body{flex:1;padding:4px;display:flex;flex-direction:column;gap:3px;cursor:pointer}
 .cal-day-body.cal-full{cursor:default}
 .cal-day:not(.locked) .cal-day-body:hover:not(.cal-full):not(:has(.cal-event:hover)){background:rgba(59,130,246,.04)}
-.cal-event{border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer;transition:background .1s;line-height:1.4;flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cal-event.evt-contact{background:#fef3c7;color:#92400e;border:none}
-.cal-event.evt-contact:hover{background:#fde68a}
-.cal-event.evt-nocontact{background:#dbeafe;color:#1e40af;border:none}
-.cal-event.evt-nocontact:hover{background:#bfdbfe}
-.cal-event.complete{background:#dcfce7;color:#166534;border:none}
-.cal-event.complete:hover{background:#bbf7d0}
-.cal-event.cancelled{background:#fee2e2;color:#991b1b;border:none}
-.cal-event.cancelled:hover{background:#fecaca}
+.cal-event{border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer;transition:filter .1s,opacity .1s;line-height:1.4;flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:none}
+.cal-event.evt-contact{background:#f59e0b;color:#fff}
+.cal-event.evt-contact:hover{filter:brightness(.92)}
+.cal-event.evt-nocontact{background:#3b82f6;color:#fff}
+.cal-event.evt-nocontact:hover{filter:brightness(.92)}
+.cal-event.complete{background:#10b981;color:#fff}
+.cal-event.complete:hover{filter:brightness(.92)}
+.cal-event.cancelled{background:#ef4444;color:#fff;opacity:.75}
+.cal-event.cancelled:hover{opacity:1}
 .cal-add-hint{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin:auto;border-radius:50%;font-size:16px;color:var(--text3);text-align:center;opacity:.32;transition:opacity .15s, background .15s, color .15s, transform .15s, border-color .15s;line-height:1;font-weight:400;border:1px dashed var(--border-strong)}
 .cal-slot{flex:1 1 0;min-height:0;padding:8px 10px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center}
 .cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{opacity:1;background:rgba(255,186,0,.12);color:var(--navy);border-color:rgba(255,186,0,.5);transform:scale(1.05)}
@@ -2283,9 +2279,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <label>Notes</label>
         <textarea class="form-textarea" id="j-notes" style="min-height:64px" placeholder="Notes for this event…"></textarea>
       </div>
-      <div id="j-actions" style="display:none;gap:8px;margin-top:8px">
-        <button class="btn btn-outline btn-sm" style="flex:1;color:var(--green);border-color:var(--green)" onclick="setEventStatus('Complete')">✓ Complete</button>
-        <button class="btn btn-outline btn-sm" style="flex:1;color:var(--red);border-color:#fecaca" onclick="setEventStatus('Cancelled')">Cancel Event</button>
+      <div id="j-actions" style="display:none;gap:8px;margin-top:12px">
+        <button class="btn btn-sm" style="flex:1;background:#10b981;color:#fff;font-weight:700;border:none" onclick="setEventStatus('Complete')">✓ Mark Complete</button>
+        <button class="btn btn-sm" style="flex:1;background:#ef4444;color:#fff;font-weight:700;border:none" onclick="setEventStatus('Cancelled')">✕ Cancel Event</button>
       </div>
     </div>
     <div class="modal-foot" style="display:none"></div>
