@@ -991,11 +991,13 @@ html.dark .qa-btn-secondary:hover{color:var(--gold)}
 .inbox-item:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu)}
 .inbox-item:active{transform:translateY(0);box-shadow:var(--shadow-neu-inset-sm)}
 .inbox-item.unread{border-left:3px solid var(--gold)}
-.inbox-item.unread:hover{}
 .inbox-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text)}
+.inbox-item.unread .inbox-name{font-weight:800}
 .inbox-preview{font-size:13px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.inbox-item.unread .inbox-preview{color:var(--text2);font-weight:500}
 .inbox-time{font-size:11px;color:var(--text3);flex-shrink:0;text-align:right}
-.inbox-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.inbox-item.unread .inbox-time{color:var(--gold);font-weight:700}
+.inbox-unread-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block;margin-top:5px;box-shadow:0 0 0 2px rgba(255,186,0,.22)}
 html.dark .inbox-item.unread{border-left-color:var(--gold)}
 
 /* ── TAB FADE TRANSITION ────────────────────────────────── */
@@ -8807,13 +8809,15 @@ async function loadInbox() {
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="inbox-name">${esc(name)}</span>
-          ${isUnread ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block"></span>' : ''}
           ${pinnedBadge}${mutedBadge}
           ${inboxStageBadge}
         </div>
         <div class="inbox-preview">${preview}</div>
       </div>
-      <div class="inbox-time" style="flex-shrink:0">${timeStr}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <div class="inbox-time">${timeStr}</div>
+        ${isUnread ? '<span class="inbox-unread-dot"></span>' : ''}
+      </div>
     </div>`;
   }
 
