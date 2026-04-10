@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BPP CRM">
 <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.jpg">
+<meta name="theme-color" content="#0b1f3b">
 <title>BPP CRM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -213,7 +214,9 @@ html.dark .pay-history-item{background:var(--card)}
 html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior:none;overscroll-behavior-x:none}
 /* Both html AND body need overflow-x:hidden — body alone doesn't stop iOS rubber-band horizontal scroll */
 html{overflow-x:hidden}
-body{overflow-x:hidden;touch-action:pan-y}
+/* Prevent iOS rubber-band scroll bleed through overlays */
+body:has(#side-panel-overlay.open,.tm-panel-overlay.open,.modal-overlay.open,.fq-overlay.open,#urg-modal-overlay.open,.cs-overlay.open){overflow:hidden!important}
+body{overflow-x:hidden;touch-action:pan-y;-webkit-touch-callout:none}
 *{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text}
 /* Eliminate 300ms tap delay on all tappable elements — feels instant */
@@ -393,7 +396,7 @@ td.actions{white-space:nowrap}
 .prop-viewed{background:#fef3c7;color:#92400e;border:none}
 
 /* SCROLLABLE CONTACTS */
-.table-scroll{overflow-x:hidden;border-top:none;background:var(--bg);position:relative}
+.table-scroll{overflow-x:hidden;border-top:none;background:var(--bg);position:relative;-webkit-overflow-scrolling:touch}
 .table-wrap{position:relative}
 .table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(200,205,215,.35));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:var(--grad-opacity,1)}
 /* gradient opacity controlled by JS based on scroll distance from bottom */
@@ -1780,6 +1783,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
   /* ── SEARCH INPUT: force 16px to prevent iOS auto-zoom ──────── */
   .search-input{font-size:16px!important}
+  .cs-input{font-size:16px!important}
 
   /* ── TM SEND BUTTON: bump to 44px tap target ────────────────── */
   .tm-send{width:44px!important;height:44px!important;flex-shrink:0!important}
@@ -1846,7 +1850,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   <div style="background:#fff;border-radius:var(--r-lg);padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)">
     <img src="/assets/images/logo-main.png" alt="Backup Power Pro" style="height:36px;margin-bottom:6px;">
     <div style="font-size:13px;color:var(--text3);margin-bottom:24px">CRM</div>
-    <input id="gate-email" type="email" placeholder="Email"
+    <input id="gate-email" type="email" placeholder="Email" autocomplete="email"
       style="width:100%;padding:11px 14px;border:none;border-radius:var(--r-sm);font-size:15px;font-family:'Inter',sans-serif;outline:none;text-align:center;margin-bottom:10px;transition:box-shadow .15s;background:var(--bg)"
       onkeydown="if(event.key==='Enter')document.getElementById('gate-input').focus()"
       onfocus="this.style.boxShadow='0 0 0 2px rgba(11,31,59,.15)'"
@@ -2047,7 +2051,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <div class="cs-overlay" id="cs-overlay" onclick="closeCommSearch()"></div>
 <div class="cs-panel" id="cs-panel" role="dialog" aria-label="Search communications" aria-hidden="true">
   <div class="cs-head">
-    <input class="cs-input" id="cs-input" type="text" placeholder="Search texts, notes… (e.g. cord length, 30 amp)" autocomplete="off" oninput="debounceCommSearch(this.value)">
+    <input class="cs-input" id="cs-input" type="text" placeholder="Search texts, notes… (e.g. cord length, 30 amp)" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="debounceCommSearch(this.value)">
     <button class="cs-close" onclick="closeCommSearch()" title="Close">×</button>
   </div>
   <div class="cs-body" id="cs-body">
@@ -2271,7 +2275,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             </button>
           </div>
         </div>
-        <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
+        <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
       </div>
       <button id="fq-launch-btn" onclick="openFollowupQueue()" title="Follow-up queue — Sparky drafts texts for overdue leads" style="display:flex;align-items:center;gap:5px;background:var(--bg);border:none;border-radius:var(--r-pill);padding:6px 12px 6px 10px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;color:var(--text2);cursor:pointer;box-shadow:var(--shadow-neu-sm);transition:box-shadow .15s,color .15s;flex-shrink:0">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -2407,20 +2411,20 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div class="form-row name-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
           <label>First Name *</label>
-          <input class="form-input" id="c-fname" placeholder="First" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-lname').focus()" autocomplete="off">
+          <input class="form-input" id="c-fname" placeholder="First" autocapitalize="words" autocorrect="off" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-lname').focus()" autocomplete="off">
         </div>
         <div>
           <label>Last Name *</label>
-          <input class="form-input" id="c-lname" placeholder="Last" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-phone').focus()" autocomplete="off">
+          <input class="form-input" id="c-lname" placeholder="Last" autocapitalize="words" autocorrect="off" oninput="autoCapName(this)" onkeydown="if(event.key==='Enter')document.getElementById('c-phone').focus()" autocomplete="off">
         </div>
       </div>
       <div class="form-row">
         <label>Phone</label>
-        <input class="form-input" id="c-phone" type="tel" placeholder="(864) 000-0000" autocomplete="off" oninput="formatPanelPhone(this)">
+        <input class="form-input" id="c-phone" type="tel" placeholder="(864) 000-0000" autocomplete="tel" oninput="formatPanelPhone(this)">
       </div>
       <div class="form-row">
         <label>Email</label>
-        <input class="form-input" id="c-email" type="email" placeholder="email@example.com" autocomplete="off">
+        <input class="form-input" id="c-email" type="email" placeholder="email@example.com" autocomplete="email">
       </div>
       <div class="form-row">
         <label>Address</label>
@@ -2624,9 +2628,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <span id="contact-info-preview">No contact info</span>
       </div>
       <div class="contact-info-expanded" id="contact-info-expanded">
-        <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fld-btn" onclick="panelCallContact()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="fld-btn" id="panel-msg-fld-btn" onclick="openMessagesFromPanel()" title="Messages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button></div></div>
-        <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-email')" title="Copy email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+        <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name" autocapitalize="words" autocorrect="off" autocomplete="name" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" autocomplete="tel" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fld-btn" onclick="panelCallContact()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="fld-btn" id="panel-msg-fld-btn" onclick="openMessagesFromPanel()" title="Messages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button></div></div>
+        <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com" autocomplete="email" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-email')" title="Copy email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
         <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value);panelMarkDirty()" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="copyField('panel-address')" title="Copy address"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
       </div>
 
