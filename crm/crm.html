@@ -3267,7 +3267,7 @@ function _renderMobileCard(c) {
   const isArchived = c.status === 'Archived';
   const dupIds = getDupIds(c.id);
   const dupEl = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:1px 5px;border-radius:var(--r-pill);font-weight:700;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
-  return `<div class="mlc${isArchived?' mlc-archived':''}" onclick="openPanel('${c.id}')">
+  return `<div class="mlc${isArchived?' mlc-archived':''}" onclick="if(!window._mobileCtxJustOpened)openPanel('${c.id}')">
     ${avatarHtml}
     <div class="mlc-body">
       <div class="mlc-name">${displayName}${unreadEl}${actEl}${dupEl}</div>
@@ -16680,6 +16680,134 @@ window.closeAddMenu = function() {
     if (!backdrop.classList.contains('open')) return;
     pop.querySelectorAll('.cs-key.cs-key-pressed').forEach(el => el.classList.remove('cs-key-pressed'));
   }, true);
+})();
+
+// ── Mobile Swipe Gestures ────────────────────────────────────────────────────────
+// Swipe right → close right-side panels (side-panel, tm-panel)
+// Swipe left  → close left-side panel (cs-panel)
+// Pull down   → dismiss bottom sheet modals
+// Long press  → action sheet on mobile lead cards (.mlc)
+(function(){
+  if (window.innerWidth > 480) return;
+
+  // Panel swipe-to-close
+  function addPanelSwipe(panelEl, dir, onClose) {
+    if (!panelEl) return;
+    var sx=0, sy=0, dragging=false;
+    panelEl.addEventListener('touchstart', function(e){
+      if(e.touches.length!==1) return;
+      sx=e.touches[0].clientX; sy=e.touches[0].clientY; dragging=false;
+    },{passive:true});
+    panelEl.addEventListener('touchmove', function(e){
+      if(!sx) return;
+      var dx=e.touches[0].clientX-sx, dy=e.touches[0].clientY-sy;
+      if(!dragging){
+        if(Math.abs(dx)<8) return;
+        if(Math.abs(dy)>Math.abs(dx)) return;
+        dragging=true;
+      }
+      var delta = dir===1 ? Math.max(0,dx) : Math.min(0,dx);
+      if(delta!==0){
+        e.preventDefault();
+        panelEl.style.transition='none';
+        panelEl.style.transform='translateX('+delta+'px)';
+        var ovId = panelEl.id==='side-panel'?'side-panel-overlay':panelEl.id==='tm-panel'?'tm-panel-overlay':null;
+        var ov = ovId && document.getElementById(ovId);
+        if(ov) ov.style.opacity=String(Math.max(0,1-Math.abs(delta)/(window.innerWidth*0.5)));
+      }
+    },{passive:false});
+    panelEl.addEventListener('touchend', function(e){
+      if(!dragging){sx=sy=0;return;}
+      var dx=e.changedTouches[0].clientX-sx;
+      var delta=dir===1?dx:-dx;
+      var ovId=panelEl.id==='side-panel'?'side-panel-overlay':panelEl.id==='tm-panel'?'tm-panel-overlay':null;
+      var ov=ovId&&document.getElementById(ovId);
+      panelEl.style.transition='';
+      if(delta>80){
+        panelEl.style.transform='translateX('+(dir===1?'100%':'-100%')+ ')';
+        if(ov){ov.style.opacity='0';}
+        setTimeout(function(){panelEl.style.transform='';if(ov)ov.style.opacity='';onClose();},260);
+      } else {
+        panelEl.style.transform='';
+        if(ov) ov.style.opacity='';
+      }
+      dragging=false; sx=sy=0;
+    },{passive:true});
+  }
+
+  addPanelSwipe(document.getElementById('side-panel'),1,function(){
+    if(typeof panelDirty!=='undefined'&&panelDirty){if(typeof panelSave==='function')panelSave();}
+    else{if(typeof closePanel==='function')closePanel();}
+  });
+  addPanelSwipe(document.getElementById('tm-panel'),1,function(){
+    if(typeof window.tmClosePanel==='function')window.tmClosePanel();
+  });
+  addPanelSwipe(document.getElementById('cs-panel'),-1,function(){
+    if(typeof closeCommSearch==='function')closeCommSearch();
+  });
+
+  // Pull-down to dismiss bottom sheet modals (drag handle zone = top 64px)
+  var MODAL_CLOSE_FNS={
+    'qb-overlay':       function(){if(typeof closeModal==='function')closeModal('qb-overlay');},
+    'contact-overlay':  function(){if(typeof closeModal==='function')closeModal('contact-overlay');},
+    'proposal-overlay': function(){if(typeof backToContactFromProposal==='function')backToContactFromProposal();},
+    'job-overlay':      function(){if(typeof saveOrCancelJob==='function')saveOrCancelJob();},
+    'jur-view-overlay': function(){if(typeof closeJurView==='function')closeJurView();},
+    'jur-overlay':      function(){if(typeof cancelJurisdiction==='function')cancelJurisdiction();},
+    'urg-modal-overlay':function(){if(typeof closeUrgModal==='function')closeUrgModal();},
+  };
+  document.querySelectorAll('.modal-overlay').forEach(function(overlay){
+    var modal=overlay.querySelector('.modal');
+    if(!modal) return;
+    var closeFn=MODAL_CLOSE_FNS[overlay.id];
+    if(!closeFn) return;
+    var sy=0, dragging=false, fromHandle=false;
+    modal.addEventListener('touchstart',function(e){
+      if(e.touches.length!==1) return;
+      var rect=modal.getBoundingClientRect();
+      fromHandle=(e.touches[0].clientY-rect.top)<64;
+      sy=e.touches[0].clientY; dragging=false;
+    },{passive:true});
+    modal.addEventListener('touchmove',function(e){
+      if(!fromHandle||!sy) return;
+      var dy=e.touches[0].clientY-sy;
+      if(!dragging){if(dy<8)return;dragging=true;}
+      modal.style.transform='translateY('+Math.max(0,dy)+'px)';
+      modal.style.transition='none';
+    },{passive:true});
+    modal.addEventListener('touchend',function(e){
+      if(!dragging){sy=0;fromHandle=false;return;}
+      var dy=e.changedTouches[0].clientY-sy;
+      modal.style.transition='';
+      if(dy>110){
+        modal.style.transform='translateY(100%)';
+        setTimeout(function(){modal.style.transform='';closeFn();},260);
+      } else {
+        modal.style.transform='';
+      }
+      dragging=false; sy=0; fromHandle=false;
+    },{passive:true});
+  });
+
+  // Long press on .mlc cards → action sheet
+  window._mobileCtxJustOpened=false;
+  var _mlcLp=null;
+  document.addEventListener('touchstart',function(e){
+    var card=e.target.closest('.mlc[onclick]');
+    if(!card) return;
+    var touch=e.touches[0];
+    _mlcLp=setTimeout(function(){
+      var m=(card.getAttribute('onclick')||'').match(/openPanel\('([^']+)'\)/);
+      if(m&&typeof showCtx==='function'){
+        window._mobileCtxJustOpened=true;
+        setTimeout(function(){window._mobileCtxJustOpened=false;},500);
+        showCtx(touch.clientX,touch.clientY,m[1]);
+      }
+    },500);
+  },{passive:true});
+  document.addEventListener('touchend',   function(){clearTimeout(_mlcLp);},{passive:true});
+  document.addEventListener('touchmove',  function(){clearTimeout(_mlcLp);},{passive:true});
+  document.addEventListener('touchcancel',function(){clearTimeout(_mlcLp);},{passive:true});
 })();
 
 // ── Prevent pinch-zoom and double-tap-zoom on iOS ─────────────────────────────
