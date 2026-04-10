@@ -1029,6 +1029,12 @@ html.dark .inv-viewed{background:rgba(234,179,8,.18);color:#facc15}
 .inv-skeleton{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--card);border-radius:var(--r-md);margin-bottom:8px;box-shadow:0 1px 3px rgba(10,20,40,.05)}
 /* Quote row avatar — matches contact-list avatar style */
 .inv-avatar{width:38px;height:38px;border-radius:50%;color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:-.5px}
+/* ── REMIND BUTTON (Proposals + Invoices) ──────────────── */
+.fin-remind-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:box-shadow .15s,color .15s,transform .1s}
+.fin-remind-btn:hover{box-shadow:var(--shadow-neu);color:var(--gold);transform:scale(1.08)}
+.fin-remind-btn:active{box-shadow:var(--shadow-neu-inset-sm);transform:scale(.96)}
+.fin-remind-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+@media(pointer:coarse){.fin-remind-btn{width:44px;height:44px}}
 
 /* ── PIPELINE KANBAN ────────────────────────────────────── */
 .view-toggle{display:inline-flex;background:var(--bg);border-radius:var(--r-sm);padding:3px;box-shadow:var(--shadow-neu-sm);margin-left:auto}
@@ -9789,17 +9795,19 @@ function renderDocsQuotes() {
     const name = c ? dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead') : 'New Lead';
     const s = statusStyle[p.status] || { bg: 'var(--bg)', color: 'var(--text2)', label: p.status };
     const amount = p.total ? '$' + Number(p.total).toLocaleString() : '—';
-    const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+    const timeAgo = p.created_at ? _relativeTime(p.created_at) : '';
     const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
     const avatarBg = _avatarColor ? _avatarColor(name) : 'var(--navy)';
+    const remindBtn = c ? `<button class="fin-remind-btn" title="Sparky writes a custom reminder — drops into SMS for you to review & send" onclick="event.stopPropagation();remindFromFinTab('${c.id}','proposal','${esc(p.id)}',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/></svg></button>` : '';
     return `<div class="inv-row" onclick="${c ? `openQuoteFromTab('${c.id}','${p.id}')` : ''}" style="cursor:${c ? 'pointer' : 'default'}">
       <div class="inv-avatar" style="background:${avatarBg}">${esc(name.charAt(0).toUpperCase())}</div>
       <div style="flex:1;min-width:0">
         <div class="inv-row-name">${esc(name)}</div>
-        <div class="inv-row-meta">${ampLabel} &middot; ${dateStr}</div>
+        <div class="inv-row-meta">${ampLabel}${timeAgo ? ' <span class="sep">&middot;</span> ' + timeAgo : ''}</div>
       </div>
       <div class="inv-row-amount">${amount}</div>
       <span class="prop-badge" style="background:${s.bg};color:${s.color};flex-shrink:0">${s.label}</span>
+      ${remindBtn}
     </div>`;
   }).join('');
 
@@ -9890,7 +9898,10 @@ function renderInvoicesTab() {
       ? `<span class="inv-viewed">Viewed ${inv.view_count}x</span>`
       : '';
     const fmtPhoneSafe = phone ? esc(fmtPhone(phone)) : '';
+    const invAvatarBg = c && _avatarColor ? _avatarColor(name) : 'var(--navy)';
+    const remindBtn = inv.contact_id ? `<button class="fin-remind-btn" title="Sparky writes a custom reminder — drops into SMS for you to review & send" onclick="event.stopPropagation();remindFromFinTab('${inv.contact_id}','invoice','${esc(inv.id)}',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/></svg></button>` : '';
     return `<div class="inv-row" onclick="openInvoiceFromTab('${inv.contact_id}')">
+      <div class="inv-avatar" style="background:${invAvatarBg}">${esc(name.charAt(0).toUpperCase())}</div>
       <div class="inv-row-main">
         <div class="inv-row-name">${esc(name)}</div>
         <div class="inv-row-meta">${fmtPhoneSafe ? `<span>${fmtPhoneSafe}</span><span class="sep">·</span>` : ''}<span>${ts}</span></div>
@@ -9900,6 +9911,7 @@ function renderInvoicesTab() {
         <span class="status-dot s-${badgeKey}">${badgeText}</span>
         ${viewedBadge}
       </div>
+      ${remindBtn}
     </div>`;
   }).join('');
 }
@@ -9942,6 +9954,98 @@ function openQuoteFromTab(contactId, proposalId) {
     } catch(e) {}
   }, 200);
 }
+
+// ── REMIND FROM FINANCE TAB ─────────────────────────────────────────────────
+// Called by the 💬 button on proposal/invoice rows.
+// Asks Sparky to generate a personalized follow-up, then opens the contact
+// panel in message compose mode with the text pre-filled for Key to review.
+window.remindFromFinTab = async function(contactId, type, docId, btn) {
+  const c = (typeof allContacts !== 'undefined' ? allContacts : []).find(x => x.id === contactId);
+  if (!c) { if (typeof showToast === 'function') showToast('Contact not found', 'error'); return; }
+
+  // Button loading state
+  if (btn) {
+    btn._origHTML = btn.innerHTML;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
+    btn.disabled = true;
+  }
+
+  try {
+    // Build rich context for Sparky
+    let docContext = '';
+    if (type === 'proposal') {
+      const ps = (typeof proposalMap !== 'undefined' && proposalMap[contactId]) || [];
+      const p = docId ? ps.find(x => x.id === docId) : ps[0];
+      if (p) {
+        const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
+        const daysSinceSent = p.created_at ? Math.floor((Date.now() - new Date(p.created_at)) / 86400000) : null;
+        docContext = `They have a ${ampLabel} proposal for $${Number(p.total || 0).toLocaleString()}, status: ${p.status || 'Sent'}${daysSinceSent !== null ? `, sent ${daysSinceSent} day${daysSinceSent === 1 ? '' : 's'} ago` : ''}. This is a follow-up to get them to approve the proposal.`;
+      }
+    } else if (type === 'invoice') {
+      const inv = (typeof allInvoices !== 'undefined' ? allInvoices : []).find(x => x.id === docId || x.contact_id === contactId);
+      if (inv) {
+        const daysSinceSent = inv.created_at ? Math.floor((Date.now() - new Date(inv.created_at)) / 86400000) : null;
+        const viewNote = (inv.view_count > 0) ? ` They've viewed it ${inv.view_count} time${inv.view_count > 1 ? 's' : ''}.` : '';
+        docContext = `They have an unpaid invoice for $${Number(inv.total || 0).toLocaleString()}${daysSinceSent !== null ? ` sent ${daysSinceSent} day${daysSinceSent === 1 ? '' : 's'} ago` : ''}.${viewNote} This is a friendly payment reminder.`;
+      }
+    }
+
+    const daysSinceTouch = (typeof _daysSinceLastTouch === 'function') ? _daysSinceLastTouch(c) : null;
+    const stageLabel = (typeof _stageLabel === 'function') ? _stageLabel(c.stage) : ('Stage ' + (c.stage || 1));
+
+    const contactPayload = {
+      id: c.id,
+      name: c.name || 'Customer',
+      stage: c.stage || 1,
+      stageLabel: stageLabel,
+      phone: c.phone,
+      jurisdiction: (typeof _getJurName === 'function') ? _getJurName(c) : '',
+      daysInSystem: (typeof _daysSinceTs === 'function') ? _daysSinceTs(c.created_at) : null,
+      daysSinceTouch: daysSinceTouch,
+      notes: ((c.install_notes || '') + (docContext ? '\n\nCONTEXT: ' + docContext : '')).slice(0, 500),
+    };
+
+    const SUPABASE_URL_TM = (typeof SUPABASE_URL !== 'undefined') ? SUPABASE_URL : '';
+    const JWT_TM = (typeof SEND_SMS_ANON_JWT !== 'undefined') ? SEND_SMS_ANON_JWT : '';
+    const ep = SUPABASE_URL_TM + '/functions/v1/ai-taskmaster';
+
+    const resp = await fetch(ep, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + JWT_TM, 'apikey': JWT_TM },
+      body: JSON.stringify({ mode: 'draft_followup', contact: contactPayload }),
+    });
+    const data = await resp.json();
+    const draft = (data && !data.fallback && data.answer) ? data.answer.trim() : null;
+
+    if (!draft) {
+      if (typeof showToast === 'function') showToast('Sparky couldn\'t draft — try again', 'error');
+      return;
+    }
+
+    // Open contact panel → messages → pre-fill compose
+    if (typeof openPanel === 'function') openPanel(contactId);
+    setTimeout(function() {
+      if (typeof openMessagesFromPanel === 'function') openMessagesFromPanel();
+      setTimeout(function() {
+        var compose = document.getElementById('msg-compose');
+        if (compose) {
+          compose.value = draft;
+          compose.focus();
+          compose.dispatchEvent(new Event('input'));
+          if (typeof showToast === 'function') showToast('Sparky drafted a reminder — review and send ✓', 'success');
+        }
+      }, 500);
+    }, 350);
+
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('Draft failed — check connection', 'error');
+  } finally {
+    if (btn) {
+      btn.innerHTML = btn._origHTML || btn.innerHTML;
+      btn.disabled = false;
+    }
+  }
+};
 
 function refreshInvoiceTabBadge() {
   // Show a small badge if there are any "viewed but unpaid" hot leads
