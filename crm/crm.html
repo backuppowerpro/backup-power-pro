@@ -1635,6 +1635,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .call-bar{bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
 }
 
+:root{--kb:0px}
 /* ══════════════════════════════════════════════════════════
    NATIVE iPHONE OVERHAUL
    Every touch target 44px+, modals as bottom sheets,
@@ -1810,6 +1811,31 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* ── PERMISSION-STYLE SHEETS FOR DEEP PANELS ─────────────── */
   .drill-level{padding:14px 16px!important}
   #drill-contact-scroll{padding:16px 16px calc(80px + env(safe-area-inset-bottom)) 16px!important}
+
+  /* ── KEYBOARD AVOIDANCE ──────────────────────────────────────────── */
+  /* JS sets --kb = keyboard height via visualViewport API.             */
+  /* Adding it as padding-bottom makes panel footers ride above keys.   */
+  .tm-panel{
+    padding-bottom:var(--kb,0px);
+    transition:transform .3s var(--ease),padding-bottom .25s cubic-bezier(.25,.46,.45,.94)
+  }
+  .side-panel{
+    padding-bottom:var(--kb,0px);
+    transition:transform .28s var(--ease),padding-bottom .25s cubic-bezier(.25,.46,.45,.94)
+  }
+  .cs-panel{
+    padding-bottom:var(--kb,0px);
+    transition:transform .28s var(--ease),padding-bottom .25s cubic-bezier(.25,.46,.45,.94)
+  }
+  /* Bottom sheet modals lift above keyboard */
+  .modal-overlay{
+    padding-bottom:var(--kb,0px)!important;
+    transition:opacity .2s var(--ease),padding-bottom .25s cubic-bezier(.25,.46,.45,.94)
+  }
+  /* Urgent modal & FQ panel */
+  .urg-modal-overlay,.fq-overlay{
+    padding-bottom:var(--kb,0px)!important
+  }
 }
 </style>
 </head>
@@ -16785,6 +16811,23 @@ window.closeAddMenu = function() {
       el.scrollIntoView({behavior:'smooth',block:'center'});
     },320);
   });
+})();
+
+// ── Visual Viewport / Keyboard Avoidance ────────────────────────────────────────
+// Sets --kb CSS variable to the keyboard height in real time.
+// CSS transitions on panels/modals use this to ride above the keyboard.
+(function(){
+  if(window.innerWidth > 480) return;
+  if(!window.visualViewport) return;
+  var root=document.documentElement;
+  function _updateKb(){
+    var vv=window.visualViewport;
+    // kb = gap between layout viewport and visual viewport bottom
+    var kb=Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    root.style.setProperty('--kb', kb > 10 ? kb+'px' : '0px');
+  }
+  window.visualViewport.addEventListener('resize',  _updateKb, {passive:true});
+  window.visualViewport.addEventListener('scroll',   _updateKb, {passive:true});
 })();
 
 // ── Mobile Swipe Gestures ────────────────────────────────────────────────────────
