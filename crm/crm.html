@@ -1697,11 +1697,12 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .addr-dropdown li{padding:14px 16px!important;min-height:50px;font-size:15px;line-height:1.4}
 
   /* ── MODALS → BOTTOM SHEETS ─────────────────────────────── */
-  .modal-overlay{align-items:flex-end!important;padding:0!important}
+  /* Float sheets above the bottom edge for one-handed thumb reach */
+  .modal-overlay{align-items:flex-end!important;padding:0 0 60px!important}
   .modal{
-    border-radius:24px 24px 0 0!important;
-    max-height:93vh!important;max-width:100%!important;
-    transform:translateY(100%)!important;
+    border-radius:24px!important;
+    max-height:82vh!important;max-width:100%!important;
+    transform:translateY(calc(100% + 60px))!important;
     transition:transform .32s cubic-bezier(.32,0,.67,0)!important
   }
   .modal-overlay.open .modal{
@@ -1723,6 +1724,14 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     flex-direction:column-reverse!important;gap:10px!important
   }
   .modal-foot .btn{width:100%!important;min-height:52px!important;font-size:16px!important;justify-content:center!important}
+
+  /* ── FOLLOW-UP QUEUE: lift above bottom edge ─────────────── */
+  .fq-overlay{padding-bottom:60px!important}
+  .fq-panel{border-radius:var(--r-xl)!important;max-height:78vh!important}
+
+  /* ── URGENT MODAL: lift above bottom edge ────────────────── */
+  .urg-modal-overlay{padding-bottom:60px!important}
+  .urg-modal{border-radius:var(--r-lg)!important}
 
   /* ── CONTEXT MENU → ACTION SHEET ────────────────────────── */
   #ctx-menu{
