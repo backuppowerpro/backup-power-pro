@@ -1969,11 +1969,6 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           </div>
         </div>
         <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
-        <div id="msg-search-hint" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:20">
-          <button onclick="_triggerMsgSearch()" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 12px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;box-shadow:var(--shadow-sm);max-width:100%;transition:background .12s">
-            🔍 Search in messages →
-          </button>
-        </div>
       </div>
       <div class="view-toggle">
         <button class="view-toggle-btn" id="view-list-btn" onclick="cycleListView()" title="List view — click again for urgent first">
