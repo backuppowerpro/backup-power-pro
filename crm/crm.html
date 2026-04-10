@@ -1731,7 +1731,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .btn,.btn-primary,.btn-outline,.btn-danger,.btn-ghost{
     min-height:48px;padding-left:16px;padding-right:16px;font-size:15px}
   .btn-sm{min-height:44px;padding:0 14px;font-size:14px;border-radius:var(--r-sm)}
-  .panel-foot .btn{min-height:50px;font-size:15px;flex:1}
+  /* Apple HIG: avoid full-width buttons on iOS — inset from edges */
+  .panel-foot{padding-left:20px!important;padding-right:20px!important}
+  .panel-foot .btn{min-height:50px;font-size:15px;flex:1;border-radius:var(--r-lg)!important}
   .modal-close{width:44px!important;height:44px!important;font-size:20px!important}
   .fq-close{width:44px!important;height:44px!important}
   .fld-btn{width:44px!important;height:44px!important}
@@ -8247,10 +8249,16 @@ function dismissApprovalNotif() {
 // TAB SWITCHING
 // ══════════════════════════════════════════════════════════
 let activeTab = 'leads';
+// Scroll position memory per tab (differentshelf: "going back should feel like returning")
+var _tabScrollPos = {};
 
 function switchTab(tab) {
   // Scroll to top if tapping the already-active tab
   if (tab === activeTab) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  // Save scroll position of outgoing tab
+  _tabScrollPos[activeTab] = window.pageYOffset || document.documentElement.scrollTop || 0;
+  // Light haptic on tab switch (delight: multi-sensory engagement)
+  if (typeof _haptic === 'function') _haptic('light');
   activeTab = tab;
   // Update tab buttons
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -8272,6 +8280,12 @@ function switchTab(tab) {
         el.style.display = 'none';
       }
     }
+  });
+
+  // Restore scroll position for incoming tab (after a micro-delay for render)
+  requestAnimationFrame(function() {
+    var savedY = _tabScrollPos[tab] || 0;
+    window.scrollTo({ top: savedY, behavior: 'instant' });
   });
 
   // Load content for the active tab
