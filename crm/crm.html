@@ -619,9 +619,9 @@ html.dark .approval-notif-amount{color:var(--gold)}
 .mobile-lead-list{display:flex;flex-direction:column;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu);overflow:hidden;margin-top:12px}
 .mlc{display:flex;align-items:center;gap:12px;padding:13px 16px;min-height:64px;border-bottom:1px solid rgba(0,0,0,.055);cursor:pointer;background:var(--bg);transition:background .1s;-webkit-tap-highlight-color:transparent;text-decoration:none}
 .mlc:last-child{border-bottom:none}
-.mlc:active{background:rgba(11,31,59,.055)}
+.mlc:active{background:rgba(11,31,59,.13)}
 html.dark .mlc{border-bottom-color:rgba(255,255,255,.06)}
-html.dark .mlc:active{background:rgba(255,255,255,.04)}
+html.dark .mlc:active{background:rgba(255,255,255,.09)}
 .mlc-body{flex:1;min-width:0;overflow:hidden}
 .mlc-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:15.5px;color:var(--text);letter-spacing:-.018em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px;display:flex;align-items:center;gap:5px}
 .mlc-stage{font-size:12px;font-weight:600;letter-spacing:-.005em}
@@ -1516,7 +1516,7 @@ html.dark .tm-panel-head{border-bottom-color:rgba(255,255,255,.05)}
 html.dark .tm-panel-close{background:var(--bg)}
 .tm-panel-close:hover{background:var(--border);color:var(--text)}
 html.dark .tm-panel-close:hover{background:#3d3830;color:var(--text)}
-.tm-panel-body{flex:1;overflow-y:auto;padding:20px 18px 12px;display:flex;flex-direction:column;gap:14px;background:var(--bg)}
+.tm-panel-body{flex:1;overflow-y:auto;padding:20px 18px 12px;display:flex;flex-direction:column;gap:14px;background:var(--bg);-webkit-overflow-scrolling:touch}
 .tm-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 18px;flex:1}
 .tm-empty-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;box-shadow:0 8px 22px rgba(255,186,0,.3)}
 .tm-empty-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--text);margin-bottom:3px;letter-spacing:-.005em}
@@ -1775,6 +1775,30 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
   /* ── ADDR DROPDOWN ITEMS ─────────────────────────────────── */
   .addr-dropdown{border-radius:0 0 var(--r-md) var(--r-md)}
+
+
+  /* ── SEARCH INPUT: force 16px to prevent iOS auto-zoom ──────── */
+  .search-input{font-size:16px!important}
+
+  /* ── TM SEND BUTTON: bump to 44px tap target ────────────────── */
+  .tm-send{width:44px!important;height:44px!important;flex-shrink:0!important}
+
+  /* ── TM PANEL FOOT: safe-area for home indicator ─────────────── */
+  .tm-panel-foot{padding-bottom:max(14px, calc(12px + env(safe-area-inset-bottom,0px)))!important}
+
+  /* ── PANEL QUICK-ACTION BUTTONS: bump to 44px ───────────────── */
+  /* (overrides the 38px set earlier in this block) */
+  .panel-quick-btns button{min-height:44px!important}
+
+  /* ── ADDRESS DROPDOWN: cap height for small screens ─────────── */
+  .addr-dropdown{max-height:50vh!important;overflow-y:auto}
+
+  /* ── TAB BUTTON ACTIVE FEEDBACK: scale press like native iOS ─── */
+  .tab-btn:active{transform:scale(.94);opacity:.8}
+
+  /* ── BUTTON ACTIVE SCALE: kinetic feedback on all taps ──────── */
+  .btn:active,.btn-primary:active,.btn-outline:active,.btn-danger:active,.btn-ghost:active{transform:scale(.97)}
+  .prop-action-btn:active{transform:scale(.97)!important}
 
   /* ── MAIN LAYOUT ─────────────────────────────────────────── */
   .main{padding-left:12px!important;padding-right:12px!important}
@@ -16680,6 +16704,87 @@ window.closeAddMenu = function() {
     if (!backdrop.classList.contains('open')) return;
     pop.querySelectorAll('.cs-key.cs-key-pressed').forEach(el => el.classList.remove('cs-key-pressed'));
   }, true);
+})();
+
+// ── Pull-to-Refresh on lead list (mobile only) ───────────────────────────────
+(function(){
+  if(window.innerWidth > 480) return;
+  var main = document.querySelector('.main');
+  if(!main) return;
+
+  // Inject PTR indicator
+  var ptr = document.createElement('div');
+  ptr.id = 'ptr-indicator';
+  ptr.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg><span>Refreshing…</span>';
+  ptr.style.cssText='position:fixed;top:calc(-48px + env(safe-area-inset-top,0px));left:0;right:0;height:48px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--text2);background:var(--bg);z-index:40;transition:transform .2s ease,opacity .2s ease;opacity:0;transform:translateY(0)';
+  document.body.appendChild(ptr);
+
+  var startY=0, pulling=false, triggered=false;
+  var THRESHOLD=64;
+
+  document.addEventListener('touchstart',function(e){
+    if(e.touches.length!==1) return;
+    // Only trigger if page is scrolled to top
+    if(window.scrollY>4) return;
+    startY=e.touches[0].clientY;
+    pulling=false; triggered=false;
+  },{passive:true});
+
+  document.addEventListener('touchmove',function(e){
+    if(!startY) return;
+    var dy=e.touches[0].clientY-startY;
+    if(dy<8){return;}
+    // Only pull from top of page
+    if(window.scrollY>4){startY=0;return;}
+    pulling=true;
+    var progress=Math.min(1, dy/THRESHOLD);
+    var translateY=Math.min(dy*0.4, THRESHOLD*0.6);
+    ptr.style.opacity=String(progress);
+    ptr.style.transform='translateY('+translateY+'px)';
+    var svgEl=ptr.querySelector('svg');
+    if(svgEl) svgEl.style.transform='rotate('+(progress*360)+'deg)';
+  },{passive:true});
+
+  document.addEventListener('touchend',function(e){
+    if(!pulling){startY=0;return;}
+    var dy=e.changedTouches[0].clientY-startY;
+    pulling=false;
+    if(dy>=THRESHOLD && !triggered){
+      triggered=true;
+      ptr.style.opacity='1';
+      ptr.style.transform='translateY('+THRESHOLD*0.6+'px)';
+      var svgEl=ptr.querySelector('svg');
+      if(svgEl){svgEl.style.transition='transform .6s linear';svgEl.style.transform='rotate(720deg)';}
+      // Trigger reload
+      if(typeof loadContacts==='function') loadContacts();
+      setTimeout(function(){
+        ptr.style.opacity='0';
+        ptr.style.transform='translateY(0)';
+        if(svgEl){svgEl.style.transition='';svgEl.style.transform='';}
+        triggered=false;
+      },800);
+    } else {
+      ptr.style.opacity='0';
+      ptr.style.transform='translateY(0)';
+    }
+    startY=0;
+  },{passive:true});
+})();
+
+// ── Scroll modal inputs into view on focus (keyboard won't cover them) ─────────
+(function(){
+  if(window.innerWidth > 480) return;
+  document.addEventListener('focusin',function(e){
+    var el=e.target;
+    var tag=(el.tagName||'').toLowerCase();
+    if(tag!=='input'&&tag!=='textarea'&&tag!=='select') return;
+    // Only do this inside a modal or bottom sheet panel
+    if(!el.closest('.modal,.fq-panel,.tm-panel,.side-panel,.cs-panel')) return;
+    // Small delay for keyboard to start animating
+    setTimeout(function(){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+    },320);
+  });
 })();
 
 // ── Mobile Swipe Gestures ────────────────────────────────────────────────────────
