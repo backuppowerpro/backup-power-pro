@@ -7516,82 +7516,6 @@ function renderActionBar() {
   const mount = document.getElementById('tm-briefing-mount');
   if (mount) mount.innerHTML = '';
 }
-function _renderActionBar_unused() {
-  const mount = document.getElementById('tm-briefing-mount');
-  if (!mount) return;
-  if (sessionStorage.getItem('bpp_actionbar_dismissed')) { mount.innerHTML = ''; return; }
-
-  const activeContacts = allContacts.filter(c => c.status !== 'Archived' && (c.stage || 1) !== 9);
-  const seen = new Set();
-  const urgent = [];
-
-  // Unread first (top priority)
-  activeContacts.forEach(c => {
-    if (_unreadContactIds && _unreadContactIds.has(c.id)) {
-      seen.add(c.id);
-      urgent.push({ c, type: 'unread' });
-    }
-  });
-
-  // Hot urgency contacts (haven't replied in 2× their stage's expected window)
-  activeContacts.forEach(c => {
-    if (seen.has(c.id)) return;
-    const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
-    if (!stageDef) return;
-    const urg = _kanbanUrgency(c, stageDef);
-    if (urg.level === 'hot') {
-      seen.add(c.id);
-      urgent.push({ c, type: 'hot', days: urg.days });
-    }
-  });
-
-  if (urgent.length === 0) { mount.innerHTML = ''; return; }
-
-  // Collapsed shows fewer chips on mobile vs desktop; expanded shows all.
-  // Mobile stacks chips vertically (CSS), so each chip adds ~44px — keep
-  // collapsed count tight so the banner doesn't dominate the viewport.
-  const expanded = !!window._actionBarExpanded;
-  const isMobile = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
-  const collapsedCount = isMobile ? 2 : 5;
-  const show = expanded ? urgent : urgent.slice(0, collapsedCount);
-  const chips = show.map(({ c, type, days }) => {
-    // Prefer first name, but if the name is missing or literally "Unknown"
-    // (intake didn't capture it), use the last-4 of the phone so Key can ID
-    // the lead without seeing a scary "Unknown" chip.
-    const rawName = (c.name || '').trim();
-    const hasRealName = rawName && !/^unknown$/i.test(rawName);
-    const phoneDigits = (c.phone || '').replace(/\D/g, '');
-    const phoneLast4 = phoneDigits.slice(-4);
-    const fname = hasRealName ? rawName.split(' ')[0] : (phoneLast4 ? `#${phoneLast4}` : 'Lead');
-    const stageDef = PERMIT_STAGES.find(s => s.id === (c.stage || 1));
-    const stageLabel = stageDef ? stageDef.label : '';
-    const sub = type === 'unread' ? 'New message' : `${days}d in ${stageLabel}`;
-    const chipClass = type === 'unread' ? 'action-bar-chip chip-unread' : 'action-bar-chip chip-hot';
-    const icon = type === 'unread'
-      ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>`
-      : `<span style="font-size:11px">🔥</span>`;
-    // Unread chips go straight to message thread; hot chips open contact panel
-    const chipAction = type === 'unread' ? `openMessagesPanel('${c.id}')` : `openPanel('${c.id}')`;
-    return `<button class="${chipClass}" onclick="${chipAction}">${icon}${esc(fname)} <span style="font-weight:500;opacity:.75;font-size:11.5px">· ${esc(sub)}</span></button>`;
-  }).join('');
-
-  // Expand/collapse toggle — "+N more" becomes a real button instead of dead text.
-  let extra = '';
-  if (urgent.length > collapsedCount) {
-    extra = expanded
-      ? `<button class="action-bar-more" onclick="window._actionBarExpanded=false;renderActionBar()">Show less</button>`
-      : `<button class="action-bar-more" onclick="window._actionBarExpanded=true;renderActionBar()">+${urgent.length - collapsedCount} more</button>`;
-  }
-
-  mount.innerHTML = `<div class="action-bar">
-    <div class="action-bar-head">
-      <span class="action-bar-label">🔥 ${urgent.length} need${urgent.length === 1 ? 's' : ''} action</span>
-      <button class="action-bar-dismiss" onclick="sessionStorage.setItem('bpp_actionbar_dismissed','1');this.closest('.action-bar').remove()" title="Dismiss for this session">×</button>
-    </div>
-    <div class="action-bar-chips${expanded ? ' is-expanded' : ''}">${chips}</div>
-    ${extra}
-  </div>`;
-}
 
 // ── TICKER RAF ─────────────────────────────────────────────
 // Idempotent: call as often as you like — only one loop runs at a time.
@@ -10789,14 +10713,8 @@ function setLeadsView(v) {
   if (window.matchMedia('(max-width:480px)').matches && v === 'pipeline') v = 'list';
   leadsView = v;
   try { localStorage.setItem('bpp_crm_leads_view', v); } catch(e) {}
-  const listBtn = document.getElementById('view-list-btn');
   const pipeBtn = document.getElementById('view-pipe-btn');
-  const permBtn = document.getElementById('view-permits-btn');
-  const matBtn  = document.getElementById('view-materials-btn');
-  if (listBtn) listBtn.classList.toggle('active', v === 'list');
   if (pipeBtn) pipeBtn.classList.toggle('active', v === 'pipeline');
-  if (permBtn) permBtn.classList.toggle('active', v === 'permits');
-  if (matBtn)  matBtn.classList.toggle('active', v === 'materials');
   const tableEl = document.getElementById('contacts-table');
   const kanbanEl = document.getElementById('kanban-board');
   const permitsEl = document.getElementById('permits-board');
