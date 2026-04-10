@@ -805,8 +805,6 @@ html.dark #drill-messages{background:var(--card)}
 html.dark #drill-messages>div:first-child{border-color:var(--border)}
 html.dark #drill-messages>div:last-child{border-color:var(--border);background:var(--card)}
 
-/* ── AI TOGGLE ───────────────────────────────────────────── */
-html.dark #panel-ai-toggle{background:#2e2a24}
 /* Pipeline header bar removed in pass 7 — unified into #permit-analytics chip row */
 
 /* ── QUICK REPLY CHIPS ───────────────────────────────────── */
@@ -2348,12 +2346,6 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           <textarea class="form-textarea" id="panel-install-notes" placeholder="AI assessment notes…" oninput="panelMarkDirty()" style="font-size:12px;color:var(--text2);background:var(--bg)"></textarea>
         </div>
         <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1" onchange="panelMarkDirty()"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
-        <div class="form-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--sp-sm)">
-          <label style="margin:0;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">AI Follow-up</label>
-          <button id="panel-ai-toggle" onclick="toggleAiEnabled()" style="width:44px;height:24px;border-radius:var(--r-pill);border:none;position:relative;cursor:pointer;transition:background .15s;background:var(--border)">
-            <span id="panel-ai-thumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s;display:block;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
-          </button>
-        </div>
       </div>
       </div><!-- end drill-contact-scroll -->
       <div class="panel-foot" style="flex-shrink:0">
@@ -3465,9 +3457,6 @@ function openPanel(id) {
 
   // Reset progressive disclosure state
   panelResetDirty();
-  // AI toggle
-  _panelAiEnabled = c.ai_enabled !== false;
-  updateAiToggleUI();
   // contact info always expanded on open, summary always hidden
   const _ciSummary = document.getElementById('contact-info-summary');
   const _ciExpanded = document.getElementById('contact-info-expanded');
@@ -4958,25 +4947,6 @@ async function panelAutosave() {
   renderContacts();
 }
 
-let _panelAiEnabled = true;
-function updateAiToggleUI() {
-  const tog = document.getElementById('panel-ai-toggle');
-  const thumb = document.getElementById('panel-ai-thumb');
-  if (!tog || !thumb) return;
-  tog.style.background = _panelAiEnabled ? 'var(--green)' : 'var(--border)';
-  thumb.style.transform = _panelAiEnabled ? 'translateX(20px)' : '';
-}
-async function toggleAiEnabled() {
-  _panelAiEnabled = !_panelAiEnabled;
-  updateAiToggleUI();
-  const id = document.getElementById('panel-id').value;
-  if (!id) return;
-  const { error } = await db.from('contacts').update({ ai_enabled: _panelAiEnabled }).eq('id', id);
-  if (error) { showToast('Failed to update AI setting', 'error'); _panelAiEnabled = !_panelAiEnabled; updateAiToggleUI(); return; }
-  const c = allContacts.find(x => x.id === id);
-  if (c) c.ai_enabled = _panelAiEnabled;
-  showToast(_panelAiEnabled ? 'AI follow-up enabled' : 'AI follow-up paused', 'success');
-}
 
 function toggleContactInfo() {
   const expanded = document.getElementById('contact-info-expanded');
