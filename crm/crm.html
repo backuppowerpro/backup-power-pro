@@ -2347,6 +2347,16 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           <textarea class="form-textarea" id="panel-install-notes" placeholder="AI assessment notes…" oninput="panelMarkDirty()" style="font-size:12px;color:var(--text2);background:var(--bg)"></textarea>
         </div>
         <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1" onchange="panelMarkDirty()"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
+
+        <!-- Events sub-section (collapsed by default) -->
+        <div id="panel-events-section" style="margin-top:4px">
+          <button id="panel-events-toggle" onclick="togglePanelEvents()" style="display:flex;align-items:center;gap:6px;width:100%;border:none;background:none;padding:6px 0 4px;cursor:pointer;color:var(--text3);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">
+            <svg id="panel-events-chev" style="transition:transform .18s;flex-shrink:0" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            Scheduled Events
+            <span id="panel-events-count" style="font-size:10px;font-weight:800;background:var(--bg);box-shadow:var(--shadow-neu-sm);padding:1px 7px;border-radius:var(--r-pill);color:var(--text2);margin-left:2px"></span>
+          </button>
+          <div id="panel-events-list" style="display:none;padding-bottom:4px"></div>
+        </div>
       </div>
       </div><!-- end drill-contact-scroll -->
       <div class="panel-foot" style="flex-shrink:0">
@@ -3458,6 +3468,13 @@ function openPanel(id) {
 
   // Reset progressive disclosure state
   panelResetDirty();
+  // Reset + populate events sub-section (collapsed by default)
+  _panelEventsOpen = false;
+  const _evListEl = document.getElementById('panel-events-list');
+  const _evChev   = document.getElementById('panel-events-chev');
+  if (_evListEl) _evListEl.style.display = 'none';
+  if (_evChev)   _evChev.style.transform = '';
+  setTimeout(renderPanelEvents, 0); // populate count badge while collapsed
   // contact info always expanded on open, summary always hidden
   const _ciSummary = document.getElementById('contact-info-summary');
   const _ciExpanded = document.getElementById('contact-info-expanded');
@@ -6289,6 +6306,60 @@ function bookEventFromPanel() {
   setTimeout(function() {
     selectJobContact(contactId);
   }, 50);
+}
+
+// ── PANEL EVENTS SUB-SECTION ─────────────────────────────
+let _panelEventsOpen = false;
+
+function renderPanelEvents() {
+  const contactId = document.getElementById('panel-id').value;
+  const countEl = document.getElementById('panel-events-count');
+  const listEl  = document.getElementById('panel-events-list');
+  if (!countEl || !listEl) return;
+
+  const jobs = (typeof allJobs !== 'undefined' ? allJobs : [])
+    .filter(j => j.contact_id === contactId && j.status !== 'Archived')
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  countEl.textContent = jobs.length || '0';
+  countEl.style.display = jobs.length ? '' : 'none';
+
+  if (!jobs.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0 6px">No events yet</div>';
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  listEl.innerHTML = jobs.map(j => {
+    const isPast = j.date < today;
+    const st = (j.status || 'Scheduled').toLowerCase();
+    const isComplete  = st === 'complete' || st === 'completed';
+    const isCancelled = st === 'cancelled' || st === 'canceled';
+    const dotColor = isComplete ? 'var(--green)' : isCancelled ? '#94a3b8' : isPast ? '#f97316' : 'var(--blue)';
+    const statusLabel = isComplete ? 'Done' : isCancelled ? 'Cancelled' : isPast ? 'Missed?' : 'Scheduled';
+    const label = j.title || j.contact_name || 'Install';
+    const dateStr = j.date ? new Date(j.date + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
+    const timeStr = j.time ? (' · ' + j.time.replace(/^(\d+):(\d+)$/, (_, h, m) => {
+      const hr = parseInt(h); return (hr > 12 ? hr - 12 : hr || 12) + ':' + m + (hr >= 12 ? ' PM' : ' AM');
+    })) : '';
+    return `<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--border);opacity:${isPast && !isComplete ? '.7' : '1'}">
+      <div style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}</div>
+        <div style="font-size:11px;color:var(--text3)">${dateStr}${timeStr}</div>
+      </div>
+      <span style="font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;color:${dotColor};flex-shrink:0">${statusLabel}</span>
+    </div>`;
+  }).join('');
+}
+
+function togglePanelEvents() {
+  _panelEventsOpen = !_panelEventsOpen;
+  const listEl = document.getElementById('panel-events-list');
+  const chev   = document.getElementById('panel-events-chev');
+  if (listEl) listEl.style.display = _panelEventsOpen ? 'block' : 'none';
+  if (chev)   chev.style.transform = _panelEventsOpen ? 'rotate(180deg)' : '';
+  if (_panelEventsOpen) renderPanelEvents();
 }
 
 function openPanelJurisdiction() {
