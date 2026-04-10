@@ -840,6 +840,12 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stage-chip.active .pa-stage-name{color:var(--navy);font-weight:700}
 .pa-stage-chip.active .pa-stage-count{color:rgba(11,31,59,.7)}
 .pa-stage-chip.active .pa-stage-dot{box-shadow:0 0 0 2px rgba(11,31,59,.2)}
+/* Urgent mode: red chip */
+.pa-stage-chip.pa-chip-urgent{background:var(--red)!important}
+.pa-stage-chip.pa-chip-urgent:hover{background:#b91c1c!important}
+.pa-stage-chip.pa-chip-urgent .pa-stage-name{color:#fff!important}
+.pa-stage-chip.pa-chip-urgent .pa-stage-count{color:rgba(255,255,255,.75)!important}
+html.dark .pa-stage-chip.pa-chip-urgent{background:var(--red)!important}
 .pa-stage-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pa-stage-name{font-size:12px;font-weight:600;color:var(--text2)}
 .pa-stage-count{font-size:11px;font-weight:700;color:var(--text3)}
@@ -3568,7 +3574,15 @@ function renderContacts() {
 
 
 function toggleAnalyticsFilter(stageId) {
-  if (stageId === 'all' && stageFilter === 'all') return;
+  // "All" chip double-duty: when already on All, toggle urgent view
+  if (stageId === 'all' && stageFilter === 'all') {
+    contactsSortUrgent = !contactsSortUrgent;
+    renderContacts();
+    loadPermitAnalytics();
+    return;
+  }
+  // Switching away from another filter → reset urgent
+  if (stageId !== 'all') contactsSortUrgent = false;
   // Lock scroll to prevent page jump during filter swap
   const scrollY = window.scrollY;
   const body = document.body;
@@ -7628,11 +7642,14 @@ function loadPermitAnalytics() {
       ? Object.values(_chipValMap).reduce((a,b)=>a+b,0)
       : f.stages.reduce((sum, s) => sum + (_chipValMap[s] || 0), 0);
     const valHtml = chipVal > 0 ? `<span class="pa-stage-val">${_fmtChipVal(chipVal)}</span>` : '';
-    return `<div class="pa-stage-chip${isActive ? ' active' : ''}" onclick="toggleAnalyticsFilter('${f.id}')">
-      <div class="pa-stage-dot" style="background:${isActive ? activeAccent : f.color}"></div>
-      <span class="pa-stage-name">${esc(f.label)}</span>
+    const isUrgentMode = f.id === 'all' && isActive && contactsSortUrgent;
+    const chipLabel = isUrgentMode ? '🔥 Urgent' : esc(f.label);
+    const chipExtra = isUrgentMode ? '' : valHtml;
+    return `<div class="pa-stage-chip${isActive ? ' active' : ''}${isUrgentMode ? ' pa-chip-urgent' : ''}" onclick="toggleAnalyticsFilter('${f.id}')">
+      <div class="pa-stage-dot" style="background:${isActive ? (isUrgentMode ? '#dc2626' : activeAccent) : f.color}"></div>
+      <span class="pa-stage-name">${chipLabel}</span>
       <span class="pa-stage-count">${count}</span>
-      ${valHtml}
+      ${chipExtra}
     </div>`;
   }).join('');
   // Ticker stats
