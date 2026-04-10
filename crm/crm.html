@@ -211,7 +211,7 @@ html.dark .pay-row{border-color:var(--border)}
 html.dark .pay-total{color:var(--gold)}
 html.dark .pay-history-item{background:var(--card)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior:none;overscroll-behavior-x:none}
+html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior-x:none}
 /* Both html AND body need overflow-x:hidden — body alone doesn't stop iOS rubber-band horizontal scroll */
 html{overflow-x:hidden}
 /* Prevent iOS rubber-band scroll bleed through overlays */
@@ -1620,8 +1620,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   html.dark .tab-btn.active{color:var(--gold)}
   .tab-icon{display:block!important;width:20px;height:20px;flex-shrink:0}
 
-  /* Push page content up from bottom tab */
-  .main{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}
+  /* Push page content up from bottom tab + extra thumb room */
+  .main{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
 
   /* View toggle: icon-only on mobile */
   .view-toggle-btn{padding:7px 9px!important;font-size:0!important;line-height:0!important;gap:0!important;min-width:34px;min-height:44px}
@@ -1667,8 +1667,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .fq-scan-btn{min-height:40px;padding:9px 18px;font-size:13px}
   .inbox-hdr-pill{min-height:40px!important;padding:9px 16px!important;font-size:13px!important}
   .view-toggle-btn{min-height:44px}
-  /* Panel action quick-buttons in banner */
-  .panel-quick-btns button{min-height:38px!important;font-size:13px!important;padding:8px 14px!important}
+  /* Panel action quick-buttons in banner — icon-only on mobile */
+  .panel-quick-btns button{min-height:38px!important;min-width:38px!important;padding:9px 10px!important}
   #panel-banner{height:170px!important}
 
   /* ── FORM INPUTS & SELECTS: 48px, no iOS zoom ───────────── */
@@ -1755,6 +1755,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
   /* ── CALENDAR ────────────────────────────────────────────── */
   .cal-add-hint{width:44px!important;height:44px!important;opacity:.45!important}
+  #tab-calendar .cal-nav{margin-top:8px!important}
 
   /* ── STATS MODAL ─────────────────────────────────────────── */
   #stats-modal{max-width:100%!important}
@@ -1820,15 +1821,15 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* JS sets --kb = keyboard height via visualViewport API.             */
   /* Adding it as padding-bottom makes panel footers ride above keys.   */
   .tm-panel{
-    padding-bottom:var(--kb,0px);
+    padding-bottom:calc(var(--kb,0px) + 40px + env(safe-area-inset-bottom,0px));
     transition:transform .3s var(--ease),padding-bottom .25s cubic-bezier(.25,.46,.45,.94)
   }
   .side-panel{
-    padding-bottom:var(--kb,0px);
+    padding-bottom:calc(var(--kb,0px) + 40px + env(safe-area-inset-bottom,0px));
     transition:transform .28s var(--ease),padding-bottom .25s cubic-bezier(.25,.46,.45,.94)
   }
   .cs-panel{
-    padding-bottom:var(--kb,0px);
+    padding-bottom:calc(var(--kb,0px) + 40px + env(safe-area-inset-bottom,0px));
     transition:transform .28s var(--ease),padding-bottom .25s cubic-bezier(.25,.46,.45,.94)
   }
   /* Bottom sheet modals lift above keyboard */
@@ -2974,17 +2975,17 @@ function _bannerHtml(c) {
   const nameGrad = `<div style="position:absolute;inset:auto 0 0 0;height:118px;background:linear-gradient(to top,rgba(6,12,24,0.92) 0%,rgba(6,12,24,0.72) 30%,rgba(6,12,24,0.34) 65%,rgba(6,12,24,0) 100%);pointer-events:none;z-index:2"></div>`;
   const _hasUnread = typeof _unreadContactIds !== 'undefined' && _unreadContactIds.has(c.id);
   const textBtnStyle = _hasUnread
-    ? 'display:flex;align-items:center;gap:5px;background:rgba(255,186,0,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.35);border-radius:20px;color:#0b1f3b;font-family:\'Outfit\',sans-serif;font-weight:800;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s;box-shadow:0 0 0 3px rgba(255,186,0,.35)'
-    : 'display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:\'Outfit\',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s';
+    ? 'display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,186,0,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.35);border-radius:20px;color:#0b1f3b;padding:7px 10px;cursor:pointer;transition:background .15s;box-shadow:0 0 0 3px rgba(255,186,0,.35)'
+    : 'display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s';
   const textBtnDot = _hasUnread ? '<span style="width:7px;height:7px;border-radius:50%;background:#dc2626;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)"></span>' : '';
   const nameLabel = `<div style="position:absolute;left:16px;right:64px;bottom:10px;z-index:3">
     <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.018em;text-shadow:0 2px 14px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;margin-bottom:8px">${displayName}</div>
     <div class="panel-quick-btns" style="display:flex;gap:7px">
-      <button onclick="openMessagesFromPanel()" style="${textBtnStyle}" title="Text">${textBtnDot}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Text</button>
-      ${c.phone ? `<button onclick="panelCallContact()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Call"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Call</button>` : ''}
-      <button onclick="openMapsFromPanel()" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Maps"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Maps</button>
-      <button onclick="closePanel();openProposalModal('${c.id}')" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Proposal"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Proposal</button>
-      <button onclick="openInvoiceBuilder()" style="display:flex;align-items:center;gap:5px;background:rgba(255,186,0,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,186,0,.45);border-radius:20px;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;padding:5px 11px;cursor:pointer;transition:background .15s" title="Invoice"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Invoice</button>
+      <button onclick="openMessagesFromPanel()" style="${textBtnStyle}" title="Text">${textBtnDot}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+      ${c.phone ? `<button onclick="panelCallContact()" style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s" title="Call"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>` : ''}
+      <button onclick="openMapsFromPanel()" style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s" title="Maps"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button>
+      <button onclick="closePanel();openProposalModal('${c.id}')" style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s" title="Proposal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></button>
+      <button onclick="openInvoiceBuilder()" style="display:flex;align-items:center;justify-content:center;background:rgba(255,186,0,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,186,0,.45);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s" title="Invoice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></button>
     </div>
   </div>`;
   const stage = c.stage || 1;
