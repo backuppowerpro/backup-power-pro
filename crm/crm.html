@@ -409,7 +409,7 @@ td.actions{white-space:nowrap}
 /* ── WEEKLY CALENDAR ──────────────────────────────── */
 .cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-3);flex-wrap:wrap}
 .week-label{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);flex:1;text-align:center;letter-spacing:-.005em}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;min-height:220px}
+.cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;min-height:220px}
 .cal-day{background:var(--bg);border-radius:var(--r-md);border:none;min-height:120px;display:flex;flex-direction:column;overflow:hidden;transition:box-shadow var(--t-fast);box-shadow:var(--shadow-neu-sm)}
 .cal-day:hover{box-shadow:var(--shadow-neu)}
 .cal-day.today{box-shadow:var(--shadow-neu-sm),0 0 0 2px rgba(255,186,0,.5)}
@@ -547,7 +547,7 @@ html.dark .approval-notif-amount{color:var(--gold)}
 .pay-history-item{background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
 
 @media(max-width:700px){
-  .cal-grid{grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-grid{grid-template-columns:repeat(5,1fr);gap:4px}
   .cal-day{min-height:160px}
   .cal-event{font-size:10px;padding:2px 5px}
   .cal-day-head{padding:5px 6px 3px}
@@ -5682,12 +5682,12 @@ function calDayUp() {
 }
 
 function renderCalendar() {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const _td = new Date(); const todayStr = `${_td.getFullYear()}-${String(_td.getMonth()+1).padStart(2,'0')}-${String(_td.getDate()).padStart(2,'0')}`;
 
-  // Week label — show date range e.g. "Apr 7 – 13" or "Apr 28 – May 4"
+  // Week label — show date range e.g. "Apr 7 – 11" or "Apr 28 – May 2"
   const ws = new Date(weekStart);
-  const we = new Date(ws); we.setDate(we.getDate() + 6);
+  const we = new Date(ws); we.setDate(we.getDate() + 4);
   const sameMonth = ws.getMonth() === we.getMonth();
   const startLabel = ws.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const endLabel = sameMonth
@@ -5697,7 +5697,7 @@ function renderCalendar() {
   document.getElementById('week-label').textContent = `${startLabel} – ${endLabel}${yearSuffix}`;
 
   let html = '';
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 5; i++) {
     const day = new Date(ws);
     day.setDate(day.getDate() + i);
     const dateStr = day.toISOString().split('T')[0];
@@ -5743,7 +5743,7 @@ function renderCalendar() {
   const statsEl = document.getElementById('cal-week-stats');
   if (statsEl) {
     const weekDates = [];
-    for (let i = 0; i < 7; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates.push(d.toISOString().split('T')[0]); }
+    for (let i = 0; i < 5; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates.push(d.toISOString().split('T')[0]); }
     const weekJobs = allJobs.filter(j => weekDates.includes(j.date) && j.status !== 'Archived');
     const totalJobs = weekJobs.length;
     const doneJobs  = weekJobs.filter(j => (j.status||'').toLowerCase() === 'complete' || (j.status||'').toLowerCase() === 'completed').length;
@@ -5791,7 +5791,7 @@ function renderCalendar() {
   const listEl = document.getElementById('cal-job-list');
   if (listEl) {
     const weekDates2 = [];
-    for (let i = 0; i < 7; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates2.push(d.toISOString().split('T')[0]); }
+    for (let i = 0; i < 5; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); weekDates2.push(d.toISOString().split('T')[0]); }
     const weekJobs2 = allJobs
       .filter(j => weekDates2.includes(j.date) && j.status !== 'Archived')
       .sort((a, b) => (a.date + (a.time||'99:99')).localeCompare(b.date + (b.time||'99:99')));
