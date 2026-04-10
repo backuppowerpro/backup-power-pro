@@ -16970,18 +16970,7 @@ document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, 
 document.addEventListener('touchstart', function(e) {
   if (e.touches.length > 1) e.preventDefault();
 }, { passive: false });
-// Block double-tap zoom — track last tap time, cancel if <300ms
-(function(){
-  var _lastTap = 0;
-  document.addEventListener('touchend', function(e) {
-    // Only block double-tap on non-input elements
-    const tag = (e.target.tagName || '').toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-    const now = Date.now();
-    if (now - _lastTap < 300) e.preventDefault();
-    _lastTap = now;
-  }, { passive: false });
-})();
+// Double-tap zoom: handled by user-scalable=no in viewport meta (no JS needed)
 
 </script>
 </body>
