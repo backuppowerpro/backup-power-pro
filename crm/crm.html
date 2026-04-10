@@ -144,6 +144,18 @@ html.dark .prop-none{background:#3d3830;color:var(--text3)}
 html.dark .prop-sent{background:#1e2a3d;color:#7cb3f0}
 html.dark .prop-approved{background:#1a3328;color:#4ade80}
 html.dark .prop-viewed{background:#3d3520;color:#e6a800}
+/* Warning banner (inspection required before payment) */
+.warn-banner-amber{width:100%;background:#fef3c7;border:none;border-radius:var(--r-sm);padding:13px;margin-bottom:12px;font-size:13px;color:#92400e;text-align:center;cursor:pointer;font-weight:600;display:block}
+html.dark .warn-banner-amber{background:#3d3010;color:#fcd34d;border:1px solid rgba(251,191,36,.2)}
+/* Notification icons dark */
+html.dark .notif-icon.approved{background:#1a3328;color:#4ade80}
+html.dark .notif-icon.viewed{background:#1e2a3d;color:#7cb3f0}
+html.dark .notif-icon.paid{background:#3d3520;color:#e6a800}
+html.dark .notif-icon.lead{background:#1e2a3d;color:#7cb3f0}
+/* pill-btn.yes dark */
+html.dark .pill-btn.yes{background:#1a3328;color:#4ade80}
+/* jur portal btn dark */
+html.dark .jur-detail-action .btn-portal{background:#1e2a3d;color:#7cb3f0}
 /* Line items (proposal form) */
 html.dark .line-items{background:var(--bg)}
 html.dark .line-item label{color:var(--text)}
@@ -301,15 +313,15 @@ h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;lett
 html.dark .search-add{background:var(--gold);color:#1e1b17}
 html.dark .search-add:hover{background:#cca000}
 /* Add action menu — popover that opens below the + button */
-.search-add-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:200px;background:var(--bg);border:none;border-radius:var(--r-md);box-shadow:var(--shadow-xl);padding:6px;display:none;flex-direction:column;gap:2px;z-index:200;animation:addMenuPop .18s var(--ease)}
+.search-add-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:200px;background:var(--bg);border:none;border-radius:var(--r-md);box-shadow:var(--shadow-xl);padding:6px;display:none;flex-direction:column;gap:2px;z-index:190;animation:addMenuPop .18s var(--ease)}
 @keyframes addMenuPop{from{opacity:0;transform:translateY(-6px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
 .search-add-menu.open{display:flex}
 .search-add-menu button{background:none;border:none;display:flex;align-items:center;gap:10px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;color:var(--text);cursor:pointer;border-radius:var(--r-sm);text-align:left;transition:background var(--t-fast)}
-.search-add-menu button:hover{background:var(--bg);color:var(--navy)}
+.search-add-menu button:hover{background:rgba(11,31,59,.06);color:var(--navy)}
 .search-add-menu button svg{flex-shrink:0;color:var(--text3)}
 .search-add-menu button:hover svg{color:var(--navy)}
 html.dark .search-add-menu{background:var(--bg)}
-html.dark .search-add-menu button:hover{background:var(--bg);color:var(--gold)}
+html.dark .search-add-menu button:hover{background:rgba(255,255,255,.07);color:var(--gold)}
 html.dark .search-add-menu button:hover svg{color:var(--gold)}
 
 /* ══════════════════════════════════════════════════════════
@@ -400,6 +412,7 @@ td.actions{white-space:nowrap}
 .table-scroll{overflow-x:hidden;border-top:none;background:var(--bg);position:relative;-webkit-overflow-scrolling:touch}
 .table-wrap{position:relative}
 .table-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(200,205,215,.35));pointer-events:none;border-radius:0 0 var(--r-md) var(--r-md);z-index:1;opacity:var(--grad-opacity,1)}
+html.dark .table-wrap::after{background:linear-gradient(transparent,rgba(15,19,31,.55))}
 /* gradient opacity controlled by JS based on scroll distance from bottom */
 .table-scroll::-webkit-scrollbar{width:8px}
 .table-scroll::-webkit-scrollbar-track{background:transparent}
@@ -565,7 +578,6 @@ html.dark .drill-head{border-bottom-color:rgba(255,255,255,.06)}
   td.notes-cell,.col-notes,.col-phone{display:none}
 }
 @media(max-width:480px){
-  .cal-grid{grid-template-columns:1fr;gap:8px}
   .cal-day{min-height:auto}
   .cal-day-body{padding:6px}
   .cal-event{font-size:14px;padding:10px 12px;flex:0 0 auto}
@@ -674,6 +686,7 @@ html.dark .fq-stage-chip{background:rgba(255,255,255,.07)}
 html.dark .fq-send-btn{background:var(--gold);color:#1e1b17}
 .fq-send-btn:disabled{opacity:.5;cursor:default}
 .fq-skip-btn{padding:10px 16px;background:none;border:1px solid var(--border);border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;color:var(--text3);cursor:pointer;white-space:nowrap}
+html.dark .fq-skip-btn{border-color:rgba(255,255,255,.14)}
 .fq-empty{text-align:center;padding:44px 20px;color:var(--text3);font-family:'Outfit',sans-serif;font-size:14px;line-height:1.6}
 .fq-empty-icon{font-size:36px;margin-bottom:10px}
 
@@ -1678,7 +1691,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     box-shadow:0 8px 24px rgba(10,20,40,.14),0 2px 6px rgba(10,20,40,.08),inset 0 1px 0 rgba(255,255,255,.9)!important}
   html.dark .tab-bar.mini{box-shadow:0 8px 24px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06)!important}
   .tab-bar.mini .tab-label{opacity:0;height:0;overflow:hidden;pointer-events:none;transition:opacity .18s ease,height .18s ease}
-  .tab-bar.mini .tab-btn{padding:8px 4px!important;gap:0}
+  .tab-bar.mini .tab-btn{padding:8px 4px!important;gap:0;position:relative}
+  .tab-bar.mini .tab-badge{position:absolute;top:2px;right:2px;margin-left:0}
 
   /* Tab buttons — pill-shaped, no border lines */
   .tab-btn{
@@ -1731,6 +1745,13 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   body.kbd-open #qa-bar,body.kbd-open #qa-inline{display:none!important}
   /* Improve readability of body text on mobile */
   .panel-body, #drill-contact-scroll, .drill-body, .inbox-preview, .msg-bubble{line-height:1.55}
+
+  /* Calendar: single-column on phones so jobs are readable */
+  .cal-grid{grid-template-columns:1fr;gap:8px}
+
+  /* Follow-up queue: lift panel above floating pill tab bar */
+  .fq-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+  .urg-modal-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 }
 
 :root{--kb:0px}
@@ -1810,12 +1831,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   }
   .modal-foot .btn{width:100%!important;min-height:52px!important;font-size:16px!important;justify-content:center!important}
 
-  /* ── FOLLOW-UP QUEUE: lift above bottom edge ─────────────── */
-  .fq-overlay{padding-bottom:60px!important}
+  /* ── FOLLOW-UP QUEUE ─────────────────────────────────────── */
   .fq-panel{border-radius:var(--r-xl)!important;max-height:78vh!important}
 
-  /* ── URGENT MODAL: lift above bottom edge ────────────────── */
-  .urg-modal-overlay{padding-bottom:60px!important}
+  /* ── URGENT MODAL ────────────────────────────────────────── */
   .urg-modal{border-radius:var(--r-lg)!important}
 
   /* ── CONTEXT MENU → ACTION SHEET ────────────────────────── */
@@ -2865,7 +2884,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div id="msg-thread-insight" style="display:none;padding:6px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);flex-shrink:0;cursor:pointer" onclick="window.tmOpenPanel&&window.tmOpenPanel()" title="Open Sparky for more"></div>
       <!-- Thread search bar (hidden by default) -->
       <div id="msg-search-bar" style="display:none;padding:7px 12px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-pill);padding:5px 12px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-pill);padding:5px 12px;transition:border-color .15s" onfocusin="this.style.borderColor=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4;flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="msg-search-input" type="text" placeholder="Search messages…" style="flex:1;background:none;border:none;outline:none;font-size:16px;color:var(--text);font-family:inherit" oninput="renderThread()" autocomplete="off">
           <button onclick="threadClearSearch()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0;font-size:16px;line-height:1;opacity:.5" title="Clear">&times;</button>
@@ -2913,7 +2932,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </label>
           </div>
-          <div style="flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:22px;padding:8px 8px 8px 14px;gap:6px;transition:border-color .15s" onfocusin="this.style.borderColor='var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
+          <div style="flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:22px;padding:8px 8px 8px 14px;gap:6px;transition:border-color .15s" onfocusin="this.style.borderColor=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
             <textarea id="msg-compose" placeholder="Message…" style="flex:1;background:none;border:none;outline:none;resize:none;font-size:15px;min-height:22px;max-height:120px;line-height:1.5;padding:0;font-family:inherit;color:var(--text)" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
             <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0">
               <button id="msg-send-btn" onclick="sendMessage()" title="Send (Enter)" style="width:32px;height:32px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s">
@@ -4017,13 +4036,13 @@ function openPanel(id) {
   if (!propSection) { /* panel not yet in DOM, skip */ } else if (proposals.length > 0) {
     let cardsHtml = '';
     proposals.forEach((p, idx) => {
-      let badge = '', badgeStyle = '';
-      if (p.status === 'Cancelled') { badge = 'Cancelled'; badgeStyle = 'background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb'; }
-      else if (p.status === 'Approved') { badge = '&#10003; Invoice'; badgeStyle = 'background:#d1fae5;color:var(--green);border:1px solid #a7f3d0'; }
-      else if (p.status === 'Viewed') { badge = 'Viewed'; badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a'; }
-      else if (p.status === 'Copied') { badge = 'Proposal'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
-      else if (p.status === 'Created') { badge = 'Proposal'; badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
-      else { badge = esc(p.status); badgeStyle = 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe'; }
+      let badge = '', badgeClass = '';
+      if (p.status === 'Cancelled') { badge = 'Cancelled'; badgeClass = 'prop-none'; }
+      else if (p.status === 'Approved') { badge = '&#10003; Invoice'; badgeClass = 'prop-approved'; }
+      else if (p.status === 'Viewed') { badge = 'Viewed'; badgeClass = 'prop-viewed'; }
+      else if (p.status === 'Copied') { badge = 'Proposal'; badgeClass = 'prop-sent'; }
+      else if (p.status === 'Created') { badge = 'Proposal'; badgeClass = 'prop-sent'; }
+      else { badge = esc(p.status); badgeClass = 'prop-sent'; }
       const ampLabel = p.amp_type === 'both' ? '30A/50A' : (p.amp_type || '30') + 'A';
       const surgeLabel = '';
       const pomLabel = p.include_pom ? ' + Protection Pkg' : '';
@@ -4045,7 +4064,7 @@ function openPanel(id) {
         cardsHtml += `
         <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer" onclick="selectProposalAndDrill(${idx})">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span class="prop-badge" style="${badgeStyle};padding:3px 8px;border-radius:var(--r-pill);font-size:11px;font-weight:700">${badge}</span>
+            <span class="prop-badge ${badgeClass}" style="padding:3px 8px;border-radius:var(--r-pill);font-size:11px;font-weight:700">${badge}</span>
             <span style="font-size:11px;color:var(--text3)">${ampLabel}${surgeLabel}${pomLabel}</span>
             <span style="font-size:13px;font-weight:700;color:var(--text);margin-left:auto">$${displayTotal.toLocaleString()}</span>
           </div>
@@ -4222,7 +4241,7 @@ async function renderProposalDrill() {
     // Action section: inspection blocks copy/preview
     if (collectDisabled) {
       // Inspection warning — blocks everything
-      actionSection = '<button onclick="drillTo(\'inspection\')" style="width:100%;background:#fef3c7;border:none;border-radius:var(--r-sm);padding:13px;margin-bottom:12px;font-size:13px;color:#92400e;text-align:center;cursor:pointer;font-weight:600">⚠️ Complete panel inspection before collecting payment →</button>';
+      actionSection = '<button onclick="drillTo(\'inspection\')" class="warn-banner-amber">⚠️ Complete panel inspection before collecting payment →</button>';
     } else {
       // Copy Invoice Link | Preview | (Edit Inspection if POM passed)
       const inspBtn = hasPOM ? '<button onclick="drillTo(\'inspection\')" style="flex:1;padding:10px;background:var(--bg);border:1.5px solid #bfdbfe;border-radius:var(--r-sm);font-weight:600;font-size:12px;cursor:pointer;color:#1d4ed8">Edit Inspection</button>' : '';
