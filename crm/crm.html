@@ -1514,9 +1514,9 @@ html.dark .cs-result-snippet mark{background:rgba(255,186,0,.22)}
 .cs-count{padding:10px 18px;font-size:12px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border)}
 
 /* ── Chat panel (slide-in from right, above everything) ── */
-.tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:310;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:340;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .tm-panel-overlay.open{opacity:1;pointer-events:auto}
-.tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--bg);display:flex;flex-direction:column;box-shadow:-14px 0 48px rgba(10,20,40,.22);transform:translateX(100%);transition:transform .3s var(--ease);z-index:320;border-left:none;padding-top:env(safe-area-inset-top,0px)}
+.tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--bg);display:flex;flex-direction:column;box-shadow:-14px 0 48px rgba(10,20,40,.22);transform:translateX(100%);transition:transform .3s var(--ease);z-index:350;border-left:none;padding-top:env(safe-area-inset-top,0px)}
 html.dark .tm-panel{box-shadow:-14px 0 48px rgba(0,0,0,.55)}
 .tm-panel.open{transform:translateX(0)}
 .tm-panel-head{display:flex;align-items:center;gap:12px;padding:16px 18px 16px 20px;background:var(--bg);border-bottom:1px solid rgba(0,0,0,.07);flex-shrink:0}
@@ -1838,8 +1838,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* JS sets --kb = keyboard height via visualViewport API.             */
   /* Adding it as padding-bottom makes panel footers ride above keys.   */
   .tm-panel{
-    padding-bottom:calc(var(--kb,0px) + 40px + env(safe-area-inset-bottom,0px));
-    transition:transform .3s var(--ease),padding-bottom .25s cubic-bezier(.25,.46,.45,.94)
+    bottom:var(--kb,0px);
+    transition:transform .3s var(--ease),bottom .25s cubic-bezier(.25,.46,.45,.94)
   }
   .side-panel{
     padding-bottom:calc(var(--kb,0px) + 40px + env(safe-area-inset-bottom,0px));
@@ -2305,10 +2305,6 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <span id="fq-launch-badge" style="display:none;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;padding:0 6px;border-radius:var(--r-pill);line-height:18px">0</span>
       </button>
       <div class="view-toggle">
-        <button class="view-toggle-btn" id="view-list-btn" onclick="cycleListView()" title="List view — click again for urgent first">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          <span id="view-list-label">List</span>
-        </button>
         <button class="view-toggle-btn active" id="view-pipe-btn" onclick="setLeadsView('pipeline')" title="Pipeline kanban">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
           Pipeline
