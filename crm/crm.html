@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BPP CRM">
@@ -210,8 +210,10 @@ html.dark .pay-row{border-color:var(--border)}
 html.dark .pay-total{color:var(--gold)}
 html.dark .pay-history-item{background:var(--card)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior:none}
-body{overflow-x:hidden}
+html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior:none;overscroll-behavior-x:none}
+/* Both html AND body need overflow-x:hidden — body alone doesn't stop iOS rubber-band horizontal scroll */
+html{overflow-x:hidden}
+body{overflow-x:hidden;touch-action:pan-y}
 *{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text}
 /* Eliminate 300ms tap delay on all tappable elements — feels instant */
@@ -361,7 +363,7 @@ td.actions{white-space:nowrap}
 /* ── SIDE PANEL ─────────────────────────────────────────── */
 .side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .side-panel-overlay.open{opacity:1;pointer-events:auto}
-.side-panel{background:var(--bg);position:fixed;top:0;right:0;bottom:0;width:100%;max-width:480px;display:flex;flex-direction:column;box-shadow:var(--shadow-xl);overflow:hidden;transform:translateX(100%);transition:transform .28s var(--ease);border-left:none}
+.side-panel{background:var(--bg);position:fixed;top:0;right:0;bottom:0;width:100%;max-width:480px;display:flex;flex-direction:column;box-shadow:var(--shadow-xl);overflow:hidden;transform:translateX(100%);transition:transform .28s var(--ease);border-left:none;padding-top:env(safe-area-inset-top,0px)}
 .side-panel-overlay.open .side-panel{transform:translateX(0)}
 .panel-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg);position:sticky;top:0;z-index:2}
 .panel-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:22px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.015em}
@@ -1015,7 +1017,7 @@ html.dark .call-play-btn:hover{background:#cca000}
 .bell-wrap{position:relative}
 .bell-badge{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;line-height:1;pointer-events:none;box-shadow:0 0 0 2px var(--navy)}
 html.dark .bell-badge{box-shadow:0 0 0 2px #2a2520}
-.notif-pop{position:fixed;top:64px;right:12px;width:360px;max-width:calc(100vw - 24px);max-height:480px;background:var(--bg);border-radius:var(--r-lg);box-shadow:var(--shadow-xl);z-index:120;overflow:hidden;display:none;flex-direction:column;transform-origin:top right;animation:notifPopIn .22s var(--ease);border:none}
+.notif-pop{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));right:12px;width:360px;max-width:calc(100vw - 24px);max-height:480px;background:var(--bg);border-radius:var(--r-lg);box-shadow:var(--shadow-xl);z-index:120;overflow:hidden;display:none;flex-direction:column;transform-origin:top right;animation:notifPopIn .22s var(--ease);border:none}
 .notif-pop.open{display:flex}
 @keyframes notifPopIn{from{opacity:0;transform:scale(.96) translateY(-6px)}to{opacity:1;transform:scale(1) translateY(0)}}
 html.dark .notif-pop{box-shadow:0 16px 48px rgba(0,0,0,.55)}
@@ -1468,7 +1470,7 @@ html.dark .sk-action-btn.cancel,html.dark .sk-action-btn.edit{border-color:rgba(
 /* ── Communications Search Panel ────────────────────────── */
 .cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:322;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .cs-overlay.open{opacity:1;pointer-events:auto}
-.cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--bg);display:flex;flex-direction:column;box-shadow:14px 0 48px rgba(10,20,40,.22);transform:translateX(-100%);transition:transform .28s var(--ease);z-index:323;border-right:none}
+.cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--bg);display:flex;flex-direction:column;box-shadow:14px 0 48px rgba(10,20,40,.22);transform:translateX(-100%);transition:transform .28s var(--ease);z-index:323;border-right:none;padding-top:env(safe-area-inset-top,0px)}
 html.dark .cs-panel{box-shadow:14px 0 48px rgba(0,0,0,.55)}
 .cs-panel.open{transform:translateX(0)}
 .cs-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -1498,7 +1500,7 @@ html.dark .cs-result-snippet mark{background:rgba(255,186,0,.22)}
 /* ── Chat panel (slide-in from right, above everything) ── */
 .tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:310;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .tm-panel-overlay.open{opacity:1;pointer-events:auto}
-.tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--bg);display:flex;flex-direction:column;box-shadow:-14px 0 48px rgba(10,20,40,.22);transform:translateX(100%);transition:transform .3s var(--ease);z-index:320;border-left:none}
+.tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--bg);display:flex;flex-direction:column;box-shadow:-14px 0 48px rgba(10,20,40,.22);transform:translateX(100%);transition:transform .3s var(--ease);z-index:320;border-left:none;padding-top:env(safe-area-inset-top,0px)}
 html.dark .tm-panel{box-shadow:-14px 0 48px rgba(0,0,0,.55)}
 .tm-panel.open{transform:translateX(0)}
 .tm-panel-head{display:flex;align-items:center;gap:12px;padding:16px 18px 16px 20px;background:var(--bg);border-bottom:1px solid rgba(0,0,0,.07);flex-shrink:0}
@@ -16497,6 +16499,27 @@ window.closeAddMenu = function() {
     if (!backdrop.classList.contains('open')) return;
     pop.querySelectorAll('.cs-key.cs-key-pressed').forEach(el => el.classList.remove('cs-key-pressed'));
   }, true);
+})();
+
+// ── Prevent pinch-zoom and double-tap-zoom on iOS ─────────────────────────────
+// user-scalable=no in viewport handles most cases; this catches the rest.
+document.addEventListener('gesturestart',  function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+// Block touch events with >1 finger (pinch)
+document.addEventListener('touchstart', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+// Block double-tap zoom — track last tap time, cancel if <300ms
+(function(){
+  var _lastTap = 0;
+  document.addEventListener('touchend', function(e) {
+    // Only block double-tap on non-input elements
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    const now = Date.now();
+    if (now - _lastTap < 300) e.preventDefault();
+    _lastTap = now;
+  }, { passive: false });
 })();
 
 </script>
