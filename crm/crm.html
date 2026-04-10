@@ -213,10 +213,10 @@ html.dark .pay-history-item{background:var(--card)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior-x:none}
 /* Both html AND body need overflow-x:hidden — body alone doesn't stop iOS rubber-band horizontal scroll */
-html{overflow-x:hidden}
+html{overflow-x:clip}
 /* Prevent iOS rubber-band scroll bleed through overlays */
 body:has(#side-panel-overlay.open,.tm-panel-overlay.open,.modal-overlay.open,.fq-overlay.open,#urg-modal-overlay.open,.cs-overlay.open){overflow:hidden!important}
-body{overflow-x:hidden;touch-action:pan-y;-webkit-touch-callout:none}
+body{overflow-x:clip;touch-action:pan-y;-webkit-touch-callout:none}
 *{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text}
 /* Eliminate 300ms tap delay on all tappable elements — feels instant */
