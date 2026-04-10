@@ -627,7 +627,7 @@ html.dark .drill-head{border-bottom-color:rgba(255,255,255,.06)}
 .mobile-lead-list{display:flex;flex-direction:column;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu);overflow:hidden;margin-top:12px}
 .mlc{display:flex;align-items:center;gap:12px;padding:13px 16px;min-height:64px;border-bottom:1px solid rgba(0,0,0,.055);cursor:pointer;background:var(--bg);transition:background .1s;-webkit-tap-highlight-color:transparent;text-decoration:none}
 .mlc:last-child{border-bottom:none}
-.mlc:active{background:rgba(11,31,59,.13)}
+.mlc:active{background:rgba(11,31,59,.13);transform:scale(.98);transition:transform .08s ease}
 html.dark .mlc{border-bottom-color:rgba(255,255,255,.06)}
 html.dark .mlc:active{background:rgba(255,255,255,.09)}
 .mlc-body{flex:1;min-width:0;overflow:hidden}
@@ -919,7 +919,7 @@ html.dark .qr-chip:hover{color:var(--gold)}
 /* ── IN-CHAT QUICK ACTIONS TOOLBAR (pass 10) ─────────────── */
 .qa-bar{display:flex;gap:6px;padding:10px 16px 6px;overflow-x:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .qa-bar::-webkit-scrollbar{display:none}
-.qa-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--r-pill);background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;transition:box-shadow var(--t-fast),color var(--t-fast),transform var(--t-fast);white-space:nowrap;flex-shrink:0}
+.qa-btn{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--r-pill);background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;transition:box-shadow var(--t-fast),color var(--t-fast),transform var(--t-fast);white-space:nowrap;flex-shrink:0}
 .qa-btn svg{width:13px;height:13px;flex-shrink:0;stroke-width:2.25}
 .qa-btn:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
 .qa-btn:active{transform:scale(.96)}
@@ -999,7 +999,7 @@ html.dark .qa-btn-secondary:hover{color:var(--gold)}
 /* ── INBOX LIST ─────────────────────────────────────────── */
 .inbox-item{background:var(--bg);border-radius:var(--r-md);padding:13px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none}
 .inbox-item:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu)}
-.inbox-item:active{transform:translateY(0);box-shadow:var(--shadow-neu-inset-sm)}
+.inbox-item:active{transform:scale(.98);box-shadow:var(--shadow-neu-inset-sm);transition:transform .08s ease}
 .inbox-item.unread{border-left:3px solid var(--gold)}
 .inbox-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text)}
 .inbox-item.unread .inbox-name{font-weight:800}
@@ -1283,6 +1283,9 @@ html.dark .urg-send-btn{background:var(--gold);color:#1e1b17}
 .urg-skip-btn:hover{box-shadow:var(--shadow-neu)}
 .urg-generating{display:flex;align-items:center;gap:10px;padding:16px;background:var(--bg);border-radius:var(--r-sm);color:var(--text3);font-size:13px;margin-bottom:4px}
 @keyframes spin{to{transform:rotate(360deg)}}
+#msg-send-btn svg{transition:none}
+#msg-send-btn.sending svg{animation:spin .7s linear infinite}
+#msg-send-btn.sending{opacity:.7;pointer-events:none}
 .kanban-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:32px 12px;border:1px dashed var(--border);border-radius:var(--r-sm);line-height:1.5;display:flex;flex-direction:column;align-items:center;gap:8px}
 .kanban-empty-icon{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--bg);color:var(--text3);opacity:.65;font-style:normal}
 .kanban-empty-icon svg{width:16px;height:16px;display:block;stroke-width:2}
@@ -1668,6 +1671,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
   /* Hide qa-bar when keyboard is open (js adds kbd-open to body via visualViewport) */
   body.kbd-open #qa-bar,body.kbd-open #qa-inline{display:none!important}
+  /* Improve readability of body text on mobile */
+  .panel-body, #drill-contact-scroll, .drill-body, .inbox-preview, .msg-bubble{line-height:1.55}
 }
 
 :root{--kb:0px}
@@ -2743,7 +2748,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <div class="panel-foot" style="flex-shrink:0">
         <button class="btn btn-danger btn-sm" style="flex:1" onclick="panelNameArchive()">Archive</button>
         <button class="btn btn-sm" id="panel-lost-btn" style="flex:1;background:var(--bg);color:var(--text2);box-shadow:var(--shadow-neu-sm)" onclick="panelMarkLost()">Lost</button>
-        <button class="btn btn-primary" id="panel-save-btn" style="display:none;background:var(--navy);color:#fff" onclick="panelSave()">Save Changes</button>
+        <button class="btn btn-primary" id="panel-save-btn" style="display:none;background:var(--navy);color:#fff;font-weight:700" onclick="panelSave()">Save Changes</button>
       </div>
     </div>
     <!-- LEVEL 2: Proposal View -->
@@ -7307,7 +7312,8 @@ function showToast(msg, type, duration) {
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), duration || 4500);
+  var dur = duration || ((type === 'error' || type === 'warning') ? 6000 : 4500);
+  toastTimer = setTimeout(() => t.classList.remove('show'), dur);
   if (type === 'success') _haptic('success');
   else if (type === 'error' || type === 'warning') _haptic('error');
 }
@@ -8748,7 +8754,7 @@ async function loadInbox() {
   }
 
   if (!data || data.length === 0) {
-    listEl.innerHTML = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;margin:0 auto 12px;display:block;opacity:.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No messages yet</p></div>';
+    listEl.innerHTML = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;margin:0 auto 12px;display:block;opacity:.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No conversations yet</p><p style="font-size:12px;color:var(--text3);margin-top:4px;font-weight:400">Your SMS conversations with leads will appear here.</p></div>';
     return;
   }
 
@@ -9337,10 +9343,11 @@ async function sendMessage() {
   const c = allContacts.find(x => x.id === contactId);
   if (!c || !c.phone) { showToast('No phone number on file', 'error'); return; }
 
+  const messageText = body;
   _haptic('light');
   sendingMsg = true;
   const sendBtn = document.getElementById('msg-send-btn');
-  if (sendBtn) { sendBtn.disabled = true; sendBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'; }
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('sending'); sendBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>'; }
   composeEl.value = '';
   composeEl.style.height = '';
   const cc = document.getElementById('msg-char-count');
@@ -9404,12 +9411,15 @@ async function sendMessage() {
 
   if (errMsg) {
     showToast('SMS failed: ' + errMsg, 'error');
+    // Restore typed text so the user doesn't lose their message
+    const compose = document.getElementById('msg-compose');
+    if (compose && !compose.value) compose.value = messageText;
   } else {
     showToast('Message sent', 'success');
   }
 
   sendingMsg = false;
-  if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'; }
+  if (sendBtn) { sendBtn.disabled = false; sendBtn.classList.remove('sending'); sendBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'; }
 }
 
 // ── POLL FOR NEW INBOUND MESSAGES ─────────────────────────
