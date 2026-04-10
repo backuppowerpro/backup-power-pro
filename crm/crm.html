@@ -2405,6 +2405,21 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           </button>
           <div id="panel-events-list" style="display:none;padding-bottom:4px"></div>
         </div>
+
+        <!-- ── Neighbor Postcard section ────────────────── -->
+        <div id="panel-neighbor-section" style="margin-top:4px;display:none">
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0 8px">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);flex:1">Neighbor Cards</span>
+            <span id="panel-neighbor-count" style="display:none;font-size:10px;font-weight:800;background:var(--bg);box-shadow:var(--shadow-neu-sm);padding:1px 7px;border-radius:var(--r-pill);color:var(--text2)"></span>
+          </div>
+          <button id="panel-neighbor-btn" onclick="sendNeighborCards()" style="width:100%;padding:9px 0;background:var(--bg);box-shadow:var(--shadow-neu-sm);border:none;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:8px;transition:box-shadow .15s">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Send Neighbor Cards
+          </button>
+          <div id="panel-neighbor-history" style="padding-bottom:4px"></div>
+        </div>
+
       </div>
       </div><!-- end drill-contact-scroll -->
       <div class="panel-foot" style="flex-shrink:0">
@@ -3523,6 +3538,7 @@ function openPanel(id) {
   if (_evListEl) _evListEl.style.display = 'none';
   if (_evChev)   _evChev.style.transform = '';
   setTimeout(renderPanelEvents, 0); // populate count badge while collapsed
+  setTimeout(_initNeighborPanel, 0); // show neighbor card section + history
   // contact info always expanded on open, summary always hidden
   const _ciSummary = document.getElementById('contact-info-summary');
   const _ciExpanded = document.getElementById('contact-info-expanded');
@@ -6535,6 +6551,107 @@ function fqSkip(idx) {
   if (_fqItems[idx]) { _fqItems[idx].done = true; }
   renderFqItems();
   _updateFqBadge();
+}
+
+// ── Neighbor Card Panel ───────────────────────────────────────────────────────
+const NC_ENDPOINT = SUPABASE_URL + '/functions/v1/send-neighbor-cards';
+
+async function sendNeighborCards() {
+  const contactId = document.getElementById('panel-id').value;
+  if (!contactId) return;
+
+  const btn = document.getElementById('panel-neighbor-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span> Sending…'; }
+
+  try {
+    const resp = await fetch(NC_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT, 'apikey': SEND_SMS_ANON_JWT },
+      body: JSON.stringify({ contactId }),
+    });
+    const data = await resp.json();
+
+    if (data.dry_run) {
+      showToast(`Dry run: ${data.sent} cards would be sent (add LOB_API_KEY to go live)`, 'success');
+    } else if (data.sent > 0) {
+      showToast(`⚡ ${data.sent} neighbor cards sent!`, 'success');
+    } else {
+      showToast(data.error || 'No valid neighbor addresses found', 'error');
+    }
+    renderNeighborCardHistory(contactId);
+  } catch(e) {
+    showToast('Failed to send — check connection', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Send Neighbor Cards'; }
+  }
+}
+
+async function renderNeighborCardHistory(contactId) {
+  const section = document.getElementById('panel-neighbor-section');
+  const listEl  = document.getElementById('panel-neighbor-history');
+  const countEl = document.getElementById('panel-neighbor-count');
+  if (!section || !listEl) return;
+
+  const { data: cards } = await db.from('neighbor_cards')
+    .select('id,variation,recipient_line1,recipient_city,sent_at,scan_count,scanned_at,lob_id')
+    .eq('contact_id', contactId)
+    .order('sent_at', { ascending: false });
+
+  const all = cards || [];
+  if (countEl) { countEl.textContent = all.length; countEl.style.display = all.length ? '' : 'none'; }
+
+  if (!all.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:2px 0 6px">No cards sent yet</div>';
+    return;
+  }
+
+  const totalScans = all.reduce((s, c) => s + (c.scan_count || 0), 0);
+  const aScans = all.filter(c => c.variation === 'A').reduce((s, c) => s + (c.scan_count || 0), 0);
+  const bScans = all.filter(c => c.variation === 'B').reduce((s, c) => s + (c.scan_count || 0), 0);
+
+  // A/B summary
+  const summaryHtml = totalScans > 0
+    ? `<div style="display:flex;gap:6px;margin-bottom:8px">
+        <div style="flex:1;background:var(--bg);box-shadow:var(--shadow-neu-sm);border-radius:var(--r-sm);padding:7px 10px;text-align:center">
+          <div style="font-size:14px;font-weight:800;color:var(--text)">${aScans}</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700">A scans</div>
+        </div>
+        <div style="flex:1;background:var(--bg);box-shadow:var(--shadow-neu-sm);border-radius:var(--r-sm);padding:7px 10px;text-align:center">
+          <div style="font-size:14px;font-weight:800;color:var(--text)">${bScans}</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700">B scans</div>
+        </div>
+        <div style="flex:1;background:var(--bg);box-shadow:var(--shadow-neu-sm);border-radius:var(--r-sm);padding:7px 10px;text-align:center">
+          <div style="font-size:14px;font-weight:800;color:var(--green)">${totalScans}</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700">total</div>
+        </div>
+      </div>` : '';
+
+  const rowsHtml = all.slice(0, 6).map(c => {
+    const varColor = c.variation === 'A' ? '#f59e0b' : '#8b5cf6';
+    const dateStr  = c.sent_at ? new Date(c.sent_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '—';
+    const scanned  = c.scan_count > 0;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:9px;font-weight:800;padding:1px 7px;border-radius:var(--r-pill);background:${varColor}18;color:${varColor};flex-shrink:0">${c.variation}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.recipient_line1)}</div>
+        <div style="font-size:10px;color:var(--text3)">${dateStr}</div>
+      </div>
+      <span style="font-size:10px;font-weight:700;color:${scanned ? 'var(--green)' : 'var(--text3)'};flex-shrink:0">${scanned ? `✓ ${c.scan_count} scan${c.scan_count>1?'s':''}` : '—'}</span>
+    </div>`;
+  }).join('');
+
+  listEl.innerHTML = summaryHtml + rowsHtml;
+}
+
+function _initNeighborPanel() {
+  const contactId = document.getElementById('panel-id').value;
+  const c = allContacts.find(x => x.id === contactId);
+  const section = document.getElementById('panel-neighbor-section');
+  if (!section || !c) return;
+  // Show for Stage 4+ (has an address, job is real)
+  const stage = c.stage || 1;
+  section.style.display = stage >= 4 ? '' : 'none';
+  if (stage >= 4) renderNeighborCardHistory(contactId);
 }
 
 function togglePanelEvents() {
