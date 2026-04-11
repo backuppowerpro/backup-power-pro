@@ -1643,17 +1643,15 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     -webkit-backdrop-filter:blur(24px) saturate(160%);
     backdrop-filter:blur(24px) saturate(160%);
     box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 1px 12px rgba(0,0,0,.28)!important;
-    gap:2px!important;padding-left:10px!important;padding-right:10px!important;
-    justify-content:flex-end!important
+    gap:2px!important;padding-left:10px!important;padding-right:10px!important
   }
   .nav-icon-btn{padding:8px!important;position:relative!important;z-index:2!important}
-  .bell-wrap{position:relative!important;z-index:2!important}
-  /* Logo: truly centered via absolute positioning, constrained width to avoid icon overlap */
-  #nav-logo{position:absolute!important;left:50%!important;transform:translateX(calc(-50% - 6px))!important;flex:none!important;height:20px!important;max-width:130px!important;width:auto!important;z-index:1!important;pointer-events:auto}
-  /* Hide non-essential nav icons on mobile */
-  .nav-icon-btn[onclick*="openStatsModal"]{display:none!important}
+  .bell-wrap{position:relative!important;z-index:2!important;margin-left:auto!important}
+  /* Logo: truly centered, constrained to avoid icon overlap */
+  #nav-logo{position:absolute!important;left:50%!important;transform:translateX(-50%)!important;flex:none!important;height:20px!important;max-width:120px!important;width:auto!important;z-index:1!important;pointer-events:auto}
+  /* 2 left (stats + pen), 2 right (bell + refresh). Jurisdictions + dark mode hidden. */
   .nav-icon-btn[onclick*="openJurisdictions"]{display:none!important}
-  .nav-icon-btn[onclick*="openQuoteBuilder"]{display:none!important}
+  #nav-dark-btn{display:none!important}
   /* Side panel: full width on phones, no rounded corners needed */
   .side-panel{
     width:100vw!important;max-width:100vw!important;
@@ -1743,7 +1741,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* Press scale */
   .tab-btn:active{transform:scale(.92)!important}
   .tab-icon{display:block!important;width:22px;height:22px;flex-shrink:0}
-  /* Sparky separator removed — clean icon row, no dividers */
+  /* Contact panel hero: action buttons fill full width evenly */
+  .panel-quick-btns{display:flex!important;gap:6px!important}
+  .panel-quick-btns>button{flex-grow:1!important;flex-basis:0!important;min-height:44px!important}
 
   /* Push page content up above floating pill + gap */
   .main{padding-bottom:calc(108px + env(safe-area-inset-bottom,0px))!important}
@@ -2916,12 +2916,14 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           <div id="panel-neighbor-history" style="padding-bottom:4px"></div>
         </div>
 
+      <!-- Archive/Lost: at bottom of scroll, not in sticky footer -->
+      <div style="display:flex;gap:8px;padding:20px 0 40px;margin-top:20px;border-top:0.5px solid var(--border)">
+        <button class="btn btn-sm" style="flex:1;background:none;color:var(--text3);font-size:12px" onclick="panelNameArchive()">Archive</button>
+        <button class="btn btn-sm" id="panel-lost-btn" style="flex:1;background:none;color:var(--text3);font-size:12px" onclick="panelMarkLost()">Lost</button>
       </div>
       </div><!-- end drill-contact-scroll -->
-      <div class="panel-foot" style="flex-shrink:0">
-        <button class="btn btn-danger btn-sm" style="flex:1" onclick="panelNameArchive()">Archive</button>
-        <button class="btn btn-sm" id="panel-lost-btn" style="flex:1;background:var(--bg);color:var(--text2);box-shadow:var(--shadow-neu-sm)" onclick="panelMarkLost()">Lost</button>
-        <button class="btn btn-primary" id="panel-save-btn" style="display:none;background:var(--navy);color:#fff;font-weight:700" onclick="panelSave()">Save Changes</button>
+      <div class="panel-foot" id="panel-foot" style="flex-shrink:0;display:none">
+        <button class="btn btn-primary" id="panel-save-btn" style="display:none;background:var(--navy);color:#fff;font-weight:700;flex:1" onclick="panelSave()">Save Changes</button>
       </div>
     </div>
     <!-- LEVEL 2: Proposal View -->
@@ -3223,7 +3225,7 @@ function _bannerHtml(c) {
     ? 'display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,186,0,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.35);border-radius:20px;color:#0b1f3b;padding:7px 10px;cursor:pointer;transition:background .15s;box-shadow:0 0 0 3px rgba(255,186,0,.35)'
     : 'display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s';
   const textBtnDot = _hasUnread ? '<span style="width:7px;height:7px;border-radius:50%;background:#dc2626;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)"></span>' : '';
-  const nameLabel = `<div style="position:absolute;left:16px;right:64px;bottom:10px;z-index:3">
+  const nameLabel = `<div style="position:absolute;left:16px;right:16px;bottom:10px;z-index:3">
     <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.018em;text-shadow:0 2px 14px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;margin-bottom:8px">${displayName}</div>
     <div class="panel-quick-btns" style="display:flex;gap:7px">
       <button onclick="openMessagesFromPanel()" style="${textBtnStyle}" title="Text">${textBtnDot}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
@@ -3258,6 +3260,7 @@ function _bannerHtml(c) {
     </div>
     ${schedChip}
   </div>`;
+  const backBtn = `<button onclick="cancelPanel()" style="position:absolute;top:14px;left:14px;background:rgba(0,0,0,.48);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:3;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 12px rgba(0,0,0,.25);width:36px;height:36px;min-width:44px;min-height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`;
   const closeBtn = `<button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.48);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:3;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 12px rgba(0,0,0,.25)">&#10005;</button>`;
   const bannerId = 'bnr-' + c.id;
   if (c.address) {
@@ -3277,7 +3280,7 @@ function _bannerHtml(c) {
       el.insertBefore(img, el.firstChild);
     });
   }
-  return `<div id="${bannerId}" style="position:relative;width:100%;height:100%;background:${color};overflow:hidden">${fallbackInitials}${gradient}${nameGrad}${nameLabel}${stageBadge}${closeBtn}</div>`;
+  return `<div id="${bannerId}" style="position:relative;width:100%;height:100%;background:${color};overflow:hidden">${fallbackInitials}${gradient}${nameGrad}${nameLabel}${stageBadge}${backBtn}${closeBtn}</div>`;
 }
 // ───────────────────────────────────────────────────────────
 const _LS_TOUCH_KEY = 'bpp_crm_touched';
@@ -5541,7 +5544,9 @@ let _panelAutosaveTimer = null;
 function panelMarkDirty() {
   panelDirty = true;
   const btn = document.getElementById('panel-save-btn');
+  const foot = document.getElementById('panel-foot');
   if (btn) { btn.style.display = ''; btn.textContent = 'Save Changes'; }
+  if (foot) foot.style.display = '';
   // Schedule autosave 2s after last keystroke
   clearTimeout(_panelAutosaveTimer);
   _panelAutosaveTimer = setTimeout(panelAutosave, 2000);
@@ -5551,7 +5556,9 @@ function panelResetDirty() {
   panelDirty = false;
   clearTimeout(_panelAutosaveTimer);
   const btn = document.getElementById('panel-save-btn');
+  const foot = document.getElementById('panel-foot');
   if (btn) btn.style.display = 'none';
+  if (foot) foot.style.display = 'none';
 }
 
 async function panelAutosave() {
