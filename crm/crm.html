@@ -3033,8 +3033,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       </div>
       <!-- Inline accordion for quick action panels -->
       <div class="qa-inline" id="qa-inline"><div class="qa-inline-inner" id="qa-inline-inner"></div></div>
-      <!-- Sparky context strip — compact insight below header -->
-      <div id="msg-thread-insight" style="display:none;padding:6px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);flex-shrink:0;cursor:pointer" onclick="window.tmOpenPanel&&window.tmOpenPanel()" title="Open Sparky for more"></div>
+      <!-- Sparky insight hidden on mobile — available via Sparky tab -->
+      <div id="msg-thread-insight" style="display:none"></div>
       <!-- Thread search bar (hidden by default) -->
       <div id="msg-search-bar" style="display:none;padding:7px 12px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0">
         <div style="display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-pill);padding:5px 12px;transition:border-color .15s" onfocusin="this.style.borderColor=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
