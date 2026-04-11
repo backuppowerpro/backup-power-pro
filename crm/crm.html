@@ -689,6 +689,8 @@ html.dark .fq-skip-btn{border-color:rgba(255,255,255,.14)}
 .nav-icon-btn{background:none;border:none;cursor:pointer;padding:8px;color:rgba(255,255,255,.6);transition:color .15s,background .15s;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm)}
 .nav-icon-btn:hover{color:#fff;background:rgba(255,255,255,.1)}
 .nav-icon-btn:active{background:rgba(255,255,255,.18)}
+.nav-icon-btn:focus{outline:none}
+.nav-icon-btn:focus-visible{outline:none}
 /* gear-btn removed — replaced by nav-icon-btn */
 .gear-menu{position:absolute;top:54px;right:8px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-xl);z-index:100;min-width:200px;overflow:hidden;display:none;animation:gearSlide .15s ease}
 .gear-menu.open{display:block}
@@ -1986,7 +1988,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .prop-action-btn:active{transform:scale(.97)!important}
 
   /* ── MAIN LAYOUT: tight spacing, no wasted space ─────────── */
-  .main{padding:6px 12px calc(108px + env(safe-area-inset-bottom,0px))!important}
+  .main{padding:6px 12px calc(108px + env(safe-area-inset-bottom,0px))!important;min-height:100vh!important;background:var(--bg)!important}
+  /* Tab containers: solid bg prevents navy flash during tab switch */
+  #tab-leads,#tab-calendar,#tab-messages,#tab-invoices{background:var(--bg)!important;min-height:100vh}
   .section-head{gap:8px;margin-bottom:6px!important}
   .toolbar{margin-bottom:6px!important}
   .pa-stage-wrap{margin-bottom:4px!important}
