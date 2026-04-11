@@ -227,7 +227,10 @@ html.dark{background:#0d1520}
 /* Prevent iOS rubber-band scroll bleed through overlays */
 body:has(#side-panel-overlay.open,.tm-panel-overlay.open,.modal-overlay.open,.fq-overlay.open,#urg-modal-overlay.open,.cs-overlay.open){overflow:hidden!important}
 body{overflow-x:clip;touch-action:pan-y;-webkit-touch-callout:none}
-*{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+*{-webkit-tap-highlight-color:transparent}
+/* user-select: text by default — let people copy phone numbers, addresses, messages.
+   Only disable on buttons/nav/tabs where selection fights tapping. */
+button,.nav,.tab-bar,.btn,.qa-btn,.mlc,.inbox-item,.kanban-card,.drill-back,.panel-close,.modal-close{-webkit-user-select:none;user-select:none}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text}
 /* Eliminate 300ms tap delay on all tappable elements — feels instant */
 button,a,[onclick],label{touch-action:manipulation}
