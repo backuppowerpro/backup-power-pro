@@ -1643,11 +1643,13 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     -webkit-backdrop-filter:blur(24px) saturate(160%);
     backdrop-filter:blur(24px) saturate(160%);
     box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 1px 12px rgba(0,0,0,.28)!important;
-    gap:2px!important;padding-left:10px!important;padding-right:10px!important
+    gap:2px!important;padding-left:10px!important;padding-right:10px!important;
+    justify-content:flex-end!important
   }
-  .nav-icon-btn{padding:8px!important}
-  /* Logo: balance with invisible left spacer via margin */
-  #nav-logo{height:22px!important;margin-left:auto!important;margin-right:auto!important}
+  .nav-icon-btn{padding:8px!important;position:relative!important;z-index:2!important}
+  .bell-wrap{position:relative!important;z-index:2!important}
+  /* Logo: truly centered via absolute positioning, constrained width to avoid icon overlap */
+  #nav-logo{position:absolute!important;left:50%!important;transform:translateX(calc(-50% - 6px))!important;flex:none!important;height:20px!important;max-width:130px!important;width:auto!important;z-index:1!important;pointer-events:auto}
   /* Hide non-essential nav icons on mobile */
   .nav-icon-btn[onclick*="openStatsModal"]{display:none!important}
   .nav-icon-btn[onclick*="openJurisdictions"]{display:none!important}
