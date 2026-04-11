@@ -1746,9 +1746,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* Call bar above floating pill */
   .call-bar{bottom:calc(90px + env(safe-area-inset-bottom,0px))!important}
 
-  /* Message thread header: on mobile, hide call/search/phone/stage + back label (chevron is enough) */
+  /* Message thread header: on mobile, hide call/search/phone/stage + back label + insight strip */
   .msg-hdr-desktop{display:none!important}
   #msg-back-label{display:none!important}
+  #msg-thread-insight{display:none!important}
 
   /* Hide qa-bar when keyboard is open (js adds kbd-open to body via visualViewport) */
   /* QA bar is now in header — hide inline panel when keyboard is open */
