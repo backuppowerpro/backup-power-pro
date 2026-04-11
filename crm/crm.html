@@ -1642,8 +1642,16 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     background:rgba(10,27,52,.88)!important;
     -webkit-backdrop-filter:blur(24px) saturate(160%);
     backdrop-filter:blur(24px) saturate(160%);
-    box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 1px 12px rgba(0,0,0,.28)!important
+    box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 1px 12px rgba(0,0,0,.28)!important;
+    gap:2px!important;padding-left:10px!important;padding-right:10px!important
   }
+  .nav-icon-btn{padding:8px!important}
+  /* Logo: balance with invisible left spacer via margin */
+  #nav-logo{height:22px!important;margin-left:auto!important;margin-right:auto!important}
+  /* Hide non-essential nav icons on mobile */
+  .nav-icon-btn[onclick*="openStatsModal"]{display:none!important}
+  .nav-icon-btn[onclick*="openJurisdictions"]{display:none!important}
+  .nav-icon-btn[onclick*="openQuoteBuilder"]{display:none!important}
   /* Side panel: full width on phones, no rounded corners needed */
   .side-panel{
     width:100vw!important;max-width:100vw!important;
@@ -1662,6 +1670,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     border-radius:40px!important;
     /* Near-opaque glass — content doesn't bleed through */
     background:rgba(232,237,246,.97)!important;
+    min-height:48px!important;
     -webkit-backdrop-filter:blur(28px) saturate(180%) brightness(1.04);
     backdrop-filter:blur(28px) saturate(180%) brightness(1.04);
     /* Glass border — top highlight + subtle surround */
@@ -1694,18 +1703,26 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   }
   /* Tab labels: hidden on mobile — icon-only pill bar */
   .tab-label{display:none!important}
-  /* Badges: pinned top-right of icon area (Apple HIG) */
-  .tab-badge{position:absolute!important;top:-2px;right:0px;margin-left:0!important;vertical-align:unset!important}
-
-  /* Tab buttons — icon-only, pill-shaped */
-  .tab-btn{
-    flex:1;padding:10px 4px!important;
-    flex-direction:column;align-items:center;justify-content:center;
-    border:none!important;border-radius:32px;
-    margin:0!important;font-size:10px!important;font-weight:600;
-    gap:0;flex-shrink:1;white-space:nowrap;
-    position:relative;transition:background .2s ease,color .18s ease,transform .1s ease
+  /* Tab badges: tiny, tight, Apple-quality */
+  .tab-badge{
+    position:absolute!important;top:2px;right:2px;margin-left:0!important;vertical-align:unset!important;
+    min-width:15px!important;height:15px!important;padding:0 4px!important;
+    font-size:9px!important;font-weight:800;line-height:15px!important;
+    border:2px solid rgba(232,237,246,.97)!important
   }
+  html.dark .tab-badge{border-color:rgba(13,17,28,.96)!important}
+
+  /* Tab buttons — icon-only, evenly distributed */
+  .tab-btn{
+    flex:1;padding:10px 0!important;
+    flex-direction:column;align-items:center;justify-content:center;
+    border:none!important;border-radius:24px;
+    margin:0!important;font-size:10px!important;font-weight:600;
+    gap:0;flex-shrink:1;flex-basis:0;white-space:nowrap;
+    position:relative;transition:background .2s ease,color .18s ease,transform .1s ease;
+    min-width:44px;min-height:44px
+  }
+  .tab-icon{width:20px!important;height:20px!important}
   /* Active tab — compact capsule indicator (Apple HIG: never full-width fill) */
   .tab-btn.active{
     background:transparent!important;
@@ -1729,9 +1746,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* Press scale */
   .tab-btn:active{transform:scale(.92)!important}
   .tab-icon{display:block!important;width:22px;height:22px;flex-shrink:0}
-  /* Sparky gets a subtle visual separation (like Apple's trailing search tab) */
-  #tab-btn-sparky{border-left:1px solid rgba(0,0,0,.09);margin-left:3px;padding-left:8px!important}
-  html.dark #tab-btn-sparky{border-left-color:rgba(255,255,255,.09)}
+  /* Sparky separator removed — clean icon row, no dividers */
 
   /* Push page content up above floating pill + gap */
   .main{padding-bottom:calc(108px + env(safe-area-inset-bottom,0px))!important}
@@ -1993,9 +2008,30 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .btn:active,.btn-primary:active,.btn-outline:active,.btn-danger:active,.btn-ghost:active{transform:scale(.97)}
   .prop-action-btn:active{transform:scale(.97)!important}
 
-  /* ── MAIN LAYOUT ─────────────────────────────────────────── */
-  .main{padding-left:12px!important;padding-right:12px!important}
-  .section-head{gap:8px;margin-bottom:12px}
+  /* ── MAIN LAYOUT: tight spacing, no wasted space ─────────── */
+  .main{padding:6px 12px calc(108px + env(safe-area-inset-bottom,0px))!important}
+  .section-head{gap:8px;margin-bottom:6px!important}
+  .toolbar{margin-bottom:6px!important}
+  .pa-stage-wrap{margin-bottom:4px!important}
+  .pa-stage-list{padding:6px 36px 6px 6px!important}
+  #fq-launch-btn{margin-bottom:0!important;padding:5px 10px 5px 8px!important;font-size:11px!important}
+
+  /* ── LEADS LIST: Apple Contacts-level clean ──────────────── */
+  .mlc{padding:10px 10px!important;border-bottom:none!important}
+  .mlc-name{font-size:14px!important}
+  .mlc-stage{font-size:11px!important}
+  /* Hide emoji urgency indicators — stage text is enough */
+  .mlc-urg{display:none!important}
+  /* Hide row chevrons — whole row is tappable */
+  .mlc-chevron{display:none!important}
+  /* DUP badges: subtle gray, not screaming red */
+  .mlc-name>span[style]{background:rgba(0,0,0,.05)!important;color:var(--text3)!important;border:none!important;font-size:8px!important;padding:1px 5px!important}
+  html.dark .mlc-name>span[style]{background:rgba(255,255,255,.08)!important;color:var(--text3)!important}
+  /* Lighten the + button */
+  .search-add{background:var(--bg)!important;color:var(--text2)!important;box-shadow:var(--shadow-neu-sm)!important}
+  /* Row separators: hairline, Apple-style */
+  .mlc+.mlc{border-top:0.5px solid rgba(0,0,0,.06)!important}
+  html.dark .mlc+.mlc{border-top-color:rgba(255,255,255,.05)!important}
 
   /* ── PROPOSAL LINK ACTIONS ───────────────────────────────── */
   .link-actions .btn{min-height:44px}
@@ -2478,7 +2514,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             </button>
           </div>
         </div>
-        <input type="text" id="search" class="search-input" placeholder="Search by name, phone, address, or stage…" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
+        <input type="text" id="search" class="search-input" placeholder="Search…" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
       </div>
       <button id="fq-launch-btn" onclick="openFollowupQueue()" title="Follow-up queue — Sparky drafts texts for overdue leads" style="display:flex;align-items:center;gap:5px;background:var(--bg);border:none;border-radius:var(--r-pill);padding:6px 12px 6px 10px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;color:var(--text2);cursor:pointer;box-shadow:var(--shadow-neu-sm);transition:box-shadow .15s,color .15s;flex-shrink:0">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -9476,8 +9512,12 @@ function insertQuickReply(btn) {
 }
 
 let sendingMsg = false;
+let _lastSendTime = 0;
 async function sendMessage() {
   if (sendingMsg) return;
+  // Rate limit: 3 second cooldown between sends
+  if (Date.now() - _lastSendTime < 3000) { showToast('Wait a moment before sending again', 'error'); return; }
+  _lastSendTime = Date.now();
   const contactId = currentMsgContactId;
   if (!contactId) return;
 
@@ -16620,7 +16660,7 @@ window.closeAddMenu = function() {
     try {
       var resp = await fetch(SUPABASE_URL + '/functions/v1/ai-taskmaster', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT, 'apikey': SEND_SMS_ANON_JWT },
         body: JSON.stringify({
           mode: 'draft_followup',
           contact: {
@@ -16673,7 +16713,7 @@ window.closeAddMenu = function() {
     try {
       var resp = await fetch(SUPABASE_URL + '/functions/v1/send-sms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT, 'apikey': SEND_SMS_ANON_JWT },
         body: JSON.stringify({ to: c.phone, body: body, contactId: c.id })
       });
       var result = await resp.json();
@@ -16764,7 +16804,7 @@ window.closeAddMenu = function() {
 
     try {
       const res  = await fetch(`${SEARCH_ENDPOINT}?q=${encodeURIComponent(q)}&limit=50`, {
-        headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY }
+        headers: { 'Authorization': 'Bearer ' + SEND_SMS_ANON_JWT, 'apikey': SEND_SMS_ANON_JWT }
       });
       const data = await res.json();
 
