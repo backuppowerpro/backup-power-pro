@@ -2905,7 +2905,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             Scheduled Events
             <span id="panel-events-count" style="font-size:10px;font-weight:800;background:var(--bg);box-shadow:var(--shadow-neu-sm);padding:1px 7px;border-radius:var(--r-pill);color:var(--text2);margin-left:2px"></span>
           </button>
-          <div id="panel-events-list" style="display:none;padding-bottom:4px"></div>
+          <div id="panel-events-list" style="padding-bottom:4px"></div>
         </div>
 
         <!-- ── Neighbor Postcard section ────────────────── -->
@@ -4098,11 +4098,11 @@ function openPanel(id) {
   // Reset progressive disclosure state
   panelResetDirty();
   // Reset + populate events sub-section (collapsed by default)
-  _panelEventsOpen = false;
+  _panelEventsOpen = true;
   const _evListEl = document.getElementById('panel-events-list');
   const _evChev   = document.getElementById('panel-events-chev');
-  if (_evListEl) _evListEl.style.display = 'none';
-  if (_evChev)   _evChev.style.transform = '';
+  if (_evListEl) _evListEl.style.display = 'block';
+  if (_evChev)   _evChev.style.transform = 'rotate(180deg)';
   setTimeout(renderPanelEvents, 0); // populate count badge while collapsed
   setTimeout(_initNeighborPanel, 0); // show neighbor card section + history
   // On mobile: start with contact info collapsed (show summary) so first thing visible is
