@@ -705,6 +705,11 @@ html.dark .gear-menu{background:var(--bg)}
 /* Contact info: always visible, no accordion */
 .contact-info-summary{display:none!important}
 .contact-info-expanded{display:block!important}
+/* Archive/Lost buttons — proper dark mode */
+.panel-archive-btn{background:rgba(220,38,38,.08);color:var(--red);border:1px solid rgba(220,38,38,.15)}
+html.dark .panel-archive-btn{background:rgba(220,38,38,.15);color:#f87171;border-color:rgba(220,38,38,.25)}
+.panel-lost-btn-style{background:rgba(0,0,0,.04);color:var(--text2);border:1px solid var(--border)}
+html.dark .panel-lost-btn-style{background:rgba(255,255,255,.06);color:var(--text2);border-color:rgba(255,255,255,.1)}
 
 /* ── DETAILS SECTION (collapsed by default) ─────────── */
 .panel-details-toggle{display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;width:100%;transition:color .15s;min-height:44px}
@@ -2024,6 +2029,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
   /* ── CALENDAR: flat, grouped, no individual card shadows ─── */
   .cal-day{box-shadow:none!important;border-radius:0!important;border:none!important}
+  .cal-day.today{box-shadow:inset 0 0 0 2px var(--gold)!important;border-radius:var(--r-sm)!important}
   .cal-day+.cal-day{border-top:0.5px solid rgba(0,0,0,.06)!important}
   html.dark .cal-day+.cal-day{border-top-color:rgba(255,255,255,.06)!important}
   .cal-grid{gap:0!important;border-radius:var(--r-md)!important;overflow:hidden!important}
@@ -2935,8 +2941,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
       <!-- Archive/Lost: at bottom of scroll, not in sticky footer -->
       <div style="display:flex;gap:10px;padding:24px 0 40px;margin-top:24px;border-top:0.5px solid var(--border)">
-        <button class="btn btn-sm" style="flex:1;min-height:44px;background:rgba(220,38,38,.08);color:var(--red);font-size:13px;font-weight:700;border:1px solid rgba(220,38,38,.15);border-radius:var(--r-md)" onclick="panelNameArchive()">Archive</button>
-        <button class="btn btn-sm" id="panel-lost-btn" style="flex:1;min-height:44px;background:rgba(0,0,0,.04);color:var(--text2);font-size:13px;font-weight:700;border:1px solid var(--border);border-radius:var(--r-md)" onclick="panelMarkLost()">Lost</button>
+        <button class="btn btn-sm panel-archive-btn" style="flex:1;min-height:44px;font-size:13px;font-weight:700;border-radius:var(--r-md)" onclick="panelNameArchive()">Archive</button>
+        <button class="btn btn-sm panel-lost-btn-style" id="panel-lost-btn" style="flex:1;min-height:44px;font-size:13px;font-weight:700;border-radius:var(--r-md)" onclick="panelMarkLost()">Lost</button>
       </div>
       </div><!-- end drill-contact-scroll -->
       <div class="panel-foot" id="panel-foot" style="flex-shrink:0;display:none">
@@ -3591,7 +3597,7 @@ function _renderMobileCard(c) {
     ${avatarHtml}
     <div class="mlc-body">
       <div class="mlc-name">${displayName}${unreadEl}${actEl}${dupEl}</div>
-      <div class="mlc-stage" style="color:${stageInfo.color}">${stageInfo.id === 1 ? '' : esc(stageInfo.label)}${isArchived?'<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px">archived</span>':''}</div>
+      ${stageInfo.id !== 1 || isArchived ? `<div class="mlc-stage" style="color:${stageInfo.color}">${stageInfo.id === 1 ? '' : esc(stageInfo.label)}${isArchived?'<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px">archived</span>':''}</div>` : ''}
     </div>
     <div class="mlc-right">${urgEl}<span class="mlc-chevron">›</span></div>
   </div>`;
@@ -5600,7 +5606,8 @@ async function panelAutosave() {
     notes:         document.getElementById('panel-notes').value.trim(),
     install_notes: installNotesVal || null,
     stage:         parseInt(document.getElementById('panel-stage').value) || 1,
-    jurisdiction_id: c.jurisdiction_id || null,
+    jurisdiction_id: parseInt(document.getElementById('panel-jurisdiction').value) || null,
+    stage:         parseInt(document.getElementById('panel-stage').value) || 1,
     status:        c.status || null,
   };
   const oldDigits = (c.phone || '').replace(/\D/g, '');
@@ -5611,7 +5618,9 @@ async function panelAutosave() {
     (c.email || '').trim() !== payload.email ||
     (c.address || '').trim() !== payload.address ||
     (c.notes || '').trim() !== payload.notes ||
-    (c.install_notes || '') !== (installNotesVal || '')
+    (c.install_notes || '') !== (installNotesVal || '') ||
+    (c.stage || 1) !== payload.stage ||
+    String(c.jurisdiction_id || '') !== String(payload.jurisdiction_id || '')
   );
   if (!changed) { panelResetDirty(); return; }
   _panelSaving = true;
