@@ -2513,7 +2513,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
             </button>
           </div>
         </div>
-        <input type="text" id="search" class="search-input" placeholder="Search…" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
+        <input type="text" id="search" class="search-input" placeholder="Search…" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="clearTimeout(window._searchDebounce);window._searchDebounce=setTimeout(function(){renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}},150);searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
       </div>
       <button id="fq-launch-btn" onclick="openFollowupQueue()" title="Follow-up queue — Sparky drafts texts for overdue leads" style="display:flex;align-items:center;gap:5px;background:var(--bg);border:none;border-radius:var(--r-pill);padding:6px 12px 6px 10px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;color:var(--text2);cursor:pointer;box-shadow:var(--shadow-neu-sm);transition:box-shadow .15s,color .15s;flex-shrink:0">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -4850,10 +4850,11 @@ async function confirmPayment() {
   const amount = parseFloat(_drillCtx().querySelector('#pay-amount-input')?.value) || 0;
   if (amount <= 0) { showToast('Enter an amount', 'error'); return; }
   const _payBtn = document.getElementById('pay-confirm-btn');
+  if (!contactId) { showToast('No contact selected', 'error'); return; }
   if (_payBtn) { _payBtn.disabled = true; _payBtn.textContent = 'Saving…'; }
-  _selectedPayMethod = null;
   const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: method, status: 'completed' }]);
   if (error) { if (_payBtn) { _payBtn.disabled = false; _payBtn.textContent = 'Confirm Payment'; } showToast('Payment failed: ' + error.message, 'error'); return; }
+  _selectedPayMethod = null;
   await db.from('contacts').update({ quote_amount: amount }).eq('id', contactId);
   const c = allContacts.find(function(x) { return x.id === contactId; });
   if (c) {
@@ -4907,9 +4908,12 @@ async function doUndoPayment(paymentId) {
   if (currentDrillLevel === 'payment') renderPaymentDrill(); else renderProposalDrill();
 }
 
+let _collectingPayment = false;
 async function collectPayment(contactId, amount) {
+  if (_collectingPayment) return;
+  _collectingPayment = true;
   const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: 'Manual', status: 'completed' }]);
-  if (error) { showToast('Payment failed: ' + error.message, 'error'); return; }
+  if (error) { _collectingPayment = false; showToast('Payment failed: ' + error.message, 'error'); return; }
   await db.from('contacts').update({ quote_amount: amount }).eq('id', contactId);
   const c = allContacts.find(function(x) { return x.id === contactId; });
   if (c) {
@@ -4920,6 +4924,7 @@ async function collectPayment(contactId, amount) {
   touchContact(contactId);
   showToast('Payment recorded!', 'success');
   renderPaymentDrill();
+  _collectingPayment = false;
 }
 
 async function copyInvoiceLink(contactId) {
