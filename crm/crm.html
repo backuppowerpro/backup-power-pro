@@ -710,7 +710,7 @@ html.dark .gear-menu{background:var(--bg)}
 .panel-details-toggle{display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;width:100%;transition:color .15s;min-height:44px}
 .panel-details-toggle:hover{color:var(--text2)}
 .panel-details-toggle svg{transition:transform .2s}
-.panel-details-content{display:block;padding:10px 8px 4px;margin-top:4px}
+.panel-details-content{display:block;padding:10px 0 4px;margin-top:4px}
 .panel-details-toggle{display:none!important} /* Details always visible — no toggle needed */
 html.dark .panel-details-content.open{background:rgba(255,255,255,.02)}
 /* Photo grid */
@@ -1716,6 +1716,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* Press scale */
   .tab-btn:active{transform:scale(.92)!important}
   .tab-icon{display:block!important;width:22px;height:22px;flex-shrink:0}
+  /* Hide stage badge from banner — redundant with Pipeline Stage dropdown below */
+  .panel-stage-badge{display:none!important}
+  .panel-quick-btns{margin-top:-2px!important}
+
   /* Contact panel hero: action buttons fill full width evenly */
   .panel-quick-btns{display:flex!important;gap:6px!important}
   .panel-quick-btns>button{flex-grow:1!important;flex-basis:0!important;min-height:44px!important}
@@ -2012,6 +2016,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .pa-stage-wrap{margin-bottom:4px!important}
   .pa-stage-list{padding:6px 36px 6px 6px!important}
   #fq-launch-btn{margin-bottom:0!important;padding:5px 10px 5px 8px!important;font-size:11px!important}
+
+  /* Contact info: consistent button alignment — push all right */
+  .field-row{flex-wrap:nowrap!important}
+  .field-row .fld-btn{box-shadow:none!important;background:transparent!important;width:36px!important;height:36px!important;opacity:.5}
+  .field-row .fld-btn:active{opacity:1}
 
   /* ── CALENDAR: flat, grouped, no individual card shadows ─── */
   .cal-day{box-shadow:none!important;border-radius:0!important;border:none!important}
@@ -2874,10 +2883,10 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <span id="contact-info-preview">No contact info</span>
       </div>
       <div class="contact-info-expanded" id="contact-info-expanded">
-        <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name" autocapitalize="words" autocorrect="off" autocomplete="name" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-name-input')" title="Copy name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" autocomplete="tel" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-phone')" title="Copy phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fld-btn" onclick="panelCallContact()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="fld-btn" id="panel-msg-fld-btn" onclick="openMessagesFromPanel()" title="Messages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button></div></div>
-        <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com" autocomplete="email" oninput="panelMarkDirty()"><button class="fld-btn" onclick="copyField('panel-email')" title="Copy email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
-        <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value);panelMarkDirty()" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="copyField('panel-address')" title="Copy address"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
+        <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name" autocapitalize="words" autocorrect="off" autocomplete="name" oninput="panelMarkDirty()"></div></div>
+        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" autocomplete="tel" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="panelCallContact()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="fld-btn" id="panel-msg-fld-btn" onclick="openMessagesFromPanel()" title="Messages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button></div></div>
+        <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com" autocomplete="email" oninput="panelMarkDirty()"></div></div>
+        <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value);panelMarkDirty()" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
       </div>
 
       <!-- 3. PHOTOS (shown when photos exist) -->
@@ -2898,7 +2907,9 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         </div>
         <div class="form-row"><label>Pipeline Stage</label><div style="display:flex;gap:6px;align-items:center"><select class="form-select" id="panel-stage" style="flex:1" onchange="panelMarkDirty()"><option value="1">Form Submitted</option><option value="2">Responded</option><option value="3">Quote Sent</option><option value="4">Booked</option><option value="5">Permit Submitted</option><option value="6">Permit Paid</option><option value="7">Permit Approved</option><option value="8">Inspection Scheduled</option><option value="9">Complete</option></select><button class="fld-btn" onclick="bookEventFromPanel()" title="Book event" style="flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg></button></div></div>
 
-        <!-- Events sub-section (collapsed by default) -->
+        <div class="form-row"><label>Jurisdiction</label><select class="form-select" id="panel-jurisdiction" onchange="panelMarkDirty()" style="width:100%"><option value="">— Select —</option></select></div>
+
+        <!-- Events sub-section -->
         <div id="panel-events-section" style="margin-top:4px">
           <button id="panel-events-toggle" onclick="togglePanelEvents()" style="display:flex;align-items:center;gap:6px;width:100%;border:none;background:none;padding:6px 0 4px;cursor:pointer;color:var(--text3);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">
             <svg id="panel-events-chev" style="transition:transform .18s;flex-shrink:0" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -3232,7 +3243,7 @@ function _bannerHtml(c) {
     : 'display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s';
   const textBtnDot = _hasUnread ? '<span style="width:7px;height:7px;border-radius:50%;background:#dc2626;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)"></span>' : '';
   const nameLabel = `<div style="position:absolute;left:16px;right:16px;bottom:10px;z-index:3">
-    <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.018em;text-shadow:0 2px 14px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;margin-bottom:8px">${displayName}</div>
+    <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.018em;text-shadow:0 2px 14px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;margin-bottom:6px">${displayName}</div>
     <div class="panel-quick-btns" style="display:flex;gap:7px">
       <button onclick="openMessagesFromPanel()" style="${textBtnStyle}" title="Text">${textBtnDot}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
       ${c.phone ? `<button onclick="panelCallContact()" style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s" title="Call"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>` : ''}
@@ -3259,7 +3270,7 @@ function _bannerHtml(c) {
     </div>`;
   })() : '';
   // Stage badge + optional install date chip — stacked horizontally in top-left
-  const stageBadge = `<div style="position:absolute;top:12px;left:14px;z-index:3;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:calc(100% - 60px)">
+  const stageBadge = `<div class="panel-stage-badge" style="position:absolute;top:12px;left:60px;z-index:3;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:calc(100% - 120px)">
     <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:4px 10px">
       <div style="width:7px;height:7px;border-radius:50%;background:${stageColor};flex-shrink:0"></div>
       <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:#fff;letter-spacing:.02em">${esc(stageLabel)}</span>
@@ -4080,6 +4091,11 @@ function openPanel(id) {
   document.getElementById('panel-email').value       = c.email || '';
   document.getElementById('panel-notes').value       = c.notes || '';
   document.getElementById('panel-stage').value       = c.stage || 1;
+  // Jurisdiction
+  const _jurSelect = document.getElementById('panel-jurisdiction');
+  if (_jurSelect) {
+    _jurSelect.innerHTML = '<option value="">— Select —</option>' + allJurisdictions.map(j => '<option value="' + j.id + '"' + (c.jurisdiction_id === j.id ? ' selected' : '') + '>' + esc(j.name) + '</option>').join('');
+  }
   // Install notes
   const installNotesEl = document.getElementById('panel-install-notes');
   const installNotesRow = document.getElementById('panel-install-notes-row');
@@ -5361,7 +5377,7 @@ async function panelSave() {
     notes:         document.getElementById('panel-notes').value.trim(),
     install_notes: installNotesVal || null,
     stage:         parseInt(document.getElementById('panel-stage').value) || 1,
-    jurisdiction_id: (allContacts.find(x => x.id === id) || {}).jurisdiction_id || null,
+    jurisdiction_id: parseInt(document.getElementById('panel-jurisdiction').value) || null,
     status:        c?.status || null,
   };
   // Check if anything actually changed — skip save if nothing changed
@@ -7996,7 +8012,7 @@ async function refreshStatsModal() {
     + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">'
     + '<span style="font-family:Outfit,sans-serif;font-size:28px;font-weight:800;color:var(--text)">$' + estNetProfit.toLocaleString() + '</span>'
     + '<span style="font-size:13px;color:var(--text3)">est. accumulated / $150,000</span></div>'
-    + '<div style="height:8px;background:var(--bg);border-radius:var(--r-pill);overflow:hidden;margin-bottom:6px">'
+    + '<div style="height:8px;background:rgba(0,0,0,.08);border-radius:var(--r-pill);overflow:hidden;margin-bottom:6px">'
     + '<div style="height:100%;background:var(--gold);border-radius:var(--r-pill);width:' + pct + '%;transition:width .5s"></div></div>'
     + '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">'
     + '<span>' + pct + '% complete</span>'
