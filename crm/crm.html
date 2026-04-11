@@ -1799,6 +1799,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* Message bubbles: clean, no excess chrome */
   .msg-bubble{box-shadow:none!important}
 
+  /* Inbox header pills: flat, no shadows clipping into search bar */
+  .inbox-hdr-pill{box-shadow:none!important;background:rgba(0,0,0,.04)!important;border:none!important}
+  html.dark .inbox-hdr-pill{background:rgba(255,255,255,.08)!important}
+  .inbox-hdr-pill:hover{box-shadow:none!important}
+
   /* Finance/Proposals list: flat like home screen, no raised cards */
   .inv-row{box-shadow:none!important;border-radius:0!important;padding:12px 10px!important;background:transparent!important}
   .inv-row+.inv-row{border-top:0.5px solid rgba(0,0,0,.06)!important}
