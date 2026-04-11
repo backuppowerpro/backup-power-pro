@@ -223,7 +223,7 @@ html.dark .pay-history-item{background:var(--card)}
 html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior-x:none}
 /* overflow-x:clip on body prevents horizontal rubber-band; html must NOT have it — it breaks position:fixed on iOS */
 html{background:#0b1f3b}
-html.dark{background:#0d1520}
+html.dark{background:var(--bg)}
 /* Prevent iOS rubber-band scroll bleed through overlays */
 body:has(#side-panel-overlay.open,.tm-panel-overlay.open,.modal-overlay.open,.fq-overlay.open,#urg-modal-overlay.open,.cs-overlay.open){overflow:hidden!important}
 body{overflow-x:clip;touch-action:pan-y;-webkit-touch-callout:none}
@@ -1990,7 +1990,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* ── MAIN LAYOUT: tight spacing, no wasted space ─────────── */
   .main{padding:6px 12px calc(108px + env(safe-area-inset-bottom,0px))!important;min-height:100vh!important;background:var(--bg)!important}
   /* Tab containers: solid bg prevents navy flash during tab switch */
-  #tab-leads,#tab-calendar,#tab-messages,#tab-invoices{background:var(--bg)!important;min-height:100vh}
+  #tab-leads,#tab-calendar,#tab-messages,#tab-invoices{background:var(--bg)!important;min-height:100vh;min-height:100dvh}
   .section-head{gap:8px;margin-bottom:6px!important}
   .toolbar{margin-bottom:6px!important}
   .pa-stage-wrap{margin-bottom:4px!important}
