@@ -297,7 +297,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;lett
 /* SECTION HEADERS */
 .section-head{display:flex;align-items:center;gap:12px;margin-bottom:var(--sp-5)}
 .section-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:18px;color:var(--text);flex:1;letter-spacing:-.01em}
-.section-divider{border:none;margin:var(--sp-8) 0}
+/* .section-divider removed — unused */
 
 /* TOOLBAR */
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:var(--sp-5);flex-wrap:wrap}
@@ -655,12 +655,7 @@ html.dark .mlc:active{background:rgba(255,255,255,.09)}
 .mobile-pipeline-strip{display:flex;gap:6px;overflow-x:auto;padding:0 0 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .mobile-pipeline-strip::-webkit-scrollbar{display:none}
 
-/* ── FAB (Floating Action Button) ────────────────────── */
-.fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--navy);border:none;font-size:28px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(255,186,0,.32),0 2px 6px rgba(10,20,40,.18);z-index:60;display:flex;align-items:center;justify-content:center;transition:transform var(--t-base),box-shadow var(--t-base);font-family:'Outfit',sans-serif;line-height:1}
-.fab:hover{transform:scale(1.06);box-shadow:0 12px 32px rgba(255,186,0,.42),0 4px 8px rgba(10,20,40,.22)}
-.fab:active{transform:scale(.94);box-shadow:0 4px 12px rgba(255,186,0,.32)}
-.fab:focus-visible{outline:3px solid rgba(255,186,0,.4);outline-offset:3px}
-html.dark .fab{background:var(--gold);color:#1e1b17}
+/* FAB removed — Sparky migrated to tab bar */
 
 /* ── Follow-up Queue ─────────────────────────────────── */
 .fq-overlay{position:fixed;inset:0;z-index:320;background:rgba(10,20,40,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center}
@@ -694,8 +689,7 @@ html.dark .fq-skip-btn{border-color:rgba(255,255,255,.14)}
 .nav-icon-btn{background:none;border:none;cursor:pointer;padding:8px;color:rgba(255,255,255,.6);transition:color .15s,background .15s;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm)}
 .nav-icon-btn:hover{color:#fff;background:rgba(255,255,255,.1)}
 .nav-icon-btn:active{background:rgba(255,255,255,.18)}
-/* gear-btn replaced by nav-icon-btn */
-.gear-btn:hover{color:#fff}
+/* gear-btn removed — replaced by nav-icon-btn */
 .gear-menu{position:absolute;top:54px;right:8px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-xl);z-index:100;min-width:200px;overflow:hidden;display:none;animation:gearSlide .15s ease}
 .gear-menu.open{display:block}
 @keyframes gearSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
@@ -801,8 +795,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .qb-summary-total{display:flex;justify-content:space-between;align-items:center;border-top:none;margin-top:6px;padding-top:8px}
 .qb-summary-total-key{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
 .qb-summary-total-val{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
-.qb-reset{background:none;border:none;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;padding:0;margin-top:12px;display:flex;align-items:center;gap:4px;font-family:'Inter',sans-serif}
-.qb-reset:hover{color:var(--text2)}
+/* .qb-reset removed — unused */
 @media(max-width:480px){.qb-wrap{padding:12px 14px 16px}}
 
 /* ── JURISDICTION CARDS ──────────────────────────────── */
@@ -1400,22 +1393,7 @@ html.dark .tm-brief-inline{border-bottom-color:#3d3830}
 html.dark .tm-brief-inline-count{background:var(--gold);color:#1e1b17}
 .tm-brief-inline-count.zero{background:#d1fae5;color:var(--green2)}
 
-/* ── Sparky launcher button (floating pill, bottom-right — the ONLY floating element) ── */
-.tm-launcher{position:fixed;bottom:24px;right:24px;height:54px;border-radius:var(--r-pill);background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);border:none;cursor:pointer;box-shadow:0 8px 24px rgba(255,186,0,.36),0 3px 8px rgba(10,20,40,.18);z-index:59;display:none;align-items:center;gap:9px;padding:0 19px 0 14px;transition:transform var(--t-base),box-shadow var(--t-base),padding var(--t-base);font-family:'Outfit',sans-serif;line-height:1;letter-spacing:-.005em}
-.tm-launcher.visible{display:inline-flex;animation:tmLauncherPop .42s var(--ease)}
-@keyframes tmLauncherPop{from{opacity:0;transform:scale(.6) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.tm-launcher-icon{width:30px;height:30px;border-radius:50%;background:rgba(11,31,59,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);transition:transform var(--t-base)}
-.tm-launcher-icon svg{width:18px;height:18px;display:block}
-.tm-launcher-label{font-weight:800;font-size:14.5px;color:var(--navy);white-space:nowrap}
-.tm-launcher:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 14px 32px rgba(255,186,0,.44),0 5px 12px rgba(10,20,40,.22)}
-.tm-launcher:hover .tm-launcher-icon{transform:rotate(-12deg) scale(1.1)}
-.tm-launcher:active{transform:translateY(0) scale(.96)}
-.tm-launcher:focus-visible{outline:3px solid rgba(255,186,0,.45);outline-offset:3px}
-.tm-launcher.alert{animation:tmLauncherPulse 2.2s ease-in-out infinite}
-@keyframes tmLauncherPulse{0%,100%{box-shadow:0 8px 24px rgba(255,186,0,.36),0 3px 8px rgba(10,20,40,.18)}50%{box-shadow:0 8px 28px rgba(255,186,0,.62),0 0 0 8px rgba(255,186,0,.18),0 3px 8px rgba(10,20,40,.2)}}
-.tm-launcher-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:10px;font-weight:800;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 6px;border:2px solid var(--bg);font-family:'Outfit',sans-serif;box-shadow:0 2px 5px rgba(0,0,0,.18);letter-spacing:0}
-html.dark .tm-launcher-badge{border-color:var(--bg)}
-html.dark .tm-launcher-icon{background:rgba(11,31,59,.18)}
+/* Sparky launcher removed — migrated to tab bar. display:none!important at line 751 */
 
 /* ══════════════════════════════════════════════════════════
    TWILIO VOICE — incoming ring modal + active call bar
@@ -1466,9 +1444,9 @@ html.dark .call-bar{background:#1a1410;border:1px solid #3d3830}
 .call-bar-btn:active{transform:scale(.92)}
 
 /* When call bar is visible, push Sparky up so they don't overlap */
-body.call-active .tm-launcher{bottom:88px}
+/* tm-launcher call-active rule removed — launcher hidden */
 @media(max-width:480px){
-  body.call-active .tm-launcher{bottom:82px}
+  /* tm-launcher removed */
   .call-bar{left:10px;right:10px;bottom:10px;padding:10px 12px}
   .call-ring-inner{padding:30px 22px 24px}
   .call-ring-avatar{width:78px;height:78px;font-size:30px}
@@ -1605,7 +1583,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
 @media (max-width: 520px){
   .tm-panel{max-width:100%}
-  .tm-launcher{bottom:18px;right:18px;height:48px;padding:0 16px 0 11px;gap:7px}
+  /* tm-launcher removed */
   .tm-launcher-icon{width:26px;height:26px}
   .tm-launcher-icon svg{width:16px;height:16px}
   .tm-launcher-label{font-size:13.5px}
@@ -1755,8 +1733,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .view-toggle-btn svg{display:block!important}
   .view-toggle{gap:2px}
 
-  /* Sparky launcher above floating pill */
-  .tm-launcher{bottom:calc(90px + env(safe-area-inset-bottom,0px))!important;right:16px!important}
+  /* Sparky launcher: now a tab, floating pill removed */
 
   /* Toast above floating pill */
   .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
@@ -2876,12 +2853,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         <div id="panel-photos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
       </div>
 
-      <!-- 4. DETAILS (collapsed by default) -->
-      <button class="panel-details-toggle" id="panel-details-toggle" onclick="togglePanelDetails()">
-        <svg id="panel-details-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        <span>Details</span>
-        <span id="panel-notes-preview" style="font-weight:400;font-size:11px;color:var(--text3);text-transform:none;letter-spacing:normal;margin-left:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px"></span>
-      </button>
+      <!-- 4. DETAILS (always visible — toggle removed) -->
       <div class="panel-details-content" id="panel-details-content">
         <div class="form-row"><label>Notes</label><textarea class="form-textarea" id="panel-notes" placeholder="Generator model, access notes, anything useful…" oninput="panelMarkDirty()"></textarea></div>
         <div class="form-row" id="panel-install-notes-row" style="display:none">
