@@ -4144,7 +4144,7 @@ function openPanel(id) {
       const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
       if (p.status === 'Cancelled') {
         cardsHtml += `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;margin-bottom:3px;cursor:pointer;opacity:.45;border-radius:var(--r-xs)" onclick="selectProposalAndDrill(${idx})">
-          <span style="font-size:10px;font-weight:700;color:var(--text3);background:#f3f4f6;border:1px solid #e5e7eb;border-radius:var(--r-pill);padding:1px 7px">Cancelled</span>
+          <span class="prop-badge prop-none" style="font-size:10px;padding:1px 7px">Cancelled</span>
           <span style="font-size:11px;color:var(--text3)">${ampLabel}</span>
           <span style="font-size:11px;color:var(--text3);margin-left:auto">$${displayTotal.toLocaleString()}</span>
           <span style="font-size:10px;color:var(--text3)">${dateStr}</span>
@@ -4254,10 +4254,10 @@ async function renderProposalDrill() {
 
   // ── Status badge ────────────────────────────────────────
   let statusBadge = '';
-  if (isCancelled) statusBadge = '<span class="prop-badge" style="background:#f3f4f6;color:var(--gray);border:1px solid #e5e7eb">Cancelled</span>';
+  if (isCancelled) statusBadge = '<span class="prop-badge prop-none">Cancelled</span>';
   else if (isApproved) statusBadge = '<span class="prop-badge prop-approved">&check; Invoice</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Approved ' + fmtTS(p.signed_at) + '</div>';
   else if (p.status === 'Viewed') statusBadge = '<span class="prop-badge prop-viewed">Viewed</span><div style="font-size:10px;color:var(--text3);margin-top:4px">Viewed ' + fmtTS(p.viewed_at) + '</div>';
-  else statusBadge = '<span class="prop-badge" style="background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe">Proposal</span><div style="font-size:10px;color:var(--text3);margin-top:4px">' + fmtTS(p.created_at) + '</div>';
+  else statusBadge = '<span class="prop-badge prop-sent">Proposal</span><div style="font-size:10px;color:var(--text3);margin-top:4px">' + fmtTS(p.created_at) + '</div>';
 
   // ── Viewed info ─────────────────────────────────────────
   const viewedInfo = p.viewed_at
@@ -4273,7 +4273,7 @@ async function renderProposalDrill() {
   }
 
   // ── Cancelled banner ────────────────────────────────────
-  const frozenNote = isCancelled ? '<div style="background:#fee2e2;border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--red);text-align:center;font-weight:600">Cancelled — customer can no longer view or sign</div>' : '';
+  const frozenNote = isCancelled ? '<div class="warn-banner-amber" style="background:rgba(220,38,38,.08);color:var(--red)">Cancelled — customer can no longer view or sign</div>' : '';
 
   // ── Line items ──────────────────────────────────────────
   let lineItemsSection = '';
@@ -4338,7 +4338,7 @@ async function renderProposalDrill() {
       actionSection = '<button onclick="drillTo(\'inspection\')" class="warn-banner-amber">⚠️ Complete panel inspection before collecting payment →</button>';
     } else {
       // Copy Invoice Link | Preview | (Edit Inspection if POM passed)
-      const inspBtn = hasPOM ? '<button onclick="drillTo(\'inspection\')" style="flex:1;padding:10px;background:var(--bg);border:1.5px solid #bfdbfe;border-radius:var(--r-sm);font-weight:600;font-size:12px;cursor:pointer;color:#1d4ed8">Edit Inspection</button>' : '';
+      const inspBtn = hasPOM ? '<button onclick="drillTo(\'inspection\')" class="btn btn-outline" style="flex:1;padding:10px;font-size:12px">Edit Inspection</button>' : '';
       actionSection = '<div id="pay-invoice-section" style="margin-bottom:12px"></div>'
         + (inspBtn ? '<div style="display:flex;gap:6px;margin-bottom:12px">' + inspBtn + '</div>' : '');
     }
