@@ -1796,7 +1796,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .msg-bubble{box-shadow:none!important}
 
   /* Calendar: single-column on phones so jobs are readable */
-  .cal-grid{grid-template-columns:1fr;gap:8px}
+  .cal-grid{grid-template-columns:1fr;gap:12px}
 
   /* Follow-up queue: lift panel above floating pill tab bar */
   .fq-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
@@ -1988,11 +1988,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .prop-action-btn:active{transform:scale(.97)!important}
 
   /* ── MAIN LAYOUT: tight spacing, no wasted space ─────────── */
-  .main{padding:6px 12px calc(108px + env(safe-area-inset-bottom,0px))!important;min-height:100vh!important;background:var(--bg)!important}
+  .main{padding:12px 12px calc(108px + env(safe-area-inset-bottom,0px))!important;min-height:100vh!important;background:var(--bg)!important}
   /* Tab containers: solid bg prevents navy flash during tab switch */
   #tab-leads,#tab-calendar,#tab-messages,#tab-invoices{background:var(--bg)!important;min-height:100vh;min-height:100dvh}
   .section-head{gap:8px;margin-bottom:6px!important}
-  .toolbar{margin-bottom:8px!important;margin-top:4px!important}
+  .toolbar{margin-bottom:10px!important;margin-top:10px!important}
   .pa-stage-wrap{margin-bottom:4px!important}
   .pa-stage-list{padding:6px 36px 6px 6px!important}
   #fq-launch-btn{margin-bottom:0!important;padding:5px 10px 5px 8px!important;font-size:11px!important}
@@ -2385,7 +2385,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
     <!-- ── INBOX sub-tab ─────────────────────────────────── -->
     <div id="msgtab-inbox" style="padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))">
-      <div class="section-head" style="margin-bottom:14px;padding:4px 0">
+      <div class="section-head" style="margin-bottom:20px;padding:6px 0">
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <div class="section-title">Inbox</div>
           <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
@@ -2529,17 +2529,16 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 <div id="tab-calendar" style="display:none">
   <main class="main" style="max-width:960px">
 
-    <div class="cal-nav" style="margin-top:var(--sp-lg)">
+    <div class="cal-nav" style="margin-top:var(--sp-4)">
       <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(-1)" title="Previous week">←</button>
-      <span class="week-label" id="week-label"></span>
-      <button class="btn btn-outline" style="padding:8px 14px;font-size:12px;font-weight:700" onclick="navigateWeek(0)" title="Jump to current week">Today</button>
+      <span class="week-label" id="week-label" onclick="navigateWeek(0)" style="cursor:pointer" title="Tap to jump to today"></span>
       <button class="btn btn-outline" style="padding:10px 20px;font-size:18px" onclick="navigateWeek(1)" title="Next week">→</button>
     </div>
 
     <!-- Week stats bar -->
-    <div id="cal-week-stats" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"></div>
+    <div id="cal-week-stats" style="display:flex;gap:10px;margin:12px 0 14px;flex-wrap:wrap"></div>
 
-    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-grid" id="cal-grid" style="margin-bottom:16px"></div>
 
     <!-- Chronological job list for this week -->
     <div id="cal-job-list" style="margin-top:20px"></div>
@@ -6381,9 +6380,9 @@ function renderCalendar() {
     });
 
     const stat = (icon, val, label, color, id) =>
-      `<div style="flex:1;min-width:100px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:10px 12px;display:flex;align-items:center;gap:8px">
-        <div style="font-size:18px;width:24px;text-align:center;flex-shrink:0;line-height:1">${icon}</div>
-        <div><div id="${id||''}" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:${color};line-height:1.2">${val}</div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;line-height:1.3">${label}</div></div>
+      `<div style="flex:1;min-width:90px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:12px 10px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px">
+        <div id="${id||''}" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:${color};line-height:1">${val}</div>
+        <div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;line-height:1.2">${label}</div>
       </div>`;
 
     statsEl.innerHTML =
