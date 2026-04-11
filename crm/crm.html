@@ -702,16 +702,9 @@ html.dark .gear-menu-item:hover{background:rgba(255,255,255,.06)}
 html.dark .gear-menu{background:var(--bg)}
 
 /* ── CONTACT INFO SUMMARY (compact one-line) ────────── */
-.contact-info-summary{display:none;align-items:center;gap:6px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s;margin-bottom:var(--sp-md);font-size:13px;color:var(--text2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:var(--shadow-neu-sm);min-height:44px}
-.contact-info-summary:hover{background:var(--border)}
-.contact-info-summary:active{background:rgba(11,31,59,.06)}
-.contact-info-summary .info-sep{color:var(--text3);margin:0 2px}
-.contact-info-summary::before{content:'Contact';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);flex-shrink:0;font-family:'Outfit',sans-serif}
-.contact-info-summary::after{content:'›';margin-left:auto;color:var(--text3);font-size:20px;font-weight:300;flex-shrink:0;line-height:1}
-.contact-info-expanded{display:none}
-.contact-info-expanded.open{display:block}
-html.dark .contact-info-summary{background:var(--bg)}
-html.dark .contact-info-summary:hover{background:rgba(255,255,255,.04)}
+/* Contact info: always visible, no accordion */
+.contact-info-summary{display:none!important}
+.contact-info-expanded{display:block!important}
 
 /* ── DETAILS SECTION (collapsed by default) ─────────── */
 .panel-details-toggle{display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;width:100%;transition:color .15s;min-height:44px}
