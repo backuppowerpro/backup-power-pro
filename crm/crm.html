@@ -1751,7 +1751,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   #msg-back-label{display:none!important}
 
   /* Hide qa-bar when keyboard is open (js adds kbd-open to body via visualViewport) */
-  body.kbd-open #qa-bar,body.kbd-open #qa-inline{display:none!important}
+  /* QA bar is now in header — hide inline panel when keyboard is open */
+  body.kbd-open #qa-inline{display:none!important}
   /* Improve readability of body text on mobile */
   .panel-body, #drill-contact-scroll, .drill-body, .inbox-preview, .msg-bubble{line-height:1.55}
 
@@ -1870,10 +1871,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .search-add{min-height:46px!important;width:46px!important}
   .sk-insight-btn{min-height:42px;padding:10px 16px;font-size:14px}
   .urgent-act-btn{min-height:48px!important;font-size:15px!important}
-  /* QA buttons: flat, compact, no shadows */
-  .qa-btn{min-height:38px!important;padding:7px 12px!important;font-size:12px!important;box-shadow:none!important;background:rgba(0,0,0,.04)!important;border:none!important}
+  /* QA buttons: icon-only, flat, evenly distributed */
+  .qa-btn{min-height:40px!important;min-width:40px!important;padding:0!important;font-size:0!important;box-shadow:none!important;background:rgba(0,0,0,.04)!important;border:none!important;border-radius:50%!important;justify-content:center!important;flex:0 0 auto!important;gap:0!important}
+  .qa-btn svg{width:18px!important;height:18px!important;stroke-width:2!important}
   html.dark .qa-btn{background:rgba(255,255,255,.07)!important}
-  .qa-bar{padding:6px 12px 4px!important;gap:6px!important}
+  .qa-bar{padding:6px 10px 4px!important;gap:0!important;justify-content:space-around!important;overflow:visible!important}
   /* Compose area: tighter padding */
   .msg-compose-foot{padding:6px 10px!important}
   .fq-send-btn{min-height:48px;font-size:15px;border-radius:var(--r-md)}
@@ -3021,6 +3023,16 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
       </div>
+      <!-- Quick actions — icon-only bar below header -->
+      <div class="qa-bar" id="qa-bar" style="border-bottom:1px solid var(--border)">
+        <button class="qa-btn" data-qa="quote" onclick="qaToggle('quote')" title="Quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></button>
+        <button class="qa-btn" data-qa="schedule" onclick="qaToggle('schedule')" title="Schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+        <button class="qa-btn" data-qa="materials" onclick="qaToggle('materials')" title="Materials"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></button>
+        <button class="qa-btn" data-qa="status" onclick="qaToggle('status')" title="Status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+        <button class="qa-btn" data-qa="note" onclick="qaToggle('note')" title="Note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      </div>
+      <!-- Inline accordion for quick action panels -->
+      <div class="qa-inline" id="qa-inline"><div class="qa-inline-inner" id="qa-inline-inner"></div></div>
       <!-- Sparky context strip — compact insight below header -->
       <div id="msg-thread-insight" style="display:none;padding:6px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);flex-shrink:0;cursor:pointer" onclick="window.tmOpenPanel&&window.tmOpenPanel()" title="Open Sparky for more"></div>
       <!-- Thread search bar (hidden by default) -->
@@ -3036,34 +3048,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       <!-- SMS opt-out warning — shown if contact texted STOP -->
       <div id="msg-optout-banner" style="display:none;background:rgba(220,38,38,.08);border-top:1px solid rgba(220,38,38,.2);padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);flex-shrink:0;text-align:center"></div>
       <div style="flex-shrink:0;background:var(--bg);border-top:1px solid var(--border);box-shadow:0 -2px 12px rgba(10,20,40,.06)">
-        <!-- Quick actions toolbar — expandable inline panels for in-chat actions -->
-        <div class="qa-bar" id="qa-bar">
-          <button class="qa-btn" data-qa="quote" onclick="qaToggle('quote')" title="Build a quick quote and send the proposal link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
-            Quote
-          </button>
-          <button class="qa-btn" data-qa="schedule" onclick="qaToggle('schedule')" title="Schedule install date">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Schedule
-          </button>
-          <button class="qa-btn" data-qa="materials" onclick="qaToggle('materials')" title="Set inlet, panel brand, interlock">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            Materials
-          </button>
-          <button class="qa-btn" data-qa="status" onclick="qaToggle('status')" title="Change pipeline stage">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Status
-          </button>
-          <button class="qa-btn" data-qa="note" onclick="qaToggle('note')" title="Add a quick note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Note
-          </button>
-        </div>
-        <!-- Inline accordion that expands below the toolbar when a quick action is picked -->
-        <div class="qa-inline" id="qa-inline">
-          <div class="qa-inline-inner" id="qa-inline-inner"></div>
-        </div>
-        <div class="msg-compose-foot" style="padding:8px 12px;display:flex;gap:8px;align-items:flex-end">
+        <div class="msg-compose-foot" style="padding:6px 10px;display:flex;gap:8px;align-items:flex-end">
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
             <button class="ai-suggest-btn" id="ai-suggest-btn" onclick="aiSuggestReply()" title="Suggest a reply">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/><path d="M19 14l.83 2.17L22 17l-2.17.83L19 20l-.83-2.17L16 17l2.17-.83z"/></svg>
