@@ -377,9 +377,10 @@ td.addr a:hover{color:var(--blue)}
 td.notes-cell{color:var(--text3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 td.actions{white-space:nowrap}
 /* ── SIDE PANEL ─────────────────────────────────────────── */
-.side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .side-panel-overlay.open{opacity:1;pointer-events:auto}
-.side-panel{background:var(--bg);position:fixed;top:0;right:0;bottom:0;width:100%;max-width:480px;display:flex;flex-direction:column;box-shadow:var(--shadow-xl);overflow:hidden;transform:translateX(100%);transition:transform .28s var(--ease);border-left:none;padding-top:env(safe-area-inset-top,0px)}
+.side-panel{background:var(--bg);position:fixed;top:0;right:0;bottom:0;width:100%;max-width:480px;display:flex;flex-direction:column;box-shadow:var(--shadow-xl);overflow:hidden;transform:translateX(100%);transition:transform .35s cubic-bezier(.32,0.72,.37,1);border-left:none;padding-top:env(safe-area-inset-top,0px)}
+.side-panel-overlay.open .side-panel{transition:transform .4s cubic-bezier(.16,1.1,.3,1)}
 .side-panel-overlay.open .side-panel{transform:translateX(0)}
 .panel-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg);position:sticky;top:0;z-index:2}
 .panel-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:22px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.015em}
@@ -536,7 +537,7 @@ html.dark .approval-notif-amount{color:var(--gold)}
 
 /* ── DRILL-DOWN PANEL ────────────────────────────────────── */
 .drill-container{position:relative;overflow:hidden;flex:1;display:flex;flex-direction:column}
-.drill-level{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .28s cubic-bezier(0.34,1.15,0.64,1);will-change:transform;overflow-y:auto;padding:18px 20px;overscroll-behavior:contain}
+.drill-level{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .38s cubic-bezier(.16,1,.3,1);will-change:transform;overflow-y:auto;padding:18px 20px;overscroll-behavior:contain}
 .drill-level.active{position:relative;transform:translateX(0);flex:1;min-height:0}
 .drill-level.left{transform:translateX(-100%)}
 .drill-level.right{transform:translateX(100%)}
@@ -659,8 +660,8 @@ html.dark .mlc:active{background:rgba(255,255,255,.09)}
 
 /* ── Follow-up Queue ─────────────────────────────────── */
 .fq-overlay{position:fixed;inset:0;z-index:320;background:rgba(10,20,40,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center}
-.fq-overlay.open{display:flex;animation:fqSlideIn .22s var(--ease)}
-@keyframes fqSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fq-overlay.open{display:flex;animation:fqSlideIn .4s cubic-bezier(.16,1.1,.3,1)}
+@keyframes fqSlideIn{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
 .fq-panel{width:100%;max-width:540px;max-height:82vh;background:var(--bg);border-radius:var(--r-xl) var(--r-xl) 0 0;box-shadow:var(--shadow-neu);display:flex;flex-direction:column;overflow:hidden}
 .fq-head{padding:18px 20px 14px;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0}
 .fq-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--text)}
@@ -1520,9 +1521,10 @@ html.dark .cs-result-snippet mark{background:rgba(255,186,0,.22)}
 .cs-count{padding:10px 18px;font-size:12px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border)}
 
 /* ── Chat panel (slide-in from right, above everything) ── */
-.tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:340;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:340;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .tm-panel-overlay.open{opacity:1;pointer-events:auto}
-.tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--bg);display:flex;flex-direction:column;box-shadow:-14px 0 48px rgba(10,20,40,.22);transform:translateX(100%);transition:transform .3s var(--ease);z-index:350;border-left:none;padding-top:env(safe-area-inset-top,0px)}
+.tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--bg);display:flex;flex-direction:column;box-shadow:-14px 0 48px rgba(10,20,40,.22);transform:translateX(100%);transition:transform .35s cubic-bezier(.32,0.72,.37,1);z-index:350;border-left:none;padding-top:env(safe-area-inset-top,0px)}
+.tm-panel.open{transition:transform .4s cubic-bezier(.16,1.1,.3,1)}
 html.dark .tm-panel{box-shadow:-14px 0 48px rgba(0,0,0,.55)}
 .tm-panel.open{transform:translateX(0)}
 .tm-panel-head{display:flex;align-items:center;gap:12px;padding:16px 18px 16px 20px;background:var(--bg);border-bottom:1px solid rgba(0,0,0,.07);flex-shrink:0}
@@ -1632,13 +1634,11 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   /* 2 left (stats + pen), 2 right (bell + refresh). Jurisdictions + dark mode hidden. */
   .nav-icon-btn[onclick*="openJurisdictions"]{display:none!important}
   #nav-dark-btn{display:none!important}
-  /* Side panel: full width on phones, no rounded corners needed */
+  /* Side panel: full width on phones */
   .side-panel{
     width:100vw!important;max-width:100vw!important;
-    left:0!important;right:0!important;
     border-radius:0!important;
-    box-shadow:none!important;
-    overflow:hidden!important
+    box-shadow:none!important
   }
   /* ── LIQUID GLASS floating pill tab bar (iOS 26) ─────────── */
   .tab-bar{
@@ -1818,6 +1818,20 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .inbox-item+.inbox-item{border-top:0.5px solid rgba(0,0,0,.06)!important}
   html.dark .inbox-item+.inbox-item{border-top-color:rgba(255,255,255,.05)!important}
   .inbox-item:hover{transform:none!important;box-shadow:none!important}
+
+  /* Call rows: flat like everything else */
+  .call-row{box-shadow:none!important;border-radius:0!important;background:transparent!important}
+  .call-row+.call-row{border-top:0.5px solid rgba(0,0,0,.06)!important}
+  html.dark .call-row+.call-row{border-top-color:rgba(255,255,255,.05)!important}
+
+  /* FQ items: flat */
+  .fq-item{box-shadow:none!important;border-radius:0!important;background:transparent!important}
+  .fq-item+.fq-item{border-top:0.5px solid rgba(0,0,0,.06)!important}
+  html.dark .fq-item+.fq-item{border-top-color:rgba(255,255,255,.05)!important}
+
+  /* Stat cards: flat */
+  .pa-stat,.inv-stat{box-shadow:none!important;background:rgba(0,0,0,.03)!important}
+  html.dark .pa-stat,html.dark .inv-stat{background:rgba(255,255,255,.05)!important}
 
   /* Calendar: single-column on phones so jobs are readable */
   .cal-grid{grid-template-columns:1fr;gap:12px}
@@ -2360,19 +2374,19 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
 <!-- ── TAB BAR ───────────────────────────────────────────── -->
 <div class="tab-bar" id="main-tab-bar" style="display:none">
-  <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')">
+  <button class="tab-btn active" id="tab-btn-leads" onclick="switchTab('leads')" aria-label="Leads" title="Leads">
     <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     <span class="tab-label">Leads</span>
   </button>
-  <button class="tab-btn" id="tab-btn-calendar" onclick="switchTab('calendar')">
+  <button class="tab-btn" id="tab-btn-calendar" onclick="switchTab('calendar')" aria-label="Calendar" title="Calendar">
     <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     <span class="tab-label">Calendar</span>
   </button>
-  <button class="tab-btn" id="tab-btn-invoices" onclick="switchTab('invoices')">
+  <button class="tab-btn" id="tab-btn-invoices" onclick="switchTab('invoices')" aria-label="Finance" title="Finance">
     <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     <span class="tab-label">Finance</span><span class="tab-badge" id="tab-inv-badge" style="display:none"></span>
   </button>
-  <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')">
+  <button class="tab-btn" id="tab-btn-messages" onclick="switchTab('messages')" aria-label="Messages" title="Messages">
     <svg class="tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     <span class="tab-label">Messages</span><span class="tab-badge tab-badge-red" id="tab-msg-badge" style="display:none"></span>
   </button>
@@ -2423,7 +2437,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
     <!-- Sub-tab toggle: Messages | Calls -->
     <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px">
-      <button id="msgtab-btn-inbox" onclick="setMsgSubTab('inbox')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text);cursor:pointer;border-bottom:2.5px solid var(--navy);margin-bottom:-2px;transition:color .15s">Messages</button>
+      <button id="msgtab-btn-inbox" onclick="setMsgSubTab('inbox')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text);cursor:pointer;border-bottom:2.5px solid var(--text);margin-bottom:-2px;transition:color .15s">Messages</button>
       <button id="msgtab-btn-calls" onclick="setMsgSubTab('calls')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:color .15s;display:flex;align-items:center;gap:6px">Calls<span id="msgtab-calls-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif"></span></button>
     </div>
 
@@ -8476,16 +8490,17 @@ function setMsgSubTab(sub) {
   const callsBtn = document.getElementById('msgtab-btn-calls');
   if (!inboxDiv || !callsDiv) return;
 
+  var _activeTabColor = document.documentElement.classList.contains('dark') ? 'var(--gold)' : 'var(--navy)';
   if (sub === 'calls') {
     inboxDiv.style.display = 'none';
     callsDiv.style.display = 'block';
     if (inboxBtn) { inboxBtn.style.borderBottomColor = 'transparent'; inboxBtn.style.color = 'var(--text3)'; }
-    if (callsBtn) { callsBtn.style.borderBottomColor = 'var(--navy)'; callsBtn.style.color = 'var(--text)'; }
+    if (callsBtn) { callsBtn.style.borderBottomColor = _activeTabColor; callsBtn.style.color = 'var(--text)'; }
     loadCallLog();
   } else {
     inboxDiv.style.display = 'block';
     callsDiv.style.display = 'none';
-    if (inboxBtn) { inboxBtn.style.borderBottomColor = 'var(--navy)'; inboxBtn.style.color = 'var(--text)'; }
+    if (inboxBtn) { inboxBtn.style.borderBottomColor = _activeTabColor; inboxBtn.style.color = 'var(--text)'; }
     if (callsBtn) { callsBtn.style.borderBottomColor = 'transparent'; callsBtn.style.color = 'var(--text3)'; }
     loadInbox();
   }
