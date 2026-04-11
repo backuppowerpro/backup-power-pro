@@ -2532,7 +2532,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     </div>
 
     <!-- Week stats bar -->
-    <div id="cal-week-stats" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"></div>
+    <div id="cal-week-stats" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"></div>
 
     <div class="cal-grid" id="cal-grid"></div>
 
@@ -3547,7 +3547,7 @@ function _renderMobileCard(c) {
     ${avatarHtml}
     <div class="mlc-body">
       <div class="mlc-name">${displayName}${unreadEl}${actEl}${dupEl}</div>
-      <div class="mlc-stage" style="color:${stageInfo.color}">${esc(stageInfo.label)}${isArchived?'<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px">archived</span>':''}</div>
+      <div class="mlc-stage" style="color:${stageInfo.color}">${stageInfo.id === 1 ? '' : esc(stageInfo.label)}${isArchived?'<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px">archived</span>':''}</div>
     </div>
     <div class="mlc-right">${urgEl}<span class="mlc-chevron">›</span></div>
   </div>`;
@@ -6376,9 +6376,9 @@ function renderCalendar() {
     });
 
     const stat = (icon, val, label, color, id) =>
-      `<div style="flex:1;min-width:110px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:12px 14px;display:flex;align-items:center;gap:10px">
-        <div style="font-size:20px">${icon}</div>
-        <div><div id="${id||''}" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;color:${color}">${val}</div><div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${label}</div></div>
+      `<div style="flex:1;min-width:100px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:10px 12px;display:flex;align-items:center;gap:8px">
+        <div style="font-size:18px;width:24px;text-align:center;flex-shrink:0;line-height:1">${icon}</div>
+        <div><div id="${id||''}" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:${color};line-height:1.2">${val}</div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;line-height:1.3">${label}</div></div>
       </div>`;
 
     statsEl.innerHTML =
