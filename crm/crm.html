@@ -720,8 +720,8 @@ html.dark .contact-info-summary:hover{background:rgba(255,255,255,.04)}
 .panel-details-toggle{display:flex;align-items:center;gap:6px;padding:10px 0;cursor:pointer;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;user-select:none;border:none;background:none;width:100%;transition:color .15s;min-height:44px}
 .panel-details-toggle:hover{color:var(--text2)}
 .panel-details-toggle svg{transition:transform .2s}
-.panel-details-content{display:none}
-.panel-details-content.open{display:block;background:rgba(0,0,0,.02);border-radius:var(--r-sm);padding:10px 8px 4px;margin-top:4px}
+.panel-details-content{display:block;padding:10px 8px 4px;margin-top:4px}
+.panel-details-toggle{display:none!important} /* Details always visible — no toggle needed */
 html.dark .panel-details-content.open{background:rgba(255,255,255,.02)}
 /* Photo grid */
 #panel-photos-grid a:hover img{opacity:.85}
@@ -1024,8 +1024,7 @@ html.dark .qa-btn-secondary:hover{color:var(--gold)}
 html.dark .inbox-item.unread{border-left-color:var(--gold)}
 
 /* ── TAB FADE TRANSITION ────────────────────────────────── */
-.tab-pane{animation:tabFade .18s ease}
-@keyframes tabFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+/* Tab switches are instant — no fade animation (Apple HIG: tabs don't animate) */
 
 /* ── CALL LOG ─────────────────────────────────────────── */
 .call-filter-chip{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--r-pill);border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:box-shadow var(--t-fast),color var(--t-fast);white-space:nowrap}
@@ -1645,11 +1644,12 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
     backdrop-filter:blur(24px) saturate(160%);
     box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 1px 12px rgba(0,0,0,.28)!important
   }
-  /* ── LIQUID GLASS side panel — rounded sheet corners (iOS 26) ── */
+  /* Side panel: full width on phones, no rounded corners needed */
   .side-panel{
-    border-top-left-radius:22px!important;
-    border-bottom-left-radius:22px!important;
-    box-shadow:-2px 0 60px rgba(0,0,0,.28),inset 1px 0 0 rgba(255,255,255,.06)!important;
+    width:100vw!important;max-width:100vw!important;
+    left:0!important;right:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
     overflow:hidden!important
   }
   /* ── LIQUID GLASS floating pill tab bar (iOS 26) ─────────── */
@@ -1686,23 +1686,18 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
       inset 0 1px 0 rgba(255,255,255,.07),
       inset 0 -1px 0 rgba(0,0,0,.2)!important
   }
-  /* Mini state — tab bar shrinks to icon-only when scrolling down */
-  .tab-bar.mini{min-height:46px;padding:4px 6px!important;
-    box-shadow:0 8px 24px rgba(10,20,40,.14),0 2px 6px rgba(10,20,40,.08),inset 0 1px 0 rgba(255,255,255,.9)!important}
-  html.dark .tab-bar.mini{box-shadow:0 8px 24px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06)!important}
-  /* Badges: always pinned top-right of icon area (Apple HIG — never below label) */
-  .tab-badge{position:absolute!important;top:0px;right:4px;margin-left:0!important;vertical-align:unset!important}
-  .tab-bar.mini .tab-label{opacity:0;height:0;overflow:hidden;pointer-events:none;transition:opacity .18s ease,height .18s ease}
-  .tab-bar.mini .tab-btn{padding:8px 4px!important;gap:0}
-  /* position:relative already on .tab-btn — badges sit in icon area */
+  /* Tab labels: hidden on mobile — icon-only pill bar */
+  .tab-label{display:none!important}
+  /* Badges: pinned top-right of icon area (Apple HIG) */
+  .tab-badge{position:absolute!important;top:-2px;right:0px;margin-left:0!important;vertical-align:unset!important}
 
-  /* Tab buttons — pill-shaped, no border lines */
+  /* Tab buttons — icon-only, pill-shaped */
   .tab-btn{
-    flex:1;padding:6px 4px 5px!important;
+    flex:1;padding:10px 4px!important;
     flex-direction:column;align-items:center;justify-content:center;
     border:none!important;border-radius:32px;
     margin:0!important;font-size:10px!important;font-weight:600;
-    gap:3px;flex-shrink:1;white-space:nowrap;
+    gap:0;flex-shrink:1;white-space:nowrap;
     position:relative;transition:background .2s ease,color .18s ease,transform .1s ease
   }
   /* Active tab — compact capsule indicator (Apple HIG: never full-width fill) */
@@ -2903,7 +2898,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         </div>
         <div id="msg-search-count" style="font-size:11px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600"></div>
       </div>
-      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;overscroll-behavior:contain" ontouchstart="if(!event.target.closest('button,a,input,textarea,.msg-bubble'))document.getElementById('msg-compose')?.blur()"></div>
+      <div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px 16px 24px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;overscroll-behavior:contain" ontouchstart="if(!event.target.closest('button,a,input,textarea,.msg-bubble'))document.getElementById('msg-compose')?.blur()"></div>
       <!-- SMS opt-out warning — shown if contact texted STOP -->
       <div id="msg-optout-banner" style="display:none;background:rgba(220,38,38,.08);border-top:1px solid rgba(220,38,38,.2);padding:8px 14px;font-size:12px;font-weight:700;color:var(--red);flex-shrink:0;text-align:center"></div>
       <div style="flex-shrink:0;background:var(--bg);border-top:1px solid var(--border);box-shadow:0 -2px 12px rgba(10,20,40,.06)">
@@ -8317,10 +8312,6 @@ function switchTab(tab) {
     if (el) {
       if (t === tab) {
         el.style.display = 'block';
-        el.classList.remove('tab-pane');
-        // re-trigger animation
-        void el.offsetWidth;
-        el.classList.add('tab-pane');
       } else {
         el.style.display = 'none';
       }
@@ -16889,74 +16880,7 @@ window.closeAddMenu = function() {
   }, true);
 })();
 
-// ── Pull-to-Refresh on lead list (mobile only) ───────────────────────────────
-(function(){
-  if(window.innerWidth > 480) return;
-  var main = document.querySelector('.main');
-  if(!main) return;
-
-  // Inject PTR indicator
-  var ptr = document.createElement('div');
-  ptr.id = 'ptr-indicator';
-  ptr.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg><span>Pull to refresh</span>';
-  // Sits fixed behind the nav header — content rubber-bands down to reveal it.
-  // z-index < nav (nav is 49) so the header always covers it, giving the "peel away" look.
-  ptr.style.cssText='position:fixed;top:calc(58px + env(safe-area-inset-top,0px));left:0;right:0;height:44px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text2);background:var(--bg);z-index:46;opacity:0;transition:opacity .12s ease;pointer-events:none';
-  document.body.appendChild(ptr);
-
-  var startY=0, pulling=false, triggered=false;
-  var THRESHOLD=70;
-
-  document.addEventListener('touchstart',function(e){
-    if(e.touches.length!==1) return;
-    if(window.scrollY>4) return;
-    startY=e.touches[0].clientY;
-    pulling=false; triggered=false;
-  },{passive:true});
-
-  document.addEventListener('touchmove',function(e){
-    if(!startY||triggered) return;
-    var dy=e.touches[0].clientY-startY;
-    if(dy<8) return;
-    if(window.scrollY>4){startY=0;return;}
-    pulling=true;
-    var progress=Math.min(1, dy/THRESHOLD);
-    // Fade in as user pulls; content rubber-bands naturally, exposing this indicator
-    ptr.style.opacity=String(Math.min(progress*1.4, 1));
-    var svgEl=ptr.querySelector('svg');
-    if(svgEl) svgEl.style.transform='rotate('+(progress*270)+'deg)';
-    // Update label
-    var label=ptr.querySelector('span');
-    if(label) label.textContent=progress>=1?'Release to refresh':'Pull to refresh';
-  },{passive:true});
-
-  document.addEventListener('touchend',function(e){
-    if(!pulling){startY=0;return;}
-    var dy=e.changedTouches[0].clientY-startY;
-    pulling=false;
-    if(dy>=THRESHOLD && !triggered){
-      triggered=true;
-      var label=ptr.querySelector('span');
-      if(label) label.textContent='Refreshing…';
-      var svgEl=ptr.querySelector('svg');
-      if(svgEl){svgEl.style.transition='transform .5s linear';svgEl.style.transform='rotate(720deg)';}
-      ptr.style.opacity='1';
-      if(typeof loadContacts==='function') loadContacts();
-      setTimeout(function(){
-        ptr.style.opacity='0';
-        if(svgEl){svgEl.style.transition='';svgEl.style.transform='';}
-        var lbl=ptr.querySelector('span'); if(lbl) lbl.textContent='Pull to refresh';
-        triggered=false;
-      },900);
-    } else {
-      ptr.style.opacity='0';
-      var svgEl=ptr.querySelector('svg');
-      if(svgEl) svgEl.style.transform='';
-      var lbl=ptr.querySelector('span'); if(lbl) lbl.textContent='Pull to refresh';
-    }
-    startY=0;
-  },{passive:true});
-})();
+// Pull-to-refresh removed — nav bar refresh icon is sufficient
 
 // ── Scroll modal inputs into view on focus (keyboard won't cover them) ─────────
 (function(){
@@ -17313,34 +17237,11 @@ document.addEventListener('focusin', function(e) {
     if (Math.abs(dx) < 50 || Math.abs(dy) > 40) return;
     var idx = TABS.indexOf(activeTab);
     if (idx === -1) return;
-    if (dx < 0 && idx < TABS.length - 1) switchTab(TABS[idx + 1]); // swipe left → next
-    else if (dx > 0 && idx > 0) switchTab(TABS[idx - 1]);           // swipe right → prev
+    // Tab swiping disabled — only panel swipe-back (left) is kept
   }, { passive: true });
 })();
 
-// ── Liquid Glass tab bar: minimize on scroll down, expand on scroll up ────────
-(function() {
-  var _tabEl = document.getElementById('main-tab-bar');
-  var _lastY = 0, _ticking = false;
-  function _onScroll(el) {
-    var sy = el.scrollTop !== undefined ? el.scrollTop : (window.pageYOffset || 0);
-    if (!_ticking) {
-      requestAnimationFrame(function() {
-        if (window.innerWidth > 640 || !_tabEl) { _ticking = false; return; }
-        if (sy > _lastY + 10 && sy > 80) {
-          _tabEl.classList.add('mini');
-        } else if (sy < _lastY - 6 || sy < 30) {
-          _tabEl.classList.remove('mini');
-        }
-        _lastY = sy;
-        _ticking = false;
-      });
-      _ticking = true;
-    }
-  }
-  // Listen on all scrollable content containers
-  document.addEventListener('scroll', function(e) { _onScroll(e.target); }, { capture: true, passive: true });
-})();
+// Tab bar mini-mode removed — icon-only permanently, no scroll listener needed
 
 // ── Prevent pinch-zoom and double-tap-zoom on iOS ─────────────────────────────
 // user-scalable=no in viewport handles most cases; this catches the rest.
