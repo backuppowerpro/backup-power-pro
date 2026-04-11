@@ -14394,6 +14394,8 @@ setTimeout(() => {
   function _clearChatHistory() {
     try { localStorage.removeItem(TM_CHAT_KEY); } catch(e) {}
   }
+  window._clearChatHistory = _clearChatHistory;
+  window.renderChatPanel = renderChatPanel;
 
   function renderChatPanel() {
     var body = document.getElementById('tm-panel-body');
