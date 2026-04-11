@@ -44,7 +44,7 @@
   --t-fast:120ms var(--ease); --t-base:160ms var(--ease); --t-slow:220ms var(--ease);
 }
 html.dark {
-  --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
+  --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffc933;
   /* ── Neumorphic surface system (dark) ───────────────────
      bg = #1a2035  →  dark shadow #161b2e  light shadow #1e253c */
   --bg:#1a2035; --card:#1a2035;
@@ -2019,6 +2019,19 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
   .pa-stage-list{padding:6px 36px 6px 6px!important}
   #fq-launch-btn{margin-bottom:0!important;padding:5px 10px 5px 8px!important;font-size:11px!important}
 
+  /* ── CALENDAR: flat, grouped, no individual card shadows ─── */
+  .cal-day{box-shadow:none!important;border-radius:0!important;border:none!important}
+  .cal-day+.cal-day{border-top:0.5px solid rgba(0,0,0,.06)!important}
+  html.dark .cal-day+.cal-day{border-top-color:rgba(255,255,255,.06)!important}
+  .cal-grid{gap:0!important;border-radius:var(--r-md)!important;overflow:hidden!important}
+  #cal-week-stats>div{box-shadow:none!important;background:rgba(0,0,0,.03)!important}
+  html.dark #cal-week-stats>div{background:rgba(255,255,255,.05)!important}
+  .cal-nav .btn{box-shadow:none!important;background:rgba(0,0,0,.03)!important;border:none!important}
+  html.dark .cal-nav .btn{background:rgba(255,255,255,.06)!important}
+  /* Weekly averages: flat cards */
+  .cal-avg-card,.trend-stat{box-shadow:none!important;background:rgba(0,0,0,.03)!important}
+  html.dark .cal-avg-card,html.dark .trend-stat{background:rgba(255,255,255,.05)!important}
+
   /* ── LEADS LIST: Apple Contacts-level clean ──────────────── */
   .mlc{padding:10px 10px!important;border-bottom:none!important}
   .mlc-name{font-size:14px!important}
@@ -2407,7 +2420,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
     <!-- ── INBOX sub-tab ─────────────────────────────────── -->
     <div id="msgtab-inbox" style="padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))">
-      <div class="section-head" style="margin-bottom:20px;padding:6px 0">
+      <div class="section-head" style="margin-bottom:20px;padding:6px 6px">
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <div class="section-title">Inbox</div>
           <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
@@ -2442,7 +2455,7 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
 
     <!-- ── CALLS sub-tab ─────────────────────────────────── -->
     <div id="msgtab-calls" style="display:none">
-      <div class="section-head" style="margin-bottom:16px">
+      <div class="section-head" style="margin-bottom:20px;padding:6px 6px">
         <div class="section-title">Call Log</div>
         <div style="display:flex;gap:8px;align-items:center">
           <button onclick="openVoicemailGreetingEditor()" class="inbox-hdr-pill" title="Edit voicemail greeting">
@@ -7987,7 +8000,7 @@ async function refreshStatsModal() {
   const goalSection = '<div style="background:linear-gradient(135deg,rgba(255,186,0,.06) 0%,var(--card) 100%);border-radius:var(--r-md);padding:16px;margin-top:16px;border:1px solid rgba(255,186,0,.2)">'
     + '<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">$150k Home Payoff Goal</div>'
     + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">'
-    + '<span style="font-family:Outfit,sans-serif;font-size:28px;font-weight:800;color:var(--navy)">$' + estNetProfit.toLocaleString() + '</span>'
+    + '<span style="font-family:Outfit,sans-serif;font-size:28px;font-weight:800;color:var(--text)">$' + estNetProfit.toLocaleString() + '</span>'
     + '<span style="font-size:13px;color:var(--text3)">est. accumulated / $150,000</span></div>'
     + '<div style="height:8px;background:var(--bg);border-radius:var(--r-pill);overflow:hidden;margin-bottom:6px">'
     + '<div style="height:100%;background:var(--gold);border-radius:var(--r-pill);width:' + pct + '%;transition:width .5s"></div></div>'
