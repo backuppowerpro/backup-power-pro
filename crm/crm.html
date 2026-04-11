@@ -2494,11 +2494,8 @@ html.dark .tm-send:disabled{background:#3d3830;color:var(--text3)}
         </div>
         <input type="text" id="search" class="search-input" placeholder="Search…" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="clearTimeout(window._searchDebounce);window._searchDebounce=setTimeout(function(){renderContacts();if(typeof leadsView!=='undefined'){if(leadsView==='pipeline')renderKanban();else if(leadsView==='permits'&&typeof renderPermitsBoard==='function')renderPermitsBoard();else if(leadsView==='materials'&&typeof renderMaterialsBoard==='function')renderMaterialsBoard()}},150);searchHighlightIdx=-1;_updateMsgSearchHint(this.value)" onkeydown="searchKeyNav(event)" autocomplete="off">
       </div>
-      <button id="fq-launch-btn" onclick="openFollowupQueue()" title="Follow-up queue — Sparky drafts texts for overdue leads" style="display:flex;align-items:center;gap:5px;background:var(--bg);border:none;border-radius:var(--r-pill);padding:6px 12px 6px 10px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;color:var(--text2);cursor:pointer;box-shadow:var(--shadow-neu-sm);transition:box-shadow .15s,color .15s;flex-shrink:0">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        Follow-ups
-        <span id="fq-launch-badge" style="display:none;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;padding:0 6px;border-radius:var(--r-pill);line-height:18px">0</span>
-      </button>
+      <!-- Follow-ups button removed — overdue contacts visible via indicators in leads list -->
+      <button id="fq-launch-btn" onclick="openFollowupQueue()" style="display:none"><span id="fq-launch-badge" style="display:none">0</span></button>
       <div class="view-toggle" id="view-toggle-wrap">
         <button class="view-toggle-btn" id="view-pipe-btn" onclick="setLeadsView(leadsView==='pipeline'?'list':'pipeline')" title="Toggle pipeline view">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
