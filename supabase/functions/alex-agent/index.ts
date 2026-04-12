@@ -20,7 +20,7 @@ const QUO_PHONE_ID        = Deno.env.get('QUO_PHONE_NUMBER_ID')!  // (864) 400-5
 const KEY_PHONE            = '+19414417996'                         // Key's personal cell
 const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'  // (864) 863-7155
 
-const ALEX_AGENT_ID = 'agent_011CZyxrXSNkENo5ZtPNCH9E'  // v3 Sonnet
+const ALEX_AGENT_ID = 'agent_011CZz9KKUD2thFcjG2kdnbA'  // v4 Sonnet — warm personality
 const ALEX_ENV_ID   = 'env_01Ba8sDT1CgQrWE5bLvtvHwK'
 
 const ANTHROPIC_HEADERS = {
