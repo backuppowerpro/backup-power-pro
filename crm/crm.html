@@ -4346,8 +4346,10 @@ async function renderProposalDrill() {
     totalAmount = (p.total || 0) + (hasPOM ? (p.pom_price || 447) : 0);
     let items = '<div class="pay-row"><span class="pay-row-label">Base install (' + (p.amp_type||'30') + 'A)</span><span class="pay-row-val">$' + (p.total||0).toLocaleString() + '</span></div>';
     if (hasPOM) items += '<div class="pay-row"><span class="pay-row-label">Peace of Mind Protection Package</span><span class="pay-row-val">+$' + (p.pom_price||447) + '</span></div>';
+    var depositAmount = Math.round(totalAmount * 0.5);
     lineItemsSection = '<div class="pay-summary" style="margin-bottom:12px">' + items + '</div>'
-      + '<div class="pay-total" style="margin-bottom:12px">$' + totalAmount.toLocaleString() + '</div>';
+      + '<div class="pay-total" style="margin-bottom:4px">$' + totalAmount.toLocaleString() + '</div>'
+      + '<div style="text-align:center;font-size:12px;color:var(--text2);font-weight:600;margin-bottom:12px">50% deposit to book: <span style="color:var(--gold);font-weight:800">$' + depositAmount.toLocaleString() + '</span></div>';
   }
 
   // ── Payment data (approved only) ────────────────────────
@@ -10030,7 +10032,9 @@ async function _qaQuoteSend(contactId) {
   // Build message text
   const link = (typeof PROPOSAL_BASE_URL === 'string' ? PROPOSAL_BASE_URL : '') + '?token=' + data.token;
   const fname = (c.name || '').split(' ')[0] || 'there';
-  const msgBody = `Hi ${fname}! Here's your quote for the Storm-Ready Connection System — $${(primary.total || calc.subtotal).toLocaleString()} all in. Review & approve here: ${link}`;
+  const totalAmt = primary.total || calc.subtotal;
+  const depositAmt = Math.round(totalAmt * 0.5);
+  const msgBody = `Hi ${fname}! Here's your quote for the Storm-Ready Connection System — $${totalAmt.toLocaleString()} all in. A 50% deposit ($${depositAmt.toLocaleString()}) is due to confirm your spot. Review & approve here: ${link}`;
 
   // Mark proposal as Copied
   await db.from('proposals').update({ status: 'Copied', copied_at: new Date().toISOString() }).eq('id', data.id);

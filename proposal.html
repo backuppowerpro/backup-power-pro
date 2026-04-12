@@ -1121,7 +1121,8 @@ function renderPricing() {
   if (totalBadge) totalBadge.textContent = fmt(total);
 
   const perDay = document.getElementById('per-day-note');
-  if (perDay) perDay.innerHTML = `That's just <strong style="color:var(--navy)">$${(total / 3650).toFixed(2)}/day</strong> for 10 years of whole-home storm protection. Pay in full or split it interest-free through Afterpay or Klarna.`;
+  const depositAmt = Math.round(total * 0.5);
+  if (perDay) perDay.innerHTML = `<strong style="color:var(--navy)">50% deposit ($${depositAmt.toLocaleString()}) due to confirm your spot.</strong><br><span style="font-size:12px">Remaining balance due on install day. That's just $${(total / 3650).toFixed(2)}/day for 10 years of protection.</span>`;
 
   // Update POM toggle visual
   const pomToggle = document.getElementById('pom-toggle');
