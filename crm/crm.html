@@ -219,12 +219,13 @@ html.dark .pay-total{color:var(--gold)}
 html.dark .pay-history-item{background:var(--card)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01','ss03';line-height:1.5;font-size:14px;overscroll-behavior-x:none}
-/* overflow-x:clip on body prevents horizontal rubber-band; html must NOT have it — it breaks position:fixed on iOS */
+/* No overflow-x on body — overflow-x:clip/hidden both break position:sticky in Chrome by making body the sticky container.
+   Horizontal rubber-band is already prevented by overscroll-behavior-x:none on html,body. */
 html{background:#111110}
 html.dark{background:var(--bg)}
 /* Prevent iOS rubber-band scroll bleed through overlays */
 body:has(#side-panel-overlay.open,.tm-panel-overlay.open,.modal-overlay.open,.fq-overlay.open,#urg-modal-overlay.open,.cs-overlay.open){overflow:hidden!important}
-body{overflow-x:clip;touch-action:pan-y;-webkit-touch-callout:none}
+body{touch-action:pan-y;-webkit-touch-callout:none}
 *{-webkit-tap-highlight-color:transparent}
 /* user-select: text by default — let people copy phone numbers, addresses, messages.
    Only disable on buttons/nav/tabs where selection fights tapping. */
