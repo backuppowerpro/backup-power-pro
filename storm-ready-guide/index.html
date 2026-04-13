@@ -85,7 +85,27 @@ p{margin-bottom:14px;line-height:1.75;font-size:15px}
 .modal-btns button{flex:1;padding:12px;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none}
 .modal-send{background:var(--navy);color:#fff}.modal-cancel{background:var(--bg);color:var(--text2)}
 @media(max-width:600px){.hero-photos{flex-wrap:wrap}.hero-photos img{width:100px;height:65px}.photo-row{flex-direction:column}.photo-row img{height:200px;width:100%}.compare{font-size:12px}.compare th,.compare td{padding:8px 10px}}
-@media print{.action-bar,.footer,.modal-overlay,.cta{display:none!important}.hero{padding:24px 20px}body{background:#fff}}
+@media print{
+  .action-bar,.footer,.modal-overlay{display:none!important}
+  body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .hero{background:#0b1f3b!important;padding:28px 20px!important;-webkit-print-color-adjust:exact}
+  .hero-title,.hero-title span,.hero-sub,.hero-badge,.hero-photos img{-webkit-print-color-adjust:exact}
+  .content{padding:20px!important;max-width:100%!important}
+  .compare th{background:#0b1f3b!important;color:#fff!important;-webkit-print-color-adjust:exact}
+  .compare .winner td{background:#fffbeb!important;-webkit-print-color-adjust:exact}
+  .tag{-webkit-print-color-adjust:exact}
+  .step-num{background:#0b1f3b!important;color:#ffba00!important;-webkit-print-color-adjust:exact}
+  .warning{background:#fef2f2!important;border-left:4px solid #dc2626!important;-webkit-print-color-adjust:exact}
+  .callout{background:#e8f1f8!important;border-left:4px solid #0b1f3b!important;-webkit-print-color-adjust:exact}
+  .success{background:#ecfdf5!important;border-left:4px solid #059669!important;-webkit-print-color-adjust:exact}
+  .tip{background:#fffbeb!important;border-left:4px solid #ffba00!important;-webkit-print-color-adjust:exact}
+  .checks li::before{color:#059669!important;-webkit-print-color-adjust:exact}
+  .cta{background:#0b1f3b!important;-webkit-print-color-adjust:exact}
+  .cta-title,.cta-phone a,.cta-step-num{-webkit-print-color-adjust:exact}
+  .photo-row img{-webkit-print-color-adjust:exact}
+  h2{color:#0b1f3b!important}
+  a{color:#0b1f3b!important}
+}
 </style>
 </head>
 <body>

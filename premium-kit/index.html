@@ -105,7 +105,41 @@ p{margin-bottom:14px;line-height:1.75;font-size:15px}
 .modal-btns button{flex:1;padding:12px;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none}
 .modal-send{background:var(--navy);color:#fff}.modal-cancel{background:var(--bg);color:var(--text2)}
 @media(max-width:600px){.hero-tags{gap:6px}.ecard-breakers{grid-template-columns:1fr}}
-@media print{.action-bar,.footer,.modal-overlay{display:none!important}.hero{padding:20px}body{background:#fff}.calc-toggle,.ibox{border:2px solid #999!important}}
+@media print{
+  .action-bar,.footer,.modal-overlay{display:none!important}
+  body{background:#fff!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .hero{background:var(--navy)!important;padding:28px 20px!important;-webkit-print-color-adjust:exact}
+  .hero-title,.hero-title span,.hero-badge,.hero-sub,.hero-tag{-webkit-print-color-adjust:exact}
+  .content{padding:20px!important;max-width:100%!important}
+  /* Calculator: convert toggles to empty checkboxes */
+  .calc-toggle{width:16px!important;height:16px!important;border-radius:3px!important;background:#fff!important;border:2px solid #333!important}
+  .calc-toggle::after{display:none!important}
+  .calc-toggle.on{background:#333!important}
+  .calc-toggle.on::after{display:flex!important;content:'✓'!important;color:#fff!important;font-size:10px!important;width:16px!important;height:16px!important;align-items:center!important;justify-content:center!important;position:static!important;transform:none!important;border-radius:0!important;box-shadow:none!important}
+  .calc-gen-input input{border:1px solid #333!important;background:#fff!important}
+  .calc-header{background:#1a2a42!important;-webkit-print-color-adjust:exact}
+  .calc-result{background:#e8f1f8!important;-webkit-print-color-adjust:exact}
+  .calc-result-fill{-webkit-print-color-adjust:exact}
+  /* Checklist: convert to print checkboxes */
+  .ibox{width:14px!important;height:14px!important;border:2px solid #333!important;border-radius:2px!important;background:#fff!important}
+  .icheck li{background:#fff!important;box-shadow:none!important;padding:6px 10px!important;cursor:default!important}
+  .icheck li.done .ibox{background:#333!important}
+  .progress-bar,.progress-fill{-webkit-print-color-adjust:exact}
+  /* Maintenance dots */
+  .dot{-webkit-print-color-adjust:exact!important;background:var(--gold)!important}
+  .maint th{-webkit-print-color-adjust:exact!important;background:#1a2a42!important}
+  /* Emergency card */
+  .ecard{border:2px dashed #666!important}
+  .ecard-header{background:#1a2a42!important;-webkit-print-color-adjust:exact}
+  .ecard-field input{border-bottom:1px solid #333!important}
+  /* Callout boxes */
+  .tip{background:#fffbeb!important;border-left:4px solid #ffba00!important;-webkit-print-color-adjust:exact}
+  /* General text */
+  h2{color:#1a2a42!important}
+  h3{color:#92400e!important}
+  a{color:#1a2a42!important}
+  .page-break{page-break-before:always}
+}
 </style>
 </head>
 <body>
