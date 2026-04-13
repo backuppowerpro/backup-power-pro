@@ -225,7 +225,7 @@ html{background:#111110}
 html.dark{background:var(--bg)}
 /* Prevent iOS rubber-band scroll bleed through overlays */
 body:has(#side-panel-overlay.open,.tm-panel-overlay.open,.modal-overlay.open,.fq-overlay.open,#urg-modal-overlay.open,.cs-overlay.open){overflow:hidden!important}
-body{touch-action:pan-y;-webkit-touch-callout:none}
+body{touch-action:pan-y;-webkit-touch-callout:none;padding-top:calc(56px + 48px + env(safe-area-inset-top,0px))}
 *{-webkit-tap-highlight-color:transparent}
 /* user-select: text by default — let people copy phone numbers, addresses, messages.
    Only disable on buttons/nav/tabs where selection fights tapping. */
@@ -262,7 +262,7 @@ button,a,[onclick],label{touch-action:manipulation}
 h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;letter-spacing:-.01em}
 
 /* NAV — Dynamic Island / notch safe area */
-.nav{background:var(--navy);display:flex;align-items:center;padding:0 16px;gap:8px;position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 4px 16px rgba(10,20,40,.18);height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);padding-left:max(16px,calc(env(safe-area-inset-left,0px) + 8px));padding-right:max(16px,calc(env(safe-area-inset-right,0px) + 8px))}
+.nav{background:var(--navy);display:flex;align-items:center;padding:0 16px;gap:8px;position:fixed;top:0;left:0;right:0;z-index:50;box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 4px 16px rgba(10,20,40,.18);height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);padding-left:max(16px,calc(env(safe-area-inset-left,0px) + 8px));padding-right:max(16px,calc(env(safe-area-inset-right,0px) + 8px))}
 .nav-brand{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:#fff;margin-right:auto;letter-spacing:-.01em}
 .nav-brand span{color:var(--gold)}
 
@@ -730,7 +730,7 @@ html.dark .panel-details-content.open{background:rgba(255,255,255,.02)}
 .hidden{display:none!important}
 
 /* ── TAB BAR ──────────────────────────────────────────── */
-.tab-bar{background:var(--bg);border-bottom:1px solid rgba(0,0,0,.07);display:flex;position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:49;padding:0 12px;overflow-x:auto;scrollbar-width:none;box-shadow:0 2px 8px rgba(10,20,40,.06)}
+.tab-bar{background:var(--bg);border-bottom:1px solid rgba(0,0,0,.07);display:flex;position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:0;right:0;z-index:49;padding:0 12px;overflow-x:auto;scrollbar-width:none;box-shadow:0 2px 8px rgba(10,20,40,.06)}
 .tab-bar::-webkit-scrollbar{display:none}
 .tab-icon{display:none}  /* icons shown only on mobile bottom tab */
 .tab-label{display:inline}
@@ -1618,6 +1618,8 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
    Must be LAST in stylesheet to win cascade.
    ══════════════════════════════════════════════════════════ */
 @media(max-width:640px){
+  /* On mobile the tab-bar moves to bottom — body only needs nav-height clearance */
+  body{padding-top:calc(56px + env(safe-area-inset-top,0px))!important}
   /* ── LIQUID GLASS top nav (iOS 26 — translucent glass nav bar) ── */
   .nav{
     background:rgba(22,18,12,.88)!important;
