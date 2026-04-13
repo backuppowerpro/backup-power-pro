@@ -8945,6 +8945,7 @@ let _unreadContactIdsKey = ''; // stringified to detect changes without re-rende
 async function loadInbox() {
   const listEl = document.getElementById('inbox-list');
   if (!listEl) return;
+  if (listEl.getAttribute('data-nc')) return; // NC picker is open — don't overwrite it
   const firstLoad = !listEl.querySelector('.inbox-item') && !listEl.querySelector('.empty');
   if (firstLoad) {
     listEl.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3)">Loading…</div>';
@@ -9422,7 +9423,7 @@ function playCallRecording(rawUrl) {
     <span style="flex:1">Loading recording…</span>
     <button onclick="_stopCallRecording()" style="background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.6);border-radius:6px;padding:4px 8px;font-size:14px;cursor:pointer;line-height:1">×</button>
   `;
-  const compose = document.getElementById('msg-compose-foot');
+  const compose = document.querySelector('.msg-compose-foot');
   if (compose && compose.parentNode) compose.parentNode.insertBefore(bar, compose);
   _callAudioBar = bar;
 
