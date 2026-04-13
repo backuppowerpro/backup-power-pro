@@ -469,9 +469,10 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
 
       case 'lookup_contact': {
         const q = (input.query || '').toString().trim()
+        // contacts table: id, name, phone, email, address, stage, status, notes, install_notes, jurisdiction_id, quote_amount, created_at
         const { data, error } = await supabase
           .from('contacts')
-          .select('id, name, phone, stage, jurisdiction, address, created_at')
+          .select('id, name, phone, stage, status, address, quote_amount, created_at')
           .or(`name.ilike.%${q}%,phone.ilike.%${q}%`)
           .limit(5)
         if (error) return { error: error.message }
@@ -479,10 +480,11 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
       }
 
       case 'get_contact_history': {
-        const limit = Math.min(Number(input.limit) || 25, 60)
+        const limit = Math.min(Number(input.limit) || 30, 60)
+        // messages table: id, contact_id, direction, body, created_at, status, duration_seconds
         const { data, error } = await supabase
           .from('messages')
-          .select('direction, body, created_at, status, message_type')
+          .select('direction, body, created_at, status, duration_seconds')
           .eq('contact_id', input.contactId)
           .order('created_at', { ascending: true })
           .limit(limit)
@@ -492,18 +494,20 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
 
       case 'search_all_contacts': {
         const limit = Math.min(Number(input.limit) || 15, 30)
+        // Only real columns: id, name, phone, email, address, stage, status, notes, install_notes, jurisdiction_id, quote_amount, created_at
         let q = supabase
           .from('contacts')
-          .select('id, name, phone, stage, jurisdiction, address, created_at, last_contacted_at, scheduled_date')
+          .select('id, name, phone, stage, status, address, notes, quote_amount, created_at')
           .order('created_at', { ascending: false })
           .limit(limit)
         if (input.stage) q = q.eq('stage', Number(input.stage))
-        if (input.jurisdiction) q = q.ilike('jurisdiction', `%${input.jurisdiction}%`)
-        if (input.query) q = q.or(`name.ilike.%${input.query}%,address.ilike.%${input.query}%`)
+        if (input.status) q = q.eq('status', input.status)
+        if (input.query) q = q.or(`name.ilike.%${input.query}%,address.ilike.%${input.query}%,phone.ilike.%${input.query}%`)
+        // min_days_quiet: filter by created_at as proxy (messages table not joined here)
         if (input.min_days_quiet) {
           const cutoff = new Date()
           cutoff.setDate(cutoff.getDate() - Number(input.min_days_quiet))
-          q = q.or(`last_contacted_at.lt.${cutoff.toISOString()},last_contacted_at.is.null`)
+          q = q.lt('created_at', cutoff.toISOString())
         }
         const { data, error } = await q
         if (error) return { error: error.message }
@@ -514,46 +518,68 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         const query = (input.query || '').toString().trim()
         const limit = Math.min(Number(input.limit) || 10, 25)
         if (!query) return { error: 'query is required' }
-        // Search messages and join with contact info
-        const { data, error } = await supabase
+        // Search messages body, then enrich with contact name via separate query
+        const { data: msgs, error } = await supabase
           .from('messages')
-          .select('id, contact_id, direction, body, created_at, contacts(id, name, phone, stage)')
+          .select('id, contact_id, direction, body, created_at')
           .ilike('body', `%${query}%`)
           .order('created_at', { ascending: false })
           .limit(limit)
-        if (error) {
-          // Fallback: search without join
-          const { data: d2, error: e2 } = await supabase
-            .from('messages')
-            .select('id, contact_id, direction, body, created_at')
-            .ilike('body', `%${query}%`)
-            .order('created_at', { ascending: false })
-            .limit(limit)
-          if (e2) return { error: e2.message }
-          return { results: d2 || [], count: (d2 || []).length, note: 'Contact names unavailable — join failed' }
-        }
+        if (error) return { error: error.message }
+        if (!msgs || msgs.length === 0) return { results: [], count: 0, query }
+        // Get unique contact IDs to fetch names
+        const contactIds = [...new Set(msgs.map((m: any) => m.contact_id))]
+        const { data: contacts } = await supabase
+          .from('contacts')
+          .select('id, name, stage')
+          .in('id', contactIds)
+        const contactMap: Record<string, any> = {}
+        for (const c of (contacts || [])) contactMap[c.id] = c
         return {
-          results: (data || []).map((m: any) => ({
+          results: msgs.map((m: any) => ({
             contact_id: m.contact_id,
-            contact_name: m.contacts?.name || 'Unknown',
-            contact_stage: m.contacts?.stage,
+            contact_name: contactMap[m.contact_id]?.name || 'Unknown',
+            contact_stage: contactMap[m.contact_id]?.stage,
             direction: m.direction,
             snippet: m.body?.slice(0, 300),
             created_at: m.created_at,
           })),
-          count: (data || []).length,
+          count: msgs.length,
           query,
         }
       }
 
       case 'get_permit_status': {
-        const { data, error } = await supabase
+        // contacts table has: stage, jurisdiction_id, notes. Permit status = pipeline stage.
+        // Stage 5=Permit Submitted, 6=Permit Paid, 7=Permit Approved, 8=Inspection Scheduled, 9=Complete
+        const { data: contact, error } = await supabase
           .from('contacts')
-          .select('id, name, jurisdiction, permit_submitted_at, permit_ready_to_pay_at, permit_paid_at, permit_printed_at, permit_inspect_sched_at, permit_inspect_pass_at, permit_number, stage')
+          .select('id, name, stage, status, notes, install_notes, jurisdiction_id')
           .eq('id', input.contactId)
           .single()
         if (error) return { error: error.message }
-        return { permit: data }
+        // Also pull recent stage history for timeline
+        const { data: history } = await supabase
+          .from('stage_history')
+          .select('from_stage, to_stage, changed_at')
+          .eq('contact_id', input.contactId)
+          .order('changed_at', { ascending: true })
+        const stageNames: Record<number,string> = {
+          1:'Form Submitted',2:'Responded',3:'Quote Sent',4:'Booked',
+          5:'Permit Submitted',6:'Permit Paid',7:'Permit Approved',8:'Inspection Scheduled',9:'Complete'
+        }
+        const permitHistory = (history || [])
+          .filter((h: any) => h.to_stage >= 5)
+          .map((h: any) => ({ stage: stageNames[h.to_stage] || `Stage ${h.to_stage}`, date: h.changed_at }))
+        return {
+          contact_id: contact.id,
+          name: contact.name,
+          current_stage: contact.stage,
+          current_stage_name: stageNames[contact.stage] || `Stage ${contact.stage}`,
+          permit_history: permitHistory,
+          notes: contact.notes,
+          install_notes: contact.install_notes,
+        }
       }
 
       case 'read_sparky_memory': {
@@ -591,12 +617,23 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
       }
 
       case 'edit_contact': {
-        const allowed = new Set(['name', 'phone', 'address', 'jurisdiction', 'panel_brand', 'generator_amp', 'notes', 'email'])
+        // Real contacts columns: name, phone, email, address, stage, status, notes, install_notes, jurisdiction_id, quote_amount
+        // panel_brand/generator info goes into notes since there's no dedicated column yet
+        const allowed = new Set(['name', 'phone', 'address', 'notes', 'install_notes', 'email', 'stage', 'status'])
         const updateFields: Record<string, any> = {}
         for (const [k, v] of Object.entries(input.fields || {})) {
           if (allowed.has(k) && v !== undefined && v !== null && v !== '') {
             updateFields[k] = v
           }
+        }
+        // Auto-append panel/generator info to notes if provided (no dedicated column)
+        const extras: string[] = []
+        if ((input.fields as any)?.panel_brand) extras.push(`Panel: ${(input.fields as any).panel_brand}`)
+        if ((input.fields as any)?.generator_amp) extras.push(`Generator: ${(input.fields as any).generator_amp}`)
+        if (extras.length && !updateFields.notes) {
+          // Fetch current notes to append
+          const { data: cur } = await supabase.from('contacts').select('notes').eq('id', input.contactId).single()
+          updateFields.notes = [(cur?.notes || '').trim(), ...extras].filter(Boolean).join('\n')
         }
         if (!Object.keys(updateFields).length) return { error: 'No valid fields provided to update.' }
         const { error } = await supabase
