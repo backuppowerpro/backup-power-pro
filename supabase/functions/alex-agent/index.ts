@@ -1,24 +1,31 @@
 /**
  * alex-agent — Bridge between Quo (OpenPhone) webhooks and Claude Managed Agent
  *
+ * TEST MODE: Only accepts messages from/sends to KEY_PHONE (+19414417996)
+ * To test: text (864) 400-5302 from your cell. Alex will text you back first.
+ * To reset: text RETEST — clears the session and Alex sends a fresh opening.
+ *
  * Flow:
  * 1. Quo webhook fires on incoming message → hits this function
- * 2. Check if lead has an existing Managed Agent session (stored in Supabase)
- * 3. If not, create a new session
- * 4. Send customer's message to the session
- * 5. Wait for Alex's response
- * 6. Send response back via Quo API
- * 7. If [LEAD_COMPLETE] detected, notify Key
+ * 2. TEST MODE: reject any number that isn't KEY_PHONE
+ * 3. RETEST keyword: wipe session, trigger Alex opener
+ * 4. New session: trigger Alex opener automatically (he texts first)
+ * 5. Existing session: relay lead's message to Alex, send response back
+ * 6. If [LEAD_COMPLETE] detected, notify Key
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const ANTHROPIC_API_KEY   = Deno.env.get('ANTHROPIC_API_KEY')!
-const QUO_API_KEY         = Deno.env.get('QUO_API_KEY')!
-const QUO_PHONE_ID        = Deno.env.get('QUO_PHONE_NUMBER_ID')!  // (864) 400-5302
-const KEY_PHONE            = '+19414417996'                         // Key's personal cell
-const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'  // (864) 863-7155
+const ANTHROPIC_API_KEY      = Deno.env.get('ANTHROPIC_API_KEY')!
+const QUO_API_KEY            = Deno.env.get('QUO_API_KEY')!
+const QUO_PHONE_ID           = Deno.env.get('QUO_PHONE_NUMBER_ID')!   // (864) 400-5302
+const KEY_PHONE              = '+19414417996'                           // Key's personal cell
+const QUO_INTERNAL_PHONE_ID  = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'  // (864) 863-7155
+
+// ── TEST MODE ─────────────────────────────────────────────────────────────────
+// Set to false when ready to go live with real leads
+const TEST_MODE = true
 
 const ALEX_AGENT_ID = 'agent_011CZzNTyd8EpxhG8pLGMjNn'  // v6 Sonnet — brief, warm, no over-explaining
 const ALEX_ENV_ID   = 'env_01Ba8sDT1CgQrWE5bLvtvHwK'
@@ -38,29 +45,14 @@ const CORS_HEADERS = {
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
-async function getOrCreateSession(supabase: any, contactPhone: string, contactName: string): Promise<string> {
-  // Check for existing session
-  const { data: existing } = await supabase
-    .from('alex_sessions')
-    .select('session_id')
-    .eq('phone', contactPhone)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(1)
-
-  if (existing?.[0]?.session_id) {
-    console.log('[alex] Resuming session:', existing[0].session_id)
-    return existing[0].session_id
-  }
-
-  // Create new Managed Agent session
+async function createNewSession(supabase: any, contactPhone: string): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/sessions', {
     method: 'POST',
     headers: ANTHROPIC_HEADERS,
     body: JSON.stringify({
       agent: ALEX_AGENT_ID,
       environment_id: ALEX_ENV_ID,
-      title: `Lead: ${contactName || contactPhone}`,
+      title: `Lead: ${contactPhone}`,
     }),
   })
 
@@ -70,16 +62,35 @@ async function getOrCreateSession(supabase: any, contactPhone: string, contactNa
     throw new Error('Session creation failed')
   }
 
-  // Store session mapping
   await supabase.from('alex_sessions').insert({
     phone: contactPhone,
     session_id: session.id,
-    contact_name: contactName || null,
     status: 'active',
   })
 
   console.log('[alex] Created session:', session.id)
   return session.id
+}
+
+async function getActiveSession(supabase: any, contactPhone: string): Promise<string | null> {
+  const { data: existing } = await supabase
+    .from('alex_sessions')
+    .select('session_id')
+    .eq('phone', contactPhone)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  return existing?.[0]?.session_id || null
+}
+
+async function clearSessions(supabase: any, contactPhone: string): Promise<void> {
+  await supabase
+    .from('alex_sessions')
+    .update({ status: 'reset' })
+    .eq('phone', contactPhone)
+    .eq('status', 'active')
+  console.log('[alex] Cleared sessions for', contactPhone)
 }
 
 async function sendToAlex(sessionId: string, messageText: string): Promise<string> {
@@ -98,10 +109,10 @@ async function sendToAlex(sessionId: string, messageText: string): Promise<strin
   // Poll for response (wait for agent to finish)
   let alexResponse = ''
   let attempts = 0
-  const maxAttempts = 30 // 30 seconds max
+  const maxAttempts = 30
 
   while (attempts < maxAttempts) {
-    await new Promise(r => setTimeout(r, 1000)) // Wait 1 second
+    await new Promise(r => setTimeout(r, 1000))
     attempts++
 
     const eventsRes = await fetch(`https://api.anthropic.com/v1/sessions/${sessionId}/events`, {
@@ -109,17 +120,14 @@ async function sendToAlex(sessionId: string, messageText: string): Promise<strin
     })
     const eventsData = await eventsRes.json()
 
-    // Check session status
     const statusRes = await fetch(`https://api.anthropic.com/v1/sessions/${sessionId}`, {
       headers: ANTHROPIC_HEADERS,
     })
     const statusData = await statusRes.json()
 
     if (statusData.status === 'idle') {
-      // Agent is done — extract the latest agent.message
       const events = Array.isArray(eventsData) ? eventsData : (eventsData.events || eventsData.data || [])
 
-      // Get the last agent.message event
       for (const ev of events) {
         if (ev.type === 'agent.message') {
           for (const c of (ev.content || [])) {
@@ -147,15 +155,14 @@ async function sendQuoMessage(to: string, content: string): Promise<void> {
       headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
       body: JSON.stringify({ from: QUO_PHONE_ID, to: [to], content }),
     })
-    console.log('[quo] Sent to', to)
+    console.log('[quo] Sent to', to, ':', content.substring(0, 60))
   } catch (err) {
     console.error('[quo] Send failed:', err)
   }
 }
 
-async function notifyKey(leadName: string, leadPhone: string, summary: string): Promise<void> {
+async function notifyKey(leadPhone: string, summary: string): Promise<void> {
   const message = `🔔 LEAD READY FOR QUOTE\n\n${summary}\n\nPhone: ${leadPhone}\nAlex collected all info — review photos and create quote.`
-
   try {
     await fetch('https://api.openphone.com/v1/messages', {
       method: 'POST',
@@ -167,6 +174,10 @@ async function notifyKey(leadName: string, leadPhone: string, summary: string): 
     console.error('[notify] Failed:', err)
   }
 }
+
+// Alex's opener prompt — sent internally to trigger the first message
+const OPENER_PROMPT = `You're reaching out to a new homeowner lead for the first time.
+Send your opening text message now. Keep it to 1-2 sentences. Natural, warm, no pressure.`
 
 // ── MAIN HANDLER ──────────────────────────────────────────────────────────────
 
@@ -180,47 +191,95 @@ Deno.serve(async (req) => {
   }
 
   // ── Quo Webhook Payload ────────────────────────────────────────────────────
-  // Quo sends: { type: "message.received", data: { object: { ... } } }
-  const eventType = body?.type
+  const eventType  = body?.type
   const messageData = body?.data?.object
 
-  // Only handle incoming messages
   if (eventType !== 'message.received' || !messageData) {
     console.log('[alex] Ignoring event type:', eventType)
     return new Response(JSON.stringify({ skipped: true }), { status: 200, headers: CORS_HEADERS })
   }
 
-  // Skip outbound messages (our own replies)
   if (messageData.direction === 'outgoing') {
     return new Response(JSON.stringify({ skipped: true, reason: 'outbound' }), { status: 200, headers: CORS_HEADERS })
   }
 
-  const fromPhone = messageData.from || ''
-  const messageText = messageData.body || messageData.text || ''
-  const hasMedia = !!(messageData.media?.length)
+  const fromPhone  = messageData.from || ''
+  const messageText = (messageData.body || messageData.text || '').trim()
+  const hasMedia   = !!(messageData.media?.length)
 
-  // Skip empty messages (unless they have media)
+  // ── TEST MODE GATE ─────────────────────────────────────────────────────────
+  if (TEST_MODE && fromPhone !== KEY_PHONE) {
+    console.log('[alex] TEST MODE: ignoring non-Key number:', fromPhone)
+    return new Response(JSON.stringify({ skipped: true, reason: 'test_mode' }), { status: 200, headers: CORS_HEADERS })
+  }
+
   if (!messageText && !hasMedia) {
     return new Response(JSON.stringify({ skipped: true, reason: 'empty' }), { status: 200, headers: CORS_HEADERS })
   }
 
-  console.log('[alex] Incoming from', fromPhone, ':', messageText.substring(0, 50))
+  console.log('[alex] Incoming from', fromPhone, ':', messageText.substring(0, 60))
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
 
-  // ── Get or create session ──────────────────────────────────────────────────
-  let sessionId: string
-  try {
-    sessionId = await getOrCreateSession(supabase, fromPhone, '')
-  } catch (err) {
-    console.error('[alex] Session error:', err)
-    return new Response(JSON.stringify({ error: 'session failed' }), { status: 500, headers: CORS_HEADERS })
+  // ── RETEST KEYWORD ─────────────────────────────────────────────────────────
+  if (messageText.toUpperCase() === 'RETEST') {
+    console.log('[alex] RETEST received — clearing session and sending opener')
+    await clearSessions(supabase, fromPhone)
+
+    let sessionId: string
+    try {
+      sessionId = await createNewSession(supabase, fromPhone)
+    } catch (err) {
+      console.error('[alex] Session error on RETEST:', err)
+      return new Response(JSON.stringify({ error: 'session failed' }), { status: 500, headers: CORS_HEADERS })
+    }
+
+    const opener = await sendToAlex(sessionId, OPENER_PROMPT)
+    const smsOpener = opener.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/__(.*?)__/g, '$1').trim()
+    await sendQuoMessage(fromPhone, smsOpener)
+
+    return new Response(JSON.stringify({ success: true, action: 'retest', sessionId }), {
+      status: 200,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
   }
 
-  // ── Build message for Alex ─────────────────────────────────────────────────
+  // ── GET OR CREATE SESSION ──────────────────────────────────────────────────
+  let sessionId = await getActiveSession(supabase, fromPhone)
+  const isNewSession = !sessionId
+
+  if (!sessionId) {
+    try {
+      sessionId = await createNewSession(supabase, fromPhone)
+    } catch (err) {
+      console.error('[alex] Session error:', err)
+      return new Response(JSON.stringify({ error: 'session failed' }), { status: 500, headers: CORS_HEADERS })
+    }
+  }
+
+  // ── NEW SESSION: Alex texts first ──────────────────────────────────────────
+  // If this is a brand-new session, send opener first, then process lead's first message
+  if (isNewSession) {
+    console.log('[alex] New session — sending opener first')
+    const opener = await sendToAlex(sessionId, OPENER_PROMPT)
+    const smsOpener = opener.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/__(.*?)__/g, '$1').trim()
+    await sendQuoMessage(fromPhone, smsOpener)
+
+    // If their first message was just "hi" or similar greeting, opener is enough
+    // If they included real info, process it too
+    const isJustGreeting = /^(hi|hey|hello|yo|sup|test|testing)[\s!.?]*$/i.test(messageText)
+    if (isJustGreeting) {
+      return new Response(JSON.stringify({ success: true, action: 'opener_sent' }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
+    }
+  }
+
+  // ── BUILD MESSAGE FOR ALEX ─────────────────────────────────────────────────
   let alexInput = messageText
   if (hasMedia) {
     alexInput = alexInput
@@ -228,11 +287,11 @@ Deno.serve(async (req) => {
       : '[Customer sent a photo]'
   }
 
-  // ── Typing delay (feels human) ─────────────────────────────────────────────
+  // ── TYPING DELAY (feels human) ─────────────────────────────────────────────
   const typingMs = 1500 + Math.random() * 2000
   await new Promise(r => setTimeout(r, typingMs))
 
-  // ── Send to Alex and get response ──────────────────────────────────────────
+  // ── SEND TO ALEX ───────────────────────────────────────────────────────────
   let alexResponse: string
   try {
     alexResponse = await sendToAlex(sessionId, alexInput)
@@ -241,37 +300,32 @@ Deno.serve(async (req) => {
     alexResponse = "Hey! I'm having a little trouble right now — Key will follow up with you shortly."
   }
 
-  // ── Check for [LEAD_COMPLETE] ──────────────────────────────────────────────
+  // ── CHECK FOR [LEAD_COMPLETE] ──────────────────────────────────────────────
   if (alexResponse.includes('[LEAD_COMPLETE]')) {
     const summary = alexResponse.split('[LEAD_COMPLETE]')[1]?.trim() || ''
-    // Remove the [LEAD_COMPLETE] tag from the customer-facing message
     alexResponse = alexResponse.split('[LEAD_COMPLETE]')[0].trim()
 
-    // Mark session as complete
     await supabase
       .from('alex_sessions')
       .update({ status: 'complete', summary })
       .eq('session_id', sessionId)
 
-    // Notify Key
-    notifyKey('Lead', fromPhone, summary).catch(err => console.error('[notify] unhandled:', err))
+    notifyKey(fromPhone, summary).catch(err => console.error('[notify] unhandled:', err))
   }
 
-  // ── Send Alex's response via Quo ───────────────────────────────────────────
+  // ── SEND RESPONSE VIA QUO ──────────────────────────────────────────────────
   if (alexResponse) {
-    // Strip any markdown formatting (bold, etc.) for SMS
     const smsText = alexResponse
-      .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove **bold**
-      .replace(/\*(.*?)\*/g, '$1')       // Remove *italic*
-      .replace(/__(.*?)__/g, '$1')       // Remove __underline__
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/__(.*?)__/g, '$1')
       .trim()
 
     await sendQuoMessage(fromPhone, smsText)
 
-    // Log the exchange
     await supabase.from('messages').insert([
-      { contact_id: null, direction: 'inbound', body: messageText, sender: 'customer', phone: fromPhone },
-      { contact_id: null, direction: 'outbound', body: smsText, sender: 'alex', phone: fromPhone },
+      { contact_id: null, direction: 'inbound',  body: messageText, sender: 'customer', phone: fromPhone },
+      { contact_id: null, direction: 'outbound', body: smsText,    sender: 'alex',     phone: fromPhone },
     ]).catch(() => {})
   }
 
