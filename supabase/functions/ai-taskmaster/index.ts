@@ -1,43 +1,39 @@
 /**
- * ai-taskmaster — the BPP CRM agent endpoint ("Sparky")
+ * ai-taskmaster v2 — Sparky, the BPP CRM Agent
  *
- * One persona ("Sparky"), many surfaces. The CRM client calls this with a
- * `mode` field that selects which prompt + which Claude tools are wired up.
- * Everything stays stateless: the client packages its compact CRM snapshot
- * into `contextSummary` (and optionally a `contact` blob) and Sparky answers.
+ * Major upgrades from v1:
+ *  - Full agentic loop: read-only tools run server-side (no round-trips to client)
+ *  - 15 tools (10 new): edit_contact, get_contact_history, search_all_contacts,
+ *    search_conversations, get_permit_status, schedule_install, flag_for_followup,
+ *    update_materials, read_sparky_memory, write_sparky_memory + stubs for
+ *    submit_permit_application and draft_customer_response_as_alex
+ *  - Prompt caching on PERSONA_BLOCK (~90% cost reduction on persona tokens)
+ *  - Persistent memory: sparky_memory Supabase table
+ *  - Auto-extract contact info from SMS threads (address, panel brand, generator size)
+ *  - Conversation + call transcription search across all contacts
+ *  - Prepared for Alex/Sparky merger (context_source field)
+ *  - Prepared for permit automation (submit_permit_application stub)
+ *  - All modes unified on claude-sonnet-4-6; haiku for simple one-liners
  *
  * POST /ai-taskmaster
- * Body:
- *   {
- *     mode?: "chat" | "suggest_reply" | "briefing" | "contact_insight" | "draft_followup",
- *     question?: string,                       // chat / draft_followup
- *     contextSummary?: string,                 // pre-computed CRM snapshot
- *     history?: [{role,content}, ...],         // chat history (last few turns)
- *     contact?: {                              // contact-specific modes
- *       id, name, stage, stageLabel,
- *       phone, jurisdiction, address,
- *       daysInSystem, daysSinceTouch,
- *       permit, materials, scheduled,
- *       notes
- *     },
- *     thread?: [{ direction, body, created_at }, ...]   // suggest_reply
- *   }
+ * Body: {
+ *   mode, question, contextSummary, history, contact, thread,
+ *   context_source?  // "sparky" (default) | "alex" (future merger)
+ * }
  *
- * Response:
- *   {
- *     fallback: boolean,
- *     answer: string,
- *     tool_calls?: [{ id, name, input }],
- *     stop_reason?: string,
- *     model?: string,
- *     mode?: string
- *   }
- *
- * Tool execution model: Claude returns tool_use blocks; the edge function
- * extracts them and ships them back to the client (as `tool_calls`). The
- * client executes against the same Supabase + send-sms function the rest of
- * the CRM uses, then shows a confirmation toast. Single-turn for v1.
+ * sparky_memory table required (see schema below):
+ *   CREATE TABLE IF NOT EXISTS sparky_memory (
+ *     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+ *     key text UNIQUE NOT NULL,
+ *     value text NOT NULL,
+ *     category text NOT NULL DEFAULT 'business',
+ *     importance int NOT NULL DEFAULT 3,
+ *     created_at timestamptz DEFAULT now(),
+ *     updated_at timestamptz DEFAULT now()
+ *   );
  */
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -45,394 +41,739 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// AGENT PERSONA — shared across every mode
-// ──────────────────────────────────────────────────────────────────────
-const AGENT_NAME = 'Sparky'
-const AGENT_TAGLINE = 'Key\u2019s sharp colleague who lives inside the BPP CRM.'
+// Tools that execute server-side — no client confirmation needed
+const SERVER_SIDE_TOOLS = new Set([
+  'lookup_contact',
+  'get_contact_history',
+  'search_all_contacts',
+  'search_conversations',
+  'get_permit_status',
+  'read_sparky_memory',
+  'write_sparky_memory',
+  'edit_contact',
+])
 
-const PERSONA_BLOCK = `You are ${AGENT_NAME} \u2014 ${AGENT_TAGLINE}
-You are NOT a generic AI assistant. You are a teammate at Backup Power Pro (BPP), a generator inlet installation business in Upstate South Carolina owned by Key Goodson.
+const MAX_AGENTIC_LOOPS = 8
+
+// ──────────────────────────────────────────────────────────────────────
+// AGENT PERSONA — cached via anthropic-beta: prompt-caching-2024-07-31
+// ──────────────────────────────────────────────────────────────────────
+const PERSONA_BLOCK = `You are Sparky — Key Goodson's sharp AI assistant employee at Backup Power Pro (BPP), a generator inlet installation business in Upstate South Carolina owned by Key Goodson.
+
+You are NOT a generic AI assistant. You are an expert on BPP, Key's pipeline, and every customer in the CRM. You think ahead, take initiative, and get things done — like a great employee who knows the business cold.
 
 VOICE
-- Direct, no fluff, action-oriented. Sharp colleague, not a robot.
-- Use Key's name once or twice, naturally, never every line.
-- Light emoji sparingly: \ud83d\udd25 for hot leads, \u2705 for done, \u23f0 for waiting/aging, \ud83d\udcb0 for big quotes, \u2728 for good news. Never stack them.
-- Plain text. No markdown headers, no asterisks for bullets \u2014 use a dot or dash.
-- Sentences short. Skip throat-clearing ("Sure!", "Great question!", "I'd be happy to..."). Get to the point.
+- Direct, no fluff, action-forward. Sharp colleague, not a robot.
+- Use Key's name once or twice naturally. Never every sentence.
+- Light emoji sparingly: 🔥 hot leads, ✅ done, ⏰ aging, 💰 big quotes, ✨ good news. Never stack them.
+- Plain text. No markdown headers, no asterisks. Use dash or dot for lists.
+- Short sentences. Skip throat-clearing ("Sure!", "Great question!"). Get to the point.
+
+YOUR CAPABILITIES (use them proactively)
+You have real tools. Use them. Don't ask Key for info you can look up yourself.
+- Read any contact's full message history, permit status, materials, and details.
+- Search all contacts by name, stage, jurisdiction, days quiet, or any criteria.
+- Search across ALL conversations for keywords — SMS threads and call transcripts.
+- Auto-update contacts when customers share their info over SMS.
+- Draft SMS replies, advance pipeline stages, add notes, schedule installs, flag follow-ups.
+- Remember Key's preferences and business context across sessions (persistent memory).
+- When Key asks about someone: look them up first, then answer with real data.
+
+AUTO-UPDATE RULE — CRITICAL
+When a customer SMS thread contains new factual info about their setup (street address, panel brand, generator wattage or amperage, corrected name, zip code, jurisdiction) — call edit_contact immediately. Do NOT ask Key — just update and mention it in one line: "Updated [name]: address + panel brand."
+
+MEMORY RULE
+When you learn something about Key's preferences, patterns, or important business context — call write_sparky_memory. Examples: install day preferences, pricing decisions, subcontractor notes, business goals. Keep memories concise and categorized.
 
 YOU KNOW BPP COLD
-- Offer: "The Storm-Ready Connection System." A code-compliant inlet box + interlock kit installed in one day for $1,197\u2013$1,497.
-- Customer already owns a portable generator. We unlock that sunk-cost investment instead of selling them a $15K standby.
-- Geography: Greenville, Spartanburg, and Pickens counties in SC ONLY. NEVER suggest contacting Anderson County.
-- Channel: SMS from (864) 400-5302 is the primary channel. Email is rare. Voice is a backup.
-- Permits: BPP always permits. Greenville Co (~5d submit\u2192pay), Spartanburg Co (~7d), Pickens Co (~5d).
-- Pipeline (9 stages): 1 Form Submitted \u2192 2 Responded \u2192 3 Quote Sent \u2192 4 Booked \u2192 5 Permit Submitted \u2192 6 Permit Paid \u2192 7 Permit Approved \u2192 8 Inspection Scheduled \u2192 9 Complete.
+- Offer: "The Storm-Ready Connection System." Code-compliant inlet box + interlock kit + permit in one day, $1,197–$1,497 all-in.
+- Customer already owns a portable generator. We unlock that sunk-cost investment instead of selling a $15K standby.
+- Geography: Greenville, Spartanburg, Pickens counties ONLY. NEVER Anderson County.
+- Primary channel: SMS. Response within 15 minutes is the make-or-break.
+- Permits: always required. Greenville Co (~5d submit→pay), Spartanburg Co (~7d), Pickens Co (~5d).
+- Service types: 30A (L14-30, most homes) and 50A (CS6365, 10kW+ generators).
+- Materials per job: ~$250 (inlet box + interlock + cord + breaker + misc). Net ~$910–$1,067/job solo.
+- Pipeline (9 stages): 1 Form Submitted → 2 Responded → 3 Quote Sent → 4 Booked → 5 Permit Submitted → 6 Permit Paid → 7 Permit Approved → 8 Inspection Scheduled → 9 Complete.
 
-CUSTOMER PSYCHOLOGY (apply when writing customer-facing copy)
-- Sunk cost: "you already own the generator" \u2014 we unlock it.
-- Loss framing > gain framing. Storm urgency works. "Don't get caught in the dark again."
-- Anchor against $15K standby BEFORE quoting our price.
-- One day, full price up front, all-inclusive. No surprise fees. We handle permit, inspection, cleanup.
-- "5 installs per week" is real scarcity \u2014 use sparingly.
+CUSTOMER PSYCHOLOGY (apply to all customer-facing copy)
+- Sunk cost: "you already own the generator" — we unlock it.
+- Loss framing beats gain framing. Storm urgency works. "Don't get caught in the dark again."
+- Always anchor $15K standby BEFORE quoting our price.
+- One day, all-inclusive, no surprises. Permit, inspection, cleanup — all included.
+- "5 installs per week" is real scarcity — use sparingly.
 
 NORTH STAR
-Key is working toward $150K spendable profit in the Found business account. The three bottlenecks in order:
-  1. Marketing \u2014 3 leads/day at CPL < $30
-  2. Sales \u2014 35\u201340% close rate, respond within 15 minutes
-  3. Production \u2014 hire first electrical sub to break the 5/week solo ceiling.
+Key's goal: $150K spendable profit in the Found business account by August–September 2026.
+Bottlenecks in order:
+1. Marketing — 3 leads/day at CPL < $30
+2. Sales — 35–40% close rate, respond within 15 min
+3. Production — hire first electrical sub to break the 5/week solo ceiling
 
-RULES (do not violate)
-- NEVER serve Anderson County customers.
+ABSOLUTE RULES
+- NEVER serve Anderson County.
 - NEVER suggest skipping permits.
 - NEVER price below $1,197.
-- NEVER push email when SMS is the primary channel.
-- NEVER fabricate phone numbers, addresses, dollar amounts, or permit statuses.
-- When unsure, ask one short clarifying question.`
+- NEVER use email when SMS is available.
+- NEVER fabricate data — if you don't know, look it up or say so.
+- NEVER make a multi-step action without telling Key what you did.
+- NEVER send an SMS without queuing it for Key's confirmation first.
+
+ALEX CONTEXT (future merger — prepare now)
+Alex is BPP's customer-facing SMS agent currently running in Quo on (864) 400-5302.
+When that number ports to Twilio, Alex and Sparky will share the same system.
+When context_source is "alex": you are responding AS Alex to a real customer. Use warm, professional tone. Focus on qualifying (do they own a generator? what brand? where are they located?) and moving toward a booked install. Follow the sales sequence.
+When context_source is "sparky" (default): you are talking directly to Key.
+
+PERMIT AUTOMATION (future capability — prepare now)
+The submit_permit_application tool will eventually automate permit submissions to county portals.
+Currently disabled. When Key asks you to pull a permit, explain exactly what he needs to do manually and flag the contact. Document every permit-related detail you learn in contact notes.
+
+Permit portal knowledge:
+- Greenville County: online portal, ~5 days submit→payment notification
+- Spartanburg County: online portal, ~7 days
+- Pickens County: online portal, ~5 days
+- Always note permit number when provided by customer or county.`
 
 // ──────────────────────────────────────────────────────────────────────
-// MODE-SPECIFIC INSTRUCTION TAILS
+// MODE INSTRUCTIONS
 // ──────────────────────────────────────────────────────────────────────
 
-const MODE_CHAT = `MODE: CHAT \u2014 You are Key's action-forward CRM partner, not a reporter.
+const MODE_CHAT = `MODE: CHAT — Key's action-forward CRM partner.
 
-You receive a compact JSON-ish contextSummary the client computed from in-memory data. Use it. Do not fabricate counts, names, or dollar amounts.
+When Key asks about a contact: use lookup_contact or get_contact_history FIRST, then answer with real data. Never say "I don't know" when you can look it up.
+When Key asks "what needs attention?" / "who should I text?" / "what's urgent?": call search_all_contacts with min_days_quiet filter, identify top 2–3 most urgent, immediately draft SMS for each with send_sms_to_contact. Key confirms before each sends.
+When you learn Key's preferences: write_sparky_memory.
+When you start a substantive chat: call read_sparky_memory first to load Key's context.
 
-When you reference a contact, format their name as "First L. (id:abc123)" so the CRM can render a clickable link. The CRM strips the parenthetical id marker before displaying. Only do this when the contextSummary actually included that contact id.
+NEVER report a problem without executing the solution:
+- Stalled lead → draft the SMS with send_sms_to_contact. Key confirms.
+- Wrong stage → call change_contact_stage right after noting it.
+- Missing info you can look up → look it up, don't ask Key.
+- Contact shared info in thread → edit_contact immediately.
 
-CORE RULE \u2014 NEVER report a problem without executing the solution:
-- If you see a stalled lead: immediately call send_sms_to_contact with a ready-to-send message. Key confirms before it goes out.
-- If you see a stage that's wrong: call change_contact_stage right after noting it.
-- If you see something Key should remember: call add_note_to_contact.
-- Do NOT say "you should follow up with Ryan" and stop. Draft the follow-up and queue it for Key's approval.
+Keep spoken text under ~120 words. Tool calls ARE the answer — they show the work. Never pad with explanation.
+Tone: "Found Ryan — 4 days quiet. Drafted a storm-angle text. Confirm to send." That's the voice.`
 
-When Key asks broad questions ("what needs my attention?", "who should I text?", "what's urgent?"):
-1. Identify the top 2\u20133 most urgent cases from the snapshot
-2. Immediately call send_sms_to_contact for each \u2014 write a quality, stage-aware message (see customer psychology in the persona block)
-3. After each tool call, say in one short line what you drafted and why
-4. End with a count: "That's 3 messages queued. Confirm each to send."
+const MODE_SUGGEST_REPLY = `MODE: SUGGEST REPLY — Draft the next SMS to a customer AND auto-update contact if they shared info.
 
-For specific questions about one person: answer directly, then queue the most logical next action (draft a text, advance the stage, add a note).
+Step 1 (always first): Scan the message thread for any new factual info the customer shared:
+- Street address or zip code → update address and jurisdiction fields
+- Panel brand (Square D, Eaton, Siemens, Leviton, Murray, etc.) → update panel_brand
+- Generator wattage or amperage (7500W, 30A, 50A, etc.) → update generator_amp
+- Their name correction → update name
+If found: call edit_contact immediately.
 
-Keep your spoken text under ~100 words. The action IS the answer \u2014 the tool calls show the work. Never pad with explanation.
-
-Tone: sharp colleague, not an assistant. "I've queued a follow-up for Ryan \u2014 hasn't replied in 3d, so I led with the storm angle. Confirm to send." That's the voice.`
-
-const MODE_SUGGEST_REPLY = `MODE: SUGGEST REPLY \u2014 You are drafting a single SMS reply to a BPP customer.
-
-You receive: the contact (name, stage, jurisdiction, etc.), the recent message thread (oldest \u2192 newest), and a CRM snapshot for context.
-
-Your job: write ONE complete reply that Key can send as-is. Do not explain. Do not preface with "Here's a draft". Output the message body and only the message body.
+Step 2: Write ONE complete reply Key can send as-is.
 
 Constraints:
-- Address the customer by first name when known.
-- 1\u20133 sentences. Conversational. No emoji unless the customer used one first.
-- Match the tone of the most recent inbound message. Concise question \u2192 concise answer.
-- If they asked about price, anchor against $15K standby and quote our $1,197\u2013$1,497 range.
-- If they asked about timing, mention one-day install + a soft slot ("got a couple openings this week").
-- If they asked about permits, reassure: "we handle the permit + inspection \u2014 included."
-- If they asked about address, ask for street + zip so we can confirm jurisdiction.
-- If they're a new lead with no real question yet, open the conversation with a short qualifier ("Thanks for reaching out \u2014 do you already own the generator and what brand?").
-- Stage-aware: a Booked customer (stage 4+) gets a confirmation tone; a Quote Sent (stage 3) gets a soft close; a Form Submitted (stage 1) gets a warm intro.
+- 1–3 sentences. Conversational. Use customer's first name.
+- Match the tone of the most recent inbound message.
+- Price question: anchor $15K standby, quote $1,197–$1,497.
+- Timing question: "one-day install — got a couple openings this week."
+- Permit question: "we handle the permit and inspection — it's included in the price."
+- New lead with no question: "Thanks for reaching out — do you already own the generator, and what size is it?"
+- Address question: ask for full street address and zip so we can confirm jurisdiction.
+- Under 320 characters when possible.
+- Stage-aware: Booked (4+) = confirmation tone. Quote Sent (3) = soft close. New (1–2) = warm intro.
 - NEVER promise something you don't know. NEVER invent dates.
-- Keep it under 320 characters when possible (one SMS).
 
-Output the message. Nothing else.`
+Output format:
+[the message body]
 
-const MODE_BRIEFING = `MODE: BRIEFING \u2014 You are writing Key's action-packed morning brief.
+If you called edit_contact, add ONE line after: "Updated: [what changed]"`
 
-You receive a contextSummary listing urgent, today, materials, and good-news items the rule-based engine pre-computed.
+const MODE_BRIEFING = `MODE: BRIEFING — Key's morning action brief.
 
-Structure (strict):
-1. One opener line: "Morning, Key. [most urgent thing in one clause]."
-2. For each urgent/today item (max 3): one line naming the person + situation, followed by a suggested next message Key can send. Format the message as:
-   \u203a [message text here]
-   This lets the CRM render a "Send" button next to it.
-3. One closing line for good news or "pipeline is quiet \u2014 good problem to have."
+First: check read_sparky_memory for any relevant context about Key's priorities or schedule.
+
+Structure:
+1. One opener: "Morning, Key. [most urgent situation in one clause]."
+2. For each urgent item (max 3): one line naming person + situation, then:
+   › [suggested SMS text]
+   (CRM renders a Send button next to this › format)
+3. One closing line: good news, or "pipeline is quiet — good problem to have."
 
 Rules:
-- Under 160 words total.
-- Use (id:abc) markers on every person mentioned so the CRM can render clickable links.
-- Write suggested messages as if you're composing them for Key \u2014 first-person friendly, stage-aware, under 160 chars.
-- No generic advice. No "you should consider." Every item ends with a specific action or message.
-- If nothing is urgent, say so in one line and skip the rest.`
+- Under 200 words total.
+- Use (id:xxx) markers on all person names so the CRM renders clickable links.
+- Suggested messages under 160 chars each, stage-aware.
+- No generic advice. Every item ends with a specific action.
+- If pipeline is genuinely empty, say so in one line.`
 
-const MODE_CONTACT_INSIGHT = `MODE: CONTACT INSIGHT \u2014 You are writing ONE short line about a single contact.
+const MODE_CONTACT_INSIGHT = `MODE: CONTACT INSIGHT — ONE punchy line about this contact, under 110 characters.
 
-You receive a contact blob (stage, days, jurisdiction, permit, materials, scheduled date, notes). Your job: produce ONE punchy line, under 110 characters, that tells Key the most useful thing to know about this person right now.
+Examples:
+- "🔥 Quote sent 4d ago, no reply — nudge today."
+- "⏰ Permit submitted 6d ago in Greenville Co, likely ready to pay."
+- "✅ Booked but no install date — lock a day this week."
+- "✨ New lead this morning — reply within 15 min for best close."
+- "Materials picked but not ordered — add to next bulk run."
+- "💰 50A job — check panel before quoting, could be $1,497."
 
-Examples of good output:
-- "\ud83d\udd25 Quote sent 4d ago, no reply \u2014 nudge today."
-- "\u23f0 Permit submitted 6d ago in Greenville Co, likely ready to pay."
-- "\u2705 Booked but no install date \u2014 lock a day this week."
-- "\u2728 New lead this morning \u2014 reply within 15 min for best close."
-- "Materials picked but not ordered \u2014 add to next bulk run."
+Output ONE line. No preamble. Use one emoji or none. Never mention BPP or give generic advice.`
 
-Output ONE line. No preamble, no follow-up, no period required. Use exactly one emoji (or none). Never mention BPP, the offer, or generic advice.`
+const MODE_DRAFT_FOLLOWUP = `MODE: DRAFT FOLLOWUP — A short check-in SMS for a quiet lead.
 
-const MODE_DRAFT_FOLLOWUP = `MODE: DRAFT FOLLOWUP \u2014 You are drafting an aging-quote check-in SMS.
-
-You receive a contact (stage, days quiet, last touch, jurisdiction). Write ONE short check-in message Key can send. 1\u20132 sentences. Friendly, low-pressure, no guilt-trip. Reference how many days it has been only if it has been more than 5 days; otherwise just open the door.
-
-Output the message body only. No preface.`
+1–2 sentences. Friendly, low-pressure. Reference days quiet only if > 5 days. Open the door gently. Stage-aware: Quote Sent leads get a soft nudge, Responded leads get a qualifier.
+Output the message body only. Nothing else.`
 
 // ──────────────────────────────────────────────────────────────────────
-// TOOLS — wired only into chat mode (single turn for v1)
+// TOOLS
 // ──────────────────────────────────────────────────────────────────────
-const TOOLS_CHAT = [
+const ALL_TOOLS = [
+  // ── READ-ONLY: server-side execution ─────────────────────────────
   {
-    name: 'change_contact_stage',
-    description: 'Move a contact to a new pipeline stage. Stage IDs: 1=Form Submitted, 2=Responded, 3=Quote Sent, 4=Booked, 5=Permit Submitted, 6=Permit Paid, 7=Permit Approved, 8=Inspection Scheduled, 9=Complete.',
+    name: 'lookup_contact',
+    description: 'Search the CRM for a contact by name fragment, last name, or phone number. Returns up to 5 matches. Use before answering any question about a specific person.',
     input_schema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string', description: 'The contact ID from the CRM snapshot.' },
-        newStage: { type: 'integer', description: 'The new pipeline stage (1\u20139).', minimum: 1, maximum: 9 },
+        query: { type: 'string', description: 'Name fragment, last name, or phone number to search.' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'get_contact_history',
+    description: 'Fetch the full message thread for a contact — SMS sent and received, plus any call transcripts. Use before answering questions about conversations with a specific person. Returns messages oldest-first.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        limit: { type: 'integer', description: 'Number of messages to fetch (default 25, max 60).', default: 25 },
+      },
+      required: ['contactId'],
+    },
+  },
+  {
+    name: 'search_all_contacts',
+    description: 'Search all CRM contacts with optional filters. Use when Key asks group questions like "who is overdue?", "any Greenville leads?", "who\'s at quote stage?", "who hasn\'t responded?".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stage: { type: 'integer', description: 'Filter by pipeline stage 1–9.', minimum: 1, maximum: 9 },
+        jurisdiction: { type: 'string', description: 'Filter by jurisdiction name fragment (e.g. "Greenville").' },
+        min_days_quiet: { type: 'integer', description: 'Only contacts with no outbound contact in at least this many days.' },
+        query: { type: 'string', description: 'Text search in name or address.' },
+        limit: { type: 'integer', description: 'Max results (default 15, max 30).', default: 15 },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'search_conversations',
+    description: 'Search across ALL contact message threads and call transcripts for a keyword or phrase. Use when Key asks "has anyone mentioned X?", "find the person who said Y", "search for panel brand Z", or wants to query conversation history. Returns matching snippets with contact info.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Keyword or phrase to search for in all conversations.' },
+        limit: { type: 'integer', description: 'Max results (default 10, max 25).', default: 10 },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'get_permit_status',
+    description: 'Get the full permit timeline for a contact — submitted date, payment status, printed, inspection scheduled and passed. Use when Key asks about a permit or when a contact is in stages 5–8.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+      },
+      required: ['contactId'],
+    },
+  },
+  {
+    name: 'read_sparky_memory',
+    description: "Read Key's persistent memory — his preferences, patterns, business context, and notes that carry across sessions. Call at the start of any substantive chat to load relevant context. Also call when Key asks 'what do you remember?' or 'do you know my...?'",
+    input_schema: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', description: 'Optional filter: "preference", "business", "contact", "schedule". Omit to get all top memories.' },
+      },
+      required: [],
+    },
+  },
+  // ── WRITE: auto-execute server-side (no client confirmation) ─────
+  {
+    name: 'write_sparky_memory',
+    description: "Save something to Key's persistent memory that should last across sessions. Use when Key states a preference, makes a policy decision, or when you observe a consistent pattern. Keep value concise (under 200 chars).",
+    input_schema: {
+      type: 'object',
+      properties: {
+        key: { type: 'string', description: 'Unique snake_case key (e.g. "install_day_preference", "bank_goal_amount", "subcontractor_status").' },
+        value: { type: 'string', description: 'The memory value, concise and specific.' },
+        category: { type: 'string', enum: ['preference', 'business', 'contact', 'schedule'], description: '"preference" = Key\'s working preferences | "business" = BPP business context | "contact" = specific contact notes | "schedule" = timing/availability' },
+        importance: { type: 'integer', description: '1–5. 5 = load every session, 1 = low priority.', minimum: 1, maximum: 5, default: 3 },
+      },
+      required: ['key', 'value', 'category'],
+    },
+  },
+  {
+    name: 'edit_contact',
+    description: 'Update contact fields in the CRM. Auto-execute when a customer shares info over SMS (address, panel brand, generator size, name). Also use when Key asks you to update something specific.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        fields: {
+          type: 'object',
+          description: 'Fields to update. Allowed: name, phone, address, jurisdiction, panel_brand, generator_amp, notes, email.',
+          properties: {
+            name: { type: 'string' },
+            phone: { type: 'string' },
+            address: { type: 'string' },
+            jurisdiction: { type: 'string' },
+            panel_brand: { type: 'string' },
+            generator_amp: { type: 'string' },
+            notes: { type: 'string' },
+            email: { type: 'string' },
+          },
+          additionalProperties: false,
+        },
+      },
+      required: ['contactId', 'fields'],
+    },
+  },
+  // ── WRITE: client-side (Key confirms before execution) ───────────
+  {
+    name: 'change_contact_stage',
+    description: 'Move a contact to a new pipeline stage. Always tell Key what stage you\'re moving them to and why. Stage IDs: 1=Form Submitted, 2=Responded, 3=Quote Sent, 4=Booked, 5=Permit Submitted, 6=Permit Paid, 7=Permit Approved, 8=Inspection Scheduled, 9=Complete.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        newStage: { type: 'integer', description: 'New stage 1–9.', minimum: 1, maximum: 9 },
       },
       required: ['contactId', 'newStage'],
     },
   },
   {
     name: 'send_sms_to_contact',
-    description: 'Queue an SMS to a contact. The client will show Key the message and ask for confirmation before actually sending. Always include the full message body \u2014 do not abbreviate.',
+    description: 'Queue an SMS to a contact. Client shows Key the message for confirmation before sending. NEVER abbreviate — always include the complete message body ready to send.',
     input_schema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string', description: 'The contact ID from the CRM snapshot.' },
-        message: { type: 'string', description: 'The complete SMS body to send.' },
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        message: { type: 'string', description: 'Complete SMS body, ready to send as-is.' },
       },
       required: ['contactId', 'message'],
     },
   },
   {
     name: 'add_note_to_contact',
-    description: 'Append a timestamped note to a contact. Use for things Key would want to remember (call outcomes, access notes, conversation summaries).',
+    description: 'Append a timestamped internal note to a contact. Use for call outcomes, access notes, conversation summaries, material confirmations, or anything Key should remember. Client confirms before saving.',
     input_schema: {
       type: 'object',
       properties: {
-        contactId: { type: 'string', description: 'The contact ID from the CRM snapshot.' },
-        noteText: { type: 'string', description: 'The note body. Will be prefixed with today\u2019s date by the client.' },
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        noteText: { type: 'string', description: 'Note body. Will be prefixed with today\'s date automatically.' },
       },
       required: ['contactId', 'noteText'],
     },
   },
   {
-    name: 'lookup_contact',
-    description: 'Search the CRM contact list by name or phone. Use this if Key references a person you cannot find in the snapshot. Returns up to 5 matches.',
+    name: 'schedule_install',
+    description: 'Set an install date and optional time slot for a contact. Client confirms. If contact is not yet Booked (stage 4), also propose advancing the stage.',
     input_schema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'A name fragment, last name, or phone number to search.' },
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        scheduledDate: { type: 'string', description: 'Install date in YYYY-MM-DD format.' },
+        timeSlot: { type: 'string', description: 'Optional time slot (e.g. "8am", "afternoon", "9am–noon").' },
       },
-      required: ['query'],
+      required: ['contactId', 'scheduledDate'],
     },
   },
   {
-    name: 'escalate_question',
-    description: 'Call this when you genuinely cannot answer from the CRM data given — for example, when Key asks about something outside your knowledge (legal, technical specs, industry trends) or when you need information not in the snapshot. This saves the question so Key can review it later or ask Claude directly. Include your best partial answer or context in the reason field.',
+    name: 'flag_for_followup',
+    description: 'Add a contact to the follow-up queue with a specific date and reason. Use when Key says "remind me", or when you identify a lead that needs attention in X days.',
     input_schema: {
       type: 'object',
       properties: {
-        question: { type: 'string', description: "Key's original question or the core of what couldn't be answered." },
-        reason: { type: 'string', description: "Brief explanation of why you're escalating + any partial context you do have." },
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        followupDate: { type: 'string', description: 'Follow-up date in YYYY-MM-DD format.' },
+        reason: { type: 'string', description: 'Brief reason for the follow-up (e.g. "check if permit is ready to pay", "see if storm convinced them").' },
       },
-      required: ['question', 'reason'],
+      required: ['contactId', 'followupDate', 'reason'],
+    },
+  },
+  {
+    name: 'update_materials',
+    description: 'Update the material notes for a contact — inlet type, panel brand, interlock, cord, and any material notes. Client confirms.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        materials: {
+          type: 'object',
+          description: 'Material fields to update.',
+          properties: {
+            inlet_type: { type: 'string', description: 'e.g. "30A L14-30" or "50A CS6365"' },
+            panel_brand: { type: 'string', description: 'e.g. "Square D", "Eaton", "Siemens", "Murray"' },
+            interlock_brand: { type: 'string', description: 'e.g. "Reliance", "Siemens"' },
+            cord_type: { type: 'string', description: 'e.g. "30A 25ft L14-30"' },
+            notes: { type: 'string', description: 'Any other material-specific notes.' },
+          },
+        },
+      },
+      required: ['contactId', 'materials'],
+    },
+  },
+  // ── FUTURE STUBS: documented and ready for activation ────────────
+  {
+    name: 'submit_permit_application',
+    description: '[FUTURE — NOT YET ACTIVE] Will submit a permit application to the appropriate county portal automatically. Currently disabled. When called, explain the manual steps Key needs to take for that jurisdiction and flag the contact with a note.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        jurisdiction: { type: 'string', description: 'County jurisdiction (e.g. "Greenville County", "Spartanburg County", "Pickens County").' },
+        applicantName: { type: 'string', description: 'Property owner name for the permit.' },
+        propertyAddress: { type: 'string', description: 'Full property address.' },
+      },
+      required: ['contactId', 'jurisdiction'],
+    },
+  },
+  {
+    name: 'draft_customer_response_as_alex',
+    description: '[FUTURE — Alex/Sparky merger] Draft a customer-facing SMS in Alex\'s voice: warm, professional, qualification-focused. Currently handled by suggest_reply mode. This tool will be activated when the Quo number (864-400-5302) ports to Twilio and Alex/Sparky merge into one system.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        context: { type: 'string', description: 'Brief context about what the customer asked or said.' },
+        goal: { type: 'string', description: 'What we want from this interaction (qualify, book, close, handle objection).', enum: ['qualify', 'book', 'close', 'handle_objection', 'confirm'] },
+      },
+      required: ['contactId', 'context'],
     },
   },
 ]
 
 // ──────────────────────────────────────────────────────────────────────
-// REQUEST HANDLER
+// SUPABASE CLIENT
 // ──────────────────────────────────────────────────────────────────────
-interface ChatMessage { role: 'user' | 'assistant'; content: string }
-
-interface RequestBody {
-  mode?: string
-  question?: string
-  contextSummary?: string
-  history?: ChatMessage[]
-  contact?: any
-  thread?: any[]
+function getSupabase() {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )
 }
 
-Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
-  if (req.method !== 'POST') {
-    return jsonResp({ error: 'method not allowed' }, 405)
-  }
-
-  let body: RequestBody = {}
-  try { body = await req.json() } catch {
-    return jsonResp({ error: 'invalid json' }, 400)
-  }
-
-  const mode = (body.mode || 'chat').toString()
-  const question = (body.question || '').toString().trim()
-  const contextSummary = (body.contextSummary || '').toString()
-  const history = Array.isArray(body.history) ? body.history.slice(-8) : []
-  const contact = body.contact && typeof body.contact === 'object' ? body.contact : null
-  const thread = Array.isArray(body.thread) ? body.thread.slice(-25) : []
-
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY') || ''
-  if (!apiKey) {
-    return jsonResp({
-      fallback: true,
-      mode,
-      answer: 'ANTHROPIC_API_KEY is not configured on the edge function. Falling back to local rules.',
-    })
-  }
-
-  // ── Build the per-mode system prompt + user message + tools ──
-  let systemPrompt = PERSONA_BLOCK
-  let userContent = ''
-  let tools: any[] | undefined = undefined
-  let messages: ChatMessage[] = []
-  let maxTokens = mode === 'chat' ? 1200 : 700
-
-  if (mode === 'chat') {
-    systemPrompt += '\n\n' + MODE_CHAT
-    tools = TOOLS_CHAT
-    if (!question) return jsonResp({ error: 'question required for chat mode' }, 400)
-    userContent = contextSummary
-      ? `Current CRM snapshot:\n${contextSummary}\n\nKey\u2019s question:\n${question}`
-      : question
-    messages = [
-      ...history.filter((m) => m && (m.role === 'user' || m.role === 'assistant') && m.content),
-      { role: 'user', content: userContent },
-    ]
-  } else if (mode === 'suggest_reply') {
-    systemPrompt += '\n\n' + MODE_SUGGEST_REPLY
-    maxTokens = 350
-    if (!contact) return jsonResp({ error: 'contact required for suggest_reply mode' }, 400)
-    const threadText = thread.length
-      ? thread.map((m: any) => {
-          const dir = (m && m.direction === 'inbound') ? 'CUSTOMER' : 'KEY'
-          return `${dir}: ${(m && m.body || '').toString().slice(0, 600)}`
-        }).join('\n')
-      : '(no prior messages \u2014 this is the first reply)'
-    const contactBlock = describeContact(contact)
-    userContent = `Contact:\n${contactBlock}\n\nMessage thread (oldest \u2192 newest):\n${threadText}\n\nWrite the next reply.`
-    messages = [{ role: 'user', content: userContent }]
-  } else if (mode === 'briefing') {
-    systemPrompt += '\n\n' + MODE_BRIEFING
-    maxTokens = 400
-    userContent = contextSummary
-      ? `CRM snapshot for the briefing:\n${contextSummary}`
-      : 'No snapshot available. Tell Key the system is empty and to load fresh data.'
-    messages = [{ role: 'user', content: userContent }]
-  } else if (mode === 'contact_insight') {
-    systemPrompt += '\n\n' + MODE_CONTACT_INSIGHT
-    maxTokens = 80
-    if (!contact) return jsonResp({ error: 'contact required for contact_insight mode' }, 400)
-    userContent = `Contact:\n${describeContact(contact)}\n\nWrite the one-line insight.`
-    messages = [{ role: 'user', content: userContent }]
-  } else if (mode === 'draft_followup') {
-    systemPrompt += '\n\n' + MODE_DRAFT_FOLLOWUP
-    maxTokens = 220
-    if (!contact) return jsonResp({ error: 'contact required for draft_followup mode' }, 400)
-    userContent = `Contact:\n${describeContact(contact)}\n\nWrite the check-in message.`
-    messages = [{ role: 'user', content: userContent }]
-  } else {
-    return jsonResp({ error: `unknown mode: ${mode}` }, 400)
-  }
-
-  // ── Call Claude ───────────────────────────────────────────
-  // Chat + briefing use Sonnet (smarter reasoning, better tool use).
-  // Suggest reply, contact insight, and draft follow-up use Haiku (fast, cheap).
-  const model = (mode === 'chat' || mode === 'briefing')
-    ? 'claude-sonnet-4-6'
-    : 'claude-haiku-4-5-20251001'
-
+// ──────────────────────────────────────────────────────────────────────
+// SERVER-SIDE TOOL EXECUTORS
+// ──────────────────────────────────────────────────────────────────────
+async function executeTool(name: string, input: any, supabase: any): Promise<any> {
   try {
-    const reqBody: any = {
-      model,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages,
+    switch (name) {
+
+      case 'lookup_contact': {
+        const q = (input.query || '').toString().trim()
+        const { data, error } = await supabase
+          .from('contacts')
+          .select('id, name, phone, stage, jurisdiction, address, created_at')
+          .or(`name.ilike.%${q}%,phone.ilike.%${q}%`)
+          .limit(5)
+        if (error) return { error: error.message }
+        return { contacts: data || [], count: (data || []).length }
+      }
+
+      case 'get_contact_history': {
+        const limit = Math.min(Number(input.limit) || 25, 60)
+        const { data, error } = await supabase
+          .from('messages')
+          .select('direction, body, created_at, status, message_type')
+          .eq('contact_id', input.contactId)
+          .order('created_at', { ascending: true })
+          .limit(limit)
+        if (error) return { error: error.message }
+        return { messages: data || [], count: (data || []).length }
+      }
+
+      case 'search_all_contacts': {
+        const limit = Math.min(Number(input.limit) || 15, 30)
+        let q = supabase
+          .from('contacts')
+          .select('id, name, phone, stage, jurisdiction, address, created_at, last_contacted_at, scheduled_date')
+          .order('created_at', { ascending: false })
+          .limit(limit)
+        if (input.stage) q = q.eq('stage', Number(input.stage))
+        if (input.jurisdiction) q = q.ilike('jurisdiction', `%${input.jurisdiction}%`)
+        if (input.query) q = q.or(`name.ilike.%${input.query}%,address.ilike.%${input.query}%`)
+        if (input.min_days_quiet) {
+          const cutoff = new Date()
+          cutoff.setDate(cutoff.getDate() - Number(input.min_days_quiet))
+          q = q.or(`last_contacted_at.lt.${cutoff.toISOString()},last_contacted_at.is.null`)
+        }
+        const { data, error } = await q
+        if (error) return { error: error.message }
+        return { contacts: data || [], count: (data || []).length }
+      }
+
+      case 'search_conversations': {
+        const query = (input.query || '').toString().trim()
+        const limit = Math.min(Number(input.limit) || 10, 25)
+        if (!query) return { error: 'query is required' }
+        // Search messages and join with contact info
+        const { data, error } = await supabase
+          .from('messages')
+          .select('id, contact_id, direction, body, created_at, contacts(id, name, phone, stage)')
+          .ilike('body', `%${query}%`)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+        if (error) {
+          // Fallback: search without join
+          const { data: d2, error: e2 } = await supabase
+            .from('messages')
+            .select('id, contact_id, direction, body, created_at')
+            .ilike('body', `%${query}%`)
+            .order('created_at', { ascending: false })
+            .limit(limit)
+          if (e2) return { error: e2.message }
+          return { results: d2 || [], count: (d2 || []).length, note: 'Contact names unavailable — join failed' }
+        }
+        return {
+          results: (data || []).map((m: any) => ({
+            contact_id: m.contact_id,
+            contact_name: m.contacts?.name || 'Unknown',
+            contact_stage: m.contacts?.stage,
+            direction: m.direction,
+            snippet: m.body?.slice(0, 300),
+            created_at: m.created_at,
+          })),
+          count: (data || []).length,
+          query,
+        }
+      }
+
+      case 'get_permit_status': {
+        const { data, error } = await supabase
+          .from('contacts')
+          .select('id, name, jurisdiction, permit_submitted_at, permit_ready_to_pay_at, permit_paid_at, permit_printed_at, permit_inspect_sched_at, permit_inspect_pass_at, permit_number, stage')
+          .eq('id', input.contactId)
+          .single()
+        if (error) return { error: error.message }
+        return { permit: data }
+      }
+
+      case 'read_sparky_memory': {
+        let q = supabase
+          .from('sparky_memory')
+          .select('key, value, category, importance, updated_at')
+          .gte('importance', 2)
+          .order('importance', { ascending: false })
+          .order('updated_at', { ascending: false })
+          .limit(25)
+        if (input.category) q = q.eq('category', input.category)
+        const { data, error } = await q
+        if (error) {
+          // Table likely doesn't exist yet
+          return { memories: [], note: 'sparky_memory table not yet created — run the schema migration. See edge function header for SQL.' }
+        }
+        return { memories: data || [], count: (data || []).length }
+      }
+
+      case 'write_sparky_memory': {
+        const { error } = await supabase
+          .from('sparky_memory')
+          .upsert(
+            {
+              key: input.key,
+              value: input.value,
+              category: input.category || 'business',
+              importance: input.importance || 3,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'key' },
+          )
+        if (error) return { error: error.message, note: 'Memory not saved — sparky_memory table may not exist.' }
+        return { saved: true, key: input.key, category: input.category }
+      }
+
+      case 'edit_contact': {
+        const allowed = new Set(['name', 'phone', 'address', 'jurisdiction', 'panel_brand', 'generator_amp', 'notes', 'email'])
+        const updateFields: Record<string, any> = {}
+        for (const [k, v] of Object.entries(input.fields || {})) {
+          if (allowed.has(k) && v !== undefined && v !== null && v !== '') {
+            updateFields[k] = v
+          }
+        }
+        if (!Object.keys(updateFields).length) return { error: 'No valid fields provided to update.' }
+        const { error } = await supabase
+          .from('contacts')
+          .update(updateFields)
+          .eq('id', input.contactId)
+        if (error) return { error: error.message }
+        return { updated: true, fields: Object.keys(updateFields), contactId: input.contactId }
+      }
+
+      case 'submit_permit_application': {
+        // Future: automate permit submission
+        const jur = (input.jurisdiction || 'your county').toString()
+        return {
+          status: 'not_yet_active',
+          message: `Permit automation for ${jur} is not yet enabled. Here are the manual steps Key needs to take.`,
+          manual_steps: {
+            'Greenville County': 'Go to permits.greenvillecounty.org → Contractor Login → New Application → Electrical/Generator Inlet → fill homeowner info + contractor license.',
+            'Spartanburg County': 'Go to onlineservices.spartanburgcounty.org → Building & Codes → New Permit → Electrical → Generator Inlet Installation.',
+            'Pickens County': 'Call Pickens County Building & Codes at (864) 898-5830 or visit pickens.sc online portal → Electrical permit application.',
+          }[jur] || 'Contact the county building & codes department for permit application instructions.',
+        }
+      }
+
+      case 'draft_customer_response_as_alex': {
+        return {
+          status: 'stub',
+          message: 'Alex/Sparky merger pending Quo port to Twilio. Use suggest_reply mode for now — it already handles customer-facing SMS drafting.',
+        }
+      }
+
+      default:
+        return { error: `Unknown server-side tool: ${name}` }
     }
-    if (tools && tools.length) reqBody.tools = tools
+  } catch (e) {
+    return { error: `Tool execution error: ${String(e)}` }
+  }
+}
 
-    const anthropicResp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(reqBody),
-    })
+// ──────────────────────────────────────────────────────────────────────
+// CLAUDE API CALL (with prompt caching)
+// ──────────────────────────────────────────────────────────────────────
+async function callClaude(
+  apiKey: string,
+  model: string,
+  maxTokens: number,
+  system: any[],
+  messages: any[],
+  tools?: any[],
+): Promise<any> {
+  const body: any = { model, max_tokens: maxTokens, system, messages }
+  if (tools && tools.length) body.tools = tools
 
-    if (!anthropicResp.ok) {
-      const errText = await anthropicResp.text()
-      return jsonResp({
-        fallback: true,
-        mode,
-        answer: 'Claude API returned an error. Falling back to local rules.',
-        debug: { status: anthropicResp.status, body: errText.slice(0, 600) },
-      })
-    }
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'prompt-caching-2024-07-31',
+    },
+    body: JSON.stringify(body),
+  })
 
-    const data = await anthropicResp.json()
-    const blocks = Array.isArray(data?.content) ? data.content : []
+  if (!resp.ok) {
+    const errText = await resp.text()
+    throw new Error(`Claude API ${resp.status}: ${errText.slice(0, 500)}`)
+  }
 
-    // Pull out text + tool_use blocks
-    let answer = ''
-    const tool_calls: any[] = []
+  return await resp.json()
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// AGENTIC LOOP
+// ──────────────────────────────────────────────────────────────────────
+async function runAgenticLoop(
+  apiKey: string,
+  model: string,
+  maxTokens: number,
+  system: any[],
+  initialMessages: any[],
+  tools: any[],
+  supabase: any,
+): Promise<{ answer: string; tool_calls: any[]; stop_reason: string; model: string }> {
+  let messages = [...initialMessages]
+  let answer = ''
+  const clientToolCalls: any[] = []
+  let lastModel = model
+
+  for (let loop = 0; loop < MAX_AGENTIC_LOOPS; loop++) {
+    const data = await callClaude(apiKey, model, maxTokens, system, messages, tools)
+    lastModel = data.model || model
+
+    const blocks: any[] = Array.isArray(data.content) ? data.content : []
+
+    // Accumulate text
     for (const b of blocks) {
-      if (!b || !b.type) continue
       if (b.type === 'text' && typeof b.text === 'string') {
-        answer += (answer ? '\n' : '') + b.text
-      } else if (b.type === 'tool_use' && b.name) {
-        tool_calls.push({ id: b.id || ('tu_' + Math.random().toString(36).slice(2, 10)), name: b.name, input: b.input || {} })
+        answer = answer ? answer + '\n' + b.text : b.text
       }
     }
-    answer = answer.trim()
 
-    if (!answer && !tool_calls.length) {
-      return jsonResp({
-        fallback: true,
-        mode,
-        answer: 'Claude returned an empty response. Falling back to local rules.',
-        model: data?.model,
+    const toolUseBlocks = blocks.filter((b) => b.type === 'tool_use')
+
+    // Done — no more tool calls
+    if (data.stop_reason === 'end_turn' || !toolUseBlocks.length) {
+      break
+    }
+
+    // Partition: server-side vs client-side
+    const serverTools = toolUseBlocks.filter((b) => SERVER_SIDE_TOOLS.has(b.name))
+    const clientTools = toolUseBlocks.filter((b) => !SERVER_SIDE_TOOLS.has(b.name))
+
+    // Queue client tools for confirmation
+    if (clientTools.length) {
+      for (const b of clientTools) {
+        clientToolCalls.push({
+          id: b.id || ('tu_' + Math.random().toString(36).slice(2, 10)),
+          name: b.name,
+          input: b.input || {},
+        })
+      }
+    }
+
+    // Execute server-side tools
+    const toolResults: any[] = []
+    for (const b of serverTools) {
+      const result = await executeTool(b.name, b.input || {}, supabase)
+      toolResults.push({
+        type: 'tool_result',
+        tool_use_id: b.id,
+        content: JSON.stringify(result),
       })
     }
 
-    return jsonResp({
-      fallback: false,
-      mode,
-      answer,
-      tool_calls,
-      stop_reason: data?.stop_reason,
-      model: data?.model || model,
-    })
-  } catch (err) {
-    return jsonResp({
-      fallback: true,
-      mode,
-      answer: 'Could not reach the Claude API. Falling back to local rules.',
-      debug: { error: String(err) },
-    })
+    // Placeholder results for client tools (Claude needs a result for every tool_use)
+    for (const b of clientTools) {
+      toolResults.push({
+        type: 'tool_result',
+        tool_use_id: b.id,
+        content: JSON.stringify({ queued: true, message: "Queued for Key's confirmation in the CRM." }),
+      })
+    }
+
+    // Extend conversation
+    messages = [
+      ...messages,
+      { role: 'assistant', content: blocks },
+      { role: 'user', content: toolResults },
+    ]
+
+    // If client tools are pending, break and let the client handle them
+    if (clientTools.length) {
+      break
+    }
   }
-})
+
+  return {
+    answer: answer.trim(),
+    tool_calls: clientToolCalls,
+    stop_reason: 'done',
+    model: lastModel,
+  }
+}
 
 // ──────────────────────────────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────────────────────────────
-function jsonResp(body: any, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
-  })
-}
-
 function describeContact(c: any): string {
-  if (!c) return '(no contact)'
+  if (!c) return '(no contact provided)'
   const lines: string[] = []
-  if (c.name) lines.push(`name: ${c.name}`)
   if (c.id) lines.push(`id: ${c.id}`)
-  if (c.stageLabel || c.stage !== undefined) lines.push(`stage: ${c.stageLabel || c.stage}`)
-  if (c.daysInSystem !== undefined && c.daysInSystem !== null) lines.push(`days in system: ${c.daysInSystem}`)
-  if (c.daysSinceTouch !== undefined && c.daysSinceTouch !== null) lines.push(`days since last touch: ${c.daysSinceTouch}`)
+  if (c.name) lines.push(`name: ${c.name}`)
+  if (c.phone) lines.push(`phone: ${c.phone}`)
+  if (c.stageLabel || c.stage !== undefined) lines.push(`stage: ${c.stageLabel ?? c.stage}`)
+  if (c.daysInSystem != null) lines.push(`days in system: ${c.daysInSystem}`)
+  if (c.daysSinceTouch != null) lines.push(`days since last touch: ${c.daysSinceTouch}`)
   if (c.jurisdiction) lines.push(`jurisdiction: ${c.jurisdiction}`)
   if (c.address) lines.push(`address: ${c.address}`)
   if (c.scheduled) lines.push(`scheduled install: ${c.scheduled}`)
@@ -444,7 +785,7 @@ function describeContact(c: any): string {
     if (p.paid_at) bits.push(`paid ${p.paid_at}`)
     if (p.printed_at) bits.push(`printed ${p.printed_at}`)
     if (p.inspect_sched_at) bits.push(`inspection ${p.inspect_sched_at}`)
-    if (bits.length) lines.push('permit: ' + bits.join(' \u00b7 '))
+    if (bits.length) lines.push('permit: ' + bits.join(' · '))
   }
   if (c.materials && typeof c.materials === 'object') {
     const m = c.materials
@@ -453,8 +794,195 @@ function describeContact(c: any): string {
     if (m.panel_brand) bits.push(m.panel_brand)
     if (m.interlock) bits.push(m.interlock)
     if (m.ordered_at) bits.push('ordered ' + m.ordered_at)
-    if (bits.length) lines.push('materials: ' + bits.join(' \u00b7 '))
+    if (bits.length) lines.push('materials: ' + bits.join(' · '))
   }
-  if (c.notes) lines.push('notes: ' + String(c.notes).slice(0, 400))
+  if (c.notes) lines.push('notes: ' + String(c.notes).slice(0, 500))
   return lines.join('\n')
 }
+
+function jsonResp(body: any, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS, 'Content-Type': 'application/json' },
+  })
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// REQUEST HANDLER
+// ──────────────────────────────────────────────────────────────────────
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  if (req.method !== 'POST') return jsonResp({ error: 'method not allowed' }, 405)
+
+  let body: any = {}
+  try { body = await req.json() } catch {
+    return jsonResp({ error: 'invalid json' }, 400)
+  }
+
+  const mode = (body.mode || 'chat').toString()
+  const question = (body.question || '').toString().trim()
+  const contextSummary = (body.contextSummary || '').toString()
+  const history: any[] = Array.isArray(body.history) ? body.history.slice(-14) : []
+  const contact = body.contact && typeof body.contact === 'object' ? body.contact : null
+  const thread = Array.isArray(body.thread) ? body.thread.slice(-35) : []
+  const contextSource = (body.context_source || 'sparky').toString() // "sparky" | "alex"
+
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY') || ''
+  if (!apiKey) {
+    return jsonResp({
+      fallback: true, mode,
+      answer: 'ANTHROPIC_API_KEY not configured on this edge function. Falling back to local rules.',
+    })
+  }
+
+  const supabase = getSupabase()
+
+  // ── System prompt: persona (cached) + mode instructions ────────
+  const modeMap: Record<string, string> = {
+    chat: MODE_CHAT,
+    suggest_reply: MODE_SUGGEST_REPLY,
+    briefing: MODE_BRIEFING,
+    contact_insight: MODE_CONTACT_INSIGHT,
+    draft_followup: MODE_DRAFT_FOLLOWUP,
+  }
+
+  const modeInstructions = modeMap[mode]
+  if (!modeInstructions) {
+    return jsonResp({ error: `Unknown mode: ${mode}` }, 400)
+  }
+
+  // Context source affects the persona tail
+  const contextTail = contextSource === 'alex'
+    ? '\n\nACTIVE CONTEXT: You are currently operating as Alex, responding to a real customer via SMS. Follow the ALEX CONTEXT rules in your persona.'
+    : ''
+
+  const system = [
+    {
+      type: 'text',
+      text: PERSONA_BLOCK + contextTail,
+      cache_control: { type: 'ephemeral' }, // cache the ~1,400-token persona block
+    },
+    {
+      type: 'text',
+      text: modeInstructions,
+    },
+  ]
+
+  // ── Build messages + choose model + tools ───────────────────────
+  let messages: any[] = []
+  let maxTokens = 1200
+  let tools: any[] | undefined
+
+  if (mode === 'chat') {
+    tools = ALL_TOOLS
+    maxTokens = 2400
+    if (!question) return jsonResp({ error: 'question required for chat mode' }, 400)
+
+    // Load persistent memory at start of chat
+    let memoryContext = ''
+    try {
+      const memResult = await executeTool('read_sparky_memory', {}, supabase)
+      if (memResult.memories && memResult.memories.length > 0) {
+        memoryContext = "Key's saved memory:\n" +
+          memResult.memories
+            .map((m: any) => `- [${m.category}/${m.importance}] ${m.key}: ${m.value}`)
+            .join('\n') +
+          '\n\n'
+      }
+    } catch (_) { /* graceful — memory may not exist */ }
+
+    const userContent = contextSummary
+      ? `${memoryContext}Current CRM snapshot:\n${contextSummary}\n\nKey's question:\n${question}`
+      : `${memoryContext}${question}`
+
+    messages = [
+      ...history.filter((m) => m && (m.role === 'user' || m.role === 'assistant') && m.content),
+      { role: 'user', content: userContent },
+    ]
+
+  } else if (mode === 'suggest_reply') {
+    // Only enable edit_contact in suggest_reply — auto-extract contact info from SMS
+    tools = ALL_TOOLS.filter((t) => t.name === 'edit_contact')
+    maxTokens = 600
+    if (!contact) return jsonResp({ error: 'contact required for suggest_reply mode' }, 400)
+    const threadText = thread.length
+      ? thread.map((m: any) => {
+          const dir = m?.direction === 'inbound' ? 'CUSTOMER' : 'KEY'
+          const body = (m?.body || '').toString().slice(0, 600)
+          return `${dir}: ${body}`
+        }).join('\n')
+      : '(no prior messages — this is the first contact)'
+    messages = [{
+      role: 'user',
+      content: `Contact:\n${describeContact(contact)}\n\nMessage thread (oldest → newest):\n${threadText}\n\nFirst check for extractable contact info, then write the reply.`,
+    }]
+
+  } else if (mode === 'briefing') {
+    tools = ALL_TOOLS.filter((t) =>
+      ['lookup_contact', 'get_contact_history', 'search_all_contacts', 'send_sms_to_contact', 'read_sparky_memory'].includes(t.name)
+    )
+    maxTokens = 600
+    messages = [{
+      role: 'user',
+      content: contextSummary
+        ? `CRM snapshot for morning brief:\n${contextSummary}`
+        : 'No snapshot available. Check memory and pipeline directly.',
+    }]
+
+  } else if (mode === 'contact_insight') {
+    tools = undefined
+    maxTokens = 100
+    if (!contact) return jsonResp({ error: 'contact required for contact_insight mode' }, 400)
+    messages = [{ role: 'user', content: `Contact:\n${describeContact(contact)}\n\nWrite the one-line insight.` }]
+
+  } else if (mode === 'draft_followup') {
+    tools = undefined
+    maxTokens = 280
+    if (!contact) return jsonResp({ error: 'contact required for draft_followup mode' }, 400)
+    messages = [{ role: 'user', content: `Contact:\n${describeContact(contact)}\n\nWrite the check-in message.` }]
+  }
+
+  // Model: haiku for simple one-liners, sonnet for everything that uses tools or reasoning
+  const model = (mode === 'contact_insight' || mode === 'draft_followup')
+    ? 'claude-haiku-4-5-20251001'
+    : 'claude-sonnet-4-6'
+
+  try {
+    if (tools && tools.length) {
+      // Full agentic loop
+      const result = await runAgenticLoop(apiKey, model, maxTokens, system, messages, tools, supabase)
+      return jsonResp({
+        fallback: false,
+        mode,
+        answer: result.answer,
+        tool_calls: result.tool_calls,
+        stop_reason: result.stop_reason,
+        model: result.model,
+      })
+    } else {
+      // Single-turn (no tools)
+      const data = await callClaude(apiKey, model, maxTokens, system, messages)
+      const blocks: any[] = Array.isArray(data.content) ? data.content : []
+      const answer = blocks
+        .filter((b) => b.type === 'text')
+        .map((b) => b.text)
+        .join('\n')
+        .trim()
+      return jsonResp({
+        fallback: !answer,
+        mode,
+        answer: answer || 'No response generated.',
+        tool_calls: [],
+        stop_reason: data.stop_reason,
+        model: data.model || model,
+      })
+    }
+  } catch (err) {
+    return jsonResp({
+      fallback: true,
+      mode,
+      answer: 'Could not reach Claude API. Falling back to local rules.',
+      debug: { error: String(err) },
+    })
+  }
+})
