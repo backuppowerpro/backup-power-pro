@@ -146,7 +146,21 @@ Permit portal knowledge:
 - Pickens County: online portal or call (864) 898-5830, ~5 days
 - City of Simpsonville: InfoVision portal, ~4 days
 - City of Mauldin: Citizenserve portal, ~5 days
-- Always capture permit number via save_permit_document when county issues it.`
+- Always capture permit number via save_permit_document when county issues it.
+
+PERMIT TYPE RULE — NEVER BREAK THIS:
+Always use "RESIDENTIAL ELECTRICAL STANDALONE" — NEVER "Residential Generator" or any generator-type permit.
+Using a generator permit type causes county reviewers to reject the application as the wrong type.
+BPP installs inlet boxes and interlock kits only — no generator is installed.
+
+SCOPE OF WORK — EXACT LANGUAGE (use every time, no paraphrasing):
+"[AMP] amp generator inlet and interlock installation. This is not a generator install, just the box to plug a portable one in."
+Add if surge protector was in the quote: "Includes whole-home surge protection device installation."
+Add any other approved add-ons from the quote.
+The amp comes from the contact's inlet type (30A or 50A). Default 30A if unknown.
+
+CONTRACTOR INFO (Greenville County eTRAKiT):
+Company: Key Electric LLC · License: 2942 · AEC: AEC001822`
 
 // ──────────────────────────────────────────────────────────────────────
 // MODE INSTRUCTIONS
@@ -740,20 +754,36 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         const genMatch = (contact.notes || '').match(/^Generator:\s*(.+)$/m)
         const generatorInfo = genMatch ? genMatch[1].trim() : ''
 
+        // Build scope of work — use Key's exact approved language.
+        // CRITICAL: permit type is RESIDENTIAL ELECTRICAL STANDALONE, NOT "Residential Generator".
+        // Using "generator installation" language causes county reviewers to reject as wrong permit type.
+        const inletStr = rdPm('minlet') || generatorInfo || ''
+        const ampMatch = inletStr.match(/(\d+)A/i)
+        const amp = ampMatch ? ampMatch[1] : '30'
+        const hasSurge = rdPm('msurge') === '1'
+        const scopeParts: string[] = [
+          `${amp} amp generator inlet and interlock installation. This is not a generator install, just the box to plug a portable one in.`,
+        ]
+        if (hasSurge) scopeParts.push('Includes whole-home surge protection device installation.')
+        const scopeOfWork = scopeParts.join(' ')
+
         // Jurisdiction-specific portal + process knowledge
         const jurKnowledge: Record<string, any> = {
           'Greenville County': {
             portal_label: 'eTRAKiT',
-            portal_hint: portalUrl || 'permits.greenvillecounty.org',
+            portal_hint: portalUrl || 'grvlc-trk.aspgov.com/eTRAKiT/',
             days_to_pay: 5,
             fee: '$50–$100',
             steps: [
-              'Log into eTRAKiT with the BPP contractor account',
-              'Click "Apply for a Permit" → Electrical → Generator Inlet Installation',
-              'Enter the property address to pull up the parcel record',
-              'Fill in: Owner Name, Owner Phone, Scope of Work (see packet below)',
-              'Select the BPP contractor license',
-              'Submit — expect payment notification email in ~5 business days',
+              'Log into eTRAKiT (grvlc-trk.aspgov.com/eTRAKiT/) with AEC001822',
+              'Click "Apply / New Permit" → agree to confirmation → Continue',
+              'Permit Type: select "RESIDENTIAL ELECTRICAL STANDALONE" — NOT "Residential Generator"',
+              'Search address by street address, select the matching parcel',
+              'Paste scope of work from the packet below into the Notes field',
+              'Step 2: Fill owner info (name, address, phone, email)',
+              'Step 3: Contractor info auto-fills from AEC login — verify license 2942',
+              'Step 4: Review everything, then Submit',
+              'Expect payment notification email in ~5 business days',
             ],
           },
           'City of Greenville': {
@@ -762,10 +792,10 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
             days_to_pay: 4,
             fee: '$50–$100',
             steps: [
-              'Log into the City of Greenville CivicPlus permits portal',
-              'Note: this portal is for city limits only — confirm address is inside city',
-              'Apply → Electrical Permit → fill homeowner info and property address',
-              'Scope of work: see packet below',
+              'Log into City of Greenville CivicPlus portal (city limits only)',
+              'Apply → Electrical Permit — use "RESIDENTIAL ELECTRICAL STANDALONE" type',
+              'Do NOT select Generator permit type — causes rejection',
+              'Fill homeowner info + scope of work from packet below',
               'Expect payment notice in ~4 business days',
             ],
           },
@@ -775,9 +805,9 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
             days_to_pay: 4,
             fee: '$50–$100',
             steps: [
-              'Log into the City of Greer eTRAKiT portal',
-              'Apply for Electrical Permit → Generator Inlet',
-              'Fill homeowner and property info — scope of work from packet below',
+              'Log into City of Greer eTRAKiT portal',
+              'Apply → Electrical Permit → select "RESIDENTIAL ELECTRICAL STANDALONE"',
+              'Fill homeowner info + scope of work from packet below',
               'Expect payment notification in ~4 business days',
             ],
           },
@@ -856,16 +886,22 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         }
 
         // Pre-filled application packet
+        // PERMIT TYPE: always "RESIDENTIAL ELECTRICAL STANDALONE" — never "Residential Generator"
+        // SCOPE: use Key's exact approved language — avoids rejection by reviewers who misread intent
         const packet = {
           applicant_name: contact.name || '(name required)',
           property_address: contact.address || '(address required — update contact first)',
           owner_phone: contact.phone || '(phone required)',
-          scope_of_work: 'Generator inlet box and interlock kit installation per NEC Article 702 (Optional Standby Systems). Work includes: weatherproof inlet receptacle, dedicated circuit breaker, mechanical interlock kit to prevent simultaneous main + generator breaker engagement.',
-          work_type: 'Electrical — Generator Inlet Installation',
+          permit_type: 'RESIDENTIAL ELECTRICAL STANDALONE',
+          permit_type_warning: 'Do NOT select "Residential Generator" — county reviewers will reject it as the wrong permit type',
+          scope_of_work: scopeOfWork,
           estimated_value: contact.quote_amount ? `$${contact.quote_amount}` : '$1,197–$1,497',
-          panel_brand: panelBrand || '(update contact notes — check with homeowner)',
-          generator_info: generatorInfo || '(update contact notes — check with homeowner)',
-          contractor_note: 'Backup Power Pro — add BPP license number before submitting',
+          panel_brand: panelBrand || '(check contact notes / ask homeowner)',
+          inlet_type: rdPm('minlet') || `${amp}A inlet`,
+          surge_protector: hasSurge ? 'Yes — included in scope' : 'No',
+          contractor: 'Key Electric LLC',
+          contractor_license: '2942',
+          aec_number: 'AEC001822',
         }
 
         // Flags that block submission
