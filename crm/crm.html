@@ -13043,7 +13043,66 @@ setTimeout(() => {
     </div>`;
 
     bannerHost.innerHTML = ''; // Sparky's Take at panel top already surfaces materials alerts
-    host.innerHTML = permitSection + matSection;
+
+    // ── Sparky Activity Log section ───────────────────────────────────
+    const skLogs = [];
+    const rawNotes = c.install_notes || '';
+    const skLogRe = /^(__sk_log_\d+):\s*(.+)$/gm;
+    let skMatch;
+    while ((skMatch = skLogRe.exec(rawNotes)) !== null) {
+      const parts = skMatch[2].split('|');
+      const ts = parts[0] || '';
+      const action = parts[1] || '';
+      const detail = parts.slice(2).join('|');
+      skLogs.push({ ts, action, detail });
+    }
+    // Show newest first
+    skLogs.reverse();
+
+    const skActionLabels = {
+      'start_permit_agent': '⚡ Permit packet',
+      'update_permit_step': '📋 Permit step',
+      'save_permit_document': '📄 Permit doc',
+      'change_contact_stage': '🔀 Stage change',
+      'send_sms_to_contact': '💬 SMS sent',
+      'add_note_to_contact': '📝 Note added',
+      'edit_contact': '✏️ Contact edit',
+      'flag_for_followup': '🚩 Follow-up set',
+      'schedule_install': '📅 Install scheduled',
+      'update_materials': '📦 Materials',
+    };
+
+    const fmtLogTs = (iso) => {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-US', { month:'short', day:'numeric' })
+          + ' ' + d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+      } catch(e) { return iso.slice(0, 16).replace('T',' '); }
+    };
+
+    const skLogSection = skLogs.length ? `
+    <div class="pm-section" id="pm-section-sklog" style="margin-top:10px">
+      <div class="pm-section-head" onclick="this.closest('.pm-section').classList.toggle('open')" style="cursor:pointer">
+        <div class="pm-section-icon" style="font-size:13px">⚡</div>
+        <div class="pm-section-title">Sparky Activity</div>
+        <div class="pm-section-status ok">${skLogs.length} action${skLogs.length !== 1 ? 's' : ''}</div>
+        <svg class="pm-section-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="pm-section-body">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:4px 0">
+          ${skLogs.map(log => `
+          <div style="display:flex;flex-direction:column;gap:2px;padding:8px 10px;background:var(--bg);border-radius:8px;box-shadow:var(--shadow-neu-sm);border-left:3px solid var(--gold)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span style="font-size:11px;font-weight:700;color:var(--navy-light,#2d4a7a)">${esc(skActionLabels[log.action] || log.action)}</span>
+              <span style="font-size:10px;color:var(--text3);white-space:nowrap">${esc(fmtLogTs(log.ts))}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.4">${esc(log.detail)}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>` : '';
+
+    host.innerHTML = permitSection + matSection + skLogSection;
   }
 
   // Toggle a section open/closed (persists per-contact)
@@ -15027,6 +15086,28 @@ setTimeout(() => {
     }
   }
 
+  // ── Sparky Activity Log ─────────────────────────────────────────────
+  // Writes a timestamped audit entry to install_notes as __sk_log_<ts>
+  // Displayed in the "Sparky Activity" section of the contact panel.
+  async function _sparkLog(contactId, action, detail) {
+    if (!contactId) return;
+    var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === contactId; }) : null;
+    if (!c) return;
+    try {
+      var ts = new Date().toISOString();
+      var key = '__sk_log_' + Date.now();
+      var safeDetail = (detail || '').replace(/\|/g, '·').slice(0, 300);
+      // Store as: __sk_log_<ts>: isoTimestamp|action|detail
+      var logVal = ts + '|' + action + '|' + safeDetail;
+      _writePmFieldLocal(c, key.replace('__pm_', '').replace('__sk_log_', 'sk_log_' + Date.now()), logVal);
+      // Write directly into install_notes since _writePmFieldLocal uses __pm_ prefix
+      var existing = (c.install_notes || '').trimEnd();
+      var logLine = key + ': ' + logVal;
+      c.install_notes = existing ? existing + '\n' + logLine : logLine;
+      await _persistInstallNotes(c);
+    } catch(e) { /* non-fatal */ }
+  }
+
   function _skRenderQueueBadge() {
     var SK_QUEUE_KEY = 'bpp_sparky_queue';
     var queue = [];
@@ -15060,6 +15141,22 @@ setTimeout(() => {
       else if (call.name === 'save_permit_document') result = await _toolSavePermitDoc(call.input);
     } catch(e) {
       result = { ok: false, message: String(e && e.message || e) };
+    }
+
+    // ── Write Sparky activity log entry ─────────────────────────────
+    if (result.ok && call.input && call.input.contactId) {
+      var logDetail = '';
+      if (call.name === 'change_contact_stage') logDetail = 'Stage → ' + call.input.newStage;
+      else if (call.name === 'send_sms_to_contact') logDetail = 'SMS sent: "' + (call.input.message || '').slice(0, 80) + '"';
+      else if (call.name === 'add_note_to_contact') logDetail = 'Note added: "' + (call.input.noteText || '').slice(0, 80) + '"';
+      else if (call.name === 'update_permit_step') logDetail = 'Permit step: ' + (call.input.step || '') + (call.input.date ? ' on ' + call.input.date : '');
+      else if (call.name === 'save_permit_document') logDetail = [(call.input.permitNumber ? 'Permit #' + call.input.permitNumber : ''), (call.input.documentUrl ? 'doc URL saved' : '')].filter(Boolean).join(' · ');
+      else if (call.name === 'schedule_install') logDetail = 'Install scheduled: ' + (call.input.scheduledDate || '') + (call.input.timeSlot ? ' ' + call.input.timeSlot : '');
+      else if (call.name === 'flag_for_followup') logDetail = 'Follow-up: ' + (call.input.followupDate || '') + ' — ' + (call.input.reason || '');
+      else if (call.name === 'update_materials') logDetail = 'Materials updated: ' + JSON.stringify(call.input.materials || {}).slice(0, 120);
+      if (logDetail) {
+        _sparkLog(call.input.contactId, call.name, logDetail);
+      }
     }
 
     call.status = result.ok ? 'done' : 'failed';

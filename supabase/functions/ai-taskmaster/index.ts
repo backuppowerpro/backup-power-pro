@@ -530,6 +530,34 @@ function getSupabase() {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// SPARKY ACTIVITY LOG WRITER
+// Appends a __sk_log_<timestamp> line to install_notes for audit trail.
+// Key can see every action Sparky took on a contact, with timestamp.
+// ──────────────────────────────────────────────────────────────────────
+async function writeSparkLog(supabase: any, contactId: string, action: string, detail: string): Promise<void> {
+  try {
+    const { data: cur } = await supabase
+      .from('contacts')
+      .select('install_notes')
+      .eq('id', contactId)
+      .single()
+    const existing = (cur?.install_notes || '').trimEnd()
+    const ts = new Date().toISOString()
+    const key = `__sk_log_${Date.now()}`
+    // Truncate detail to 300 chars to keep notes manageable
+    const safeDetail = detail.replace(/\|/g, '·').slice(0, 300)
+    const logLine = `${key}: ${ts}|${action}|${safeDetail}`
+    const updated = existing ? `${existing}\n${logLine}` : logLine
+    await supabase
+      .from('contacts')
+      .update({ install_notes: updated })
+      .eq('id', contactId)
+  } catch (_) {
+    // Log failures are non-fatal — never block the main tool from returning
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // SERVER-SIDE TOOL EXECUTORS
 // ──────────────────────────────────────────────────────────────────────
 async function executeTool(name: string, input: any, supabase: any): Promise<any> {
@@ -710,6 +738,11 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
           .update(updateFields)
           .eq('id', input.contactId)
         if (error) return { error: error.message }
+        // Log the edit for audit trail
+        const editSummary = Object.entries(updateFields)
+          .map(([k, v]) => `${k}: "${String(v).slice(0, 50)}"`)
+          .join(', ')
+        await writeSparkLog(supabase, input.contactId, 'edit_contact', `Fields updated: ${editSummary}`)
         return { updated: true, fields: Object.keys(updateFields), contactId: input.contactId }
       }
 
@@ -765,7 +798,12 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
           `${amp} amp generator inlet and interlock installation. This is not a generator install, just the box to plug a portable one in.`,
         ]
         if (hasSurge) scopeParts.push('Includes whole-home surge protection device installation.')
+        // Additional work from materials notes or contact notes — Key sometimes quotes extra items
+        const matNotes = rdPm('mnotes') || ''
+        if (matNotes) scopeParts.push(matNotes.trim())
         const scopeOfWork = scopeParts.join(' ')
+        // Surface raw notes so Sparky can spot any additional quoted work not captured above
+        const additionalWorkCheck = (contact.notes || '').trim()
 
         // Jurisdiction-specific portal + process knowledge
         const jurKnowledge: Record<string, any> = {
@@ -899,6 +937,8 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
           panel_brand: panelBrand || '(check contact notes / ask homeowner)',
           inlet_type: rdPm('minlet') || `${amp}A inlet`,
           surge_protector: hasSurge ? 'Yes — included in scope' : 'No',
+          additional_work_notes: additionalWorkCheck || null,
+          scope_review_note: 'Always check additional_work_notes and materials notes for any extra quoted items not captured above. Add them to scope if relevant.',
           contractor: 'Key Electric LLC',
           contractor_license: '2942',
           aec_number: 'AEC001822',
@@ -910,7 +950,7 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         if (!contact.jurisdiction_id) flags.push('No jurisdiction selected — set it in the permit section first')
         if (!jurName) flags.push('Jurisdiction name missing — verify the permit_jurisdictions record')
 
-        return {
+        const result = {
           contact_name: contact.name,
           contact_id: contact.id,
           contact_stage: contact.stage,
@@ -939,6 +979,17 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
                 'Advance the pipeline: change_contact_stage to stage 5 (Permit Submitted)',
               ],
         }
+
+        // Auto-log permit agent run for audit trail
+        const logDetail = [
+          `${amp}A inlet`,
+          jurName || 'jurisdiction unknown',
+          `bid: ${packet.estimated_value}`,
+          hasSurge ? '+surge' : null,
+          flags.length ? `FLAGS: ${flags.join('; ')}` : null,
+        ].filter(Boolean).join(' · ')
+        await writeSparkLog(supabase, input.contactId, 'start_permit_agent', `Permit packet generated · ${logDetail}`)
+        return result
       }
 
       case 'submit_permit_application': {
