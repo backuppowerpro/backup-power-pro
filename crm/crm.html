@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BPP CRM">
 <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.jpg">
-<meta name="theme-color" content="#4a3e2e">
+<meta name="theme-color" content="#b2b2b2">
 <title>BPP CRM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -19,10 +19,10 @@
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
   --green:#10b981; --green2:#059669; --red:#dc2626; --blue:#3b82f6; --purple:#8b5cf6;
   --gray:#6b6560;
-  /* ── Dark tan / warm leather ──────────────────────────────
-     bg #4a3e2e → shadow-dark #2e2618 shadow-light #685848 */
-  --bg:#4a3e2e; --card:#4a3e2e;
-  --neu-dark:#2e2618; --neu-light:#685848;
+  /* ── Medium neutral grey — neumorphic light ──────────────
+     bg #b2b2b2 → shadow-dark #969696 shadow-light #cecece */
+  --bg:#b2b2b2; --card:#b2b2b2;
+  --neu-dark:#969696; --neu-light:#cecece;
   --neu-d:5px; --neu-blur:12px;
   --neu-d-sm:3px; --neu-blur-sm:6px;
   --shadow-neu: var(--neu-d) var(--neu-d) var(--neu-blur) var(--neu-dark), calc(var(--neu-d) * -1) calc(var(--neu-d) * -1) var(--neu-blur) var(--neu-light);
@@ -32,9 +32,9 @@
   --shadow-sm:var(--shadow-neu-sm);
   --shadow-md:var(--shadow-neu);
   --shadow-lg:var(--shadow-neu);
-  --shadow-xl:0 20px 40px rgba(0,0,0,.55), 0 6px 14px rgba(0,0,0,.30);
-  --border:rgba(255,240,200,.07); --border-strong:rgba(255,240,200,.13);
-  --text:#f5eedd; --text2:#b8a888; --text3:#806858;
+  --shadow-xl:0 20px 40px rgba(0,0,0,.22), 0 6px 14px rgba(0,0,0,.12);
+  --border:rgba(0,0,0,.10); --border-strong:rgba(0,0,0,.16);
+  --text:#1a1a1a; --text2:#555555; --text3:#888888;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px; --sp-10:40px; --sp-12:48px;
   --sp-sm:12px; --sp-md:20px; --sp-lg:32px;
   --r-xs:6px; --r-sm:10px; --r-md:14px; --r-lg:18px; --r-xl:22px; --r-pill:100px;
@@ -43,9 +43,9 @@
 }
 html.dark {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
-  /* ── Dark tan / warm leather ── */
-  --bg:#4a3e2e; --card:#4a3e2e;
-  --neu-dark:#2e2618; --neu-light:#685848;
+  /* ── Medium neutral grey ── */
+  --bg:#b2b2b2; --card:#b2b2b2;
+  --neu-dark:#969696; --neu-light:#cecece;
   --shadow-neu: var(--neu-d) var(--neu-d) var(--neu-blur) var(--neu-dark), calc(var(--neu-d) * -1) calc(var(--neu-d) * -1) var(--neu-blur) var(--neu-light);
   --shadow-neu-sm: var(--neu-d-sm) var(--neu-d-sm) var(--neu-blur-sm) var(--neu-dark), calc(var(--neu-d-sm) * -1) calc(var(--neu-d-sm) * -1) var(--neu-blur-sm) var(--neu-light);
   --shadow-neu-inset: inset 2px 2px 6px var(--neu-dark), inset -2px -2px 6px var(--neu-light);
@@ -54,8 +54,8 @@ html.dark {
   --shadow-md:var(--shadow-neu);
   --shadow-lg:var(--shadow-neu);
   --shadow-xl:0 20px 40px rgba(0,0,0,.60), 0 6px 14px rgba(0,0,0,.35);
-  --border:rgba(255,240,200,.07); --border-strong:rgba(255,240,200,.13);
-  --text:#f5eedd; --text2:#b8a888; --text3:#806858;
+  --border:rgba(0,0,0,.10); --border-strong:rgba(0,0,0,.16);
+  --text:#1a1a1a; --text2:#555555; --text3:#888888;
 }
 ::selection{background:rgba(255,186,0,.32);color:var(--text)}
 html.dark ::selection{background:rgba(255,186,0,.35);color:#0e0e0d}
@@ -64,26 +64,26 @@ html.dark ::selection{background:rgba(255,186,0,.35);color:#0e0e0d}
 *::-webkit-scrollbar-thumb{background:rgba(10,20,40,.12);border-radius:6px}
 *::-webkit-scrollbar-thumb:hover{background:rgba(10,20,40,.22)}
 /* Scrollbar */
-html.dark{scrollbar-color:#5e5040 #4a3e2e}
+html.dark{scrollbar-color:#999999 #b2b2b2}
 html.dark ::-webkit-scrollbar{width:6px;height:6px}
 html.dark ::-webkit-scrollbar-track{background:var(--bg)}
 html.dark ::-webkit-scrollbar-thumb{background:#2e2c28;border-radius:var(--r-xs)}
 html.dark ::-webkit-scrollbar-thumb:hover{background:#3a3834}
 /* Nav */
-html.dark .nav{background:#352a1c}
+html.dark .nav{background:#9a9a9a}
 /* Tab bar */
 html.dark .tab-bar{background:var(--bg);box-shadow:0 2px 8px rgba(0,0,0,.3)}
 html.dark .tab-btn{color:var(--text2)}
 html.dark .tab-btn.active{color:var(--gold)}
 html.dark .tab-btn:hover:not(.active){color:var(--text)}
 /* Table — dark mode neumorphic bg auto-applies via var(--bg) */
-html.dark thead th{background:var(--bg);border-bottom-color:rgba(255,255,255,.09)}
-html.dark tbody tr{border-bottom-color:rgba(255,255,255,.07)}
-html.dark tbody tr:hover{background:rgba(255,255,255,.05)}
+html.dark thead th{background:var(--bg);border-bottom-color:rgba(0,0,0,.12)}
+html.dark tbody tr{border-bottom-color:rgba(0,0,0,.09)}
+html.dark tbody tr:hover{background:rgba(0,0,0,.05)}
 html.dark td.name{color:var(--text)}
 /* Calendar — neumorphic inherits via var(--bg) */
 html.dark .cal-day.today{box-shadow:var(--shadow-neu-sm),0 0 0 2px rgba(230,168,0,.4)}
-html.dark .cal-day-head{border-bottom-color:rgba(255,255,255,.05);background:rgba(255,255,255,.02)}
+html.dark .cal-day-head{border-bottom-color:rgba(0,0,0,.08);background:rgba(0,0,0,.03)}
 html.dark .cal-day.today .cal-day-num{color:var(--gold)}
 html.dark .cal-day.locked .cal-day-body{background:rgba(255,255,255,.03)}
 html.dark .week-label{color:var(--text)}
@@ -96,10 +96,10 @@ html.dark .btn-danger{background:rgba(220,38,38,.12);border-color:rgba(220,38,38
 html.dark .btn-danger:hover{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.4)}
 html.dark .btn-danger:active{box-shadow:var(--shadow-neu-inset-sm)}
 /* Side panel — solid bg, no blur haze */
-html.dark .side-panel{background:#1a1917;box-shadow:-1px 0 0 rgba(255,248,230,.06),-20px 0 60px rgba(0,0,0,.5)}
+html.dark .side-panel{background:var(--bg);box-shadow:-1px 0 0 rgba(0,0,0,.10),-20px 0 60px rgba(0,0,0,.18)}
 html.dark .panel-head{background:transparent}
 html.dark .panel-body{background:transparent}
-html.dark .panel-foot{background:rgba(14,13,12,.7);border-top:1px solid rgba(255,248,230,.06)}
+html.dark .panel-foot{background:rgba(160,160,160,.92);border-top:1px solid rgba(0,0,0,.10)}
 html.dark .panel-name{color:#fff}
 html.dark #panel-banner .panel-name{color:#fff}
 html.dark #panel-banner .modal-close{background:rgba(0,0,0,.42);color:#fff}
@@ -108,21 +108,21 @@ html.dark .panel-close{background:#252322;color:var(--text2)}
 html.dark .panel-close:hover{background:#2e2c2a}
 html.dark .panel-section-label{color:var(--text3)}
 /* Modals — solid, no blur */
-html.dark .modal{background:#1e1d1b;border:1px solid rgba(255,248,230,.07)}
+html.dark .modal{background:var(--bg);border:1px solid rgba(0,0,0,.12)}
 html.dark .modal-head{background:transparent}
 html.dark .modal-title{color:var(--text)}
-html.dark .modal-close{background:rgba(255,255,255,.06);color:var(--text2)}
-html.dark .modal-close:hover{background:rgba(255,255,255,.12)}
+html.dark .modal-close{background:rgba(0,0,0,.08);color:var(--text2)}
+html.dark .modal-close:hover{background:rgba(0,0,0,.14)}
 html.dark .modal-foot{border-top-color:rgba(255,255,255,.06)}
 /* Forms — dark mode inherits var(--bg) which is already updated */
 html.dark .form-input.locked{opacity:.55}
 /* Field buttons (copy/map) */
 html.dark .fld-btn{background:var(--bg);color:var(--text2)}
-html.dark .fld-btn:hover{background:rgba(255,255,255,.04);color:var(--gold)}
+html.dark .fld-btn:hover{background:rgba(0,0,0,.07);color:var(--navy)}
 /* Address dropdown — solid */
-html.dark .addr-dropdown{background:#222120;border:1px solid rgba(255,248,230,.08)}
+html.dark .addr-dropdown{background:#c8c8c8;border:1px solid rgba(0,0,0,.12)}
 html.dark .addr-dropdown li{color:var(--text2)}
-html.dark .addr-dropdown li:hover,html.dark .addr-dropdown li.focused{background:rgba(255,255,255,.06);color:var(--gold)}
+html.dark .addr-dropdown li:hover,html.dark .addr-dropdown li.focused{background:rgba(0,0,0,.07);color:var(--navy)}
 /* Buttons */
 html.dark .btn-outline{color:var(--text2);background:var(--bg)}
 html.dark .btn-outline:hover{color:var(--gold);background:rgba(230,168,0,.08)}
@@ -319,7 +319,7 @@ html.dark .search-add:hover{background:#cca000}
 .search-add-menu button svg{flex-shrink:0;color:var(--text3)}
 .search-add-menu button:hover svg{color:var(--navy)}
 html.dark .search-add-menu{background:var(--bg)}
-html.dark .search-add-menu button:hover{background:rgba(255,255,255,.07);color:var(--gold)}
+html.dark .search-add-menu button:hover{background:rgba(0,0,0,.07);color:var(--navy)}
 html.dark .search-add-menu button:hover svg{color:var(--gold)}
 
 /* ══════════════════════════════════════════════════════════
@@ -836,10 +836,8 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .ticker-val.is-gold{color:var(--gold)}
 .ticker-val.is-blue{color:var(--blue)}
 .ticker-sep{width:1px;height:14px;background:var(--border);flex-shrink:0;margin:0 6px;opacity:.6}
-.pa-stage-wrap{position:relative;margin-bottom:14px;-webkit-mask-image:linear-gradient(to right,black 0%,black calc(100% - 48px),transparent 100%);mask-image:linear-gradient(to right,black 0%,black calc(100% - 48px),transparent 100%)}
-.pa-stage-wrap.scrolled-left{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 32px),transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black calc(100% - 32px),transparent 100%)}
-.pa-stage-wrap.scrolled-end{-webkit-mask-image:none;mask-image:none}
-.pa-stage-wrap.scrolled-left.scrolled-end{-webkit-mask-image:linear-gradient(to right,transparent 0%,black 44px,black 100%);mask-image:linear-gradient(to right,transparent 0%,black 44px,black 100%)}
+.pa-stage-wrap{position:relative;margin-bottom:14px}
+.pa-stage-wrap.scrolled-left,.pa-stage-wrap.scrolled-end,.pa-stage-wrap.scrolled-left.scrolled-end{}
 .pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:10px 36px 10px 10px;scroll-behavior:smooth}
 .pa-stage-list::-webkit-scrollbar{display:none}
 .pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--bg);border-radius:var(--r-pill);border:none;cursor:pointer;transition:box-shadow var(--t-fast),background var(--t-fast);white-space:nowrap;box-shadow:var(--shadow-neu-sm)}
