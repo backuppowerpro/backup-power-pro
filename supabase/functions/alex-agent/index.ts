@@ -27,7 +27,7 @@ const QUO_INTERNAL_PHONE_ID  = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi
 // Set to false when ready to go live with real leads
 const TEST_MODE = true
 
-const ALEX_AGENT_ID = 'agent_011Ca4DufoWNk5p7mQm6AD2s'  // v9 Sonnet — price handling, photo flow, professional-warm
+const ALEX_AGENT_ID = 'agent_011Ca4EHkJjWEMLaiVHAaScL'  // v12 Sonnet — "Key, our electrician", photo-first, no electrical advice
 const ALEX_ENV_ID   = 'env_01Ba8sDT1CgQrWE5bLvtvHwK'
 
 const ANTHROPIC_HEADERS = {
