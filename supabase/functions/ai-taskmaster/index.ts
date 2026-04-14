@@ -51,6 +51,7 @@ const SERVER_SIDE_TOOLS = new Set([
   'read_sparky_memory',
   'write_sparky_memory',
   'edit_contact',
+  'start_permit_agent',
 ])
 
 const MAX_AGENTIC_LOOPS = 8
@@ -124,15 +125,28 @@ When that number ports to Twilio, Alex and Sparky will share the same system.
 When context_source is "alex": you are responding AS Alex to a real customer. Use warm, professional tone. Focus on qualifying (do they own a generator? what brand? where are they located?) and moving toward a booked install. Follow the sales sequence.
 When context_source is "sparky" (default): you are talking directly to Key.
 
-PERMIT AUTOMATION (future capability — prepare now)
-The submit_permit_application tool will eventually automate permit submissions to county portals.
-Currently disabled. When Key asks you to pull a permit, explain exactly what he needs to do manually and flag the contact. Document every permit-related detail you learn in contact notes.
+PERMIT AUTOMATION (LIVE — use start_permit_agent)
+When Key asks to pull a permit or clicks "Pull Permit" on a contact, call start_permit_agent(contactId).
+It returns the full application packet, jurisdiction portal, step-by-step instructions, and recommended next actions.
+After briefing Key, always chain:
+- update_permit_step(step: "submitted") once Key confirms they submitted
+- flag_for_followup with the payment notification expected date
+- change_contact_stage to stage 5 (Permit Submitted)
+
+As the permit progresses, use update_permit_step for each milestone:
+submitted → ready_to_pay → paid → ready_to_print → printed → inspect_scheduled → inspect_passed
+
+Use save_permit_document when the permit number or document URL is confirmed.
 
 Permit portal knowledge:
-- Greenville County: online portal, ~5 days submit→payment notification
-- Spartanburg County: online portal, ~7 days
-- Pickens County: online portal, ~5 days
-- Always note permit number when provided by customer or county.`
+- Greenville County: eTRAKiT portal, ~5 days submit→payment notification
+- City of Greenville: CivicPlus portal, ~4 days (city limits only)
+- City of Greer: eTRAKiT portal, ~4 days
+- Spartanburg County: email-based submission, ~7 days (slowest)
+- Pickens County: online portal or call (864) 898-5830, ~5 days
+- City of Simpsonville: InfoVision portal, ~4 days
+- City of Mauldin: Citizenserve portal, ~5 days
+- Always capture permit number via save_permit_document when county issues it.`
 
 // ──────────────────────────────────────────────────────────────────────
 // MODE INSTRUCTIONS
@@ -335,6 +349,17 @@ const ALL_TOOLS = [
       required: ['contactId', 'fields'],
     },
   },
+  {
+    name: 'start_permit_agent',
+    description: "Read a contact's full info, resolve their jurisdiction, and generate a complete permit application packet. Call when Key asks to pull a permit or says 'pull permit for [name]'. Returns: portal URL, jurisdiction-specific step-by-step application instructions, pre-filled application data (homeowner name, address, scope, contractor info), typical timeline, and recommended next actions. After briefing Key, propose: update_permit_step(submitted) + flag_for_followup for payment notification date + change_contact_stage to 5.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+      },
+      required: ['contactId'],
+    },
+  },
   // ── WRITE: client-side (Key confirms before execution) ───────────
   {
     name: 'change_contact_stage',
@@ -418,6 +443,36 @@ const ALL_TOOLS = [
         },
       },
       required: ['contactId', 'materials'],
+    },
+  },
+  {
+    name: 'update_permit_step',
+    description: "Advance the permit tracker for a contact to a completed step. Key confirms in the CRM before the tracker updates. Always propose this after Key confirms a permit milestone happened. Steps in order: submitted → ready_to_pay → paid → ready_to_print → printed → inspect_scheduled → inspect_passed.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        step: {
+          type: 'string',
+          description: 'The step to mark as complete.',
+          enum: ['submitted', 'ready_to_pay', 'paid', 'ready_to_print', 'printed', 'inspect_scheduled', 'inspect_passed'],
+        },
+        date: { type: 'string', description: 'Date for this step in YYYY-MM-DD format. Defaults to today if omitted.' },
+      },
+      required: ['contactId', 'step'],
+    },
+  },
+  {
+    name: 'save_permit_document',
+    description: 'Save a permit document URL and/or permit number to a contact record. Call when Key provides the permit number or document URL from the county portal. Client confirms before saving.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        documentUrl: { type: 'string', description: 'URL to the permit document on the county portal.' },
+        permitNumber: { type: 'string', description: 'Permit number issued by the county (e.g. "GC-2026-12345").' },
+      },
+      required: ['contactId'],
     },
   },
   // ── FUTURE STUBS: documented and ready for activation ────────────
@@ -644,8 +699,214 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         return { updated: true, fields: Object.keys(updateFields), contactId: input.contactId }
       }
 
+      case 'start_permit_agent': {
+        if (!input.contactId) return { error: 'contactId required' }
+
+        // Fetch contact
+        const { data: contact, error: cErr } = await supabase
+          .from('contacts')
+          .select('id, name, phone, address, stage, notes, install_notes, jurisdiction_id, quote_amount')
+          .eq('id', input.contactId)
+          .single()
+        if (cErr || !contact) return { error: cErr?.message || 'Contact not found' }
+
+        // Fetch jurisdiction record
+        let jurRecord: any = null
+        if (contact.jurisdiction_id) {
+          const { data: jd } = await supabase
+            .from('permit_jurisdictions')
+            .select('id, name, link1_url, portal_url, notes')
+            .eq('id', contact.jurisdiction_id)
+            .single()
+          jurRecord = jd
+        }
+
+        const jurName: string = jurRecord?.name || ''
+        const portalUrl: string = jurRecord?.link1_url || jurRecord?.portal_url || ''
+
+        // Parse existing permit data from install_notes
+        const installNotes = contact.install_notes || ''
+        const rdPm = (key: string): string => {
+          const m = installNotes.match(new RegExp('^__pm_' + key + ':\\s*(.*)$', 'm'))
+          return m ? (m[1] || '').trim() : ''
+        }
+        const existingPermitNum = rdPm('pnum')
+        const existingSubmitted = rdPm('psub')
+        const existingDoc = rdPm('pdoc')
+
+        // Parse panel/generator info appended to notes by edit_contact
+        const panelMatch = (contact.notes || '').match(/^Panel:\s*(.+)$/m)
+        const panelBrand = panelMatch ? panelMatch[1].trim() : ''
+        const genMatch = (contact.notes || '').match(/^Generator:\s*(.+)$/m)
+        const generatorInfo = genMatch ? genMatch[1].trim() : ''
+
+        // Jurisdiction-specific portal + process knowledge
+        const jurKnowledge: Record<string, any> = {
+          'Greenville County': {
+            portal_label: 'eTRAKiT',
+            portal_hint: portalUrl || 'permits.greenvillecounty.org',
+            days_to_pay: 5,
+            fee: '$50–$100',
+            steps: [
+              'Log into eTRAKiT with the BPP contractor account',
+              'Click "Apply for a Permit" → Electrical → Generator Inlet Installation',
+              'Enter the property address to pull up the parcel record',
+              'Fill in: Owner Name, Owner Phone, Scope of Work (see packet below)',
+              'Select the BPP contractor license',
+              'Submit — expect payment notification email in ~5 business days',
+            ],
+          },
+          'City of Greenville': {
+            portal_label: 'CivicPlus',
+            portal_hint: portalUrl || 'CivicPlus portal (city limits only)',
+            days_to_pay: 4,
+            fee: '$50–$100',
+            steps: [
+              'Log into the City of Greenville CivicPlus permits portal',
+              'Note: this portal is for city limits only — confirm address is inside city',
+              'Apply → Electrical Permit → fill homeowner info and property address',
+              'Scope of work: see packet below',
+              'Expect payment notice in ~4 business days',
+            ],
+          },
+          'City of Greer': {
+            portal_label: 'eTRAKiT',
+            portal_hint: portalUrl || 'City of Greer eTRAKiT portal',
+            days_to_pay: 4,
+            fee: '$50–$100',
+            steps: [
+              'Log into the City of Greer eTRAKiT portal',
+              'Apply for Electrical Permit → Generator Inlet',
+              'Fill homeowner and property info — scope of work from packet below',
+              'Expect payment notification in ~4 business days',
+            ],
+          },
+          'City of Mauldin': {
+            portal_label: 'Citizenserve',
+            portal_hint: portalUrl || 'Citizenserve portal',
+            days_to_pay: 5,
+            fee: '$50–$100',
+            steps: [
+              'Log into the Citizenserve portal — City of Mauldin',
+              'Apply → Electrical Permit → fill homeowner info + scope of work',
+              'Expect ~5 business days for payment notification',
+            ],
+          },
+          'City of Simpsonville': {
+            portal_label: 'InfoVision',
+            portal_hint: portalUrl || 'InfoVision portal',
+            days_to_pay: 4,
+            fee: '$50–$100',
+            steps: [
+              'Log into the InfoVision portal — City of Simpsonville',
+              'Apply → Electrical Permit → fill homeowner info + scope of work',
+              'Expect ~4 business days for payment notification',
+            ],
+          },
+          'Fountain Inn': {
+            portal_label: 'iWorq',
+            portal_hint: portalUrl || 'iWorq portal',
+            days_to_pay: 5,
+            fee: '$50–$100',
+            steps: [
+              'Go to iWorq portal — City of Fountain Inn',
+              'Call to confirm current process if needed',
+              'Apply for Electrical Permit — scope of work from packet below',
+              'Expect ~5 business days for payment notification',
+            ],
+          },
+          'Spartanburg County': {
+            portal_label: 'Online portal or email',
+            portal_hint: portalUrl || 'onlineservices.spartanburgcounty.org',
+            days_to_pay: 7,
+            fee: '$60–$120',
+            steps: [
+              'Go to onlineservices.spartanburgcounty.org → Building & Codes → New Permit',
+              'Select Electrical → Generator Inlet Installation',
+              'Fill in homeowner info + scope of work from packet below',
+              'Note: this is the slowest jurisdiction — expect ~7 business days for payment notification',
+              'Follow up by phone if no notice in 5 days: Spartanburg County Building & Codes',
+            ],
+          },
+          'Pickens County': {
+            portal_label: 'Online portal or phone',
+            portal_hint: portalUrl || 'Pickens County Building & Codes portal',
+            days_to_pay: 5,
+            fee: '$50–$100',
+            steps: [
+              'Visit the Pickens County Building & Codes online portal',
+              'Alternative: call (864) 898-5830 to submit by phone',
+              'Apply for Electrical Permit — scope of work from packet below',
+              'Expect ~5 business days for payment notification',
+            ],
+          },
+        }
+
+        const jInfo = jurKnowledge[jurName] || {
+          portal_label: portalUrl ? 'County Portal' : 'County Building & Codes dept',
+          portal_hint: portalUrl || 'Contact the county/city building & codes department',
+          days_to_pay: 5,
+          fee: '$50–$150',
+          steps: [
+            'Contact the county/city building & codes department',
+            'Request an Electrical permit for generator inlet and interlock kit installation',
+            'Provide homeowner name, property address, and BPP contractor license number',
+            'Ask about timeline for payment notification',
+          ],
+        }
+
+        // Pre-filled application packet
+        const packet = {
+          applicant_name: contact.name || '(name required)',
+          property_address: contact.address || '(address required — update contact first)',
+          owner_phone: contact.phone || '(phone required)',
+          scope_of_work: 'Generator inlet box and interlock kit installation per NEC Article 702 (Optional Standby Systems). Work includes: weatherproof inlet receptacle, dedicated circuit breaker, mechanical interlock kit to prevent simultaneous main + generator breaker engagement.',
+          work_type: 'Electrical — Generator Inlet Installation',
+          estimated_value: contact.quote_amount ? `$${contact.quote_amount}` : '$1,197–$1,497',
+          panel_brand: panelBrand || '(update contact notes — check with homeowner)',
+          generator_info: generatorInfo || '(update contact notes — check with homeowner)',
+          contractor_note: 'Backup Power Pro — add BPP license number before submitting',
+        }
+
+        // Flags that block submission
+        const flags: string[] = []
+        if (!contact.address) flags.push('No address on file — update contact address before submitting')
+        if (!contact.jurisdiction_id) flags.push('No jurisdiction selected — set it in the permit section first')
+        if (!jurName) flags.push('Jurisdiction name missing — verify the permit_jurisdictions record')
+
+        return {
+          contact_name: contact.name,
+          contact_id: contact.id,
+          contact_stage: contact.stage,
+          jurisdiction: jurName || '(not set)',
+          portal_label: jInfo.portal_label,
+          portal_url: jInfo.portal_hint || null,
+          status: existingSubmitted
+            ? 'already_submitted'
+            : flags.length
+            ? 'blocked_by_flags'
+            : 'ready_to_submit',
+          existing_permit_number: existingPermitNum || null,
+          existing_submitted_date: existingSubmitted || null,
+          existing_document_url: existingDoc || null,
+          application_packet: packet,
+          process_steps: jInfo.steps,
+          typical_days_to_payment_notification: jInfo.days_to_pay,
+          permit_fee_estimate: jInfo.fee,
+          flags: flags.length ? flags : null,
+          recommended_next_actions: flags.length
+            ? ['Resolve the flags above, then call start_permit_agent again']
+            : [
+                `Open ${jInfo.portal_label} and submit the application using the packet above`,
+                'After submitting: call update_permit_step(step: "submitted") to start the permit tracker',
+                `Set a reminder: flag_for_followup ${jInfo.days_to_pay} business days out — "Check for permit payment notification"`,
+                'Advance the pipeline: change_contact_stage to stage 5 (Permit Submitted)',
+              ],
+        }
+      }
+
       case 'submit_permit_application': {
-        // Future: automate permit submission
+        // Legacy stub — superseded by start_permit_agent
         const jur = (input.jurisdiction || 'your county').toString()
         return {
           status: 'not_yet_active',

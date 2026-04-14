@@ -12551,6 +12551,7 @@ setTimeout(() => {
       inspect_sched_at: _readPmField(c, 'pisch'),
       inspect_passed_at:_readPmField(c, 'pipas'),
       notes:            _readPmField(c, 'pnotes'),
+      document_url:     _readPmField(c, 'pdoc'),
     };
   };
   // Materials data
@@ -12962,7 +12963,18 @@ setTimeout(() => {
           <textarea class="form-textarea" id="pm-permit-notes" placeholder="Anything weird about this permit (special inspector, payment method, etc.)" rows="2" oninput="window.pmDebounceSave('${id}','pnotes',this.value)">${esc(pd.notes)}</textarea>
         </div>
         ${portalBtn}
-        <div style="margin-top:14px">
+        ${pd.document_url ? `<div class="pm-row" style="margin-top:12px">
+          <label style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Permit Document</label>
+          <a href="${esc(pd.document_url)}" target="_blank" rel="noopener" class="pm-portal-btn" style="margin-top:4px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            View Permit Document
+          </a>
+        </div>` : ''}
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+          <button onclick="window.pmPullPermit('${id}')" class="pm-pill" style="width:100%;padding:10px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,var(--gold) 0%,#ffd166 100%);color:var(--navy);font-weight:700;border:none" title="Open Sparky to pull the permit for this contact">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Pull Permit with Sparky
+          </button>
           <button onclick="window.generateMailingInsert('${id}')" class="pm-pill" style="width:100%;padding:10px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:7px" title="Generate a fold-and-mail letter with permit instructions — prints to a #10 window envelope">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
             Generate Mail Insert
@@ -14623,6 +14635,34 @@ setTimeout(() => {
     if (o) o.classList.remove('open');
     if (typeof unlockBody === 'function') unlockBody(); else document.body.style.overflow = '';
   };
+
+  // Pull Permit with Sparky — opens Sparky and triggers the permit agent for this contact
+  window.pmPullPermit = function(contactId) {
+    var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === contactId; }) : null;
+    var fname = c ? ((c.name || '').split(' ')[0] || 'this contact') : 'this contact';
+    var addr = c ? (c.address || '') : '';
+    var jurName = '';
+    if (c && c.jurisdiction_id && typeof allJurisdictions !== 'undefined') {
+      var jur = allJurisdictions.find(function(j) { return j.id === c.jurisdiction_id; });
+      if (jur) jurName = jur.name;
+    }
+    var q = 'Pull the permit for ' + fname;
+    if (addr) q += ' at ' + addr;
+    if (jurName) q += ' (' + jurName + ')';
+    q += '. Generate the application packet and walk me through the steps.';
+    // Open panel and fire the permit question
+    var p = document.getElementById('tm-panel');
+    var o = document.getElementById('tm-panel-overlay');
+    if (!p || !o) return;
+    if (typeof renderChatPanel === 'function') renderChatPanel();
+    p.classList.add('open');
+    o.classList.add('open');
+    p.setAttribute('aria-hidden', 'false');
+    if (typeof lockBody === 'function') lockBody(); else document.body.style.overflow = 'hidden';
+    setTimeout(function() {
+      if (typeof window.tmAskPreset === 'function') window.tmAskPreset(q);
+    }, 350);
+  };
   window.tmAskPreset = function(q) {
     var ta = document.getElementById('tm-compose');
     if (ta) ta.value = q;
@@ -14923,6 +14963,70 @@ setTimeout(() => {
     return { ok: true, message: 'Saved to your review queue — open Sparky and tap "Review" to see it' };
   }
 
+  // ── Permit step tracker tool ─────────────────────────────────────
+  async function _toolUpdatePermitStep(input) {
+    var contactId = input && input.contactId;
+    var step = input && input.step;
+    if (!contactId || !step) return { ok: false, message: 'Missing contactId or step' };
+    var stepMap = {
+      'submitted':         'psub',
+      'ready_to_pay':      'prtp',
+      'paid':              'ppaid',
+      'ready_to_print':    'prtpr',
+      'printed':           'pprn',
+      'inspect_scheduled': 'pisch',
+      'inspect_passed':    'pipas',
+    };
+    var pmKey = stepMap[step];
+    if (!pmKey) return { ok: false, message: 'Unknown permit step: ' + step };
+    var date = (input.date || new Date().toISOString().slice(0, 10));
+    var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === contactId; }) : null;
+    if (!c) return { ok: false, message: 'Contact not found' };
+    try {
+      _writePmFieldLocal(c, pmKey, date);
+      await _persistInstallNotes(c);
+      if (typeof currentPanelContactId !== 'undefined' && currentPanelContactId === contactId) {
+        if (typeof renderPmPanelSections === 'function') renderPmPanelSections();
+      }
+      var stepLabels = {
+        'submitted': 'Submitted', 'ready_to_pay': 'Ready to Pay', 'paid': 'Paid',
+        'ready_to_print': 'Ready to Print', 'printed': 'Printed',
+        'inspect_scheduled': 'Inspection Scheduled', 'inspect_passed': 'Inspection Passed',
+      };
+      return { ok: true, message: 'Permit step "' + (stepLabels[step] || step) + '" marked on ' + date + ' for ' + (c.name || contactId) };
+    } catch(e) {
+      return { ok: false, message: String(e && e.message || e) };
+    }
+  }
+
+  // ── Save permit document URL / permit number ──────────────────────
+  async function _toolSavePermitDoc(input) {
+    var contactId = input && input.contactId;
+    if (!contactId) return { ok: false, message: 'Missing contactId' };
+    var docUrl = (input.documentUrl || '').toString().trim();
+    var permitNum = (input.permitNumber || '').toString().trim();
+    if (!docUrl && !permitNum) return { ok: false, message: 'Provide documentUrl and/or permitNumber' };
+    var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === contactId; }) : null;
+    if (!c) return { ok: false, message: 'Contact not found' };
+    try {
+      if (docUrl) _writePmFieldLocal(c, 'pdoc', docUrl);
+      if (permitNum) _writePmFieldLocal(c, 'pnum', permitNum);
+      await _persistInstallNotes(c);
+      // Sync permit number input if panel is open
+      if (typeof currentPanelContactId !== 'undefined' && currentPanelContactId === contactId) {
+        var numEl = document.getElementById('pm-permit-num');
+        if (numEl && permitNum) numEl.value = permitNum;
+        if (typeof renderPmPanelSections === 'function') renderPmPanelSections();
+      }
+      var saved = [];
+      if (permitNum) saved.push('Permit #' + permitNum);
+      if (docUrl) saved.push('document URL');
+      return { ok: true, message: 'Saved ' + saved.join(' + ') + ' for ' + (c.name || contactId) };
+    } catch(e) {
+      return { ok: false, message: String(e && e.message || e) };
+    }
+  }
+
   function _skRenderQueueBadge() {
     var SK_QUEUE_KEY = 'bpp_sparky_queue';
     var queue = [];
@@ -14952,6 +15056,8 @@ setTimeout(() => {
       else if (call.name === 'add_note_to_contact') result = await _toolAddNote(call.input);
       else if (call.name === 'lookup_contact') result = _toolLookupContact(call.input);
       else if (call.name === 'escalate_question') result = _toolEscalateQuestion(call.input);
+      else if (call.name === 'update_permit_step') result = await _toolUpdatePermitStep(call.input);
+      else if (call.name === 'save_permit_document') result = await _toolSavePermitDoc(call.input);
     } catch(e) {
       result = { ok: false, message: String(e && e.message || e) };
     }
