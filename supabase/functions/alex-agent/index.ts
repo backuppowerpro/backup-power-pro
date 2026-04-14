@@ -27,7 +27,7 @@ const QUO_INTERNAL_PHONE_ID  = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi
 // Set to false when ready to go live with real leads
 const TEST_MODE = true
 
-const ALEX_AGENT_ID = 'agent_011Ca4EHkJjWEMLaiVHAaScL'  // v12 Sonnet — "Key, our electrician", photo-first, no electrical advice
+const ALEX_AGENT_ID = 'agent_011Ca4EqNFKhLkRojPYt6uVA'  // v13 Sonnet — no em dashes, clean photo flow, ghost follow-up defined
 const ALEX_ENV_ID   = 'env_01Ba8sDT1CgQrWE5bLvtvHwK'
 
 const ANTHROPIC_HEADERS = {
@@ -148,6 +148,13 @@ async function sendToAlex(sessionId: string, messageText: string): Promise<strin
   return alexResponse
 }
 
+async function updateLastOutbound(supabase: any, sessionId: string): Promise<void> {
+  await supabase
+    .from('alex_sessions')
+    .update({ last_outbound_at: new Date().toISOString() })
+    .eq('session_id', sessionId)
+}
+
 async function sendQuoMessage(to: string, content: string): Promise<void> {
   try {
     await fetch('https://api.openphone.com/v1/messages', {
@@ -240,6 +247,7 @@ Deno.serve(async (req) => {
     const opener = await sendToAlex(sessionId, OPENER_PROMPT)
     const smsOpener = opener.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/__(.*?)__/g, '$1').trim()
     await sendQuoMessage(fromPhone, smsOpener)
+    await updateLastOutbound(supabase, sessionId)
 
     return new Response(JSON.stringify({ success: true, action: 'retest', sessionId }), {
       status: 200,
@@ -267,6 +275,7 @@ Deno.serve(async (req) => {
     const opener = await sendToAlex(sessionId, OPENER_PROMPT)
     const smsOpener = opener.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/__(.*?)__/g, '$1').trim()
     await sendQuoMessage(fromPhone, smsOpener)
+    await updateLastOutbound(supabase, sessionId)
 
     // If their first message was just "hi" or similar greeting, opener is enough
     // If they included real info, process it too
@@ -322,6 +331,7 @@ Deno.serve(async (req) => {
       .trim()
 
     await sendQuoMessage(fromPhone, smsText)
+    await updateLastOutbound(supabase, sessionId)
 
     await supabase.from('messages').insert([
       { contact_id: null, direction: 'inbound',  body: messageText, sender: 'customer', phone: fromPhone },
