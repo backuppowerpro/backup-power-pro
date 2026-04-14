@@ -2908,7 +2908,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
       </div>
       <div class="contact-info-expanded" id="contact-info-expanded">
         <div class="form-row"><label>Name *</label><div class="field-row"><input class="form-input" id="panel-name-input" placeholder="Full name" autocapitalize="words" autocorrect="off" autocomplete="name" oninput="panelMarkDirty()"></div></div>
-        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" autocomplete="tel" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="panelCallContact()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="fld-btn" id="panel-msg-fld-btn" onclick="openMessagesFromPanel()" title="Messages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button></div></div>
+        <div class="form-row"><label>Phone</label><div class="field-row"><input class="form-input" id="panel-phone" type="tel" placeholder="(864) 000-0000" autocomplete="tel" oninput="formatPanelPhone(this);panelMarkDirty()"><button class="fld-btn" onclick="panelCallContact()" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="fld-btn" id="panel-msg-fld-btn" onclick="openMessagesFromPanel()" title="Messages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button><button class="fld-btn" onclick="startVideoCall()" title="Video Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button></div></div>
         <div class="form-row"><label>Email</label><div class="field-row"><input class="form-input" id="panel-email" type="email" placeholder="email@example.com" autocomplete="email" oninput="panelMarkDirty()"></div></div>
         <div class="form-row"><label>Address</label><div class="field-row"><div class="addr-wrap" style="flex:1;min-width:0"><input class="form-input" id="panel-address" placeholder="Start typing address…" autocomplete="off" oninput="panelAddrInput(this.value);panelMarkDirty()" onkeydown="panelAddrKeydown(event)" onblur="setTimeout(panelAddrHide,200)" style="width:100%"><ul class="addr-dropdown" id="panel-addr-dropdown"></ul></div><button class="fld-btn" onclick="openMapsFromPanel()" title="Open in Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button></div></div>
       </div>
@@ -16395,6 +16395,92 @@ setTimeout(() => {
 
   console.log('[voice] module loaded');
 })();
+
+// ══════════════════════════════════════════════════════════
+// VIDEO CALL (Jitsi Meet — free, no download for homeowner)
+// ══════════════════════════════════════════════════════════
+window.startVideoCall = function() {
+  const id = (typeof currentPanelContactId !== 'undefined') ? currentPanelContactId : null;
+  const c = id && (typeof allContacts !== 'undefined') ? allContacts.find(x => x.id === id) : null;
+  if (!c) { if (typeof showToast === 'function') showToast('Open a contact first', 'error'); return; }
+
+  const roomId = 'BPP-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+  const callUrl = 'https://meet.jit.si/' + roomId;
+  const firstName = c.name ? c.name.split(' ')[0] : 'there';
+
+  const existing = document.getElementById('video-call-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'video-call-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(10,20,40,.52);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--bg);border-radius:var(--r-xl);padding:24px;max-width:360px;width:100%;box-shadow:var(--shadow-neu);position:relative">
+      <button onclick="document.getElementById('video-call-modal').remove()" style="position:absolute;top:14px;right:14px;border:none;background:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:4px" aria-label="Close">✕</button>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        </div>
+        <div>
+          <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--navy)">Video Call</div>
+          <div style="font-size:12px;color:var(--text3)">${c.name || 'Contact'}</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;margin-top:8px">Send the link — they click it, no download needed.</div>
+
+      <div style="background:var(--shadow-neu-inset,rgba(0,0,0,.05));border-radius:var(--r-sm);padding:10px 12px;margin-bottom:16px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-neu-inset)">
+        <span style="font-size:11.5px;font-family:monospace;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${callUrl}</span>
+        <button onclick="navigator.clipboard.writeText('${callUrl}').then(()=>{if(typeof showToast==='function')showToast('Link copied','success')})" style="border:none;background:none;cursor:pointer;color:var(--blue);font-size:11px;font-weight:700;font-family:'Outfit',sans-serif;white-space:nowrap;flex-shrink:0;padding:0">Copy</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${c.phone ? `<button id="vcall-sms-btn" onclick="videoCallSendSms('${id}','${callUrl}',this)" style="padding:12px;border-radius:var(--r-sm);background:var(--navy);color:#fff;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Text Link to ${firstName}
+        </button>` : `<div style="font-size:12px;color:var(--text3);text-align:center;padding:4px 0">No phone on file — copy the link and share it manually</div>`}
+        <button onclick="window.open('${callUrl}','_blank');document.getElementById('video-call-modal')?.remove()" style="padding:12px;border-radius:var(--r-sm);background:#10b981;color:#fff;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          Open My Side
+        </button>
+      </div>
+    </div>`;
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+};
+
+window.videoCallSendSms = async function(contactId, callUrl, btn) {
+  const c = (typeof allContacts !== 'undefined') ? allContacts.find(x => x.id === contactId) : null;
+  if (!c || !c.phone) return;
+  const firstName = c.name ? c.name.split(' ')[0] : 'there';
+  const msg = `Hi ${firstName}! Key is ready for a quick video call to help with your quote. Click to join — no app needed:\n${callUrl}`;
+
+  const origHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    const resp = await fetch((typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '') + '/functions/v1/send-sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (typeof TM_ANON_JWT !== 'undefined' ? TM_ANON_JWT : '') },
+      body: JSON.stringify({ contactId, body: msg }),
+    });
+    const payload = await resp.json().catch(() => ({}));
+    if (resp.ok && payload.success) {
+      if (typeof showToast === 'function') showToast('Link sent to ' + (c.name || 'contact'), 'success');
+      if (typeof loadMessageThread === 'function' && typeof currentMsgContactId !== 'undefined' && currentMsgContactId === contactId) loadMessageThread(contactId);
+      window.open(callUrl, '_blank');
+      document.getElementById('video-call-modal')?.remove();
+    } else {
+      if (typeof showToast === 'function') showToast('SMS failed: ' + (payload.error || 'Error'), 'error');
+      btn.disabled = false;
+      btn.innerHTML = origHTML;
+    }
+  } catch(e) {
+    if (typeof showToast === 'function') showToast('SMS error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = origHTML;
+  }
+};
 
 // ══════════════════════════════════════════════════════════
 // TOOLBAR "+" ACTION MENU (New lead / Dial a number)
