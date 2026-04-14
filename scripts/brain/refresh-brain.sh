@@ -45,6 +45,15 @@ else
   echo "QUO FAILED: $QUO_OUT" >> "$LOG_FILE"
 fi
 
+# Synthesize CEO morning brief from all fetched data
+BRIEF_OUT=""; BRIEF_STATUS="OK"
+if BRIEF_OUT=$(bash "$BRAIN_DIR/synthesize-ceo-brief.sh" 2>&1); then
+  echo "$BRIEF_OUT" >> "$LOG_FILE"
+else
+  BRIEF_STATUS="FAIL"
+  echo "BRIEF FAILED: $BRIEF_OUT" >> "$LOG_FILE"
+fi
+
 END=$(date +%s)
 DURATION=$((END - START))
 
