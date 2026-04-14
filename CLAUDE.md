@@ -91,6 +91,7 @@ Skills invoke automatically based on what's being built. No command needed. Just
 | Edge function / Supabase function | `security-review` |
 | Auth / data / payments | `security-review` + `security-scan` |
 | Research task | `deep-research` |
+| Strategic business decision (scaling, pricing, hiring, new market) | `cs-ceo-advisor` |
 | Substantial code change (3+ files) | `simplify` (after build) |
 | Styling / color / typography | `ui-styling` + `design-system` |
 | Design system decisions | `design-system` + `design` |
