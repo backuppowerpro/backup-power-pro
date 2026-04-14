@@ -14933,6 +14933,8 @@ setTimeout(() => {
     if (!contactId || !message) return { ok: false, message: 'Missing contactId or message' };
     var c = (typeof allContacts !== 'undefined') ? allContacts.find(function(x) { return x.id === contactId; }) : null;
     if (!c) return { ok: false, message: 'Contact not found' };
+    // Hard block: Key handles all communication with booked/active clients personally
+    if ((c.stage || 0) >= 4) return { ok: false, message: 'Not sent — Key handles all communication with booked clients (stage 4+) personally. No AI messages after quote approval.' };
     if (!c.phone) return { ok: false, message: 'No phone on file for ' + _shortName(c) };
     try {
       var resp = await fetch(SUPABASE_URL + '/functions/v1/send-sms', {
