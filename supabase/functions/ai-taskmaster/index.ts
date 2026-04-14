@@ -936,15 +936,13 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
           owner_phone: contact.phone || '(phone required)',
           permit_type: 'RESIDENTIAL ELECTRICAL STANDALONE',
           permit_type_warning: 'Do NOT select "Residential Generator" — county reviewers will reject it as the wrong permit type',
-          project_name: scopeOfWork,
-          // project_name fills the "Project Name" field on eTRAKiT — this is what shows as "Description" on the review page.
-          // ALWAYS fill it. Government reviewers flag incomplete forms.
+          project_name: contact.name || '(name required)',
+          // project_name = customer's name. Fills the "Project Name" field on eTRAKiT.
           scope_of_work: scopeOfWork,
-          // scope_of_work goes into exactly 3 fields that explicitly ask for a work description:
-          //   1. Project Name (Step 1 top) — shows as "Description" on Review page
-          //   2. Notes (Step 1 general notes box)
-          //   3. Description of Work (ELECTRIC STNDALN section)
-          // Do NOT put it in Bid Amount, amp fields, dropdowns, or anything not asking for a work description.
+          // scope_of_work goes into exactly 2 fields that explicitly ask for a work description:
+          //   1. Notes (Step 1 general notes box)
+          //   2. Description of Work (ELECTRIC STNDALN section)
+          // Do NOT put it in Project Name, Bid Amount, amp fields, dropdowns, or anything not asking for a work description.
           estimated_value: contact.quote_amount ? `$${contact.quote_amount}` : '$1,197–$1,497',
           panel_brand: panelBrand || '(check contact notes / ask homeowner)',
           inlet_type: rdPm('minlet') || `${amp}A inlet`,
