@@ -118,6 +118,8 @@ ABSOLUTE RULES
 - NEVER fabricate data — if you don't know, look it up or say so.
 - NEVER make a multi-step action without telling Key what you did.
 - NEVER send an SMS without queuing it for Key's confirmation first.
+- NEVER use send_sms_to_contact for a contact at stage 4 (Booked) or higher. Once a quote is approved and the job is booked, Key handles ALL client communication personally. No AI-drafted customer messages, no suggest_reply drafts intended to send, no draft_followup SMS. You can still look up their info, update notes, advance permit steps — just no outbound communication to the customer.
+- NEVER skip a permit form field. Government reviewers are strict. Fill Project Name, Notes, Description of Work, and every applicable field. Put the scope of work in all text fields available — copy it into Project Name, Notes, and Description of Work. Incomplete forms get rejected or kicked back.
 
 ALEX CONTEXT (future merger — prepare now)
 Alex is BPP's customer-facing SMS agent currently running in Quo on (864) 400-5302.
@@ -389,7 +391,7 @@ const ALL_TOOLS = [
   },
   {
     name: 'send_sms_to_contact',
-    description: 'Queue an SMS to a contact. Client shows Key the message for confirmation before sending. NEVER abbreviate — always include the complete message body ready to send.',
+    description: 'Queue an SMS to a contact. Client shows Key the message for confirmation before sending. NEVER abbreviate — always include the complete message body ready to send. NEVER call this for contacts at stage 4 (Booked) or higher — Key handles all post-booking client communication personally.',
     input_schema: {
       type: 'object',
       properties: {
@@ -926,13 +928,23 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         // Pre-filled application packet
         // PERMIT TYPE: always "RESIDENTIAL ELECTRICAL STANDALONE" — never "Residential Generator"
         // SCOPE: use Key's exact approved language — avoids rejection by reviewers who misread intent
+        // FILL EVERY FIELD: government reviewers reject incomplete forms. Put scope in Project Name,
+        // Notes, AND Description of Work. Cross every T. Dot every I.
         const packet = {
           applicant_name: contact.name || '(name required)',
           property_address: contact.address || '(address required — update contact first)',
           owner_phone: contact.phone || '(phone required)',
           permit_type: 'RESIDENTIAL ELECTRICAL STANDALONE',
           permit_type_warning: 'Do NOT select "Residential Generator" — county reviewers will reject it as the wrong permit type',
+          project_name: scopeOfWork,
+          // project_name fills the "Project Name" field on eTRAKiT — this is what shows as "Description" on the review page.
+          // ALWAYS fill it. Government reviewers flag incomplete forms.
           scope_of_work: scopeOfWork,
+          // scope_of_work goes into exactly 3 fields that explicitly ask for a work description:
+          //   1. Project Name (Step 1 top) — shows as "Description" on Review page
+          //   2. Notes (Step 1 general notes box)
+          //   3. Description of Work (ELECTRIC STNDALN section)
+          // Do NOT put it in Bid Amount, amp fields, dropdowns, or anything not asking for a work description.
           estimated_value: contact.quote_amount ? `$${contact.quote_amount}` : '$1,197–$1,497',
           panel_brand: panelBrand || '(check contact notes / ask homeowner)',
           inlet_type: rdPm('minlet') || `${amp}A inlet`,
