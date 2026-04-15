@@ -2666,9 +2666,20 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
         <div class="qb-row-left"><span class="qb-row-name">Twin / Quad</span><span class="qb-row-sub">Making panel space</span></div>
         <div style="display:flex;align-items:center"><span class="qb-row-right">+$129</span><button class="qb-row-toggle" id="qb-tog-twin"></button></div>
       </div>
+      <div class="qb-row" id="qb-row-pom" onclick="qbToggle('pomIncluded')">
+        <div class="qb-row-left"><span class="qb-row-name">Peace of Mind Package</span><span class="qb-row-sub">Annual protection plan</span></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right">+$447</span><button class="qb-row-toggle" id="qb-tog-pom"></button></div>
+      </div>
     </div>
 
-
+    <!-- Deposit -->
+    <div class="qb-section">
+      <div class="qb-section-title">Booking Deposit</div>
+      <div class="qb-row active" id="qb-row-deposit" onclick="qbToggle('requireDeposit')">
+        <div class="qb-row-left"><span class="qb-row-name">Require Deposit</span><span class="qb-row-sub" id="qb-deposit-sub">50% due to book</span></div>
+        <div style="display:flex;align-items:center"><span class="qb-row-right" id="qb-deposit-right"></span><button class="qb-row-toggle on" id="qb-tog-deposit"></button></div>
+      </div>
+    </div>
 
       </div>
     </div>
@@ -8186,7 +8197,7 @@ const QB_S = {
   mainBreaker: 224, twinQuad: 129, surge: 0, pom: 447,
   cordValue30: 129, cordValue50: 198,
 };
-let qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true };
+let qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true, pomIncluded:false, requireDeposit:true };
 
 function qbCalc(s) {
   const is50 = s.amp === 50;
@@ -8200,7 +8211,7 @@ function qbCalc(s) {
   const totalCost = yourSupplies + QB_C.adCost;
   const longRunSell = extraFt * (is50 ? QB_S.longRun50perFt : QB_S.longRun30perFt);
   const cordDiscount = s.cordIncluded ? 0 : cordValue;
-  const addonSell = (s.mainBreaker ? QB_S.mainBreaker : 0) + (s.twinQuad ? QB_S.twinQuad : 0) + (s.surge ? QB_S.surge : 0);
+  const addonSell = (s.mainBreaker ? QB_S.mainBreaker : 0) + (s.twinQuad ? QB_S.twinQuad : 0) + (s.surge ? QB_S.surge : 0) + (s.pomIncluded ? QB_S.pom : 0);
   const standardSell = (is50 ? QB_S.base50 : QB_S.base30) + longRunSell + addonSell - cordDiscount;
   let totalSell = Math.round(Math.max(standardSell, totalCost + QB_C.minProfit));
   if (totalSell % 2 === 0) totalSell += 1;
@@ -8247,12 +8258,20 @@ function qbRender() {
   document.getElementById('qb-tog-main').classList.toggle('on', qbState.mainBreaker);
   document.getElementById('qb-row-twin').classList.toggle('active', qbState.twinQuad);
   document.getElementById('qb-tog-twin').classList.toggle('on', qbState.twinQuad);
+  document.getElementById('qb-row-pom').classList.toggle('active', qbState.pomIncluded);
+  document.getElementById('qb-tog-pom').classList.toggle('on', qbState.pomIncluded);
+  // Deposit row
+  document.getElementById('qb-row-deposit').classList.toggle('active', qbState.requireDeposit);
+  document.getElementById('qb-tog-deposit').classList.toggle('on', qbState.requireDeposit);
+  const depositAmt = Math.round(r.totalSell * 0.5);
+  document.getElementById('qb-deposit-sub').textContent = qbState.requireDeposit ? '50% due to book: ' + qbFmt(depositAmt) : 'Full balance at time of service';
+  document.getElementById('qb-deposit-right').textContent = qbState.requireDeposit ? qbFmt(depositAmt) : '';
 }
 function qbSetAmp(a) { qbState.amp = a; qbRender(); }
 function qbOnRunChange(v) { qbState.runFt = parseInt(v); qbRender(); }
 function qbToggle(key) { qbState[key] = !qbState[key]; qbRender(); }
 function qbResetAll() {
-  qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true };
+  qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true, pomIncluded:false, requireDeposit:true };
   document.getElementById('qb-run-slider').value = 5;
   qbRender();
   showToast('Quote reset', 'success');
