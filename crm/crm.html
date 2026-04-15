@@ -242,11 +242,169 @@ html.dark tbody tr:hover {
   background: var(--navy) !important;
   color: #fff !important;
   padding: 6px 10px !important;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Rajdhani', 'Outfit', sans-serif;
   font-weight: 800;
-  letter-spacing: .02em;
+  letter-spacing: .08em;
+  text-transform: uppercase;
   box-shadow: inset 1px 1px 0 rgba(255,255,255,.25), inset -1px -1px 0 rgba(0,0,0,.5);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CYBERTRUCK LAYER — retro-future, intentional, bold
+   Every surface has purpose. Every edge is sharp. Amber on graphite.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Tactical geometric font for headings/labels/UI chrome */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --ct-steel:  #8d9197;
+  --ct-graphite: #24272b;
+  --ct-amber:  #ff9500;
+  --ct-blade:  #b8bcc0;
+  --ct-edge:   rgba(0,0,0,.55);
+}
+
+/* Brushed-steel body texture — fine horizontal grain, barely there */
+body {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.06)),
+    repeating-linear-gradient(90deg,
+      rgba(255,255,255,.02) 0 1px,
+      rgba(0,0,0,.018) 1px 2px),
+    var(--bg) !important;
+}
+html.dark body {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.025), rgba(0,0,0,.28)),
+    repeating-linear-gradient(90deg,
+      rgba(255,255,255,.015) 0 1px,
+      rgba(0,0,0,.04) 1px 2px),
+    var(--bg) !important;
+}
+
+/* All UI chrome typography: Rajdhani, uppercase, tracked — like a dashboard readout */
+.tab-btn, .nav-label, .section-title, .modal-title,
+h1, h2, h3, h4, .h1, .h2, .h3, thead th,
+.stat-label, .pa-stat-label, .inv-stat-label, .kpi-label,
+.drill-back, .drill-title {
+  font-family: 'Rajdhani', 'Outfit', sans-serif !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase;
+  font-weight: 700 !important;
+}
+
+/* Signature amber accent bar on primary buttons and headers — a tactical highlight */
+.btn-primary, button[type="submit"], .kpi-card, .stat-card, .pa-stat, .inv-stat {
+  position: relative;
+}
+.btn-primary::before, button[type="submit"]::before,
+.kpi-card::before, .stat-card::before, .pa-stat::before, .inv-stat::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--ct-amber);
+  box-shadow: 1px 0 0 rgba(0,0,0,.4);
+  pointer-events: none;
+}
+
+/* Cut-corner primary buttons — angular Cybertruck silhouette */
+.btn-primary, button[type="submit"] {
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  padding-left: 16px !important;
+  background: linear-gradient(180deg, #1a2f4f, #0b1f3b) !important;
+  color: #fff !important;
+  font-family: 'Rajdhani', 'Outfit', sans-serif !important;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.15), inset -1px -1px 0 rgba(0,0,0,.5), 0 1px 0 rgba(0,0,0,.25) !important;
+}
+.btn-primary:active, button[type="submit"]:active {
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  background: linear-gradient(180deg, #0b1f3b, #061428) !important;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,.5) !important;
+  transform: translate(1px,1px);
+}
+
+/* Warning/hazard stripe accent for important banners — amber/black diagonal */
+.warn-banner-amber, .warn-banner {
+  background:
+    repeating-linear-gradient(45deg, #ffb000 0 12px, #1a1a1a 12px 24px) !important;
+  color: #fff !important;
+  text-shadow: 1px 1px 0 rgba(0,0,0,.9);
+  font-family: 'Rajdhani', 'Outfit', sans-serif !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  border: 2px solid #000 !important;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.15), 2px 2px 0 rgba(0,0,0,.4) !important;
+  border-radius: 0 !important;
+}
+
+/* Stat cards / KPIs — cut corner, amber bar, brushed-steel face */
+.pa-stat, .inv-stat, .kpi-card, .stat-card {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.6), rgba(0,0,0,.08)),
+    var(--card) !important;
+  border: none !important;
+}
+html.dark .pa-stat, html.dark .inv-stat, html.dark .kpi-card, html.dark .stat-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.3)),
+    var(--card) !important;
+}
+
+/* Tab bar — thicker, tactical, amber underline on active */
+.tab-bar { background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(0,0,0,.06)), var(--bg) !important; }
+.tab-btn.active {
+  box-shadow: inset 0 -3px 0 var(--ct-amber) !important;
+  color: var(--text) !important;
+  background: rgba(255,149,0,.06) !important;
+}
+html.dark .tab-bar { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.3)), var(--bg) !important; }
+
+/* Status badges — angular clip, high-contrast, uppercase */
+.prop-badge {
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%) !important;
+  padding: 3px 12px !important;
+  font-family: 'Rajdhani', 'Outfit', sans-serif !important;
+  letter-spacing: .08em !important;
+}
+
+/* LCD stat displays — give them an angular cut corner for that dashboard readout look */
+.pa-stat-num, .inv-stat-value, .lcd-num, .digital {
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+/* Inputs and selects — recessed metal slots */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+select, textarea {
+  background: linear-gradient(180deg, rgba(0,0,0,.07), rgba(255,255,255,.1)), color-mix(in srgb, var(--bg) 88%, #000 12%) !important;
+  font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace !important;
+}
+
+/* Side-panel & modal: add a subtle edge highlight like a brushed-steel panel seam */
+.side-panel, .modal {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.35), rgba(0,0,0,.04)),
+    var(--card) !important;
+  box-shadow: var(--shadow-neu), -2px 0 0 rgba(0,0,0,.18) !important;
+}
+html.dark .side-panel, html.dark .modal {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.25)),
+    var(--card) !important;
+}
+
+/* Amber accent utility */
+.accent-amber { color: var(--ct-amber) !important; }
+.bg-amber { background: var(--ct-amber) !important; color: #000; font-weight: 800; }
+
+/* End Cybertruck layer */
+
 
 html.dark ::selection{background:rgba(212,145,26,.35);color:#0e0e0d}
 *::-webkit-scrollbar{width:8px;height:0}
