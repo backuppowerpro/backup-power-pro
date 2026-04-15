@@ -373,6 +373,96 @@ select, textarea {
 /* End Cybertruck layer */
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   CONTACT PANEL CONSISTENCY FIXES — input heights, badge styles, labels
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* All form fields in the panel: same height (38px), same bevel, same font */
+.side-panel input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.side-panel select,
+.side-panel textarea,
+.modal input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.modal select,
+.modal textarea {
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  background: color-mix(in srgb, var(--bg) 88%, #000 12%) !important;
+  box-shadow: var(--shadow-neu-inset-sm) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: var(--text);
+}
+/* Textareas can grow */
+.side-panel textarea, .modal textarea {
+  height: auto !important;
+  min-height: 80px !important;
+  padding: 10px 12px !important;
+  resize: vertical;
+}
+
+/* Section labels in panel: VT323 pixel font for tactical consistency */
+.side-panel .form-row > label,
+.side-panel label[class*="form-label"],
+.modal .form-row > label,
+.modal label[class*="form-label"] {
+  font-family: 'VT323', 'Outfit', sans-serif !important;
+  font-size: 14px !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: var(--text2) !important;
+  font-weight: normal !important;
+  margin-bottom: 4px !important;
+  display: block;
+}
+
+/* Panel stage badge (Booked, Quote Sent etc. at top of panel) — give it real bg + bevel */
+.panel-stage-badge {
+  background: var(--card) !important;
+  box-shadow: var(--shadow-neu-sm) !important;
+  padding: 4px 10px !important;
+  font-family: 'Rajdhani', 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-radius: 0 !important;
+}
+.panel-stage-badge .pa-stage-name { font-size: 11px; }
+
+/* SVG icons: standardize to 16px in panel content (was 11-18 chaos) */
+.side-panel svg:not([width="20"]):not([width="24"]):not([width="32"]):not([width="40"]):not([width="48"]):not([width="52"]) {
+  width: 16px !important;
+  height: 16px !important;
+}
+.side-panel button svg:not([width="20"]):not([width="24"]):not([width="32"]) {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Form row spacing: consistent gap */
+.side-panel .form-row, .modal .form-row {
+  margin-bottom: 16px !important;
+}
+
+/* Field-row (input + button combos) — consistent gap */
+.side-panel .field-row, .modal .field-row {
+  display: flex !important;
+  gap: 6px !important;
+  align-items: stretch !important;
+}
+.side-panel .field-row > input, .modal .field-row > input {
+  flex: 1;
+}
+.side-panel .field-row .fld-btn, .modal .field-row .fld-btn {
+  min-width: 38px !important;
+  height: 38px !important;
+  padding: 0 10px !important;
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
    MOBILE / iOS SAFARI FIX LAYER
    Per mobile audit: prevent input zoom, fix safe-area, kill 300ms tap delay
    ═══════════════════════════════════════════════════════════════════════════ */
