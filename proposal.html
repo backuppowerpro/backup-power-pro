@@ -673,6 +673,7 @@ function renderProposal() {
   chosenAmp = P.selected_amp || P.amp_type || '30';
   surgeOn = P.selected_surge || false;
   pomOn = P.selected_pom || false;
+  const requireDeposit = P.require_deposit !== false;
 
   const firstName = (P.contact_name || '').trim().split(/\s+/)[0] || P.contact_name || 'Homeowner';
   const createdDate = new Date(P.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -972,7 +973,7 @@ function renderProposal() {
     <div class="sign-card reveal" id="sign-section">
       <div class="sign-card-head">
         <h2>Approve This Proposal</h2>
-        <p>Check both boxes and sign below. Once approved, Key pulls your permit and reaches out to get you on the schedule. Your price is locked. No payment until the job is done.</p>
+        <p>${requireDeposit ? 'Check both boxes and sign below. A 50% deposit confirms your spot — Key then pulls your permit and books your date. Balance due on install day.' : 'Check both boxes and sign below. Once approved, Key pulls your permit and reaches out to get you on the schedule. Your price is locked. No payment until the job is done.'}</p>
       </div>
       <div class="sign-card-body">
         <div class="ack-row" id="ack-row-scope">
@@ -998,7 +999,7 @@ function renderProposal() {
           Approve &amp; Lock In My Price — <span id="approve-total">${fmt(calcTotal(chosenAmp))}</span>
         </button>
         <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">
-          No payment today. Billed on completion.
+          ${requireDeposit ? '50% deposit due now to confirm your spot. Remaining balance due on install day.' : 'No payment today. Billed on completion.'}
         </div>
         <div id="approve-err" style="font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:center"></div>
       </div>
@@ -1207,6 +1208,23 @@ function updateApproveBtn() {
   if (btn && !btn.disabled) validateForm();
 }
 
+// ── DEPOSIT PAYMENT (called from approved state) ─────────────
+async function payDeposit() {
+  const btn = document.querySelector('[onclick="payDeposit()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Redirecting...'; }
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/proposal-deposit-checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ proposal_token: P.token }),
+    });
+    const result = await resp.json();
+    if (result.url) { window.location.href = result.url; return; }
+    alert('Payment error: ' + (result.error || 'Unknown error'));
+  } catch(e) { alert('Network error — please call (864) 400-5302.'); }
+  if (btn) { btn.disabled = false; btn.textContent = `Pay $${Math.round((P.total||0)*0.5).toLocaleString()} Deposit Now →`; }
+}
+
 // ── APPROVE ──────────────────────────────────────────────────
 let approving = false;
 async function approveProposal() {
@@ -1225,17 +1243,45 @@ async function approveProposal() {
   const { error } = await db.from('proposals').update({ status: 'Approved', signed_at: new Date().toISOString(), signer_name: name, safety_ack: true, selected_amp: chosenAmp, selected_surge: surgeOn, selected_pom: pomOn, total, approved_ip: ip, approved_user_agent: navigator.userAgent, approved_terms_snapshot: termsSnapshot, is_locked: true }).eq('token', P.token);
   if (error) { err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.'; btn.disabled = false; approving = false; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve &amp; Lock In My Price — <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>'; return; }
   P.status = 'Approved'; P.signer_name = name; P.signed_at = new Date().toISOString(); P.selected_amp = chosenAmp; P.selected_surge = surgeOn; P.selected_pom = pomOn; P.total = total; P.approved_ip = ip;
-  launchConfetti();
-  setTimeout(() => renderApproved(), 800);
+
+  const requireDeposit = P.require_deposit !== false;
+  if (requireDeposit) {
+    btn.innerHTML = '<div class="spinner-large" style="width:20px;height:20px;border-width:2.5px;margin:0"></div> Redirecting to payment...';
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/proposal-deposit-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({ proposal_token: P.token }),
+      });
+      const result = await resp.json();
+      if (result.error || !result.url) {
+        err.textContent = 'Payment setup failed: ' + (result.error || 'Unknown error');
+        btn.disabled = false; approving = false;
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve &amp; Lock In My Price — <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>';
+        return;
+      }
+      window.location.href = result.url;
+    } catch (fetchErr) {
+      err.textContent = 'Network error — please try again or call (864) 400-5302.';
+      btn.disabled = false; approving = false;
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve &amp; Lock In My Price — <span id="approve-total">' + fmt(calcTotal(chosenAmp)) + '</span>';
+    }
+  } else {
+    launchConfetti();
+    setTimeout(() => renderApproved(), 800);
+  }
 }
 
 // ── APPROVED STATE ───────────────────────────────────────────
 function renderApproved() {
   window.scrollTo(0, 0);
   renderPropertyBanner && setTimeout(renderPropertyBanner, 100);
+  const requireDeposit = P.require_deposit !== false;
+  const depositPaid = new URLSearchParams(window.location.search).get('deposit_paid') === '1';
   const signedDate = P.signed_at ? new Date(P.signed_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '';
   const signedTime = P.signed_at ? new Date(P.signed_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '';
   const total = P.total || 0;
+  const depositAmt = Math.round(total * 0.5);
   const ampLabel = P.selected_amp === '50' ? '50 Amp' : '30 Amp';
   const pr = getPrice(P.selected_amp || P.amp_type || '30');
   let pricingRowsHtml = '';
@@ -1264,11 +1310,17 @@ function renderApproved() {
   document.getElementById('main').innerHTML = `
     <div id="property-banner-wrap"></div>
 
+    ${requireDeposit && !depositPaid ? `
+    <div style="background:#dc2626;border-radius:14px;padding:24px 20px;text-align:center;color:#fff;margin-bottom:16px">
+      <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px">⚡ Proposal Approved — Deposit Required</div>
+      <p style="font-size:14px;opacity:.9;margin-bottom:16px">Your proposal is signed. Pay your 50% deposit now to confirm your spot and get on the schedule.</p>
+      <button onclick="payDeposit()" style="background:#fff;color:#dc2626;font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;padding:14px 28px;border:none;border-radius:10px;cursor:pointer">Pay $${depositAmt.toLocaleString()} Deposit Now →</button>
+    </div>` : `
     <div class="approved-banner">
       <div class="approved-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <h2>You're Storm-Ready. ⚡</h2>
-      <p>Your install date is being locked in. We'll reach out within 48 hours to confirm.</p>
-    </div>
+      <h2>${depositPaid ? 'Deposit Paid. You\'re Locked In. ⚡' : 'You\'re Storm-Ready. ⚡'}</h2>
+      <p>${depositPaid ? `Your $${depositAmt.toLocaleString()} deposit is confirmed. Key will reach out within 48 hours to schedule your install. Remaining balance due on install day.` : 'Your install date is being locked in. We\'ll reach out within 48 hours to confirm.'}</p>
+    </div>`}
 
     <div class="card">
       <div class="card-head">
@@ -1278,7 +1330,7 @@ function renderApproved() {
       <div class="card-body">
         <div class="next-step-item"><div class="next-step-num">1</div><div class="next-step-text"><strong>Key reaches out within 48 hours</strong><span>You'll get a text to confirm your date and answer any final questions.</span></div></div>
         <div class="next-step-item"><div class="next-step-num">2</div><div class="next-step-text"><strong>We pull your permit</strong><span>We handle all paperwork with your local jurisdiction. Nothing for you to do.</span></div></div>
-        <div class="next-step-item"><div class="next-step-num">3</div><div class="next-step-text"><strong>Installation day — done in a day</strong><span>We arrive, install everything, clean up, and walk you through your new system. Payment is due upon completion.</span></div></div>
+        <div class="next-step-item"><div class="next-step-num">3</div><div class="next-step-text"><strong>Installation day — done in a day</strong><span>We arrive, install everything, clean up, and walk you through your new system. ${requireDeposit ? `Remaining balance ($${(total - depositAmt).toLocaleString()}) due upon completion.` : 'Payment is due upon completion.'}</span></div></div>
         <div class="next-step-item"><div class="next-step-num">4</div><div class="next-step-text"><strong>State electrical inspection</strong><span>We schedule and coordinate the inspection. You're officially code-compliant and storm-ready.</span></div></div>
         <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
           <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Questions? Call or text Key anytime</div>
@@ -1408,7 +1460,7 @@ async function downloadPDF() {
     <div style="font-size:14px;font-weight:800;color:#0b1f3b;margin-bottom:10px">Pricing</div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">${pricingRows}<tr style="border-top:2px solid #0b1f3b"><td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b">Total</td><td style="padding:10px 0;font-weight:800;font-size:16px;color:#0b1f3b;text-align:right">${fmt(total)}</td></tr></table>
     ${P.notes ? '<div style="border-top:2px solid #e4e8f0;margin:12px 0"></div><div style="font-size:12px;font-weight:700;color:#0b1f3b;margin-bottom:6px">Notes from Key</div><div style="font-size:11px;color:#4a5568;line-height:1.6">' + esc(P.notes) + '</div>' : ''}
-    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:16px;font-size:11px;color:#92400e;line-height:1.6"><strong>Payment Terms:</strong> Full payment is due upon completion of installation.</div>
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:16px;font-size:11px;color:#92400e;line-height:1.6"><strong>Payment Terms:</strong> ${P.require_deposit !== false ? `50% deposit ($${Math.round(total*0.5).toLocaleString()}) collected at booking. Remaining balance ($${Math.round(total*0.5).toLocaleString()}) due upon completion of installation.` : 'Full payment is due upon completion of installation.'}</div>
     <div style="text-align:center;font-size:10px;color:#8a9ab5;border-top:1px solid #e4e8f0;padding-top:12px;margin-top:16px">Backup Power Pro · SC LIC #2942 · (864) 400-5302 · backuppowerpro.com</div>
   </div>`;
 
