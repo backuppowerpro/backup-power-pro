@@ -573,8 +573,10 @@ html.dark .kanban-card, html.dark table tbody tr {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 * {
-  /* Override soft transitions with stepped 8-bit feel */
-  transition-timing-function: steps(4, end) !important;
+  /* Minesweeper has NO animations — instant interactions, no lag */
+  transition-duration: 0s !important;
+  transition-timing-function: steps(1) !important;
+  animation-duration: 0s !important;
 }
 
 /* Hard-edged shadows everywhere — no blur radius */
