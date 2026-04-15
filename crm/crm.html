@@ -3750,7 +3750,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   <div class="panel-head" style="padding:0;overflow:visible;flex-direction:column;align-items:stretch;gap:0">
     <!-- Full-width Street View banner. Inner contents (gradient, name, close button)
          are populated by _bannerHtml() each time the panel opens. -->
-    <div id="panel-banner" style="position:relative;width:100%;height:120px;background:var(--navy);overflow:hidden;flex-shrink:0"></div>
+    <div id="panel-banner" style="position:relative;width:100%;height:160px;background:var(--navy);overflow:hidden;flex-shrink:0"></div>
   </div>
   <div class="drill-container">
     <!-- LEVEL 1: Contact Details (Progressive Disclosure) -->
@@ -4107,13 +4107,27 @@ function _bannerHtml(c) {
   // Fallback initials only show until/unless the Street View image loads.
   // We tag them so the async image loader can hide them when the photo arrives.
   const fallbackInitials = `<div class="bnr-fallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;transition: opacity .25s steps(4)"><span style="font-size:64px;font-weight:800;color:rgba(255,255,255,0.32);font-family:'VT323',monospace;letter-spacing:.02em">${initials}</span></div>`;
-  // Name sits on a thin solid bar at the very bottom — minimal obstruction of Street View.
+  // Name + quick action buttons sit on a dark bar at the very bottom.
   const gradient = '';
   const nameGrad = '';
   const _hasUnread = typeof _unreadContactIds !== 'undefined' && _unreadContactIds.has(c.id);
-  const nameLabel = `<div style="position:absolute;left:0;right:0;bottom:0;z-index:3;background:rgba(6,12,24,0.82);padding:6px 14px;display:flex;align-items:center;gap:8px">
-    <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em;text-shadow:0 1px 0 rgba(0,0,0,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25;flex:1;min-width:0">${displayName}</div>
-    ${_hasUnread ? '<span style="width:8px;height:8px;border-radius:0;background:#dc2626;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)" title="Unread"></span>' : ''}
+  const bnrBtnBase = 'display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.14);border:none;box-shadow:inset 2px 2px 0 rgba(255,255,255,.22),inset -2px -2px 0 rgba(0,0,0,.45);border-radius:0;color:#fff;padding:7px 10px;cursor:pointer;min-height:34px;transition:box-shadow .15s steps(4, end)';
+  const bnrBtnUnread = 'display:flex;align-items:center;justify-content:center;gap:4px;background:var(--gold);border:none;box-shadow:inset 2px 2px 0 rgba(255,255,255,.35),inset -2px -2px 0 rgba(0,0,0,.45);border-radius:0;color:#0b1f3b;padding:7px 10px;cursor:pointer;min-height:34px;transition:box-shadow .15s steps(4, end)';
+  const bnrBtnInvoice = 'display:flex;align-items:center;justify-content:center;background:rgba(212,145,26,.32);border:none;box-shadow:inset 2px 2px 0 rgba(255,255,255,.3),inset -2px -2px 0 rgba(0,0,0,.45);border-radius:0;color:#fff;padding:7px 10px;cursor:pointer;min-height:34px;transition:box-shadow .15s steps(4, end)';
+  const textBtnStyle = _hasUnread ? bnrBtnUnread : bnrBtnBase;
+  const textBtnDot = _hasUnread ? '<span style="width:7px;height:7px;border-radius:0;background:#dc2626;flex-shrink:0"></span>' : '';
+  const nameLabel = `<div style="position:absolute;left:0;right:0;bottom:0;z-index:3;background:rgba(6,12,24,0.82);padding:6px 10px 8px">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px">
+      <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em;text-shadow:0 1px 0 rgba(0,0,0,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25;flex:1;min-width:0">${displayName}</div>
+      ${_hasUnread ? '<span style="width:8px;height:8px;border-radius:0;background:#dc2626;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)" title="Unread"></span>' : ''}
+    </div>
+    <div class="panel-quick-btns" style="display:flex;gap:5px;width:100%">
+      <button onclick="openMessagesFromPanel()" style="${textBtnStyle};flex:1" title="Text">${textBtnDot}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+      ${c.phone ? `<button onclick="panelCallContact()" style="${bnrBtnBase};flex:1" title="Call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>` : ''}
+      <button onclick="openMapsFromPanel()" style="${bnrBtnBase};flex:1" title="Maps"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button>
+      <button onclick="closePanel();openProposalModal('${c.id}')" style="${bnrBtnBase};flex:1" title="Proposal"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></button>
+      <button onclick="openInvoiceBuilder()" style="${bnrBtnInvoice};flex:1" title="Invoice"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"><rect x="2" y="5" width="20" height="14"/><line x1="2" y1="10" x2="22" y2="10"/></svg></button>
+    </div>
   </div>`;
   const stage = c.stage || 1;
   const stageDef = (typeof PERMIT_STAGES !== 'undefined') ? PERMIT_STAGES.find(s => s.id === stage) : null;
