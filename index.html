@@ -1269,6 +1269,7 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       box.style.background='var(--gold)'; box.style.borderColor='var(--gold)';
       icon.style.display='block'; lbl.style.borderColor='var(--gold)';
       document.getElementById('varGenErr').style.display='none';
+      varCheckReady();
       var hu=document.getElementById('varHeadsUp');
       hu.style.transformOrigin='top center';
       hu.style.animation='none';
@@ -1276,11 +1277,29 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     } else {
       box.style.background='transparent'; box.style.borderColor='rgba(255,255,255,.3)';
       icon.style.display='none'; lbl.style.borderColor='rgba(255,255,255,.15)';
+      varCheckReady();
     }
   });
 
-  varNameInput.addEventListener('input', function(){ this.value=this.value.replace(/\s/g,''); if(this.value.length>0) this.value=this.value.charAt(0).toUpperCase()+this.value.slice(1); });
-  document.getElementById('varLastName').addEventListener('input', function(){ this.value=this.value.replace(/\s/g,''); if(this.value.length>0) this.value=this.value.charAt(0).toUpperCase()+this.value.slice(1); });
+  function varCheckReady(){
+    var name=varNameInput.value.trim();
+    var lastName=document.getElementById('varLastName').value.trim();
+    var phone=varPhoneInput.value.replace(/\D/g,'');
+    var email=document.getElementById('varEmail').value.trim();
+    var addrOk=window.isVarAddrVerified?window.isVarAddrVerified():!!document.getElementById('varAddress').value.trim();
+    var serviceOk=window.isVarServiceArea?window.isVarServiceArea():true;
+    var genOk=document.getElementById('varGenCheck').checked;
+    var emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+    var btn=document.getElementById('varSubmitBtn');
+    if(name&&lastName&&phone.length===10&&emailOk&&addrOk&&serviceOk&&genOk){
+      btn.classList.add('ready');
+    } else {
+      btn.classList.remove('ready');
+    }
+  }
+
+  varNameInput.addEventListener('input', function(){ this.value=this.value.replace(/\s/g,''); if(this.value.length>0) this.value=this.value.charAt(0).toUpperCase()+this.value.slice(1); varCheckReady(); });
+  document.getElementById('varLastName').addEventListener('input', function(){ this.value=this.value.replace(/\s/g,''); if(this.value.length>0) this.value=this.value.charAt(0).toUpperCase()+this.value.slice(1); varCheckReady(); });
 
   varPhoneInput.addEventListener('input', function(e){
     var v=e.target.value.replace(/\D/g,'');
@@ -1290,7 +1309,9 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     else if(v.length>=4) v='('+v.slice(0,3)+') '+v.slice(3);
     else if(v.length>=1) v='('+v;
     e.target.value=v;
+    varCheckReady();
   });
+  document.getElementById('varEmail').addEventListener('input', varCheckReady);
 
   async function sha256(str){
     if(!str) return '';
@@ -1423,6 +1444,7 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     checkServiceArea(parts.county);
     document.getElementById('varAddressErr').style.display='none';
     hide();
+    if(typeof varCheckReady==='function') varCheckReady();
   }
 
   function parseMapboxFeature(feature){
@@ -1504,6 +1526,8 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
 <style>
 @keyframes spin{to{transform:rotate(360deg)}}
 .var-trust-card:hover{background:rgba(255,255,255,.13)!important;border-color:rgba(255,186,0,.4)!important;transform:translateY(-2px)}
+#varSubmitBtn.ready:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(255,186,0,.45)!important}
+#varSubmitBtn.ready{transition:transform .2s,box-shadow .2s,opacity .2s}
 @keyframes nudge{0%{transform:scaleY(1)}20%{transform:scaleY(1.12)}50%{transform:scaleY(.95)}75%{transform:scaleY(1.05)}100%{transform:scaleY(1)}}
 </style>
 </body>
