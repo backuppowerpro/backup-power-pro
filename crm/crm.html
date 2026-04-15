@@ -3714,7 +3714,10 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
         <button class="btn btn-sm" style="width:100%;background:none;border:1px solid var(--border);color:var(--text3);font-size:11px;font-weight:600" onclick="archiveJob()">Archive Event</button>
       </div>
     </div>
-    <div class="modal-foot" style="display:none"></div>
+    <div class="modal-foot" id="job-modal-foot">
+      <button class="btn" onclick="cancelJob()" style="color:var(--text2)">Discard</button>
+      <button class="btn btn-primary" onclick="saveJob()">Save Event</button>
+    </div>
   </div>
 </div>
 
@@ -4899,7 +4902,10 @@ function openPanel(id) {
   // Fill fields
   document.getElementById('panel-id').value          = c.id;
   // Banner now renders the name overlay itself (via _bannerHtml). No separate panel-name element.
-  document.getElementById('panel-banner').innerHTML  = _bannerHtml(c);
+  // Always un-hide banner — drillTo('messages') sets display:none and openPanel must reset it.
+  const _bnrEl = document.getElementById('panel-banner');
+  _bnrEl.innerHTML = _bannerHtml(c);
+  _bnrEl.style.display = '';
   document.getElementById('panel-name-input').value  = dispName(c.name) || '';
   const phoneEl = document.getElementById('panel-phone');
   phoneEl.value = c.phone || '';
@@ -11939,7 +11945,6 @@ function setLeadsView(v) {
   // Stage filter chips: only useful in list view
   const stageWrap = document.querySelector('.pa-stage-wrap');
   if (stageWrap) stageWrap.style.display = v === 'list' ? '' : 'none';
-  _updateListBtnLabel();
 }
 
 
