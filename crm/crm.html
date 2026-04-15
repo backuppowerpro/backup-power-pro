@@ -74,15 +74,46 @@ body {
 }
 html.dark body { background: var(--bg); }
 
-/* Buttons: classic raised chisel, sharp press */
+/* Buttons: classic raised chisel — on press, FLATTEN (no raise, no push) */
 button, .btn, input[type="submit"], input[type="button"] {
   border-radius: 0 !important;
   transition: none !important;
   letter-spacing: .01em;
 }
 button:active, .btn:active {
-  box-shadow: var(--shadow-neu-inset-sm) !important;
+  box-shadow: none !important;
+  outline: 1px solid rgba(0,0,0,.28);
+  outline-offset: -1px;
   transform: translate(1px, 1px);
+}
+html.dark button:active, html.dark .btn:active {
+  outline-color: rgba(0,0,0,.6);
+}
+
+/* ── RAISED → FLAT on click (cards, toolbars, tab chrome, modal headers) ── */
+.card:active, .tab-bar:active, .toolbar:active, .modal-header:active,
+.tab-btn:active, .kpi-card:active, .stat-card:active,
+.nav-icon-btn:active, .fld-btn:active, .qa-btn:active {
+  box-shadow: none !important;
+  outline: 1px solid rgba(0,0,0,.25);
+  outline-offset: -1px;
+}
+
+/* ── FLAT → DEPRESSED on click (list rows, table rows, nav items, drill cards) ── */
+tbody tr:active, .mlc:active, .prop-card:active, .kanban-card:active,
+.addr-dropdown li:active, .pay-history-item:active, .photo-tile:active,
+.drill-back:active, .timeline-item:active, .lead-card:active,
+.cal-day:active, .msg-bubble:active, .permit-row:active {
+  box-shadow: var(--shadow-neu-inset-sm) !important;
+  background: rgba(0,0,0,.06) !important;
+}
+html.dark tbody tr:active, html.dark .mlc:active, html.dark .prop-card:active,
+html.dark .kanban-card:active, html.dark .addr-dropdown li:active,
+html.dark .pay-history-item:active, html.dark .photo-tile:active,
+html.dark .drill-back:active, html.dark .timeline-item:active,
+html.dark .lead-card:active, html.dark .cal-day:active,
+html.dark .msg-bubble:active, html.dark .permit-row:active {
+  background: rgba(0,0,0,.25) !important;
 }
 
 /* Inputs: pressed/recessed */
@@ -4475,6 +4506,7 @@ async function renderProposalDrill() {
       invoiceLineItems._contactId = contactId;
       invoiceLineItems.push({ name: 'Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', amount: p.total || 0 });
       if (hasPOM) invoiceLineItems.push({ name: 'Peace of Mind Protection Package', amount: p.pom_price || 447 });
+      (p.custom_items || []).forEach(function(item){ if (item && (item.title || item.price)) invoiceLineItems.push({ name: item.title || 'Additional service', amount: item.price || 0 }); });
     }
     totalAmount = invoiceLineItems.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
     let liHtml = '';
@@ -4818,6 +4850,7 @@ async function renderPaymentDrill() {
     if (p) {
       invoiceLineItems.push({ name: 'Storm-Ready Connection System (' + (p.amp_type||'30') + 'A)', amount: baseAmount });
       if (hasPOM) invoiceLineItems.push({ name: 'Peace of Mind Protection Package', amount: p.pom_price || 447 });
+      (p.custom_items || []).forEach(function(item){ if (item && (item.title || item.price)) invoiceLineItems.push({ name: item.title || 'Additional service', amount: item.price || 0 }); });
     }
   }
 
@@ -8371,7 +8404,7 @@ const QB_C = {
 const QB_S = {
   base30: 1197, base50: 1497,
   longRun30perFt: 12, longRun50perFt: 14,
-  mainBreaker: 224, twinQuad: 129, surge: 0, pom: 447,
+  mainBreaker: 224, twinQuad: 129, surge: 375, pom: 447,
   cordValue30: 129, cordValue50: 198,
 };
 let qbState = { amp:30, runFt:5, mainBreaker:false, twinQuad:false, cordIncluded:true, pomIncluded:false, requireDeposit:true };
