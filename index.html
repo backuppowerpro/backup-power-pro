@@ -1279,6 +1279,7 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
   };
 
   varNameInput.addEventListener('input', function(){ this.value=this.value.replace(/\s/g,''); if(this.value.length>0) this.value=this.value.charAt(0).toUpperCase()+this.value.slice(1); });
+  document.getElementById('varLastName').addEventListener('input', function(){ this.value=this.value.replace(/\s/g,''); if(this.value.length>0) this.value=this.value.charAt(0).toUpperCase()+this.value.slice(1); });
 
   varPhoneInput.addEventListener('input', function(e){
     var v=e.target.value.replace(/\D/g,'');
@@ -1312,12 +1313,14 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     if(!lastName){document.getElementById('varLastNameErr').style.display='block';ok=false;}
     else{document.getElementById('varLastNameErr').style.display='none';}
 
-    if(phone.length!==10){document.getElementById('varPhoneErr').style.display='block';ok=false;}
-    else{document.getElementById('varPhoneErr').style.display='none';}
+    var phoneEl=document.getElementById('varPhoneErr');
+    if(phone.length!==10){phoneEl.textContent='Enter a valid 10-digit phone number';phoneEl.style.display='block';ok=false;}
+    else{phoneEl.style.display='none';}
 
     var emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-    if(!emailOk){document.getElementById('varEmailErr').style.display='block';ok=false;}
-    else{document.getElementById('varEmailErr').style.display='none';}
+    var emailEl=document.getElementById('varEmailErr');
+    if(!emailOk){emailEl.textContent='Enter a valid email address (e.g. name@gmail.com)';emailEl.style.display='block';ok=false;}
+    else{emailEl.style.display='none';}
 
     var addrVerifiedOk = window.isVarAddrVerified ? window.isVarAddrVerified() : !!address;
     var serviceAreaOk  = window.isVarServiceArea  ? window.isVarServiceArea()  : true;
