@@ -42,5 +42,8 @@ ON CONFLICT (key) DO NOTHING;
 ALTER TABLE sparky_memory ENABLE ROW LEVEL SECURITY;
 
 -- Service role can do everything (edge function uses service role key)
-CREATE POLICY "service_role_all" ON sparky_memory
-  FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "service_role_all" ON sparky_memory
+    FOR ALL USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

@@ -3621,6 +3621,11 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
               <span style="font-weight:600;color:var(--text2)">+$129</span>
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
+              <input type="checkbox" id="p-permit-check" checked onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
+              <span style="flex:1">Permit &amp; inspection</span>
+              <span style="font-weight:600;color:var(--text2)">+$125</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
               <input type="checkbox" id="p-pom-check" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
               <span style="flex:1">Peace of Mind Package</span>
               <span style="font-weight:600;color:var(--text2)">+$447</span>
@@ -6760,19 +6765,23 @@ function pBuildPricing(amp) {
   const override = pGetPriceOverride();
   const mb = s.mainBreaker ? QB_S.mainBreaker : 0;
   const tq = s.twinQuad ? QB_S.twinQuad : 0;
+  const permitIncluded = document.getElementById('p-permit-check')?.checked ?? true;
+  const permitVal = permitIncluded ? QB_C.permitCustomer : 0;
   // If override set: base = override, total = override + add-ons (cord, mb, tq, permit)
+  // If no override: r.totalSell already includes permit; subtract it back if unchecked
   const baseTotal = override !== null
-    ? override + cordVal + mb + tq + QB_C.permitCustomer
-    : r.totalSell;
-  const calcProfit = override !== null ? override - (r.totalSell - r.profit) : r.profit;
+    ? override + cordVal + mb + tq + permitVal
+    : r.totalSell - (permitIncluded ? 0 : QB_C.permitCustomer);
+  const calcProfit = override !== null ? override - (r.totalSell - r.profit) : r.profit - (permitIncluded ? 0 : QB_C.permitCustomer);
   return {
-    base: override !== null ? override + cordVal + mb + tq + QB_C.permitCustomer : r.totalSell,
+    base: baseTotal,
     longRun: override !== null ? 0 : r.longRunSell,
     mainBreaker: mb,
     twinQuad: tq,
     cord: cordVal,
     cordIncluded: s.cordIncluded,
-    permitInspection: QB_C.permitCustomer,
+    permitInspection: permitVal,
+    permitIncluded,
     total: baseTotal,
     profit: calcProfit,
     margin: baseTotal > 0 ? Math.round(calcProfit / baseTotal * 100) : 0,
@@ -6913,6 +6922,8 @@ function editProposal(proposalId) {
   document.getElementById('p-notes').value = p.notes || '';
   const overrideEl = document.getElementById('p-price-override');
   if (overrideEl) overrideEl.value = p.price_override != null ? p.price_override : '';
+  const permitEl = document.getElementById('p-permit-check');
+  if (permitEl) permitEl.checked = p.include_permit !== false;
   pClearCustomItems();
   (p.custom_items || []).forEach(item => pAddCustomItem(item.title, item.price));
   document.getElementById('proposal-modal-title').textContent = 'Edit Proposal';
@@ -6997,6 +7008,7 @@ async function saveProposal() {
     notes:           document.getElementById('p-notes').value.trim(),
     custom_items:    pGetCustomItems(),
     price_override:  pGetPriceOverride(),
+    include_permit:  document.getElementById('p-permit-check')?.checked ?? true,
     status:          'Created',
   };
   // LOGIC #1 fix: fold custom items into stored total so invoice/deposit math stays consistent
