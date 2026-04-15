@@ -23,7 +23,7 @@ serve(async (req) => {
   }
 
   try {
-    const { proposal_token } = await req.json()
+    const { proposal_token, pay_full } = await req.json()
     if (!proposal_token) {
       return new Response(JSON.stringify({ error: 'Missing proposal_token' }), { status: 400, headers: corsHeaders })
     }
@@ -41,26 +41,31 @@ serve(async (req) => {
 
     const total = prop.total || 0
     const depositAmt = Math.round(total * 0.5)
+    const chargeAmt = pay_full ? total : depositAmt
+    const invoiceNotes = pay_full ? 'full_payment' : 'deposit'
+    const lineItemName = pay_full
+      ? 'Full Payment — Storm-Ready Connection System'
+      : '50% Deposit — Storm-Ready Connection System'
 
-    // Check for existing deposit invoice (notes='deposit' + proposal_id)
+    // Check for existing invoice of same type
     const { data: existing } = await supabase
       .from('invoices')
       .select('token, status')
       .eq('proposal_id', prop.id)
-      .eq('notes', 'deposit')
+      .eq('notes', invoiceNotes)
       .maybeSingle()
 
     if (existing && existing.status === 'paid') {
-      return new Response(JSON.stringify({ error: 'Deposit already paid' }), { status: 400, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Payment already completed' }), { status: 400, headers: corsHeaders })
     }
 
     let invToken: string
 
     if (existing) {
-      // Reuse existing unpaid deposit invoice
+      // Reuse existing unpaid invoice
       invToken = existing.token
     } else {
-      // Create deposit invoice
+      // Create invoice
       invToken = crypto.randomUUID()
 
       const { error: invErr } = await supabase
@@ -73,14 +78,14 @@ serve(async (req) => {
           contact_email: prop.contact_email || null,
           contact_phone: prop.contact_phone || null,
           contact_address: prop.contact_address || null,
-          total: depositAmt,
+          total: chargeAmt,
           status: 'sent',
-          notes: 'deposit',
-          line_items: [{ name: '50% Deposit — Storm-Ready Connection System', amount: depositAmt }],
+          notes: invoiceNotes,
+          line_items: [{ name: lineItemName, amount: chargeAmt }],
         }])
 
       if (invErr) {
-        console.error('Failed to create deposit invoice:', invErr.message)
+        console.error('Failed to create invoice:', invErr.message)
         return new Response(JSON.stringify({ error: 'Failed to create invoice: ' + invErr.message }), { status: 500, headers: corsHeaders })
       }
     }
@@ -92,8 +97,8 @@ serve(async (req) => {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: { name: `50% Deposit — Storm-Ready Connection System` },
-          unit_amount: depositAmt * 100,
+          product_data: { name: lineItemName },
+          unit_amount: chargeAmt * 100,
         },
         quantity: 1,
       }],

@@ -1209,20 +1209,26 @@ function updateApproveBtn() {
 }
 
 // ── DEPOSIT PAYMENT (called from approved state) ─────────────
-async function payDeposit() {
-  const btn = document.querySelector('[onclick="payDeposit()"]');
+async function payDeposit(payFull = false) {
+  const btnId = payFull ? '[onclick="payDeposit(true)"]' : '[onclick="payDeposit()"]';
+  const btn = document.querySelector(btnId);
   if (btn) { btn.disabled = true; btn.textContent = 'Redirecting...'; }
   try {
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/proposal-deposit-checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-      body: JSON.stringify({ proposal_token: P.token }),
+      body: JSON.stringify({ proposal_token: P.token, pay_full: payFull }),
     });
     const result = await resp.json();
     if (result.url) { window.location.href = result.url; return; }
     alert('Payment error: ' + (result.error || 'Unknown error'));
   } catch(e) { alert('Network error — please call (864) 400-5302.'); }
-  if (btn) { btn.disabled = false; btn.textContent = `Pay $${Math.round((P.total||0)*0.5).toLocaleString()} Deposit Now →`; }
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = payFull
+      ? `Pay $${Math.round(P.total||0).toLocaleString()} in Full →`
+      : `Pay $${Math.round((P.total||0)*0.5).toLocaleString()} Deposit Now →`;
+  }
 }
 
 // ── APPROVE ──────────────────────────────────────────────────
@@ -1312,9 +1318,13 @@ function renderApproved() {
 
     ${requireDeposit && !depositPaid ? `
     <div style="background:#dc2626;border-radius:14px;padding:24px 20px;text-align:center;color:#fff;margin-bottom:16px">
-      <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px">⚡ Proposal Approved — Deposit Required</div>
-      <p style="font-size:14px;opacity:.9;margin-bottom:16px">Your proposal is signed. Pay your 50% deposit now to confirm your spot and get on the schedule.</p>
-      <button onclick="payDeposit()" style="background:#fff;color:#dc2626;font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;padding:14px 28px;border:none;border-radius:10px;cursor:pointer">Pay $${depositAmt.toLocaleString()} Deposit Now →</button>
+      <div style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px">⚡ Proposal Approved — Deposit Required</div>
+      <p style="font-size:14px;opacity:.9;margin-bottom:20px">Your proposal is signed. Pay your 50% deposit now to confirm your spot and get on the schedule.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto">
+        <button onclick="payDeposit()" style="background:#fff;color:#dc2626;font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;padding:14px 28px;border:none;border-radius:10px;cursor:pointer">Pay $${depositAmt.toLocaleString()} Deposit Now →</button>
+        <button onclick="payDeposit(true)" style="background:rgba(255,255,255,.15);color:#fff;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;padding:12px 24px;border:2px solid rgba(255,255,255,.4);border-radius:10px;cursor:pointer">Pay $${total.toLocaleString()} in Full →</button>
+      </div>
+      <p style="font-size:11px;opacity:.75;margin-top:12px;line-height:1.5">Paying in full is optional. The amount beyond the required deposit is <strong style="color:#fff">fully refundable</strong> any time before your install is completed.</p>
     </div>` : `
     <div class="approved-banner">
       <div class="approved-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
