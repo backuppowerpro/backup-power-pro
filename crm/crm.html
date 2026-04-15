@@ -19,45 +19,107 @@
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#d4911a;
   --green:#10b981; --green2:#059669; --red:#dc2626; --blue:#3b82f6; --purple:#8b5cf6;
   --gray:#6b6560;
-  /* ── Medium neutral grey — neumorphic light ──────────────
-     bg #b2b2b2 → shadow-dark #969696 shadow-light #cecece */
-  --bg:#b2b2b2; --card:#b2b2b2;
-  --neu-dark:#969696; --neu-light:#cecece;
-  --neu-d:5px; --neu-blur:12px;
-  --neu-d-sm:3px; --neu-blur-sm:6px;
-  --shadow-neu: var(--neu-d) var(--neu-d) var(--neu-blur) var(--neu-dark), calc(var(--neu-d) * -1) calc(var(--neu-d) * -1) var(--neu-blur) var(--neu-light);
-  --shadow-neu-sm: var(--neu-d-sm) var(--neu-d-sm) var(--neu-blur-sm) var(--neu-dark), calc(var(--neu-d-sm) * -1) calc(var(--neu-d-sm) * -1) var(--neu-blur-sm) var(--neu-light);
-  --shadow-neu-inset: inset 2px 2px 6px var(--neu-dark), inset -2px -2px 6px var(--neu-light);
-  --shadow-neu-inset-sm: inset 1px 1px 4px var(--neu-dark), inset -1px -1px 4px var(--neu-light);
+  /* ── Minesweeper brutalist — polished silver-gray with chiseled bevels ── */
+  --bg:#bfc3c8; --card:#bfc3c8;
+  --bevel-light:#ffffff; --bevel-dark:#5a5f64;
+  --neu-dark:#8b9096; --neu-light:#e4e7ea;
+  --neu-d:0; --neu-blur:0;
+  --neu-d-sm:0; --neu-blur-sm:0;
+  /* Classic chiseled bevels — raised (buttons, cards) and pressed (inputs, active states) */
+  --shadow-neu: inset 1px 1px 0 rgba(255,255,255,.85), inset -2px -2px 0 rgba(0,0,0,.28), 1px 1px 0 rgba(0,0,0,.18);
+  --shadow-neu-sm: inset 1px 1px 0 rgba(255,255,255,.75), inset -1px -1px 0 rgba(0,0,0,.24);
+  --shadow-neu-inset: inset 2px 2px 0 rgba(0,0,0,.28), inset -1px -1px 0 rgba(255,255,255,.55);
+  --shadow-neu-inset-sm: inset 1px 1px 0 rgba(0,0,0,.24), inset -1px -1px 0 rgba(255,255,255,.5);
   --shadow-sm:var(--shadow-neu-sm);
   --shadow-md:var(--shadow-neu);
   --shadow-lg:var(--shadow-neu);
-  --shadow-xl:0 20px 40px rgba(0,0,0,.22), 0 6px 14px rgba(0,0,0,.12);
-  --border:rgba(0,0,0,.10); --border-strong:rgba(0,0,0,.16);
+  --shadow-xl:0 0 0 1px rgba(0,0,0,.35), 2px 2px 0 rgba(0,0,0,.22), inset 1px 1px 0 rgba(255,255,255,.7);
+  --border:rgba(0,0,0,.32); --border-strong:rgba(0,0,0,.5);
   --text:#181818; --text2:#555555; --text3:#888888;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px; --sp-10:40px; --sp-12:48px;
   --sp-sm:12px; --sp-md:20px; --sp-lg:32px;
-  --r-xs:6px; --r-sm:10px; --r-md:14px; --r-lg:18px; --r-xl:22px; --r-pill:100px;
-  --ease:cubic-bezier(0.34,1.12,0.64,1);
-  --t-fast:120ms var(--ease); --t-base:160ms var(--ease); --t-slow:220ms var(--ease);
+  /* Zero radius — brutal/chiseled */
+  --r-xs:0; --r-sm:0; --r-md:0; --r-lg:0; --r-xl:0; --r-pill:0;
+  --ease:cubic-bezier(0.2,0,0.2,1);
+  --t-fast:80ms var(--ease); --t-base:120ms var(--ease); --t-slow:180ms var(--ease);
 }
 html.dark {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#d4911a;
-  /* ── Medium neutral grey ── */
-  --bg:#b2b2b2; --card:#b2b2b2;
-  --neu-dark:#969696; --neu-light:#cecece;
-  --shadow-neu: var(--neu-d) var(--neu-d) var(--neu-blur) var(--neu-dark), calc(var(--neu-d) * -1) calc(var(--neu-d) * -1) var(--neu-blur) var(--neu-light);
-  --shadow-neu-sm: var(--neu-d-sm) var(--neu-d-sm) var(--neu-blur-sm) var(--neu-dark), calc(var(--neu-d-sm) * -1) calc(var(--neu-d-sm) * -1) var(--neu-blur-sm) var(--neu-light);
-  --shadow-neu-inset: inset 2px 2px 6px var(--neu-dark), inset -2px -2px 6px var(--neu-light);
-  --shadow-neu-inset-sm: inset 1px 1px 4px var(--neu-dark), inset -1px -1px 4px var(--neu-light);
+  /* ── Dark Minesweeper — deep graphite with metal bevels ── */
+  --bg:#3a3e43; --card:#3a3e43;
+  --bevel-light:#6a6f75; --bevel-dark:#1a1c1f;
+  --neu-dark:#1a1c1f; --neu-light:#5d6167;
+  --shadow-neu: inset 1px 1px 0 rgba(255,255,255,.12), inset -2px -2px 0 rgba(0,0,0,.6), 1px 1px 0 rgba(0,0,0,.45);
+  --shadow-neu-sm: inset 1px 1px 0 rgba(255,255,255,.1), inset -1px -1px 0 rgba(0,0,0,.5);
+  --shadow-neu-inset: inset 2px 2px 0 rgba(0,0,0,.6), inset -1px -1px 0 rgba(255,255,255,.08);
+  --shadow-neu-inset-sm: inset 1px 1px 0 rgba(0,0,0,.5), inset -1px -1px 0 rgba(255,255,255,.07);
   --shadow-sm:var(--shadow-neu-sm);
   --shadow-md:var(--shadow-neu);
   --shadow-lg:var(--shadow-neu);
-  --shadow-xl:0 20px 40px rgba(0,0,0,.60), 0 6px 14px rgba(0,0,0,.35);
-  --border:rgba(0,0,0,.10); --border-strong:rgba(0,0,0,.16);
-  --text:#181818; --text2:#555555; --text3:#888888;
+  --shadow-xl:0 0 0 1px rgba(0,0,0,.7), 2px 2px 0 rgba(0,0,0,.5), inset 1px 1px 0 rgba(255,255,255,.1);
+  --border:rgba(0,0,0,.5); --border-strong:rgba(0,0,0,.75);
+  --text:#e8eaec; --text2:#b0b4b8; --text3:#7e8388;
 }
 ::selection{background:rgba(212,145,26,.32);color:var(--text)}
+
+/* ── MINESWEEPER BRUTALIST POLISH ─────────────────────────────────────── */
+/* Body: crisp silver backdrop with faint grid texture */
+body {
+  background:
+    linear-gradient(var(--bg), var(--bg)),
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(0,0,0,.015) 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(0,0,0,.015) 23px 24px);
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+}
+html.dark body { background: var(--bg); }
+
+/* Buttons: classic raised chisel, sharp press */
+button, .btn, input[type="submit"], input[type="button"] {
+  border-radius: 0 !important;
+  transition: none !important;
+  letter-spacing: .01em;
+}
+button:active, .btn:active {
+  box-shadow: var(--shadow-neu-inset-sm) !important;
+  transform: translate(1px, 1px);
+}
+
+/* Inputs: pressed/recessed */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+select, textarea {
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: var(--shadow-neu-inset-sm) !important;
+  background: color-mix(in srgb, var(--bg) 92%, #000 8%) !important;
+}
+input:focus-visible:not([type="checkbox"]):not([type="radio"]),
+select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--gold) !important;
+  outline-offset: -2px;
+}
+
+/* Cards / modals / panels: raised chisel */
+.card, .modal, .side-panel, .tab-bar, thead, table {
+  border-radius: 0 !important;
+}
+
+/* Tables: grid cells like a minesweeper board */
+table td, table th {
+  border-bottom: 1px solid rgba(0,0,0,.22);
+  border-right: 1px solid rgba(0,0,0,.1);
+}
+html.dark table td, html.dark table th {
+  border-bottom: 1px solid rgba(0,0,0,.5);
+  border-right: 1px solid rgba(255,255,255,.04);
+}
+
+/* Badges / pills — rectangles, not pills */
+.prop-badge, .badge, .chip, .pill { border-radius: 0 !important; }
+
+/* Digital counter feel for big numbers (hours/$/counts) */
+.digit, .stat-num, .mono { font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace; letter-spacing: .02em; }
+
 html.dark ::selection{background:rgba(212,145,26,.35);color:#0e0e0d}
 *::-webkit-scrollbar{width:8px;height:0}
 *::-webkit-scrollbar-track{background:transparent}
