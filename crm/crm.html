@@ -3589,6 +3589,18 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
           <input type="range" min="5" max="80" step="5" value="5" id="p-run-slider" class="qb-range" oninput="pOnRunChange(this.value)" style="width:100%">
         </div>
 
+        <!-- Price Override -->
+        <div class="form-row">
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>Installation Price Override</span>
+            <span id="p-calc-price-hint" style="font-size:11px;color:var(--text3);font-weight:500"></span>
+          </label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-weight:700;color:var(--text2);font-size:14px">$</span>
+            <input type="number" id="p-price-override" min="0" step="1" placeholder="Leave blank to use standard pricing" oninput="pRecalc()" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-xs);font-size:13px;font-family:'Inter',sans-serif;background:var(--bg)">
+          </div>
+        </div>
+
         <!-- Add-ons -->
         <div class="form-row">
           <label>Add-ons</label>
@@ -6714,6 +6726,11 @@ async function loadProposals() {
   if (typeof loadPermitAnalytics === 'function') loadPermitAnalytics();
 }
 
+function pGetPriceOverride() {
+  const val = document.getElementById('p-price-override')?.value;
+  return val && val !== '' ? parseInt(val) : null;
+}
+
 function pBuildPricing(amp) {
   const s = {
     mode: qbState.mode, amp: parseInt(amp), runFt: pRunFt, extFt: 5,
@@ -6726,23 +6743,38 @@ function pBuildPricing(amp) {
   const r = qbCalc(s);
   const is50 = s.amp === 50;
   const cordVal = s.cordIncluded ? (is50 ? QB_S.cordValue50 : QB_S.cordValue30) : 0;
+  const override = pGetPriceOverride();
+  const mb = s.mainBreaker ? QB_S.mainBreaker : 0;
+  const tq = s.twinQuad ? QB_S.twinQuad : 0;
+  // If override set: base = override, total = override + add-ons (cord, mb, tq, permit)
+  const baseTotal = override !== null
+    ? override + cordVal + mb + tq + QB_C.permitCustomer
+    : r.totalSell;
+  const calcProfit = override !== null ? override - (r.totalSell - r.profit) : r.profit;
   return {
-    base: r.totalSell,
-    longRun: r.longRunSell,
-    mainBreaker: s.mainBreaker ? QB_S.mainBreaker : 0,
-    twinQuad: s.twinQuad ? QB_S.twinQuad : 0,
+    base: override !== null ? override + cordVal + mb + tq + QB_C.permitCustomer : r.totalSell,
+    longRun: override !== null ? 0 : r.longRunSell,
+    mainBreaker: mb,
+    twinQuad: tq,
     cord: cordVal,
     cordIncluded: s.cordIncluded,
     permitInspection: QB_C.permitCustomer,
-    total: r.totalSell,
-    profit: r.profit,
-    margin: r.margin,
+    total: baseTotal,
+    profit: calcProfit,
+    margin: baseTotal > 0 ? Math.round(calcProfit / baseTotal * 100) : 0,
+    priceOverride: override,
   };
 }
 
 function pRecalc() {
   const amps = pAmpType === 'both' ? ['30', '50'] : [pAmpType];
   const primary = pBuildPricing(amps[0]);
+  // Update calc hint so Key can see standard price while editing override
+  const hint = document.getElementById('p-calc-price-hint');
+  if (hint) {
+    const stdPrice = (() => { const o = document.getElementById('p-price-override'); const prev = o?.value; if (o) o.value = ''; const r = pBuildPricing(amps[0]); if (o) o.value = prev; return r.total; })();
+    hint.textContent = pGetPriceOverride() !== null ? `Standard: $${stdPrice.toLocaleString()}` : '';
+  }
   const pomChecked = document.getElementById('p-pom-check')?.checked || false;
   const surgeChecked = document.getElementById('p-surge-check')?.checked || false;
   const depositChecked = document.getElementById('p-deposit-check')?.checked ?? true;
@@ -6865,6 +6897,8 @@ function editProposal(proposalId) {
   }
   if (document.getElementById('p-deposit-check')) document.getElementById('p-deposit-check').checked = (p.require_deposit !== false);
   document.getElementById('p-notes').value = p.notes || '';
+  const overrideEl = document.getElementById('p-price-override');
+  if (overrideEl) overrideEl.value = p.price_override != null ? p.price_override : '';
   pClearCustomItems();
   (p.custom_items || []).forEach(item => pAddCustomItem(item.title, item.price));
   document.getElementById('proposal-modal-title').textContent = 'Edit Proposal';
@@ -6948,6 +6982,7 @@ async function saveProposal() {
     price_surge:     QB_S.surge,
     notes:           document.getElementById('p-notes').value.trim(),
     custom_items:    pGetCustomItems(),
+    price_override:  pGetPriceOverride(),
     status:          'Created',
   };
   // LOGIC #1 fix: fold custom items into stored total so invoice/deposit math stays consistent
