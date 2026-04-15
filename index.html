@@ -444,14 +444,14 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
             <input type="text" id="varName" placeholder="John" autocomplete="given-name" autocapitalize="words"
               style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
               onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
-            <div id="varNameErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
+            <div id="varNameErr" role="alert" aria-live="polite" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
           </div>
           <div>
             <label for="varLastName" style="display:block;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:5px">Last Name</label>
             <input type="text" id="varLastName" placeholder="Smith" autocomplete="family-name" autocapitalize="words"
               style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
               onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
-            <div id="varLastNameErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
+            <div id="varLastNameErr" role="alert" aria-live="polite" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
           </div>
         </div>
 
@@ -462,14 +462,14 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
             <input type="tel" id="varPhone" placeholder="(864) 555-0100" autocomplete="tel" inputmode="tel"
               style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
               onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
-            <div id="varPhoneErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Valid phone required</div>
+            <div id="varPhoneErr" role="alert" aria-live="polite" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Valid phone required</div>
           </div>
           <div>
             <label for="varEmail" style="display:block;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:5px">Email</label>
             <input type="email" id="varEmail" placeholder="john@email.com" autocomplete="email" inputmode="email"
               style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
               onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
-            <div id="varEmailErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Valid email required</div>
+            <div id="varEmailErr" role="alert" aria-live="polite" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Valid email required</div>
           </div>
         </div>
 
@@ -483,7 +483,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
             <ul id="varAddrDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;padding:4px 0;background:#1a2d4a;border:1.5px solid rgba(255,255,255,.15);border-radius:10px;list-style:none;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.4);max-height:220px;overflow-y:auto"></ul>
             <div id="varAddrMsg" style="display:none;font-size:12px;margin-top:4px;text-align:left"></div>
             <div id="varAddrManualWrap" style="display:none;margin-top:6px;text-align:left"><span style="font-size:12px;color:rgba(255,255,255,.4)">Can't find your address? </span><a id="varAddrManualLink" href="#" style="font-size:12px;color:var(--gold);text-decoration:underline">Enter it manually</a></div>
-            <div id="varAddressErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
+            <div id="varAddressErr" role="alert" aria-live="polite" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
           </div>
         </div>
 
@@ -491,10 +491,10 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
         <label id="varGenLabel" for="varGenCheck" style="display:block;padding:14px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);cursor:pointer;transition:border-color .2s">
           <!-- Top row: checkbox + label text -->
           <div style="display:flex;align-items:flex-start;gap:12px">
-            <div id="varGenBox" style="flex-shrink:0;width:22px;height:22px;border:2px solid rgba(255,255,255,.3);border-radius:6px;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s">
+            <div id="varGenBox" aria-hidden="true" style="flex-shrink:0;width:22px;height:22px;border:2px solid rgba(255,255,255,.3);border-radius:6px;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s">
               <svg id="varGenIcon" viewBox="0 0 12 12" fill="none" stroke="#0b1f3b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;width:12px;height:12px"><polyline points="2,6 5,9 10,3"/></svg>
             </div>
-            <input type="checkbox" id="varGenCheck" style="position:absolute;opacity:0;width:0;height:0">
+            <input type="checkbox" id="varGenCheck" aria-describedby="varGenErr" style="position:absolute;opacity:0;width:0;height:0">
             <span style="font-size:13px;color:rgba(255,255,255,.85);line-height:1.5;text-align:left;display:block">My generator has at least one <strong style="color:#fff">240-volt, 30-amp or 50-amp outlet.</strong></span>
           </div>
           <!-- Full-width icons + text below -->
@@ -512,7 +512,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
             <p style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.6;margin:0;text-align:left"><strong style="color:rgba(255,255,255,.75)">If your generator has either of these outlets, you qualify.</strong> If it doesn't or you're still shopping, reach out once you upgrade to a 240V generator, we'd be happy to get you connected.</p>
           </div>
         </label>
-        <div id="varGenErr" style="display:none;color:#f87171;font-size:12px;margin-top:-6px;text-align:left">Please confirm your generator has a 240V outlet to continue</div>
+        <div id="varGenErr" role="alert" aria-live="polite" style="display:none;color:#f87171;font-size:12px;margin-top:-6px;text-align:left">Please confirm your generator has a 240V outlet to continue</div>
 
         <!-- Panel photo notice -->
         <div id="varHeadsUp" style="display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:12px;background:rgba(255,186,0,.1);border:1.5px solid rgba(255,186,0,.25)">
