@@ -184,14 +184,9 @@ a:hover{text-decoration:underline}
         </thead>
         <tbody>
           <tr>
-            <td>Dubsado</td>
-            <td>CRM, quotes, invoices, scheduling, and client portal</td>
-            <td>Name, email, phone, address, quote details</td>
-          </tr>
-          <tr>
-            <td>Zapier</td>
-            <td>Automation — connects our systems (e.g., passes booking data to Meta and SMS)</td>
-            <td>Name, phone, email, booking details</td>
+            <td>Supabase</td>
+            <td>Our CRM and database — stores contact records, quotes, invoices, and messages</td>
+            <td>Name, email, phone, address, quote and job details</td>
           </tr>
           <tr>
             <td>Meta Pixel (Facebook/Instagram)</td>
@@ -200,23 +195,28 @@ a:hover{text-decoration:underline}
           </tr>
           <tr>
             <td>Meta Conversions API</td>
-            <td>Sends appointment booking events to Meta to improve ad targeting accuracy</td>
+            <td>Sends lead events to Meta server-side to improve ad attribution accuracy</td>
             <td>Hashed email or phone (sent securely; Meta cannot reverse the hash)</td>
           </tr>
           <tr>
-            <td>Microsoft Clarity</td>
-            <td>Session recording and heatmaps — helps us understand how visitors use the site</td>
-            <td>Anonymized mouse movements, clicks, scroll behavior</td>
-          </tr>
-          <tr>
-            <td>Quo (Twilio)</td>
-            <td>Outbound SMS messaging for appointment confirmations and follow-ups</td>
+            <td>Twilio</td>
+            <td>Outbound SMS messaging for quote follow-ups and appointment communications</td>
             <td>Phone number, first name</td>
           </tr>
           <tr>
-            <td>Google Maps / Places API</td>
+            <td>Stripe</td>
+            <td>Payment processing for deposits and invoices</td>
+            <td>Payment details handled entirely by Stripe — we never see or store card numbers</td>
+          </tr>
+          <tr>
+            <td>PostHog</td>
+            <td>Product analytics — helps us understand how visitors use the site</td>
+            <td>Anonymized page events, clicks, and session data</td>
+          </tr>
+          <tr>
+            <td>Mapbox</td>
             <td>Address autocomplete in the quote form</td>
-            <td>Address entered into the quote form</td>
+            <td>Address text entered into the form field</td>
           </tr>
         </tbody>
       </table>
@@ -247,23 +247,38 @@ a:hover{text-decoration:underline}
     </div>
 
     <div class="section">
-      <h2>8. Children's Privacy</h2>
+      <h2>8. California Residents — CCPA Rights</h2>
+      <p>If you are a California resident, you have the following rights under the California Consumer Privacy Act (CCPA):</p>
+      <ul>
+        <li><strong>Right to Know:</strong> You can request details about the personal information we collect, use, and share.</li>
+        <li><strong>Right to Delete:</strong> You can request that we delete your personal information, subject to certain legal exceptions.</li>
+        <li><strong>Right to Opt Out of Sale:</strong> We do not sell your personal information to third parties. You do not need to take any action to opt out.</li>
+        <li><strong>Right to Non-Discrimination:</strong> We will not discriminate against you for exercising any of these rights.</li>
+      </ul>
+      <div class="hbox">
+        <p><strong>We do not sell your personal information</strong> — to data brokers, advertisers, or anyone else. Full stop.</p>
+      </div>
+      <p>To exercise your CCPA rights, contact us at <a href="mailto:key@backuppowerpro.com">key@backuppowerpro.com</a>. We will respond within 45 days.</p>
+    </div>
+
+    <div class="section">
+      <h2>9. Children's Privacy</h2>
       <p>Our services are intended for homeowners aged 18 and older. We do not knowingly collect personal information from anyone under the age of 18. If you believe we have inadvertently collected information from a minor, please contact us and we will delete it promptly.</p>
     </div>
 
     <div class="section">
-      <h2>9. Security</h2>
+      <h2>10. Security</h2>
       <p>We take reasonable precautions to protect your information. Payment processing is handled entirely through Dubsado and their payment partners — we do not store credit card numbers or banking information on our systems. Our website is served over HTTPS. Third-party tools we use (Dubsado, Meta, Twilio) maintain their own security standards.</p>
       <p>No method of transmission over the internet is 100% secure. While we do our best to protect your data, we cannot guarantee absolute security.</p>
     </div>
 
     <div class="section">
-      <h2>10. Changes to This Policy</h2>
+      <h2>11. Changes to This Policy</h2>
       <p>We may update this Privacy Policy from time to time. When we do, we will update the "Last updated" date at the top of this page. Continued use of our website or services after changes are posted constitutes your acceptance of the updated policy. The current version is always available at <a href="https://backuppowerpro.com/privacy">backuppowerpro.com/privacy</a>.</p>
     </div>
 
     <div class="section">
-      <h2>11. Governing Law</h2>
+      <h2>12. Governing Law</h2>
       <p>This Privacy Policy is governed by the laws of the <strong>State of South Carolina</strong>.</p>
     </div>
 
