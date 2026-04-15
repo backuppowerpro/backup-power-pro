@@ -1109,6 +1109,7 @@ td.actions{white-space:nowrap}
 /* ── SIDE PANEL ─────────────────────────────────────────── */
 .side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:300;opacity:0;pointer-events:none;transition: opacity .3s steps(4);pointer-events:auto}
 .side-panel{background:var(--bg);position:fixed;top:0;right:0;bottom:0;width:100%;max-width:480px;display:flex;flex-direction:column;box-shadow:none;overflow:hidden;transform:translateX(100%);transition: transform .35s steps(4);border-left:none;padding-top:env(safe-area-inset-top,0px)}
+.side-panel-overlay.open{opacity:1;pointer-events:auto}
 .side-panel-overlay.open .side-panel{transition: transform .4s steps(4)}
 .side-panel-overlay.open .side-panel{transform:translateX(0);box-shadow:var(--shadow-xl)}
 .panel-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg);position:sticky;top:0;z-index:2}
@@ -1191,9 +1192,9 @@ html.dark .cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{backgrou
 html.dark .cal-holiday{background:#2d1f4e;color:#c084fc}
 
 /* MODALS */
-.modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition: opacity .2s var(--steps(4))}
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition: opacity .2s steps(4, end)}
 .modal-overlay.open{opacity:1;pointer-events:auto}
-.modal{transform:translateY(16px) scale(.98);transition: transform .25s var(--steps(4))}
+.modal{transform:translateY(16px) scale(.98);transition: transform .25s steps(4, end)}
 .modal-overlay.open .modal{transform:translateY(0) scale(1)}
 body.modal-open{overflow:hidden;padding-right:var(--scrollbar-w,0px)}
 .modal{background:var(--bg);border-radius:var(--r-lg);width:100%;max-width:480px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-xl);border:none}
@@ -1242,7 +1243,7 @@ html.dark .form-input:focus,html.dark .form-select:focus,html.dark .form-textare
 .link-actions{display:flex;gap:8px}
 
 /* TOAST */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--r-md);font-size:13.5px;font-weight:600;font-family:'Outfit',sans-serif;z-index:9999;opacity:0;transition: opacity .25s var(--ease),transform .25s var(--steps(4));pointer-events:none;box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,.06);letter-spacing:.005em}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--r-md);font-size:13.5px;font-weight:600;font-family:'Outfit',sans-serif;z-index:9999;opacity:0;transition: opacity .25s var(--ease),transform .25s steps(4, end);pointer-events:none;box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,.06);letter-spacing:.005em}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{background:var(--green2)}
 .toast.error{background:var(--red)}
@@ -1662,7 +1663,7 @@ html.dark .qr-chip:hover{color:var(--gold)}
 .qa-btn.active{box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
 html.dark .qa-btn{background:var(--bg);border-color:rgba(255,255,255,.08);color:var(--text2)}
 html.dark .qa-btn:hover,html.dark .qa-btn.active{background:var(--gold);color:#1e1b17;border-color:var(--gold)}
-.qa-inline{max-height:0;overflow:hidden;transition: max-height .22s var(--steps(4));background:var(--bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.qa-inline{max-height:0;overflow:hidden;transition: max-height .22s steps(4, end);background:var(--bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .qa-inline.open{max-height:min(52vh,520px);overflow-y:auto}
 @media (max-width: 768px) and (max-height:750px){.qa-inline.open{max-height:38vh}}
 .qa-inline-inner{padding:14px 16px}
@@ -2216,8 +2217,8 @@ html.dark .sk-action-btn.confirm:hover{background:#e8b75a}
 html.dark .sk-action-btn.cancel,html.dark .sk-action-btn.edit{border-color:rgba(255,255,255,.08)}
 
 /* ── Communications Search Panel ────────────────────────── */
-.cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:322;opacity:0;pointer-events:none;transition: opacity .2s var(--steps(4));pointer-events:auto}
-.cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--bg);display:flex;flex-direction:column;box-shadow:none;transform:translateX(-100%);transition: transform .28s var(--steps(4));z-index:323;border-right:none;padding-top:env(safe-area-inset-top,0px)}
+.cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:322;opacity:0;pointer-events:none;transition: opacity .2s steps(4, end);pointer-events:auto}
+.cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--bg);display:flex;flex-direction:column;box-shadow:none;transform:translateX(-100%);transition: transform .28s steps(4, end);z-index:323;border-right:none;padding-top:env(safe-area-inset-top,0px)}
 .cs-panel.open{transform:translateX(0);box-shadow:14px 0 48px rgba(10,20,40,.22)}
 html.dark .cs-panel.open{box-shadow:14px 0 48px rgba(0,0,0,.55)}
 .cs-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -2787,20 +2788,20 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   /* Adding it as padding-bottom makes panel footers ride above keys.   */
   .tm-panel{
     bottom:var(--kb,0px);
-    transition: transform .3s var(--steps(4)),bottom .25s steps(4)
+    transition: transform .3s steps(4, end),bottom .25s steps(4)
   }
   .side-panel{
     padding-bottom:calc(var(--kb,0px) + 40px + env(safe-area-inset-bottom,0px));
-    transition: transform .28s var(--steps(4)),padding-bottom .25s steps(4)
+    transition: transform .28s steps(4, end),padding-bottom .25s steps(4)
   }
   .cs-panel{
     padding-bottom:calc(var(--kb,0px) + 40px + env(safe-area-inset-bottom,0px));
-    transition: transform .28s var(--steps(4)),padding-bottom .25s steps(4)
+    transition: transform .28s steps(4, end),padding-bottom .25s steps(4)
   }
   /* Bottom sheet modals lift above keyboard */
   .modal-overlay{
     padding-bottom:var(--kb,0px)!important;
-    transition: opacity .2s var(--steps(4)),padding-bottom .25s steps(4)
+    transition: opacity .2s steps(4, end),padding-bottom .25s steps(4)
   }
   /* Urgent modal & FQ panel */
   .urg-modal-overlay,.fq-overlay{
