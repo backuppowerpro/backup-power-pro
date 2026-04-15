@@ -412,6 +412,7 @@ let P = null;
 let chosenAmp = null;
 let surgeOn = false;
 let pomOn = false;
+let customItemsOn = [];
 let ackScope = false;
 let ackSafety = false;
 let isPreview = false;
@@ -467,7 +468,7 @@ function calcTotal(amp) {
   const pr = getPrice(amp);
   const base = pr.total || pr.base || 0;
   const pomAdder = pomOn ? (P.pom_price || 447) : 0;
-  const customAdder = Array.isArray(P.custom_items) ? P.custom_items.reduce((s, i) => s + (i.price || 0), 0) : 0;
+  const customAdder = Array.isArray(P.custom_items) ? P.custom_items.reduce((s, i, idx) => s + (customItemsOn[idx] !== false ? (i.price || 0) : 0), 0) : 0;
   return base + pomAdder + customAdder;
 }
 
@@ -683,6 +684,7 @@ function renderProposal() {
   chosenAmp = P.selected_amp || P.amp_type || '30';
   surgeOn = P.selected_surge || false;
   pomOn = P.selected_pom || false;
+  customItemsOn = Array.isArray(P.custom_items) ? P.custom_items.map(() => true) : [];
   const requireDeposit = P.require_deposit !== false;
 
   const firstName = (P.contact_name || '').trim().split(/\s+/)[0] || P.contact_name || 'Homeowner';
@@ -899,6 +901,8 @@ function renderProposal() {
       </div>
 
       <div class="investment-items" id="pricing-items"></div>
+
+      <div class="investment-items" id="custom-items-mount"></div>
 
       ${P.include_pom ? `<div class="pom-divider-bar">
         <span>Optional Add-On · Same Day</span>
@@ -1155,11 +1159,8 @@ function renderPricing() {
     if (P.include_surge) rows += priceRow('Whole-House Surge Protector', 'Installed on main panel', fmt(P.price_surge));
   }
 
-  if (Array.isArray(P.custom_items)) {
-    P.custom_items.forEach(item => {
-      if (item.title || item.price) rows += priceRow(item.title || 'Additional service', '', fmt(item.price || 0));
-    });
-  }
+  // Custom items rendered separately as toggle cards (see #custom-items-mount)
+  renderCustomItems();
 
   if (P.discount_amount && P.discount_amount > 0) {
     const discountNote = P.notes ? P.notes.trim() : '';
@@ -1226,6 +1227,35 @@ function switchAmp(amp) {
 }
 
 // ── POM TOGGLE ───────────────────────────────────────────────
+function renderCustomItems() {
+  const mount = document.getElementById('custom-items-mount');
+  if (!mount) return;
+  const items = Array.isArray(P.custom_items) ? P.custom_items.filter(i => i.title || i.price) : [];
+  if (!items.length) { mount.innerHTML = ''; return; }
+  const html = items.map((item, idx) => {
+    const on = customItemsOn[idx] !== false;
+    return `<div onclick="toggleCustomItem(${idx})" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;background:${on ? 'var(--light-blue)' : '#f8f9fb'};border-radius:10px;margin-bottom:8px;border:1.5px solid ${on ? 'rgba(11,31,59,.18)' : 'transparent'};transition:all .15s;user-select:none">
+      <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${on ? 'var(--navy)' : '#c8cdd8'};background:${on ? 'var(--navy)' : '#fff'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">
+        ${on ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;color:${on ? 'var(--navy)' : 'var(--text3)'};${on ? '' : 'text-decoration:line-through'}">${esc(item.title || 'Additional service')}</div>
+      </div>
+      <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:${on ? 'var(--navy)' : 'var(--text3)'}">${fmt(item.price || 0)}</div>
+    </div>`;
+  }).join('');
+  mount.innerHTML = `<div style="margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Extra Services — Select What You'd Like</div>
+    ${html}
+  </div>`;
+}
+
+function toggleCustomItem(idx) {
+  customItemsOn[idx] = !customItemsOn[idx];
+  renderPricing();
+  updateApproveBtn();
+}
+
 function togglePom() {
   pomOn = !pomOn;
   const card = document.getElementById('pom-card');
