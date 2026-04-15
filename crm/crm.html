@@ -4277,9 +4277,9 @@ async function renderProposalDrill() {
   const previewUrl = url + '&preview=1';
   const fmtTS = function(d) { return d ? new Date(d).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : ''; };
 
-  const hasPOM = p.include_pom || false;
-  const hasSurge = p.include_surge || p.selected_surge || false;
   const isApproved = p.status === 'Approved';
+  const hasPOM = isApproved ? (p.selected_pom || false) : (p.include_pom || false);
+  const hasSurge = p.include_surge || p.selected_surge || false;
   const isCancelled = p.status === 'Cancelled';
   const canEdit = !isApproved && !isCancelled;
 
@@ -4635,7 +4635,7 @@ async function renderPaymentDrill() {
   const contactId = currentPanelContactId;
   const p = proposalMap[contactId]?.[currentProposalIdx];
   const el = document.getElementById('drill-payment-content');
-  const hasPOM = p ? (p.include_pom || false) : false;
+  const hasPOM = p ? ((p.status === 'Approved') ? (p.selected_pom || false) : (p.include_pom || false)) : false;
   const baseAmount = p ? (p.total || 0) : 0;
   const proposalSigned = p && p.signed_at;
   const directInvoice = invoiceLineItems._source === 'direct';
@@ -5071,7 +5071,7 @@ function generateInvoicePDF() {
   ];
   if (!invoiceLineItems.length) {
     if (p.include_surge || p.selected_surge) lines.push({ name: 'Whole-Home Surge Protector', amount: 375 });
-    if (p.include_pom) lines.push({ name: 'Peace of Mind Package', amount: 97 });
+    if (p.selected_pom) lines.push({ name: 'Peace of Mind Package', amount: p.pom_price || 447 });
   }
   var total = 0;
   lines.forEach(function(li) {
@@ -8048,7 +8048,7 @@ async function autoCreateInvoiceForProposal(proposal) {
   // Build line items from proposal
   const lineItems = [{ name: 'Storm-Ready Connection System (' + (proposal.selected_amp || '30') + 'A)', amount: proposal.total || 0 }];
   if (proposal.include_surge && !proposal.selected_surge) lineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
-  if (proposal.selected_pom) lineItems.push({ name: 'Peace of Mind Package', amount: proposal.pom_price || 97 });
+  if (proposal.selected_pom) lineItems.push({ name: 'Peace of Mind Package', amount: proposal.pom_price || 447 });
   const total = lineItems.reduce(function(s, li) { return s + (li.amount || 0); }, 0);
   // Find contact info
   const c = allContacts.find(x => x.id === proposal.contact_id);

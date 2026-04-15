@@ -887,7 +887,7 @@ function renderProposal() {
 
       <div class="investment-items" id="pricing-items"></div>
 
-      <div class="pom-divider-bar">
+      ${P.include_pom ? `<div class="pom-divider-bar">
         <span>Optional Add-On · Same Day</span>
       </div>
 
@@ -907,7 +907,7 @@ function renderProposal() {
           <div class="pom-feature-pill"><span style="font-size:14px;flex-shrink:0">🔍</span><div><div class="pom-feature-pill-title">Panel Inspection</div><div class="pom-feature-pill-desc">20-point safety check</div></div></div>
           <div class="pom-feature-pill"><span style="font-size:14px;flex-shrink:0">📅</span><div><div class="pom-feature-pill-title">Priority Scheduling</div><div class="pom-feature-pill-desc">Move to front of the line</div></div></div>
         </div>
-      </div>
+      </div>` : ''}
 
       <div class="investment-total-section">
         <span class="investment-total-label">Total</span>
