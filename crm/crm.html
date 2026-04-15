@@ -225,8 +225,9 @@ html.dark tbody tr:hover {
 
 /* ══ RAISED CHROME — apply to toolbars, headers, tab bars ══ */
 .tab-bar, .toolbar, header, .modal-header {
-  box-shadow: inset 1px 1px 0 rgba(255,255,255,.7), inset -1px -1px 0 rgba(0,0,0,.25), 0 1px 0 rgba(0,0,0,.2) !important;
+  box-shadow: var(--shadow-neu-sm) !important;
   border-radius: 0 !important;
+  border: none !important;
 }
 
 /* ══ SIMPLE BOLD ICONS — strip styling from inline SVGs where common ══ */
@@ -1371,7 +1372,7 @@ html.dark .inbox-item.unread{border-left-color:var(--gold)}
 /* ── CALL LOG ─────────────────────────────────────────── */
 .call-filter-chip{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--r-pill);border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:box-shadow var(--t-fast),color var(--t-fast);white-space:nowrap}
 .call-filter-chip:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
-.call-filter-chip.active{background:var(--gold);box-shadow:none;color:var(--navy)}
+.call-filter-chip.active{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
 html.dark .call-filter-chip.active{background:var(--gold);color:#1a2035}
 html.dark .call-filter-chip:hover{color:var(--gold)}
 .call-row{background:var(--bg);border-radius:var(--r-md);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:var(--shadow-neu-sm);border:none}
@@ -1991,38 +1992,20 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   /* ── LIQUID GLASS floating pill tab bar (iOS 26) ─────────── */
   .tab-bar{
     position:fixed!important;top:auto!important;
-    bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;
-    left:16px!important;right:16px!important;width:auto!important;
-    height:auto;min-height:48px;
-    padding:5px 6px!important;
-    border-radius:40px!important;
-    /* Near-opaque glass — content doesn't bleed through */
-    background:rgba(232,237,246,.97)!important;
-    min-height:48px!important;
-    -webkit-backdrop-filter:blur(28px) saturate(180%) brightness(1.04);
-    backdrop-filter:blur(28px) saturate(180%) brightness(1.04);
-    /* Glass border — top highlight + subtle surround */
-    border:none!important;
-    outline:0.5px solid rgba(255,255,255,.75)!important;
-    /* Floating shadow — layered for depth */
-    box-shadow:
-      0 12px 40px rgba(10,20,40,.18),
-      0 3px 10px rgba(10,20,40,.10),
-      inset 0 1px 0 rgba(255,255,255,.95),
-      inset 0 -1px 0 rgba(0,0,0,.04)!important;
+    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+    left:12px!important;right:12px!important;width:auto!important;
+    height:auto;min-height:52px;
+    padding:4px 6px!important;
+    border-radius:0!important;
+    background:var(--card)!important;
+    border:none!important;outline:none!important;
+    box-shadow:var(--shadow-neu)!important;
     justify-content:space-around;overflow:visible;z-index:51;
-    transition:transform .28s cubic-bezier(0.34,1.12,0.64,1),opacity .2s ease
+    transition:none
   }
-  /* No shelf needed — 97% opaque pill + padding-bottom on .main handles content clearance */
-  /* Dark mode floating pill */
   html.dark .tab-bar{
-    background:rgba(18,17,16,.97)!important;
-    outline-color:rgba(255,255,255,.08)!important;
-    box-shadow:
-      0 12px 40px rgba(0,0,0,.60),
-      0 3px 10px rgba(0,0,0,.35),
-      inset 0 1px 0 rgba(255,255,255,.06),
-      inset 0 -1px 0 rgba(0,0,0,.25)!important
+    background:var(--card)!important;
+    box-shadow:var(--shadow-neu)!important
   }
   /* Tab labels: hidden on mobile — icon-only pill bar */
   .tab-label{display:none!important}
@@ -2031,9 +2014,9 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
     position:absolute!important;top:2px;right:2px;margin-left:0!important;vertical-align:unset!important;
     min-width:15px!important;height:15px!important;padding:0 4px!important;
     font-size:9px!important;font-weight:800;line-height:15px!important;
-    border:2px solid rgba(232,237,246,.97)!important
+    border:1px solid #000!important;background:#dc2626!important;color:#fff!important;border-radius:0!important
   }
-  html.dark .tab-badge{border-color:rgba(18,17,16,.97)!important}
+  html.dark .tab-badge{border-color:#000!important}
 
   /* Tab buttons — icon-only, evenly distributed */
   .tab-btn{
