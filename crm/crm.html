@@ -402,10 +402,66 @@ select, textarea {
   padding: 6px 10px;
 }
 
-/* List rows / table rows / tiles — flat by default, pressed on active */
-tbody tr, .mlc, .pay-history-item, .timeline-item, .photo-tile {
-  background: transparent;
+/* List rows / table rows / tiles — RAISED Minesweeper cells with chunky bevels */
+tbody tr, .mlc, .lead-card, .kanban-card, .prop-card, .pay-history-item, .timeline-item {
+  background: var(--card) !important;
+  box-shadow: var(--shadow-neu-sm) !important;
+  border: none !important;
 }
+tbody tr td, table th {
+  border: none !important;
+  padding: 12px 14px !important;
+}
+/* Spacing between rows so bevels don't merge — like Minesweeper grid gaps */
+tbody tr {
+  outline: 1px solid rgba(0,0,0,.18);
+  outline-offset: -1px;
+}
+html.dark tbody tr {
+  outline: 1px solid rgba(0,0,0,.55);
+  outline-offset: -1px;
+}
+/* Hover lifts the row */
+tbody tr:hover {
+  box-shadow: var(--shadow-neu) !important;
+  background: color-mix(in srgb, var(--card) 92%, white 8%) !important;
+}
+html.dark tbody tr:hover {
+  background: color-mix(in srgb, var(--card) 88%, white 12%) !important;
+}
+/* Tap depresses */
+tbody tr:active {
+  box-shadow: var(--shadow-neu-inset-sm) !important;
+}
+
+/* Chip overflow fix — wrap on desktop, scroll on mobile */
+.pa-stage-list {
+  flex-wrap: wrap !important;
+  overflow-x: visible !important;
+  padding: 10px !important;
+}
+@media (max-width: 768px) {
+  .pa-stage-list { flex-wrap: nowrap !important; overflow-x: auto !important; padding-right: 36px !important; }
+}
+.pa-stage-wrap {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+/* Status badges — chunkier 2px Minesweeper bevels (was 1px) */
+.prop-badge {
+  box-shadow: var(--shadow-neu-sm) !important;
+  padding: 4px 12px !important;
+}
+
+/* pa-stage-chip — chunky raised, pressed when active */
+.pa-stage-chip {
+  box-shadow: var(--shadow-neu-sm) !important;
+  border-radius: 0 !important;
+}
+.pa-stage-chip:hover { box-shadow: var(--shadow-neu) !important; }
+.pa-stage-chip.active { box-shadow: var(--shadow-neu-inset-sm) !important; }
+
 
 
 
