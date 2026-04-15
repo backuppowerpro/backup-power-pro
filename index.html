@@ -497,9 +497,9 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
             <input type="checkbox" id="varGenCheck" aria-describedby="varGenErr" style="position:absolute;opacity:0;width:0;height:0">
             <span style="font-size:13px;color:rgba(255,255,255,.85);line-height:1.5;text-align:left;display:block">My generator has at least one <strong style="color:#fff">240-volt, 30-amp or 50-amp outlet.</strong></span>
           </div>
-          <!-- Full-width icons + text below -->
-          <div style="margin-top:12px;text-align:center">
-            <div style="display:flex;align-items:flex-end;gap:16px;justify-content:center;margin-bottom:10px">
+          <!-- Icons + text: side-by-side on desktop, stacked on mobile -->
+          <div class="var-outlet-row" style="margin-top:12px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+            <div style="display:flex;align-items:flex-end;gap:12px;flex-shrink:0">
               <div style="text-align:center">
                 <img src="img/30amp-outlet.png" alt="30-amp 240V outlet (3-prong)" style="width:56px;height:56px;object-fit:contain;opacity:.9;display:block;margin:0 auto 4px">
                 <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.04em;text-transform:uppercase">30-Amp</span>
@@ -509,7 +509,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
                 <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.04em;text-transform:uppercase">50-Amp</span>
               </div>
             </div>
-            <p style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.6;margin:0;text-align:left"><strong style="color:rgba(255,255,255,.75)">If your generator has either of these outlets, you qualify.</strong> If it doesn't or you're still shopping, reach out once you upgrade to a 240V generator, we'd be happy to get you connected.</p>
+            <p style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.6;margin:0;flex:1;min-width:160px"><strong style="color:rgba(255,255,255,.75)">If your generator has either of these outlets, you qualify.</strong> If it doesn't or you're still shopping, reach out once you upgrade to a 240V generator, we'd be happy to get you connected.</p>
           </div>
         </label>
         <div id="varGenErr" role="alert" aria-live="polite" style="display:none;color:#f87171;font-size:12px;margin-top:-6px;text-align:left">Please confirm your generator has a 240V outlet to continue</div>
