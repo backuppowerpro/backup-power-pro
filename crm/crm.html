@@ -678,7 +678,8 @@ html.dark .avatar, html.dark .pn-avatar, html.dark [class*="avatar"] {
 .text-muted { color: var(--text3) !important; }
 
 /* Force consistent panel-name padding so it doesn't clip behind back arrow */
-.panel-name { padding-left: 4px; }
+/* Panel name must clear the 44px back button + close button on both sides */
+.panel-name { padding-left: 60px !important; padding-right: 60px !important; padding-top: 4px; line-height: 1.4 !important; }
 
 /* Drill panel scroll fix — show inner scroll indicator */
 #drill-contact-scroll, .drill-level > div[style*="overflow-y:auto"] {
