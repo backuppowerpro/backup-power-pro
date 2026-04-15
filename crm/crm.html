@@ -376,6 +376,101 @@ select, textarea {
 }
 /* End Cybertruck layer */
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONSISTENCY LAYER — kill the chaos: standardize buttons, icons, fonts
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Force inheritance — kill stray Arial appearances */
+* { font-family: inherit; }
+body, html, .side-panel, .modal, .drill-level, .nav, .tab-bar {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Button height standardization — only 3 sizes allowed: 28 (compact), 36 (default), 44 (touch) */
+button, .btn, input[type="submit"], input[type="button"] {
+  min-height: 36px !important;
+  line-height: 1.2;
+}
+.btn-sm, button.btn-sm, .qa-btn, .pill-btn-sm, .chip-sm {
+  min-height: 28px !important;
+}
+@media (pointer: coarse) {
+  /* All buttons are touch-target sized on touch devices */
+  button:not(.tab-btn):not(.btn-sm), .btn { min-height: 44px !important; min-width: 44px !important; }
+  .qa-btn, .pill-btn { min-width: 44px !important; min-height: 44px !important; }
+  .panel-quick-btns button { min-height: 44px !important; min-width: 44px !important; padding: 8px 12px !important; }
+}
+
+/* Panel quick-action buttons (chat/call/maps/proposal/invoice) — make them tappable */
+.panel-quick-btns button {
+  min-height: 38px !important;
+  min-width: 38px !important;
+  padding: 8px 12px !important;
+}
+
+/* Icon size standardization — 14px (inline), 16px (default), 20px (large) */
+svg { stroke-width: 2.25 !important; flex-shrink: 0; }
+button svg, .btn svg { stroke-width: 2.5 !important; }
+
+/* Kill remaining border-radius leftovers (except avatars/photos which use 50%) */
+.btn, button, input, select, textarea, .card, .modal, .panel, .chip, .pill,
+.tab-bar, .toolbar, .modal-header, .alert, .toast, .badge, .prop-badge,
+.kanban-card, .lead-card, .prop-card, .stage-chip, .pa-stage-chip,
+.call-filter-chip, .stat-card, .kpi-card, .pa-stat, .inv-stat,
+.pay-history-item, .photo-tile, .timeline-item {
+  border-radius: 0 !important;
+}
+
+/* Avatars: keep circular (universally recognized for people) BUT thinner border so it fits Minesweeper */
+.avatar, .pn-avatar, .mlc-avatar, [class*="avatar"] {
+  border-radius: 50% !important;
+  border: 2px solid rgba(0,0,0,.45);
+}
+html.dark .avatar, html.dark .pn-avatar, html.dark [class*="avatar"] {
+  border-color: rgba(0,0,0,.7);
+}
+
+/* Status badge consistency — exactly 3 sizes, all flat, all chunky */
+.prop-badge, .badge {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  padding: 4px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+}
+
+/* Text color consistency — primary, secondary, muted */
+.text-primary { color: var(--text) !important; }
+.text-secondary { color: var(--text2) !important; }
+.text-muted { color: var(--text3) !important; }
+
+/* Force consistent panel-name padding so it doesn't clip behind back arrow */
+.panel-name { padding-left: 4px; }
+
+/* Drill panel scroll fix — show inner scroll indicator */
+#drill-contact-scroll, .drill-level > div[style*="overflow-y:auto"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text3) transparent;
+}
+#drill-contact-scroll::-webkit-scrollbar,
+.drill-level > div[style*="overflow-y:auto"]::-webkit-scrollbar {
+  width: 8px;
+}
+#drill-contact-scroll::-webkit-scrollbar-thumb,
+.drill-level > div[style*="overflow-y:auto"]::-webkit-scrollbar-thumb {
+  background: var(--text3);
+  border-radius: 0;
+}
+
+/* Spacing rhythm: standardize padding inside cards */
+.card, .modal, .pa-stat, .inv-stat, .kpi-card, .stat-card { padding: 14px 16px; }
+
+
+
 /* ═══ STRONG 3D MINESWEEPER BEVELS — flat surfaces, chunky edges ═══ */
 .card, .modal, .side-panel, .tab-bar, .toolbar,
 .pa-stat, .inv-stat, .kpi-card, .stat-card,
