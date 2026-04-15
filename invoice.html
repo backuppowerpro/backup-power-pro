@@ -482,6 +482,7 @@ function renderInvoice() {
       Pay ${fmt(total)} by Bank Transfer
       <span class="ach-badge">NO FEE</span>
     </button>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:-8px;margin-bottom:8px">ACH bank transfers take 3–5 business days to clear.</div>
 
     <!-- Pay by Card — secondary, smaller -->
     <button class="btn-pay-card" onclick="payOnline(false)">
@@ -526,8 +527,8 @@ function renderPaidInvoice() {
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <h2>Thank You for Choosing Backup Power Pro!</h2>
-      <p>Your Storm-Ready Connection System has been professionally installed, permitted, and inspected.</p>
-      <p style="margin-top:10px;font-size:13px;opacity:.8">Keep this receipt for your records and your insurance company.</p>
+      <p>${INV.notes === 'deposit' ? 'Your deposit has been received. We\'ll reach out soon to confirm your installation date.' : 'Your Storm-Ready Connection System has been professionally installed, permitted, and inspected.'}</p>
+      <p style="margin-top:10px;font-size:13px;opacity:.8">Keep this receipt for your records${INV.notes !== 'deposit' ? ' and your insurance company' : ''}.</p>
       <p style="margin-top:8px;font-size:13px">If you ever need anything: <a href="tel:8644005302" style="color:#fff;font-weight:700;text-decoration:underline">(864) 400-5302</a></p>
     </div>
 

@@ -1035,9 +1035,10 @@ function renderProposal() {
             </div>
             <div class="pay-opt" id="pay-opt-full" onclick="selectPayOpt(true)">
               <div class="pay-opt-label"><span class="pay-opt-name">Pay in Full</span><span class="pay-opt-amount">${fmt(total)}</span></div>
-              <div class="pay-opt-sub">Amount beyond deposit is fully refundable before install</div>
+              <div class="pay-opt-sub">Remainder is fully refundable if cancelled 48+ hrs before install</div>
             </div>
           </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Checkout accepts card and bank transfer. ACH bank transfers take 3–5 business days to clear.</div>
         </div>` : ''}
         ${(P.discount_amount && P.discount_amount > 0 && P.notes) ? `
         <div style="margin-top:20px;padding:14px 16px;background:#fefce8;border-left:4px solid #ca8a04;border-radius:8px">
@@ -1052,13 +1053,12 @@ function renderProposal() {
           <div class="sig-preview" id="sig-preview"></div>
           <div class="name-hint" style="text-align:center">By signing, you agree this constitutes a legally binding electronic signature under the ESIGN Act.</div>
         </div>
-        <button class="approve-btn" id="approve-btn" onclick="approveProposal()" disabled>
+        <button class="approve-btn" id="approve-btn" onclick="approveProposal()" disabled ${daysLeft <= 0 ? 'data-expired="1"' : ''}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span id="approve-btn-label">${requireDeposit ? `Approve &amp; Pay ${fmt(depositAmt)} Deposit` : `Approve &amp; Lock In My Price — ${fmt(calcTotal(chosenAmp))}`}</span>
+          <span id="approve-btn-label">${daysLeft <= 0 ? 'Proposal Expired' : (requireDeposit ? `Approve &amp; Pay ${fmt(depositAmt)} Deposit` : `Approve &amp; Lock In My Price — ${fmt(calcTotal(chosenAmp))}`)}</span>
         </button>
-        <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">
-          ${requireDeposit ? 'You\'ll be taken to a secure checkout to complete payment.' : 'No payment today. Billed on completion.'}
-        </div>
+        ${daysLeft <= 0 ? `<div style="text-align:center;font-size:12px;color:#dc2626;margin-top:10px;line-height:1.6;font-weight:600">This proposal expired. Please text or call us at <a href="tel:8644005302" style="color:#dc2626">(864) 400-5302</a> to get updated pricing.</div>` : `<div style="text-align:center;font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">
+          ${requireDeposit ? 'You\'ll be taken to a secure checkout to complete payment.' : 'No payment today. Billed on completion.'}</div>`}
         <div id="approve-err" style="font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:center"></div>
       </div>
     </div>
@@ -1230,6 +1230,7 @@ function switchAmp(amp) {
     b.classList.toggle('active', b.textContent.trim().startsWith(amp === '30' ? '30' : '50'));
   });
   renderPricing();
+  updateApproveBtn();
 }
 
 // ── POM TOGGLE ───────────────────────────────────────────────
@@ -1292,7 +1293,10 @@ function updateSigPreview() {
 function validateForm() {
   const name = (document.getElementById('signer-name')?.value || '').trim();
   const btn = document.getElementById('approve-btn');
-  if (btn) btn.disabled = !(name.length >= 2 && ackScope && ackSafety);
+  if (btn) {
+    if (btn.dataset.expired === '1') { btn.disabled = true; return; }
+    btn.disabled = !(name.length >= 2 && ackScope && ackSafety);
+  }
 }
 
 function toggleDepPolicy(e) {

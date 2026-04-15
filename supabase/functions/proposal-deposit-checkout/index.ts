@@ -40,6 +40,9 @@ serve(async (req) => {
     }
 
     const total = prop.total || 0
+    if (!total || total <= 0) {
+      return new Response(JSON.stringify({ error: 'Invalid proposal total' }), { status: 400, headers: corsHeaders })
+    }
     const depositAmt = Math.round(total * 0.5)
     const chargeAmt = pay_full ? total : depositAmt
     const invoiceNotes = pay_full ? 'full_payment' : 'deposit'
