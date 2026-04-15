@@ -455,44 +455,30 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
 
         <div class="divider"></div>
 
-        <div class="field" id="f-genvoltage">
-          <label>Is Your Generator 240 Volts? <span class="req">*</span></label>
-          <div class="opt-group cols-3">
-            <label class="opt-label">
-              <input type="radio" name="genVoltage" value="Yes - 240V">
-              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
-                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-                <div class="opt-text">Yes, it's 240V</div>
-              </div>
-            </label>
-            <label class="opt-label">
-              <input type="radio" name="genVoltage" value="No - 120V">
-              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
-                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
-                <div class="opt-text">No, it's 120V</div>
-              </div>
-            </label>
-            <label class="opt-label">
-              <input type="radio" name="genVoltage" value="Unsure">
-              <div class="opt-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 10px;gap:6px">
-                <div class="opt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-                <div class="opt-text">Unsure</div>
-              </div>
-            </label>
-          </div>
-          <div class="err" id="genVoltage-err">Please select one</div>
-          <div class="voltage-warn" id="voltageWarn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <div>
-              <strong>Heads up — 240V generator required</strong>
-              <p>A 240-volt generator is needed to connect to your home's panel. We can still do the installation, but a portable generator upgrade may be required. No worries — we'll walk you through it.</p>
-              <button type="button" class="voltage-ack-btn" id="voltageAckBtn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                I understand
-              </button>
+        <!-- Generator qualification checkbox -->
+        <div class="field" id="f-gencheck">
+          <label>Generator Outlet Confirmation <span class="req">*</span></label>
+          <label id="gencheck-label" style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:border-color .2s,background .2s;background:var(--white)">
+            <div id="gencheck-box" style="flex-shrink:0;width:22px;height:22px;border:2px solid var(--border);border-radius:6px;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s;background:var(--white)">
+              <svg id="gencheck-icon" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;width:12px;height:12px"><polyline points="2,6 5,9 10,3"/></svg>
             </div>
+            <input type="checkbox" id="genCompatible" style="position:absolute;opacity:0;width:0;height:0" onchange="toggleGenCheck(this)">
+            <span style="font-size:14px;color:var(--text);line-height:1.5">I own a portable generator with at least a <strong>240-volt, 30-amp or 50-amp outlet</strong> (the large 3- or 4-prong outlet on the generator panel).</span>
+          </label>
+          <div class="err" id="gencheck-err">Please confirm your generator has a 240V outlet to continue</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Panel photo notice -->
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:12px;background:#eff6ff;border:1.5px solid #bfdbfe;margin-bottom:16px">
+          <div style="flex-shrink:0;width:36px;height:36px;background:#1d4ed8;border-radius:8px;display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </div>
-          <div class="err" id="voltageAck-err" style="display:none">Please click "I understand" above to continue</div>
+          <div>
+            <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:#1e40af;margin-bottom:3px">We'll need a panel photo for your quote</div>
+            <div style="font-size:13px;color:#1e40af;line-height:1.5;opacity:.85">After you submit, we'll text you and ask for a photo of your main electrical panel and breaker labels. This lets us provide an accurate, no-surprise quote — no site visit required.</div>
+          </div>
         </div>
 
         <!-- Scarcity callout -->
@@ -511,8 +497,8 @@ src="https://www.facebook.com/tr?id=1389648775800936&ev=PageView&noscript=1"/></
             Back
           </button>
           <button class="btn btn-gold" id="submitBtn" onclick="submitForm()">
-            Get My Free Quote
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Submit — Expect a Text
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </button>
         </div>
         <div class="btn-sub">
@@ -703,16 +689,9 @@ function validateStep(step) {
   }
   if (step === 2) {
     const pl = document.querySelector('input[name="panelLocation"]:checked');
-    const gv = document.querySelector('input[name="genVoltage"]:checked');
+    const gc = document.getElementById('genCompatible').checked;
     setErrById('panelLocation-err', !pl); if (!pl) ok = false;
-    setErrById('genVoltage-err', !gv); if (!gv) ok = false;
-    // 120V acknowledgment check — runs alongside other errors, not after
-    if (gv && gv.value === 'No - 120V' && !voltage120Acknowledged) {
-      document.getElementById('voltageAck-err').style.display = 'block';
-      ok = false;
-    } else {
-      document.getElementById('voltageAck-err').style.display = 'none';
-    }
+    setErrById('gencheck-err', !gc); if (!gc) ok = false;
   }
   return ok;
 }
@@ -762,31 +741,34 @@ phoneConfirmBtn.addEventListener('click', function() {
   phoneConfirmEl.classList.add('confirmed');
 });
 
-// 120V voltage warning + acknowledge
-let voltage120Acknowledged = false;
-const voltageWarn = document.getElementById('voltageWarn');
-const voltageAckBtn = document.getElementById('voltageAckBtn');
+// Generator compatibility checkbox toggle
+function toggleGenCheck(cb) {
+  const box = document.getElementById('gencheck-box');
+  const icon = document.getElementById('gencheck-icon');
+  const label = document.getElementById('gencheck-label');
+  if (cb.checked) {
+    box.style.background = 'var(--navy)';
+    box.style.borderColor = 'var(--navy)';
+    icon.style.display = 'block';
+    label.style.borderColor = 'var(--navy)';
+    label.style.background = '#f8faff';
+    document.getElementById('f-gencheck').classList.remove('has-error');
+    setErrById('gencheck-err', false);
+  } else {
+    box.style.background = 'var(--white)';
+    box.style.borderColor = 'var(--border)';
+    icon.style.display = 'none';
+    label.style.borderColor = 'var(--border)';
+    label.style.background = 'var(--white)';
+  }
+}
 
-document.querySelectorAll('input[name="genVoltage"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    if (this.value === 'No - 120V') {
-      voltageWarn.classList.add('show');
-      voltage120Acknowledged = false;
-      voltageAckBtn.classList.remove('done');
-      voltageAckBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> I understand';
-    } else {
-      voltageWarn.classList.remove('show');
-      voltage120Acknowledged = false;
-      document.getElementById('voltageAck-err').style.display = 'none';
-    }
-  });
-});
-
-voltageAckBtn.addEventListener('click', function() {
-  voltage120Acknowledged = true;
-  voltageAckBtn.classList.add('done');
-  voltageAckBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Acknowledged';
-  document.getElementById('voltageAck-err').style.display = 'none';
+// Make the whole label row clickable (including visual checkbox)
+document.getElementById('gencheck-label').addEventListener('click', function(e) {
+  if (e.target.tagName === 'INPUT') return;
+  const cb = document.getElementById('genCompatible');
+  cb.checked = !cb.checked;
+  toggleGenCheck(cb);
 });
 
 async function submitForm() {
@@ -845,8 +827,8 @@ async function submitForm() {
     addressCountry: 'US',
 
     // ── Generator info ────────────────────────────
-    panelLocation: document.querySelector('input[name="panelLocation"]:checked')?.value || '',
-    genVoltage:    document.querySelector('input[name="genVoltage"]:checked')?.value || '',
+    panelLocation:         document.querySelector('input[name="panelLocation"]:checked')?.value || '',
+    hasCompatibleGenerator: document.getElementById('genCompatible').checked ? 'Yes - 240V 30A/50A confirmed' : 'No',
 
     // ── Submission metadata ───────────────────────
     submittedAt:    new Date().toISOString(),
