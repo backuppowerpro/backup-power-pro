@@ -364,6 +364,87 @@ select, textarea {
 /* End Cybertruck layer */
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE / iOS SAFARI FIX LAYER
+   Per mobile audit: prevent input zoom, fix safe-area, kill 300ms tap delay
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Prevent iOS pinch-zoom on input focus by enforcing 16px+ font everywhere */
+input, select, textarea {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100%;
+}
+@media (min-width: 769px) {
+  /* Allow smaller font on desktop where zoom isn't an issue */
+  input, select, textarea { font-size: 14px !important; }
+}
+
+/* Kill 300ms tap delay + tap highlight on iOS */
+button, .btn, a, [onclick], [role="button"], input, select, textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch target enforcement on coarse pointers */
+@media (pointer: coarse) {
+  button:not(.btn-sm):not(.tab-btn), .btn:not(.btn-sm),
+  [onclick]:not(.btn-sm):not(.tab-btn), [role="button"] {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  input, select, textarea {
+    min-height: 44px !important;
+  }
+  .pa-stage-chip, .call-filter-chip { min-height: 40px !important; padding: 8px 12px !important; }
+}
+
+/* Safe-area-inset for notch + home indicator */
+.nav, header.nav {
+  padding-top: max(8px, env(safe-area-inset-top, 0px));
+  padding-left: max(8px, env(safe-area-inset-left, 0px));
+  padding-right: max(8px, env(safe-area-inset-right, 0px));
+}
+.tab-bar {
+  padding-bottom: max(0px, env(safe-area-inset-bottom, 0px));
+}
+.side-panel, .modal {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+.fq-panel, .tm-panel {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+/* Use 100dvh instead of 100vh on mobile for proper viewport with iOS address bar */
+.modal-overlay, .side-panel-overlay, .modal, .side-panel {
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+/* iOS keyboard handling — when keyboard opens, content stays visible */
+@supports (-webkit-touch-callout: none) {
+  .modal-body, .drill-level, #drill-contact-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* File upload: add camera capture for mobile photos */
+input[type="file"][accept*="image"] {
+  /* Browsers with capture attribute will use back camera */
+}
+
+/* Disable iOS pull-to-refresh (don't conflict with our pull-to-scroll) */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Mobile message bubbles bigger tap target */
+@media (max-width: 480px) {
+  .msg-bubble { padding: 10px 14px !important; }
+  .msg-compose textarea { font-size: 16px !important; min-height: 44px; }
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
    8-BIT TYPE & ICONS — Press Start 2P for headlines, pixel rendering for SVGs
    ═══════════════════════════════════════════════════════════════════════════ */
 
