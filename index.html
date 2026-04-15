@@ -503,7 +503,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
         <div id="varGenErr" style="display:none;color:#f87171;font-size:12px;margin-top:-6px;text-align:left">Please confirm your generator has a 240V outlet to continue</div>
 
         <!-- Panel photo notice -->
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:12px;background:rgba(255,186,0,.1);border:1.5px solid rgba(255,186,0,.25)">
+        <div id="varHeadsUp" style="display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:12px;background:rgba(255,186,0,.1);border:1.5px solid rgba(255,186,0,.25)">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           <span style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.5"><strong style="color:var(--gold)">Heads up:</strong> After you submit, we'll text you and ask for a quick photo of your electrical panel so we can give you an accurate, no-surprise quote.</span>
         </div>
@@ -1269,6 +1269,10 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       box.style.background='var(--gold)'; box.style.borderColor='var(--gold)';
       icon.style.display='block'; lbl.style.borderColor='var(--gold)';
       document.getElementById('varGenErr').style.display='none';
+      var hu=document.getElementById('varHeadsUp');
+      hu.style.transformOrigin='top center';
+      hu.style.animation='none';
+      requestAnimationFrame(function(){ hu.style.animation='nudge .5s ease'; });
     } else {
       box.style.background='transparent'; box.style.borderColor='rgba(255,255,255,.3)';
       icon.style.display='none'; lbl.style.borderColor='rgba(255,255,255,.15)';
@@ -1497,6 +1501,9 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
   });
 })();
 </script>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<style>
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes nudge{0%{transform:scaleY(1)}20%{transform:scaleY(1.12)}50%{transform:scaleY(.95)}75%{transform:scaleY(1.05)}100%{transform:scaleY(1)}}
+</style>
 </body>
 </html>
