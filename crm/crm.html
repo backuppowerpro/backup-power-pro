@@ -5918,7 +5918,8 @@ function pRecalc() {
   const surgeChecked = document.getElementById('p-surge-check')?.checked || false;
   const depositChecked = document.getElementById('p-deposit-check')?.checked ?? true;
   const customTotal = pCustomItemsTotal ? pCustomItemsTotal() : 0;
-  const displayTotal = primary.total + (pomChecked ? (QB_S.pom || 447) : 0) + customTotal;
+  // POM is offered on the proposal page, customer decides — do NOT add to quote total
+  const displayTotal = primary.total + customTotal;
   document.getElementById('p-total').textContent = '$' + displayTotal.toLocaleString();
   const depositLbl = document.getElementById('p-deposit-lbl');
   if (depositLbl) depositLbl.textContent = depositChecked ? '50% = $' + Math.round(displayTotal * 0.5).toLocaleString() : 'Full balance at service';
@@ -5930,6 +5931,7 @@ function pRecalc() {
   } else {
     const extras = [];
     if (!surgeChecked) extras.push('surge');
+    if (pomChecked) extras.push('protection pkg');
     document.getElementById('p-total-note').textContent = extras.length ? '+ ' + extras.join(', ') + ' offered on proposal page' : '';
   }
   // Update cord label
