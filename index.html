@@ -440,14 +440,16 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
         <!-- Row 1: First + Last name -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
-            <input type="text" id="varName" placeholder="First name" autocomplete="given-name" autocapitalize="words"
-              style="width:100%;padding:15px 18px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
+            <label for="varName" style="display:block;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:5px">First Name</label>
+            <input type="text" id="varName" placeholder="John" autocomplete="given-name" autocapitalize="words"
+              style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
               onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
             <div id="varNameErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
           </div>
           <div>
-            <input type="text" id="varLastName" placeholder="Last name" autocomplete="family-name" autocapitalize="words"
-              style="width:100%;padding:15px 18px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
+            <label for="varLastName" style="display:block;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:5px">Last Name</label>
+            <input type="text" id="varLastName" placeholder="Smith" autocomplete="family-name" autocapitalize="words"
+              style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
               onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
             <div id="varLastNameErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
           </div>
@@ -456,27 +458,33 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
         <!-- Row 2: Phone + Email -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
+            <label for="varPhone" style="display:block;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:5px">Phone</label>
             <input type="tel" id="varPhone" placeholder="(864) 555-0100" autocomplete="tel" inputmode="tel"
-              style="width:100%;padding:15px 18px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
+              style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
               onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
             <div id="varPhoneErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Valid phone required</div>
           </div>
           <div>
-            <input type="email" id="varEmail" placeholder="Email address" autocomplete="email" inputmode="email"
-              style="width:100%;padding:15px 18px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
+            <label for="varEmail" style="display:block;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:5px">Email</label>
+            <input type="email" id="varEmail" placeholder="john@email.com" autocomplete="email" inputmode="email"
+              style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
               onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
             <div id="varEmailErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Valid email required</div>
           </div>
         </div>
 
         <!-- Row 3: Address -->
-        <div style="position:relative">
-          <input type="text" id="varAddress" placeholder="Service address (123 Oak St, Greenville SC)" autocomplete="off"
-            style="width:100%;padding:15px 18px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
-            onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
-          <ul id="varAddrDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;padding:4px 0;background:#1a2d4a;border:1.5px solid rgba(255,255,255,.15);border-radius:10px;list-style:none;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.4);max-height:220px;overflow-y:auto"></ul>
-          <div id="varAddrMsg" style="display:none;font-size:12px;margin-top:4px;text-align:left"></div>
-          <div id="varAddressErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
+        <div>
+          <label for="varAddress" style="display:block;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:5px">Service Address</label>
+          <div style="position:relative">
+            <input type="text" id="varAddress" placeholder="123 Oak St, Greenville SC" autocomplete="off"
+              style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:15px;outline:none;box-sizing:border-box"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
+            <ul id="varAddrDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;padding:4px 0;background:#1a2d4a;border:1.5px solid rgba(255,255,255,.15);border-radius:10px;list-style:none;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.4);max-height:220px;overflow-y:auto"></ul>
+            <div id="varAddrMsg" style="display:none;font-size:12px;margin-top:4px;text-align:left"></div>
+            <div id="varAddrManualWrap" style="display:none;margin-top:6px;text-align:left"><span style="font-size:12px;color:rgba(255,255,255,.4)">Can't find your address? </span><a id="varAddrManualLink" href="#" style="font-size:12px;color:var(--gold);text-decoration:underline">Enter it manually</a></div>
+            <div id="varAddressErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px;text-align:left">Required</div>
+          </div>
         </div>
 
         <!-- Generator qualifier checkbox -->
@@ -518,7 +526,7 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
           Submit. Expect a Text
           <svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
-        <p style="font-size:11px;color:rgba(255,255,255,.35);text-align:center;margin-top:-4px">By submitting you agree to receive texts from us. Standard rates may apply.</p>
+        <p style="font-size:11px;color:rgba(255,255,255,.35);text-align:center;margin-top:-4px">By submitting you agree to receive texts from us. Standard rates may apply. <a href="/privacy.html" target="_blank" style="color:rgba(255,255,255,.5);text-decoration:underline">Privacy Policy</a></p>
       </div>
       <!-- Trust strip -->
       <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
@@ -1447,9 +1455,29 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     window.varAddrParts=parts;
     checkServiceArea(parts.county);
     document.getElementById('varAddressErr').style.display='none';
+    document.getElementById('varAddrManualWrap').style.display='none';
     hide();
     if(typeof varCheckReady==='function') varCheckReady();
   }
+
+  // Manual fallback — shown after API error or repeated blur without selection
+  var manualFallbackShown = false;
+  function showManualFallback(){
+    if(manualFallbackShown) return;
+    manualFallbackShown = true;
+    document.getElementById('varAddrManualWrap').style.display='block';
+  }
+
+  document.getElementById('varAddrManualLink').addEventListener('click', function(e){
+    e.preventDefault();
+    addrVerified = true;
+    serviceAreaOk = true;
+    window.varAddrParts = { street: input.value.trim(), city:'', county:'', state:'SC', zip:'' };
+    msg.style.display='block'; msg.style.color='rgba(255,255,255,.4)'; msg.textContent='Address entered manually.';
+    document.getElementById('varAddrManualWrap').style.display='none';
+    document.getElementById('varAddressErr').style.display='none';
+    if(typeof varCheckReady==='function') varCheckReady();
+  });
 
   function parseMapboxFeature(feature){
     let street='',city='',county='',state='',zip='';
@@ -1467,9 +1495,10 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
   }
 
   input.addEventListener('input',function(){
-    addrVerified=false; serviceAreaOk=true;
+    addrVerified=false; serviceAreaOk=true; manualFallbackShown=false;
     window.varAddrParts={street:'',city:'',county:'',state:'',zip:''};
     msg.style.display='none';
+    document.getElementById('varAddrManualWrap').style.display='none';
     clearTimeout(debounceTimer);
     const val=input.value.trim();
     if(val.length<3){ hide(); return; }
@@ -1499,7 +1528,7 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
         });
         if(dropdown.lastChild) dropdown.lastChild.style.borderBottom='none';
         dropdown.style.display='block';
-      } catch(e){ hide(); }
+      } catch(e){ hide(); showManualFallback(); }
     },250);
   });
 
@@ -1518,6 +1547,7 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       if(input.value.trim()&&!addrVerified){
         document.getElementById('varAddressErr').style.display='block';
         document.getElementById('varAddressErr').textContent='Please select your address from the suggestions';
+        showManualFallback();
       }
     },160);
   });
