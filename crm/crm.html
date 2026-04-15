@@ -2394,28 +2394,18 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
     min-width:44px;min-height:44px
   }
   .tab-icon{width:20px!important;height:20px!important}
-  /* Active tab — compact capsule indicator (Apple HIG: never full-width fill) */
+  /* Active tab — Minesweeper pressed cell (no floating capsule) */
   .tab-btn.active{
-    background:transparent!important;
+    background:var(--bg)!important;
     color:var(--navy)!important;font-weight:700;
-    border-top-color:transparent!important;border-bottom-color:transparent!important
+    box-shadow:var(--shadow-neu-inset-sm)!important;
+    border:none!important;
+    border-radius:0!important
   }
-  /* ::before creates the contained capsule — inset keeps it proportional to content */
-  .tab-btn.active::before{
-    content:'';position:absolute;inset:2px 6px;
-    background:rgba(11,31,59,.11);
-    border-radius:20px;
-    pointer-events:none
-  }
-  html.dark .tab-btn.active{
-    background:transparent!important;
-    color:var(--gold)!important
-  }
-  html.dark .tab-btn.active::before{
-    background:rgba(212,145,26,.12)
-  }
-  /* Press scale */
-  .tab-btn:active{transform:scale(.92)!important}
+  .tab-btn.active::before{ display:none!important; content:none!important }
+  html.dark .tab-btn.active{ color:var(--gold)!important }
+  /* Press: flatten + 1px nudge */
+  .tab-btn:active{ transform:translate(1px,1px)!important; box-shadow:var(--shadow-neu-inset-sm)!important }
   .tab-icon{display:block!important;width:22px;height:22px;flex-shrink:0}
   /* Hide stage badge from banner — redundant with Pipeline Stage dropdown below */
   .panel-stage-badge{display:none!important}
