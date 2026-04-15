@@ -276,24 +276,11 @@ h1, h2, h3, h4, .h1, .h2, .h3, thead th,
   font-weight: 700 !important;
 }
 
-/* Signature amber accent bar on primary buttons and headers — a tactical highlight */
-.btn-primary, button[type="submit"], .kpi-card, .stat-card, .pa-stat, .inv-stat {
-  position: relative;
-}
-.btn-primary::before, button[type="submit"]::before,
-.kpi-card::before, .stat-card::before, .pa-stat::before, .inv-stat::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 4px; height: 100%;
-  background: var(--ct-amber);
-  box-shadow: 1px 0 0 rgba(0,0,0,.4);
-  pointer-events: none;
-}
+/* Amber accent bar removed — was causing visual artifacts on cut-corner buttons */
 
 /* Cut-corner primary buttons — angular Cybertruck silhouette */
 .btn-primary, button[type="submit"] {
-  , calc(100% - 10px) 100%, 0 100%, 0 10px);
+
   padding-left: 16px !important;
   background: var(--navy) !important;
   color: #fff !important;
@@ -304,7 +291,7 @@ h1, h2, h3, h4, .h1, .h2, .h3, thead th,
   box-shadow: inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5) !important;
 }
 .btn-primary:active, button[type="submit"]:active {
-  , calc(100% - 10px) 100%, 0 100%, 0 10px);
+
   background: #061428 !important;
   box-shadow: inset 2px 2px 0 rgba(0,0,0,.5), inset -2px -2px 0 rgba(255,255,255,.08) !important;
   transform: translate(1px,1px);
@@ -350,7 +337,7 @@ html.dark .tab-bar { background: var(--bg) !important; }
 
 /* LCD stat displays — give them an angular cut corner for that dashboard readout look */
 .pa-stat-num, .inv-stat-value, .lcd-num, .digital {
-  , calc(100% - 6px) 100%, 0 100%, 0 6px);
+
 }
 
 /* Inputs and selects — recessed metal slots */
