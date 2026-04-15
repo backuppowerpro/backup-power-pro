@@ -828,7 +828,7 @@ html.dark .search-add-menu button:hover svg{color:var(--gold)}
 /* ══════════════════════════════════════════════════════════
    DIALER — compact numeric keypad for cold-calling
    ══════════════════════════════════════════════════════════ */
-.dialer-overlay{position:fixed;inset:0;z-index:350;display:none;align-items:center;justify-content:center;background:rgba(10,20,40,.56);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px;animation:callRingFadeIn .22s var(--ease)}
+.dialer-overlay{position:fixed;inset:0;z-index:350;display:none;align-items:center;justify-content:center;background:rgba(10,20,40,.56);padding:20px;animation:callRingFadeIn .22s var(--ease)}
 .dialer-overlay.open{display:flex}
 .dialer{position:relative;width:100%;max-width:320px;background:var(--bg);border-radius:var(--r-xl);padding:22px 22px 26px;box-shadow:var(--shadow-neu);animation:callRingPop .32s var(--ease)}
 .dialer-display{display:flex;align-items:center;gap:6px;margin-bottom:18px;padding-right:10px}
@@ -878,8 +878,7 @@ td.addr a:hover{color:var(--blue)}
 td.notes-cell{color:var(--text3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 td.actions{white-space:nowrap}
 /* ── SIDE PANEL ─────────────────────────────────────────── */
-.side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.side-panel-overlay.open{opacity:1;pointer-events:auto}
+.side-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s ease;pointer-events:auto}
 .side-panel{background:var(--bg);position:fixed;top:0;right:0;bottom:0;width:100%;max-width:480px;display:flex;flex-direction:column;box-shadow:none;overflow:hidden;transform:translateX(100%);transition:transform .35s cubic-bezier(.32,0.72,.37,1);border-left:none;padding-top:env(safe-area-inset-top,0px)}
 .side-panel-overlay.open .side-panel{transition:transform .4s cubic-bezier(.16,1.1,.3,1)}
 .side-panel-overlay.open .side-panel{transform:translateX(0);box-shadow:var(--shadow-xl)}
@@ -1020,7 +1019,7 @@ html.dark .form-input:focus,html.dark .form-select:focus,html.dark .form-textare
 .toast.error{background:var(--red)}
 
 /* APPROVAL NOTIFICATION */
-.approval-notif{position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);opacity:0;transition:opacity .3s;pointer-events:none}
+.approval-notif{position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);opacity:0;transition:opacity .3s;pointer-events:none}
 .approval-notif.show{opacity:1;pointer-events:auto}
 .approval-notif-card{background:#fff;border-radius:var(--r-lg);padding:40px 36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);transform:scale(.9);transition:transform .35s cubic-bezier(.175,.885,.32,1.275)}
 .approval-notif.show .approval-notif-card{transform:scale(1)}
@@ -1160,7 +1159,7 @@ html.dark .mlc:active{background:rgba(255,255,255,.09)}
 /* FAB removed — Sparky migrated to tab bar */
 
 /* ── Follow-up Queue ─────────────────────────────────── */
-.fq-overlay{position:fixed;inset:0;z-index:320;background:rgba(10,20,40,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center}
+.fq-overlay{position:fixed;inset:0;z-index:320;background:rgba(10,20,40,.5);display:none;align-items:flex-end;justify-content:center}
 .fq-overlay.open{display:flex;animation:fqSlideIn .4s cubic-bezier(.16,1.1,.3,1)}
 @keyframes fqSlideIn{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
 .fq-panel{width:100%;max-width:540px;max-height:82vh;background:var(--bg);border-radius:var(--r-xl) var(--r-xl) 0 0;box-shadow:var(--shadow-neu);display:flex;flex-direction:column;overflow:hidden}
@@ -1767,9 +1766,7 @@ html.dark .urgent-act-primary{background:var(--gold);color:#1e1b17}
 .urgent-act-secondary:hover{box-shadow:var(--shadow-neu)}
 
 /* ── URGENT CONFIRM MODAL ───────────────────────────────── */
-.urg-modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.5);z-index:360;display:none;align-items:flex-end;justify-content:center;padding:0;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-.urg-modal-overlay.open{display:flex}
-@media(min-width:600px){.urg-modal-overlay{align-items:center;padding:20px}}
+.urg-modal-overlay{position:fixed;inset:0;background:rgba(10,20,40,.5);z-index:360;display:none;align-items:flex-end;justify-content:center;padding:0;padding:20px}}
 .urg-modal{background:var(--bg);border-radius:var(--r-lg) var(--r-lg) 0 0;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:24px 22px 32px;box-shadow:var(--shadow-xl);overscroll-behavior:contain}
 @media(min-width:600px){.urg-modal{border-radius:var(--r-lg)}}
 .urg-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px}
@@ -1990,8 +1987,7 @@ html.dark .sk-action-btn.confirm:hover{background:#e8b75a}
 html.dark .sk-action-btn.cancel,html.dark .sk-action-btn.edit{border-color:rgba(255,255,255,.08)}
 
 /* ── Communications Search Panel ────────────────────────── */
-.cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:322;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-.cs-overlay.open{opacity:1;pointer-events:auto}
+.cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:322;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);pointer-events:auto}
 .cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--bg);display:flex;flex-direction:column;box-shadow:none;transform:translateX(-100%);transition:transform .28s var(--ease);z-index:323;border-right:none;padding-top:env(safe-area-inset-top,0px)}
 .cs-panel.open{transform:translateX(0);box-shadow:14px 0 48px rgba(10,20,40,.22)}
 html.dark .cs-panel.open{box-shadow:14px 0 48px rgba(0,0,0,.55)}
@@ -2020,8 +2016,7 @@ html.dark .cs-result-snippet mark{background:rgba(212,145,26,.22)}
 .cs-count{padding:10px 18px;font-size:12px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border)}
 
 /* ── Chat panel (slide-in from right, above everything) ── */
-.tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:340;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-.tm-panel-overlay.open{opacity:1;pointer-events:auto}
+.tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:340;opacity:0;pointer-events:none;transition:opacity .3s ease;pointer-events:auto}
 .tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--bg);display:flex;flex-direction:column;box-shadow:none;transform:translateX(100%);transition:transform .35s cubic-bezier(.32,0.72,.37,1);z-index:350;border-left:none;padding-top:env(safe-area-inset-top,0px)}
 .tm-panel.open{transition:transform .4s cubic-bezier(.16,1.1,.3,1);transform:translateX(0);box-shadow:-14px 0 48px rgba(10,20,40,.22)}
 html.dark .tm-panel.open{box-shadow:-14px 0 48px rgba(0,0,0,.55)}
@@ -2122,8 +2117,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   /* ── LIQUID GLASS top nav (iOS 26 — translucent glass nav bar) ── */
   .nav{
     background:rgba(22,18,12,.88)!important;
-    -webkit-backdrop-filter:blur(28px) saturate(180%) brightness(1.05);
-    backdrop-filter:blur(28px) saturate(180%) brightness(1.05);
+    
     box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 1px 16px rgba(0,0,0,.36)!important;
     gap:2px!important;padding-left:10px!important;padding-right:10px!important
   }
@@ -2437,8 +2431,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   /* Backdrop for action sheet */
   #ctx-backdrop{
     position:fixed;inset:0;background:rgba(0,0,0,.4);
-    z-index:9000;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-    display:none;animation:ctxBdIn .2s ease
+    z-index:9000;display:none;animation:ctxBdIn .2s ease
   }
   #ctx-backdrop.visible{display:block}
   @keyframes ctxBdIn{from{opacity:0}to{opacity:1}}
@@ -6819,7 +6812,7 @@ function openLockNote(dateStr, e) {
   const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const el = document.createElement('div');
   el.id = 'lock-note-overlay';
-  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;
   const hasNote = currentNote.length > 0;
   el.innerHTML = '<div class="modal" style="max-width:380px" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">\uD83D\uDD12 ' + esc(dateLabel) + '</div><button class="modal-close" id="lock-note-close">\u2715</button></div><div class="modal-body"><div class="form-row"><label>Note</label><textarea class="form-textarea" id="lock-note-input" placeholder="Why is this day blocked?" style="min-height:80px">' + esc(currentNote) + '</textarea></div></div><div class="modal-foot" style="display:flex;gap:8px;justify-content:flex-end">' + (hasNote ? '<button class="btn btn-danger btn-sm" id="lock-note-clear" style="margin-right:auto">Clear Note</button>' : '') + '<button class="btn btn-outline btn-sm" id="lock-note-cancel">Cancel</button><button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" id="lock-note-save">Save</button></div></div>';
   document.body.appendChild(el);
@@ -8477,7 +8470,7 @@ function openStatsModal() {
   const overlay = document.createElement('div');
   overlay.id = 'stats-modal-overlay';
   overlay.className = 'modal-overlay open';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
   const periodLabel = trendDays === 7 ? 'Last 7 Days' : 'Last 30 Days';
   overlay.innerHTML = '<div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">Stats</div><button class="btn btn-outline btn-sm" onclick="toggleTrendPeriod();refreshStatsModal()" id="stats-period-btn">' + periodLabel + '</button><button class="modal-close" onclick="closeStatsModal()">\u2715</button></div><div class="modal-body" id="stats-modal-body"></div></div>';
   overlay.addEventListener('click', function(ev) { if (ev.target === overlay) closeStatsModal(); });
@@ -8577,7 +8570,7 @@ function openJurisdictionsPopup() {
   const overlay = document.createElement('div');
   overlay.id = 'jur-popup-overlay';
   overlay.className = 'modal-overlay open';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
   const sorted = sortedJurisdictions ? sortedJurisdictions() : allJurisdictions;
   let cards = sorted.map(j => '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s" onclick="closeJurPopup();viewJurisdiction(' + j.id + ')">'
     + '<div class="jur-logo" style="width:36px;height:36px">' + (j.logo_url ? '<img src="' + esc(j.logo_url) + '" alt="">' : '\uD83C\uDFDB\uFE0F') + '</div>'
@@ -11992,7 +11985,7 @@ setTimeout(() => {
   .desktop-only{display:flex}
   @media(max-width:768px){.desktop-only{display:none!important}}
   /* Cheatsheet modal */
-  .cs-backdrop{position:fixed;inset:0;z-index:8999;background:rgba(8,15,30,.52);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .18s}
+  .cs-backdrop{position:fixed;inset:0;z-index:8999;background:rgba(8,15,30,.52);display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .18s}
   .cs-backdrop.open{display:flex;opacity:1}
   .cs-pop{background:var(--bg);border-radius:var(--r-lg);box-shadow:var(--shadow-xl);width:380px;max-width:92vw;font-family:'Inter',sans-serif;overflow:hidden;transform:translateY(-10px) scale(.97);transition:transform .22s cubic-bezier(.16,1,.3,1)}
   .cs-backdrop.open .cs-pop{transform:translateY(0) scale(1)}
@@ -12010,7 +12003,7 @@ setTimeout(() => {
   html.dark .cs-key{background:rgba(255,255,255,.08)}
   .cs-key.cs-key-pressed{background:var(--gold)!important;color:var(--navy)!important;box-shadow:var(--shadow-neu-inset-sm)!important;transform:scale(.93)}
   /* Command palette */
-  .cmdk-overlay{position:fixed;inset:0;background:rgba(8,15,30,.55);backdrop-filter:blur(6px);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;opacity:0;transition:opacity .15s}
+  .cmdk-overlay{position:fixed;inset:0;background:rgba(8,15,30,.55);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;opacity:0;transition:opacity .15s}
   .cmdk-overlay.open{display:flex;opacity:1}
   .cmdk{width:560px;max-width:92vw;background:var(--bg);border-radius:var(--r-lg);box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column;max-height:70vh;transform:translateY(-12px);transition:transform .22s cubic-bezier(.16,1,.3,1);font-family:'Inter',sans-serif}
   .cmdk-overlay.open .cmdk{transform:translateY(0)}
@@ -16947,7 +16940,7 @@ window.startVideoCall = function() {
 
   const modal = document.createElement('div');
   modal.id = 'video-call-modal';
-  modal.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(10,20,40,.52);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(10,20,40,.52);padding:20px';
   modal.innerHTML = `
     <div style="background:var(--bg);border-radius:var(--r-xl);padding:24px;max-width:360px;width:100%;box-shadow:var(--shadow-neu);position:relative">
       <button onclick="document.getElementById('video-call-modal').remove()" style="position:absolute;top:14px;right:14px;border:none;background:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:4px" aria-label="Close">✕</button>
