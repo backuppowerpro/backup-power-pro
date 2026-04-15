@@ -1002,7 +1002,22 @@ function renderProposal() {
         </div>
         ${requireDeposit ? `
         <div style="margin-top:20px">
-          <label class="form-label" style="margin-bottom:8px">How would you like to pay?</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <label class="form-label" style="margin-bottom:0">How would you like to pay?</label>
+            <div style="position:relative;display:inline-block" id="dep-policy-wrap">
+              <button onclick="toggleDepPolicy(event)" style="background:none;border:none;cursor:pointer;font-size:11px;font-weight:700;color:var(--navy-mid);text-decoration:underline;text-underline-offset:2px;padding:0;font-family:'Inter',sans-serif">Deposit Policy</button>
+              <div id="dep-policy-popup" style="display:none;position:absolute;left:0;top:calc(100% + 6px);width:280px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:0 8px 24px rgba(11,31,59,.12);z-index:100;font-size:12px;color:var(--text2);line-height:1.65">
+                <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px">Deposit &amp; Refund Policy</div>
+                <ul style="margin:0;padding-left:14px;display:flex;flex-direction:column;gap:5px">
+                  <li><strong>Rescheduling:</strong> Free anytime. Deposit carries over.</li>
+                  <li><strong>Cancel 48+ hrs before install:</strong> Full deposit refunded, minus $125 permit fee (non-refundable once filed).</li>
+                  <li><strong>Cancel under 48 hrs:</strong> Deposit forfeited. You may reschedule instead to keep it.</li>
+                  <li><strong>If we cancel:</strong> Full refund including permit fee.</li>
+                </ul>
+                <div style="margin-top:8px;font-size:11px;color:var(--text3)">The permit is filed within 1 business day of receiving your deposit.</div>
+              </div>
+            </div>
+          </div>
           <div style="display:flex;flex-direction:column;gap:8px">
             <div class="pay-opt selected" id="pay-opt-deposit" onclick="selectPayOpt(false)">
               <div class="pay-opt-label"><span class="pay-opt-name">50% Deposit</span><span class="pay-opt-amount">${fmt(depositAmt)}</span></div>
@@ -1225,6 +1240,18 @@ function validateForm() {
   const name = (document.getElementById('signer-name')?.value || '').trim();
   const btn = document.getElementById('approve-btn');
   if (btn) btn.disabled = !(name.length >= 2 && ackScope && ackSafety);
+}
+
+function toggleDepPolicy(e) {
+  e.stopPropagation();
+  const popup = document.getElementById('dep-policy-popup');
+  if (!popup) return;
+  const isOpen = popup.style.display !== 'none';
+  popup.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    const close = (ev) => { if (!document.getElementById('dep-policy-wrap')?.contains(ev.target)) { popup.style.display = 'none'; document.removeEventListener('click', close); } };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  }
 }
 
 function selectPayOpt(full) {
