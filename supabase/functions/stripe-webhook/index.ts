@@ -57,12 +57,29 @@ serve(async (req) => {
           payment_method: 'Card (Stripe)',
         })
         .eq('token', token)
-        .select('proposal_id')
+        .select('proposal_id, contact_phone, contact_name, notes, total')
         .single()
 
       if (invoiceErr) {
         console.error('stripe-webhook: failed to update invoice:', invoiceErr.message)
         // Don't return 500 — Stripe will retry. Log and continue so the payment record still gets created.
+      }
+
+      // Send SMS confirmation to customer (fire-and-forget)
+      if (invoice?.contact_phone && contactId) {
+        const isDeposit = invoice.notes === 'deposit'
+        const firstName = (invoice.contact_name || '').trim().split(/\s+/)[0] || ''
+        const greeting = firstName ? `Hi ${firstName} — ` : ''
+        const smsBody = isDeposit
+          ? `${greeting}your $${amountPaid.toLocaleString()} deposit is confirmed for your generator inlet installation. Key will reach out within 48 hrs to schedule your install date. Questions: (864) 400-5302 — Backup Power Pro`
+          : `${greeting}your full payment of $${amountPaid.toLocaleString()} is confirmed. Your generator inlet installation is fully paid. Key will reach out to confirm your date. — Backup Power Pro`
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+        fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
+          body: JSON.stringify({ contactId, body: smsBody }),
+        }).catch(e => console.error('stripe-webhook: SMS send failed:', e))
       }
 
       // Mark proposal as Approved now that payment is confirmed

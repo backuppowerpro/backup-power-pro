@@ -118,6 +118,10 @@ serve(async (req) => {
           financial_connections: { permissions: ['payment_method'] },
         },
       },
+    }, {
+      // Idempotency key: same invoice + pay mode always returns the same session,
+      // preventing duplicate charges if customer double-clicks or opens two tabs.
+      idempotencyKey: `checkout-${invToken}-${pay_full ? 'full' : 'deposit'}`,
     })
 
     return new Response(JSON.stringify({ url: session.url }), {

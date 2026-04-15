@@ -1049,7 +1049,7 @@ function renderProposal() {
         <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
           <label class="form-label" style="font-size:13px;margin-bottom:6px">Sign to Approve <span class="req">*</span></label>
           <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">Type your full name below — this is your electronic signature and confirms your approval of this proposal.</p>
-          <input class="name-input" id="signer-name" type="text" placeholder="Type your full name to sign" autocomplete="name" oninput="validateForm();updateSigPreview()">
+          <input class="name-input" id="signer-name" type="text" placeholder="Type your full name to sign" autocomplete="name" value="${esc(P.contact_name || '')}" oninput="validateForm();updateSigPreview()">
           <div class="sig-preview" id="sig-preview"></div>
           <div class="name-hint" style="text-align:center">By signing, you agree this constitutes a legally binding electronic signature under the ESIGN Act.</div>
         </div>
@@ -1073,13 +1073,14 @@ function renderProposal() {
   wireAckRow('ack-row-safety', 'ack-box-safety', 'safety');
   document.getElementById('safety-link').addEventListener('click', function(e) {
     e.stopPropagation();
-    window.open('inlet-safety-instructions.html', '_blank');
+    window.open('/inlet-safety-instructions.html', '_blank');
   });
 
   renderPricing();
   renderPropertyBanner();
   initScrollReveal();
   initReviewCarousel();
+  updateSigPreview();
   // Hero entrance
   const hero = document.querySelector('.hero-card');
   if (hero) { hero.style.cssText += ';opacity:0;transform:translateY(28px)'; requestAnimationFrame(() => { hero.style.transition = 'opacity .7s ease, transform .7s ease'; hero.style.opacity = '1'; hero.style.transform = 'translateY(0)'; }); }
@@ -1231,6 +1232,7 @@ function switchAmp(amp) {
   });
   renderPricing();
   updateApproveBtn();
+  saveSelections();
 }
 
 // ── POM TOGGLE ───────────────────────────────────────────────
@@ -1261,6 +1263,7 @@ function toggleCustomItem(idx) {
   customItemsOn[idx] = !customItemsOn[idx];
   renderPricing();
   updateApproveBtn();
+  saveSelections();
 }
 
 function togglePom() {
@@ -1271,6 +1274,7 @@ function togglePom() {
   if (track) track.classList.toggle('on', pomOn);
   renderPricing();
   updateApproveBtn();
+  saveSelections();
 }
 
 // ── SURGE TOGGLE ─────────────────────────────────────────────
@@ -1297,6 +1301,21 @@ function validateForm() {
     if (btn.dataset.expired === '1') { btn.disabled = true; return; }
     btn.disabled = !(name.length >= 2 && ackScope && ackSafety);
   }
+}
+
+// ── PERSIST SELECTIONS (debounced) ───────────────────────────
+let _saveSelectionsTimer = null;
+function saveSelections() {
+  if (!P?.token) return;
+  clearTimeout(_saveSelectionsTimer);
+  _saveSelectionsTimer = setTimeout(async () => {
+    try {
+      await db.from('proposals').update({
+        selected_amp: chosenAmp,
+        selected_pom: pomOn,
+      }).eq('token', P.token);
+    } catch(e) { /* non-critical — selections saved on final approve anyway */ }
+  }, 600);
 }
 
 function toggleDepPolicy(e) {
@@ -1559,6 +1578,20 @@ function renderApproved() {
       Questions? Call or text <strong style="color:var(--navy)">(864) 400-5302</strong>
       <div style="margin-top:12px"><a href="/inlet-safety-instructions.html" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">📘 Generator Safety Instructions</a></div>
     </div>
+
+    <details style="margin-top:16px;background:#f8f9fb;border:1px solid var(--border);border-radius:10px;padding:0">
+      <summary style="font-size:12px;color:var(--text3);cursor:pointer;padding:12px 16px;list-style:none;display:flex;justify-content:space-between;align-items:center">
+        <span>Need to reschedule or cancel?</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </summary>
+      <div style="padding:0 16px 14px;font-size:12px;color:var(--text2);line-height:1.65">
+        <div style="margin-bottom:8px"><strong>Rescheduling:</strong> Free anytime — text Key at <a href="sms:8644005302" style="color:var(--navy);font-weight:600">(864) 400-5302</a>. Your deposit carries over.</div>
+        <div style="margin-bottom:8px"><strong>Cancel 48+ hrs before install:</strong> Full deposit refunded, minus the $125 permit fee (non-refundable once filed — typically within 1 business day of deposit).</div>
+        <div style="margin-bottom:8px"><strong>Cancel under 48 hrs:</strong> Deposit is forfeited. You may reschedule instead to keep it.</div>
+        <div><strong>If we cancel for any reason:</strong> Full refund including permit fee. No questions asked.</div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">Full policy: <a href="/terms" target="_blank" style="color:var(--navy);font-weight:600">Terms &amp; Conditions</a></div>
+      </div>
+    </details>
   `;
 
   setTimeout(initScrollReveal, 100);
