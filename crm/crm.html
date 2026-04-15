@@ -2218,6 +2218,7 @@ html.dark .sk-action-btn.cancel,html.dark .sk-action-btn.edit{border-color:rgba(
 
 /* ── Communications Search Panel ────────────────────────── */
 .cs-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:322;opacity:0;pointer-events:none;transition: opacity .2s steps(4, end);pointer-events:auto}
+.cs-overlay.open{opacity:1;pointer-events:auto}
 .cs-panel{position:fixed;top:0;left:0;bottom:0;width:100%;max-width:520px;background:var(--bg);display:flex;flex-direction:column;box-shadow:none;transform:translateX(-100%);transition: transform .28s steps(4, end);z-index:323;border-right:none;padding-top:env(safe-area-inset-top,0px)}
 .cs-panel.open{transform:translateX(0);box-shadow:14px 0 48px rgba(10,20,40,.22)}
 html.dark .cs-panel.open{box-shadow:14px 0 48px rgba(0,0,0,.55)}
@@ -2247,6 +2248,7 @@ html.dark .cs-result-snippet mark{background:rgba(212,145,26,.22)}
 
 /* ── Chat panel (slide-in from right, above everything) ── */
 .tm-panel-overlay{position:fixed;inset:0;background:rgba(10,20,40,.42);z-index:340;opacity:0;pointer-events:none;transition: opacity .3s steps(4);pointer-events:auto}
+.tm-panel-overlay.open{opacity:1;pointer-events:auto}
 .tm-panel{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--bg);display:flex;flex-direction:column;box-shadow:none;transform:translateX(100%);transition: transform .35s steps(4);z-index:350;border-left:none;padding-top:env(safe-area-inset-top,0px)}
 .tm-panel.open{transition: transform .4s steps(4);transform:translateX(0);box-shadow:-14px 0 48px rgba(10,20,40,.22)}
 html.dark .tm-panel.open{box-shadow:-14px 0 48px rgba(0,0,0,.55)}
