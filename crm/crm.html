@@ -20,16 +20,16 @@
   --green:#10b981; --green2:#059669; --red:#dc2626; --blue:#3b82f6; --purple:#8b5cf6;
   --gray:#6b6560;
   /* ── Minesweeper brutalist — polished silver-gray with chiseled bevels ── */
-  --bg:#bfc3c8; --card:#bfc3c8;
+  --bg:#c0c0c0; --card:#c0c0c0;
   --bevel-light:#ffffff; --bevel-dark:#5a5f64;
   --neu-dark:#8b9096; --neu-light:#e4e7ea;
   --neu-d:0; --neu-blur:0;
   --neu-d-sm:0; --neu-blur-sm:0;
-  /* Classic chiseled Minesweeper bevels — STARK white highlight + dark shadow, 2-3px */
-  --shadow-neu: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #6a6e73, inset 3px 3px 0 rgba(255,255,255,.6), inset -3px -3px 0 rgba(0,0,0,.18);
-  --shadow-neu-sm: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #6a6e73;
-  --shadow-neu-inset: inset 2px 2px 0 #6a6e73, inset -2px -2px 0 #ffffff, inset 3px 3px 0 rgba(0,0,0,.12), inset -3px -3px 0 rgba(255,255,255,.35);
-  --shadow-neu-inset-sm: inset 2px 2px 0 #6a6e73, inset -2px -2px 0 #ffffff;
+  /* HARD Minesweeper bevels — 3-4px stark white + dark, no transparency */
+  --shadow-neu: inset 3px 3px 0 #ffffff, inset -3px -3px 0 #5a5e63;
+  --shadow-neu-sm: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #5a5e63;
+  --shadow-neu-inset: inset 3px 3px 0 #5a5e63, inset -3px -3px 0 #ffffff;
+  --shadow-neu-inset-sm: inset 2px 2px 0 #5a5e63, inset -2px -2px 0 #ffffff;
   --shadow-sm:var(--shadow-neu-sm);
   --shadow-md:var(--shadow-neu);
   --shadow-lg:var(--shadow-neu);
@@ -46,13 +46,13 @@
 html.dark {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#d4911a;
   /* ── Dark Minesweeper — deep graphite with metal bevels ── */
-  --bg:#3a3e43; --card:#3a3e43;
+  --bg:#3d3d3d; --card:#3d3d3d;
   --bevel-light:#6a6f75; --bevel-dark:#1a1c1f;
   --neu-dark:#1a1c1f; --neu-light:#5d6167;
-  --shadow-neu: inset 2px 2px 0 #70757c, inset -2px -2px 0 #0d0f12, inset 3px 3px 0 rgba(255,255,255,.06), inset -3px -3px 0 rgba(0,0,0,.45);
-  --shadow-neu-sm: inset 2px 2px 0 #70757c, inset -2px -2px 0 #0d0f12;
-  --shadow-neu-inset: inset 2px 2px 0 #0d0f12, inset -2px -2px 0 #70757c, inset 3px 3px 0 rgba(0,0,0,.4), inset -3px -3px 0 rgba(255,255,255,.05);
-  --shadow-neu-inset-sm: inset 2px 2px 0 #0d0f12, inset -2px -2px 0 #70757c;
+  --shadow-neu: inset 3px 3px 0 #7b8088, inset -3px -3px 0 #0d0f12;
+  --shadow-neu-sm: inset 2px 2px 0 #7b8088, inset -2px -2px 0 #0d0f12;
+  --shadow-neu-inset: inset 3px 3px 0 #0d0f12, inset -3px -3px 0 #7b8088;
+  --shadow-neu-inset-sm: inset 2px 2px 0 #0d0f12, inset -2px -2px 0 #7b8088;
   --shadow-sm:var(--shadow-neu-sm);
   --shadow-md:var(--shadow-neu);
   --shadow-lg:var(--shadow-neu);
@@ -364,6 +364,70 @@ select, textarea {
 /* End Cybertruck layer */
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   HARD MINESWEEPER LAYER — every cell is a chunky 3D block, no exceptions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Every clickable cell-like element gets the FULL 3px bevel + click→press */
+.btn, button, .pa-stage-chip, .call-filter-chip, .qa-btn, .pill-btn,
+.fld-btn, .nav-icon-btn, .pm-step, .pm-pill, .nav-label, .tab-btn,
+.kpi-card, .stat-card, .pa-stat, .inv-stat, .prop-card, .lead-card,
+.kanban-card, .photo-tile, .timeline-item, .pay-history-item,
+.material-btn, [class*="-chip"], [class*="-btn"]:not([class*="btn-primary"]) {
+  box-shadow: var(--shadow-neu) !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background: var(--card) !important;
+  color: var(--text) !important;
+}
+
+/* Active/pressed → flatten + inset for tactile click */
+.btn:active, button:active, .pa-stage-chip.active, .call-filter-chip.active,
+.qa-btn:active, .pill-btn:active, .pm-step.active, .tab-btn.active,
+.kpi-card:active, .stat-card:active, .prop-card:active, .lead-card:active,
+.kanban-card:active, .photo-tile:active, [class*="-chip"]:active {
+  box-shadow: var(--shadow-neu-inset-sm) !important;
+}
+
+/* Hover lift = stronger bevel */
+.btn:hover:not(:active), button:hover:not(:active),
+.kpi-card:hover, .stat-card:hover, .prop-card:hover, .lead-card:hover {
+  box-shadow: var(--shadow-neu) !important;
+  filter: brightness(1.05);
+}
+
+/* Body bg back to classic Minesweeper silver */
+body { background: var(--bg) !important; }
+html.dark body { background: var(--bg) !important; }
+
+/* Cards/tiles get a 1px outer border so they look stamped onto the silver — like Minesweeper grid lines */
+.card, .pa-stat, .inv-stat, .kpi-card, .stat-card, .modal,
+.side-panel, .prop-card, .lead-card, .kanban-card,
+table tbody tr {
+  outline: 1px solid rgba(0,0,0,.4);
+  outline-offset: -1px;
+}
+html.dark .card, html.dark .pa-stat, html.dark .inv-stat,
+html.dark .kpi-card, html.dark .stat-card, html.dark .modal,
+html.dark .side-panel, html.dark .prop-card, html.dark .lead-card,
+html.dark .kanban-card, html.dark table tbody tr {
+  outline: 1px solid rgba(0,0,0,.7);
+}
+
+/* Status dots → small square tiles with bevel */
+[class*="dot"], [class*="indicator"]:not(.full-width) {
+  border-radius: 0 !important;
+}
+
+/* Notifications dot, badge — flat squares with hard outline */
+.bell-badge, .tab-badge, .nav-badge, .badge-count {
+  border-radius: 0 !important;
+  border: 1px solid #000 !important;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.3), inset -1px -1px 0 rgba(0,0,0,.3) !important;
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
    8-BIT GRID LAYER — every transition is stepped, every shadow is hard
    No soft fades anywhere. 8px base grid: every block snaps.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -445,10 +509,11 @@ button svg, .btn svg { stroke-width: 2.5 !important; }
   border-radius: 0 !important;
 }
 
-/* Avatars: keep circular (universally recognized for people) BUT thinner border so it fits Minesweeper */
+/* Avatars: 8-bit blocky circle (16-vertex polygon = pixel-art Game Boy feel) */
 .avatar, .pn-avatar, .mlc-avatar, [class*="avatar"] {
-  border-radius: 0;!important;
+  border-radius: 0 !important;
   border: 2px solid rgba(0,0,0,.45);
+  clip-path: polygon(37.5% 0, 62.5% 0, 75% 12.5%, 87.5% 12.5%, 100% 37.5%, 100% 62.5%, 87.5% 87.5%, 75% 87.5%, 62.5% 100%, 37.5% 100%, 25% 87.5%, 12.5% 87.5%, 0 62.5%, 0 37.5%, 12.5% 12.5%, 25% 12.5%);
 }
 html.dark .avatar, html.dark .pn-avatar, html.dark [class*="avatar"] {
   border-color: rgba(0,0,0,.7);
