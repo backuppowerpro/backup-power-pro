@@ -223,8 +223,8 @@ html.dark tbody tr:hover {
   background: rgba(255,255,255,.05);
 }
 
-/* ══ RAISED CHROME — apply to toolbars, headers, tab bars ══ */
-.tab-bar, .toolbar, header, .modal-header {
+/* ══ RAISED CHROME — apply to headers, tab bars (NOT toolbar — it's a flat strip) ══ */
+.tab-bar, header, .modal-header {
   box-shadow: var(--shadow-neu-sm) !important;
   border-radius: 0 !important;
   border: none !important;
@@ -797,7 +797,7 @@ html.dark .avatar, html.dark .pn-avatar, html.dark [class*="avatar"] {
 
 
 /* ═══ STRONG 3D MINESWEEPER BEVELS — flat surfaces, chunky edges ═══ */
-.card, .modal, .side-panel, .tab-bar, .toolbar,
+.card, .modal, .side-panel, .tab-bar,
 .pa-stat, .inv-stat, .kpi-card, .stat-card,
 .prop-card, .kanban-card, .lead-card,
 .tm-panel, .dialer-panel, .drill-level {
@@ -805,6 +805,9 @@ html.dark .avatar, html.dark .pn-avatar, html.dark [class*="avatar"] {
   box-shadow: var(--shadow-neu) !important;
   border: none !important;
 }
+
+/* Toolbar is a flat strip — buttons inside are the raised elements, not the container */
+.toolbar { box-shadow: none !important; background: var(--bg) !important; }
 
 /* Buttons: beefy raised with real depth */
 .btn, button:not(.btn-primary):not([type="submit"]):not(.tab-btn) {
@@ -1591,7 +1594,7 @@ html.dark .panel-details-content.open{background:rgba(255,255,255,.02)}
 .tab-bar::-webkit-scrollbar{display:none}
 .tab-icon{display:none}  /* icons shown only on mobile bottom tab */
 .tab-label{display:inline}
-.tab-btn{padding:14px 18px;font-family:'Outfit',sans-serif;font-weight:600;font-size:14px;border:none;background:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--t-fast),border-color var(--t-fast);white-space:nowrap;flex-shrink:0;letter-spacing:.005em;display:flex;align-items:center;gap:6px}
+.tab-btn{padding:14px 18px;font-family:'Outfit',sans-serif;font-weight:600;font-size:14px;border:none;background:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--t-fast),border-color var(--t-fast);white-space:nowrap;flex-shrink:0;letter-spacing:.005em;display:flex;align-items:center;gap:6px;box-shadow:none!important}
 .tab-btn.active{color:var(--text);border-bottom-color:var(--gold);font-weight:700}
 .tab-btn:hover:not(.active){color:var(--text)}
 .tab-btn:focus-visible{outline:2px solid var(--navy);outline-offset:2px;border-radius:0;color:var(--text)}
