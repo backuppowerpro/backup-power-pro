@@ -6947,7 +6947,7 @@ function openLockNote(dateStr, e) {
   const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const el = document.createElement('div');
   el.id = 'lock-note-overlay';
-  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px';
   const hasNote = currentNote.length > 0;
   el.innerHTML = '<div class="modal" style="max-width:380px" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">\uD83D\uDD12 ' + esc(dateLabel) + '</div><button class="modal-close" id="lock-note-close">\u2715</button></div><div class="modal-body"><div class="form-row"><label>Note</label><textarea class="form-textarea" id="lock-note-input" placeholder="Why is this day blocked?" style="min-height:80px">' + esc(currentNote) + '</textarea></div></div><div class="modal-foot" style="display:flex;gap:8px;justify-content:flex-end">' + (hasNote ? '<button class="btn btn-danger btn-sm" id="lock-note-clear" style="margin-right:auto">Clear Note</button>' : '') + '<button class="btn btn-outline btn-sm" id="lock-note-cancel">Cancel</button><button class="btn btn-primary btn-sm" style="background:var(--navy);color:#fff" id="lock-note-save">Save</button></div></div>';
   document.body.appendChild(el);
@@ -8605,7 +8605,7 @@ function openStatsModal() {
   const overlay = document.createElement('div');
   overlay.id = 'stats-modal-overlay';
   overlay.className = 'modal-overlay open';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
   const periodLabel = trendDays === 7 ? 'Last 7 Days' : 'Last 30 Days';
   overlay.innerHTML = '<div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()"><div class="modal-head"><div class="modal-title">Stats</div><button class="btn btn-outline btn-sm" onclick="toggleTrendPeriod();refreshStatsModal()" id="stats-period-btn">' + periodLabel + '</button><button class="modal-close" onclick="closeStatsModal()">\u2715</button></div><div class="modal-body" id="stats-modal-body"></div></div>';
   overlay.addEventListener('click', function(ev) { if (ev.target === overlay) closeStatsModal(); });
@@ -8705,7 +8705,7 @@ function openJurisdictionsPopup() {
   const overlay = document.createElement('div');
   overlay.id = 'jur-popup-overlay';
   overlay.className = 'modal-overlay open';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
   const sorted = sortedJurisdictions ? sortedJurisdictions() : allJurisdictions;
   let cards = sorted.map(j => '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:background .1s" onclick="closeJurPopup();viewJurisdiction(' + j.id + ')">'
     + '<div class="jur-logo" style="width:36px;height:36px">' + (j.logo_url ? '<img src="' + esc(j.logo_url) + '" alt="">' : '\uD83C\uDFDB\uFE0F') + '</div>'
