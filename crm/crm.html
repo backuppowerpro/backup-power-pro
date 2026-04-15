@@ -746,8 +746,9 @@ button svg, .btn svg { stroke-width: 2.5 !important; }
 /* Avatars: 8-bit blocky circle (16-vertex polygon = pixel-art Game Boy feel) */
 .avatar, .pn-avatar, .mlc-avatar, [class*="avatar"] {
   border-radius: 0 !important;
-  border: 2px solid rgba(0,0,0,.45);
-  clip-path: polygon(37.5% 0, 62.5% 0, 75% 12.5%, 87.5% 12.5%, 100% 37.5%, 100% 62.5%, 87.5% 87.5%, 75% 87.5%, 62.5% 100%, 37.5% 100%, 25% 87.5%, 12.5% 87.5%, 0 62.5%, 0 37.5%, 12.5% 12.5%, 25% 12.5%);
+  border: none;
+  box-shadow: var(--shadow-neu-sm);
+  clip-path: none !important;
 }
 html.dark .avatar, html.dark .pn-avatar, html.dark [class*="avatar"] {
   border-color: rgba(0,0,0,.7);
@@ -1032,13 +1033,14 @@ html.dark .approval-notif-title{color:var(--text)}
 html.dark .approval-notif-amount{color:var(--gold)}
 html.dark .approval-notif-btn{background:var(--gold);color:#1e1b17}
 /* Quote builder */
-html.dark .qb-big{color:var(--gold)}
+html.dark .qb-big{color:#d4911a;background:#000}
 html.dark .qb-hero-right .qb-profit{color:var(--gold)}
 html.dark .qb-seg{background:var(--card)}
 html.dark .qb-seg-btn.active{background:var(--gold);color:#1e1b17}
 html.dark .qb-row.active .qb-row-name{color:var(--gold)}
 html.dark .qb-row.active .qb-row-right{color:var(--gold)}
-html.dark .qb-row-toggle.on{background:var(--gold)}
+html.dark .qb-row-toggle.on{background:#0a1628 !important}
+html.dark .qb-row-toggle.on::after{background:var(--gold)}
 html.dark .qb-slider-val{color:var(--gold)}
 html.dark .qb-slider-note.highlight{color:var(--gold)}
 html.dark input[type=range].qb-range{background:var(--border)}
@@ -1143,7 +1145,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Outfit',system-ui,sans-serif;line-height:1.2;lett
 /* TOOLBAR */
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:var(--sp-5);flex-wrap:wrap}
 /* Search wrapper — groups the search input + inline add-lead button */
-.search-wrap{flex:1;min-width:200px;display:flex;align-items:stretch;gap:8px;position:relative}
+.search-wrap{flex:1;min-width:200px;display:flex;align-items:stretch;gap:2px;position:relative}
 .search-wrap .search-input{flex:1;min-width:0}
 .search-add-wrap{position:relative;flex-shrink:0}
 .search-add{width:40px;height:100%;min-height:42px;border:none;border-radius:var(--r-sm);background:var(--navy);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),transform var(--t-fast),box-shadow var(--t-fast);box-shadow:var(--shadow-sm)}
@@ -1319,7 +1321,8 @@ html.dark .cal-holiday{background:#2d1f4e;color:#c084fc}
 .modal{transform:translateY(16px) scale(.98);transition: transform .25s steps(4, end)}
 .modal-overlay.open .modal{transform:translateY(0) scale(1)}
 body.modal-open{overflow:hidden;padding-right:var(--scrollbar-w,0px)}
-.modal{background:var(--bg);border-radius:0;width:100%;max-width:480px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-neu);border:none}
+.modal{background:var(--bg);border-radius:0;width:100%;max-width:480px;max-height:92vh;height:auto;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-neu);border:none}
+.modal .modal-body{max-height:none}
 .modal-head{padding:24px 24px 0;display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .modal-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;color:var(--text);flex:1;letter-spacing:-.015em}
 .modal-close{width:36px;height:36px;min-width:44px;min-height:44px;border-radius:0;border:none;background:transparent;cursor:pointer;font-size:17px;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:background var(--t-fast),color var(--t-fast),transform var(--t-fast)}
@@ -1608,8 +1611,8 @@ html.dark .tab-btn-sparky{color:var(--gold)}
 /* ── QUOTE BUILDER ────────────────────────────────────── */
 .qb-wrap{max-width:480px;margin:0 auto;padding:16px 18px 20px}
 .qb-hero{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-md)}
-.qb-hero-left .qb-label{color:var(--text3);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
-.qb-hero-left .qb-big{font-family:'Outfit',sans-serif;font-weight:800;font-size:38px;line-height:1;color:var(--navy);letter-spacing:-1px}
+.qb-hero-left .qb-label{color:var(--text3);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.qb-hero-left .qb-big{font-family:'VT323',monospace;font-size:48px;line-height:1;color:#d4911a;letter-spacing:.04em;background:#0a0a0a;padding:4px 16px;display:inline-block;box-shadow:inset 2px 2px 0 rgba(0,0,0,.9),inset -1px -1px 0 rgba(80,80,80,.4),0 0 0 1px rgba(0,0,0,.65);text-shadow:0 0 8px rgba(212,145,26,.7),0 0 2px rgba(255,200,80,.5)}
 .qb-hero-left .qb-note{color:var(--gold);font-size:10px;font-weight:600;margin-top:3px;min-height:14px}
 .qb-hero-right{text-align:right}
 .qb-hero-right .qb-profit{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;line-height:1}
@@ -1626,10 +1629,10 @@ html.dark .tab-btn-sparky{color:var(--gold)}
 .qb-row-right{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text3);flex-shrink:0;margin-left:12px}
 .qb-row.active .qb-row-name{color:var(--navy)}
 .qb-row.active .qb-row-right{color:var(--navy)}
-.qb-row-toggle{width:36px;height:20px;border-radius: 0;background:var(--border);position:relative;cursor:pointer;transition:background .15s;flex-shrink:0;margin-left:10px;border:none}
-.qb-row-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius: 0;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
-.qb-row-toggle.on{background:var(--navy)}
-.qb-row-toggle.on::after{transform:translateX(15px)}
+.qb-row-toggle{width:52px;height:26px !important;min-height:26px !important;border-radius:0;background:#2a2a2a !important;box-shadow:var(--shadow-neu-inset-sm);position:relative;cursor:pointer;flex-shrink:0;margin-left:10px;border:none}
+.qb-row-toggle::after{content:'';position:absolute;top:4px;left:4px;width:14px;height:18px;border-radius:0;background:#888;box-shadow:var(--shadow-neu-sm)}
+.qb-row-toggle.on{background:#0b1f3b !important;box-shadow:var(--shadow-neu-inset-sm)}
+.qb-row-toggle.on::after{transform:translateX(30px);background:var(--gold)}
 .qb-section{margin-bottom:var(--sp-md)}
 .qb-section-title{color:var(--text3);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
 .qb-slider-row{margin-bottom:12px}
@@ -2011,6 +2014,7 @@ html.dark .view-toggle-btn.active{background:var(--gold);color:#1e2035;box-shado
 html.dark .view-toggle-work.active{background:var(--gold);color:#1e1b17}
 /* Kanban breakout: escape the main 1140px container so the board can use the full viewport,
    and add a soft right-edge fade to telegraph that you can scroll horizontally. */
+#kanban-board{overflow-y:auto;max-height:calc(100vh - 220px)}
 .kanban-shell{position:relative;margin-top:16px;animation:tabFade .2s var(--ease)}
 .kanban-wrap{display:grid;grid-template-columns:repeat(9,minmax(232px,1fr));gap:12px;overflow-x:auto;padding:12px 14px 14px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .kanban-wrap > .kanban-col{scroll-snap-align:start}
@@ -2045,9 +2049,7 @@ html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04)
 .kanban-col-total{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:var(--text3);padding:0 4px 8px;letter-spacing:.04em;font-variant-numeric:tabular-nums;text-transform:uppercase;display:flex;align-items:baseline;gap:5px}
 .kanban-col-total::before{content:'Total';font-size:9px;font-weight:700;color:var(--text3);opacity:.7}
 .kanban-col-total b{font-weight:800;color:var(--text2);letter-spacing:-.005em;font-size:11px}
-.kanban-cards{display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;max-height:62vh;padding-right:2px}
-.kanban-cards::-webkit-scrollbar{width:6px}
-.kanban-cards::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:0}
+.kanban-cards{display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:visible;max-height:none;padding-right:2px}
 .kanban-card{background:var(--bg);border-radius:var(--r-sm);padding:12px 13px;cursor:pointer;transition:transform var(--t-fast),box-shadow var(--t-base);box-shadow:5px 5px 20px var(--neu-dark),-4px -4px 16px var(--neu-light);border:none;border-left:3px solid var(--urgcolor,var(--bg));position:relative}
 .kanban-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu);border-left-color:var(--urgcolor,var(--coldot,var(--gold)))}
 .kanban-card:active{transform:translateY(0);box-shadow:var(--shadow-neu-inset-sm)}
@@ -2694,7 +2696,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .sk-insight-btn{min-height:42px;padding:10px 16px;font-size:14px}
   .urgent-act-btn{min-height:48px!important;font-size:15px!important}
   /* QA buttons: icon-only, flat, evenly distributed */
-  .qa-btn{min-height:40px!important;min-width:40px!important;padding:0!important;font-size:0!important;box-shadow:none!important;background:rgba(0,0,0,.04)!important;border:none!important;border-radius: 0;!important;justify-content:center!important;flex:0 0 auto!important;gap:0!important}
+  .qa-btn{min-height:44px!important;min-width:44px!important;padding:0!important;font-size:0!important;box-shadow:none!important;background:rgba(0,0,0,.04)!important;border:none!important;border-radius:0!important;justify-content:center!important;flex:0 0 auto!important;gap:0!important}
   .qa-btn svg{width:18px!important;height:18px!important;stroke-width:2!important}
   html.dark .qa-btn{background:rgba(255,255,255,.07)!important}
   .qa-bar{padding:6px 10px 4px!important;gap:0!important;justify-content:space-around!important;overflow:visible!important}
@@ -2702,11 +2704,11 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .msg-compose-foot{padding:6px 10px!important}
   .fq-send-btn{min-height:48px;font-size:15px;border-radius:var(--r-md)}
   .fq-skip-btn{min-height:48px;font-size:15px;border-radius:var(--r-md)}
-  .fq-scan-btn{min-height:40px;padding:9px 18px;font-size:13px}
+  .fq-scan-btn{min-height:44px;padding:10px 18px;font-size:13px}
   .inbox-hdr-pill{min-height:40px!important;padding:9px 16px!important;font-size:13px!important}
   .view-toggle-btn{min-height:44px}
   /* Panel action quick-buttons in banner — icon-only on mobile */
-  .panel-quick-btns button{min-height:38px!important;min-width:38px!important;padding:9px 10px!important}
+  .panel-quick-btns button{min-height:44px!important;min-width:44px!important;padding:10px!important}
   #panel-banner{height:170px!important}
 
   /* ── FORM INPUTS & SELECTS: 48px, no iOS zoom ───────────── */
@@ -2810,9 +2812,9 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   #stats-modal{max-width:100%!important}
 
   /* ── TOGGLE SWITCHES: iOS-size ───────────────────────────── */
-  .qb-row-toggle{width:51px!important;height:31px!important;flex-shrink:0}
-  .qb-row-toggle::after{width:27px!important;height:27px!important;top:2px!important;left:2px!important}
-  .qb-row-toggle.on::after{transform:translateX(20px)!important}
+  .qb-row-toggle{width:60px!important;height:32px!important;min-height:32px!important;flex-shrink:0}
+  .qb-row-toggle::after{width:20px!important;height:24px!important;top:4px!important;left:4px!important}
+  .qb-row-toggle.on::after{transform:translateX(36px)!important}
 
   /* ── TAB BAR IMPROVEMENTS ────────────────────────────────── */
   .tab-btn{min-height:50px!important}
@@ -9663,7 +9665,7 @@ function inboxToggleMute(contactId) {
   loadInbox();
 }
 
-// ── NEW CONVERSATION — inline contact picker ───────────────
+// ── NEW CONVERSATION — inline contact picker + raw number compose ───────────────
 function inboxNewConversation() {
   const listEl = document.getElementById('inbox-list');
   const doneEl = document.getElementById('inbox-done-section');
@@ -9682,7 +9684,7 @@ function inboxNewConversation() {
     const ci = (c.name || '').split('').reduce((s, ch) => s + ch.charCodeAt(0), 0) % colors.length;
     const searchKey = ((c.name || '') + ' ' + (c.phone || '')).toLowerCase();
     return `<div class="inbox-item nc-row" data-nc="${esc(searchKey)}" onclick="openMessagesPanel('${c.id}');window.inboxNcClose()" style="cursor:pointer">
-      <div style="width:36px;height:36px;border-radius: 0;background:${colors[ci]};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${esc(initials)}</div>
+      <div style="width:36px;height:36px;border-radius:0;background:${colors[ci]};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${esc(initials)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
         ${ph ? `<div style="font-size:11.5px;color:var(--text3);margin-top:1px">${esc(ph)}</div>` : ''}
@@ -9691,25 +9693,77 @@ function inboxNewConversation() {
   }).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">No contacts with phone numbers</div>';
 
   listEl.setAttribute('data-nc', '1');
-  listEl.innerHTML = `<div style="padding:10px 12px 6px">
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius: 0;padding:8px 12px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input id="inbox-nc-inp" type="text" placeholder="Search contacts…" oninput="window.inboxNcFilter(this.value)" style="flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:inherit">
+  listEl.innerHTML = `
+  <div style="padding:10px 12px 6px;border-bottom:2px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--bg) 80%,#000 20%);box-shadow:var(--shadow-neu-inset-sm);padding:8px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" style="flex-shrink:0;color:var(--text3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="inbox-nc-inp" type="text" inputmode="tel" placeholder="Search contacts or type a number…" oninput="window.inboxNcFilter(this.value)" style="flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:inherit">
       </div>
-      <button onclick="window.inboxNcClose()" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:4px 8px;line-height:1" title="Cancel">&times;</button>
+      <button onclick="window.inboxNcClose()" style="width:36px;height:36px;background:var(--bg);box-shadow:var(--shadow-neu-sm);border:none;font-size:20px;color:var(--text3);cursor:pointer;line-height:1;flex-shrink:0" title="Cancel">&times;</button>
+    </div>
+    <div id="nc-new-number-row" style="display:none;align-items:center;gap:8px;background:var(--navy);box-shadow:var(--shadow-neu-sm);padding:10px 12px;cursor:pointer" onclick="window.inboxNcNewNumber()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.69a16 16 0 0 0 5.4 5.4l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/></svg>
+      <div style="flex:1;min-width:0">
+        <div id="nc-new-number-label" style="font-weight:700;font-size:13px;color:#fff;font-family:'Rajdhani',sans-serif;letter-spacing:.04em">TEXT NEW NUMBER</div>
+        <div id="nc-new-number-sub" style="font-size:11px;color:rgba(255,255,255,.6);margin-top:1px">Tap to start a conversation</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"><path d="m9 18 6-6-6-6"/></svg>
     </div>
   </div>
-  <div id="nc-rows" style="overflow-y:auto;max-height:calc(100% - 80px)">${rows}</div>`;
+  <div id="nc-rows" style="overflow-y:auto;max-height:calc(100% - 120px)">${rows}</div>`;
 
   setTimeout(() => { const inp = document.getElementById('inbox-nc-inp'); if (inp) inp.focus(); }, 60);
 
   window.inboxNcFilter = function(term) {
-    const t = term.toLowerCase();
+    const t = term.trim().toLowerCase();
+    // Check if looks like a phone number
+    const digits = term.replace(/\D/g, '');
+    const isPhonelike = digits.length >= 7;
+    const newRow = document.getElementById('nc-new-number-row');
+    const newLabel = document.getElementById('nc-new-number-label');
+    const newSub = document.getElementById('nc-new-number-sub');
+    if (newRow) {
+      if (isPhonelike) {
+        newRow.style.display = 'flex';
+        if (newLabel) newLabel.textContent = 'TEXT ' + fmtPhone(digits);
+        if (newSub) newSub.textContent = 'Start new conversation';
+        newRow.setAttribute('data-raw', digits);
+      } else {
+        newRow.style.display = 'none';
+      }
+    }
     document.querySelectorAll('.nc-row').forEach(el => {
       el.style.display = !t || (el.getAttribute('data-nc') || '').includes(t) ? '' : 'none';
     });
   };
+
+  window.inboxNcNewNumber = async function() {
+    const row = document.getElementById('nc-new-number-row');
+    const rawDigits = (row && row.getAttribute('data-raw')) || '';
+    if (!rawDigits || rawDigits.length < 7) return;
+    const normalized = rawDigits.length === 10 ? '+1' + rawDigits : '+' + rawDigits;
+    // Check if contact already exists
+    let contact = (allContacts || []).find(c => {
+      const cd = (c.phone || '').replace(/\D/g, '');
+      return cd === rawDigits || cd === rawDigits.replace(/^1/, '');
+    });
+    if (!contact && typeof db !== 'undefined') {
+      const { data, error } = await db.from('contacts').insert({
+        name: 'New Contact',
+        phone: normalized,
+        ai_enabled: false,
+        status: 'New Lead',
+      }).select().single();
+      if (error) { if (typeof showToast === 'function') showToast('Could not create contact: ' + error.message, 'error'); return; }
+      contact = data;
+      if (typeof allContacts !== 'undefined') allContacts.push(contact);
+      if (typeof showToast === 'function') showToast('New contact created — tap name to edit', 'info');
+    }
+    window.inboxNcClose();
+    if (contact) openMessagesPanel(contact.id);
+  };
+
   window.inboxNcClose = function() {
     const el = document.getElementById('inbox-list');
     if (el) el.removeAttribute('data-nc');
