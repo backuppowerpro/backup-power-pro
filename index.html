@@ -522,12 +522,12 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
         <div style="text-align:center;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:.04em">⚡ 5 install slots per week — spots fill fast</div>
         <!-- 2-col trust items -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;text-align:center">
+          <div class="var-trust-card" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;text-align:center;transition:background .2s,border-color .2s,transform .2s">
             <div style="font-size:15px;margin-bottom:3px">🔒</div>
             <div style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:#fff;line-height:1.3">Price-Lock Guarantee</div>
             <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;line-height:1.3">The price we text is what you pay</div>
           </div>
-          <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;text-align:center">
+          <div class="var-trust-card" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;text-align:center;transition:background .2s,border-color .2s,transform .2s">
             <div style="font-size:13px;margin-bottom:3px;letter-spacing:1px">⭐⭐⭐⭐⭐</div>
             <div style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:#fff;line-height:1.3">4.9 · 100+ Reviews</div>
             <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;line-height:1.3">Same owner as Key Electric</div>
@@ -1503,6 +1503,7 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
 </script>
 <style>
 @keyframes spin{to{transform:rotate(360deg)}}
+.var-trust-card:hover{background:rgba(255,255,255,.13)!important;border-color:rgba(255,186,0,.4)!important;transform:translateY(-2px)}
 @keyframes nudge{0%{transform:scaleY(1)}20%{transform:scaleY(1.12)}50%{transform:scaleY(.95)}75%{transform:scaleY(1.05)}100%{transform:scaleY(1)}}
 </style>
 </body>
