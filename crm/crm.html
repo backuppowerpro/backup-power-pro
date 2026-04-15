@@ -25,11 +25,11 @@
   --neu-dark:#8b9096; --neu-light:#e4e7ea;
   --neu-d:0; --neu-blur:0;
   --neu-d-sm:0; --neu-blur-sm:0;
-  /* Classic chiseled bevels — raised (buttons, cards) and pressed (inputs, active states) */
-  --shadow-neu: inset 1px 1px 0 rgba(255,255,255,.85), inset -2px -2px 0 rgba(0,0,0,.28), 1px 1px 0 rgba(0,0,0,.18);
-  --shadow-neu-sm: inset 1px 1px 0 rgba(255,255,255,.75), inset -1px -1px 0 rgba(0,0,0,.24);
-  --shadow-neu-inset: inset 2px 2px 0 rgba(0,0,0,.28), inset -1px -1px 0 rgba(255,255,255,.55);
-  --shadow-neu-inset-sm: inset 1px 1px 0 rgba(0,0,0,.24), inset -1px -1px 0 rgba(255,255,255,.5);
+  /* Classic chiseled Minesweeper bevels — STARK white highlight + dark shadow, 2-3px */
+  --shadow-neu: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #6a6e73, inset 3px 3px 0 rgba(255,255,255,.6), inset -3px -3px 0 rgba(0,0,0,.18);
+  --shadow-neu-sm: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #6a6e73;
+  --shadow-neu-inset: inset 2px 2px 0 #6a6e73, inset -2px -2px 0 #ffffff, inset 3px 3px 0 rgba(0,0,0,.12), inset -3px -3px 0 rgba(255,255,255,.35);
+  --shadow-neu-inset-sm: inset 2px 2px 0 #6a6e73, inset -2px -2px 0 #ffffff;
   --shadow-sm:var(--shadow-neu-sm);
   --shadow-md:var(--shadow-neu);
   --shadow-lg:var(--shadow-neu);
@@ -49,10 +49,10 @@ html.dark {
   --bg:#3a3e43; --card:#3a3e43;
   --bevel-light:#6a6f75; --bevel-dark:#1a1c1f;
   --neu-dark:#1a1c1f; --neu-light:#5d6167;
-  --shadow-neu: inset 1px 1px 0 rgba(255,255,255,.12), inset -2px -2px 0 rgba(0,0,0,.6), 1px 1px 0 rgba(0,0,0,.45);
-  --shadow-neu-sm: inset 1px 1px 0 rgba(255,255,255,.1), inset -1px -1px 0 rgba(0,0,0,.5);
-  --shadow-neu-inset: inset 2px 2px 0 rgba(0,0,0,.6), inset -1px -1px 0 rgba(255,255,255,.08);
-  --shadow-neu-inset-sm: inset 1px 1px 0 rgba(0,0,0,.5), inset -1px -1px 0 rgba(255,255,255,.07);
+  --shadow-neu: inset 2px 2px 0 #70757c, inset -2px -2px 0 #0d0f12, inset 3px 3px 0 rgba(255,255,255,.06), inset -3px -3px 0 rgba(0,0,0,.45);
+  --shadow-neu-sm: inset 2px 2px 0 #70757c, inset -2px -2px 0 #0d0f12;
+  --shadow-neu-inset: inset 2px 2px 0 #0d0f12, inset -2px -2px 0 #70757c, inset 3px 3px 0 rgba(0,0,0,.4), inset -3px -3px 0 rgba(255,255,255,.05);
+  --shadow-neu-inset-sm: inset 2px 2px 0 #0d0f12, inset -2px -2px 0 #70757c;
   --shadow-sm:var(--shadow-neu-sm);
   --shadow-md:var(--shadow-neu);
   --shadow-lg:var(--shadow-neu);
@@ -65,14 +65,11 @@ html.dark {
 /* ── MINESWEEPER BRUTALIST POLISH ─────────────────────────────────────── */
 /* Body: crisp silver backdrop with faint grid texture */
 body {
-  background:
-    linear-gradient(var(--bg), var(--bg)),
-    repeating-linear-gradient(0deg, transparent 0 23px, rgba(0,0,0,.015) 23px 24px),
-    repeating-linear-gradient(90deg, transparent 0 23px, rgba(0,0,0,.015) 23px 24px);
+  background: var(--bg) !important;
   font-feature-settings: "tnum" 1, "cv11" 1;
   -webkit-font-smoothing: antialiased;
 }
-html.dark body { background: var(--bg); }
+html.dark body { background: var(--bg) !important; }
 
 /* Buttons: classic raised chisel — on press, FLATTEN (no raise, no push) */
 button, .btn, input[type="submit"], input[type="button"] {
@@ -265,23 +262,7 @@ html.dark tbody tr:hover {
   --ct-edge:   rgba(0,0,0,.55);
 }
 
-/* Brushed-steel body texture — fine horizontal grain, barely there */
-body {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.06)),
-    repeating-linear-gradient(90deg,
-      rgba(255,255,255,.02) 0 1px,
-      rgba(0,0,0,.018) 1px 2px),
-    var(--bg) !important;
-}
-html.dark body {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.025), rgba(0,0,0,.28)),
-    repeating-linear-gradient(90deg,
-      rgba(255,255,255,.015) 0 1px,
-      rgba(0,0,0,.04) 1px 2px),
-    var(--bg) !important;
-}
+/* Body texture removed — flat gray per user preference */
 
 /* All UI chrome typography: Rajdhani, uppercase, tracked — like a dashboard readout */
 .tab-btn, .nav-label, .section-title, .modal-title,
@@ -313,58 +294,50 @@ h1, h2, h3, h4, .h1, .h2, .h3, thead th,
 .btn-primary, button[type="submit"] {
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   padding-left: 16px !important;
-  background: linear-gradient(180deg, #1a2f4f, #0b1f3b) !important;
+  background: var(--navy) !important;
   color: #fff !important;
   font-family: 'Rajdhani', 'Outfit', sans-serif !important;
   text-transform: uppercase;
   letter-spacing: .08em;
   font-weight: 700;
-  box-shadow: inset 1px 1px 0 rgba(255,255,255,.15), inset -1px -1px 0 rgba(0,0,0,.5), 0 1px 0 rgba(0,0,0,.25) !important;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5) !important;
 }
 .btn-primary:active, button[type="submit"]:active {
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  background: linear-gradient(180deg, #0b1f3b, #061428) !important;
-  box-shadow: inset 2px 2px 0 rgba(0,0,0,.5) !important;
+  background: #061428 !important;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,.5), inset -2px -2px 0 rgba(255,255,255,.08) !important;
   transform: translate(1px,1px);
 }
 
 /* Warning/hazard stripe accent for important banners — amber/black diagonal */
 .warn-banner-amber, .warn-banner {
-  background:
-    repeating-linear-gradient(45deg, #ffb000 0 12px, #1a1a1a 12px 24px) !important;
-  color: #fff !important;
-  text-shadow: 1px 1px 0 rgba(0,0,0,.9);
+  background: #ffb000 !important;
+  color: #1a1a1a !important;
   font-family: 'Rajdhani', 'Outfit', sans-serif !important;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .08em;
   border: 2px solid #000 !important;
-  box-shadow: inset 1px 1px 0 rgba(255,255,255,.15), 2px 2px 0 rgba(0,0,0,.4) !important;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.35), inset -2px -2px 0 rgba(0,0,0,.25) !important;
   border-radius: 0 !important;
 }
 
 /* Stat cards / KPIs — cut corner, amber bar, brushed-steel face */
 .pa-stat, .inv-stat, .kpi-card, .stat-card {
   clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.6), rgba(0,0,0,.08)),
-    var(--card) !important;
+  background: var(--card) !important;
+  box-shadow: var(--shadow-neu) !important;
   border: none !important;
-}
-html.dark .pa-stat, html.dark .inv-stat, html.dark .kpi-card, html.dark .stat-card {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.3)),
-    var(--card) !important;
 }
 
 /* Tab bar — thicker, tactical, amber underline on active */
-.tab-bar { background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(0,0,0,.06)), var(--bg) !important; }
+.tab-bar { background: var(--bg) !important; box-shadow: var(--shadow-neu-sm) !important; }
 .tab-btn.active {
   box-shadow: inset 0 -3px 0 var(--ct-amber) !important;
   color: var(--text) !important;
   background: rgba(255,149,0,.06) !important;
 }
-html.dark .tab-bar { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.3)), var(--bg) !important; }
+html.dark .tab-bar { background: var(--bg) !important; }
 
 /* Status badges — angular clip, high-contrast, uppercase */
 .prop-badge {
@@ -382,28 +355,57 @@ html.dark .tab-bar { background: linear-gradient(180deg, rgba(255,255,255,.04), 
 /* Inputs and selects — recessed metal slots */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
 select, textarea {
-  background: linear-gradient(180deg, rgba(0,0,0,.07), rgba(255,255,255,.1)), color-mix(in srgb, var(--bg) 88%, #000 12%) !important;
+  background: color-mix(in srgb, var(--bg) 90%, #000 10%) !important;
   font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace !important;
 }
 
 /* Side-panel & modal: add a subtle edge highlight like a brushed-steel panel seam */
 .side-panel, .modal {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.35), rgba(0,0,0,.04)),
-    var(--card) !important;
-  box-shadow: var(--shadow-neu), -2px 0 0 rgba(0,0,0,.18) !important;
-}
-html.dark .side-panel, html.dark .modal {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.25)),
-    var(--card) !important;
+  background: var(--card) !important;
+  box-shadow: var(--shadow-neu) !important;
 }
 
 /* Amber accent utility */
 .accent-amber { color: var(--ct-amber) !important; }
 .bg-amber { background: var(--ct-amber) !important; color: #000; font-weight: 800; }
 
+/* UX #10 fix: photo upload label needs 44px+ touch target */
+@media (pointer: coarse) {
+  .msg-compose-foot label { min-width: 44px !important; min-height: 44px !important; padding: 6px !important; }
+}
 /* End Cybertruck layer */
+
+/* ═══ STRONG 3D MINESWEEPER BEVELS — flat surfaces, chunky edges ═══ */
+.card, .modal, .side-panel, .tab-bar, .toolbar,
+.pa-stat, .inv-stat, .kpi-card, .stat-card,
+.prop-card, .kanban-card, .lead-card,
+.tm-panel, .dialer-panel, .drill-level {
+  background: var(--card) !important;
+  box-shadow: var(--shadow-neu) !important;
+  border: none !important;
+}
+
+/* Buttons: beefy raised with real depth */
+.btn, button:not(.btn-primary):not([type="submit"]):not(.tab-btn) {
+  background: var(--card) !important;
+  box-shadow: var(--shadow-neu-sm) !important;
+  border: none !important;
+  padding: 7px 14px;
+  font-weight: 700;
+}
+
+/* Inputs / selects / textareas: chunky pressed look */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+select, textarea {
+  box-shadow: var(--shadow-neu-inset-sm) !important;
+  padding: 6px 10px;
+}
+
+/* List rows / table rows / tiles — flat by default, pressed on active */
+tbody tr, .mlc, .pay-history-item, .timeline-item, .photo-tile {
+  background: transparent;
+}
+
 
 
 html.dark ::selection{background:rgba(212,145,26,.35);color:#0e0e0d}
@@ -549,7 +551,7 @@ html.dark .qb-slider-val{color:var(--gold)}
 html.dark .qb-slider-note.highlight{color:var(--gold)}
 html.dark input[type=range].qb-range{background:var(--border)}
 html.dark input[type=range].qb-range::-webkit-slider-thumb{background:var(--gold);box-shadow:0 0 0 3px rgba(196,130,20,.15),0 2px 4px rgba(0,0,0,.3)}
-html.dark .qb-summary{background:linear-gradient(135deg,rgba(196,130,20,.06) 0%,var(--card) 100%)}
+html.dark .qb-summary{background:var(--card)}
 html.dark .qb-summary-total-val{color:var(--gold)}
 html.dark .qb-summary-total{border:none}
 /* Drill-down panel */
@@ -5239,10 +5241,9 @@ async function confirmPayment() {
   const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: method, status: 'completed' }]);
   if (error) { if (_payBtn) { _payBtn.disabled = false; _payBtn.textContent = 'Confirm Payment'; } showToast('Payment failed: ' + error.message, 'error'); return; }
   _selectedPayMethod = null;
-  await db.from('contacts').update({ quote_amount: amount }).eq('id', contactId);
+  // LOGIC #2 fix: do NOT overwrite quote_amount with this payment — cumulative paid lives in payments table
   const c = allContacts.find(function(x) { return x.id === contactId; });
   if (c) {
-    c.quote_amount = amount;
     const np = (c.name || '').split(' ');
     fireMetaEvent('Purchase', { email: c.email, phone: c.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' }, { currency: 'USD', value: amount });
   }
@@ -5298,10 +5299,9 @@ async function collectPayment(contactId, amount) {
   _collectingPayment = true;
   const { error } = await db.from('payments').insert([{ contact_id: contactId, amount: amount, method: 'Manual', status: 'completed' }]);
   if (error) { _collectingPayment = false; showToast('Payment failed: ' + error.message, 'error'); return; }
-  await db.from('contacts').update({ quote_amount: amount }).eq('id', contactId);
+  // LOGIC #2 fix: do NOT overwrite quote_amount — payments are cumulative in payments table
   const c = allContacts.find(function(x) { return x.id === contactId; });
   if (c) {
-    c.quote_amount = amount;
     const np = (c.name || '').split(' ');
     fireMetaEvent('Purchase', { email: c.email, phone: c.phone, fn: np[0]||'', ln: np.slice(1).join(' ')||'' }, { currency: 'USD', value: amount });
   }
@@ -6118,9 +6118,16 @@ function confirmDeleteContact(id) {
 }
 
 async function deleteContact(id) {
+  // LOGIC #5 fix: cascade delete dependent records so we don't orphan proposals/payments/invoices
+  try {
+    await db.from('payments').delete().eq('contact_id', id);
+    await db.from('invoices').delete().eq('contact_id', id);
+    await db.from('inspections').delete().eq('contact_id', id);
+    await db.from('proposals').delete().eq('contact_id', id);
+  } catch (e) { console.warn('[deleteContact] cascade warn:', e); }
   const { error } = await db.from('contacts').delete().eq('id', id);
-  if (error) { showToast('Delete failed', 'error'); return; }
-  showToast('Lead deleted', 'success');
+  if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+  showToast('Lead and all records deleted', 'success');
   loadContacts();
 }
 
@@ -6379,7 +6386,11 @@ function editProposal(proposalId) {
   document.getElementById('p-main-breaker').checked = !!p.include_main_breaker;
   document.getElementById('p-twin-quad').checked = !!p.include_twin_quad;
   if (document.getElementById('p-surge-check')) document.getElementById('p-surge-check').checked = !!p.include_surge;
-  if (document.getElementById('p-pom-check')) document.getElementById('p-pom-check').checked = !!p.include_pom;
+  // LOGIC #3 fix: for approved proposals the customer's actual choice lives in selected_pom, not include_pom
+  if (document.getElementById('p-pom-check')) {
+    const _isApproved = p.status === 'Approved';
+    document.getElementById('p-pom-check').checked = !!(_isApproved ? p.selected_pom : p.include_pom);
+  }
   if (document.getElementById('p-deposit-check')) document.getElementById('p-deposit-check').checked = (p.require_deposit !== false);
   document.getElementById('p-notes').value = p.notes || '';
   pClearCustomItems();
@@ -6450,7 +6461,9 @@ async function saveProposal() {
     include_main_breaker: document.getElementById('p-main-breaker').checked,
     include_twin_quad:    document.getElementById('p-twin-quad').checked,
     include_surge:   surgeIncluded,
+    /* LOGIC #3 fix: when editing an approved proposal, also update selected_pom to keep state consistent */
     include_pom:     pomIncluded,
+    selected_pom:    pomIncluded,
     require_deposit: depositRequired,
     pricing_30:      pricing30,
     pricing_50:      pricing50,
@@ -6465,6 +6478,9 @@ async function saveProposal() {
     custom_items:    pGetCustomItems(),
     status:          'Created',
   };
+  // LOGIC #1 fix: fold custom items into stored total so invoice/deposit math stays consistent
+  const _customTotal = (pCustomItemsTotal ? pCustomItemsTotal() : 0) || 0;
+  payload.total = primary.total + _customTotal;
 
   let data, error;
   if (_editingProposalId) {
