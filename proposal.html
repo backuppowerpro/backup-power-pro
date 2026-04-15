@@ -1062,9 +1062,9 @@ function renderPricing() {
     const _pi = (chosenAmp === '50' ? '50' : '30');
     const is50 = chosenAmp === '50';
     rows += priceRow(
-      `${_pi} Amp Generator Installation`,
+      `${_pi} Amp Generator Home Connection Installation`,
       null,
-      fmt(Math.max(0, base - longRun - mb - tq - cord - permit)),
+      fmt(Math.max(0, base - mb - tq - cord - permit)),
       `assets/product-images/inlet-${_pi}amp.jpg`,
       [
         `${_pi}A weather-rated inlet box — exterior wall mount`,
@@ -1101,7 +1101,7 @@ function renderPricing() {
     if (tq) rows += priceRow('Panel Space Optimization', 'Twin/quad breaker swap to free up slots', fmt(tq));
   } else {
     const _pi2 = (chosenAmp === '50' ? '50' : '30');
-    rows += priceRow(`${_pi2} Amp Generator Installation`, 'Inlet box, interlock kit, permit, inspection, walkthrough', fmt(pr.base || P.price_base), `assets/product-images/inlet-${_pi2}amp.jpg`);
+    rows += priceRow(`${_pi2} Amp Generator Home Connection Installation`, 'Inlet box, interlock kit, permit, inspection, walkthrough', fmt(pr.base || P.price_base), `assets/product-images/inlet-${_pi2}amp.jpg`);
     if (P.include_cord) rows += priceRow(`${_pi2}A Power Transfer Cord`, 'Connects generator to inlet box', fmt(P.price_cord), `assets/product-images/cord-${_pi2}amp.jpg`);
     if (P.include_surge) rows += priceRow('Whole-House Surge Protector', 'Installed on main panel', fmt(P.price_surge));
   }
@@ -1121,8 +1121,15 @@ function renderPricing() {
   if (totalBadge) totalBadge.textContent = fmt(total);
 
   const perDay = document.getElementById('per-day-note');
+  const requireDeposit = P.require_deposit !== false;
   const depositAmt = Math.round(total * 0.5);
-  if (perDay) perDay.innerHTML = `<strong style="color:var(--navy)">50% deposit ($${depositAmt.toLocaleString()}) due to confirm your spot.</strong><br><span style="font-size:12px">Remaining balance due on install day. That's just $${(total / 3650).toFixed(2)}/day for 10 years of protection.</span>`;
+  if (perDay) {
+    if (requireDeposit) {
+      perDay.innerHTML = `<strong style="color:var(--navy)">50% deposit ($${depositAmt.toLocaleString()}) due to confirm your spot.</strong><br><span style="font-size:12px">Remaining balance due on install day. That's just $${(total / 3650).toFixed(2)}/day for 10 years of protection.</span>`;
+    } else {
+      perDay.innerHTML = `<span style="font-size:12px">That's just $${(total / 3650).toFixed(2)}/day for 10 years of protection.</span>`;
+    }
+  }
 
   // Update POM toggle visual
   const pomToggle = document.getElementById('pom-toggle');
