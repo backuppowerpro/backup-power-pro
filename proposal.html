@@ -1029,6 +1029,12 @@ function renderProposal() {
             </div>
           </div>
         </div>` : ''}
+        ${(P.discount_amount && P.discount_amount > 0 && P.notes) ? `
+        <div style="margin-top:20px;padding:14px 16px;background:#fefce8;border-left:4px solid #ca8a04;border-radius:8px">
+          <div style="font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Scope Modification — Binding on Approval</div>
+          <p style="font-size:13px;color:#78350f;line-height:1.6;margin:0">${esc(P.notes)}</p>
+          <p style="font-size:11px;color:#92400e;margin-top:8px;margin-bottom:0;line-height:1.5">By signing below, you acknowledge that the above note modifies the standard scope of work described in this proposal. This modification is contractually binding and supersedes any conflicting default scope description above.</p>
+        </div>` : ''}
         <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
           <label class="form-label" style="font-size:13px;margin-bottom:6px">Sign to Approve <span class="req">*</span></label>
           <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">Type your full name below — this is your electronic signature and confirms your approval of this proposal.</p>
@@ -1153,6 +1159,17 @@ function renderPricing() {
     P.custom_items.forEach(item => {
       if (item.title || item.price) rows += priceRow(item.title || 'Additional service', '', fmt(item.price || 0));
     });
+  }
+
+  if (P.discount_amount && P.discount_amount > 0) {
+    const discountNote = P.notes ? P.notes.trim() : '';
+    rows += `<tr class="price-row discount-row">
+      <td class="price-row-content">
+        <div class="price-row-name" style="color:var(--green)">Discount Applied</div>
+        ${discountNote ? `<div class="price-row-desc" style="color:var(--text2);font-style:italic">${discountNote} — scope modification (see below)</div>` : ''}
+      </td>
+      <td class="price-row-price" style="color:var(--green);white-space:nowrap">−${fmt(P.discount_amount)}</td>
+    </tr>`;
   }
 
   const total = calcTotal(chosenAmp);
@@ -1377,6 +1394,7 @@ function renderApproved() {
     if (P.include_cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(P.price_cord || 0)}</td></tr>`;
   }
   if (P.selected_pom) pricingRowsHtml += `<tr><td class="price-item-name">Peace of Mind Protection Package</td><td>${fmt(P.pom_price || 447)}</td></tr>`;
+  if (P.discount_amount && P.discount_amount > 0) pricingRowsHtml += `<tr><td class="price-item-name" style="color:var(--green)">Discount${P.notes ? ` — ${esc(P.notes)}` : ''}</td><td style="color:var(--green)">−${fmt(P.discount_amount)}</td></tr>`;
 
   let termsDisplay = '';
   if (P.approved_terms_snapshot) {
@@ -1470,7 +1488,8 @@ function renderApproved() {
           <div class="legal-row"><span class="legal-label">IP Address</span><span class="legal-value">${esc(P.approved_ip || 'N/A')}</span></div>
           <div class="legal-row"><span class="legal-label">Safety Instructions</span><span class="legal-value">${P.safety_ack ? '&#10003; Acknowledged' : 'Not acknowledged'}</span></div>
         </div>
-        <div class="legal-footer">This document constitutes a binding agreement under the Electronic Signatures in Global and National Commerce Act (ESIGN Act).</div>
+        ${(P.discount_amount && P.discount_amount > 0 && P.notes) ? `<div class="legal-row" style="background:#fefce8;border-left:3px solid #ca8a04"><span class="legal-label" style="color:#92400e">Scope Modification</span><span class="legal-value" style="color:#78350f;font-style:italic">${esc(P.notes)}</span></div>` : ''}
+        <div class="legal-footer">This document constitutes a binding agreement under the Electronic Signatures in Global and National Commerce Act (ESIGN Act).${(P.discount_amount && P.discount_amount > 0 && P.notes) ? ' Any scope modification noted above supersedes the default scope description.' : ''}</div>
       </div>
     </div>
 
