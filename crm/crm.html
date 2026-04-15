@@ -364,6 +364,53 @@ select, textarea {
 /* End Cybertruck layer */
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   8-BIT TYPE & ICONS — Press Start 2P for headlines, pixel rendering for SVGs
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+/* Headlines and titles get pixel/8-bit font (NOT body text — Inter stays for legibility) */
+.modal-title, .panel-name, .pa-stat-label, .inv-stat-label,
+.stats-num, .lcd-num, .digital, .pa-stat-num, .inv-stat-value,
+h1.pixel, h2.pixel, h3.pixel, .pixel-title {
+  font-family: 'VT323', 'Press Start 2P', 'JetBrains Mono', monospace !important;
+  letter-spacing: .04em !important;
+  font-weight: normal !important;
+  text-transform: uppercase;
+}
+
+/* Big LCD numerals — VT323 is a great LCD substitute */
+.pa-stat-num, .inv-stat-value, .lcd-num, .digital {
+  font-family: 'VT323', monospace !important;
+  font-size: 32px !important;
+  letter-spacing: .03em !important;
+}
+
+/* Section labels in caps + pixel feel */
+.section-title, .pm-section-label, .qb-summary-label {
+  font-family: 'VT323', 'Outfit', sans-serif !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+/* SVG icons — render with hard pixel edges, no anti-aliasing */
+svg {
+  shape-rendering: crispEdges !important;  /* hard pixel lines, no smoothing */
+  image-rendering: pixelated;
+  stroke-width: 2.5 !important;
+  stroke-linecap: square !important;        /* no rounded ends */
+  stroke-linejoin: miter !important;        /* hard corners */
+}
+
+/* Bigger icon stroke for chunkier 8-bit feel */
+button svg, .btn svg, .qa-btn svg, .nav-icon-btn svg {
+  stroke-width: 3 !important;
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
    HARD MINESWEEPER LAYER — every cell is a chunky 3D block, no exceptions
    ═══════════════════════════════════════════════════════════════════════════ */
 
