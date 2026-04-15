@@ -12,7 +12,7 @@
 :root {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
   --green:#059669; --red:#dc2626; --border:#e4e8f0;
-  --bg:#eef1f7; --text:#1a2a42; --text2:#4a5568; --text3:#8a9ab5;
+  --bg:#eef1f7; --text:#1a2a42; --text2:#4a5568; --text3:#6b7280;
   --blue:#1d4ed8;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -384,6 +384,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
   .photos-grid img{height:72px}
   .sig-preview{padding:16px 0 12px;min-height:56px}
 }
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>

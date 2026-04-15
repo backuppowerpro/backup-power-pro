@@ -34,7 +34,7 @@
 :root {
   --navy:#0b1f3b; --navy2:#1a3a5c; --gold:#ffba00;
   --green:#059669; --red:#dc2626; --border:#e4e8f0;
-  --bg:#f4f6fa; --text:#1a2a42; --text2:#4a5568; --text3:#8a9ab5;
+  --bg:#f4f6fa; --text:#1a2a42; --text2:#4a5568; --text3:#6b7280;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;min-height:100%}
@@ -171,6 +171,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .checkout-close:hover{background:#f0f0f0;color:var(--navy)}
 .checkout-modal-scroll{overflow-y:auto;flex:1;padding:0 24px 28px}
 #checkout-container{min-height:120px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
