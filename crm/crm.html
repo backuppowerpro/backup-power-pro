@@ -447,7 +447,7 @@ button svg, .btn svg { stroke-width: 2.5 !important; }
 
 /* Avatars: keep circular (universally recognized for people) BUT thinner border so it fits Minesweeper */
 .avatar, .pn-avatar, .mlc-avatar, [class*="avatar"] {
-  border-radius: 50% !important;
+  border-radius: 0;!important;
   border: 2px solid rgba(0,0,0,.45);
 }
 html.dark .avatar, html.dark .pn-avatar, html.dark [class*="avatar"] {
@@ -926,7 +926,7 @@ td.actions{white-space:nowrap}
 .delete-btn-confirm{background:var(--red)!important;color:#fff!important}
 
 /* PROPOSAL BADGES */
-.prop-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;font-family:'Outfit',sans-serif;white-space:nowrap;transition:filter .12s}
+.prop-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius: 0;font-size:11.5px;font-weight:700;font-family:'Outfit',sans-serif;white-space:nowrap;transition:filter .12s}
 .prop-badge[onclick]:hover{filter:brightness(.88)}
 .prop-none{background:#f3f4f6;color:var(--gray);border:none}
 .prop-sent{background:#dbeafe;color:#1d4ed8;border:none}
@@ -977,12 +977,12 @@ html.dark .table-wrap::after{background:linear-gradient(transparent,rgba(38,28,1
 .cal-event.complete:hover{filter:brightness(.92)}
 .cal-event.cancelled{background:#ef4444;color:#fff;opacity:.75}
 .cal-event.cancelled:hover{opacity:1}
-.cal-add-hint{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin:auto;border-radius:50%;font-size:16px;color:var(--text3);text-align:center;opacity:.32;transition:opacity .15s, background .15s, color .15s, transform .15s, border-color .15s;line-height:1;font-weight:400;border:1px dashed var(--border-strong)}
+.cal-add-hint{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin:auto;border-radius: 0;font-size:16px;color:var(--text3);text-align:center;opacity:.32;transition:opacity .15s, background .15s, color .15s, transform .15s, border-color .15s;line-height:1;font-weight:400;border:1px dashed var(--border-strong)}
 .cal-slot{flex:1 1 0;min-height:0;padding:8px 10px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center}
 .cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{opacity:1;background:rgba(212,145,26,.12);color:var(--navy);border-color:rgba(212,145,26,.5);transform:scale(1.05)}
 html.dark .cal-day-body:hover:not(:has(.cal-event:hover)) .cal-add-hint{background:rgba(196,130,20,.18);color:var(--gold);border-color:rgba(196,130,20,.55)}
 @media(hover:none){.cal-add-hint{opacity:.45}}
-.cal-holiday{font-size:11px;font-weight:700;color:#9333ea;background:#f3e8ff;padding:1px 6px;border-radius:var(--r-pill);margin-left:auto;white-space:nowrap}
+.cal-holiday{font-size:11px;font-weight:700;color:#9333ea;background:#f3e8ff;padding:1px 6px;border-radius: 0;margin-left:auto;white-space:nowrap}
 html.dark .cal-holiday{background:#2d1f4e;color:#c084fc}
 
 /* MODALS */
@@ -1048,7 +1048,7 @@ html.dark .form-input:focus,html.dark .form-select:focus,html.dark .form-textare
 .approval-notif-card{background:#fff;border-radius:var(--r-lg);padding:40px 36px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);transform:scale(.9);transition: transform .35s steps(4)}
 .approval-notif.show .approval-notif-card{transform:scale(1)}
 html.dark .approval-notif-card{background:var(--card)}
-.approval-notif-icon{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;animation:notifPulse 1.5s ease-in-out infinite}
+.approval-notif-icon{width:72px;height:72px;border-radius: 0;background:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;animation:notifPulse 1.5s ease-in-out infinite}
 @keyframes notifPulse{0%,100%{box-shadow:0 0 0 0 rgba(5,150,105,.4)}50%{box-shadow:0 0 0 16px rgba(5,150,105,0)}}
 .approval-notif-title{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:6px}
 html.dark .approval-notif-title{color:var(--text)}
@@ -1073,14 +1073,14 @@ html.dark .drill-head{border-bottom-color:rgba(255,255,255,.06)}
 .drill-back:hover{color:var(--navy);background:var(--bg)}
 .drill-back:active{background:var(--border)}
 /* Inspection checklist */
-.insp-progress{height:6px;background:var(--bg);border-radius:var(--r-pill);overflow:hidden;margin-bottom:14px}
-.insp-progress-bar{height:100%;background:var(--green);border-radius:var(--r-pill);transition:width .3s}
-.insp-status{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--r-pill);font-size:12px;font-weight:700;font-family:'Outfit',sans-serif;margin-bottom:14px}
+.insp-progress{height:6px;background:var(--bg);border-radius: 0;overflow:hidden;margin-bottom:14px}
+.insp-progress-bar{height:100%;background:var(--green);border-radius: 0;transition:width .3s}
+.insp-status{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius: 0;font-size:12px;font-weight:700;font-family:'Outfit',sans-serif;margin-bottom:14px}
 .insp-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);margin-bottom:6px;min-height:48px}
 .insp-num{font-size:11px;font-weight:700;color:var(--text3);min-width:20px;text-align:center;flex-shrink:0}
 .insp-label{font-size:13px;font-weight:500;color:var(--text);flex:1;line-height:1.3}
 .pill-group{display:flex;gap:4px;flex-shrink:0}
-.pill-btn{padding:6px 12px;border-radius:var(--r-pill);font-size:11px;font-weight:700;border:none;cursor:pointer;transition:all .15s;font-family:'Outfit',sans-serif;min-height:44px;min-width:44px;text-align:center;background:var(--bg);color:var(--text3)}
+.pill-btn{padding:6px 12px;border-radius: 0;font-size:11px;font-weight:700;border:none;cursor:pointer;transition:all .15s;font-family:'Outfit',sans-serif;min-height:44px;min-width:44px;text-align:center;background:var(--bg);color:var(--text3)}
 .pill-btn:hover{opacity:.85}
 .pill-btn.yes{background:#d1fae5;color:#059669}
 .pill-btn.no{background:#fee2e2;color:#dc2626}
@@ -1174,7 +1174,7 @@ html.dark .mlc:active{background:rgba(255,255,255,.09)}
 .mlc-chevron{color:var(--text3);font-size:18px;font-weight:300;line-height:1;margin-right:-2px}
 .mlc-urg{font-size:15px;line-height:1}
 /* Mobile unread dot in name row */
-.mlc-unread{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;box-shadow:0 0 0 2px rgba(220,38,38,.2)}
+.mlc-unread{display:inline-block;width:8px;height:8px;border-radius: 0;background:var(--red);flex-shrink:0;box-shadow:0 0 0 2px rgba(220,38,38,.2)}
 .mlc-archived{opacity:.5}
 /* Mobile pipeline header pill strip — horizontal scroll */
 .mobile-pipeline-strip{display:flex;gap:6px;overflow-x:auto;padding:0 0 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -1189,15 +1189,15 @@ html.dark .mlc:active{background:rgba(255,255,255,.09)}
 .fq-panel{width:100%;max-width:540px;max-height:82vh;background:var(--bg);border-radius:var(--r-xl) var(--r-xl) 0 0;box-shadow:var(--shadow-neu);display:flex;flex-direction:column;overflow:hidden}
 .fq-head{padding:18px 20px 14px;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0}
 .fq-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--text)}
-.fq-scan-btn{background:var(--gold);color:var(--navy);border:none;border-radius:var(--r-pill);padding:7px 14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.fq-scan-btn{background:var(--gold);color:var(--navy);border:none;border-radius: 0;padding:7px 14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-top:2px}
 .fq-scan-btn:disabled{opacity:.5;cursor:default}
-.fq-close{background:none;border:none;width:32px;height:32px;min-width:44px;min-height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:20px;flex-shrink:0;margin-top:-2px}
+.fq-close{background:none;border:none;width:32px;height:32px;min-width:44px;min-height:44px;border-radius: 0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:20px;flex-shrink:0;margin-top:-2px}
 .fq-close:hover{background:var(--border)}
 .fq-body{flex:1;overflow-y:auto;padding:14px 16px 24px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .fq-item{background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);padding:14px 16px;margin-bottom:12px}
 .fq-item-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .fq-item-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fq-stage-chip{font-size:10px;font-weight:800;font-family:'Outfit',sans-serif;padding:2px 8px;border-radius:var(--r-pill);background:rgba(11,31,59,.07);flex-shrink:0}
+.fq-stage-chip{font-size:10px;font-weight:800;font-family:'Outfit',sans-serif;padding:2px 8px;border-radius: 0;background:rgba(11,31,59,.07);flex-shrink:0}
 html.dark .fq-stage-chip{background:rgba(255,255,255,.07)}
 .fq-reason{font-size:11px;color:var(--text3);margin-bottom:9px;line-height:1.4}
 .fq-draft{width:100%;box-sizing:border-box;background:var(--bg);border:none;border-radius:var(--r-sm);box-shadow:var(--shadow-neu-inset-sm);padding:10px 12px;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);resize:vertical;min-height:70px;outline:none;line-height:1.5}
@@ -1264,7 +1264,7 @@ html.dark .panel-details-content.open{background:rgba(255,255,255,.02)}
 .tab-btn:hover:not(.active){color:var(--text)}
 .tab-btn:focus-visible{outline:2px solid var(--navy);outline-offset:2px;border-radius:4px;color:var(--text)}
 html.dark .tab-btn:focus-visible{outline-color:var(--gold)}
-.tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;line-height:1;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;vertical-align:1px;font-variant-numeric:tabular-nums}
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;background:var(--gold);color:var(--navy);font-size:10px;font-weight:800;line-height:1;border-radius: 0;font-family:'Outfit',sans-serif;vertical-align:1px;font-variant-numeric:tabular-nums}
 .tab-badge.tab-badge-red{background:var(--red);color:#fff;font-weight:700}
 html.dark .tab-badge{background:var(--gold);color:#1e1b17}
 /* Sparky tab — gold tint, never gets the regular active underline */
@@ -1297,8 +1297,8 @@ html.dark .tab-btn-sparky{color:var(--gold)}
 .qb-row-right{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--text3);flex-shrink:0;margin-left:12px}
 .qb-row.active .qb-row-name{color:var(--navy)}
 .qb-row.active .qb-row-right{color:var(--navy)}
-.qb-row-toggle{width:36px;height:20px;border-radius:var(--r-pill);background:var(--border);position:relative;cursor:pointer;transition:background .15s;flex-shrink:0;margin-left:10px;border:none}
-.qb-row-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.qb-row-toggle{width:36px;height:20px;border-radius: 0;background:var(--border);position:relative;cursor:pointer;transition:background .15s;flex-shrink:0;margin-left:10px;border:none}
+.qb-row-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius: 0;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .qb-row-toggle.on{background:var(--navy)}
 .qb-row-toggle.on::after{transform:translateX(15px)}
 .qb-section{margin-bottom:var(--sp-md)}
@@ -1311,7 +1311,7 @@ html.dark .tab-btn-sparky{color:var(--gold)}
 .qb-slider-note{font-size:10px;margin-top:10px;color:var(--text3);font-weight:500}
 .qb-slider-note.highlight{color:var(--navy);font-weight:700}
 input[type=range].qb-range{-webkit-appearance:none;width:100%;height:4px;border-radius:var(--r-xs);background:var(--border);outline:none;cursor:pointer;display:block}
-input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--navy);cursor:pointer;box-shadow:0 0 0 3px rgba(11,31,59,.1),0 2px 4px rgba(0,0,0,.12)}
+input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius: 0;background:var(--navy);cursor:pointer;box-shadow:0 0 0 3px rgba(11,31,59,.1),0 2px 4px rgba(0,0,0,.12)}
 .qb-summary{background:linear-gradient(135deg,rgba(212,145,26,.05) 0%,var(--card) 100%);border:none;border-radius:var(--r-md);padding:14px 16px;margin-top:var(--sp-md)}
 .qb-summary-title{color:var(--text3);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
 .qb-summary-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
@@ -1368,7 +1368,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stage-wrap.scrolled-end:not(.scrolled-left){-webkit-mask-image:none;mask-image:none}
 .pa-stage-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:10px 36px 10px 10px;scroll-behavior:smooth}
 .pa-stage-list::-webkit-scrollbar{display:none}
-.pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--bg);border-radius:var(--r-pill);border:none;cursor:pointer;transition:box-shadow var(--t-fast),background var(--t-fast);white-space:nowrap;box-shadow:var(--shadow-neu-sm)}
+.pa-stage-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;background:var(--bg);border-radius: 0;border:none;cursor:pointer;transition:box-shadow var(--t-fast),background var(--t-fast);white-space:nowrap;box-shadow:var(--shadow-neu-sm)}
 .pa-stage-chip:hover{box-shadow:var(--shadow-neu)}
 .pa-stage-chip.active{background:var(--gold);box-shadow:none}
 .pa-stage-chip.active:hover{background:#e6a800}
@@ -1381,7 +1381,7 @@ input[type=range].qb-range::-webkit-slider-thumb{-webkit-appearance:none;width:2
 .pa-stage-chip.pa-chip-urgent .pa-stage-name{color:#fff!important}
 .pa-stage-chip.pa-chip-urgent .pa-stage-count{color:rgba(255,255,255,.75)!important}
 html.dark .pa-stage-chip.pa-chip-urgent{background:var(--red)!important}
-.pa-stage-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pa-stage-dot{width:8px;height:8px;border-radius: 0;flex-shrink:0}
 .pa-stage-name{font-size:12px;font-weight:600;color:var(--text2)}
 .pa-stage-count{font-size:11px;font-weight:700;color:var(--text3)}
 
@@ -1401,8 +1401,8 @@ html.dark .pa-stage-chip.pa-chip-urgent{background:var(--red)!important}
 .msg-thread-head{padding:14px 20px 12px;border-bottom:1px solid var(--border);box-shadow:0 2px 8px rgba(10,20,40,.06);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg);z-index:2;position:relative}
 html.dark .msg-thread-head{box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .msg-thread-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:var(--text);flex:1;letter-spacing:-.01em}
-.msg-thread-phone{display:inline-flex;align-items:center;gap:5px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--blue);text-decoration:none;font-weight:700;padding:5px 10px;border-radius:var(--r-pill);background:#eff6ff;transition:background var(--t-fast),transform var(--t-fast);font-variant-numeric:tabular-nums;letter-spacing:-.005em}
-.msg-thread-phone::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--blue);opacity:.6}
+.msg-thread-phone{display:inline-flex;align-items:center;gap:5px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--blue);text-decoration:none;font-weight:700;padding:5px 10px;border-radius: 0;background:#eff6ff;transition:background var(--t-fast),transform var(--t-fast);font-variant-numeric:tabular-nums;letter-spacing:-.005em}
+.msg-thread-phone::before{content:'';width:6px;height:6px;border-radius: 0;background:var(--blue);opacity:.6}
 .msg-thread-phone:hover{background:#dbeafe;transform:translateY(-1px)}
 html.dark .msg-thread-phone{background:rgba(59,130,246,.14);color:#7cb3f0}
 html.dark .msg-thread-phone::before{background:#7cb3f0}
@@ -1423,7 +1423,7 @@ html.dark .msg-thread-phone:hover{background:rgba(59,130,246,.22)}
 .msg-status-icon.s-delivered{color:#4ade80}
 html.dark .msg-status-icon.s-delivered{color:#34d399}
 .msg-status-icon.s-failed{color:var(--red)}
-.msg-sender-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:var(--r-pill)}
+.msg-sender-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius: 0;}
 .msg-sender-badge.ai{background:rgba(212,145,26,.18);color:#92400e;border:1px solid rgba(212,145,26,.3)}
 .msg-sender-badge.key{background:rgba(11,31,59,.1);color:var(--navy);border:1px solid rgba(11,31,59,.15)}
 .msg-timestamp{font-size:10px;color:var(--text3)}
@@ -1442,14 +1442,14 @@ html.dark #drill-messages>div:last-child{border-color:var(--border);background:v
 
 /* ── QUICK REPLY CHIPS ───────────────────────────────────── */
 .quick-replies{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 0}
-.qr-chip{padding:5px 12px;border-radius:var(--r-pill);background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;transition:box-shadow var(--t-fast),color var(--t-fast);white-space:nowrap}
+.qr-chip{padding:5px 12px;border-radius: 0;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;transition:box-shadow var(--t-fast),color var(--t-fast);white-space:nowrap}
 .qr-chip:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
 html.dark .qr-chip:hover{color:var(--gold)}
 
 /* ── IN-CHAT QUICK ACTIONS TOOLBAR (pass 10) ─────────────── */
 .qa-bar{display:flex;gap:6px;padding:10px 16px 6px;overflow-x:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .qa-bar::-webkit-scrollbar{display:none}
-.qa-btn{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--r-pill);background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;transition:box-shadow var(--t-fast),color var(--t-fast),transform var(--t-fast);white-space:nowrap;flex-shrink:0}
+.qa-btn{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius: 0;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:'Outfit',sans-serif;transition:box-shadow var(--t-fast),color var(--t-fast),transform var(--t-fast);white-space:nowrap;flex-shrink:0}
 .qa-btn svg{width:13px;height:13px;flex-shrink:0;stroke-width:2.25}
 .qa-btn:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
 .qa-btn:active{transform:scale(.96)}
@@ -1502,13 +1502,13 @@ html.dark .qa-btn-secondary:hover{color:var(--gold)}
 .qa-btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
 
 /* AI suggest button beside send — Sparky-branded gold accent */
-.ai-suggest-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:none;border:none;color:var(--gold);cursor:pointer;flex-shrink:0;transition:opacity var(--t-fast),transform var(--t-fast);opacity:.7}
+.ai-suggest-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius: 0;background:none;border:none;color:var(--gold);cursor:pointer;flex-shrink:0;transition:opacity var(--t-fast),transform var(--t-fast);opacity:.7}
 .ai-suggest-btn:hover{opacity:1;transform:scale(1.12)}
 .ai-suggest-btn:active{transform:scale(.9)}
 .ai-suggest-btn svg{width:17px;height:17px}
 .ai-suggest-btn.loading{pointer-events:none;opacity:.4}
 .ai-suggest-btn.loading svg{display:none}
-.ai-suggest-btn.loading::after{content:'';width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:aiSpin .7s linear infinite}
+.ai-suggest-btn.loading::after{content:'';width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--gold);border-radius: 0;animation:aiSpin .7s linear infinite}
 @keyframes aiSpin{to{transform:rotate(360deg)}}
 .ai-suggest-btn:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:480px){
@@ -1522,7 +1522,7 @@ html.dark .qa-btn-secondary:hover{color:var(--gold)}
 .skeleton{background:linear-gradient(90deg,var(--bg) 25%,var(--border) 50%,var(--bg) 75%);background-size:200% 100%;animation:shimmer 1.4s ease-in-out infinite;border-radius:var(--r-xs)}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .skeleton-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bg)}
-.skeleton-avatar{width:34px;height:34px;border-radius:50%;flex-shrink:0}
+.skeleton-avatar{width:34px;height:34px;border-radius: 0;flex-shrink:0}
 .skeleton-lines{flex:1;display:flex;flex-direction:column;gap:6px}
 .skeleton-line{height:10px;border-radius:var(--r-xs)}
 
@@ -1537,14 +1537,14 @@ html.dark .qa-btn-secondary:hover{color:var(--gold)}
 .inbox-item.unread .inbox-preview{color:var(--text2);font-weight:500}
 .inbox-time{font-size:11px;color:var(--text3);flex-shrink:0;text-align:right}
 .inbox-item.unread .inbox-time{color:var(--gold);font-weight:700}
-.inbox-unread-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block;margin-top:5px;box-shadow:0 0 0 2px rgba(212,145,26,.22)}
+.inbox-unread-dot{width:9px;height:9px;border-radius: 0;background:var(--gold);flex-shrink:0;display:block;margin-top:5px;box-shadow:0 0 0 2px rgba(212,145,26,.22)}
 html.dark .inbox-item.unread{border-left-color:var(--gold)}
 
 /* ── TAB FADE TRANSITION ────────────────────────────────── */
 /* Tab switches are instant — no fade animation (Apple HIG: tabs don't animate) */
 
 /* ── CALL LOG ─────────────────────────────────────────── */
-.call-filter-chip{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--r-pill);border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:box-shadow var(--t-fast),color var(--t-fast);white-space:nowrap}
+.call-filter-chip{display:inline-flex;align-items:center;padding:5px 12px;border-radius: 0;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:box-shadow var(--t-fast),color var(--t-fast);white-space:nowrap}
 .call-filter-chip:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
 .call-filter-chip.active{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
 html.dark .call-filter-chip.active{background:var(--gold);color:#1a2035}
@@ -1555,7 +1555,7 @@ html.dark .call-row:hover{box-shadow:var(--shadow-neu)}
 .call-row.missed{border-left:3px solid var(--red)}
 .call-row.voicemail{border-left:3px solid var(--gold)}
 html.dark .call-row.voicemail{border-left-color:var(--gold)}
-.call-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.call-icon{width:34px;height:34px;border-radius: 0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .call-icon.answered{background:#dcfce7;color:#16a34a}
 .call-icon.missed-icon{background:#fee2e2;color:var(--red)}
 .call-icon.voicemail-icon{background:#fef9c3;color:#a16207}
@@ -1564,7 +1564,7 @@ html.dark .call-icon.answered{background:#1a3328;color:#4ade80}
 html.dark .call-icon.missed-icon{background:#3d1e1e;color:#f87171}
 html.dark .call-icon.voicemail-icon{background:#3d3520;color:#e6a800}
 html.dark .call-icon.outbound-icon{background:#1e2a3d;color:#7cb3f0}
-.call-play-btn{display:inline-flex;align-items:center;gap:4px;background:var(--navy);color:#fff;border:none;border-radius:var(--r-pill);padding:4px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:background .15s;flex-shrink:0}
+.call-play-btn{display:inline-flex;align-items:center;gap:4px;background:var(--navy);color:#fff;border:none;border-radius: 0;padding:4px 10px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:background .15s;flex-shrink:0}
 .call-play-btn:hover{background:var(--navy2)}
 html.dark .call-play-btn{background:var(--gold);color:#1e1b17}
 html.dark .call-play-btn:hover{background:#b87812}
@@ -1591,7 +1591,7 @@ html.dark .notif-item:hover{background:rgba(255,255,255,.05)}
 .notif-item.unread:hover{background:#fff5d4}
 html.dark .notif-item.unread{background:rgba(196,130,20,.08)}
 html.dark .notif-item.unread:hover{background:rgba(196,130,20,.14)}
-.notif-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.notif-icon{width:30px;height:30px;border-radius: 0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
 .notif-icon.approved{background:#d1fae5;color:#059669}
 .notif-icon.viewed{background:#dbeafe;color:#1d4ed8}
 .notif-icon.paid{background:#fef3c7;color:#92400e}
@@ -1612,7 +1612,7 @@ html.dark .notif-icon.lead{background:rgba(234,179,8,.18);color:#facc15}
 
 /* ── STATUS DOT (Linear-style) ─────────────────────────── */
 .status-dot{display:inline-flex;align-items:center;gap:7px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;white-space:nowrap;letter-spacing:.005em}
-.status-dot::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--dot,var(--gray));flex-shrink:0}
+.status-dot::before{content:'';width:8px;height:8px;border-radius: 0;background:var(--dot,var(--gray));flex-shrink:0}
 .status-dot.s-newlead{--dot:#d4911a;color:#92400e}
 .status-dot.s-newlead::before{animation:statusPulse 2.2s var(--ease) infinite}
 .status-dot.s-contacted{--dot:#3b82f6;color:#1d4ed8}
@@ -1640,7 +1640,7 @@ html.dark .status-dot.s-lost{color:#94a3b8}
 html.dark .inv-stat.outstanding .inv-stat-value{color:#f87171}
 html.dark .inv-stat.paid .inv-stat-value{color:#4ade80}
 .inv-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.inv-filter-pill{padding:6px 14px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;border-radius:var(--r-pill);cursor:pointer;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast);display:inline-flex;align-items:center;gap:6px}
+.inv-filter-pill{padding:6px 14px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;border-radius: 0;cursor:pointer;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast);display:inline-flex;align-items:center;gap:6px}
 .inv-filter-pill:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
 html.dark .inv-filter-pill:hover{color:var(--gold)}
 .inv-filter-pill.active{background:var(--gold);box-shadow:none;color:var(--navy)}
@@ -1656,13 +1656,13 @@ html.dark .inv-filter-pill.active{background:var(--gold);color:#1a2035}
 .inv-row-meta .sep{opacity:.5}
 .inv-row-amount{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--text);text-align:right;flex-shrink:0;letter-spacing:-.3px}
 .inv-row-status{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:88px}
-.inv-viewed{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:var(--r-pill)}
+.inv-viewed{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius: 0;}
 html.dark .inv-viewed{background:rgba(234,179,8,.18);color:#facc15}
 .inv-skeleton{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--card);border-radius:var(--r-md);margin-bottom:8px;box-shadow:0 1px 3px rgba(10,20,40,.05)}
 /* Quote row avatar — matches contact-list avatar style */
-.inv-avatar{width:38px;height:38px;border-radius:50%;color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:-.5px}
+.inv-avatar{width:38px;height:38px;border-radius: 0;color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:-.5px}
 /* ── REMIND BUTTON (Proposals + Invoices) ──────────────── */
-.fin-remind-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:box-shadow .15s,color .15s,transform .1s}
+.fin-remind-btn{width:34px;height:34px;border-radius: 0;border:none;background:var(--bg);box-shadow:var(--shadow-neu-sm);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:box-shadow .15s,color .15s,transform .1s}
 .fin-remind-btn:hover{box-shadow:var(--shadow-neu);color:var(--gold);transform:scale(1.08)}
 .fin-remind-btn:active{box-shadow:var(--shadow-neu-inset-sm);transform:scale(.96)}
 .fin-remind-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
@@ -1695,7 +1695,7 @@ html.dark .kanban-col{background:rgba(255,255,255,.02)}
 html.dark .kanban-col-head{border-bottom-color:var(--border)}
 .kanban-col-top{display:flex;align-items:center;gap:8px;width:100%}
 .kanban-col-name{font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text);flex:1;display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.kanban-col-name::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--coldot,var(--gray));box-shadow:0 0 0 2px rgba(255,255,255,.6);flex-shrink:0}
+.kanban-col-name::before{content:'';width:8px;height:8px;border-radius: 0;background:var(--coldot,var(--gray));box-shadow:0 0 0 2px rgba(255,255,255,.6);flex-shrink:0}
 html.dark .kanban-col-name::before{box-shadow:0 0 0 2px rgba(255,255,255,.04)}
 .kanban-col[data-stage="1"] .kanban-col-name{--coldot:#64748b}
 .kanban-col[data-stage="1"] .kanban-col-name::before{animation:pulseDot 2s var(--ease) infinite}
@@ -1709,7 +1709,7 @@ html.dark .kanban-col-name::before{box-shadow:0 0 0 2px rgba(255,255,255,.04)}
 .kanban-col[data-stage="9"] .kanban-col-name{--coldot:#059669}
 @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 0 0 0 rgba(100,116,139,.5)}50%{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 0 0 6px rgba(100,116,139,0)}}
 html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04),0 0 0 0 rgba(100,116,139,.5)}50%{box-shadow:0 0 0 2px rgba(255,255,255,.04),0 0 0 6px rgba(100,116,139,0)}}
-.kanban-col-count{font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;color:var(--text2);background:var(--bg);padding:2px 8px;border-radius:var(--r-pill);border:none;box-shadow:var(--shadow-neu-inset-sm);font-variant-numeric:tabular-nums;flex-shrink:0}
+.kanban-col-count{font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;color:var(--text2);background:var(--bg);padding:2px 8px;border-radius: 0;border:none;box-shadow:var(--shadow-neu-inset-sm);font-variant-numeric:tabular-nums;flex-shrink:0}
 .kanban-col-next{display:flex;align-items:center;gap:5px;font-family:'Inter',sans-serif;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.01em;line-height:1.3;padding:2px 0 0}
 .kanban-col-next-arrow{font-family:'Outfit',sans-serif;font-size:9px;font-weight:800;color:var(--coldot,var(--gold));letter-spacing:.06em;text-transform:uppercase;flex-shrink:0}
 .kanban-col[data-stage="9"] .kanban-col-next-arrow{color:#059669}
@@ -1730,7 +1730,7 @@ html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04)
 .kanban-card-amount{font-family:'Outfit',sans-serif;font-weight:800;color:var(--navy);font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 html.dark .kanban-card-amount{color:var(--gold)}
 .kanban-card-next{margin-top:8px;padding-top:7px;border-top:1px dashed var(--border);font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px;line-height:1.3}
-.kanban-card-call{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s,background .15s,box-shadow .15s;color:var(--text3)}
+.kanban-card-call{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius: 0;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s,background .15s,box-shadow .15s;color:var(--text3)}
 .kanban-card:hover .kanban-card-call{opacity:1}
 .kanban-card-call:hover{background:var(--navy);box-shadow:var(--shadow-neu-inset-sm);color:#fff}
 html.dark .kanban-card-call:hover{background:var(--gold);box-shadow:var(--shadow-neu-inset-sm);color:var(--navy)}
@@ -1814,7 +1814,7 @@ html.dark .urg-send-btn{background:var(--gold);color:#1e1b17}
 #msg-send-btn.sending svg{animation:spin .7s linear infinite}
 #msg-send-btn.sending{opacity:.7;pointer-events:none}
 .kanban-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:32px 12px;border:1px dashed var(--border);border-radius:var(--r-sm);line-height:1.5;display:flex;flex-direction:column;align-items:center;gap:8px}
-.kanban-empty-icon{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--bg);color:var(--text3);opacity:.65;font-style:normal}
+.kanban-empty-icon{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius: 0;background:var(--bg);color:var(--text3);opacity:.65;font-style:normal}
 .kanban-empty-icon svg{width:16px;height:16px;display:block;stroke-width:2}
 
 /* ── PREMIUM NAV TWEAK ──────────────────────────────────── */
@@ -1830,11 +1830,11 @@ html.dark .urg-send-btn{background:var(--gold);color:#1e1b17}
 @keyframes tmSlideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 .tm-brief-head{display:flex;align-items:flex-start;gap:var(--sp-3);padding:18px 22px 12px;border-bottom:1px solid var(--border)}
 html.dark .tm-brief-head{border-bottom-color:rgba(255,255,255,.06)}
-.tm-brief-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;box-shadow:0 4px 10px rgba(212,145,26,.22)}
+.tm-brief-avatar{width:40px;height:40px;border-radius: 0;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;box-shadow:0 4px 10px rgba(212,145,26,.22)}
 .tm-brief-title{flex:1;min-width:0}
 .tm-brief-greeting{font-family:'Outfit',sans-serif;font-weight:800;font-size:17px;color:var(--text);letter-spacing:-.015em;line-height:1.25}
 .tm-brief-sub{font-size:12.5px;color:var(--text2);margin-top:2px;font-weight:500}
-.tm-brief-count{background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;padding:4px 11px;border-radius:var(--r-pill);letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
+.tm-brief-count{background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;padding:4px 11px;border-radius: 0;letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
 html.dark .tm-brief-count{background:var(--gold);color:#1e1b17}
 .tm-brief-count.zero{background:#d1fae5;color:var(--green2)}
 html.dark .tm-brief-count.zero{background:rgba(16,185,129,.18);color:#4ade80}
@@ -1850,12 +1850,12 @@ html.dark .tm-brief-close:hover{background:var(--bg)}
 .tm-brief-sec-head.msg{color:#8b5cf6}
 .tm-brief-sec-head.mat{color:#f97316}
 .tm-brief-sec-head.good{color:var(--green2)}
-.tm-brief-sec-count{background:var(--bg);color:var(--text2);font-size:10px;font-weight:800;padding:2px 7px;border-radius:var(--r-pill);margin-left:auto}
+.tm-brief-sec-count{background:var(--bg);color:var(--text2);font-size:10px;font-weight:800;padding:2px 7px;border-radius: 0;margin-left:auto}
 html.dark .tm-brief-sec-count{background:var(--bg)}
 .tm-brief-item{display:flex;align-items:flex-start;gap:11px;padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;transition:background var(--t-fast),transform var(--t-fast);margin-bottom:1px}
 .tm-brief-item:hover{background:var(--bg);transform:translateX(2px)}
 html.dark .tm-brief-item:hover{background:var(--bg)}
-.tm-brief-item-dot{width:6px;height:6px;border-radius:50%;margin-top:7px;flex-shrink:0;background:var(--text3)}
+.tm-brief-item-dot{width:6px;height:6px;border-radius: 0;margin-top:7px;flex-shrink:0;background:var(--text3)}
 .tm-brief-item.urgent .tm-brief-item-dot{background:var(--red)}
 .tm-brief-item.today .tm-brief-item-dot{background:#3b82f6}
 .tm-brief-item.msg .tm-brief-item-dot{background:#8b5cf6}
@@ -1901,7 +1901,7 @@ html.dark .panel-advance-btn:hover{color:var(--gold)}
 /* ── Inbox header pill buttons ───────────────────────── */
 .inbox-hdr-actions{display:flex;gap:6px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;justify-content:flex-end}
 .inbox-hdr-actions::-webkit-scrollbar{display:none}
-.inbox-hdr-pill{display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:none;box-shadow:var(--shadow-neu-sm);border-radius:var(--r-pill);padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:box-shadow .15s,color .15s;white-space:nowrap;flex-shrink:0}
+.inbox-hdr-pill{display:flex;align-items:center;gap:5px;background:var(--bg);color:var(--text2);border:none;box-shadow:var(--shadow-neu-sm);border-radius: 0;padding:5px 11px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:box-shadow .15s,color .15s;white-space:nowrap;flex-shrink:0}
 .inbox-hdr-pill:hover{box-shadow:var(--shadow-neu);color:var(--navy)}
 html.dark .inbox-hdr-pill:hover{color:var(--gold)}
 
@@ -1910,7 +1910,7 @@ html.dark .inbox-hdr-pill:hover{color:var(--gold)}
 .tm-brief-inline.collapsed{opacity:0;max-height:0;padding-bottom:0;margin-bottom:0;pointer-events:none}
 html.dark .tm-brief-inline{border-bottom-color:rgba(255,255,255,.06)}
 .tm-brief-inline-head{display:flex;align-items:center;gap:6px;padding:0 0 6px;font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
-.tm-brief-inline-count{background:var(--navy);color:#fff;font-size:10px;font-weight:800;padding:1px 7px;border-radius:var(--r-pill)}
+.tm-brief-inline-count{background:var(--navy);color:#fff;font-size:10px;font-weight:800;padding:1px 7px;border-radius: 0;}
 html.dark .tm-brief-inline-count{background:var(--gold);color:#1e1b17}
 .tm-brief-inline-count.zero{background:#d1fae5;color:var(--green2)}
 
@@ -1927,14 +1927,14 @@ html.dark .tm-brief-inline-count{background:var(--gold);color:#1e1b17}
 .call-ring-inner{position:relative;width:100%;max-width:340px;background:var(--card);border-radius:var(--r-xl);padding:36px 28px 28px;text-align:center;box-shadow:0 40px 100px rgba(0,0,0,.5);animation:callRingPop .42s var(--ease)}
 @keyframes callRingPop{from{transform:scale(.9) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 html.dark .call-ring-inner{background:var(--card);border:1px solid rgba(255,255,255,.06)}
-.call-ring-pulse{position:absolute;top:40px;left:50%;transform:translateX(-50%);width:100px;height:100px;border-radius:50%;background:var(--gold);opacity:.18;animation:callPulse 1.6s ease-out infinite;pointer-events:none}
+.call-ring-pulse{position:absolute;top:40px;left:50%;transform:translateX(-50%);width:100px;height:100px;border-radius: 0;background:var(--gold);opacity:.18;animation:callPulse 1.6s ease-out infinite;pointer-events:none}
 @keyframes callPulse{0%{transform:translateX(-50%) scale(.9);opacity:.28}100%{transform:translateX(-50%) scale(1.5);opacity:0}}
-.call-ring-avatar{position:relative;width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);margin:0 auto 18px;display:flex;align-items:center;justify-content:center;color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:34px;box-shadow:0 12px 28px rgba(212,145,26,.36);z-index:1}
+.call-ring-avatar{position:relative;width:88px;height:88px;border-radius: 0;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);margin:0 auto 18px;display:flex;align-items:center;justify-content:center;color:var(--navy);font-family:'Outfit',sans-serif;font-weight:800;font-size:34px;box-shadow:0 12px 28px rgba(212,145,26,.36);z-index:1}
 .call-ring-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;color:var(--text);margin-bottom:4px;letter-spacing:-.015em}
 .call-ring-number{font-family:'Outfit',sans-serif;font-size:14px;color:var(--text2);margin-bottom:6px;font-variant-numeric:tabular-nums}
 .call-ring-label{font-size:13px;color:var(--text3);font-weight:500;margin-bottom:28px}
 .call-ring-actions{display:flex;gap:24px;justify-content:center}
-.call-ring-btn{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform var(--t-fast),box-shadow var(--t-fast);box-shadow:0 8px 24px rgba(10,20,40,.28)}
+.call-ring-btn{width:64px;height:64px;border-radius: 0;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform var(--t-fast),box-shadow var(--t-fast);box-shadow:0 8px 24px rgba(10,20,40,.28)}
 .call-ring-btn svg{width:28px;height:28px;color:#fff}
 .call-ring-btn.decline{background:var(--red)}
 .call-ring-btn.decline:hover{background:#b91c1c;transform:scale(1.06);box-shadow:0 12px 32px rgba(220,38,38,.45)}
@@ -1948,13 +1948,13 @@ html.dark .call-ring-inner{background:var(--card);border:1px solid rgba(255,255,
 .call-bar.open{display:flex}
 html.dark .call-bar{background:#1a1410;border:1px solid rgba(255,255,255,.06)}
 @keyframes callBarSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.call-bar-pulse{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:callBarPulse 2s ease-out infinite}
+.call-bar-pulse{width:10px;height:10px;border-radius: 0;background:var(--green);flex-shrink:0;box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:callBarPulse 2s ease-out infinite}
 @keyframes callBarPulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.6)}50%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
 .call-bar-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .call-bar-name{font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.01em}
 .call-bar-meta{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(255,255,255,.7);font-family:'Outfit',sans-serif;font-weight:600;font-variant-numeric:tabular-nums}
 .call-bar-dot{display:none}
-.call-bar-btn{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast)}
+.call-bar-btn{width:40px;height:40px;border-radius: 0;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast)}
 .call-bar-btn svg{width:18px;height:18px;color:#fff}
 .call-bar-btn.mute{background:rgba(255,255,255,.12)}
 .call-bar-btn.mute:hover{background:rgba(255,255,255,.2)}
@@ -1978,7 +1978,7 @@ html.dark .call-bar{background:#1a1410;border:1px solid rgba(255,255,255,.06)}
 /* Sparky agent insight bar — lives at the top of the contact panel */
 .sk-insight{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;margin:0 0 var(--sp-md);background:linear-gradient(135deg,rgba(212,145,26,.12) 0%,rgba(212,145,26,.04) 100%);border:1px solid rgba(212,145,26,.32);border-radius:var(--r-md);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;color:var(--text);line-height:1.45;animation:tmMsgIn .32s var(--ease);box-shadow:0 1px 3px rgba(212,145,26,.08)}
 html.dark .sk-insight{background:linear-gradient(135deg,rgba(196,130,20,.14) 0%,rgba(196,130,20,.05) 100%);border-color:rgba(196,130,20,.34);color:var(--text)}
-.sk-insight-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);box-shadow:0 3px 8px rgba(212,145,26,.35);margin-top:1px}
+.sk-insight-av{width:28px;height:28px;border-radius: 0;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);box-shadow:0 3px 8px rgba(212,145,26,.35);margin-top:1px}
 .sk-insight-av svg{width:15px;height:15px;display:block}
 .sk-insight-text{flex:1;min-width:0;letter-spacing:-.005em}
 .sk-insight-name{font-weight:800;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);display:block;margin-bottom:2px;font-family:'Outfit',sans-serif}
@@ -2046,29 +2046,29 @@ html.dark .cs-result-snippet mark{background:rgba(212,145,26,.22)}
 html.dark .tm-panel.open{box-shadow:-14px 0 48px rgba(0,0,0,.55)}
 .tm-panel-head{display:flex;align-items:center;gap:12px;padding:16px 18px 16px 20px;background:var(--bg);border-bottom:1px solid rgba(0,0,0,.07);flex-shrink:0}
 html.dark .tm-panel-head{border-bottom-color:rgba(255,255,255,.05)}
-.tm-panel-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(212,145,26,.32)}
+.tm-panel-avatar{width:36px;height:36px;border-radius: 0;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(212,145,26,.32)}
 .tm-panel-avatar svg{width:18px;height:18px;color:var(--navy)}
 .tm-panel-title{flex:1;min-width:0}
 .tm-panel-title h3{font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:var(--text);margin:0;letter-spacing:-.01em;line-height:1.2}
 .tm-panel-title p{font-size:11.5px;color:var(--text3);margin:1px 0 0;font-weight:500}
-.tm-panel-title p .tm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;vertical-align:1px;box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:tmPulseDot 2.1s ease-in-out infinite}
+.tm-panel-title p .tm-dot{display:inline-block;width:7px;height:7px;border-radius: 0;background:var(--green);margin-right:5px;vertical-align:1px;box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:tmPulseDot 2.1s ease-in-out infinite}
 @keyframes tmPulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}50%{box-shadow:0 0 0 5px rgba(16,185,129,0)}}
-.tm-panel-close{background:var(--bg);border:none;color:var(--text2);width:36px;height:36px;min-width:44px;min-height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;transition:background var(--t-fast),color var(--t-fast);flex-shrink:0}
+.tm-panel-close{background:var(--bg);border:none;color:var(--text2);width:36px;height:36px;min-width:44px;min-height:44px;border-radius: 0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;transition:background var(--t-fast),color var(--t-fast);flex-shrink:0}
 html.dark .tm-panel-close{background:var(--bg)}
 .tm-panel-close:hover{background:var(--border);color:var(--text)}
 html.dark .tm-panel-close:hover{background:#252322;color:var(--text)}
 .tm-panel-body{flex:1;overflow-y:auto;padding:20px 18px 12px;display:flex;flex-direction:column;gap:14px;background:var(--bg);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;,transparent);,transparent)}
 .tm-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 18px;flex:1}
-.tm-empty-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;box-shadow:0 8px 22px rgba(212,145,26,.3)}
+.tm-empty-avatar{width:56px;height:56px;border-radius: 0;background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;box-shadow:0 8px 22px rgba(212,145,26,.3)}
 .tm-empty-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--text);margin-bottom:3px;letter-spacing:-.005em}
 .tm-empty-sub{font-size:12.5px;color:var(--text2);margin-bottom:18px;max-width:280px;line-height:1.45}
 .tm-chips{display:flex;flex-direction:column;gap:7px;width:100%;max-width:320px}
-.tm-chip{padding:10px 14px;border:none;border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-weight:500;font-size:12.5px;cursor:pointer;transition:box-shadow var(--t-fast),transform var(--t-fast);text-align:left;box-shadow:var(--shadow-neu-sm)}
+.tm-chip{padding:10px 14px;border:none;border-radius: 0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-weight:500;font-size:12.5px;cursor:pointer;transition:box-shadow var(--t-fast),transform var(--t-fast);text-align:left;box-shadow:var(--shadow-neu-sm)}
 .tm-chip:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu)}
 .tm-msg{display:flex;gap:9px;max-width:100%;animation:tmMsgIn .28s var(--ease)}
 @keyframes tmMsgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .tm-msg.user{flex-direction:row-reverse}
-.tm-msg-av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-family:'Outfit',sans-serif}
+.tm-msg-av{width:30px;height:30px;border-radius: 0;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-family:'Outfit',sans-serif}
 .tm-msg.asst .tm-msg-av{background:linear-gradient(135deg,var(--gold) 0%,#e8b75a 100%);color:var(--navy);box-shadow:0 2px 6px rgba(212,145,26,.28)}
 .tm-msg.asst .tm-msg-av svg{width:17px;height:17px}
 .tm-msg.user .tm-msg-av{background:var(--navy);color:#fff;box-shadow:0 2px 6px rgba(11,31,59,.18)}
@@ -2084,7 +2084,7 @@ html.dark .tm-msg.user .tm-bubble{background: #2a3548;color:var(--text)}
 .tm-bubble a.tm-link:hover{border-bottom-style:solid}
 .tm-msg.user .tm-bubble a.tm-link{color:#e8b75a}
 .tm-typing{display:inline-flex;gap:4px;align-items:center;padding:2px 0}
-.tm-typing span{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:tmTyping 1.2s ease-in-out infinite}
+.tm-typing span{width:6px;height:6px;border-radius: 0;background:var(--text3);animation:tmTyping 1.2s ease-in-out infinite}
 .tm-typing span:nth-child(2){animation-delay:.15s}
 .tm-typing span:nth-child(3){animation-delay:.3s}
 @keyframes tmTyping{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
@@ -2092,7 +2092,7 @@ html.dark .tm-msg.user .tm-bubble{background: #2a3548;color:var(--text)}
 html.dark .tm-panel-foot{border-top-color:rgba(255,255,255,.05)}
 .tm-compose{flex:1;resize:none;border:none;background:var(--bg);color:var(--text);border-radius:var(--r-md);padding:12px 14px;font-family:'Inter',sans-serif;font-size:16px;outline:none;max-height:200px;min-height:52px;line-height:1.5;box-shadow:var(--shadow-neu-inset-sm);transition:box-shadow var(--t-fast)}
 .tm-compose:focus{box-shadow:var(--shadow-neu-inset-sm)}
-.tm-send{background:var(--navy);color:#fff;border:none;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast);box-shadow:var(--shadow-sm)}
+.tm-send{background:var(--navy);color:#fff;border:none;width:40px;height:40px;border-radius: 0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast);box-shadow:var(--shadow-sm)}
 .tm-send:hover:not(:disabled){background:#132a4f;transform:translateY(-1px)}
 .tm-send:active:not(:disabled){transform:translateY(0)}
 .tm-send:disabled{background:var(--border);cursor:not-allowed;box-shadow:none}
@@ -2373,7 +2373,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .sk-insight-btn{min-height:42px;padding:10px 16px;font-size:14px}
   .urgent-act-btn{min-height:48px!important;font-size:15px!important}
   /* QA buttons: icon-only, flat, evenly distributed */
-  .qa-btn{min-height:40px!important;min-width:40px!important;padding:0!important;font-size:0!important;box-shadow:none!important;background:rgba(0,0,0,.04)!important;border:none!important;border-radius:50%!important;justify-content:center!important;flex:0 0 auto!important;gap:0!important}
+  .qa-btn{min-height:40px!important;min-width:40px!important;padding:0!important;font-size:0!important;box-shadow:none!important;background:rgba(0,0,0,.04)!important;border:none!important;border-radius: 0;!important;justify-content:center!important;flex:0 0 auto!important;gap:0!important}
   .qa-btn svg{width:18px!important;height:18px!important;stroke-width:2!important}
   html.dark .qa-btn{background:rgba(255,255,255,.07)!important}
   .qa-bar{padding:6px 10px 4px!important;gap:0!important;justify-content:space-around!important;overflow:visible!important}
@@ -2717,7 +2717,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   <div class="notif-head">
     <div class="notif-head-title">Notifications</div>
     <div style="display:flex;gap:6px;align-items:center">
-      <button onclick="notifSparkySummary()" style="display:flex;align-items:center;gap:4px;background:var(--gold);color:var(--navy);border:none;border-radius:var(--r-pill);padding:4px 9px;font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;cursor:pointer" title="Sparky summarizes your notifications">
+      <button onclick="notifSparkySummary()" style="display:flex;align-items:center;gap:4px;background:var(--gold);color:var(--navy);border:none;border-radius: 0;padding:4px 9px;font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;cursor:pointer" title="Sparky summarizes your notifications">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg>
         Ask Sparky
       </button>
@@ -2795,7 +2795,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
     </div>
     <div id="urg-draft-area">
       <div class="urg-generating" id="urg-generating">
-        <div style="width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>
+        <div style="width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius: 0;animation:spin .7s linear infinite;flex-shrink:0"></div>
         Sparky is drafting a message…
       </div>
       <div id="urg-draft-ready" style="display:none">
@@ -2860,8 +2860,8 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
       <h3>Sparky</h3>
       <p><span class="tm-dot"></span>Your CRM colleague &middot; live</p>
     </div>
-    <button id="sk-review-btn" onclick="skShowReviewQueue()" title="Pending Sparky actions" style="display:none;position:relative;background:var(--bg);box-shadow:var(--shadow-neu-sm);border:none;color:var(--text3);font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer;flex-shrink:0;align-items:center;gap:4px;transition:all .15s" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text3)'"><span id="sk-queue-badge" style="background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;margin-right:4px"></span>Actions</button>
-    <button onclick="if(confirm('Clear chat?')){try{localStorage.removeItem('bpp_taskmaster_chat')}catch(e){};var b=document.getElementById('tm-panel-body');if(b){b.innerHTML='<div class=\'tm-empty\'><div class=\'tm-empty-title\'>Chat cleared</div><div class=\'tm-empty-sub\'>Ask Sparky anything to start a new conversation.</div></div>'}}" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%;transition:color .15s" title="Clear chat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+    <button id="sk-review-btn" onclick="skShowReviewQueue()" title="Pending Sparky actions" style="display:none;position:relative;background:var(--bg);box-shadow:var(--shadow-neu-sm);border:none;color:var(--text3);font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;padding:4px 10px;border-radius: 0;cursor:pointer;flex-shrink:0;align-items:center;gap:4px;transition:all .15s" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text3)'"><span id="sk-queue-badge" style="background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;margin-right:4px"></span>Actions</button>
+    <button onclick="if(confirm('Clear chat?')){try{localStorage.removeItem('bpp_taskmaster_chat')}catch(e){};var b=document.getElementById('tm-panel-body');if(b){b.innerHTML='<div class=\'tm-empty\'><div class=\'tm-empty-title\'>Chat cleared</div><div class=\'tm-empty-sub\'>Ask Sparky anything to start a new conversation.</div></div>'}}" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius: 0;transition:color .15s" title="Clear chat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
     <button class="tm-panel-close" onclick="tmClosePanel()" aria-label="Close" title="Close">&times;</button>
   </div>
   <div class="tm-panel-body" id="tm-panel-body"></div>
@@ -2911,7 +2911,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
     <!-- Sub-tab toggle: Proposals | Invoices -->
     <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px">
       <button id="fintab-btn-proposals" onclick="setFinSubTab('proposals')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text);cursor:pointer;border-bottom:2.5px solid var(--navy);margin-bottom:-2px;transition:color .15s">Proposals</button>
-      <button id="fintab-btn-invoices" onclick="setFinSubTab('invoices')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:color .15s">Invoices<span id="fintab-inv-badge" style="display:none;background:var(--navy);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;margin-left:6px"></span></button>
+      <button id="fintab-btn-invoices" onclick="setFinSubTab('invoices')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:color .15s">Invoices<span id="fintab-inv-badge" style="display:none;background:var(--navy);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius: 0;font-family:'Outfit',sans-serif;margin-left:6px"></span></button>
     </div>
 
     <!-- ── PROPOSALS sub-tab ──────────────────────────────── -->
@@ -2940,7 +2940,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
     <!-- Sub-tab toggle: Messages | Calls -->
     <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px">
       <button id="msgtab-btn-inbox" onclick="setMsgSubTab('inbox')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text);cursor:pointer;border-bottom:2.5px solid var(--text);margin-bottom:-2px;transition:color .15s">Messages</button>
-      <button id="msgtab-btn-calls" onclick="setMsgSubTab('calls')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:color .15s;display:flex;align-items:center;gap:6px">Calls<span id="msgtab-calls-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif"></span></button>
+      <button id="msgtab-btn-calls" onclick="setMsgSubTab('calls')" style="padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;border:none;background:none;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:color .15s;display:flex;align-items:center;gap:6px">Calls<span id="msgtab-calls-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius: 0;font-family:'Outfit',sans-serif"></span></button>
     </div>
 
     <!-- ── INBOX sub-tab ─────────────────────────────────── -->
@@ -2948,18 +2948,18 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
       <div class="section-head" style="margin-bottom:20px;padding:6px 6px">
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <div class="section-title">Inbox</div>
-          <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;display:none"></span>
+          <span id="inbox-unread-count" style="background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius: 0;font-family:'Outfit',sans-serif;display:none"></span>
         </div>
         <div class="inbox-hdr-actions">
           <button id="inbox-search-btn" class="inbox-hdr-pill" title="Search conversations" style="display:none">Search</button>
           <button onclick="inboxToggleUnreadFilter()" id="inbox-unread-filter-btn" class="inbox-hdr-pill" title="Show unread only">
             Unread
           </button>
-          <button onclick="inboxNewConversation()" style="display:flex;align-items:center;gap:5px;background:var(--text);color:var(--bg);border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">
+          <button onclick="inboxNewConversation()" style="display:flex;align-items:center;gap:5px;background:var(--text);color:var(--bg);border:none;border-radius: 0;padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New
           </button>
-          <button onclick="inboxSparkyScan()" id="inbox-sparky-btn" style="display:flex;align-items:center;gap:5px;background:var(--gold);color:var(--navy);border:none;border-radius:var(--r-pill);padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer" title="Sparky scans conversations and archives done ones">
+          <button onclick="inboxSparkyScan()" id="inbox-sparky-btn" style="display:flex;align-items:center;gap:5px;background:var(--gold);color:var(--navy);border:none;border-radius: 0;padding:6px 12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer" title="Sparky scans conversations and archives done ones">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.67 4.33L18 9l-4.33 1.67L12 15l-1.67-4.33L6 9l4.33-1.67z"/></svg>
             Sparky
           </button>
@@ -2967,7 +2967,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
       </div>
       <div id="inbox-search-bar" style="padding:2px 0 12px">
         <input id="inbox-search-input" type="text" placeholder="Search conversations…" autocomplete="off"
-          style="width:100%;padding:9px 14px;border:none;border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:box-shadow .15s;box-sizing:border-box;box-shadow:var(--shadow-neu-inset-sm)"
+          style="width:100%;padding:9px 14px;border:none;border-radius: 0;background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:box-shadow .15s;box-sizing:border-box;box-shadow:var(--shadow-neu-inset-sm)"
           onfocus="this.style.boxShadow='var(--shadow-neu-inset-sm),0 0 0 2px rgba(212,145,26,.3)'" onblur="this.style.boxShadow='var(--shadow-neu-inset-sm)'"
           oninput="inboxFilterSearch(this.value)">
       </div>
@@ -2992,7 +2992,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
       <!-- Call search -->
       <div style="padding-bottom:12px">
         <input id="call-search-input" type="text" placeholder="Search calls…" autocomplete="off"
-          style="width:100%;padding:9px 14px;border:none;border-radius:var(--r-pill);background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:box-shadow .15s;box-sizing:border-box;box-shadow:var(--shadow-neu-inset-sm)"
+          style="width:100%;padding:9px 14px;border:none;border-radius: 0;background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:box-shadow .15s;box-sizing:border-box;box-shadow:var(--shadow-neu-inset-sm)"
           onfocus="this.style.boxShadow='var(--shadow-neu-inset-sm),0 0 0 2px rgba(212,145,26,.3)'" onblur="this.style.boxShadow='var(--shadow-neu-inset-sm)'"
           oninput="setCallSearch(this.value)">
       </div>
@@ -3000,7 +3000,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <button class="call-filter-chip active" id="call-filter-all" onclick="setCallFilter('all')">All</button>
         <button class="call-filter-chip" id="call-filter-missed" onclick="setCallFilter('missed')">
-          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:4px;vertical-align:middle"></span>Missed
+          <span style="display:inline-block;width:7px;height:7px;border-radius: 0;background:var(--red);margin-right:4px;vertical-align:middle"></span>Missed
         </button>
         <button class="call-filter-chip" id="call-filter-voicemail" onclick="setCallFilter('voicemail')">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>Voicemails
@@ -3457,7 +3457,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
           <button id="panel-events-toggle" onclick="togglePanelEvents()" style="display:flex;align-items:center;gap:6px;width:100%;border:none;background:none;padding:6px 0 4px;cursor:pointer;color:var(--text3);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">
             <svg id="panel-events-chev" style="transition:transform .18s;flex-shrink:0" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             Scheduled Events
-            <span id="panel-events-count" style="font-size:10px;font-weight:800;background:var(--bg);box-shadow:var(--shadow-neu-sm);padding:1px 7px;border-radius:var(--r-pill);color:var(--text2);margin-left:2px"></span>
+            <span id="panel-events-count" style="font-size:10px;font-weight:800;background:var(--bg);box-shadow:var(--shadow-neu-sm);padding:1px 7px;border-radius: 0;color:var(--text2);margin-left:2px"></span>
           </button>
           <div id="panel-events-list" style="padding-bottom:4px"></div>
         </div>
@@ -3467,7 +3467,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
           <div style="display:flex;align-items:center;gap:8px;padding:6px 0 8px">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             <span style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);flex:1">Neighbor Cards</span>
-            <span id="panel-neighbor-count" style="display:none;font-size:10px;font-weight:800;background:var(--bg);box-shadow:var(--shadow-neu-sm);padding:1px 7px;border-radius:var(--r-pill);color:var(--text2)"></span>
+            <span id="panel-neighbor-count" style="display:none;font-size:10px;font-weight:800;background:var(--bg);box-shadow:var(--shadow-neu-sm);padding:1px 7px;border-radius: 0;color:var(--text2)"></span>
           </div>
           <button id="panel-neighbor-btn" onclick="sendNeighborCards()" style="width:100%;padding:9px 0;background:var(--bg);box-shadow:var(--shadow-neu-sm);border:none;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:8px;transition:box-shadow .15s">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -3518,23 +3518,23 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
         <span style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:18px;letter-spacing:-.01em">Drop to send</span>
       </div>
       <div class="msg-thread-head" style="padding:8px 14px 8px 6px;gap:6px">
-        <button onclick="drillTo(window._msgReturnLevel||'contact')" style="width:36px;height:36px;border-radius:50%;background:none;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;transition:background .15s" title="Back" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
+        <button onclick="drillTo(window._msgReturnLevel||'contact')" style="width:36px;height:36px;border-radius: 0;background:none;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;transition:background .15s" title="Back" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           <span id="msg-back-label" style="font-size:13px;font-weight:700;color:var(--text2);margin-left:2px"></span>
         </button>
         <!-- Avatar + name: tapping opens contact page. On mobile: only these are shown. -->
         <div onclick="drillTo('contact')" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer" title="View contact">
-          <div id="msg-thread-avatar" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#fff"></div>
+          <div id="msg-thread-avatar" style="width:34px;height:34px;border-radius: 0;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:#fff"></div>
           <div style="min-width:0;flex:1">
             <div id="msg-thread-name" class="msg-thread-title" style="font-size:14px"></div>
-            <span id="msg-thread-stage" class="msg-hdr-desktop" style="display:none;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.04em;padding:2px 7px;border-radius:var(--r-pill)"></span>
+            <span id="msg-thread-stage" class="msg-hdr-desktop" style="display:none;font-size:10px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.04em;padding:2px 7px;border-radius: 0;"></span>
             <a id="msg-thread-phone" class="msg-thread-phone msg-hdr-desktop" href="#" onclick="event.stopPropagation();threadCallContact();return false" style="font-size:11px;padding:2px 7px;margin-top:1px;display:none"></a>
           </div>
         </div>
-        <button id="msg-call-btn" class="msg-hdr-desktop" onclick="threadCallContact()" style="width:34px;height:34px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Call" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
+        <button id="msg-call-btn" class="msg-hdr-desktop" onclick="threadCallContact()" style="width:34px;height:34px;border-radius: 0;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Call" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         </button>
-        <button onclick="threadToggleSearch()" id="msg-search-btn" class="msg-hdr-desktop" style="width:34px;height:34px;border-radius:50%;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Search messages" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
+        <button onclick="threadToggleSearch()" id="msg-search-btn" class="msg-hdr-desktop" style="width:34px;height:34px;border-radius: 0;background:var(--bg);border:none;box-shadow:var(--shadow-neu-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text2);transition:box-shadow var(--t-fast),color var(--t-fast)" title="Search messages" onmouseover="this.style.boxShadow='var(--shadow-neu)';this.style.color='var(--navy)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)';this.style.color='var(--text2)'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
       </div>
@@ -3552,7 +3552,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
       <div id="msg-thread-insight" style="display:none"></div>
       <!-- Thread search bar (hidden by default) -->
       <div id="msg-search-bar" style="display:none;padding:7px 12px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-pill);padding:5px 12px;transition:border-color .15s" onfocusin="this.style.borderColor=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius: 0;padding:5px 12px;transition:border-color .15s" onfocusin="this.style.borderColor=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4;flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="msg-search-input" type="text" placeholder="Search messages…" style="flex:1;background:none;border:none;outline:none;font-size:16px;color:var(--text);font-family:inherit" oninput="renderThread()" autocomplete="off">
           <button onclick="threadClearSearch()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0;font-size:16px;line-height:1;opacity:.5" title="Clear">&times;</button>
@@ -3576,7 +3576,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
           <div style="flex:1;display:flex;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:0;padding:6px 6px 6px 12px;gap:4px;transition:border-color .15s" onfocusin="this.style.borderColor=document.documentElement.classList.contains('dark')?'var(--gold)':'var(--navy)'" onfocusout="this.style.borderColor='var(--border)'">
             <textarea id="msg-compose" placeholder="Message…" style="flex:1;background:none;border:none;outline:none;resize:none;font-size:15px;min-height:22px;max-height:120px;line-height:1.5;padding:0;font-family:inherit;color:var(--text)" oninput="this.style.height='auto';this.style.height=Math.min(120,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
             <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0">
-              <button id="msg-send-btn" onclick="sendMessage()" title="Send (Enter)" style="width:32px;height:32px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s">
+              <button id="msg-send-btn" onclick="sendMessage()" title="Send (Enter)" style="width:32px;height:32px;border-radius: 0;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
             </div>
@@ -3736,7 +3736,7 @@ function _avatarHtml(c, size) {
   const color = _avatarColor(c.id);
   const initials = _avatarInitials(c.name);
   const fs = size <= 36 ? '12px' : size <= 48 ? '15px' : '19px';
-  const base = `border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;background:${color};width:${size}px;height:${size}px`;
+  const base = `border-radius: 0;overflow:hidden;flex-shrink:0;position:relative;background:${color};width:${size}px;height:${size}px`;
   const span = `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${fs};font-family:'Outfit',sans-serif;pointer-events:none">${initials}</span>`;
   const elId = 'av-' + c.id;
   if (c.address) {
@@ -3769,7 +3769,7 @@ function _bannerHtml(c) {
   const textBtnStyle = _hasUnread
     ? 'display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(212,145,26,.88);border:1px solid rgba(255,255,255,.35);border-radius:20px;color:#0b1f3b;padding:7px 10px;cursor:pointer;transition:background .15s;box-shadow:0 0 0 3px rgba(212,145,26,.35)'
     : 'display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;padding:7px 10px;cursor:pointer;transition:background .15s';
-  const textBtnDot = _hasUnread ? '<span style="width:7px;height:7px;border-radius:50%;background:#dc2626;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)"></span>' : '';
+  const textBtnDot = _hasUnread ? '<span style="width:7px;height:7px;border-radius: 0;background:#dc2626;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.6)"></span>' : '';
   const nameLabel = `<div style="position:absolute;left:16px;right:16px;bottom:10px;z-index:3">
     <div class="panel-name" style="color:#fff;font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.018em;text-shadow:0 2px 14px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;margin-bottom:6px">${displayName}</div>
     <div class="panel-quick-btns" style="display:flex;gap:7px">
@@ -3800,12 +3800,12 @@ function _bannerHtml(c) {
   // Stage badge + optional install date chip — stacked horizontally in top-left
   const stageBadge = `<div class="panel-stage-badge" style="position:absolute;top:12px;left:60px;z-index:3;display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:calc(100% - 120px)">
     <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.12);border-radius:0;padding:4px 10px">
-      <div style="width:7px;height:7px;border-radius:50%;background:${stageColor};flex-shrink:0"></div>
+      <div style="width:7px;height:7px;border-radius: 0;background:${stageColor};flex-shrink:0"></div>
       <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;color:#fff;letter-spacing:.02em">${esc(stageLabel)}</span>
     </div>
     ${schedChip}
   </div>`;
-  const backBtn = `<button onclick="cancelPanel()" style="position:absolute;top:14px;left:14px;background:rgba(0,0,0,.48);color:#fff;z-index:3;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 12px rgba(0,0,0,.25);width:36px;height:36px;min-width:44px;min-height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`;
+  const backBtn = `<button onclick="cancelPanel()" style="position:absolute;top:14px;left:14px;background:rgba(0,0,0,.48);color:#fff;z-index:3;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 12px rgba(0,0,0,.25);width:36px;height:36px;min-width:44px;min-height:44px;border-radius: 0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`;
   const closeBtn = `<button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.48);color:#fff;z-index:3;border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 12px rgba(0,0,0,.25)">&#10005;</button>`;
   const bannerId = 'bnr-' + c.id;
   if (c.address) {
@@ -4022,7 +4022,7 @@ function _showContactsSkeleton() {
         <div class="skeleton skeleton-line" style="width:${40+Math.random()*30|0}%"></div>
         <div class="skeleton skeleton-line" style="width:${20+Math.random()*20|0}%"></div>
       </div>
-      <div class="skeleton skeleton-line" style="width:52px;height:22px;border-radius:var(--r-pill);flex-shrink:0;margin-left:auto"></div>
+      <div class="skeleton skeleton-line" style="width:52px;height:22px;border-radius: 0;flex-shrink:0;margin-left:auto"></div>
     </div>`).join('');
   wrap.innerHTML = `<div class="table-wrap" style="background:var(--bg)"><div style="padding:8px 0">${rows}</div></div>`;
 }
@@ -4085,12 +4085,12 @@ function _renderMobileCard(c) {
   const unreadEl = hasUnread ? '<span class="mlc-unread"></span>' : '';
   const actType = contactActivityType(c.id);
   const actColors = { approved:'var(--gold)', paid:'var(--green)', viewed:'#3b82f6' };
-  const actEl = actType ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${actColors[actType]};flex-shrink:0"></span>` : '';
+  const actEl = actType ? `<span style="display:inline-block;width:7px;height:7px;border-radius: 0;background:${actColors[actType]};flex-shrink:0"></span>` : '';
   const avatarHtml = _avatarHtml(c, 40);
   const displayName = esc(dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead'));
   const isArchived = c.status === 'Archived';
   const dupIds = getDupIds(c.id);
-  const dupEl = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:1px 5px;border-radius:var(--r-pill);font-weight:700;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
+  const dupEl = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:1px 5px;border-radius: 0;font-weight:700;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
   return `<div class="mlc${isArchived?' mlc-archived':''}" onclick="if(!window._mobileCtxJustOpened)openPanel('${c.id}')">
     ${avatarHtml}
     <div class="mlc-body">
@@ -4198,7 +4198,7 @@ function renderContacts() {
       const firstName = (c.name || '').split(' ')[0] || dispName(c.name, 'New Lead');
       const avatarHtml = _avatarHtml(c, 38);
       const dupIds = getDupIds(c.id);
-      const dupBadge = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
+      const dupBadge = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:2px 6px;border-radius: 0;font-weight:700;margin-left:6px;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
       const sparkyIns = (typeof window._buildSparkyInsight === 'function') ? window._buildSparkyInsight(c) : null;
       const sparkyText = sparkyIns ? sparkyIns.text : stageDef.nextAction;
       const urgEmoji = urg.level === 'hot' ? '🔥' : urg.level === 'warm' ? '⚠️' : '🕐';
@@ -4261,14 +4261,14 @@ function renderContacts() {
     const jurCell = jur ? `<span style="font-size:12px">${esc(jur.name)}</span>` : empty;
 
     const dupIds = getDupIds(c.id);
-    const dupBadge = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:2px 6px;border-radius:var(--r-pill);font-weight:700;margin-left:6px;cursor:pointer;border:1px solid rgba(220,38,38,.2)" onclick="event.stopPropagation();openMergeModal('${c.id}','${dupIds[0]}')">DUP</span>` : '';
+    const dupBadge = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:2px 6px;border-radius: 0;font-weight:700;margin-left:6px;cursor:pointer;border:1px solid rgba(220,38,38,.2)" onclick="event.stopPropagation();openMergeModal('${c.id}','${dupIds[0]}')">DUP</span>` : '';
 
     const hasUnreadMsg = _unreadContactIds.has(c.id);
-    const unreadMsgDot = hasUnreadMsg ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:middle;flex-shrink:0" title="Unread message"></span>' : '';
+    const unreadMsgDot = hasUnreadMsg ? '<span style="display:inline-block;width:7px;height:7px;border-radius: 0;background:var(--red);margin-left:5px;vertical-align:middle;flex-shrink:0" title="Unread message"></span>' : '';
     const actType = !isArchived ? contactActivityType(c.id) : null;
     const actColors = { approved: 'var(--gold)', paid: 'var(--green)', viewed: '#3b82f6' };
     const actTitles = { approved: 'Proposal approved', paid: 'Invoice paid', viewed: 'Proposal viewed' };
-    const activityDot = actType ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + actColors[actType] + ';margin-left:6px;vertical-align:middle;flex-shrink:0" title="' + actTitles[actType] + '"></span>' : '';
+    const activityDot = actType ? '<span style="display:inline-block;width:7px;height:7px;border-radius: 0;background:' + actColors[actType] + ';margin-left:6px;vertical-align:middle;flex-shrink:0" title="' + actTitles[actType] + '"></span>' : '';
     // Stale indicator: show flame icon if contact is overdue for action in current stage
     let staleIndicator = '';
     if (!isArchived && (c.stage || 1) !== 9) {
@@ -4690,7 +4690,7 @@ function openPanel(id) {
         cardsHtml += `
         <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;cursor:pointer" onclick="selectProposalAndDrill(${idx})">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span class="prop-badge ${badgeClass}" style="padding:3px 8px;border-radius:var(--r-pill);font-size:11px;font-weight:700">${badge}</span>
+            <span class="prop-badge ${badgeClass}" style="padding:3px 8px;border-radius: 0;font-size:11px;font-weight:700">${badge}</span>
             <span style="font-size:11px;color:var(--text3)">${ampLabel}${surgeLabel}${pomLabel}</span>
             <span style="font-size:13px;font-weight:700;color:var(--text);margin-left:auto">$${displayTotal.toLocaleString()}</span>
           </div>
@@ -4729,7 +4729,7 @@ function openPanel(id) {
             const dotColor = isOut ? 'var(--text3)' : 'var(--blue)';
             if (bodyDisplay) {
               previewHtml = `<div style="margin-top:6px;display:flex;align-items:flex-start;gap:5px;font-size:11.5px;color:var(--text3);line-height:1.35;cursor:pointer" onclick="openMessagesFromPanel()">
-                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:3px"></span>
+                <span style="display:inline-block;width:6px;height:6px;border-radius: 0;background:${dotColor};flex-shrink:0;margin-top:3px"></span>
                 <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${isOut ? 'You: ' : ''}<span style="color:var(--text2)">${esc(bodyDisplay)}</span></span>
                 <span style="white-space:nowrap;flex-shrink:0">${esc(elapsed)}</span>
               </div>`;
@@ -4744,7 +4744,7 @@ function openPanel(id) {
             if (msgCount > 0) {
               const dot = document.createElement('span');
               dot.className = 'msg-unread-dot';
-              dot.style.cssText = 'position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--red);pointer-events:none';
+              dot.style.cssText = 'position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius: 0;background:var(--red);pointer-events:none';
               msgFldBtn.appendChild(dot);
             }
           }
@@ -5095,7 +5095,7 @@ function renderInvoiceBuilderDrill() {
     const _cur30B = _mainB && _mainB.name.includes('30A');
     const _cur50B = _mainB && _mainB.name.includes('50A');
     const _hasPOMB = invoiceLineItems.some(li => li.name.toLowerCase().includes('peace of mind') || li.name.toLowerCase().includes('protection'));
-    const _qpBtnB = (lbl, active, fn) => `<button onclick="${fn}" style="padding:6px 14px;border-radius:var(--r-pill);border:2px solid ${active?'var(--navy)':'var(--border)'};background:${active?'var(--navy)':'var(--bg)'};color:${active?'#fff':'var(--text2)'};font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap">${lbl}</button>`;
+    const _qpBtnB = (lbl, active, fn) => `<button onclick="${fn}" style="padding:6px 14px;border-radius: 0;border:2px solid ${active?'var(--navy)':'var(--border)'};background:${active?'var(--navy)':'var(--bg)'};color:${active?'#fff':'var(--text2)'};font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap">${lbl}</button>`;
     el.innerHTML = `
       <div style="margin-bottom:12px;padding:10px 0 8px;border-bottom:1px solid var(--border)">
         <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px">Quick Edit</div>
@@ -5228,7 +5228,7 @@ async function renderPaymentDrill() {
   const cur50 = mainItem && mainItem.name.includes('50A');
   const hasPOMLine = invoiceLineItems.some(li => li.name.toLowerCase().includes('peace of mind') || li.name.toLowerCase().includes('protection'));
   const qpBtn = (label, active, onclick) =>
-    `<button onclick="${onclick}" style="padding:6px 14px;border-radius:var(--r-pill);border:2px solid ${active?'var(--navy)':'var(--border)'};background:${active?'var(--navy)':'var(--bg)'};color:${active?'#fff':'var(--text2)'};font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap">${label}</button>`;
+    `<button onclick="${onclick}" style="padding:6px 14px;border-radius: 0;border:2px solid ${active?'var(--navy)':'var(--border)'};background:${active?'var(--navy)':'var(--bg)'};color:${active?'#fff':'var(--text2)'};font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap">${label}</button>`;
   const quickPicks = '<div style="padding:10px 12px 8px;border-bottom:1px solid var(--border)">'
     + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px">Quick Edit</div>'
     + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
@@ -5772,7 +5772,7 @@ async function sendInvoiceLink(contactId) {
   var emailBody = 'Hi ' + firstName + ',%0D%0A%0D%0AYour invoice for $' + total.toLocaleString() + ' is ready. You can view it here:%0D%0A%0D%0A' + invoiceUrl + '%0D%0A%0D%0AThanks,%0D%0AKey — Backup Power Pro%0D%0A(864) 400-5302';
 
   el.innerHTML = '<div style="text-align:center;padding:20px 0">'
-    + '<div style="width:56px;height:56px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+    + '<div style="width:56px;height:56px;background:#f0fdf4;border-radius: 0;display:flex;align-items:center;justify-content:center;margin:0 auto 12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
     + '<div style="font-family:Outfit,sans-serif;font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px">Invoice Created!</div>'
     + '<div style="font-size:13px;color:var(--text3);margin-bottom:16px">$' + total.toLocaleString() + ' — ' + esc(c.name || '') + '</div>'
     + '<button class="btn btn-primary" style="width:100%;margin-bottom:8px;min-height:44px" onclick="navigator.clipboard.writeText(\'' + invoiceUrl + '\');showToast(\'Invoice link copied!\',\'success\')">Copy Invoice Link</button>'
@@ -6933,7 +6933,7 @@ function renderCalendar() {
         <span class="cal-day-name">${days[i]}</span>
         <span class="cal-day-num">${day.getDate()}</span>
         ${holidayBadge}
-        ${isLocked ? '<span class="cal-lock-icon" onclick="event.stopPropagation();openLockNote(\'' + dateStr + '\',event)" style="cursor:pointer" title="' + esc(lockNote || 'Click to add note') + '">' + (lockNote ? '<span style="display:inline-block;width:5px;height:5px;background:var(--gold);border-radius:50%;margin-right:3px;vertical-align:middle"></span>' : '') + '&#128274;</span>' : ''}
+        ${isLocked ? '<span class="cal-lock-icon" onclick="event.stopPropagation();openLockNote(\'' + dateStr + '\',event)" style="cursor:pointer" title="' + esc(lockNote || 'Click to add note') + '">' + (lockNote ? '<span style="display:inline-block;width:5px;height:5px;background:var(--gold);border-radius: 0;margin-right:3px;vertical-align:middle"></span>' : '') + '&#128274;</span>' : ''}
       </div>
       <div class="cal-day-body${atLimit ? ' cal-full' : ''}" ${canAdd ? `onclick="openJobModal(null,'${dateStr}')"` : ''}>
         ${events}
@@ -7017,12 +7017,12 @@ function renderCalendar() {
         const addr = contact ? (contact.address || '') : '';
         const avatarBg = typeof _avatarColor === 'function' ? _avatarColor(label) : 'var(--navy)';
         return `<div onclick="${j.contact_id ? `openPanel('${j.contact_id}')` : `openJobModal('${j.id}',null)`}" style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border-radius:var(--r-md);box-shadow:var(--shadow-neu-sm);cursor:pointer;transition:box-shadow .15s;margin-bottom:8px" onmouseover="this.style.boxShadow='var(--shadow-neu)'" onmouseout="this.style.boxShadow='var(--shadow-neu-sm)'">
-          <div style="width:40px;height:40px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:#fff;flex-shrink:0">${esc(label.charAt(0).toUpperCase())}</div>
+          <div style="width:40px;height:40px;border-radius: 0;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;color:#fff;flex-shrink:0">${esc(label.charAt(0).toUpperCase())}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(label)}</div>
             <div style="font-size:12px;color:var(--text3);margin-top:1px">${dayLabel}${timeStr ? ' · ' + timeStr : ''}${addr ? ' · ' + esc(addr) : ''}</div>
           </div>
-          <span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 9px;border-radius:var(--r-pill);background:${badgeBg};color:${badgeColor}">${badgeLabel}</span>
+          <span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 9px;border-radius: 0;background:${badgeBg};color:${badgeColor}">${badgeLabel}</span>
         </div>`;
       }).join('');
       listEl.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">This Week</div>${rows}`;
@@ -7209,7 +7209,7 @@ function selectJobContact(contactId) {
     const intlk = _readPmField(c, 'mintlk');
     if (inlet || brand || intlk) {
       const chips = [
-        inlet && `<span style="background:var(--gold);color:var(--navy);font-weight:700;font-size:11px;padding:2px 8px;border-radius:var(--r-pill)">${esc(inlet)}</span>`,
+        inlet && `<span style="background:var(--gold);color:var(--navy);font-weight:700;font-size:11px;padding:2px 8px;border-radius: 0;">${esc(inlet)}</span>`,
         brand && `<span style="font-size:12px;font-weight:600;color:var(--text)">${esc(brand)}${model ? ' ' + esc(model) : ''}</span>`,
         intlk && `<span style="font-size:11px;color:var(--text2)">${esc(intlk)}</span>`,
       ].filter(Boolean).join('<span style="color:var(--text3);margin:0 4px">·</span>');
@@ -7550,7 +7550,7 @@ function renderPanelEvents() {
     })) : '';
     const rowOpacity = isArchived ? '.4' : (isPast && !isComplete && !isCancelled ? '.7' : '1');
     return `<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--border);opacity:${rowOpacity}">
-      <div style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
+      <div style="width:7px;height:7px;border-radius: 0;background:${dotColor};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap${isArchived ? ';text-decoration:line-through' : ''}">${esc(label)}</div>
         <div style="font-size:11px;color:var(--text3)">${dateStr}${timeStr}</div>
@@ -7587,7 +7587,7 @@ async function runFollowupScan() {
 
   const body = document.getElementById('fq-body');
   if (body) body.innerHTML = `<div class="fq-empty">
-    <div style="width:26px;height:26px;border:2.5px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px"></div>
+    <div style="width:26px;height:26px;border:2.5px solid var(--border);border-top-color:var(--navy);border-radius: 0;animation:spin .7s linear infinite;margin:0 auto 14px"></div>
     <div>Sparky is scanning your pipeline…</div>
   </div>`;
 
@@ -7700,7 +7700,7 @@ async function sendNeighborCards() {
   if (!contactId) return;
 
   const btn = document.getElementById('panel-neighbor-btn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span> Sending…'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--navy);border-radius: 0;animation:spin .7s linear infinite;display:inline-block"></span> Sending…'; }
 
   try {
     const resp = await fetch(NC_ENDPOINT, {
@@ -7770,7 +7770,7 @@ async function renderNeighborCardHistory(contactId) {
     const dateStr  = c.sent_at ? new Date(c.sent_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '—';
     const scanned  = c.scan_count > 0;
     return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:9px;font-weight:800;padding:1px 7px;border-radius:var(--r-pill);background:${varColor}18;color:${varColor};flex-shrink:0">${c.variation}</span>
+      <span style="font-size:9px;font-weight:800;padding:1px 7px;border-radius: 0;background:${varColor}18;color:${varColor};flex-shrink:0">${c.variation}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:11px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.recipient_line1)}</div>
         <div style="font-size:10px;color:var(--text3)">${dateStr}</div>
@@ -8521,7 +8521,7 @@ async function refreshStatsModal() {
     const cnt = byStage[s.id] || 0;
     if (!cnt) return '';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">'
-      + '<div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:' + s.color + ';flex-shrink:0"></div><span style="font-size:13px;color:var(--text2)">' + esc(s.label) + '</span></div>'
+      + '<div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius: 0;background:' + s.color + ';flex-shrink:0"></div><span style="font-size:13px;color:var(--text2)">' + esc(s.label) + '</span></div>'
       + '<span style="font-size:13px;font-weight:700;color:var(--text)">' + cnt + '</span></div>';
   }).filter(Boolean).join('');
   const pipelineSection = stageRows ? '<div style="background:var(--bg);border-radius:var(--r-md);padding:14px 16px;margin-top:16px">'
@@ -8548,8 +8548,8 @@ async function refreshStatsModal() {
     + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">'
     + '<span style="font-family:Outfit,sans-serif;font-size:28px;font-weight:800;color:var(--text)">$' + estNetProfit.toLocaleString() + '</span>'
     + '<span style="font-size:13px;color:var(--text3)">est. accumulated / $150,000</span></div>'
-    + '<div style="height:8px;background:rgba(0,0,0,.08);border-radius:var(--r-pill);overflow:hidden;margin-bottom:6px">'
-    + '<div style="height:100%;background:var(--gold);border-radius:var(--r-pill);width:' + pct + '%;transition:width .5s"></div></div>'
+    + '<div style="height:8px;background:rgba(0,0,0,.08);border-radius: 0;overflow:hidden;margin-bottom:6px">'
+    + '<div style="height:100%;background:var(--gold);border-radius: 0;width:' + pct + '%;transition:width .5s"></div></div>'
     + '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">'
     + '<span>' + pct + '% complete</span>'
     + '<span>$' + moRevenue.toLocaleString() + ' revenue this month</span></div>'
@@ -9214,8 +9214,8 @@ function renderCallLog(data) {
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--text)">${esc(name)}</span>
-          ${isMissed ? '<span style="font-size:11px;font-weight:700;color:var(--red);background:#fee2e2;padding:1px 7px;border-radius:var(--r-pill)">Missed</span>' : ''}
-          ${isVoicemail ? '<span style="font-size:11px;font-weight:700;color:#a16207;background:#fef9c3;padding:1px 7px;border-radius:var(--r-pill)">Voicemail</span>' : ''}
+          ${isMissed ? '<span style="font-size:11px;font-weight:700;color:var(--red);background:#fee2e2;padding:1px 7px;border-radius: 0;">Missed</span>' : ''}
+          ${isVoicemail ? '<span style="font-size:11px;font-weight:700;color:#a16207;background:#fef9c3;padding:1px 7px;border-radius: 0;">Voicemail</span>' : ''}
         </div>
         <div style="font-size:12px;color:var(--text3);margin-top:2px">${esc(meta)} · ${esc(timeStr)}</div>
         ${transcriptRow}
@@ -9380,7 +9380,7 @@ function inboxNewConversation() {
     const ci = (c.name || '').split('').reduce((s, ch) => s + ch.charCodeAt(0), 0) % colors.length;
     const searchKey = ((c.name || '') + ' ' + (c.phone || '')).toLowerCase();
     return `<div class="inbox-item nc-row" data-nc="${esc(searchKey)}" onclick="openMessagesPanel('${c.id}');window.inboxNcClose()" style="cursor:pointer">
-      <div style="width:36px;height:36px;border-radius:50%;background:${colors[ci]};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${esc(initials)}</div>
+      <div style="width:36px;height:36px;border-radius: 0;background:${colors[ci]};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${esc(initials)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
         ${ph ? `<div style="font-size:11.5px;color:var(--text3);margin-top:1px">${esc(ph)}</div>` : ''}
@@ -9391,7 +9391,7 @@ function inboxNewConversation() {
   listEl.setAttribute('data-nc', '1');
   listEl.innerHTML = `<div style="padding:10px 12px 6px">
     <div style="display:flex;align-items:center;gap:8px">
-      <div style="flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-pill);padding:8px 12px">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius: 0;padding:8px 12px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text3)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input id="inbox-nc-inp" type="text" placeholder="Search contacts…" oninput="window.inboxNcFilter(this.value)" style="flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);font-family:inherit">
       </div>
@@ -9553,7 +9553,7 @@ async function loadInbox() {
     } else {
       preview = (m.direction === 'outbound' ? 'You: ' : '') + esc(m.body || '').slice(0, 80);
     }
-    const avatar = c ? _avatarHtml(c, 34) : `<div style="width:34px;height:34px;border-radius:50%;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text3)">?</div>`;
+    const avatar = c ? _avatarHtml(c, 34) : `<div style="width:34px;height:34px;border-radius: 0;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text3)">?</div>`;
     const mutedBadge  = isMuted  ? `<span style="font-size:10px;font-weight:700;color:var(--text3);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1px 5px;margin-left:4px">Muted</span>` : '';
     const pinnedBadge = isPinned ? `<span style="font-size:12px;margin-left:2px" title="Pinned">📌</span>` : '';
 
@@ -9564,7 +9564,7 @@ async function loadInbox() {
     const cStage = c ? (c.stage || 1) : 0;
     const cStageDef = cStage ? PERMIT_STAGES.find(s => s.id === cStage) : null;
     const inboxStageBadge = (cStageDef && cStageDef.id !== 1)
-      ? `<span style="font-size:9.5px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.02em;padding:1px 6px;border-radius:var(--r-pill);background:${cStageDef.color}18;color:${cStageDef.color};flex-shrink:0;white-space:nowrap">${esc(cStageDef.label)}</span>`
+      ? `<span style="font-size:9.5px;font-weight:700;font-family:'Outfit',sans-serif;letter-spacing:.02em;padding:1px 6px;border-radius: 0;background:${cStageDef.color}18;color:${cStageDef.color};flex-shrink:0;white-space:nowrap">${esc(cStageDef.label)}</span>`
       : '';
     return `<div class="inbox-item${isUnread ? ' unread' : ''}" style="${isDone || isMuted ? 'opacity:.45;' : ''}" data-name="${esc(name.toLowerCase())}" data-preview="${esc(_previewText.toLowerCase())}" data-cid="${m.contact_id}" onclick="openMessagesPanel('${m.contact_id}')">
       ${avatar}
@@ -11205,7 +11205,7 @@ async function loadInvoicesTab(silent) {
   if (!silent) {
     list.innerHTML = Array(4).fill(0).map(() => `
       <div class="inv-skeleton">
-        <div class="skeleton" style="width:38px;height:38px;border-radius:50%"></div>
+        <div class="skeleton" style="width:38px;height:38px;border-radius: 0;"></div>
         <div style="flex:1">
           <div class="skeleton" style="width:38%;height:11px;margin-bottom:6px;border-radius:var(--r-xs)"></div>
           <div class="skeleton" style="width:22%;height:9px;border-radius:var(--r-xs)"></div>
@@ -11726,7 +11726,7 @@ function renderKanban() {
       const styleVar = `--urgcolor:${urg.color}`;
       const doneHint = isDone ? `<div class="kanban-card-next done">Job complete</div>` : '';
       const hasUnread = _unreadContactIds.has(c.id);
-      const unreadDot = hasUnread ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:middle;flex-shrink:0" title="Unread message"></span>` : '';
+      const unreadDot = hasUnread ? `<span style="display:inline-block;width:7px;height:7px;border-radius: 0;background:var(--red);margin-left:5px;vertical-align:middle;flex-shrink:0" title="Unread message"></span>` : '';
       const callBtnKanban = c.phone
         ? `<button class="kanban-card-call" onclick="event.stopPropagation();window.voiceCallContact&&window.voiceCallContact('${c.id}')" title="Call ${esc(fmtPhone(c.phone))}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.61 5.02 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.91a16 16 0 0 0 6.08 6.08l1.08-1.08a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>`
         : '';
@@ -12003,7 +12003,7 @@ setTimeout(() => {
   .kanban-card.kdragging{opacity:.55;transform:rotate(-1.5deg) scale(1.02);box-shadow:0 12px 28px rgba(10,20,40,.22);cursor:grabbing}
   .kanban-col.kdrop-target{background:rgba(212,145,26,.10);outline:2px dashed var(--gold);outline-offset:-4px}
   html.dark .kanban-col.kdrop-target{background:rgba(196,130,20,.12)}
-  .kanban-card-date{display:inline-block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:var(--green);background:rgba(5,150,105,.12);padding:1px 6px;border-radius:var(--r-pill);margin-top:4px}
+  .kanban-card-date{display:inline-block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:var(--green);background:rgba(5,150,105,.12);padding:1px 6px;border-radius: 0;margin-top:4px}
   html.dark .kanban-card-date{background:rgba(74,222,128,.15);color:#4ade80}
   /* Desktop-only nav elements */
   .desktop-only{display:flex}
@@ -12052,7 +12052,7 @@ setTimeout(() => {
   .smart-prompt{background:linear-gradient(135deg,rgba(212,145,26,.12),rgba(212,145,26,.04));border:1px solid rgba(212,145,26,.35);border-radius:var(--r-md);padding:12px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px;animation:promptIn .25s cubic-bezier(.16,1,.3,1)}
   html.dark .smart-prompt{background:linear-gradient(135deg,rgba(196,130,20,.12),rgba(196,130,20,.04));border-color:rgba(196,130,20,.35)}
   @keyframes promptIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-  .smart-prompt-icon{width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-family:'Outfit',sans-serif}
+  .smart-prompt-icon{width:28px;height:28px;border-radius: 0;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-family:'Outfit',sans-serif}
   .smart-prompt-body{flex:1;min-width:0}
   .smart-prompt-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px}
   .smart-prompt-sub{font-size:11.5px;color:var(--text2);line-height:1.35}
@@ -12071,7 +12071,7 @@ setTimeout(() => {
   .activity-feed::before{content:'';position:absolute;left:13px;top:8px;bottom:8px;width:1.5px;background:var(--border)}
   html.dark .activity-feed::before{background:#252322}
   .activity-item{display:flex;gap:12px;padding:6px 0;position:relative;align-items:flex-start}
-  .activity-icon{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;z-index:1;border:2px solid var(--card)}
+  .activity-icon{width:28px;height:28px;border-radius: 0;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;z-index:1;border:2px solid var(--card)}
   html.dark .activity-icon{background:#1e1b17;border-color:var(--card)}
   .activity-icon.created{background:#dbeafe;color:#1d4ed8}
   .activity-icon.stage{background:#fef3c7;color:#92400e}
@@ -12094,7 +12094,7 @@ setTimeout(() => {
   /* Typing indicator bubble */
   .msg-typing{display:flex;align-items:center;gap:4px;padding:10px 14px;background:var(--bg);border-radius:18px;border-bottom-right-radius:4px;align-self:flex-end;max-width:60%;opacity:.85}
   html.dark .msg-typing{background:#1e1b17}
-  .msg-typing span{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:typingDot 1.2s infinite ease-in-out}
+  .msg-typing span{width:6px;height:6px;border-radius: 0;background:var(--text3);animation:typingDot 1.2s infinite ease-in-out}
   .msg-typing span:nth-child(2){animation-delay:.15s}
   .msg-typing span:nth-child(3){animation-delay:.3s}
   @keyframes typingDot{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
@@ -13166,7 +13166,7 @@ setTimeout(() => {
   .pm-section-icon{width:30px;height:30px;border-radius:0;background:rgba(212,145,26,.12);color:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:800;font-family:'Outfit',sans-serif}
   html.dark .pm-section-icon{background:rgba(196,130,20,.18)}
   .pm-section-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;color:var(--text);flex:1;letter-spacing:-.005em}
-  .pm-section-status{font-size:11px;font-weight:700;color:var(--text3);font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;padding:3px 8px;border-radius:var(--r-pill);background:var(--bg)}
+  .pm-section-status{font-size:11px;font-weight:700;color:var(--text3);font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;padding:3px 8px;border-radius: 0;background:var(--bg)}
   html.dark .pm-section-status{background:#1e1b17}
   .pm-section-status.warn{background:#fef3c7;color:#92400e}
   .pm-section-status.hot{background:#fee2e2;color:var(--red)}
@@ -13187,7 +13187,7 @@ setTimeout(() => {
   html.dark .pm-steps::before{background:#252322}
   .pm-step{display:flex;align-items:center;gap:11px;padding:7px 0;cursor:pointer;position:relative;z-index:1;transition:transform .15s}
   .pm-step:hover{transform:translateX(2px)}
-  .pm-step-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--card);border:2px solid var(--border);color:var(--text3);font-size:12px;font-weight:800;font-family:'Outfit',sans-serif;transition:all .2s;box-shadow:0 0 0 3px var(--card)}
+  .pm-step-dot{width:30px;height:30px;border-radius: 0;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--card);border:2px solid var(--border);color:var(--text3);font-size:12px;font-weight:800;font-family:'Outfit',sans-serif;transition:all .2s;box-shadow:0 0 0 3px var(--card)}
   html.dark .pm-step-dot{background:#28241f;border-color:rgba(255,255,255,.06);box-shadow:0 0 0 3px #28241f}
   .pm-step.done .pm-step-dot{background:var(--green);border-color:var(--green);color:#fff}
   .pm-step.current .pm-step-dot{background:var(--gold);border-color:var(--gold);color:var(--navy);animation:pmPulse 1.8s ease-in-out infinite}
@@ -13227,7 +13227,7 @@ setTimeout(() => {
   button.pm-banner-action:active{transform:scale(.99)}
   .pm-banner-cta{font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;padding-left:6px}
   html.dark .pm-banner-cta{color:var(--gold)}
-  .pm-banner-icon{width:24px;height:24px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-size:13px;font-family:'Outfit',sans-serif}
+  .pm-banner-icon{width:24px;height:24px;border-radius: 0;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-size:13px;font-family:'Outfit',sans-serif}
   html.dark .pm-banner-icon{color:#1e1b17}
   .pm-banner-body{flex:1;min-width:0;font-size:12px;color:var(--text);line-height:1.4}
   .pm-banner-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:12.5px;color:var(--text);margin-bottom:2px}
@@ -13267,9 +13267,9 @@ setTimeout(() => {
   .pm-board-section{background:var(--bg);border:none;border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-neu-sm);transition:box-shadow var(--t-base)}
   .pm-board-section:hover{box-shadow:var(--shadow-neu)}
   .pm-board-section-head{padding:12px 16px;background:var(--bg);font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:9px}
-  .pm-board-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.55)}
+  .pm-board-dot{width:9px;height:9px;border-radius: 0;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.55)}
   html.dark .pm-board-dot{box-shadow:0 0 0 2px rgba(255,255,255,.06)}
-  .pm-board-section-count{margin-left:auto;background:var(--bg);color:var(--text2);font-family:'Outfit',sans-serif;font-weight:800;font-size:10.5px;padding:2px 9px;border-radius:var(--r-pill);border:none;box-shadow:var(--shadow-neu-inset-sm);font-variant-numeric:tabular-nums;letter-spacing:-.005em}
+  .pm-board-section-count{margin-left:auto;background:var(--bg);color:var(--text2);font-family:'Outfit',sans-serif;font-weight:800;font-size:10.5px;padding:2px 9px;border-radius: 0;border:none;box-shadow:var(--shadow-neu-inset-sm);font-variant-numeric:tabular-nums;letter-spacing:-.005em}
   .pm-board-row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background var(--t-fast),transform var(--t-fast)}
   .pm-board-row:hover{background:rgba(11,31,59,.025)}
   .pm-board-row:active{background:rgba(11,31,59,.04)}
@@ -13277,7 +13277,7 @@ setTimeout(() => {
   .pm-board-row:last-child{border-bottom:none}
   .pm-board-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:13.5px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.005em}
   .pm-board-jur{font-size:11.5px;color:var(--text3);white-space:nowrap;margin-top:2px;font-weight:500}
-  .pm-board-step{font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;border-radius:var(--r-pill);white-space:nowrap;flex-shrink:0}
+  .pm-board-step{font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;border-radius: 0;white-space:nowrap;flex-shrink:0}
   .pm-board-days{font-size:11px;color:var(--text3);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:60px;text-align:right;flex-shrink:0}
   .pm-board-days.warn{color:#c2410c;font-weight:700}
   .pm-board-days.hot{color:var(--red);font-weight:800}
@@ -13301,7 +13301,7 @@ setTimeout(() => {
 
   /* Materials board — interactive card layout */
   .pm-mboard-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .pm-mboard-status{font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;border-radius:var(--r-pill);text-align:center;white-space:nowrap;flex-shrink:0}
+  .pm-mboard-status{font-size:10.5px;font-weight:800;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:4px 9px;border-radius: 0;text-align:center;white-space:nowrap;flex-shrink:0}
   .pm-mboard-status.todo{background:#fef3c7;color:#92400e}
   .pm-mboard-status.ordered{background:#dbeafe;color:#1d4ed8}
   .pm-mboard-status.received{background:#d1fae5;color:var(--green)}
@@ -14775,7 +14775,7 @@ setTimeout(() => {
       var rows = items.map(function(it) {
         var cid = it.contactId ? String(it.contactId).replace(/"/g, '&quot;') : '';
         var draftBtn = (canDraft && cid)
-          ? '<button class="tm-brief-draft-btn" data-cid="' + cid + '" title="Sparky drafts a follow-up text" onclick="event.stopPropagation();tmDraftFollowup(\'' + cid + '\')" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:var(--r-pill);font-size:11px;font-weight:700;color:var(--text3);padding:3px 9px;cursor:pointer;font-family:\'Outfit\',sans-serif;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--navy)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.color=\'var(--text3)\'">Draft \u203a</button>'
+          ? '<button class="tm-brief-draft-btn" data-cid="' + cid + '" title="Sparky drafts a follow-up text" onclick="event.stopPropagation();tmDraftFollowup(\'' + cid + '\')" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius: 0;font-size:11px;font-weight:700;color:var(--text3);padding:3px 9px;cursor:pointer;font-family:\'Outfit\',sans-serif;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor=\'var(--gold)\';this.style.color=\'var(--navy)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.color=\'var(--text3)\'">Draft \u203a</button>'
           : '';
         return '<div class="tm-brief-item ' + classMap[kind] + '" data-contact-id="' + cid + '" role="button" tabindex="0" style="display:flex;align-items:center;gap:8px">'
           + '<span class="tm-brief-item-dot" style="flex-shrink:0"></span>'
@@ -16969,7 +16969,7 @@ window.startVideoCall = function() {
     <div style="background:var(--bg);border-radius:var(--r-xl);padding:24px;max-width:360px;width:100%;box-shadow:var(--shadow-neu);position:relative">
       <button onclick="document.getElementById('video-call-modal').remove()" style="position:absolute;top:14px;right:14px;border:none;background:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:4px" aria-label="Close">✕</button>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <div style="width:36px;height:36px;border-radius: 0;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         </div>
         <div>
@@ -17665,7 +17665,7 @@ window.closeAddMenu = function() {
     }
     // Show spinner while waiting
     if (hintEl) hintEl.style.display = 'none';
-    if (resultsEl) resultsEl.innerHTML = '<div class="cs-spinner"><div style="width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite"></div></div>';
+    if (resultsEl) resultsEl.innerHTML = '<div class="cs-spinner"><div style="width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--navy);border-radius: 0;animation:spin .7s linear infinite"></div></div>';
     _csTimer = setTimeout(function() { runCommSearch(q.trim()); }, 320);
   };
 
