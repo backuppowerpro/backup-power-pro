@@ -89,11 +89,17 @@ html.dark button:active, html.dark .btn:active {
 
 /* ── RAISED → FLAT on click (cards, toolbars, tab chrome, modal headers) ── */
 .card:active, .tab-bar:active, .toolbar:active, .modal-header:active,
-.tab-btn:active, .kpi-card:active, .stat-card:active,
+.kpi-card:active, .stat-card:active,
 .nav-icon-btn:active, .fld-btn:active, .qa-btn:active {
   box-shadow: none !important;
   outline: 1px solid rgba(0,0,0,.25);
   outline-offset: -1px;
+}
+
+/* ── FLAT → DEPRESSED on click (tab buttons are flat — they press IN) ── */
+.tab-btn:not(.active):active {
+  box-shadow: var(--shadow-neu-inset-sm) !important;
+  transform: none !important;
 }
 
 /* ── FLAT → DEPRESSED on click (list rows, table rows, nav items, drill cards) ── */
@@ -610,12 +616,14 @@ button svg, .btn svg, .qa-btn svg, .nav-icon-btn svg {
   color: var(--text) !important;
 }
 
-/* Active/pressed → flatten + inset for tactile click */
-.btn:active, button:active, .pa-stage-chip.active, .call-filter-chip.active,
-.qa-btn:active, .pill-btn:active, .pm-step.active, .tab-btn.active,
-.kpi-card:active, .stat-card:active, .prop-card:active, .lead-card:active,
-.kanban-card:active, .photo-tile:active, [class*="-chip"]:active {
+/* .active CLASS states — permanently depressed (selected state) */
+.pa-stage-chip.active, .call-filter-chip.active, .pm-step.active, .tab-btn.active {
   box-shadow: var(--shadow-neu-inset-sm) !important;
+}
+/* Cards/tiles → FLATTEN on press (raised → flat) */
+.kpi-card:active, .stat-card:active, .prop-card:active, .lead-card:active,
+.kanban-card:active, .photo-tile:active {
+  box-shadow: none !important;
 }
 
 /* Hover lift = stronger bevel */
@@ -2545,7 +2553,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .tab-btn.active::before{ display:none!important; content:none!important }
   html.dark .tab-btn.active{ color:var(--gold)!important }
   /* Press: flatten + 1px nudge */
-  .tab-btn:active{ transform:translate(1px,1px)!important; box-shadow:var(--shadow-neu-inset-sm)!important }
+  .tab-btn:active{ transform:none!important; box-shadow:var(--shadow-neu-inset-sm)!important }
   .tab-icon{display:block!important;width:22px;height:22px;flex-shrink:0}
   /* Hide stage badge from banner — redundant with Pipeline Stage dropdown below */
   .panel-stage-badge{display:none!important}
@@ -2854,7 +2862,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .addr-dropdown{max-height:50vh!important;overflow-y:auto}
 
   /* ── TAB BUTTON ACTIVE FEEDBACK: scale press like native iOS ─── */
-  .tab-btn:active{transform:scale(.94);opacity:.8}
+  .tab-btn:active{transform:none!important;opacity:.85}
 
   /* ── BUTTON ACTIVE SCALE: kinetic feedback on all taps ──────── */
   .btn:active,.btn-primary:active,.btn-outline:active,.btn-danger:active,.btn-ghost:active{transform:scale(.97)}
