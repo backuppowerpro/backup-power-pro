@@ -49,7 +49,7 @@ serve(async (req) => {
       }
 
       // Mark invoice as paid
-      const { error: invoiceErr } = await supabase
+      const { data: invoice, error: invoiceErr } = await supabase
         .from('invoices')
         .update({
           status: 'paid',
@@ -57,10 +57,24 @@ serve(async (req) => {
           payment_method: 'Card (Stripe)',
         })
         .eq('token', token)
+        .select('proposal_id')
+        .single()
 
       if (invoiceErr) {
         console.error('stripe-webhook: failed to update invoice:', invoiceErr.message)
         // Don't return 500 — Stripe will retry. Log and continue so the payment record still gets created.
+      }
+
+      // Mark proposal as Approved now that payment is confirmed
+      if (invoice?.proposal_id) {
+        const { error: propErr } = await supabase
+          .from('proposals')
+          .update({ status: 'Approved', is_locked: true })
+          .eq('id', invoice.proposal_id)
+          .neq('status', 'Approved') // idempotent — don't overwrite if already approved
+        if (propErr) {
+          console.error('stripe-webhook: failed to approve proposal:', propErr.message)
+        }
       }
 
       // Record payment in payments table
@@ -90,11 +104,11 @@ serve(async (req) => {
 
         if (contactErr) {
           console.error('stripe-webhook: failed to fetch contact:', contactErr.message)
-        } else if (contact && (contact.stage || 1) < 9) {
+        } else if (contact && (contact.stage || 1) < 4) {
           const oldStage = contact.stage || 1
           const { error: stageErr } = await supabase
             .from('contacts')
-            .update({ stage: 9 })
+            .update({ stage: 4 })
             .eq('id', contactId)
 
           if (stageErr) {

@@ -1317,7 +1317,7 @@ async function approveProposal() {
   const ip = await getIP();
   const total = calcTotal(chosenAmp);
   const termsSnapshot = JSON.stringify({ proposal_id: P.id, proposal_token: P.token, contact_name: P.contact_name, contact_address: P.contact_address, selected_amp: chosenAmp, selected_surge: surgeOn, surge_price: surgeOn ? (P.surge_price || 375) : 0, pricing: getPrice(chosenAmp), total, scope_acknowledged: true, safety_acknowledged: true, signer_name: name, signed_at: new Date().toISOString(), ip_address: ip, user_agent: navigator.userAgent });
-  const { error } = await db.from('proposals').update({ status: 'Approved', signed_at: new Date().toISOString(), signer_name: name, safety_ack: true, selected_amp: chosenAmp, selected_surge: surgeOn, selected_pom: pomOn, total, approved_ip: ip, approved_user_agent: navigator.userAgent, approved_terms_snapshot: termsSnapshot, is_locked: true }).eq('token', P.token);
+  const { error } = await db.from('proposals').update({ signed_at: new Date().toISOString(), signer_name: name, safety_ack: true, selected_amp: chosenAmp, selected_surge: surgeOn, selected_pom: pomOn, total, approved_ip: ip, approved_user_agent: navigator.userAgent, approved_terms_snapshot: termsSnapshot }).eq('token', P.token);
   if (error) { err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.'; btn.disabled = false; approving = false; updateApproveBtn(); return; }
   P.status = 'Approved'; P.signer_name = name; P.signed_at = new Date().toISOString(); P.selected_amp = chosenAmp; P.selected_surge = surgeOn; P.selected_pom = pomOn; P.total = total; P.approved_ip = ip;
 
