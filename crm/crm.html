@@ -6028,6 +6028,7 @@ function editProposal(proposalId) {
   document.getElementById('p-twin-quad').checked = !!p.include_twin_quad;
   if (document.getElementById('p-surge-check')) document.getElementById('p-surge-check').checked = !!p.include_surge;
   if (document.getElementById('p-pom-check')) document.getElementById('p-pom-check').checked = !!p.include_pom;
+  if (document.getElementById('p-deposit-check')) document.getElementById('p-deposit-check').checked = (p.require_deposit !== false);
   document.getElementById('p-notes').value = p.notes || '';
   pClearCustomItems();
   (p.custom_items || []).forEach(item => pAddCustomItem(item.title, item.price));
