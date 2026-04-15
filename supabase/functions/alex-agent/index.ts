@@ -7,11 +7,12 @@
  *
  * Flow:
  * 1. Quo webhook fires on incoming message → hits this function
- * 2. TEST MODE: reject any number that isn't KEY_PHONE
- * 3. RETEST keyword: wipe session, trigger Alex opener
- * 4. New session: trigger Alex opener automatically (he texts first)
- * 5. Existing session: relay lead's message to Alex, send response back
- * 6. If [LEAD_COMPLETE] detected, notify Key
+ * 2. Idempotency check: reject duplicate webhook deliveries immediately
+ * 3. TEST MODE: reject any number that isn't KEY_PHONE
+ * 4. RETEST keyword: wipe session, trigger Alex opener
+ * 5. New session: trigger Alex opener automatically (he texts first)
+ * 6. Existing session: relay lead's message to Alex, send response back
+ * 7. If [LEAD_COMPLETE] detected, notify Key
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -27,7 +28,7 @@ const QUO_INTERNAL_PHONE_ID  = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi
 // Set to false when ready to go live with real leads
 const TEST_MODE = true
 
-const ALEX_AGENT_ID = 'agent_011Ca4EqNFKhLkRojPYt6uVA'  // v13 Sonnet — no em dashes, clean photo flow, ghost follow-up defined
+const ALEX_AGENT_ID = 'agent_011Ca4EqNFKhLkRojPYt6uVA'  // v13 Sonnet — no em dashes, clean photo flow
 const ALEX_ENV_ID   = 'env_01Ba8sDT1CgQrWE5bLvtvHwK'
 
 const ANTHROPIC_HEADERS = {
@@ -44,6 +45,16 @@ const CORS_HEADERS = {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
+
+async function claimMessage(supabase: any, messageId: string): Promise<boolean> {
+  // Returns true if we claimed it (first to process), false if duplicate
+  const { error } = await supabase
+    .from('alex_dedup')
+    .insert({ message_id: messageId })
+  // 23505 = unique_violation — another invocation already claimed this message
+  if (error?.code === '23505') return false
+  return true
+}
 
 async function createNewSession(supabase: any, contactPhone: string): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/sessions', {
@@ -94,7 +105,15 @@ async function clearSessions(supabase: any, contactPhone: string): Promise<void>
 }
 
 async function sendToAlex(sessionId: string, messageText: string): Promise<string> {
-  // Send user message event
+  // Get baseline event count before posting — so we don't grab a stale response
+  const beforeRes = await fetch(`https://api.anthropic.com/v1/sessions/${sessionId}/events`, {
+    headers: ANTHROPIC_HEADERS,
+  })
+  const beforeData = await beforeRes.json()
+  const beforeEvents = Array.isArray(beforeData) ? beforeData : (beforeData.events || beforeData.data || [])
+  const baselineCount = beforeEvents.length
+
+  // Post user message event
   await fetch(`https://api.anthropic.com/v1/sessions/${sessionId}/events`, {
     method: 'POST',
     headers: ANTHROPIC_HEADERS,
@@ -106,43 +125,51 @@ async function sendToAlex(sessionId: string, messageText: string): Promise<strin
     }),
   })
 
-  // Poll for response (wait for agent to finish)
+  // Poll: wait for session to go non-idle then back to idle, with new events
   let alexResponse = ''
   let attempts = 0
-  const maxAttempts = 30
+  const maxAttempts = 35
+  let seenNonIdle = false
 
   while (attempts < maxAttempts) {
     await new Promise(r => setTimeout(r, 1000))
     attempts++
 
-    const eventsRes = await fetch(`https://api.anthropic.com/v1/sessions/${sessionId}/events`, {
-      headers: ANTHROPIC_HEADERS,
-    })
-    const eventsData = await eventsRes.json()
-
     const statusRes = await fetch(`https://api.anthropic.com/v1/sessions/${sessionId}`, {
       headers: ANTHROPIC_HEADERS,
     })
     const statusData = await statusRes.json()
+    const currentStatus = statusData.status
 
-    if (statusData.status === 'idle') {
+    if (currentStatus !== 'idle') {
+      seenNonIdle = true
+      continue
+    }
+
+    // Idle — but only collect if we've seen it run, or waited long enough
+    if (seenNonIdle || attempts >= 5) {
+      const eventsRes = await fetch(`https://api.anthropic.com/v1/sessions/${sessionId}/events`, {
+        headers: ANTHROPIC_HEADERS,
+      })
+      const eventsData = await eventsRes.json()
       const events = Array.isArray(eventsData) ? eventsData : (eventsData.events || eventsData.data || [])
 
-      for (const ev of events) {
-        if (ev.type === 'agent.message') {
-          for (const c of (ev.content || [])) {
-            if (c.type === 'text') {
-              alexResponse = c.text
+      if (events.length > baselineCount) {
+        // New events present — find the last agent.message text
+        for (const ev of events) {
+          if (ev.type === 'agent.message') {
+            for (const c of (ev.content || [])) {
+              if (c.type === 'text') alexResponse = c.text
             }
           }
         }
+        break
       }
-      break
     }
   }
 
   if (!alexResponse) {
-    alexResponse = "Hey! Give me just a moment — I'll get right back to you."
+    alexResponse = 'Give me just a moment and I will be right back to you.'
   }
 
   return alexResponse
@@ -169,7 +196,7 @@ async function sendQuoMessage(to: string, content: string): Promise<void> {
 }
 
 async function notifyKey(leadPhone: string, summary: string): Promise<void> {
-  const message = `🔔 LEAD READY FOR QUOTE\n\n${summary}\n\nPhone: ${leadPhone}\nAlex collected all info — review photos and create quote.`
+  const message = `LEAD READY FOR QUOTE\n\n${summary}\n\nPhone: ${leadPhone}\nAlex collected all info. Review photos and create quote.`
   try {
     await fetch('https://api.openphone.com/v1/messages', {
       method: 'POST',
@@ -180,6 +207,17 @@ async function notifyKey(leadPhone: string, summary: string): Promise<void> {
   } catch (err) {
     console.error('[notify] Failed:', err)
   }
+}
+
+// Strip markdown and dashes from SMS text
+function cleanSms(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/\u2014/g, ',')   // em dash → comma
+    .replace(/\u2013/g, '-')   // en dash → hyphen
+    .trim()
 }
 
 // Alex's opener prompt — sent internally to trigger the first message
@@ -198,7 +236,7 @@ Deno.serve(async (req) => {
   }
 
   // ── Quo Webhook Payload ────────────────────────────────────────────────────
-  const eventType  = body?.type
+  const eventType   = body?.type
   const messageData = body?.data?.object
 
   if (eventType !== 'message.received' || !messageData) {
@@ -210,9 +248,10 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ skipped: true, reason: 'outbound' }), { status: 200, headers: CORS_HEADERS })
   }
 
-  const fromPhone  = messageData.from || ''
+  const fromPhone   = messageData.from || ''
   const messageText = (messageData.body || messageData.text || '').trim()
-  const hasMedia   = !!(messageData.media?.length)
+  const hasMedia    = !!(messageData.media?.length)
+  const quoMsgId    = messageData.id || `${fromPhone}-${messageData.createdAt || Date.now()}`
 
   // ── TEST MODE GATE ─────────────────────────────────────────────────────────
   if (TEST_MODE && fromPhone !== KEY_PHONE) {
@@ -224,12 +263,19 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ skipped: true, reason: 'empty' }), { status: 200, headers: CORS_HEADERS })
   }
 
-  console.log('[alex] Incoming from', fromPhone, ':', messageText.substring(0, 60))
+  console.log('[alex] Incoming from', fromPhone, 'id:', quoMsgId, ':', messageText.substring(0, 60))
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
+
+  // ── IDEMPOTENCY: reject duplicate webhook deliveries ───────────────────────
+  const claimed = await claimMessage(supabase, quoMsgId)
+  if (!claimed) {
+    console.log('[alex] Duplicate webhook delivery, skipping:', quoMsgId)
+    return new Response(JSON.stringify({ skipped: true, reason: 'duplicate' }), { status: 200, headers: CORS_HEADERS })
+  }
 
   // ── RETEST KEYWORD ─────────────────────────────────────────────────────────
   if (messageText.toUpperCase() === 'RETEST') {
@@ -245,8 +291,7 @@ Deno.serve(async (req) => {
     }
 
     const opener = await sendToAlex(sessionId, OPENER_PROMPT)
-    const smsOpener = opener.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/__(.*?)__/g, '$1').trim()
-    await sendQuoMessage(fromPhone, smsOpener)
+    await sendQuoMessage(fromPhone, cleanSms(opener))
     await updateLastOutbound(supabase, sessionId)
 
     return new Response(JSON.stringify({ success: true, action: 'retest', sessionId }), {
@@ -269,17 +314,14 @@ Deno.serve(async (req) => {
   }
 
   // ── NEW SESSION: Alex texts first ──────────────────────────────────────────
-  // If this is a brand-new session, send opener first, then process lead's first message
   if (isNewSession) {
     console.log('[alex] New session — sending opener first')
     const opener = await sendToAlex(sessionId, OPENER_PROMPT)
-    const smsOpener = opener.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/__(.*?)__/g, '$1').trim()
-    await sendQuoMessage(fromPhone, smsOpener)
+    await sendQuoMessage(fromPhone, cleanSms(opener))
     await updateLastOutbound(supabase, sessionId)
 
-    // If their first message was just "hi" or similar greeting, opener is enough
-    // If they included real info, process it too
-    const isJustGreeting = /^(hi|hey|hello|yo|sup|test|testing)[\s!.?]*$/i.test(messageText)
+    // If their first message was just a greeting, opener is enough
+    const isJustGreeting = /^(hi|hey|hello|yo|sup|test|testing|retest)[\s!.?]*$/i.test(messageText)
     if (isJustGreeting) {
       return new Response(JSON.stringify({ success: true, action: 'opener_sent' }), {
         status: 200,
@@ -306,7 +348,7 @@ Deno.serve(async (req) => {
     alexResponse = await sendToAlex(sessionId, alexInput)
   } catch (err) {
     console.error('[alex] Agent error:', err)
-    alexResponse = "Hey! I'm having a little trouble right now — Key will follow up with you shortly."
+    alexResponse = "I am having a little trouble right now. Key will follow up with you shortly."
   }
 
   // ── CHECK FOR [LEAD_COMPLETE] ──────────────────────────────────────────────
@@ -324,19 +366,8 @@ Deno.serve(async (req) => {
 
   // ── SEND RESPONSE VIA QUO ──────────────────────────────────────────────────
   if (alexResponse) {
-    const smsText = alexResponse
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/__(.*?)__/g, '$1')
-      .trim()
-
-    await sendQuoMessage(fromPhone, smsText)
+    await sendQuoMessage(fromPhone, cleanSms(alexResponse))
     await updateLastOutbound(supabase, sessionId)
-
-    await supabase.from('messages').insert([
-      { contact_id: null, direction: 'inbound',  body: messageText, sender: 'customer', phone: fromPhone },
-      { contact_id: null, direction: 'outbound', body: smsText,    sender: 'alex',     phone: fromPhone },
-    ]).catch(() => {})
   }
 
   return new Response(JSON.stringify({ success: true, sessionId }), {
