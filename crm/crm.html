@@ -2777,6 +2777,16 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
               <span style="flex:1">Panel space (twin/quad)</span>
               <span style="font-weight:600;color:var(--text2)">+$129</span>
             </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
+              <input type="checkbox" id="p-pom-check" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
+              <span style="flex:1">Peace of Mind Package</span>
+              <span style="font-weight:600;color:var(--text2)">+$447</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
+              <input type="checkbox" id="p-deposit-check" checked onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
+              <span style="flex:1">Require deposit to book</span>
+              <span style="font-weight:600;color:var(--gold)" id="p-deposit-lbl">50% = $598</span>
+            </label>
           </div>
         </div>
 
@@ -5906,9 +5916,12 @@ function pRecalc() {
   const primary = pBuildPricing(amps[0]);
   const pomChecked = document.getElementById('p-pom-check')?.checked || false;
   const surgeChecked = document.getElementById('p-surge-check')?.checked || false;
+  const depositChecked = document.getElementById('p-deposit-check')?.checked ?? true;
   const customTotal = pCustomItemsTotal ? pCustomItemsTotal() : 0;
-  const displayTotal = primary.total + (pomChecked ? 97 : 0) + customTotal;
+  const displayTotal = primary.total + (pomChecked ? (QB_S.pom || 447) : 0) + customTotal;
   document.getElementById('p-total').textContent = '$' + displayTotal.toLocaleString();
+  const depositLbl = document.getElementById('p-deposit-lbl');
+  if (depositLbl) depositLbl.textContent = depositChecked ? '50% = $' + Math.round(displayTotal * 0.5).toLocaleString() : 'Full balance at service';
   document.getElementById('p-profit').textContent = '$' + primary.profit.toLocaleString();
   document.getElementById('p-profit').style.color = primary.profit >= 500 ? 'var(--green)' : 'var(--gold)';
   if (pAmpType === 'both') {
@@ -6065,6 +6078,7 @@ async function saveProposal() {
   const cordIncluded = document.getElementById('p-cord-check').checked;
   const surgeIncluded = false; // surge is always offered as customer-facing toggle on proposal
   const pomIncluded = document.getElementById('p-pom-check')?.checked || false;
+  const depositRequired = document.getElementById('p-deposit-check')?.checked ?? true;
 
   const pricing30 = pBuildPricing('30');
   const pricing50 = pBuildPricing('50');
@@ -6084,6 +6098,7 @@ async function saveProposal() {
     include_twin_quad:    document.getElementById('p-twin-quad').checked,
     include_surge:   surgeIncluded,
     include_pom:     pomIncluded,
+    require_deposit: depositRequired,
     pricing_30:      pricing30,
     pricing_50:      pricing50,
     surge_price:     QB_S.surge,
