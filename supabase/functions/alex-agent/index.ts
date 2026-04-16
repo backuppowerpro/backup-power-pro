@@ -36,7 +36,8 @@ const MODEL = 'claude-opus-4-6'
 const MAX_TOKENS       = 250   // SMS — keep responses tight
 const MAX_HISTORY_MSGS = 30    // Trim beyond this to prevent token overflow (~15 exchanges)
 const MAX_TOOL_LOOPS   = 5     // Safety valve — prevent infinite agentic loops
-const MAX_SMS_CHARS    = 320   // Hard SMS truncation if Claude exceeds prompt instruction
+const MAX_SMS_CHARS    = 480   // Soft cap — let Alex finish his thought rather than cut mid-sentence
+                               // Standard SMS is 160 chars but most phones concatenate up to 3 segments (480)
 const MAX_MSGS_PER_HOUR = 8    // Per-phone rate limit — prevents abuse / API cost spikes
 
 const CORS = {
