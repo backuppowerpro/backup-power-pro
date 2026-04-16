@@ -211,19 +211,22 @@ PYEOF
 # ── Build synthesis prompt ──
 PROMPT="You are the CEO brain of Backup Power Pro (BPP), a generator inlet installation business in Upstate SC owned by Key Goodson.
 
-Today is $TODAY. You have today's live metrics AND multi-week trend data. Write a CEO Morning Brief that thinks in trajectories — not snapshots. Where is each metric heading? What does that trajectory mean for the business? When should we recalibrate what 'good' looks like?
+Today is $TODAY. You have today's live metrics AND multi-week trend data.
 
-Rules:
-- If CPL has been dropping consistently, don't say 'CPL is under target' — say the floor is moving and what new ceiling makes sense
-- If close rate is declining, that's a crisis signal even if the number still looks OK
-- Connect the dots: ad performance → site traffic → pipeline → revenue
-- Surface the 1-2 decisions Key should make TODAY given where things are heading
-- If any permit is Ready to Pay, call it out — it costs money to sit on it
-- End with 'What I'd tackle first:' and one specific action
-- Max 280 words. Confident operating partner tone. No bullet dumps.
+Write two things and return them as a JSON object:
+
+1. \"brief\" — full CEO morning brief (~280 words). Thinks in trajectories, not snapshots. Where is each metric heading? Connect ad performance → site traffic → pipeline → revenue. Surface the 1-2 decisions Key should make TODAY. End with 'What I'd tackle first:' and one specific action. Confident operating partner tone. No bullet dumps.
+
+2. \"sms\" — the SAME brief formatted for SMS text message. Plain text only (no markdown, no asterisks). Max 1600 chars. This will be texted directly to Key — make it punchy and readable on a phone screen. Start with BPP $TODAY, then the brief content, end with 'Tackle first: [action]'
+
+Rules for both:
+- If CPL dropping consistently: don't say 'under target' — say floor is moving and what new ceiling makes sense
+- If close rate declining: treat as crisis signal even if number still looks OK
+- If any permit is Ready to Pay, call it out first — it costs money to sit on
+- Recalibrate targets based on actual trends
 
 Business context:
-- Original CPL target was under \$30 — recalibrate if trends warrant it
+- CPL target: under \$30 (recalibrate if trends warrant)
 - Close rate target: 35-40% | Min job price: \$1,197
 - Stage 3 trigger: installs exceed solo capacity (2-3/wk now, max 5/wk)
 - Geography: Greenville, Spartanburg, Pickens only
@@ -243,7 +246,10 @@ $(echo "$META_DATA" | head -35)
 $(echo "$CRM_DATA" | head -35)
 
 --- PERMIT STATUS ---
-${PERMIT_DATA:-No active permits or permit check unavailable}"
+${PERMIT_DATA:-No active permits or permit check unavailable}
+
+Respond with ONLY a JSON object, no other text:
+{\"brief\": \"...\", \"sms\": \"...\"}"
 
 # ── Call Claude ──
 PROMPT_FILE=$(mktemp /tmp/bpp-ceo-prompt.XXXXXX)
@@ -254,7 +260,7 @@ import json
 prompt = open('$PROMPT_FILE').read()
 payload = {
     'model': 'claude-haiku-4-5',
-    'max_tokens': 500,
+    'max_tokens': 1200,
     'messages': [{'role': 'user', 'content': prompt}]
 }
 print(json.dumps(payload))
@@ -268,50 +274,83 @@ RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
   -d "@$REQUEST_FILE")
 rm -f "$REQUEST_FILE"
 
-BRIEF=$(echo "$RESPONSE" | python3 -c "
+RAW_TEXT=$(echo "$RESPONSE" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
     print(d['content'][0]['text'])
 except Exception as e:
-    print('Brief unavailable: ' + str(e))
+    print('ERROR: ' + str(e))
 ")
 
-if [ -z "$BRIEF" ] || echo "$BRIEF" | grep -q "Brief unavailable"; then
-  echo "[synthesize-ceo-brief] Claude synthesis failed" >&2; exit 1
+# ── Parse structured JSON from Claude ──
+PARSE_RESULT=$(python3 - <<PYEOF
+import json, re, sys
+
+raw = """$RAW_TEXT"""
+
+# Extract JSON object from response
+m = re.search(r'\{[\s\S]*\}', raw)
+if not m:
+    print('PARSE_FAIL')
+    sys.exit(0)
+
+try:
+    obj = json.loads(m.group(0))
+    brief = obj.get('brief', '')
+    sms   = obj.get('sms', brief)  # fallback to brief if sms missing
+    if not brief:
+        print('PARSE_FAIL')
+        sys.exit(0)
+    print('PARSE_OK')
+    print(json.dumps({'brief': brief, 'sms': sms}))
+except Exception as e:
+    print('PARSE_FAIL')
+PYEOF
+)
+
+PARSE_STATUS=$(echo "$PARSE_RESULT" | head -1)
+if [ "$PARSE_STATUS" != "PARSE_OK" ]; then
+  echo "[synthesize-ceo-brief] JSON parse failed — response: ${RAW_TEXT:0:200}" >&2; exit 1
 fi
 
-# ── Write brief to Supabase ──
-BRIEF_JSON=$(python3 -c "
+PARSED_JSON=$(echo "$PARSE_RESULT" | tail -1)
+
+BRIEF=$(python3 -c "import json,sys; d=json.loads(sys.stdin.read()); print(d['brief'])" <<< "$PARSED_JSON")
+BRIEF_SMS=$(python3 -c "import json,sys; d=json.loads(sys.stdin.read()); print(d['sms'])" <<< "$PARSED_JSON")
+
+# ── Write brief to Supabase sparky_memory ──
+BRIEF_SAVE=$(python3 -c "
 import json, sys
 brief = sys.stdin.read()
 print(json.dumps({'key': 'ceo_morning_brief', 'value': brief}))
 " <<< "$BRIEF")
 
-sb_upsert "$BRIEF_JSON"
+sb_upsert "$BRIEF_SAVE"
 
-# ── Also write to Sparky inbox → CRM notification + Twilio ping to Key ──
-# Short summary with the key numbers. Full brief is in the Briefing card below.
-INBOX_SUMMARY="Morning brief ready — CPL \$$META_CPL | $META_LEADS leads this week | Pipeline \$$CRM_PIPELINE"
-[ -n "$CRM_CLOSE" ] && INBOX_SUMMARY="$INBOX_SUMMARY | Close rate $CRM_CLOSE%"
-
-# Extract "What I'd tackle first:" line from brief as suggested action
+# ── Write to Sparky inbox ──
+# Inbox card is compact (Key already has full brief in SMS)
+# Extract "What I'd tackle first:" line as suggested action
 TACKLE=$(echo "$BRIEF" | grep -A2 "What I.d tackle first" | tail -1 | sed 's/^[[:space:]]*//')
-[ -z "$TACKLE" ] && TACKLE="See full briefing in the Briefing section below."
+[ -z "$TACKLE" ] && TACKLE="See CRM for details."
+
+INBOX_SUMMARY="Morning brief — CPL \$$META_CPL | $META_LEADS leads | Pipeline \$$CRM_PIPELINE | Close $CRM_CLOSE%"
 
 INBOX_JSON=$(python3 -c "
-import json
+import json, sys
+sms = sys.stdin.read()
 print(json.dumps({
   'agent': 'brief',
   'priority': 'normal',
-  'summary': '''$INBOX_SUMMARY''',
-  'suggested_action': '''$TACKLE'''
+  'summary': '$INBOX_SUMMARY',
+  'suggested_action': '$TACKLE',
+  'sms_body': sms
 }))
-")
+" <<< "$BRIEF_SMS")
 
 curl -s -X POST "$SUPABASE_URL/functions/v1/sparky-notify" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" \
   -d "$INBOX_JSON" > /dev/null
 
-echo "[synthesize-ceo-brief] CEO brief + snapshot + inbox written ($TODAY $TS) — CPL=\$$META_CPL leads=$META_LEADS pipeline=\$$CRM_PIPELINE"
+echo "[synthesize-ceo-brief] Brief sent ($TODAY $TS) — CPL=\$$META_CPL leads=$META_LEADS pipeline=\$$CRM_PIPELINE"

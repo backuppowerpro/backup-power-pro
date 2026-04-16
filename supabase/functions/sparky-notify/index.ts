@@ -33,11 +33,17 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
 }
 
-async function pingKeyViaSms(summary: string, priority: string): Promise<void> {
-  const prefix = priority === 'urgent' ? '🚨 Sparky' : 'Sparky'
-  // Truncate summary so SMS stays short
-  const short = summary.length > 120 ? summary.slice(0, 117) + '...' : summary
-  const body = `${prefix}: ${short}\n\nOpen CRM → Sparky tab.`
+async function pingKeyViaSms(summary: string, priority: string, smsBodyOverride?: string): Promise<void> {
+  let body: string
+  if (smsBodyOverride) {
+    // Full-text mode (morning brief) — send as-is, no truncation
+    body = smsBodyOverride
+  } else {
+    // Short ping mode (all other agents) — truncate to 120 chars
+    const prefix = priority === 'urgent' ? '🚨 Sparky' : 'Sparky'
+    const short = summary.length > 120 ? summary.slice(0, 117) + '...' : summary
+    body = `${prefix}: ${short}\n\nOpen CRM → Sparky tab.`
+  }
 
   const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
   const resp = await fetch(
@@ -55,7 +61,7 @@ async function pingKeyViaSms(summary: string, priority: string): Promise<void> {
     const err = await resp.text()
     console.error('[sparky-notify] Twilio SMS failed:', err)
   } else {
-    console.log('[sparky-notify] Pinged Key:', short.slice(0, 60))
+    console.log('[sparky-notify] Pinged Key:', body.slice(0, 60))
   }
 }
 
@@ -68,7 +74,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'invalid json' }), { status: 400, headers: CORS })
   }
 
-  const { agent, contact_id, priority = 'normal', summary, draft_reply, suggested_action } = body || {}
+  const { agent, contact_id, priority = 'normal', summary, draft_reply, suggested_action, sms_body } = body || {}
 
   if (!agent || !summary) {
     return new Response(JSON.stringify({ error: 'agent and summary required' }), { status: 400, headers: CORS })
@@ -99,7 +105,7 @@ Deno.serve(async (req) => {
   }
 
   // 2. Ping Key via Twilio SMS (fire-and-forget — don't delay response)
-  pingKeyViaSms(summary, priority).catch(err => console.error('[sparky-notify] SMS unhandled:', err))
+  pingKeyViaSms(summary, priority, sms_body || undefined).catch(err => console.error('[sparky-notify] SMS unhandled:', err))
 
   return new Response(JSON.stringify({ ok: true, inbox_id: item.id }), {
     status: 200,

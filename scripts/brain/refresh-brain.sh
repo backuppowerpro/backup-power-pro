@@ -16,6 +16,7 @@ echo "=== brain refresh @ $TODAY $TS ===" > "$LOG_FILE"
 # Run each fetcher, capture the one-line summary it prints
 META_OUT=""; POSTHOG_OUT=""; CRM_OUT=""; QUO_OUT=""; PERMIT_OUT=""
 META_STATUS="OK"; POSTHOG_STATUS="OK"; CRM_STATUS="OK"; QUO_STATUS="OK"; PERMIT_STATUS="OK"
+BRIEF_STATUS="(runs at 6:50am)"
 
 if META_OUT=$(bash "$BRAIN_DIR/fetch-meta.sh" 2>&1); then
   echo "$META_OUT" >> "$LOG_FILE"
@@ -45,28 +46,19 @@ else
   echo "QUO FAILED: $QUO_OUT" >> "$LOG_FILE"
 fi
 
-# Permit check runs here so results are ready for the brief
+# Permit check runs here so permit data is fresh in /tmp for the 6:50am brief
 if PERMIT_OUT=$(bash "$BRAIN_DIR/fetch-permits.sh" 2>&1); then
   echo "$PERMIT_OUT" >> "$LOG_FILE"
 else
   PERMIT_STATUS="FAIL"
   echo "PERMITS FAILED: $PERMIT_OUT" >> "$LOG_FILE"
 fi
-
-# Synthesize CEO morning brief from all fetched data
-BRIEF_OUT=""; BRIEF_STATUS="OK"
-if BRIEF_OUT=$(bash "$BRAIN_DIR/synthesize-ceo-brief.sh" 2>&1); then
-  echo "$BRIEF_OUT" >> "$LOG_FILE"
-else
-  BRIEF_STATUS="FAIL"
-  echo "BRIEF FAILED: $BRIEF_OUT" >> "$LOG_FILE"
-fi
+# Brief synthesis runs at 6:50am via com.bpp.brain-brief.plist (separate LaunchAgent)
 
 END=$(date +%s)
 DURATION=$((END - START))
 
 # Build a compact one-line summary for 00 Log.md
-# Try to extract key numbers from the outputs
 META_LINE=$(echo "$META_OUT" | tail -1)
 POSTHOG_LINE=$(echo "$POSTHOG_OUT" | tail -1)
 CRM_LINE=$(echo "$CRM_OUT" | tail -1)
@@ -101,11 +93,12 @@ cat >> "$WIKI_LOG" <<EOF
 - **CRM**: $CRM_STATUS — $CRM_LINE
 - **Quo**: $QUO_STATUS — $QUO_LINE
 - **Permits**: $PERMIT_STATUS — $PERMIT_LINE
+- **Brief**: $BRIEF_STATUS
 - See [[Ads/Meta Performance]], [[Website/Site Analytics]], [[CRM/CRM Usage]], [[CRM/Quo Conversations]]
 EOF
 
 echo "=== refresh complete in ${DURATION}s ===" >> "$LOG_FILE"
-echo "[refresh-brain] done in ${DURATION}s (meta=$META_STATUS posthog=$POSTHOG_STATUS crm=$CRM_STATUS quo=$QUO_STATUS)"
+echo "[refresh-brain] done in ${DURATION}s (meta=$META_STATUS posthog=$POSTHOG_STATUS crm=$CRM_STATUS quo=$QUO_STATUS permits=$PERMIT_STATUS)"
 
 # Exit 0 even if some fetchers failed — we want launchd to keep scheduling
 exit 0
