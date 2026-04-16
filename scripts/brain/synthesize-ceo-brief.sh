@@ -282,4 +282,28 @@ print(json.dumps({'key': 'ceo_morning_brief', 'value': brief}))
 
 sb_upsert "$BRIEF_JSON"
 
-echo "[synthesize-ceo-brief] CEO brief + snapshot written ($TODAY $TS) — CPL=\$$META_CPL leads=$META_LEADS pipeline=\$$CRM_PIPELINE"
+# ── Also write to Sparky inbox → CRM notification + Twilio ping to Key ──
+# Short summary with the key numbers. Full brief is in the Briefing card below.
+INBOX_SUMMARY="Morning brief ready — CPL \$$META_CPL | $META_LEADS leads this week | Pipeline \$$CRM_PIPELINE"
+[ -n "$CRM_CLOSE" ] && INBOX_SUMMARY="$INBOX_SUMMARY | Close rate $CRM_CLOSE%"
+
+# Extract "What I'd tackle first:" line from brief as suggested action
+TACKLE=$(echo "$BRIEF" | grep -A2 "What I.d tackle first" | tail -1 | sed 's/^[[:space:]]*//')
+[ -z "$TACKLE" ] && TACKLE="See full briefing in the Briefing section below."
+
+INBOX_JSON=$(python3 -c "
+import json
+print(json.dumps({
+  'agent': 'brief',
+  'priority': 'normal',
+  'summary': '''$INBOX_SUMMARY''',
+  'suggested_action': '''$TACKLE'''
+}))
+")
+
+curl -s -X POST "$SUPABASE_URL/functions/v1/sparky-notify" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  -d "$INBOX_JSON" > /dev/null
+
+echo "[synthesize-ceo-brief] CEO brief + snapshot + inbox written ($TODAY $TS) — CPL=\$$META_CPL leads=$META_LEADS pipeline=\$$CRM_PIPELINE"
