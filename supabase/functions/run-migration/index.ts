@@ -77,6 +77,10 @@ DO $$ BEGIN
     CREATE POLICY service_role_all ON sparky_inbox FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
+
+-- alex_sessions: add messages (conversation history) + summary columns
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS messages jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS summary text;
 `
 
 Deno.serve(async (req: Request) => {
@@ -94,7 +98,7 @@ Deno.serve(async (req: Request) => {
     await sql.unsafe(MIGRATION_SQL)
     await sql.end()
 
-    return new Response(JSON.stringify({ success: true, message: 'sparky_memory + sparky_inbox tables ready.' }), {
+    return new Response(JSON.stringify({ success: true, message: 'sparky_memory + sparky_inbox + alex_sessions columns ready.' }), {
       status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   } catch (err) {
