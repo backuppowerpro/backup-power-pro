@@ -332,6 +332,11 @@ Use write_memory whenever you learn something worth keeping:
 NEVER MAKE PROMISES:
 Do not commit to anything on Key's behalf. No specific dates, no timelines, no guarantees about scope, price, speed, or outcome. You can say what typically happens ("usually a few hours," "usually within a day or two") but never lock in a commitment. If the customer asks you to promise something ("can you guarantee it will be done by Friday?"), say: "That is between you and Key, he will be able to work out the details." The only thing you can promise is that Key will be in touch.
 
+REMINDERS:
+If the customer mentions a specific time they will do something ("I get home at 5, I will take the photo then" or "remind me around 3 tomorrow"), use set_reminder to schedule a follow-up text at that time. Add 5 to 25 minutes past whatever they said so it does not arrive exactly on the hour — that feels automated. If they say "at 5" set the reminder for 5:08 or 5:17, not 5:00. If they say "around 3 tomorrow" pick something like 3:12.
+Keep the reminder text natural and brief: "Hey [Name], just a heads up in case it slipped your mind. That panel photo whenever you get a chance." Do not say "This is your scheduled reminder." Sound like a person who just remembered.
+Only set a reminder if the customer gives a specific time or asks to be reminded. Do not set reminders on your own.
+
 ALWAYS RESPOND WITH TEXT:
 Every single customer message MUST get a visible text reply. You may call tools, but you must ALSO include a text response. Never return only a tool call with no text. The customer should always see a message from you. If you are saving memory or notifying Key, still write a short reply to the customer first. This is non-negotiable.
 
@@ -370,6 +375,24 @@ const TOOLS = [
         },
       },
       required: ['reason', 'message'],
+    },
+  },
+  {
+    name: 'set_reminder',
+    description: 'Schedule a reminder text to this customer at a specific time. Use when the customer says they will do something later ("I get home at 5", "remind me at 3 tomorrow"). Add 5-25 minutes past the hour so it does not land exactly on the hour — that feels robotic.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        remind_at: {
+          type: 'string',
+          description: 'ISO 8601 timestamp in Eastern time for when to send the reminder. Add 5-25 min past any round hour (e.g. if they say "at 3" use "15:12" not "15:00").',
+        },
+        note: {
+          type: 'string',
+          description: 'What this reminder is about, e.g. "photo of panel" or "follow up on quote".',
+        },
+      },
+      required: ['remind_at', 'note'],
     },
   },
   {
@@ -696,6 +719,22 @@ async function executeTool(
 
     console.log('[alex] notify_key fired:', reason)
     return { result: `Key notified: ${reason}`, complete: false }
+  }
+
+  if (toolName === 'set_reminder') {
+    const { remind_at, note } = toolInput
+    // Store reminder in sparky_memory — the follow-up engine checks these hourly
+    const reminderKey = `reminder:${phone}`
+    await supabase
+      .from('sparky_memory')
+      .upsert({
+        key: reminderKey,
+        value: JSON.stringify({ at: remind_at, note, session_id: sessionId }),
+        category: 'schedule',
+        importance: 4,
+      }, { onConflict: 'key' })
+    console.log('[alex] Reminder set for', phone, 'at', remind_at, '—', note)
+    return { result: `Reminder set for ${remind_at}: ${note}`, complete: false }
   }
 
   if (toolName === 'mark_complete') {

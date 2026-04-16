@@ -175,15 +175,78 @@ async function sendSms(to: string, content: string): Promise<boolean> {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
 
-  if (!isInWindow()) {
-    console.log('[followup] Outside window, skipping')
-    return new Response(JSON.stringify({ skipped: true, reason: 'outside_hours' }), { status: 200, headers: CORS })
-  }
-
   const db = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
+
+  // ── Customer-requested reminders ──────────────────────────────────────────
+  // Alex sets these via set_reminder tool when customer says "remind me at 5"
+  // Fires regardless of follow-up window since the customer asked for this time.
+  {
+    const now = new Date().toISOString()
+    const { data: reminders } = await db
+      .from('sparky_memory')
+      .select('key, value')
+      .eq('category', 'schedule')
+      .like('key', 'reminder:%')
+
+    for (const rem of reminders || []) {
+      try {
+        const data = JSON.parse(rem.value)
+        if (!data.at || new Date(data.at).toISOString() > now) continue  // not due yet
+
+        const phone = rem.key.replace('reminder:', '')
+        // Look up the session to make sure it's still active
+        const { data: sess } = await db
+          .from('alex_sessions')
+          .select('session_id, messages, alex_active, status')
+          .eq('session_id', data.session_id)
+          .maybeSingle()
+
+        if (!sess || sess.status !== 'active' || !sess.alex_active) {
+          // Session is done, delete the stale reminder
+          await db.from('sparky_memory').delete().eq('key', rem.key)
+          continue
+        }
+
+        // Look up name for personalization
+        const digits = phone.replace(/\D/g, '').slice(-10)
+        const { data: contacts } = await db
+          .from('contacts')
+          .select('name')
+          .ilike('phone', `%${digits}`)
+          .limit(1)
+        const firstName = contacts?.[0]?.name?.split(' ')?.[0] || ''
+        const hi = firstName ? `Hey ${firstName}, j` : 'J'
+
+        const reminderMsg = `${hi}ust a heads up in case it slipped your mind. That panel photo whenever you get a chance.`
+
+        const sent = await sendSms(phone, reminderMsg)
+        if (sent) {
+          const msgs = [...(sess.messages || []), { role: 'assistant', content: reminderMsg }]
+          await db.from('alex_sessions').update({
+            messages: msgs,
+            last_outbound_at: now,
+          }).eq('session_id', data.session_id)
+          console.log(`[followup] Reminder fired for ${phone}: ${data.note}`)
+        }
+
+        // Delete the reminder regardless (one-shot)
+        await db.from('sparky_memory').delete().eq('key', rem.key)
+      } catch (err) {
+        console.error('[followup] Reminder error:', rem.key, err)
+        // Delete broken reminders
+        await db.from('sparky_memory').delete().eq('key', rem.key)
+      }
+    }
+  }
+
+  // ── Window check (follow-ups only send during business hours) ───────────
+  if (!isInWindow()) {
+    console.log('[followup] Outside window, skipping follow-ups (reminders still fire above)')
+    return new Response(JSON.stringify({ ok: true, reminders_checked: true, reason: 'outside_hours' }), { status: 200, headers: CORS })
+  }
 
   // ── Morning photo reminder ──────────────────────────────────────────────
   // If a lead was contacted after dark last night and hasn't sent a photo yet,
