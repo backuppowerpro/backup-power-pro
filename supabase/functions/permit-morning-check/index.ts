@@ -14,6 +14,27 @@ const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!
 const TWILIO_FROM = '+18648637800'
 const KEY_CELL = '+19414417996'
 const FIRECRAWL_KEY = Deno.env.get('FIRECRAWL_API_KEY')!
+
+// Report a permit event to Sparky inbox (shows in CRM + pings Key via SMS)
+async function reportToSparky(
+  contactId: string,
+  priority: 'urgent' | 'normal' | 'fyi',
+  summary: string,
+  suggestedAction?: string,
+): Promise<void> {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/sparky-notify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+      body: JSON.stringify({ agent: 'permit', contact_id: contactId, priority, summary, suggested_action: suggestedAction }),
+    })
+  } catch (err) {
+    console.error('[permit] reportToSparky failed:', err)
+  }
+}
 const GVL_USER = Deno.env.get('PERMIT_GVL_USER')!  // AEC001822
 const GVL_PASS = Deno.env.get('PERMIT_GVL_PASS')!  // stored in Supabase secrets
 const ETRAKIT_URL = 'https://grvlc-trk.aspgov.com/eTRAKiT/'
@@ -226,13 +247,37 @@ Deno.serve(async (_req) => {
           if (!updateErr) {
             autoUpdated.push(c.name || c.address || 'Unknown')
             console.log(`Auto-updated ${c.name}: ready_to_pay`)
+            // Urgent inbox item — needs payment today
+            reportToSparky(
+              c.id,
+              'urgent',
+              `${c.name || c.address} permit is Ready to Pay${match.permitNum ? ' (' + match.permitNum + ')' : ''}.`,
+              'Go to contact → Permit tab → mark Ready to Pay, then pay the fee.'
+            ).catch(() => {})
           }
         } else {
           stillPending.push(`${c.name || c.address} (Day ${daysSub}, ${match.status})`)
+          // Only surface to inbox if it's been pending a while (5+ days)
+          if (daysSub >= 5) {
+            reportToSparky(
+              c.id,
+              'fyi',
+              `${c.name || c.address} permit still pending — Day ${daysSub}. Portal status: ${match.status}.`,
+              'No action needed yet unless days keep climbing.'
+            ).catch(() => {})
+          }
         }
       } else {
         // Not found on dashboard — still in review
         stillPending.push(`${c.name || c.address} (Day ${daysSub})`)
+        if (daysSub >= 5) {
+          reportToSparky(
+            c.id,
+            'fyi',
+            `${c.name || c.address} permit not found on portal — Day ${daysSub} since submitted.`,
+            'May still be in review. No action unless it hits Day 7+'
+          ).catch(() => {})
+        }
       }
     }
   }
@@ -255,6 +300,15 @@ Deno.serve(async (_req) => {
     const names = manualQueue.map(c => {
       const d = pmRead(c.install_notes || '', 'psub')
       const days = d ? Math.floor((Date.now() - new Date(d).getTime()) / 86400000) : 0
+      // Only surface to inbox on Day 3 and Day 7 to avoid daily noise
+      if (days === 3 || days >= 7) {
+        reportToSparky(
+          c.id,
+          days >= 7 ? 'normal' : 'fyi',
+          `${c.name || c.address} permit needs a manual status call — Day ${days}. Jurisdiction doesn't have an online portal.`,
+          'Call the jurisdiction to check permit status.'
+        ).catch(() => {})
+      }
       return `${c.name || c.address} (Day ${days})`
     })
     lines.push(`📞 Call to check: ${names.join(', ')}`)
