@@ -185,6 +185,57 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
+  // ── Morning photo reminder ──────────────────────────────────────────────
+  // If a lead was contacted after dark last night and hasn't sent a photo yet,
+  // send a gentle morning nudge at 9-10 AM so they don't forget.
+  const eastern = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const currentHour = eastern.getHours()
+
+  if (currentHour >= 9 && currentHour < 10) {
+    // Find sessions created last night (7 PM - 7 AM) with no photo and no customer reply
+    const lastNight7pm = new Date(eastern)
+    lastNight7pm.setHours(currentHour >= 9 ? -5 : 19, 0, 0, 0)  // previous day 7 PM
+    const thismorning7am = new Date(eastern)
+    thismorning7am.setHours(7, 0, 0, 0)
+
+    const { data: nightLeads } = await db
+      .from('alex_sessions')
+      .select('session_id, phone, messages, photo_received, customer_last_msg_at, followup_count')
+      .eq('status', 'active')
+      .eq('alex_active', true)
+      .eq('photo_received', false)
+      .eq('followup_count', 0)
+      .gte('created_at', lastNight7pm.toISOString())
+      .lte('created_at', thismorning7am.toISOString())
+
+    for (const lead of nightLeads || []) {
+      // Skip if customer already replied
+      if (lead.customer_last_msg_at) continue
+
+      // Look up name
+      const digits = (lead.phone || '').replace(/\D/g, '').slice(-10)
+      const { data: contacts } = await db
+        .from('contacts')
+        .select('name')
+        .ilike('phone', `%${digits}`)
+        .limit(1)
+      const firstName = contacts?.[0]?.name?.split(' ')?.[0] || ''
+      const hi = firstName ? `Hey ${firstName}, g` : 'G'
+
+      const reminder = `${hi}ood morning. Whenever you get a chance today, a photo of that electrical panel with the door open is all Key needs to get your quote started.`
+
+      const sent = await sendSms(lead.phone, reminder)
+      if (sent) {
+        const msgs = [...(lead.messages || []), { role: 'assistant', content: reminder }]
+        await db.from('alex_sessions').update({
+          messages: msgs,
+          last_outbound_at: new Date().toISOString(),
+        }).eq('session_id', lead.session_id)
+        console.log('[followup] Morning photo reminder sent to', lead.phone)
+      }
+    }
+  }
+
   // Expire sessions older than 30 days using created_at (handles NULL last_outbound_at)
   await db
     .from('alex_sessions')

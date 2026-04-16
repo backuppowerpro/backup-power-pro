@@ -34,13 +34,46 @@ const CORS = {
 
 type Variant = 'A' | 'B' | 'C'
 
+function isLateNight(): boolean {
+  const eastern = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const h = eastern.getHours()
+  return h >= 20 || h < 7  // 8 PM to 7 AM
+}
+
+function isDark(): boolean {
+  const eastern = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const h = eastern.getHours()
+  return h >= 19 || h < 7  // after 7 PM or before 7 AM — too dark for a good panel photo
+}
+
 function getOpenerMessages(variant: Variant, firstName: string): string[] {
   const name = firstName || ''
   const hi = name ? `Hey ${name}` : 'Hey'
+  const late = isLateNight()
+  const dark = isDark()
 
+  // Late night: acknowledge the hour, defer the photo ask to morning
+  if (late && dark) {
+    switch (variant) {
+      case 'A':
+        return [
+          `${hi}, this is Alex with Backup Power Pro. Appreciate you reaching out, happy to help get things started.`,
+        ]
+      case 'B':
+        return [
+          `${hi}, this is Alex with Backup Power Pro. Appreciate you reaching out.`,
+          `Key, our electrician, will need a photo of your electrical panel with the door open to get your quote started. No rush at all, when it is bright out in the morning will work perfectly.`,
+        ]
+      case 'C':
+        return [
+          `${hi}, this is Alex with Backup Power Pro. Thanks for filling out the form. Key, our electrician, will need a photo of your electrical panel to get your quote going. Whenever it is bright out tomorrow morning works great, no rush on our end.`,
+        ]
+    }
+  }
+
+  // Daytime: standard openers
   switch (variant) {
     case 'A':
-      // Warm greeting only — no ask. Photo request comes naturally when they reply.
       return [
         `${hi}, this is Alex with Backup Power Pro. Appreciate you reaching out, happy to help get things started.`,
       ]
