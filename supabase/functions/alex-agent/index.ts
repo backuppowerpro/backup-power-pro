@@ -677,6 +677,8 @@ async function executeTool(
         .from('alex_sessions')
         .update({ opted_out: true, alex_active: false, status: 'opted_out' })
         .eq('session_id', sessionId)
+      // Cancel any pending reminder
+      await supabase.from('sparky_memory').delete().eq('key', `reminder:${phone}`)
     }
     const priority = priorityMap[reason] || 'normal'
 
@@ -737,11 +739,16 @@ async function executeTool(
     return { result: `Reminder set for ${remind_at}: ${note}`, complete: false }
   }
 
+  // When customer sends a photo or completes the task, cancel any pending reminder
+  // (handled below in the photo detection block — this comment is for clarity)
+
   if (toolName === 'mark_complete') {
     await supabase
       .from('alex_sessions')
       .update({ status: 'complete', summary: toolInput.summary, alex_active: false })
       .eq('session_id', sessionId)
+    // Cancel any pending reminder — session is done
+    await supabase.from('sparky_memory').delete().eq('key', `reminder:${phone}`)
     return { result: 'Marked complete', complete: true, summary: toolInput.summary }
   }
 
@@ -1303,6 +1310,9 @@ Deno.serve(async (req) => {
     await supabase.from('alex_sessions')
       .update({ photo_received: true })
       .eq('session_id', session.id)
+
+    // Cancel any pending reminder — they already sent the photo, no need to nag
+    await supabase.from('sparky_memory').delete().eq('key', `reminder:${fromPhone}`)
   }
   messages.push({ role: 'user', content: userText })
 
@@ -1366,6 +1376,9 @@ Deno.serve(async (req) => {
     .from('alex_sessions')
     .update({ followup_count: 0, last_followup_at: null })
     .eq('session_id', session.id)
+
+  // Cancel any pending reminder — they replied, no need to nag
+  await supabase.from('sparky_memory').delete().eq('key', `reminder:${fromPhone}`)
   await saveMessages(supabase, session.id, messages)
 
   // Handle completion
