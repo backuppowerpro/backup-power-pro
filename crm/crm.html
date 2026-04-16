@@ -2069,6 +2069,8 @@ html.dark @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.04)
 .kanban-card-meta .urg-cool{color:var(--text3);font-weight:600}
 .kanban-card-meta .urg-warm{color:#ea580c;font-weight:700}
 .kanban-card-meta .urg-hot{color:var(--red);font-weight:800}
+.s1-stale-badge{display:inline-flex;align-items:center;padding:1px 5px;font-family:'VT323',monospace;font-size:12px;font-weight:700;background:var(--red);color:#fff;box-shadow:1px 1px 0 #7f0000,-1px -1px 0 rgba(255,255,255,.3);letter-spacing:.05em;flex-shrink:0;vertical-align:middle}
+.kanban-col-stale-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 4px;background:var(--red);color:#fff;font-family:'VT323',monospace;font-size:13px;line-height:1;box-shadow:1px 1px 0 #7f0000,-1px -1px 0 rgba(255,255,255,.3);margin-left:5px;vertical-align:middle}
 .kanban-card-amount{font-family:'Outfit',sans-serif;font-weight:800;color:var(--navy);font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 html.dark .kanban-card-amount{color:var(--gold)}
 .kanban-card-next{margin-top:8px;padding-top:7px;border-top:1px dashed var(--border);font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px;line-height:1.3}
@@ -12116,6 +12118,8 @@ function renderKanban() {
 
     const isDone = col.stage === 9;
     const arrowText = isDone ? 'STATUS' : 'NEXT';
+    const isStage1 = col.stage === 1;
+    const staleCount = isStage1 ? items.filter(c => Date.now() - new Date(c.created_at).getTime() >= 86400000).length : 0;
 
     const cards = items.map(c => {
       const p = (proposalMap[c.id] || []).find(x => x.status !== 'Cancelled');
@@ -12124,9 +12128,21 @@ function renderKanban() {
       const ts = _relativeTime(new Date(lastTouch).toISOString());
       const urg = _kanbanUrgency(c, stageDef);
       const days = urg.days != null ? urg.days : _kanbanDaysSinceTouch(c);
-      const staleHint = urg.level === 'hot'  ? `${days}d overdue`
-                      : urg.level === 'warm' ? `${days}d waiting`
-                      : ts;
+      const hoursSince = isStage1 ? (Date.now() - new Date(c.created_at).getTime()) / 3600000 : 0;
+      let staleHint;
+      if (isStage1) {
+        if (hoursSince < 1)       staleHint = 'just now';
+        else if (hoursSince < 24) staleHint = Math.floor(hoursSince) + 'h ago';
+        else if (hoursSince < 48) staleHint = Math.round(hoursSince) + 'h waiting';
+        else                      staleHint = Math.floor(hoursSince / 24) + 'd waiting';
+      } else {
+        staleHint = urg.level === 'hot'  ? `${days}d overdue`
+                  : urg.level === 'warm' ? `${days}d waiting`
+                  : ts;
+      }
+      const staleBadge = isStage1 && hoursSince >= 24
+        ? `<span class="s1-stale-badge">${hoursSince < 48 ? Math.round(hoursSince)+'h' : Math.floor(hoursSince/24)+'d'}</span>`
+        : '';
       // Per-card "next" hint hidden — same as column NEXT label, redundant.
       // Only shown for stage 9 (Complete) as a "Job complete ✓" celebration.
       const styleVar = `--urgcolor:${urg.color}`;
@@ -12140,7 +12156,7 @@ function renderKanban() {
         ${callBtnKanban}
         <div class="kanban-card-name">${esc(dispName(c.name, fmtPhoneShort(c.phone) || 'New Lead'))}${unreadDot}</div>
         <div class="kanban-card-meta">
-          <span class="urg-${urg.level}">${staleHint}</span>
+          <span class="urg-${urg.level}">${staleHint}${staleBadge}</span>
           ${amt ? `<span class="kanban-card-amount">${amt}</span>` : ''}
         </div>
         ${doneHint}
@@ -12156,7 +12172,7 @@ function renderKanban() {
       <div class="kanban-col-head">
         <div class="kanban-col-top">
           <div class="kanban-col-name">${esc(col.label)}</div>
-          <div class="kanban-col-count">${items.length}</div>
+          <div class="kanban-col-count">${items.length}${staleCount > 0 ? `<span class="kanban-col-stale-count">${staleCount}</span>` : ''}</div>
         </div>
         <div class="kanban-col-next">
           <span class="kanban-col-next-arrow">${arrowText}</span>
