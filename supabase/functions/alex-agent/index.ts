@@ -975,9 +975,11 @@ Deno.serve(async (req) => {
       supabase, fromPhone, session.id, openerMessages, contactContext,
     )
     messages = afterOpener
-    // Typing delay for opener — feels more natural than instant response
+    // Opener delay — simulate a real person: get notification, stop what they're doing,
+    // open the app, read the lead info, then type. 45-90 seconds feels human.
+    // Regular replies use shorter delays since you're already in the conversation.
     const openerCleaned = cleanSms(opener)
-    const openerDelay = Math.max(1000, Math.min(openerCleaned.length * 25, 5000) + (Math.random() - 0.3) * 1200)
+    const openerDelay = 45000 + Math.floor(Math.random() * 45000) // 45-90 seconds
     await new Promise(r => setTimeout(r, openerDelay))
     await sendQuoMessage(fromPhone, openerCleaned)
 
