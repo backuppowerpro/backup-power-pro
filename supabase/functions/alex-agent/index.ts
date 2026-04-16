@@ -1238,8 +1238,11 @@ Deno.serve(async (req) => {
 
   if (debounceCheck?.customer_last_msg_at) {
     const latestMs = new Date(debounceCheck.customer_last_msg_at).getTime()
-    // If the DB shows a newer message arrived, skip — the newer handler will respond
-    if (latestMs > msgTimestamp) {
+    // If the DB shows a message that arrived SIGNIFICANTLY after ours (>5s buffer),
+    // a different webhook handler is processing the newer message — let it respond.
+    // The 5s buffer accounts for normal clock difference between webhook createdAt
+    // (set before the HTTP request) and customer_last_msg_at (set during processing).
+    if (latestMs > msgTimestamp + 5000) {
       console.log('[alex] Debounced — newer message will respond')
       return new Response(JSON.stringify({ skipped: true, reason: 'debounced' }), { status: 200, headers: CORS })
     }
