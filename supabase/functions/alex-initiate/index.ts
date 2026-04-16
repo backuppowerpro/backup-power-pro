@@ -61,11 +61,11 @@ function getOpenerMessages(variant: Variant, firstName: string): string[] {
 }
 
 function pickVariant(): Variant {
-  // Weighted: 60% C (Key's preferred), 20% A, 20% B for comparison data
+  // Weighted: 60% B (Key's pick — two-text pattern), 20% A, 20% C for comparison
   const r = Math.random()
   if (r < 0.20) return 'A'
-  if (r < 0.40) return 'B'
-  return 'C'
+  if (r < 0.40) return 'C'
+  return 'B'
 }
 
 // ── SMS sender ───────────────────────────────────────────────────────────────
