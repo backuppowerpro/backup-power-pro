@@ -259,7 +259,7 @@ python3 -c "
 import json
 prompt = open('$PROMPT_FILE').read()
 payload = {
-    'model': 'claude-haiku-4-5',
+    'model': 'claude-sonnet-4-6',
     'max_tokens': 1200,
     'messages': [{'role': 'user', 'content': prompt}]
 }

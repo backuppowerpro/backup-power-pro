@@ -1338,10 +1338,11 @@ Deno.serve(async (req: Request) => {
     messages = [{ role: 'user', content: `Contact:\n${describeContact(contact)}\n\nWrite the check-in message.` }]
   }
 
-  // Model: haiku for simple one-liners, sonnet for everything that uses tools or reasoning
+  // Model: haiku for simple one-liners (contact_insight, draft_followup),
+  // opus for everything that uses tools or multi-step reasoning (Sparky is the boss — used less often, high stakes)
   const model = (mode === 'contact_insight' || mode === 'draft_followup')
     ? 'claude-haiku-4-5-20251001'
-    : 'claude-sonnet-4-6'
+    : 'claude-opus-4-6'
 
   try {
     if (tools && tools.length) {
