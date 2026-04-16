@@ -765,9 +765,17 @@ async function executeTool(
   }
 
   if (toolName === 'mark_complete') {
+    // Preserve A/B variant tag from alex-initiate by prepending it to the completion summary
+    const { data: sess } = await supabase
+      .from('alex_sessions')
+      .select('summary')
+      .eq('session_id', sessionId)
+      .maybeSingle()
+    const variantTag = (sess?.summary || '').match(/^variant:[ABC]/) ? sess.summary.split('\n')[0] + '\n' : ''
+
     await supabase
       .from('alex_sessions')
-      .update({ status: 'complete', summary: toolInput.summary, alex_active: false })
+      .update({ status: 'complete', summary: variantTag + toolInput.summary, alex_active: false })
       .eq('session_id', sessionId)
     // Cancel any pending reminder — session is done
     await supabase.from('sparky_memory').delete().eq('key', `reminder:${phone}`)

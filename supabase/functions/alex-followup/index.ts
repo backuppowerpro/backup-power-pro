@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
         const topic = (data.note || 'panel photo').toLowerCase()
         const reminderMsg = topic.includes('photo')
           ? `${hi}ust a heads up in case it slipped your mind. That panel photo whenever you get a chance.`
-          : `${hi}ust circling back on what we talked about. ${data.note || 'Let me know if you have any questions.'}`
+          : `${hi}ust wanted to touch base on what we talked about. ${data.note || 'Let me know if you have any questions.'}`
 
         const sent = await sendSms(phone, reminderMsg)
         if (sent) {
