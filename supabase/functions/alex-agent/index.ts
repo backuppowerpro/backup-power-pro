@@ -209,6 +209,38 @@ async function notifyKey(leadPhone: string, summary: string): Promise<void> {
   }
 }
 
+// Write a report to sparky_inbox so Key sees it in the CRM Sparky tab.
+// Also triggers a Twilio SMS ping to Key via sparky-notify.
+async function reportToSparky(
+  contactId: string | null,
+  priority: 'urgent' | 'normal' | 'fyi',
+  summary: string,
+  draftReply?: string,
+  suggestedAction?: string,
+): Promise<void> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    await fetch(`${supabaseUrl}/functions/v1/sparky-notify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
+      },
+      body: JSON.stringify({
+        agent: 'alex',
+        contact_id: contactId || undefined,
+        priority,
+        summary,
+        draft_reply: draftReply || undefined,
+        suggested_action: suggestedAction || undefined,
+      }),
+    })
+    console.log('[alex] Reported to Sparky inbox:', summary.slice(0, 60))
+  } catch (err) {
+    console.error('[alex] reportToSparky failed:', err)
+  }
+}
+
 // Strip markdown and dashes from SMS text
 function cleanSms(text: string): string {
   return text
@@ -361,6 +393,26 @@ Deno.serve(async (req) => {
       .update({ status: 'complete', summary })
       .eq('session_id', sessionId)
 
+    // Look up contact in CRM for inbox link
+    const last10 = fromPhone.replace(/\D/g, '').slice(-10)
+    const { data: contacts } = await supabase
+      .from('contacts')
+      .select('id, name')
+      .ilike('phone', `%${last10}%`)
+      .limit(1)
+    const contactId = contacts?.[0]?.id || null
+    const contactName = contacts?.[0]?.name || fromPhone
+
+    // Report to Sparky inbox (shows in CRM + pings Key via Twilio SMS)
+    reportToSparky(
+      contactId,
+      'urgent',
+      `${contactName} is ready for a quote. Alex collected panel info and photos.`,
+      undefined,
+      'Open contact, review photos, send proposal.'
+    ).catch(err => console.error('[alex] reportToSparky unhandled:', err))
+
+    // Belt-and-suspenders: also notify via Quo (existing channel)
     notifyKey(fromPhone, summary).catch(err => console.error('[notify] unhandled:', err))
   }
 

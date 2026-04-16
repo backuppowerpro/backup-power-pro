@@ -2124,6 +2124,24 @@ html.dark .kanban-card-call:hover{background:var(--gold);box-shadow:var(--shadow
 .urgent-card-stage{font-size:11px;font-weight:600;margin-top:1px;opacity:.75}
 .urgent-card-meta{font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0;margin-left:auto}
 .urgent-card-sparky{font-size:12px;color:var(--text2);line-height:1.4;padding:8px 10px;background:var(--shadow-neu-inset);border-radius:var(--r-sm);box-shadow:var(--shadow-neu-inset-sm)}
+/* ── Sparky Inbox (agent reports) ── */
+.sk-inbox-wrap{margin-bottom:14px}
+.sk-inbox-head{display:flex;align-items:center;gap:7px;font-family:'Outfit',sans-serif;font-weight:800;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid rgba(255,186,0,.35)}
+.sk-inbox-head-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 4px;background:var(--red);color:#fff;font-family:'VT323',monospace;font-size:13px;line-height:1}
+.sk-inbox-card{background:rgba(255,186,0,.06);border:1px solid rgba(255,186,0,.25);border-left:3px solid var(--gold);padding:10px 12px;margin-bottom:8px;position:relative}
+.sk-inbox-card.priority-urgent{border-left-color:var(--red);background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.25)}
+.sk-inbox-card-agent{font-family:'VT323',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.sk-inbox-card-summary{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.45;margin-bottom:6px}
+.sk-inbox-card-draft{font-size:11.5px;color:var(--text2);line-height:1.4;padding:7px 9px;background:rgba(0,0,0,.15);border-left:2px solid rgba(255,186,0,.4);margin-bottom:8px;font-style:italic;white-space:pre-wrap}
+.sk-inbox-card-draft-label{font-family:'VT323',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:3px}
+.sk-inbox-card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.sk-inbox-btn{font-family:'VT323',monospace;font-size:13px;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border:none;cursor:pointer;transition:none}
+.sk-inbox-btn.send{background:var(--gold);color:var(--navy);box-shadow:2px 2px 0 #7a6000,-1px -1px 0 rgba(255,255,255,.4)}
+.sk-inbox-btn.send:active{box-shadow:inset 1px 1px 0 #7a6000;transform:translate(1px,1px)}
+.sk-inbox-btn.open{background:var(--navy);color:#fff;box-shadow:2px 2px 0 #050e1e,-1px -1px 0 rgba(255,255,255,.2)}
+.sk-inbox-btn.open:active{box-shadow:inset 1px 1px 0 #050e1e;transform:translate(1px,1px)}
+.sk-inbox-btn.dismiss{background:var(--bg);color:var(--text2);box-shadow:2px 2px 0 var(--shadow-dark,#999),-1px -1px 0 #fff}
+.sk-inbox-btn.dismiss:active{box-shadow:inset 1px 1px 0 var(--shadow-dark,#999);transform:translate(1px,1px)}
 .urgent-card-btns{display:flex;gap:6px;margin-top:auto}
 .urgent-act-btn{flex:1;padding:9px 12px;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:background var(--t-fast),transform var(--t-fast)}
 .urgent-act-btn:active{transform:scale(.97)}
@@ -15352,6 +15370,122 @@ setTimeout(() => {
     if (el) el.classList.add('collapsed');
   };
 
+  // ══════════════════════════════════════════════════════════
+  // SPARKY INBOX — agent reports that need Key's attention
+  // Nothing here auto-sends to customers. Key approves all actions.
+  // ══════════════════════════════════════════════════════════
+  var _sparkInboxItems = [];
+
+  async function _fetchSparkInbox() {
+    if (typeof db === 'undefined') return;
+    try {
+      var { data } = await db
+        .from('sparky_inbox')
+        .select('*, contacts(name, phone)')
+        .eq('read', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      _sparkInboxItems = data || [];
+    } catch(e) {
+      _sparkInboxItems = [];
+    }
+  }
+
+  function _renderSparkInbox() {
+    var body = document.getElementById('tm-panel-body');
+    if (!body) return;
+    var existing = document.getElementById('sk-inbox-wrap');
+    if (existing) existing.remove();
+    if (!_sparkInboxItems || !_sparkInboxItems.length) return;
+
+    var items = _sparkInboxItems;
+    var cards = items.map(function(item) {
+      var agentLabel = (item.agent || 'agent').toUpperCase();
+      var isPriority = item.priority === 'urgent';
+      var contactName = (item.contacts && item.contacts.name) || '';
+      var contactId = item.contact_id || '';
+      var draftHtml = item.draft_reply
+        ? '<div class="sk-inbox-card-draft-label">Draft reply</div>'
+          + '<div class="sk-inbox-card-draft">' + _escHtml(item.draft_reply) + '</div>'
+        : '';
+      var sendBtn = item.draft_reply && contactId
+        ? '<button class="sk-inbox-btn send" onclick="skInboxSendDraft(' + _escHtml(JSON.stringify(item.id)) + ',' + _escHtml(JSON.stringify(contactId)) + ',' + _escHtml(JSON.stringify(item.draft_reply)) + ')">Send Draft</button>'
+        : '';
+      var openBtn = contactId
+        ? '<button class="sk-inbox-btn open" onclick="skInboxOpenContact(' + _escHtml(JSON.stringify(item.id)) + ',' + _escHtml(JSON.stringify(contactId)) + ')">Open Contact</button>'
+        : '';
+      var dismissBtn = '<button class="sk-inbox-btn dismiss" onclick="skInboxDismiss(' + _escHtml(JSON.stringify(item.id)) + ')">Dismiss</button>';
+
+      var ts = item.created_at
+        ? new Date(item.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' })
+        : '';
+
+      return '<div class="sk-inbox-card' + (isPriority ? ' priority-urgent' : '') + '" id="sk-inbox-card-' + _escHtml(item.id) + '">'
+        + '<div class="sk-inbox-card-agent">' + agentLabel + (ts ? ' · ' + ts : '') + '</div>'
+        + '<div class="sk-inbox-card-summary">' + _escHtml(item.summary) + '</div>'
+        + draftHtml
+        + '<div class="sk-inbox-card-actions">' + sendBtn + openBtn + dismissBtn + '</div>'
+        + '</div>';
+    }).join('');
+
+    var html = '<div class="sk-inbox-wrap" id="sk-inbox-wrap">'
+      + '<div class="sk-inbox-head">⚡ Inbox <span class="sk-inbox-head-count">' + items.length + '</span></div>'
+      + cards
+      + '</div>';
+
+    body.insertAdjacentHTML('afterbegin', html);
+  }
+
+  // Mark inbox item read and remove its card
+  window.skInboxDismiss = async function(itemId) {
+    try {
+      await db.from('sparky_inbox').update({ read: true }).eq('id', itemId);
+      _sparkInboxItems = _sparkInboxItems.filter(function(x) { return x.id !== itemId; });
+      var card = document.getElementById('sk-inbox-card-' + itemId);
+      if (card) card.remove();
+      // Update counts
+      var wrap = document.getElementById('sk-inbox-wrap');
+      if (wrap) {
+        var countEl = wrap.querySelector('.sk-inbox-head-count');
+        if (countEl) countEl.textContent = _sparkInboxItems.length;
+        if (!_sparkInboxItems.length) wrap.remove();
+      }
+      _updateInboxBadge();
+    } catch(e) { console.warn('skInboxDismiss failed', e); }
+  };
+
+  // Open the contact panel and close Sparky
+  window.skInboxOpenContact = async function(itemId, contactId) {
+    await window.skInboxDismiss(itemId);
+    window.tmClosePanel();
+    if (typeof openPanel === 'function') openPanel(contactId);
+  };
+
+  // Mark actioned + send the draft SMS via existing Sparky tool
+  window.skInboxSendDraft = async function(itemId, contactId, draft) {
+    if (!confirm('Send this draft to the customer?')) return;
+    try {
+      // Use Sparky's existing send SMS tool
+      var result = await _toolSendSms({ contactId: contactId, message: draft });
+      if (result && result.ok) {
+        await db.from('sparky_inbox').update({ read: true, actioned: true }).eq('id', itemId);
+        _sparkInboxItems = _sparkInboxItems.filter(function(x) { return x.id !== itemId; });
+        var card = document.getElementById('sk-inbox-card-' + itemId);
+        if (card) card.remove();
+        var wrap = document.getElementById('sk-inbox-wrap');
+        if (wrap && !_sparkInboxItems.length) wrap.remove();
+        _updateInboxBadge();
+        if (typeof showToast === 'function') showToast('Draft sent', 'success');
+      } else {
+        if (typeof showToast === 'function') showToast('Send failed — check contact panel', 'error');
+      }
+    } catch(e) { if (typeof showToast === 'function') showToast('Send error', 'error'); }
+  };
+
+  function _updateInboxBadge() {
+    try { refreshLauncherAlert(); } catch(e) {}
+  }
+
   // Handlers bound from the card HTML
   window.tmDismissBriefing = function() {
     _markBriefingSeen();
@@ -15615,6 +15749,8 @@ setTimeout(() => {
     if (!p || !o) return;
     renderChatPanel();
     renderInlineBriefing();
+    // Load agent inbox reports (async — renders above briefing when ready)
+    _fetchSparkInbox().then(function() { _renderSparkInbox(); _updateInboxBadge(); }).catch(function(){});
     p.classList.add('open');
     o.classList.add('open');
     p.setAttribute('aria-hidden', 'false');
@@ -16813,10 +16949,12 @@ setTimeout(() => {
       var tabBtn = document.getElementById('tab-btn-sparky');
       var b = buildBriefing();
       var urgentCount = (b.urgent && b.urgent.length) || 0;
-      if (urgentCount > 0) {
+      var inboxCount = (typeof _sparkInboxItems !== 'undefined' && _sparkInboxItems.length) || 0;
+      var totalCount = urgentCount + inboxCount;
+      if (totalCount > 0) {
         if (launcher) launcher.classList.add('alert');
-        if (badge) { badge.textContent = urgentCount > 9 ? '9+' : String(urgentCount); badge.style.display = ''; }
-        if (tabBadge) { tabBadge.textContent = urgentCount > 9 ? '9+' : String(urgentCount); tabBadge.style.display = ''; }
+        if (badge) { badge.textContent = totalCount > 9 ? '9+' : String(totalCount); badge.style.display = ''; }
+        if (tabBadge) { tabBadge.textContent = totalCount > 9 ? '9+' : String(totalCount); tabBadge.style.display = ''; }
         if (tabBtn) tabBtn.style.color = 'var(--gold)';
       } else {
         if (launcher) launcher.classList.remove('alert');
@@ -16848,6 +16986,8 @@ setTimeout(() => {
   function _scheduleFirstBriefing() {
     if (typeof allContacts !== 'undefined' && Array.isArray(allContacts) && allContacts.length > 0) {
       generateBriefing(false);
+      // Pre-fetch inbox so badge shows count without opening Sparky
+      _fetchSparkInbox().then(function() { refreshLauncherAlert(); }).catch(function(){});
       refreshLauncherAlert();
     } else {
       setTimeout(_scheduleFirstBriefing, 1500);
