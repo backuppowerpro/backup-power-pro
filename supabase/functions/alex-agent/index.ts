@@ -718,16 +718,24 @@ function cleanSms(text: string): string {
   return cleaned
 }
 
-async function sendQuoMessage(to: string, content: string): Promise<void> {
+// Returns true if sent, false if delivery was rejected (bad number, landline, etc.)
+async function sendQuoMessage(to: string, content: string): Promise<boolean> {
   try {
-    await fetch('https://api.openphone.com/v1/messages', {
+    const resp = await fetch('https://api.openphone.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
       body: JSON.stringify({ from: QUO_PHONE_ID, to: [to], content }),
     })
+    if (!resp.ok) {
+      const errBody = await resp.text().catch(() => '')
+      console.error(`[quo] Send failed (${resp.status}):`, errBody.slice(0, 200))
+      return false
+    }
     console.log('[quo] Sent to', to, ':', content.slice(0, 60))
+    return true
   } catch (err) {
-    console.error('[quo] Send failed:', err)
+    console.error('[quo] Send error:', err)
+    return false
   }
 }
 
@@ -836,6 +844,36 @@ Deno.serve(async (req) => {
       }
     }
     return new Response(JSON.stringify({ ok: true, reason: 'key_activity_tracked' }), { status: 200, headers: CORS })
+  }
+
+  // ── Delivery failure detection ────────────────────────────────────────────
+  // OpenPhone sends message.delivery_failed / message.undelivered when an SMS
+  // can't be delivered (landline, disconnected, wrong number). Stop messaging.
+  if (eventType === 'message.delivery_failed' || eventType === 'message.undelivered' ||
+      (eventType === 'message.sent' && messageData.status === 'failed')) {
+    const failedTo = Array.isArray(messageData.to) ? messageData.to[0] : (messageData.to || '')
+    if (failedTo) {
+      const supabase = db()
+      const normalized = normalizePhone(failedTo)
+      await supabase
+        .from('alex_sessions')
+        .update({ alex_active: false, status: 'undeliverable' })
+        .eq('phone', normalized)
+        .eq('status', 'active')
+
+      const digits = normalized.replace(/\D/g, '').slice(-10)
+      const { data: contacts } = await supabase
+        .from('contacts').select('id, name').ilike('phone', `%${digits}%`).limit(1)
+
+      reportToSparkyImmediate(
+        supabase, contacts?.[0]?.id || null, normalized, 'urgent',
+        `SMS delivery failed to ${contacts?.[0]?.name || normalized}. Number may be a landline, disconnected, or wrong. All AI messaging stopped.`,
+        'Verify the phone number. Reach out by other means if needed.',
+      ).catch(() => {})
+
+      console.warn('[alex] Delivery failed for', normalized, '— session deactivated')
+    }
+    return new Response(JSON.stringify({ ok: true, reason: 'delivery_failure_handled' }), { status: 200, headers: CORS })
   }
 
   if (eventType !== 'message.received') {
@@ -1080,7 +1118,25 @@ Deno.serve(async (req) => {
     const openerCleaned = cleanSms(opener)
     const openerDelay = 45000 + Math.floor(Math.random() * 45000) // 45-90 seconds
     await new Promise(r => setTimeout(r, openerDelay))
-    await sendQuoMessage(fromPhone, openerCleaned)
+    const openerSent = await sendQuoMessage(fromPhone, openerCleaned)
+
+    if (!openerSent) {
+      // First message failed — likely bad number, landline, or disconnected.
+      // Deactivate session so follow-up engine doesn't keep trying.
+      await supabase.from('alex_sessions')
+        .update({ alex_active: false, status: 'undeliverable' })
+        .eq('session_id', session.id)
+
+      const digits = fromPhone.replace(/\D/g, '').slice(-10)
+      const { data: c } = await supabase.from('contacts').select('id, name').ilike('phone', `%${digits}%`).limit(1)
+      reportToSparkyImmediate(supabase, c?.[0]?.id || null, fromPhone, 'urgent',
+        `Alex could not deliver opener to ${c?.[0]?.name || fromPhone}. Number may be a landline or invalid.`,
+        'Verify phone number. Reach out by other means if needed.',
+      ).catch(() => {})
+
+      console.warn('[alex] Opener delivery failed, session deactivated:', fromPhone)
+      return new Response(JSON.stringify({ error: 'delivery_failed' }), { status: 200, headers: CORS })
+    }
 
     // Greeting-only messages → opener is enough for this webhook
     const isGreeting = /^(hi|hey|hello|yo|sup|test|testing|start)[\s!.?]*$/i.test(messageText)
@@ -1214,8 +1270,22 @@ Deno.serve(async (req) => {
     const typingDelay = Math.max(800, baseMs + jitter) // floor of 800ms
     await new Promise(r => setTimeout(r, typingDelay))
 
-    await sendQuoMessage(fromPhone, cleaned)
-    await markOutbound(supabase, session.id)
+    const sent = await sendQuoMessage(fromPhone, cleaned)
+    if (sent) {
+      await markOutbound(supabase, session.id)
+    } else {
+      // Reply delivery failed mid-conversation — deactivate, notify Key
+      await supabase.from('alex_sessions')
+        .update({ alex_active: false, status: 'undeliverable' })
+        .eq('session_id', session.id)
+      const digits = fromPhone.replace(/\D/g, '').slice(-10)
+      const { data: c } = await supabase.from('contacts').select('id, name').ilike('phone', `%${digits}%`).limit(1)
+      reportToSparkyImmediate(supabase, c?.[0]?.id || null, fromPhone, 'urgent',
+        `SMS delivery failed mid-conversation to ${c?.[0]?.name || fromPhone}. Number may have issues.`,
+        'Verify phone number.',
+      ).catch(() => {})
+      console.warn('[alex] Delivery failed mid-convo:', fromPhone)
+    }
   }
 
   return new Response(JSON.stringify({ success: true, sessionId: session.id }), { status: 200, headers: CORS })

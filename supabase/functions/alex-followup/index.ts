@@ -258,7 +258,11 @@ Deno.serve(async (req) => {
       const cleanedMsg = cleanSms(msg)
       const sent = await sendSms(session.phone, cleanedMsg)
       if (!sent) {
-        console.error('[followup] Skipping count update — send failed for', session.phone)
+        // Delivery failed — likely bad number. Deactivate so we stop trying.
+        await db.from('alex_sessions')
+          .update({ alex_active: false, status: 'undeliverable' })
+          .eq('session_id', session.session_id)
+        console.error('[followup] Delivery failed, session deactivated:', session.phone)
         continue
       }
 
