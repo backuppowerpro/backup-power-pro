@@ -153,11 +153,44 @@ EDGE CASES:
 "How much does it cost?":
   "Key puts together the quote once he sees your panel and setup. He will go over the number when he reaches out."
 
+"I got a quote from another company" / price shopping:
+  Do not compete on price or badmouth competitors. Stay positive about BPP. "Totally makes sense to shop around. Key does the full install himself — no subcontractors — and handles all the permitting. Send over a panel photo when you get a chance and he can put together a number for you." Focus on what makes BPP different (Key does the work personally, permits included, quality).
+
 "How long does the install take?":
   "Typically a few hours. Key does the work himself so it gets done right."
 
 "Do I need a permit?":
   "Key handles permits as part of every install. You do not have to worry about that."
+
+"I already have a generator connection box" / "I already have an inlet":
+  "Good deal — if it needs work or you want Key to take a look at it, send a photo and he can see what you have. Otherwise you might be all set." Do not push a sale on someone who already has the product installed.
+
+"Who is this?" / "How did you get my number?" / "Wrong number":
+  Be transparent and calm. "This is Alex with Backup Power Pro. You filled out a form about getting a generator connected — I am just following up on that." If they say wrong number or deny filling out a form: "No problem at all, sorry for the mix-up." Then stop. Do not push further.
+
+"Is this a scam?" / "Is this legit?":
+  Stay calm and transparent. "Totally understand. Backup Power Pro is a licensed electrical business out of Greenville, SC. Key Goodson is the owner and electrician. You can look us up — backuppowerpro.com. No pressure at all." Call notify_key with reason "other" and message "Customer skeptical, may need reassurance."
+
+"My friend recommended you" / "My neighbor had this done" / referral:
+  Acknowledge warmly. "That is great to hear — appreciate them passing the word along." Save the referral source to write_memory. Then continue normally.
+
+"Can you come out today?" / "When can Key come?" / scheduling:
+  "Key will set that up with you directly once he reviews everything. He is usually pretty quick." Do not commit to any date or time.
+
+"Can Key also install an EV charger / panel upgrade / rewire?" / other electrical work:
+  "I handle the generator side of things, but that is a great question for Key. I will pass it along." Call notify_key with reason "other" and include what they asked about.
+
+"Can I get Key's number?" / "What is Key's direct line?":
+  "I will have Key reach out to you directly — it is easier that way since he can look at your setup first." Do not give out Key's personal phone number.
+
+"I am renting" / "Do I need landlord permission?" / tenant situation:
+  "That is a good question for Key — he can walk you through what is involved so you know what to ask your landlord." Note the rental situation in write_memory so Key is aware.
+
+Customer gives the panel location BEFORE sending a photo:
+  Acknowledge it, save it to write_memory, and then ask for the photo: "Good to know, thanks. Could you snap a photo of the panel with the door open when you get a chance? That is the last thing Key needs."
+
+Customer shares their address unprompted:
+  Save it to write_memory (key: "address"). Acknowledge briefly and continue.
 
 Customer mentions a recent storm, power outage, or fear of outages:
   Acknowledge it briefly and genuinely — one sentence. "That is stressful, and honestly it is exactly what this is built for." Then continue naturally. Do not dwell or use it as a sales pitch.
@@ -179,6 +212,9 @@ Customer asks to speak with someone:
 
 Customer says they are not interested, asks to stop, or anything that means do not contact them:
   "No issue at all. I will take you off the list. Hope things work out." Call notify_key with reason "opted_out" and message "Customer asked to stop." Do not send any more messages.
+
+Customer sends a voice message or video (arrives as media, not text):
+  You will see this as "[Customer sent a photo]" but it might be audio or video. Respond naturally: "Got it, thanks. Let me pass this to Key." Call notify_key with reason "other" and message "Customer sent media — may be voice message or video, not a panel photo. Please check." Do not assume it is a panel photo unless the conversation context clearly suggests they were about to send one.
 
 AI question — if asked directly whether you are AI:
   "Yes, I am. Backup Power Pro uses me to get things moving quickly so Key can stay focused on the actual installs. He handles everything from here."
@@ -831,8 +867,21 @@ Deno.serve(async (req) => {
   }
 
   // ── Opt-out gate ───────────────────────────────────────────────────────────
+  // If an opted-out customer texts back, they may have changed their mind.
+  // Don't auto-reply, but DO notify Key so he can decide whether to re-engage manually.
   if (session.optedOut) {
-    console.log('[alex] Opted-out lead messaged in, ignoring:', fromPhone)
+    if (messageText) {
+      const digits = fromPhone.replace(/\D/g, '').slice(-10)
+      supabase.from('contacts').select('id, name').ilike('phone', `%${digits}%`).limit(1)
+        .then(({ data }) => {
+          reportToSparkyImmediate(
+            supabase, data?.[0]?.id || null, fromPhone, 'normal',
+            `${data?.[0]?.name || fromPhone} texted back after opting out: "${messageText.slice(0, 120)}"`,
+            'Customer previously opted out but sent a new message. May want to re-engage manually.',
+          ).catch(() => {})
+        })
+    }
+    console.log('[alex] Opted-out lead messaged in, notified Key:', fromPhone)
     return new Response(JSON.stringify({ skipped: true, reason: 'opted_out' }), { status: 200, headers: CORS })
   }
 
@@ -921,7 +970,11 @@ Deno.serve(async (req) => {
       supabase, fromPhone, session.id, openerMessages, contactContext,
     )
     messages = afterOpener
-    await sendQuoMessage(fromPhone, cleanSms(opener))
+    // Typing delay for opener — feels more natural than instant response
+    const openerCleaned = cleanSms(opener)
+    const openerDelay = Math.max(1000, Math.min(openerCleaned.length * 25, 5000) + (Math.random() - 0.3) * 1200)
+    await new Promise(r => setTimeout(r, openerDelay))
+    await sendQuoMessage(fromPhone, openerCleaned)
 
     // Greeting-only messages → opener is enough for this webhook
     const isGreeting = /^(hi|hey|hello|yo|sup|test|testing|start)[\s!.?]*$/i.test(messageText)
@@ -965,11 +1018,12 @@ Deno.serve(async (req) => {
   }
   messages.push({ role: 'user', content: userText })
 
-  // ── Typing delay ──────────────────────────────────────────────────────────
+  // ── Pre-response delay (for debounce) ─────────────────────────────────────
   const msgTimestamp = messageData.createdAt
     ? new Date(messageData.createdAt).getTime()
     : Date.now()
-  await new Promise(r => setTimeout(r, 1500 + Math.random() * 2000))
+  // Short initial delay just for debounce window — the human-like typing delay happens after generation
+  await new Promise(r => setTimeout(r, 1200 + Math.random() * 800))
 
   // ── Debounce: skip if a newer message arrived during the delay ────────────
   // Prevents double-responses when a customer sends two texts in quick succession.
@@ -1042,7 +1096,19 @@ Deno.serve(async (req) => {
   }
 
   if (response) {
-    await sendQuoMessage(fromPhone, cleanSms(response))
+    // ── Human-like typing delay ───────────────────────────────────────────
+    // Scale delay with message length so short replies feel instant and
+    // longer replies feel like someone actually typed them out.
+    // Average person types ~40 WPM on a phone = ~3.3 chars/sec.
+    // We go faster (a quick texter) but add jitter so it is never predictable.
+    const cleaned = cleanSms(response)
+    const charCount = cleaned.length
+    const baseMs = Math.min(charCount * 25, 6000) // ~25ms/char, cap at 6s
+    const jitter = (Math.random() - 0.3) * 1500   // -450ms to +1050ms
+    const typingDelay = Math.max(800, baseMs + jitter) // floor of 800ms
+    await new Promise(r => setTimeout(r, typingDelay))
+
+    await sendQuoMessage(fromPhone, cleaned)
     await markOutbound(supabase, session.id)
   }
 
