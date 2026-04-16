@@ -394,7 +394,16 @@ async function getSession(supabase: any, phone: string): Promise<{
   }
 }
 
-async function createSession(supabase: any, phone: string): Promise<{ id: string; messages: any[] }> {
+async function createSession(supabase: any, phone: string): Promise<{
+  id: string
+  messages: any[]
+  keyActive: boolean
+  keyLastActiveAt: string | null
+  alexActive: boolean
+  optedOut: boolean
+  customerLastMsgAt: string | null
+  lastOutboundAt: string | null
+}> {
   const id = crypto.randomUUID()
   await supabase.from('alex_sessions').insert({
     phone: normalizePhone(phone),
@@ -408,7 +417,16 @@ async function createSession(supabase: any, phone: string): Promise<{ id: string
     opted_out: false,
   })
   console.log('[alex] Created session:', id)
-  return { id, messages: [] }
+  return {
+    id,
+    messages: [],
+    keyActive: false,
+    keyLastActiveAt: null,
+    alexActive: true,
+    optedOut: false,
+    customerLastMsgAt: null,
+    lastOutboundAt: null,
+  }
 }
 
 // saveMessages saves history only — does NOT update last_outbound_at
