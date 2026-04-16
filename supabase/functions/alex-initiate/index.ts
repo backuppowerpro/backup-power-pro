@@ -61,9 +61,8 @@ function getOpenerMessages(variant: Variant, firstName: string): string[] {
 }
 
 function pickVariant(): Variant {
-  // Weighted: 60% B (Key's pick — two-text pattern), 20% A, 20% C for comparison
+  // 60% B (two-text, Key's top pick), 40% C (negative-frame single). No A (too open-ended).
   const r = Math.random()
-  if (r < 0.20) return 'A'
   if (r < 0.40) return 'C'
   return 'B'
 }
