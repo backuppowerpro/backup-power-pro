@@ -30,9 +30,10 @@ const QUO_PHONE_ID          = Deno.env.get('QUO_PHONE_NUMBER_ID')!    // (864) 4
 const KEY_PHONE             = '+19414417996'
 const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'
 
-// TEST_MODE: env var override, defaults to true until go-live.
+// TEST_MODE: only exact 'true' activates. Defaults to true until go-live.
 // Set ALEX_TEST_MODE=false in Supabase function secrets to go live.
-const TEST_MODE = (Deno.env.get('ALEX_TEST_MODE') ?? 'true').toLowerCase() !== 'false'
+const TEST_MODE = (Deno.env.get('ALEX_TEST_MODE') ?? 'true').toLowerCase() === 'true'
+console.log('[alex] Mode:', TEST_MODE ? 'TEST (KEY_PHONE only)' : 'PRODUCTION')
 
 const MODEL = 'claude-opus-4-6'
 const MAX_TOKENS       = 250   // SMS — keep responses tight
@@ -1068,6 +1069,15 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ skipped: true, reason: 'duplicate' }), { status: 200, headers: CORS })
   }
 
+  // Timestamp this message immediately after dedup — used by debounce to detect
+  // when a newer message arrived during processing. Must happen BEFORE any delays.
+  const msgReceivedAt = new Date().toISOString()
+  await supabase
+    .from('alex_sessions')
+    .update({ customer_last_msg_at: msgReceivedAt })
+    .eq('phone', fromPhone)
+    .eq('status', 'active')
+
   // ── Spam detection ─────────────────────────────────────────────────────────
   // Catches two patterns:
   // 1. Rapid-fire spam: 5+ unanswered messages piling up (Alex hasn't responded yet)
@@ -1152,6 +1162,12 @@ Deno.serve(async (req) => {
     notifyKeyQuo(fromPhone,
       `STOP received from ${contactName} (${fromPhone})\nAll AI messaging halted. Manual follow-up only.`,
     ).catch(() => {})
+
+    // Cancel any pending reminder
+    await supabase.from('sparky_memory').delete().eq('key', `reminder:${fromPhone}`)
+
+    // Send confirmation to customer (TCPA best practice)
+    await sendQuoMessage(fromPhone, 'Got it, I will not text you again. Take care.')
 
     console.log('[alex] Opt-out from', fromPhone)
     return new Response(JSON.stringify({ ok: true, reason: 'opted_out' }), { status: 200, headers: CORS })
@@ -1272,11 +1288,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Track when customer last messaged (used by follow-up engine)
-  await supabase
-    .from('alex_sessions')
-    .update({ customer_last_msg_at: new Date().toISOString() })
-    .eq('session_id', session.id)
+  // customer_last_msg_at already set at dedup boundary (line above) for debounce accuracy
 
   let messages = session.messages
 
@@ -1334,6 +1346,8 @@ Deno.serve(async (req) => {
     // Greeting-only messages → opener is enough for this webhook
     const isGreeting = /^(hi|hey|hello|yo|sup|test|testing|start)[\s!.?]*$/i.test(messageText)
     if (isGreeting) {
+      // Save the customer's greeting to history so the conversation record is complete
+      messages.push({ role: 'user', content: messageText })
       await saveMessages(supabase, session.id, messages)
       await markOutbound(supabase, session.id)
       return new Response(JSON.stringify({ success: true, action: 'opener_sent' }), { status: 200, headers: CORS })
@@ -1377,31 +1391,21 @@ Deno.serve(async (req) => {
   messages.push({ role: 'user', content: userText })
 
   // ── Pre-response delay (for debounce) ─────────────────────────────────────
-  const msgTimestamp = messageData.createdAt
-    ? new Date(messageData.createdAt).getTime()
-    : Date.now()
-  // Short initial delay just for debounce window — the human-like typing delay happens after generation
-  await new Promise(r => setTimeout(r, 1200 + Math.random() * 800))
+  // Short delay to let rapid-fire messages settle before responding.
+  await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000))
 
   // ── Debounce: skip if a newer message arrived during the delay ────────────
-  // Prevents double-responses when a customer sends two texts in quick succession.
-  // The handler for the newer message will have the full context and respond once.
+  // We set customer_last_msg_at = msgReceivedAt at the dedup boundary.
+  // If a newer message updated it since, let the newer handler respond instead.
   const { data: debounceCheck } = await supabase
     .from('alex_sessions')
     .select('customer_last_msg_at')
     .eq('session_id', session.id)
     .single()
 
-  if (debounceCheck?.customer_last_msg_at) {
-    const latestMs = new Date(debounceCheck.customer_last_msg_at).getTime()
-    // If the DB shows a message that arrived SIGNIFICANTLY after ours (>5s buffer),
-    // a different webhook handler is processing the newer message — let it respond.
-    // The 5s buffer accounts for normal clock difference between webhook createdAt
-    // (set before the HTTP request) and customer_last_msg_at (set during processing).
-    if (latestMs > msgTimestamp + 5000) {
-      console.log('[alex] Debounced — newer message will respond')
-      return new Response(JSON.stringify({ skipped: true, reason: 'debounced' }), { status: 200, headers: CORS })
-    }
+  if (debounceCheck?.customer_last_msg_at && debounceCheck.customer_last_msg_at !== msgReceivedAt) {
+    console.log('[alex] Debounced — newer message will respond')
+    return new Response(JSON.stringify({ skipped: true, reason: 'debounced' }), { status: 200, headers: CORS })
   }
 
   // Run Alex — fresh context injected at API level, not stored

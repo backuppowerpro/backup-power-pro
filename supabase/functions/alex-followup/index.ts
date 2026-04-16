@@ -266,11 +266,11 @@ Deno.serve(async (req) => {
   const currentHour = eastern.getHours()
 
   if (currentHour >= 9 && currentHour < 10) {
-    // Find sessions created last night (7 PM - 7 AM) with no photo and no customer reply
-    const lastNight7pm = new Date(eastern)
-    lastNight7pm.setHours(currentHour >= 9 ? -5 : 19, 0, 0, 0)  // previous day 7 PM
-    const thismorning7am = new Date(eastern)
-    thismorning7am.setHours(7, 0, 0, 0)
+    // Find sessions created during dark hours (roughly last 14 hours).
+    // Using UTC timestamps directly avoids all timezone conversion headaches.
+    // At 9 AM Eastern, 14 hours ago = 7 PM the previous evening. Perfect range.
+    const fourteenHoursAgo = new Date(Date.now() - 14 * 3600000).toISOString()
+    const twoHoursAgo = new Date(Date.now() - 2 * 3600000).toISOString()
 
     const { data: nightLeads } = await db
       .from('alex_sessions')
@@ -279,8 +279,8 @@ Deno.serve(async (req) => {
       .eq('alex_active', true)
       .eq('photo_received', false)
       .eq('followup_count', 0)
-      .gte('created_at', lastNight7pm.toISOString())
-      .lte('created_at', thismorning7am.toISOString())
+      .gte('created_at', fourteenHoursAgo)
+      .lte('created_at', twoHoursAgo)
 
     for (const lead of nightLeads || []) {
       // Skip if customer already replied
