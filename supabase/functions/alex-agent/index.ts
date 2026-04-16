@@ -28,7 +28,7 @@ const QUO_INTERNAL_PHONE_ID  = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi
 // Set to false when ready to go live with real leads
 const TEST_MODE = true
 
-const ALEX_AGENT_ID = 'agent_011Ca4EqNFKhLkRojPYt6uVA'  // v13 Sonnet — no em dashes, clean photo flow
+const ALEX_AGENT_ID = 'agent_011Ca4EqNFKhLkRojPYt6uVA'  // v13 Opus (upgraded from Sonnet 2026-04-15) — no em dashes, clean photo flow
 const ALEX_ENV_ID   = 'env_01Ba8sDT1CgQrWE5bLvtvHwK'
 
 const ANTHROPIC_HEADERS = {
