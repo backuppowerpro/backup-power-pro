@@ -37,6 +37,10 @@ META_DATA="";    [ -f "$WIKI_DIR/Ads/Meta Performance.md" ]   && META_DATA=$(hea
 POSTHOG_DATA=""; [ -f "$WIKI_DIR/Website/Site Analytics.md" ] && POSTHOG_DATA=$(head -60 "$WIKI_DIR/Website/Site Analytics.md")
 CRM_DATA="";     [ -f "$WIKI_DIR/CRM/CRM Usage.md" ]          && CRM_DATA=$(head -80 "$WIKI_DIR/CRM/CRM Usage.md")
 
+# Permit data written by fetch-permits.sh earlier in the same refresh run
+PERMIT_DATA=""
+[ -f /tmp/bpp-permit-summary.txt ] && PERMIT_DATA=$(cat /tmp/bpp-permit-summary.txt)
+
 # ── Extract metrics using Python (macOS-safe) ──
 read META_CPL META_SPEND META_LEADS SITE_UV SITE_CONV SITE_LEADS CRM_ACTIVE CRM_PIPELINE CRM_CLOSE CRM_NEW <<< $(python3 - <<PYEOF
 import re, sys
@@ -214,8 +218,9 @@ Rules:
 - If close rate is declining, that's a crisis signal even if the number still looks OK
 - Connect the dots: ad performance → site traffic → pipeline → revenue
 - Surface the 1-2 decisions Key should make TODAY given where things are heading
+- If any permit is Ready to Pay, call it out — it costs money to sit on it
 - End with 'What I'd tackle first:' and one specific action
-- Max 250 words. Confident operating partner tone. No bullet dumps.
+- Max 280 words. Confident operating partner tone. No bullet dumps.
 
 Business context:
 - Original CPL target was under \$30 — recalibrate if trends warrant it
@@ -235,7 +240,10 @@ $TREND_DATA
 $(echo "$META_DATA" | head -35)
 
 --- RAW DETAIL (CRM) ---
-$(echo "$CRM_DATA" | head -35)"
+$(echo "$CRM_DATA" | head -35)
+
+--- PERMIT STATUS ---
+${PERMIT_DATA:-No active permits or permit check unavailable}"
 
 # ── Call Claude ──
 PROMPT_FILE=$(mktemp /tmp/bpp-ceo-prompt.XXXXXX)

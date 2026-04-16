@@ -14,8 +14,8 @@ START=$(date +%s)
 echo "=== brain refresh @ $TODAY $TS ===" > "$LOG_FILE"
 
 # Run each fetcher, capture the one-line summary it prints
-META_OUT=""; POSTHOG_OUT=""; CRM_OUT=""; QUO_OUT=""
-META_STATUS="OK"; POSTHOG_STATUS="OK"; CRM_STATUS="OK"; QUO_STATUS="OK"
+META_OUT=""; POSTHOG_OUT=""; CRM_OUT=""; QUO_OUT=""; PERMIT_OUT=""
+META_STATUS="OK"; POSTHOG_STATUS="OK"; CRM_STATUS="OK"; QUO_STATUS="OK"; PERMIT_STATUS="OK"
 
 if META_OUT=$(bash "$BRAIN_DIR/fetch-meta.sh" 2>&1); then
   echo "$META_OUT" >> "$LOG_FILE"
@@ -45,6 +45,14 @@ else
   echo "QUO FAILED: $QUO_OUT" >> "$LOG_FILE"
 fi
 
+# Permit check runs here so results are ready for the brief
+if PERMIT_OUT=$(bash "$BRAIN_DIR/fetch-permits.sh" 2>&1); then
+  echo "$PERMIT_OUT" >> "$LOG_FILE"
+else
+  PERMIT_STATUS="FAIL"
+  echo "PERMITS FAILED: $PERMIT_OUT" >> "$LOG_FILE"
+fi
+
 # Synthesize CEO morning brief from all fetched data
 BRIEF_OUT=""; BRIEF_STATUS="OK"
 if BRIEF_OUT=$(bash "$BRAIN_DIR/synthesize-ceo-brief.sh" 2>&1); then
@@ -63,6 +71,7 @@ META_LINE=$(echo "$META_OUT" | tail -1)
 POSTHOG_LINE=$(echo "$POSTHOG_OUT" | tail -1)
 CRM_LINE=$(echo "$CRM_OUT" | tail -1)
 QUO_LINE=$(echo "$QUO_OUT" | tail -1)
+PERMIT_LINE=$(echo "$PERMIT_OUT" | tail -1)
 
 # Append to 00 Log.md (create if needed)
 if [ ! -f "$WIKI_LOG" ]; then
@@ -91,6 +100,7 @@ cat >> "$WIKI_LOG" <<EOF
 - **PostHog**: $POSTHOG_STATUS — $POSTHOG_LINE
 - **CRM**: $CRM_STATUS — $CRM_LINE
 - **Quo**: $QUO_STATUS — $QUO_LINE
+- **Permits**: $PERMIT_STATUS — $PERMIT_LINE
 - See [[Ads/Meta Performance]], [[Website/Site Analytics]], [[CRM/CRM Usage]], [[CRM/Quo Conversations]]
 EOF
 
