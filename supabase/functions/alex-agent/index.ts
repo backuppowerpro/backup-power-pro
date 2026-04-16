@@ -40,7 +40,7 @@ const MAX_HISTORY_MSGS = 30    // Trim beyond this to prevent token overflow (~1
 const MAX_TOOL_LOOPS   = 5     // Safety valve — prevent infinite agentic loops
 const MAX_SMS_CHARS    = 480   // Soft cap — let Alex finish his thought rather than cut mid-sentence
                                // Standard SMS is 160 chars but most phones concatenate up to 3 segments (480)
-const MAX_MSGS_PER_HOUR = 8    // Per-phone rate limit — prevents abuse / API cost spikes
+const MAX_UNANSWERED_MSGS = 5  // Per-phone rate limit — if 5+ messages pile up without Alex responding, likely spam
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -1068,24 +1068,38 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ skipped: true, reason: 'duplicate' }), { status: 200, headers: CORS })
   }
 
-  // ── Per-phone rate limiting (sliding window) ────────────────────────────
-  // Count user messages in the session. If over threshold and actively messaging, block.
-  // Uses message count + recency — an old session with 10 msgs over 10 days is fine,
-  // but 10 msgs in the last hour is abuse.
+  // ── Spam detection ─────────────────────────────────────────────────────────
+  // Catches two patterns:
+  // 1. Rapid-fire spam: 5+ unanswered messages piling up (Alex hasn't responded yet)
+  // 2. Abnormally long conversations: 50+ total messages (real convos are 5-15)
   {
     const { data: rateSess } = await supabase
       .from('alex_sessions')
-      .select('messages, customer_last_msg_at')
+      .select('messages')
       .eq('phone', fromPhone)
       .eq('status', 'active')
       .limit(1)
       .maybeSingle()
 
     if (rateSess?.messages) {
-      const userMsgs = (rateSess.messages || []).filter((m: any) => m.role === 'user')
-      if (userMsgs.length > MAX_MSGS_PER_HOUR) {
-        console.warn('[alex] Rate limited:', fromPhone, `(${userMsgs.length} msgs in session)`)
+      const msgs = rateSess.messages || []
+
+      // Count unanswered: user messages after the last assistant message
+      let unanswered = 0
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === 'user') unanswered++
+        else if (msgs[i].role === 'assistant') break
+      }
+
+      if (unanswered >= MAX_UNANSWERED_MSGS) {
+        console.warn('[alex] Spam detected:', fromPhone, `(${unanswered} unanswered msgs)`)
         return new Response(JSON.stringify({ skipped: true, reason: 'rate_limited' }), { status: 200, headers: CORS })
+      }
+
+      // Abnormally long conversation — likely abuse or stuck in a loop
+      if (msgs.length > 50) {
+        console.warn('[alex] Session too long:', fromPhone, `(${msgs.length} total msgs)`)
+        return new Response(JSON.stringify({ skipped: true, reason: 'session_too_long' }), { status: 200, headers: CORS })
       }
     }
   }
