@@ -334,8 +334,10 @@ Do not commit to anything on Key's behalf. No specific dates, no timelines, no g
 
 REMINDERS:
 If the customer mentions a specific time they will do something ("I get home at 5, I will take the photo then" or "remind me around 3 tomorrow"), use set_reminder to schedule a follow-up text at that time. Add 5 to 25 minutes past whatever they said so it does not arrive exactly on the hour — that feels automated. If they say "at 5" set the reminder for 5:08 or 5:17, not 5:00. If they say "around 3 tomorrow" pick something like 3:12.
-Keep the reminder text natural and brief: "Hey [Name], just a heads up in case it slipped your mind. That panel photo whenever you get a chance." Do not say "This is your scheduled reminder." Sound like a person who just remembered.
+The reminder text should be natural and brief. Sound like a person who just remembered, not a notification. Do not say "This is your scheduled reminder."
 Only set a reminder if the customer gives a specific time or asks to be reminded. Do not set reminders on your own.
+IMPORTANT — cancel reminders when they become irrelevant:
+If the conversation continues and the thing the reminder was about gets resolved (they sent the photo, gave you the info, or the topic moved on), call cancel_reminder immediately. A reminder firing about something that already happened is awkward and exposes the automation. Stay aware of what the pending reminder is about and whether the conversation has already addressed it.
 
 ALWAYS RESPOND WITH TEXT:
 Every single customer message MUST get a visible text reply. You may call tools, but you must ALSO include a text response. Never return only a tool call with no text. The customer should always see a message from you. If you are saving memory or notifying Key, still write a short reply to the customer first. This is non-negotiable.
@@ -393,6 +395,20 @@ const TOOLS = [
         },
       },
       required: ['remind_at', 'note'],
+    },
+  },
+  {
+    name: 'cancel_reminder',
+    description: 'Cancel a pending reminder for this customer. Use when the thing the reminder was about has already been resolved in conversation — they sent the photo, gave the info, or the topic is no longer relevant.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'Brief reason for canceling, e.g. "customer already sent the photo" or "topic resolved in conversation".',
+        },
+      },
+      required: ['reason'],
     },
   },
   {
@@ -739,8 +755,11 @@ async function executeTool(
     return { result: `Reminder set for ${remind_at}: ${note}`, complete: false }
   }
 
-  // When customer sends a photo or completes the task, cancel any pending reminder
-  // (handled below in the photo detection block — this comment is for clarity)
+  if (toolName === 'cancel_reminder') {
+    await supabase.from('sparky_memory').delete().eq('key', `reminder:${phone}`)
+    console.log('[alex] Reminder cancelled for', phone, '—', toolInput.reason)
+    return { result: `Reminder cancelled: ${toolInput.reason}`, complete: false }
+  }
 
   if (toolName === 'mark_complete') {
     await supabase
@@ -1377,8 +1396,10 @@ Deno.serve(async (req) => {
     .update({ followup_count: 0, last_followup_at: null })
     .eq('session_id', session.id)
 
-  // Cancel any pending reminder — they replied, no need to nag
-  await supabase.from('sparky_memory').delete().eq('key', `reminder:${fromPhone}`)
+  // NOTE: Do NOT cancel reminders just because the customer replied.
+  // They might reply about something unrelated and still need the reminder.
+  // Reminders cancel on: photo received, session complete, opt-out, or Alex
+  // explicitly cancels via cancel_reminder when the topic is resolved in conversation.
   await saveMessages(supabase, session.id, messages)
 
   // Handle completion

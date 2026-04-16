@@ -210,6 +210,13 @@ Deno.serve(async (req) => {
           continue
         }
 
+        // Check if the reminder topic was already resolved (photo already received)
+        if (sess.photo_received && data.note?.toLowerCase().includes('photo')) {
+          console.log(`[followup] Reminder for ${phone} skipped — photo already received`)
+          await db.from('sparky_memory').delete().eq('key', rem.key)
+          continue
+        }
+
         // Look up name for personalization
         const digits = phone.replace(/\D/g, '').slice(-10)
         const { data: contacts } = await db
@@ -220,7 +227,11 @@ Deno.serve(async (req) => {
         const firstName = contacts?.[0]?.name?.split(' ')?.[0] || ''
         const hi = firstName ? `Hey ${firstName}, j` : 'J'
 
-        const reminderMsg = `${hi}ust a heads up in case it slipped your mind. That panel photo whenever you get a chance.`
+        // Use the reminder note to personalize the message
+        const topic = (data.note || 'panel photo').toLowerCase()
+        const reminderMsg = topic.includes('photo')
+          ? `${hi}ust a heads up in case it slipped your mind. That panel photo whenever you get a chance.`
+          : `${hi}ust circling back on what we talked about. ${data.note || 'Let me know if you have any questions.'}`
 
         const sent = await sendSms(phone, reminderMsg)
         if (sent) {
