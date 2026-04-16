@@ -33,7 +33,8 @@ const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0
 const TEST_MODE = true   // Set false when going live
 
 const MODEL = 'claude-opus-4-6'
-const MAX_TOKENS = 500
+const MAX_TOKENS       = 250   // SMS — keep responses tight
+const MAX_HISTORY_MSGS = 30    // Trim beyond this to prevent token overflow (~15 exchanges)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -41,115 +42,213 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
+// ── Webhook signature verification ───────────────────────────────────────────
+// OpenPhone signs every webhook with HMAC-SHA256 using your webhook secret.
+// Set QUO_WEBHOOK_SECRET in Supabase function secrets to enable.
+// If not set, verification is skipped (dev/transition mode).
+
+async function verifyWebhookSignature(rawBody: string, req: Request): Promise<boolean> {
+  const secret = Deno.env.get('QUO_WEBHOOK_SECRET')
+  if (!secret) return true // no secret configured — allow (set secret to enforce)
+
+  const signature = (
+    req.headers.get('openphone-signature') ||
+    req.headers.get('x-openphone-signature') ||
+    req.headers.get('x-signature')
+  )
+  if (!signature) {
+    console.warn('[alex] Webhook received without signature header — rejected')
+    return false
+  }
+
+  try {
+    const enc = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw', enc.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false, ['verify'],
+    )
+    // Signature may be hex or prefixed (v1=abc123) — strip prefix, parse hex
+    const hexSig = signature.replace(/^v\d+=/, '').toLowerCase()
+    const sigBytes = Uint8Array.from(
+      (hexSig.match(/.{2}/g) ?? []).map((b: string) => parseInt(b, 16)),
+    )
+    return await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(rawBody))
+  } catch (err) {
+    console.error('[alex] Signature verification error:', err)
+    return false
+  }
+}
+
 // ── SYSTEM PROMPT ─────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `RULES:
+const SYSTEM_PROMPT = `HARD RULES — never break these:
 - NEVER give electrical advice or assessments. You are not an electrician.
-- NEVER say a dollar amount.
-- NEVER use em dashes.
+- NEVER say any dollar amount or price range.
+- NEVER use em dashes (—). Use a comma or period instead.
 - NEVER use emoji.
-- NEVER use bold, italic, or markdown.
-- NEVER say: Great question, Absolutely, Thank you for reaching out, Id be happy to, I appreciate, I understand, Fair question, Awesome, Dont hesitate
-- NEVER sound desperate.
-- Max one exclamation mark per conversation.
-- KEEP IT SHORT. Say what needs to be said and stop. Do not over-explain.
-- Do NOT volunteer that you are AI.
-- Do NOT describe the installation in technical detail. Just say we hook the generator up to the panel.
+- NEVER use bold, italic, or markdown formatting of any kind.
+- NEVER say: Great question, Absolutely, Thank you for reaching out, Id be happy to, I appreciate, I understand, Fair enough, Awesome, Dont hesitate, Certainly, Of course, Sounds great, No problem, Perfect (except as an occasional genuine reaction), Checking in, Following up, Circling back, Hope this finds you.
+- NEVER sound desperate, pushy, or salesy.
+- NEVER stack multiple questions in one message. One question at a time, always.
+- Max one exclamation mark per entire conversation — use it only when it feels genuinely earned.
+- Every message must fit in a single SMS (under 320 characters). One idea per message. No lists.
+- NEVER mention, imply, or hint that you are an AI, bot, or automated system — not even subtly. Speak as a person. If directly asked "are you a bot?" or "am I talking to a real person?" or anything equivalent, answer honestly. Only then.
 
-You are Alex. You work for Backup Power Pro. Your job is to collect photos and contact info so our electrician can put together a quote.
+You are Alex. You work for Backup Power Pro, a generator connection service based in Upstate South Carolina. Key is the licensed electrician who does all the installations himself.
 
-Tone: friendly and professional. Warm but not your best friend, not a robot.
+Your job: get a photo of the customer's electrical panel and find out where it is located. That is everything Key needs to get started.
 
-INTRO (first message only):
-Hi, this is Alex with Backup Power Pro. I saw your interest in getting a generator connected to your panel. Do you have a portable generator?
+VOICE AND TONE:
+Think of yourself as a knowledgeable friend who happens to work in this industry. Warm, direct, genuinely helpful. You actually care whether this person gets their generator set up. You are patient. You do not make people feel rushed or dumb. You speak in plain English. You sound like a real person texting, not a customer service script.
 
-== ELECTRICIAN REFERENCES ==
+Use the customer's first name naturally — once every few exchanges if you know it. Not every message. Not never. When it fits naturally.
+
+SPEED AND ATTENTIVENESS:
+Respond as though you were actively waiting for their message. Short, timely responses feel more human than long careful ones. Never make the customer feel like they are waiting for a response or wondering if anyone received their message.
+
+POSITIVE LANGUAGE:
+Say "I will find out" — not "I do not know."
+Say "Key will go over the number when he reaches out" — not "I cannot tell you prices."
+Say "Take your time" — not "No rush" or "No worries."
+Say "He will be in touch soon" — not "I will let him know" (passive).
+If something involves waiting: say what happens next and roughly when. "Key usually gets back within a day. He is on job sites during the day so he tends to reach out in the evenings."
+
+NARRATING WAITS:
+Whenever the customer does something and the next step involves waiting on Key, always close the loop. Tell them what happens next and when. Never leave them in silence wondering. "Key will take a look at this and reach out to set something up — usually within a day or two." That one sentence does more for trust than three paragraphs of explanation.
+
+ELECTRICIAN REFERENCES:
 First mention: "Key, our electrician"
 After that: "Key" or "he"
 
-== COLLECT (one item at a time, in order) ==
-1. Confirm they have a portable generator.
-2. Photo of the generator outlet. Key needs to see the plug type.
-3. Photo of the main electrical panel with the door open. Key needs to see the breakers.
-4. Full name.
-5. Email address.
-6. Street address.
-7. Best time to reach them.
-When all collected → call mark_complete tool.
+WHAT WE DO (if they ask):
+We install a generator connection box on the outside of the house so they can plug in a portable generator and power the home during outages. Key handles the wiring, the connection box, and all permits. The install typically takes a few hours.
 
-== WHAT WE DO ==
-If they ask: "We connect your generator to your home's panel so you can power your house during outages. Key reviews your photos and handles all the details."
+OPENER (first message only):
+One warm sentence that introduces yourself and ends with the panel photo ask. Target under 160 characters — short openers get far more responses than long ones. Sound like a person, not a form letter.
+BAD: "Hi John! My name is Alex and I work for Backup Power Pro and I am reaching out because you expressed interest in our generator connection services..."
+GOOD: "Hey John, this is Alex with Backup Power Pro. Could you send a photo of your electrical panel with the door open so Key can take a look?"
 
-== PRICE ==
-"That is up to Key, our electrician. He will have a number once he reviews your photos."
-Then continue collecting.
+COLLECT:
 
-== AI QUESTION ==
-If asked directly: "Yes, I am. The company set me up to get the process started faster."
-Do not bring this up unprompted.
+Step 1 — Panel photo:
+  Ask clearly. If they seem unsure what a panel looks like: "It is the metal box with rows of switches — usually in a garage, basement, or hallway. Open the door and you will see a bunch of labeled breakers."
+  When they say they will send it later: "Take your time, send it whenever works."
+  When you receive a photo: thank them in one warm, genuine sentence. Tell them Key will take a look and reach out soon. Call notify_key immediately with reason "photo_received." Then move to Step 2.
 
-== TECHNICAL QUESTION ==
-Any electrical or wiring question: "Key will answer that when he reviews your setup."
+Step 2 — Panel location:
+  Ask simply: "One more thing — is the panel inside or outside?"
+  Based on their answer, ask a natural follow-up if needed (is it on an exterior wall or more toward the center of the house).
+  Explain briefly why it matters: the connection box has to mount on the exterior, and the closer the panel is to an outside wall, the simpler the install tends to be. Mention that every install includes a 20-foot cord, which gives flexibility on placement.
+  Do not quiz them or make it feel technical. Help them understand, not stress them out.
 
-== WANTS TO SPEAK WITH SOMEONE ==
-"Of course. What is the best time to reach you?"
+Step 3 — Wrap up:
+  Once you have the photo AND location, say: "That is everything Key needs. He will reach out soon to go over options." Then call mark_complete immediately.
 
-== COVERAGE ==
-Greenville, Spartanburg, Pickens counties. If outside: "We do not cover that area currently."
+EDGE CASES:
 
-== LATE NIGHT / NO RUSH ==
-"No rush on the photos. Send them whenever."
+"I do not have a generator yet":
+  "Key can still get the connection box installed and ready — that way you can plug any generator in the moment you need it. Want to get the quote started?"
 
-== KEY TAKES OVER ==
-Stop responding.
+"How much does it cost?":
+  "Key puts together the quote once he sees your panel and setup. He will go over the number when he reaches out."
 
-== GHOST FOLLOW-UP ==
-Day 1 (sent if no reply after ~24h):
-"Hi [name], just checking in. Whenever you get those photos to Key, he can get your quote started."
+"How long does the install take?":
+  "Typically a few hours. Key does the work himself so it gets done right."
 
-Day 3 (sent if still no reply):
-"Still want us to take a look?"
+"Do I need a permit?":
+  "Key handles permits as part of every install. You do not have to worry about that."
 
-Day 7 (final follow-up):
-"No pressure at all. We are here whenever you are ready."
-After Day 7: stop.
+Customer mentions a recent storm, power outage, or fear of outages:
+  Acknowledge it briefly and genuinely — one sentence. "That is stressful, and honestly it is exactly what this is built for." Then continue naturally. Do not dwell or use it as a sales pitch.
 
-== DONE ==
-When you have both photos AND name, email, and address — call the mark_complete tool with a summary.
-Do not output [LEAD_COMPLETE] as text. Use the tool.
+Customer seems confused:
+  Slow down. Ask one simple question. Do not pile on information. Wait for them to catch up.
 
-== MEMORY ==
-Use the write_memory tool whenever you learn something worth keeping:
-- Generator type or size
-- Panel location or quirks
-- Objections or concerns raised
-- Scheduling preferences
-- Anything that would help Key or a future conversation`
+Customer seems frustrated or upset:
+  Stay calm. Briefly acknowledge. Offer to have Key reach out personally. Call notify_key with reason "other" and describe the situation.
+
+Customer goes silent for a while, then texts back:
+  Pick up naturally from where you left off. No "Hey, just wanted to follow up" language. Just continue as if you are right there.
+
+Technical electrical question you cannot honestly answer:
+  "That is a great one for Key — he will be able to give you a straight answer when he takes a look." Call notify_key with reason "technical_question" and include the question. Then continue the conversation.
+
+Customer asks to speak with someone:
+  "Sure. I will let Key know to reach out. What is the best time?" Call notify_key with reason "wants_to_talk."
+
+Customer says they are not interested, asks to stop, or anything that means do not contact them:
+  "No issue at all. I will take you off the list. Hope things work out." Call notify_key with reason "opted_out" and message "Customer asked to stop." Do not send any more messages.
+
+AI question — if asked directly whether you are AI:
+  "Yes, I am. Backup Power Pro uses me to get things moving quickly so Key can stay focused on the actual installs. He handles everything from here."
+  Do not bring this up unprompted.
+
+COVERAGE:
+Greenville, Spartanburg, Pickens counties SC only. If they mention a city or area outside this: "We do not cover that area at the moment."
+
+TIME AWARENESS:
+If it is after 8 PM or before 8 AM:
+  Add one brief note: "Thanks for reaching out — I will make sure Key sees this first thing in the morning." Then continue normally. Do not block responses.
+  If they send a photo or key information during off-hours, acknowledge it and tell them Key will follow up in the morning.
+
+LANGUAGE:
+If the customer writes in Spanish, respond in Spanish. Continue in whatever language they use.
+
+MEMORY:
+Use write_memory whenever you learn something worth keeping:
+  - Urgency or timeline ("had three outages this year," "just bought a generator," "storm season coming")
+  - Panel details (brand, age, anything notable they mention)
+  - Location or property type (detached garage, manufactured home, apartment, etc.)
+  - Any hesitation, objection, or concern they raised
+  - Anything Key should know before calling them
+
+DONE:
+When you have the photo AND panel location, say your wrap-up line and call mark_complete. Do not write the word "complete" or signal completion as text — use the tool.`
 
 // ── TOOLS ────────────────────────────────────────────────────────────────────
 
 const TOOLS = [
   {
     name: 'write_memory',
-    description: 'Save an important fact about this lead for future reference. Use for generator details, objections, scheduling preferences, or anything Key should know.',
+    description: 'Save an important fact about this lead for future reference. Use for panel location, objections, scheduling preferences, or anything Key should know.',
     input_schema: {
       type: 'object',
       properties: {
-        key: { type: 'string', description: 'Short label, e.g. "generator_type", "panel_location", "objection"' },
+        key: { type: 'string', description: 'Short label, e.g. "panel_location", "objection", "timeline"' },
         value: { type: 'string', description: 'What to remember' },
       },
       required: ['key', 'value'],
     },
   },
   {
+    name: 'notify_key',
+    description: 'Notify Key (the owner/electrician) immediately. Use when photo is received, customer has a technical question, customer wants to speak with someone, or customer has opted out.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          enum: ['photo_received', 'technical_question', 'wants_to_talk', 'opted_out', 'other'],
+          description: 'Why you are notifying Key',
+        },
+        message: {
+          type: 'string',
+          description: 'What Key needs to know',
+        },
+      },
+      required: ['reason', 'message'],
+    },
+  },
+  {
     name: 'mark_complete',
-    description: 'Call this when you have collected all required info: generator confirmed, both photos received, name, email, address, and best time. This notifies Key to create the quote.',
+    description: 'Call this when you have both the panel photo AND the panel location. This wraps up Alex\'s job for this lead.',
     input_schema: {
       type: 'object',
       properties: {
         summary: {
           type: 'string',
-          description: 'Brief summary: Name, address, generator type, what photos were received.',
+          description: 'Brief summary: panel photo received, panel location (interior/exterior), any relevant notes.',
         },
       },
       required: ['summary'],
@@ -171,16 +270,34 @@ async function claimMessage(supabase: any, msgId: string): Promise<boolean> {
   return error?.code !== '23505'
 }
 
-async function getSession(supabase: any, phone: string): Promise<{ id: string; messages: any[] } | null> {
+async function getSession(supabase: any, phone: string): Promise<{
+  id: string
+  messages: any[]
+  keyActive: boolean
+  keyLastActiveAt: string | null
+  alexActive: boolean
+  optedOut: boolean
+  customerLastMsgAt: string | null
+  lastOutboundAt: string | null
+} | null> {
   const { data } = await supabase
     .from('alex_sessions')
-    .select('session_id, messages')
+    .select('session_id, messages, key_active, key_last_active_at, alex_active, opted_out, customer_last_msg_at, last_outbound_at')
     .eq('phone', phone)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(1)
   if (!data?.[0]) return null
-  return { id: data[0].session_id, messages: data[0].messages || [] }
+  return {
+    id: data[0].session_id,
+    messages: data[0].messages || [],
+    keyActive: data[0].key_active ?? false,
+    keyLastActiveAt: data[0].key_last_active_at ?? null,
+    alexActive: data[0].alex_active !== false,
+    optedOut: data[0].opted_out ?? false,
+    customerLastMsgAt: data[0].customer_last_msg_at ?? null,
+    lastOutboundAt: data[0].last_outbound_at ?? null,
+  }
 }
 
 async function createSession(supabase: any, phone: string): Promise<{ id: string; messages: any[] }> {
@@ -190,15 +307,29 @@ async function createSession(supabase: any, phone: string): Promise<{ id: string
     session_id: id,
     status: 'active',
     messages: [],
+    alex_active: true,
+    key_active: false,
+    followup_count: 0,
+    photo_received: false,
+    opted_out: false,
   })
   console.log('[alex] Created session:', id)
   return { id, messages: [] }
 }
 
+// saveMessages saves history only — does NOT update last_outbound_at
+// Call markOutbound() separately only when an SMS was actually sent
 async function saveMessages(supabase: any, sessionId: string, messages: any[]): Promise<void> {
   await supabase
     .from('alex_sessions')
-    .update({ messages, last_outbound_at: new Date().toISOString() })
+    .update({ messages })
+    .eq('session_id', sessionId)
+}
+
+async function markOutbound(supabase: any, sessionId: string): Promise<void> {
+  await supabase
+    .from('alex_sessions')
+    .update({ last_outbound_at: new Date().toISOString() })
     .eq('session_id', sessionId)
 }
 
@@ -253,9 +384,42 @@ async function buildContactContext(supabase: any, phone: string): Promise<string
   return lines.join('\n')
 }
 
+// ── HISTORY MANAGEMENT ───────────────────────────────────────────────────────
+// Keeps the most recent N messages. Preserves any leading system-context injection
+// (the [INTERNAL BRIEFING] block that comes before the first user message).
+
+function trimHistory(messages: any[], maxMsgs: number = MAX_HISTORY_MSGS): any[] {
+  if (messages.length <= maxMsgs) return messages
+
+  // Preserve leading context injection (role:user containing [INTERNAL BRIEFING])
+  const contextMessages: any[] = []
+  let i = 0
+  while (i < messages.length && i < 2) {
+    const m = messages[i]
+    if (m.role === 'user' && typeof m.content === 'string' && m.content.includes('[INTERNAL BRIEFING')) {
+      contextMessages.push(m)
+      i++
+    } else {
+      break
+    }
+  }
+
+  // Take the last maxMsgs from the rest, but never cut mid-tool-call
+  const rest = messages.slice(i)
+  const trimmed = rest.slice(-maxMsgs)
+  return [...contextMessages, ...trimmed]
+}
+
 // ── ANTHROPIC CALL ────────────────────────────────────────────────────────────
 
-async function callClaude(messages: any[]): Promise<any> {
+// contactContext is injected fresh on every API call — never stored in history.
+// This keeps the JSONB clean and ensures Alex always has current CRM data.
+async function callClaude(messages: any[], contactContext?: string): Promise<any> {
+  const history = trimHistory(messages)
+  const apiMessages = contactContext
+    ? [{ role: 'user', content: contactContext }, ...history]
+    : history
+
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -268,7 +432,7 @@ async function callClaude(messages: any[]): Promise<any> {
       max_tokens: MAX_TOKENS,
       system: SYSTEM_PROMPT,
       tools: TOOLS,
-      messages,
+      messages: apiMessages,
     }),
   })
   if (!resp.ok) {
@@ -296,10 +460,70 @@ async function executeTool(
     return { result: `Saved: ${toolInput.key}`, complete: false }
   }
 
+  if (toolName === 'notify_key') {
+    const { reason, message } = toolInput
+    const priorityMap: Record<string, 'urgent' | 'normal' | 'fyi'> = {
+      photo_received: 'urgent',
+      technical_question: 'normal',
+      wants_to_talk: 'urgent',
+      opted_out: 'urgent',
+      other: 'normal',
+    }
+
+    // Soft opt-out: customer expressed disinterest in a non-keyword way
+    if (reason === 'opted_out') {
+      await supabase
+        .from('alex_sessions')
+        .update({ opted_out: true, alex_active: false, status: 'opted_out' })
+        .eq('session_id', sessionId)
+    }
+    const priority = priorityMap[reason] || 'normal'
+
+    const digits = phone.replace(/\D/g, '').slice(-10)
+    const { data: contacts } = await supabase
+      .from('contacts')
+      .select('id, name')
+      .ilike('phone', `%${digits}%`)
+      .limit(1)
+    const contactId = contacts?.[0]?.id || null
+    const contactName = contacts?.[0]?.name || phone
+
+    // For photo_received, pull the URL Alex just saved to memory
+    let photoLine = ''
+    if (reason === 'photo_received') {
+      const { data: photoMems } = await supabase
+        .from('sparky_memory')
+        .select('key, value')
+        .like('key', `contact:${phone}:photo_%`)
+        .order('key', { ascending: false })
+        .limit(1)
+      if (photoMems?.[0]?.value) {
+        photoLine = `\nPhoto: ${photoMems[0].value}`
+      }
+    }
+
+    const summary = `Alex → Key [${reason}]: ${message}${photoLine}`
+    const actions: Record<string, string> = {
+      photo_received: 'Panel photo received. Review it and send a quote.',
+      technical_question: 'Answer the customer\'s question when you follow up.',
+      wants_to_talk: 'Customer wants a call. Reach out at their preferred time.',
+    }
+
+    // Fire Sparky inbox notification
+    reportToSparkyImmediate(supabase, contactId, phone, priority, summary, actions[reason]).catch(() => {})
+
+    // Also fire internal Quo SMS to Key
+    const quoMsg = `ALEX → ${contactName}\n${reason.replace('_', ' ').toUpperCase()}: ${message}${photoLine}\nPhone: ${phone}`
+    notifyKeyQuo(phone, quoMsg).catch(() => {})
+
+    console.log('[alex] notify_key fired:', reason)
+    return { result: `Key notified: ${reason}`, complete: false }
+  }
+
   if (toolName === 'mark_complete') {
     await supabase
       .from('alex_sessions')
-      .update({ status: 'complete', summary: toolInput.summary })
+      .update({ status: 'complete', summary: toolInput.summary, alex_active: false })
       .eq('session_id', sessionId)
     return { result: 'Marked complete', complete: true, summary: toolInput.summary }
   }
@@ -315,12 +539,13 @@ async function runAlex(
   phone: string,
   sessionId: string,
   messages: any[],
+  contactContext?: string,
 ): Promise<{ response: string; updatedMessages: any[]; complete: boolean; summary?: string }> {
   let complete = false
   let completeSummary: string | undefined
 
   while (true) {
-    const data = await callClaude(messages)
+    const data = await callClaude(messages, contactContext)
     const assistantContent = data.content || []
 
     // Append assistant turn to history
@@ -365,11 +590,14 @@ async function runAlex(
 
 function cleanSms(text: string): string {
   return text
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/\*(.*?)\*/g, '$1')
-    .replace(/__(.*?)__/g, '$1')
-    .replace(/\u2014/g, ',')
-    .replace(/\u2013/g, '-')
+    .replace(/\*\*(.*?)\*\*/g, '$1')    // bold
+    .replace(/\*(.*?)\*/g, '$1')         // italic
+    .replace(/__(.*?)__/g, '$1')         // underline
+    .replace(/~(.*?)~/g, '$1')           // strikethrough
+    .replace(/`(.*?)`/g, '$1')           // backticks
+    .replace(/\[(.*?)\]\(.*?\)/g, '$1')  // [link](url) → text
+    .replace(/\u2014/g, ',')             // em dash
+    .replace(/\u2013/g, '-')             // en dash
     .trim()
 }
 
@@ -407,6 +635,17 @@ async function reportToSparky(
   summary: string,
   suggestedAction?: string,
 ): Promise<void> {
+  await reportToSparkyImmediate(supabase, contactId, phone, priority, summary, suggestedAction)
+}
+
+async function reportToSparkyImmediate(
+  _supabase: any,
+  contactId: string | null,
+  _phone: string,
+  priority: 'urgent' | 'normal' | 'fyi',
+  summary: string,
+  suggestedAction?: string,
+): Promise<void> {
   try {
     await fetch(`${Deno.env.get('SUPABASE_URL')!}/functions/v1/sparky-notify`, {
       method: 'POST',
@@ -427,15 +666,62 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS })
 
+  let rawBody: string
   let body: any
-  try { body = await req.json() } catch {
+  try {
+    rawBody = await req.text()
+    body = JSON.parse(rawBody)
+  } catch {
     return new Response(JSON.stringify({ error: 'invalid json' }), { status: 400, headers: CORS })
+  }
+
+  // Verify webhook is genuinely from OpenPhone
+  if (!await verifyWebhookSignature(rawBody, req)) {
+    return new Response('Unauthorized', { status: 401, headers: CORS })
   }
 
   const eventType   = body?.type
   const messageData = body?.data?.object
 
-  if (eventType !== 'message.received' || !messageData) {
+  if (!messageData) {
+    return new Response(JSON.stringify({ skipped: true }), { status: 200, headers: CORS })
+  }
+
+  // ── Key-takeover detection ──────────────────────────────────────────────────
+  // When Key manually sends a message via Quo (userId present = human, not API),
+  // mark that session as key_active so Alex stands down.
+  // Guard: only act on messages FROM the BPP Quo line to avoid mis-firing on
+  // API-sent messages that OpenPhone might still include a userId on.
+  if (eventType === 'message.sent' && messageData.userId) {
+    const toPhone = Array.isArray(messageData.to) ? messageData.to[0] : messageData.to
+    const sentFrom: string = messageData.from || ''
+    // Only treat as Key activity if the message went to a real customer (not Key's own phone)
+    // and came from BPP's line (userId confirms human; from confirms our number)
+    if (toPhone && toPhone !== KEY_PHONE && sentFrom === QUO_PHONE_ID) {
+      const supabase = db()
+      const session = await getSession(supabase, toPhone)
+      if (session) {
+        // Save Key's message to history so Alex has full context when re-engaging
+        const keyMsg = (messageData.body || messageData.text || '').trim()
+        const updatedMsgs = keyMsg
+          ? [...session.messages, { role: 'user', content: `[Key said to customer]: ${keyMsg}` }]
+          : session.messages
+
+        await supabase
+          .from('alex_sessions')
+          .update({
+            key_active: true,
+            key_last_active_at: new Date().toISOString(),
+            messages: updatedMsgs,
+          })
+          .eq('session_id', session.id)
+        console.log('[alex] Key takeover marked for', toPhone)
+      }
+    }
+    return new Response(JSON.stringify({ ok: true, reason: 'key_activity_tracked' }), { status: 200, headers: CORS })
+  }
+
+  if (eventType !== 'message.received') {
     return new Response(JSON.stringify({ skipped: true }), { status: 200, headers: CORS })
   }
   if (messageData.direction === 'outgoing') {
@@ -466,22 +752,60 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ skipped: true, reason: 'duplicate' }), { status: 200, headers: CORS })
   }
 
-  // RETEST: wipe history and start fresh
+  // ── STOP / opt-out detection (TCPA) ────────────────────────────────────────
+  const OPT_OUT_WORDS = /^\s*(stop|cancel|unsubscribe|quit|end|optout|opt.?out)\s*$/i
+  if (OPT_OUT_WORDS.test(messageText)) {
+    // Mark opted out on any active session, and create/close one if needed
+    await supabase
+      .from('alex_sessions')
+      .update({ opted_out: true, alex_active: false, status: 'opted_out' })
+      .eq('phone', fromPhone)
+      .eq('status', 'active')
+
+    // Notify Key
+    const digits = fromPhone.replace(/\D/g, '').slice(-10)
+    const { data: contacts } = await supabase
+      .from('contacts')
+      .select('id, name')
+      .ilike('phone', `%${digits}%`)
+      .limit(1)
+    const contactName = contacts?.[0]?.name || fromPhone
+    const contactId   = contacts?.[0]?.id || null
+
+    reportToSparkyImmediate(
+      supabase, contactId, fromPhone, 'urgent',
+      `${contactName} texted STOP. All AI messaging halted.`,
+      'Customer opted out. Do not send automated messages. Reach out manually if needed.',
+    ).catch(() => {})
+
+    notifyKeyQuo(fromPhone,
+      `STOP received from ${contactName} (${fromPhone})\nAll AI messaging halted. Manual follow-up only.`,
+    ).catch(() => {})
+
+    console.log('[alex] Opt-out from', fromPhone)
+    return new Response(JSON.stringify({ ok: true, reason: 'opted_out' }), { status: 200, headers: CORS })
+  }
+
+  // RETEST command (manual) — kept for explicitness
+  // In TEST_MODE, every message auto-starts fresh (see below), so RETEST is redundant but harmless.
   if (messageText.toUpperCase() === 'RETEST') {
     await clearSessions(supabase, fromPhone)
     const session = await createSession(supabase, fromPhone)
 
     const context = await buildContactContext(supabase, fromPhone)
-    const messages: any[] = []
-    if (context) messages.push({ role: 'user', content: context })
+    const openerMessages: any[] = [{ role: 'user', content: 'Send your opening message now.' }]
 
-    messages.push({ role: 'user', content: 'Send your opening message now.' })
-
-    const { response, updatedMessages } = await runAlex(supabase, fromPhone, session.id, messages)
+    const { response, updatedMessages } = await runAlex(supabase, fromPhone, session.id, openerMessages, context)
     await saveMessages(supabase, session.id, updatedMessages)
     await sendQuoMessage(fromPhone, cleanSms(response))
 
     return new Response(JSON.stringify({ success: true, action: 'retest' }), { status: 200, headers: CORS })
+  }
+
+  // TEST_MODE: auto-fresh-start on every incoming message — simulates a new form submission
+  // This means every text from Key starts a clean conversation, no need to type RETEST.
+  if (TEST_MODE) {
+    await clearSessions(supabase, fromPhone)
   }
 
   // Load or create session
@@ -492,42 +816,186 @@ Deno.serve(async (req) => {
     session = await createSession(supabase, fromPhone)
   }
 
+  // Check if this lead has had a real prior conversation (complete/expired — not just TEST_MODE resets).
+  // Used to avoid re-sending the opener to a returning lead.
+  // Excludes 'reset' sessions (TEST_MODE cleanup) so every test run gets a fresh opener.
+  let hasHistory = false
+  if (isNew && !TEST_MODE) {
+    const { data: prevSessions } = await supabase
+      .from('alex_sessions')
+      .select('session_id')
+      .eq('phone', fromPhone)
+      .in('status', ['complete', 'expired', 'opted_out'])
+      .limit(1)
+    hasHistory = !!(prevSessions?.length)
+  }
+
+  // ── Opt-out gate ───────────────────────────────────────────────────────────
+  if (session.optedOut) {
+    console.log('[alex] Opted-out lead messaged in, ignoring:', fromPhone)
+    return new Response(JSON.stringify({ skipped: true, reason: 'opted_out' }), { status: 200, headers: CORS })
+  }
+
+  // ── alex_active gate ───────────────────────────────────────────────────────
+  if (!session.alexActive) {
+    // Alex was deactivated (completed, opted out, or Key took over permanently).
+    // If the customer replied after completion, silently notify Key so he can follow up.
+    if (messageText && session.messages.length > 0) {
+      const digits = fromPhone.replace(/\D/g, '').slice(-10)
+      supabase.from('contacts').select('id, name').ilike('phone', `%${digits}%`).limit(1)
+        .then(({ data }) => {
+          reportToSparkyImmediate(
+            supabase, data?.[0]?.id || null, fromPhone, 'normal',
+            `${data?.[0]?.name || fromPhone} replied after Alex was deactivated: "${messageText.slice(0, 120)}"`,
+            'Check if follow-up is needed.',
+          ).catch(() => {})
+        })
+    }
+    console.log('[alex] Alex deactivated for', fromPhone)
+    return new Response(JSON.stringify({ skipped: true, reason: 'alex_inactive' }), { status: 200, headers: CORS })
+  }
+
+  // ── Key-active gate ────────────────────────────────────────────────────────
+  // If Key has sent a message recently, Alex stands down.
+  // If Key has been silent 4+ hours and the customer is writing back, Alex re-engages.
+  if (session.keyActive) {
+    const keyLastMs = session.keyLastActiveAt ? new Date(session.keyLastActiveAt).getTime() : 0
+    const hoursSinceKey = (Date.now() - keyLastMs) / 3600000
+
+    if (hoursSinceKey < 4) {
+      // Key is active — track that customer replied and stay silent
+      await supabase
+        .from('alex_sessions')
+        .update({ customer_last_msg_at: new Date().toISOString() })
+        .eq('session_id', session.id)
+      console.log('[alex] Key active, standing down for', fromPhone)
+      return new Response(JSON.stringify({ skipped: true, reason: 'key_active' }), { status: 200, headers: CORS })
+    } else {
+      // Key went silent for 4+ hours — Alex re-engages
+      await supabase
+        .from('alex_sessions')
+        .update({ key_active: false })
+        .eq('session_id', session.id)
+      // Inject a note into the messages so Alex acknowledges the gap naturally
+      session.messages = [
+        ...session.messages,
+        {
+          role: 'user',
+          content: '[INTERNAL: Key was responding to this customer directly but has been quiet for several hours. The customer just messaged in again. Re-engage naturally — briefly acknowledge you are following back up, and continue from where things left off. Do not re-introduce yourself.]',
+        },
+      ]
+      console.log('[alex] Key silent 4h+, Alex re-engaging for', fromPhone)
+    }
+  }
+
+  // Track when customer last messaged (used by follow-up engine)
+  await supabase
+    .from('alex_sessions')
+    .update({ customer_last_msg_at: new Date().toISOString() })
+    .eq('session_id', session.id)
+
   let messages = session.messages
 
-  // New session: inject context + send opener first
+  // ── Fresh context — fetched on EVERY request, never stored in JSONB ────────
+  // Injected at the API call boundary so Alex always has current CRM data,
+  // updated notes, and any memory written by other agents since the session started.
+  const contactContext = await buildContactContext(supabase, fromPhone)
+
+  // New session: send opener (or returning-lead re-engagement) before processing message
   if (isNew) {
-    const context = await buildContactContext(supabase, fromPhone)
-    if (context) messages.push({ role: 'user', content: context })
+    let openerTrigger: string
 
-    messages.push({ role: 'user', content: 'Send your opening message now.' })
-    const { response: opener, updatedMessages: afterOpener } = await runAlex(supabase, fromPhone, session.id, messages)
+    if (hasHistory) {
+      // This lead has talked to Alex before — don't re-introduce, pick up naturally
+      openerTrigger =
+        '[INTERNAL: This customer has interacted with Backup Power Pro before. ' +
+        'Do NOT re-introduce yourself or send the standard opener. ' +
+        'Based on the context briefing, acknowledge you are following back up and continue from where things left off. ' +
+        'Keep it brief and natural.]'
+    } else {
+      openerTrigger = 'Send your opening message now.'
+    }
+
+    const openerMessages: any[] = [{ role: 'user', content: openerTrigger }]
+    const { response: opener, updatedMessages: afterOpener } = await runAlex(
+      supabase, fromPhone, session.id, openerMessages, contactContext,
+    )
     messages = afterOpener
-
     await sendQuoMessage(fromPhone, cleanSms(opener))
 
-    // If it was just a greeting, opener is enough for this webhook
-    const isGreeting = /^(hi|hey|hello|yo|sup|test|testing)[\s!.?]*$/i.test(messageText)
+    // Greeting-only messages → opener is enough for this webhook
+    const isGreeting = /^(hi|hey|hello|yo|sup|test|testing|start)[\s!.?]*$/i.test(messageText)
     if (isGreeting) {
       await saveMessages(supabase, session.id, messages)
+      await markOutbound(supabase, session.id)
       return new Response(JSON.stringify({ success: true, action: 'opener_sent' }), { status: 200, headers: CORS })
     }
   }
 
-  // Build user message
+  // Build user message + capture photo URLs into memory
   let userText = messageText
-  if (hasMedia) userText = userText ? `${userText}\n\n[Customer sent a photo]` : '[Customer sent a photo]'
+  if (hasMedia) {
+    userText = userText ? `${userText}\n\n[Customer sent a photo]` : '[Customer sent a photo]'
+
+    // Persist photo URLs SYNCHRONOUSLY before runAlex so notify_key can read them immediately.
+    // Fire-and-forget caused a race where notify_key fetched the URL before the save completed.
+    const mediaItems: any[] = messageData.media || []
+    const photoSaves = mediaItems.map(async (item: any, idx: number) => {
+      const url = item?.url || item?.mediaUrl
+      if (url && typeof url === 'string' && url.startsWith('http')) {
+        const key = `contact:${fromPhone}:photo_${Date.now()}_${idx}`
+        try {
+          await supabase
+            .from('sparky_memory')
+            .upsert({ key, value: url, category: 'contact', importance: 4 }, { onConflict: 'key' })
+          console.log('[alex] Photo URL saved:', key)
+        } catch (err) {
+          console.error('[alex] Failed to save photo URL:', err)
+        }
+      } else if (item) {
+        console.warn('[alex] Could not extract photo URL from media item:', JSON.stringify(item).slice(0, 100))
+      }
+    })
+    await Promise.all(photoSaves)
+
+    // Mark photo received on session — used by follow-up engine to pick the right track
+    await supabase.from('alex_sessions')
+      .update({ photo_received: true })
+      .eq('session_id', session.id)
+  }
   messages.push({ role: 'user', content: userText })
 
-  // Typing delay
+  // ── Typing delay ──────────────────────────────────────────────────────────
+  const msgTimestamp = messageData.createdAt
+    ? new Date(messageData.createdAt).getTime()
+    : Date.now()
   await new Promise(r => setTimeout(r, 1500 + Math.random() * 2000))
 
-  // Run Alex
+  // ── Debounce: skip if a newer message arrived during the delay ────────────
+  // Prevents double-responses when a customer sends two texts in quick succession.
+  // The handler for the newer message will have the full context and respond once.
+  const { data: debounceCheck } = await supabase
+    .from('alex_sessions')
+    .select('customer_last_msg_at')
+    .eq('session_id', session.id)
+    .single()
+
+  if (debounceCheck?.customer_last_msg_at) {
+    const latestMs = new Date(debounceCheck.customer_last_msg_at).getTime()
+    // If the DB shows a newer message arrived, skip — the newer handler will respond
+    if (latestMs > msgTimestamp) {
+      console.log('[alex] Debounced — newer message will respond')
+      return new Response(JSON.stringify({ skipped: true, reason: 'debounced' }), { status: 200, headers: CORS })
+    }
+  }
+
+  // Run Alex — fresh context injected at API level, not stored
   let response: string
   let complete = false
   let summary: string | undefined
 
   try {
-    const result = await runAlex(supabase, fromPhone, session.id, messages)
+    const result = await runAlex(supabase, fromPhone, session.id, messages, contactContext)
     response = result.response
     messages = result.updatedMessages
     complete = result.complete
@@ -535,9 +1003,24 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error('[alex] Agent error:', err)
     response = 'I am having a little trouble right now. Key will follow up with you shortly.'
+
+    // Notify Key that Alex failed so he can follow up manually
+    const digits = fromPhone.replace(/\D/g, '').slice(-10)
+    supabase.from('contacts').select('id, name').ilike('phone', `%${digits}%`).limit(1)
+      .then(({ data }) => {
+        reportToSparkyImmediate(
+          supabase, data?.[0]?.id || null, fromPhone, 'urgent',
+          `Alex errored for ${data?.[0]?.name || fromPhone}: ${String(err).slice(0, 200)}`,
+          'Alex could not respond. Follow up manually.',
+        ).catch(() => {})
+      })
   }
 
-  // Save history
+  // Save history + reset follow-up sequence (customer re-engaged, clock restarts)
+  await supabase
+    .from('alex_sessions')
+    .update({ followup_count: 0, last_followup_at: null })
+    .eq('session_id', session.id)
   await saveMessages(supabase, session.id, messages)
 
   // Handle completion
@@ -558,7 +1041,10 @@ Deno.serve(async (req) => {
     notifyKeyQuo(fromPhone, summary).catch(() => {})
   }
 
-  if (response) await sendQuoMessage(fromPhone, cleanSms(response))
+  if (response) {
+    await sendQuoMessage(fromPhone, cleanSms(response))
+    await markOutbound(supabase, session.id)
+  }
 
   return new Response(JSON.stringify({ success: true, sessionId: session.id }), { status: 200, headers: CORS })
 })
