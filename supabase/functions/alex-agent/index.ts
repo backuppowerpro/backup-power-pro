@@ -549,7 +549,7 @@ async function buildContactContext(supabase: any, phone: string): Promise<string
     supabase
       .from('contacts')
       .select('name, address, stage, install_notes, created_at')
-      .ilike('phone', `%${digits}`)
+      .ilike('phone', `%${digits}%`)
       .limit(1)
       .maybeSingle(),
     supabase
@@ -813,7 +813,7 @@ async function runAlex(
 
     if (data.stop_reason === 'end_turn') {
       const text = assistantContent.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
-      return { response: text, updatedMessages: messages, complete, summary: completeSummary }
+      return { response: text || 'Let me check on that for you.', updatedMessages: messages, complete, summary: completeSummary }
     }
 
     if (data.stop_reason === 'tool_use') {
@@ -1276,14 +1276,9 @@ Deno.serve(async (req) => {
         .from('alex_sessions')
         .update({ key_active: false })
         .eq('session_id', session.id)
-      // Inject a note into the messages so Alex acknowledges the gap naturally
-      session.messages = [
-        ...session.messages,
-        {
-          role: 'user',
-          content: '[INTERNAL: Key was responding to this customer directly but has been quiet for several hours. The customer just messaged in again. Re-engage naturally — briefly acknowledge you are following back up, and continue from where things left off. Do not re-introduce yourself.]',
-        },
-      ]
+      // Set a flag — the re-engage context will be injected ephemerally at API call time,
+      // NOT saved to message history (avoids permanent internal instruction in DB)
+      session.keyReEngage = true
       console.log('[alex] Key silent 4h+, Alex re-engaging for', fromPhone)
     }
   }
@@ -1413,8 +1408,15 @@ Deno.serve(async (req) => {
   let complete = false
   let summary: string | undefined
 
+  // If Key went silent and customer is re-engaging, append the note to contactContext
+  // (ephemeral — injected at API boundary, never saved to message history)
+  const reEngageNote = (session as any).keyReEngage
+    ? '\n[CONTEXT: Key was responding to this customer directly but has been quiet for several hours. The customer just messaged in again. Re-engage naturally, briefly acknowledge you are following back up, and continue from where things left off. Do not re-introduce yourself.]'
+    : ''
+  const fullContext = (contactContext || '') + reEngageNote
+
   try {
-    const result = await runAlex(supabase, fromPhone, session.id, messages, contactContext)
+    const result = await runAlex(supabase, fromPhone, session.id, messages, fullContext || undefined)
     response = result.response
     messages = result.updatedMessages
     complete = result.complete
