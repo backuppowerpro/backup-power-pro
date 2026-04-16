@@ -8,82 +8,160 @@
  * Auth:      Authorization: Bearer <service_role_key>
  *
  * Idempotent — won't double-text a lead that already has an active session.
+ *
+ * A/B TESTING: Randomly assigns each lead to an opener variant and tracks
+ * response rates. GET /alex-initiate?report=true returns current results.
+ *
+ * Variants:
+ *   A — Warm greeting only (no ask). Photo request comes when they reply.
+ *   B — Two-text pattern: greeting, then ask 10s later. (Research: +44% responses)
+ *   C — Single message with negative-frame ask.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
-const QUO_API_KEY       = Deno.env.get('QUO_API_KEY')!
-const QUO_PHONE_ID      = Deno.env.get('QUO_PHONE_NUMBER_ID')!
-
-const MODEL      = 'claude-opus-4-6'
-const MAX_TOKENS = 250
+const QUO_API_KEY  = Deno.env.get('QUO_API_KEY')!
+const QUO_PHONE_ID = Deno.env.get('QUO_PHONE_NUMBER_ID')!
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
-// ── Opener generation ─────────────────────────────────────────────────────────
+// ── A/B Test Opener Templates ────────────────────────────────────────────────
+// Pre-written. No AI generation = faster, cheaper, consistent, measurable.
 
-async function generateOpener(firstName: string): Promise<string> {
-  const namePart = firstName ? ` ${firstName}` : ''
+type Variant = 'A' | 'B' | 'C'
 
-  const prompt = `You are Alex, an assistant for Backup Power Pro (generator connection installation in Upstate SC).
+function getOpenerMessages(variant: Variant, firstName: string): string[] {
+  const name = firstName || ''
+  const hi = name ? `Hey ${name}` : 'Hey'
 
-A new customer${firstName ? ` named ${firstName}` : ''} just submitted a form asking about getting a generator connected to their home's electrical panel.
+  switch (variant) {
+    case 'A':
+      // Warm greeting only — no ask. Photo request comes naturally when they reply.
+      return [
+        `${hi}, this is Alex with Backup Power Pro. Appreciate you reaching out, happy to help get things started.`,
+      ]
 
-Write the first SMS you will send them. Introduce yourself as Alex with Backup Power Pro. Say you are here to help get their quote started. Ask them to send a photo of their electrical panel with the door open so Key, the electrician, can take a look.
+    case 'B':
+      // Two-text pattern: greeting, then ask 10s later.
+      return [
+        `${hi}, this is Alex with Backup Power Pro. Appreciate you reaching out.`,
+        `Whenever you get a chance, would it be a problem to snap a photo of your electrical panel with the door open? That is all Key, our electrician, needs to get your quote started.`,
+      ]
 
-Rules:
-- Warm, natural, personal. Not corporate.
-- Use their first name once if you have it (${firstName || 'not known'}).
-- Two to three sentences max.
-- Under 280 characters.
-- No em dashes, no emoji, no bold, no markdown.
-- Do not start with "Hi${namePart}!" — that is too template-like. Find a natural opening.
-- Sound like a real person who is genuinely happy to help.
-
-Return ONLY the SMS message text.`
-
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-
-  if (!resp.ok) throw new Error(`Claude error: ${resp.status}`)
-  const data = await resp.json()
-  return data.content?.[0]?.text?.trim() || `Hey${firstName ? ' ' + firstName : ''}, this is Alex with Backup Power Pro. I saw you were interested in getting a generator connected. To get Key started on your quote, could you send a photo of your electrical panel with the door open?`
+    case 'C':
+      // Single message with negative-frame ask.
+      return [
+        `${hi}, this is Alex with Backup Power Pro. Thanks for filling out the form. Would it be a problem to send over a photo of your electrical panel when you get a chance? That is all Key, our electrician, needs to put a quote together.`,
+      ]
+  }
 }
 
-function cleanSms(text: string): string {
-  return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/\u2014/g, ',').replace(/\u2013/g, '-').trim()
+function pickVariant(): Variant {
+  const r = Math.random()
+  if (r < 0.333) return 'A'
+  if (r < 0.666) return 'B'
+  return 'C'
 }
+
+// ── SMS sender ───────────────────────────────────────────────────────────────
 
 async function sendSms(to: string, content: string): Promise<boolean> {
-  const resp = await fetch('https://api.openphone.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
-    body: JSON.stringify({ from: QUO_PHONE_ID, to: [to], content }),
-  })
-  if (!resp.ok) console.error('[initiate] Quo send failed:', resp.status, await resp.text())
-  return resp.ok
+  try {
+    const resp = await fetch('https://api.openphone.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+      body: JSON.stringify({ from: QUO_PHONE_ID, to: [to], content }),
+    })
+    if (!resp.ok) {
+      console.error('[initiate] Quo send failed:', resp.status, await resp.text().catch(() => ''))
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('[initiate] Quo send error:', err)
+    return false
+  }
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────────
+// ── A/B Report ───────────────────────────────────────────────────────────────
+
+async function generateReport(db: any): Promise<string> {
+  // Count sessions per variant
+  const { data: sessions } = await db
+    .from('alex_sessions')
+    .select('session_id, summary, messages, status, created_at')
+    .not('summary', 'is', null)
+    .like('summary', 'variant:%')
+
+  // Also count sessions that have opener_variant in summary field
+  const { data: allSessions } = await db
+    .from('alex_sessions')
+    .select('session_id, summary, messages, status, customer_last_msg_at, photo_received, created_at')
+    .not('summary', 'is', null)
+
+  const variants: Record<string, { sent: number; replied: number; photoReceived: number; completed: number }> = {
+    A: { sent: 0, replied: 0, photoReceived: 0, completed: 0 },
+    B: { sent: 0, replied: 0, photoReceived: 0, completed: 0 },
+    C: { sent: 0, replied: 0, photoReceived: 0, completed: 0 },
+  }
+
+  for (const s of allSessions || []) {
+    const match = (s.summary || '').match(/^variant:([ABC])/)
+    if (!match) continue
+    const v = match[1] as Variant
+    variants[v].sent++
+    // Check if customer replied (has user messages beyond internal triggers)
+    const userMsgs = (s.messages || []).filter((m: any) =>
+      m.role === 'user' && typeof m.content === 'string' && !m.content.startsWith('[INTERNAL')
+    )
+    if (userMsgs.length > 0 || s.customer_last_msg_at) variants[v].replied++
+    if (s.photo_received) variants[v].photoReceived++
+    if (s.status === 'complete') variants[v].completed++
+  }
+
+  const lines = [
+    'ALEX OPENER A/B TEST RESULTS',
+    `Report generated: ${new Date().toISOString().split('T')[0]}`,
+    '',
+    'Variant | Sent | Replied | Rate | Photos | Completed',
+    '--------|------|---------|------|--------|----------',
+  ]
+
+  for (const [v, d] of Object.entries(variants)) {
+    const rate = d.sent > 0 ? ((d.replied / d.sent) * 100).toFixed(1) + '%' : 'n/a'
+    lines.push(`${v}       | ${d.sent.toString().padStart(4)} | ${d.replied.toString().padStart(7)} | ${rate.padStart(4)} | ${d.photoReceived.toString().padStart(6)} | ${d.completed}`)
+  }
+
+  lines.push('')
+  lines.push('Variant A: Warm greeting only (no photo ask)')
+  lines.push('Variant B: Two-text pattern (greeting + ask 10s later)')
+  lines.push('Variant C: Single message with negative-frame ask')
+
+  return lines.join('\n')
+}
+
+// ── Main handler ─────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+
+  // GET — A/B test report
+  if (req.method === 'GET') {
+    const url = new URL(req.url)
+    if (url.searchParams.get('report') === 'true') {
+      const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+      const report = await generateReport(db)
+      return new Response(report, { status: 200, headers: { ...CORS, 'Content-Type': 'text/plain' } })
+    }
+    return new Response(JSON.stringify({ ok: true, service: 'alex-initiate', ab_test: true }), {
+      status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
+    })
+  }
+
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS })
 
   let body: any
@@ -103,7 +181,7 @@ Deno.serve(async (req) => {
   const digits = rawPhone.replace(/\D/g, '')
   const phone = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : rawPhone
 
-  console.log('[initiate] Lead from', source, '— phone:', phone, '— name:', name || '(unknown)')
+  console.log('[initiate] Lead from', source, '— phone:', phone)
 
   const db = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -111,7 +189,6 @@ Deno.serve(async (req) => {
   )
 
   // ── Idempotency check ─────────────────────────────────────────────────────
-  // Don't double-text a lead that already has an active session
   const { data: existing } = await db
     .from('alex_sessions')
     .select('session_id, status')
@@ -141,7 +218,8 @@ Deno.serve(async (req) => {
     })
   }
 
-  // ── Create session ────────────────────────────────────────────────────────
+  // ── Pick A/B variant and create session ───────────────────────────────────
+  const variant = pickVariant()
   const sessionId = crypto.randomUUID()
   await db.from('alex_sessions').insert({
     phone,
@@ -151,36 +229,55 @@ Deno.serve(async (req) => {
     alex_active: true,
     key_active: false,
     followup_count: 0,
+    photo_received: false,
+    opted_out: false,
+    summary: `variant:${variant}`,  // Track which opener was used
   })
 
-  // ── Generate and send opener ──────────────────────────────────────────────
+  // ── Send opener(s) ────────────────────────────────────────────────────────
   const firstName = name.split(' ')[0] || ''
+  const openerTexts = getOpenerMessages(variant, firstName)
 
-  let openerText: string
-  try {
-    openerText = cleanSms(await generateOpener(firstName))
-  } catch (err) {
-    console.error('[initiate] Opener generation failed:', err)
-    openerText = `Hey${firstName ? ' ' + firstName : ''}, this is Alex with Backup Power Pro. I can help get Key started on your quote. Could you send a photo of your electrical panel with the door open?`
+  const allMessages: any[] = []
+  let firstSendFailed = false
+
+  for (let i = 0; i < openerTexts.length; i++) {
+    const text = openerTexts[i]
+
+    // For two-text pattern (variant B), wait 10s between messages
+    if (i > 0) {
+      await new Promise(r => setTimeout(r, 8000 + Math.floor(Math.random() * 4000)))  // 8-12s
+    }
+
+    const sent = await sendSms(phone, text)
+    if (!sent) {
+      if (i === 0) {
+        firstSendFailed = true
+        break
+      }
+      // If second text fails, log but continue — first one went through
+      console.error('[initiate] Second SMS failed for', phone)
+      break
+    }
+    allMessages.push({ role: 'assistant', content: text })
   }
 
-  const sent = await sendSms(phone, openerText)
-  if (!sent) {
+  if (firstSendFailed) {
     // Clean up session so it can be retried
     await db.from('alex_sessions').delete().eq('session_id', sessionId)
     return new Response(JSON.stringify({ error: 'SMS send failed' }), { status: 500, headers: CORS })
   }
 
-  // Save opener to session history
+  // Save opener(s) to session history
   await db
     .from('alex_sessions')
     .update({
-      messages: [{ role: 'assistant', content: openerText }],
+      messages: allMessages,
       last_outbound_at: new Date().toISOString(),
     })
     .eq('session_id', sessionId)
 
-  // Also save name to sparky_memory if provided
+  // Save name to sparky_memory if provided
   if (name) {
     await db.from('sparky_memory').upsert(
       { key: `contact:${phone}:name`, value: name, category: 'contact', importance: 3 },
@@ -188,6 +285,6 @@ Deno.serve(async (req) => {
     )
   }
 
-  console.log('[initiate] Opener sent to', phone, '— session:', sessionId)
-  return new Response(JSON.stringify({ ok: true, sessionId }), { status: 200, headers: CORS })
+  console.log(`[initiate] Variant ${variant} sent to ${phone} — session: ${sessionId}`)
+  return new Response(JSON.stringify({ ok: true, sessionId, variant }), { status: 200, headers: CORS })
 })
