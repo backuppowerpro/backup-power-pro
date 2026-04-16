@@ -35,6 +35,9 @@ const TEST_MODE = true   // Set false when going live
 const MODEL = 'claude-opus-4-6'
 const MAX_TOKENS       = 250   // SMS — keep responses tight
 const MAX_HISTORY_MSGS = 30    // Trim beyond this to prevent token overflow (~15 exchanges)
+const MAX_TOOL_LOOPS   = 5     // Safety valve — prevent infinite agentic loops
+const MAX_SMS_CHARS    = 320   // Hard SMS truncation if Claude exceeds prompt instruction
+const MAX_MSGS_PER_HOUR = 8    // Per-phone rate limit — prevents abuse / API cost spikes
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -336,6 +339,14 @@ async function claimMessage(supabase: any, msgId: string): Promise<boolean> {
   return error?.code !== '23505'
 }
 
+// Normalize phone to E.164 for consistent storage and lookup
+function normalizePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  if (digits.length === 10) return `+1${digits}`
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
+  return raw // already E.164 or unknown format — store as-is
+}
+
 async function getSession(supabase: any, phone: string): Promise<{
   id: string
   messages: any[]
@@ -346,10 +357,11 @@ async function getSession(supabase: any, phone: string): Promise<{
   customerLastMsgAt: string | null
   lastOutboundAt: string | null
 } | null> {
+  const normalized = normalizePhone(phone)
   const { data } = await supabase
     .from('alex_sessions')
     .select('session_id, messages, key_active, key_last_active_at, alex_active, opted_out, customer_last_msg_at, last_outbound_at')
-    .eq('phone', phone)
+    .eq('phone', normalized)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(1)
@@ -369,7 +381,7 @@ async function getSession(supabase: any, phone: string): Promise<{
 async function createSession(supabase: any, phone: string): Promise<{ id: string; messages: any[] }> {
   const id = crypto.randomUUID()
   await supabase.from('alex_sessions').insert({
-    phone,
+    phone: normalizePhone(phone),
     session_id: id,
     status: 'active',
     messages: [],
@@ -486,26 +498,45 @@ async function callClaude(messages: any[], contactContext?: string): Promise<any
     ? [{ role: 'user', content: contactContext }, ...history]
     : history
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      tools: TOOLS,
-      messages: apiMessages,
-    }),
+  const payload = JSON.stringify({
+    model: MODEL,
+    max_tokens: MAX_TOKENS,
+    system: SYSTEM_PROMPT,
+    tools: TOOLS,
+    messages: apiMessages,
   })
-  if (!resp.ok) {
-    const err = await resp.text()
-    throw new Error(`Claude API error ${resp.status}: ${err}`)
+
+  // One retry on failure (network blip, 500, overloaded)
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: payload,
+      })
+      if (resp.ok) return resp.json()
+
+      const err = await resp.text()
+      if (attempt === 0 && resp.status >= 500) {
+        console.warn(`[alex] Claude API ${resp.status}, retrying in 2s...`)
+        await new Promise(r => setTimeout(r, 2000))
+        continue
+      }
+      throw new Error(`Claude API error ${resp.status}: ${err}`)
+    } catch (e) {
+      if (attempt === 0 && !(e instanceof Error && e.message.includes('Claude API error'))) {
+        console.warn('[alex] Claude API fetch error, retrying in 2s...', e)
+        await new Promise(r => setTimeout(r, 2000))
+        continue
+      }
+      throw e
+    }
   }
-  return resp.json()
+  throw new Error('Claude API failed after retry')
 }
 
 // ── TOOL EXECUTION ────────────────────────────────────────────────────────────
@@ -609,8 +640,13 @@ async function runAlex(
 ): Promise<{ response: string; updatedMessages: any[]; complete: boolean; summary?: string }> {
   let complete = false
   let completeSummary: string | undefined
+  let loops = 0
 
   while (true) {
+    if (++loops > MAX_TOOL_LOOPS) {
+      console.error('[alex] Hit max tool loop limit — breaking out')
+      return { response: 'Give me just a moment, let me get Key on this.', updatedMessages: messages, complete, summary: completeSummary }
+    }
     const data = await callClaude(messages, contactContext)
     const assistantContent = data.content || []
 
@@ -655,7 +691,7 @@ async function runAlex(
 // ── OUTBOUND HELPERS ──────────────────────────────────────────────────────────
 
 function cleanSms(text: string): string {
-  return text
+  let cleaned = text
     .replace(/\*\*(.*?)\*\*/g, '$1')    // bold
     .replace(/\*(.*?)\*/g, '$1')         // italic
     .replace(/__(.*?)__/g, '$1')         // underline
@@ -665,6 +701,21 @@ function cleanSms(text: string): string {
     .replace(/\u2014/g, ',')             // em dash
     .replace(/\u2013/g, '-')             // en dash
     .trim()
+
+  // Hard truncation safety net — if Claude exceeds SMS limit despite prompt instructions
+  if (cleaned.length > MAX_SMS_CHARS) {
+    // Try to truncate at a sentence boundary
+    const truncated = cleaned.slice(0, MAX_SMS_CHARS)
+    const lastPeriod = truncated.lastIndexOf('.')
+    const lastQuestion = truncated.lastIndexOf('?')
+    const breakPoint = Math.max(lastPeriod, lastQuestion)
+    cleaned = breakPoint > MAX_SMS_CHARS * 0.6
+      ? truncated.slice(0, breakPoint + 1)
+      : truncated.slice(0, MAX_SMS_CHARS - 3) + '...'
+    console.warn(`[alex] SMS truncated from ${text.length} to ${cleaned.length} chars`)
+  }
+
+  return cleaned
 }
 
 async function sendQuoMessage(to: string, content: string): Promise<void> {
@@ -794,7 +845,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ skipped: true, reason: 'outbound' }), { status: 200, headers: CORS })
   }
 
-  const fromPhone   = messageData.from || ''
+  const fromPhone   = normalizePhone(messageData.from || '')
   const messageText = (messageData.body || messageData.text || '').trim()
   const hasMedia    = !!(messageData.media?.length)
   const quoMsgId   = messageData.id || `${fromPhone}-${messageData.createdAt || Date.now()}`
@@ -816,6 +867,29 @@ Deno.serve(async (req) => {
   if (!await claimMessage(supabase, quoMsgId)) {
     console.log('[alex] Duplicate, skipping:', quoMsgId)
     return new Response(JSON.stringify({ skipped: true, reason: 'duplicate' }), { status: 200, headers: CORS })
+  }
+
+  // ── Per-phone rate limiting ───────────────────────────────────────────────
+  // Prevents abuse / cost spikes from spam. If session has too many user messages
+  // relative to how recently it was created, stop processing.
+  {
+    const { data: rateSess } = await supabase
+      .from('alex_sessions')
+      .select('messages, created_at')
+      .eq('phone', fromPhone)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle()
+
+    if (rateSess) {
+      const userMsgCount = (rateSess.messages || []).filter((m: any) => m.role === 'user').length
+      const sessionAgeHrs = (Date.now() - new Date(rateSess.created_at).getTime()) / 3600000
+      const msgsPerHour = sessionAgeHrs > 0 ? userMsgCount / sessionAgeHrs : userMsgCount
+      if (msgsPerHour > MAX_MSGS_PER_HOUR) {
+        console.warn('[alex] Rate limited:', fromPhone, `(${msgsPerHour.toFixed(1)} msgs/hr)`)
+        return new Response(JSON.stringify({ skipped: true, reason: 'rate_limited' }), { status: 200, headers: CORS })
+      }
+    }
   }
 
   // ── STOP / opt-out detection (TCPA) ────────────────────────────────────────
@@ -1088,7 +1162,7 @@ Deno.serve(async (req) => {
     summary = result.summary
   } catch (err) {
     console.error('[alex] Agent error:', err)
-    response = 'I am having a little trouble right now. Key will follow up with you shortly.'
+    response = 'Hey, give me just a sec. Let me get Key to follow up with you on this.'
 
     // Notify Key that Alex failed so he can follow up manually
     const digits = fromPhone.replace(/\D/g, '').slice(-10)
