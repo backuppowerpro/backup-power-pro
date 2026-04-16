@@ -1340,7 +1340,7 @@ body.modal-open{overflow:hidden;padding-right:var(--scrollbar-w,0px)}
 .modal-close:hover{background:var(--bg);color:var(--text)}
 .modal-close:active{transform:scale(.93)}
 #panel-banner .modal-close:hover{background:rgba(0,0,0,.62);color:#fff}
-.modal-body{padding:18px 24px;overflow-y:auto;flex:1;overscroll-behavior:contain;,transparent);,transparent)}
+.modal-body{padding:18px 24px;overflow-y:auto;flex:1;overscroll-behavior:contain}
 .modal-foot{padding:16px 24px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 .form-row{margin-bottom:var(--sp-5)}
 .form-row label{display:block;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-family:'Outfit',sans-serif}
@@ -1411,7 +1411,7 @@ html.dark .approval-notif-amount{color:var(--gold)}
 /* Fixed header + scrollable body inside each drill level */
 .drill-head{flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border);padding:4px 8px 0;position:relative;z-index:2}
 html.dark .drill-head{border-bottom-color:rgba(255,255,255,.06)}
-.drill-body{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 20px 24px;,transparent);,transparent)}
+.drill-body{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 20px 24px}
 .drill-back{display:inline-flex;align-items:center;gap:6px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;padding:10px 10px;border-radius:var(--r-sm);transition:all .15s;margin-bottom:0;min-height:44px}
 .drill-back:hover{color:var(--navy);background:var(--bg)}
 .drill-back:active{background:var(--border)}
@@ -2421,7 +2421,7 @@ html.dark .tm-panel-head{border-bottom-color:rgba(255,255,255,.05)}
 html.dark .tm-panel-close{background:var(--bg)}
 .tm-panel-close:hover{background:var(--border);color:var(--text)}
 html.dark .tm-panel-close:hover{background:#252322;color:var(--text)}
-.tm-panel-body{flex:1;overflow-y:auto;padding:20px 18px 12px;display:flex;flex-direction:column;gap:14px;background:var(--bg);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;,transparent);,transparent)}
+.tm-panel-body{flex:1;overflow-y:auto;padding:20px 18px 12px;display:flex;flex-direction:column;gap:10px;background:var(--bg);-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .tm-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 18px;flex:1}
 .tm-empty-avatar{width:56px;height:56px;border-radius:0;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;box-shadow:var(--shadow-neu)}
 .tm-empty-title{font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;color:var(--text);margin-bottom:3px;letter-spacing:-.005em}
@@ -2429,21 +2429,49 @@ html.dark .tm-panel-close:hover{background:#252322;color:var(--text)}
 .tm-chips{display:flex;flex-direction:column;gap:7px;width:100%;max-width:320px}
 .tm-chip{padding:10px 14px;border:none;border-radius: 0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-weight:500;font-size:12.5px;cursor:pointer;transition:box-shadow var(--t-fast),transform var(--t-fast);text-align:left;box-shadow:var(--shadow-neu-sm)}
 .tm-chip:hover{transform:translateY(-1px);box-shadow:var(--shadow-neu)}
-.tm-msg{display:flex;gap:9px;max-width:100%;animation:tmMsgIn .28s var(--ease)}
+/* ── Chat bubbles — iMessage-quality within Minesweeper brutalist style ── */
+.tm-msg{display:flex;gap:9px;max-width:100%;animation:tmMsgIn .28s var(--ease);align-items:flex-end}
 @keyframes tmMsgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .tm-msg.user{flex-direction:row-reverse}
-.tm-msg-av{width:30px;height:30px;border-radius: 0;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-family:'Outfit',sans-serif}
+/* Tighten vertical spacing for consecutive messages from same sender */
+.tm-msg + .tm-msg.asst:has(+ .tm-msg.asst),
+.tm-msg.user + .tm-msg.user{margin-top:-4px}
+
+.tm-msg-av{width:28px;height:28px;border-radius: 0;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:'Outfit',sans-serif}
 .tm-msg.asst .tm-msg-av{background:var(--gold);color:var(--navy);box-shadow:var(--shadow-neu-sm)}
-.tm-msg.asst .tm-msg-av svg{width:17px;height:17px}
+.tm-msg.asst .tm-msg-av svg{width:16px;height:16px}
 .tm-msg.user .tm-msg-av{background:var(--navy);color:#fff;box-shadow:var(--shadow-neu-sm)}
 html.dark .tm-msg.user .tm-msg-av{background:#252322;color:var(--text)}
-.tm-bubble{max-width:calc(100% - 42px);padding:11px 14px;border-radius:0;font-size:13.5px;line-height:1.55;font-family:'Inter',sans-serif;word-wrap:break-word;white-space:pre-wrap}
+
+/* Bubbles: max 78% width so they don't span the whole panel */
+.tm-bubble{max-width:78%;padding:10px 14px;border-radius:0;font-size:14px;line-height:1.48;font-family:'Inter',sans-serif;word-wrap:break-word;white-space:pre-wrap;word-break:break-word}
 .tm-bubble strong{font-weight:700;color:inherit}
 .tm-bubble em{font-style:italic}
-.tm-msg.asst .tm-bubble{background:var(--bg);color:var(--text);border:none;box-shadow:var(--shadow-neu-inset-sm)}
-html.dark .tm-msg.asst .tm-bubble{background:var(--bg)}
-.tm-msg.user .tm-bubble{background:var(--navy);color:#fff;box-shadow:var(--shadow-neu-sm)}
-html.dark .tm-msg.user .tm-bubble{background: #2a3548;color:var(--text)}
+
+/* Assistant bubble: contrasting surface so it reads as a distinct message */
+.tm-msg.asst .tm-bubble{
+  background:color-mix(in srgb, var(--bg) 82%, #fff 18%);
+  color:var(--text);
+  border:none;
+  box-shadow:var(--shadow-neu-sm);
+}
+html.dark .tm-msg.asst .tm-bubble{
+  background:color-mix(in srgb, var(--bg) 78%, #fff 6%);
+  color:var(--text);
+  box-shadow:var(--shadow-neu-sm);
+}
+
+/* User bubble: bold navy, always right-aligned, clearly raised */
+.tm-msg.user .tm-bubble{
+  background:var(--navy);
+  color:#fff;
+  box-shadow:var(--shadow-neu-sm);
+  font-weight:500;
+}
+html.dark .tm-msg.user .tm-bubble{
+  background:#1a2b4a;
+  color:#fff;
+}
 .tm-bubble a.tm-link{color:var(--gold);font-weight:700;text-decoration:none;border-bottom:1px dashed rgba(212,145,26,.4);cursor:pointer;transition:border-bottom-style var(--t-fast)}
 .tm-bubble a.tm-link:hover{border-bottom-style:solid}
 .tm-msg.user .tm-bubble a.tm-link{color:#e8b75a}
@@ -2452,14 +2480,15 @@ html.dark .tm-msg.user .tm-bubble{background: #2a3548;color:var(--text)}
 .tm-typing span:nth-child(2){animation-delay:.15s}
 .tm-typing span:nth-child(3){animation-delay:.3s}
 @keyframes tmTyping{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
-.tm-panel-foot{padding:12px 14px 14px;border-top:1px solid rgba(0,0,0,.07);background:var(--bg);display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
+.tm-panel-foot{padding:10px 12px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(0,0,0,.07);background:var(--bg);display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
 html.dark .tm-panel-foot{border-top-color:rgba(255,255,255,.05)}
-.tm-compose{flex:1;resize:none;border:none;background:var(--bg);color:var(--text);border-radius:var(--r-md);padding:12px 14px;font-family:'Inter',sans-serif;font-size:16px;outline:none;max-height:200px;min-height:52px;line-height:1.5;box-shadow:var(--shadow-neu-inset-sm);transition:box-shadow var(--t-fast)}
-.tm-compose:focus{box-shadow:var(--shadow-neu-inset-sm)}
-.tm-send{background:var(--navy);color:#fff;border:none;width:40px;height:40px;border-radius: 0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t-fast),transform var(--t-fast);box-shadow:var(--shadow-sm)}
-.tm-send:hover:not(:disabled){background:#132a4f;transform:translateY(-1px)}
-.tm-send:active:not(:disabled){transform:translateY(0)}
-.tm-send:disabled{background:var(--border);cursor:not-allowed;box-shadow:none}
+.tm-compose{flex:1;resize:none;border:none;background:color-mix(in srgb, var(--bg) 88%, #000 12%);color:var(--text);border-radius:0;padding:11px 14px;font-family:'Inter',sans-serif;font-size:15px;outline:none;max-height:200px;min-height:44px;line-height:1.45;box-shadow:var(--shadow-neu-inset-sm);transition:box-shadow var(--t-fast)}
+html.dark .tm-compose{background:color-mix(in srgb, var(--bg) 85%, #000 15%)}
+.tm-compose:focus{box-shadow:var(--shadow-neu-inset-sm);outline:2px solid var(--gold);outline-offset:-2px}
+.tm-send{background:var(--navy);color:#fff;border:none;width:44px;height:44px;border-radius: 0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:box-shadow var(--t-fast),transform var(--t-fast);box-shadow:var(--shadow-neu-sm)}
+.tm-send:hover:not(:disabled){background:#132a4f}
+.tm-send:active:not(:disabled){box-shadow:var(--shadow-neu-inset-sm);transform:translate(1px,1px)}
+.tm-send:disabled{background:var(--border);cursor:not-allowed;box-shadow:var(--shadow-neu-inset-sm);opacity:.6}
 html.dark .tm-send{background:var(--gold);color:#1e1b17}
 html.dark .tm-send:hover:not(:disabled){background:#e8b75a}
 html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
@@ -2649,7 +2678,11 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .tm-brief-inline{display:none!important}
   /* Chat avatars: hidden — you know who's talking */
   .tm-msg-av{display:none!important}
-  .tm-bubble{max-width:100%!important}
+  /* Bubbles: keep chat feel on mobile — max 82%, not 100% */
+  .tm-bubble{max-width:82%!important}
+  /* User bubbles anchor right with tighter padding on mobile */
+  .tm-msg.user .tm-bubble{padding:9px 13px!important;font-size:14.5px!important}
+  .tm-msg.asst .tm-bubble{padding:10px 14px!important;font-size:14.5px!important}
 
   /* Sparky action cards: clean, no gold borders */
   .tm-confirm-card{border:1px solid var(--border)!important;box-shadow:none!important}
@@ -3769,7 +3802,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   <div class="drill-container">
     <!-- LEVEL 1: Contact Details (Progressive Disclosure) -->
     <div class="drill-level active" id="drill-contact" style="overflow:hidden;padding:0">
-      <div id="drill-contact-scroll" style="flex:1;overflow-y:auto;padding:18px 20px;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:contain;,transparent);,transparent)">
+      <div id="drill-contact-scroll" style="flex:1;overflow-y:auto;padding:18px 20px;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:contain">
       <input type="hidden" id="panel-id">
 
       <!-- 0. SPARKY INSIGHT (rendered by renderSparkyInsight when panel opens) -->
@@ -5266,11 +5299,13 @@ async function renderProposalDrill() {
   // ── Action row (unapproved proposals) ───────────────────
   let unapprovedActions = '';
   if (!isApproved && !isCancelled) {
-    const editLink = canEdit ? '<button onclick="editProposal(\'' + p.id + '\')" style="background:none;border:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Edit</button>' : '';
+    // Unified link style — Edit and Preview look identical (text links, no button chrome)
+    const linkStyle = 'background:none;border:none;outline:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:0;text-decoration:underline;font-family:inherit;line-height:1.3;display:inline-flex;align-items:center;text-transform:none;letter-spacing:normal';
+    const editLink = canEdit ? '<button type="button" onclick="editProposal(\'' + p.id + '\')" style="' + linkStyle + '">Edit</button>' : '';
     unapprovedActions = '<button class="prop-action-btn prop-action-create" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')" style="font-size:15px;padding:13px">Copy Quote Link</button>'
       + '<div style="display:flex;justify-content:center;gap:4px;margin-top:6px;margin-bottom:4px">'
       + editLink
-      + '<a href="' + esc(previewUrl) + '" target="_blank" style="color:var(--text2);font-size:13px;font-weight:600;padding:6px 10px;border-radius:var(--r-xs);text-decoration:underline">Preview</a>'
+      + '<a href="' + esc(previewUrl) + '" target="_blank" style="' + linkStyle + '">Preview</a>'
       + '</div>';
   }
 
