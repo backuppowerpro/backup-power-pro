@@ -177,15 +177,25 @@ async function generateReport(db: any): Promise<string> {
   return lines.join('\n')
 }
 
+// ── Auth helper ──────────────────────────────────────────────────────────────
+
+function isAuthorized(req: Request): boolean {
+  const auth = req.headers.get('Authorization')?.replace('Bearer ', '')
+  return auth === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+}
+
 // ── Main handler ─────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
 
-  // GET — A/B test report
+  // GET — A/B test report (requires auth — contains business metrics)
   if (req.method === 'GET') {
     const url = new URL(req.url)
     if (url.searchParams.get('report') === 'true') {
+      if (!isAuthorized(req)) {
+        return new Response('Unauthorized', { status: 401, headers: CORS })
+      }
       const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
       const report = await generateReport(db)
       return new Response(report, { status: 200, headers: { ...CORS, 'Content-Type': 'text/plain' } })
@@ -196,6 +206,11 @@ Deno.serve(async (req) => {
   }
 
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS })
+
+  // Auth required — prevents anyone from spamming arbitrary phone numbers
+  if (!isAuthorized(req)) {
+    return new Response('Unauthorized', { status: 401, headers: CORS })
+  }
 
   let body: any
   try { body = await req.json() } catch {

@@ -745,6 +745,13 @@ async function executeTool(
 
   if (toolName === 'set_reminder') {
     const { remind_at, note } = toolInput
+
+    // Validate: must be in the future and within 30 days
+    const reminderTime = new Date(remind_at).getTime()
+    if (isNaN(reminderTime)) return { result: 'Invalid date format.', complete: false }
+    if (reminderTime < Date.now()) return { result: 'Reminder time is in the past.', complete: false }
+    if (reminderTime > Date.now() + 30 * 24 * 3600000) return { result: 'Reminder too far out. Max 30 days.', complete: false }
+
     // Store reminder in sparky_memory — the follow-up engine checks these hourly
     const reminderKey = `reminder:${phone}`
     await supabase
@@ -766,12 +773,24 @@ async function executeTool(
   }
 
   if (toolName === 'mark_complete') {
-    // Preserve A/B variant tag from alex-initiate by prepending it to the completion summary
+    // Validate: photo must actually be received before completing
     const { data: sess } = await supabase
       .from('alex_sessions')
-      .select('summary')
+      .select('summary, photo_received, messages')
       .eq('session_id', sessionId)
       .maybeSingle()
+
+    const hasPhoto = sess?.photo_received ||
+      (sess?.messages || []).some((m: any) => {
+        const c = typeof m.content === 'string' ? m.content : ''
+        return c.includes('[Customer sent a photo]')
+      })
+
+    if (!hasPhoto) {
+      return { result: 'Cannot complete yet — no panel photo received. Collect the photo first.', complete: false }
+    }
+
+    // Preserve A/B variant tag from alex-initiate
     const variantTag = (sess?.summary || '').match(/^variant:[ABC]/) ? sess.summary.split('\n')[0] + '\n' : ''
 
     await supabase
