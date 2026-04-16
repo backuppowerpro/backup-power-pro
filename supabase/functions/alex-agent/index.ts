@@ -1092,12 +1092,28 @@ Deno.serve(async (req) => {
       }
 
       if (unanswered >= MAX_UNANSWERED_MSGS) {
+        const digits = fromPhone.replace(/\D/g, '').slice(-10)
+        supabase.from('contacts').select('id, name').ilike('phone', `%${digits}%`).limit(1)
+          .then(({ data }) => {
+            reportToSparkyImmediate(supabase, data?.[0]?.id || null, fromPhone, 'urgent',
+              `Possible spam from ${data?.[0]?.name || fromPhone}: ${unanswered} unanswered messages in a row. Alex stopped responding.`,
+              'Check if this is a real customer or spam. Resume manually if needed.',
+            ).catch(() => {})
+          })
         console.warn('[alex] Spam detected:', fromPhone, `(${unanswered} unanswered msgs)`)
         return new Response(JSON.stringify({ skipped: true, reason: 'rate_limited' }), { status: 200, headers: CORS })
       }
 
       // Abnormally long conversation — likely abuse or stuck in a loop
       if (msgs.length > 50) {
+        const digits = fromPhone.replace(/\D/g, '').slice(-10)
+        supabase.from('contacts').select('id, name').ilike('phone', `%${digits}%`).limit(1)
+          .then(({ data }) => {
+            reportToSparkyImmediate(supabase, data?.[0]?.id || null, fromPhone, 'normal',
+              `Unusually long session with ${data?.[0]?.name || fromPhone}: ${msgs.length} messages. May need manual review.`,
+              'Check conversation. Could be a very engaged lead or something stuck.',
+            ).catch(() => {})
+          })
         console.warn('[alex] Session too long:', fromPhone, `(${msgs.length} total msgs)`)
         return new Response(JSON.stringify({ skipped: true, reason: 'session_too_long' }), { status: 200, headers: CORS })
       }
