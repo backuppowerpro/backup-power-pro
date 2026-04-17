@@ -81,6 +81,104 @@ END $$;
 -- alex_sessions: add messages (conversation history) + summary columns
 ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS messages jsonb NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS summary text;
+
+-- alex_sessions: follow-up engine columns
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS alex_active        boolean     NOT NULL DEFAULT true;
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS key_active         boolean     NOT NULL DEFAULT false;
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS key_last_active_at timestamptz;
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS followup_count     int         NOT NULL DEFAULT 0;
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS last_followup_at   timestamptz;
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS customer_last_msg_at timestamptz;
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS opted_out          boolean     NOT NULL DEFAULT false;
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS photo_received     boolean     NOT NULL DEFAULT false;
+-- Security audit #5: per-session notify_key SMS counter (cap abuse)
+ALTER TABLE alex_sessions ADD COLUMN IF NOT EXISTS notify_key_count   int         NOT NULL DEFAULT 0;
+
+-- alex_dedup: prune entries older than 7 days (message IDs don't need to live forever)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'alex_dedup') THEN
+    DELETE FROM alex_dedup WHERE created_at < NOW() - INTERVAL '7 days';
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- ── TCPA DNC + consent audit log (added 2026-04-17 from legal audit) ───────
+-- Legal audit finding C3: STOP must propagate cross-sender. H6: durable consent
+-- record to survive TCPA claims. Every outbound SMS sender (alex-agent,
+-- alex-followup, alex-ghost, quo-ai-new-lead, stripe-webhook) must check
+-- contacts.do_not_contact before sending.
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS do_not_contact boolean NOT NULL DEFAULT false;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS dnc_at timestamptz;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS dnc_source text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS consent_at timestamptz;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS consent_ip text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS consent_ua text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS consent_page text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS consent_version text;
+
+CREATE INDEX IF NOT EXISTS contacts_do_not_contact ON contacts (do_not_contact);
+CREATE INDEX IF NOT EXISTS contacts_phone_dnc ON contacts (phone, do_not_contact);
+
+-- Consent log is immutable (insert-only). Survives contact deletion via SET NULL.
+CREATE TABLE IF NOT EXISTS sms_consent_log (
+  id              uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
+  contact_id      uuid        REFERENCES contacts(id) ON DELETE SET NULL,
+  phone           text,
+  event           text        NOT NULL DEFAULT 'submit', -- submit | stop | help
+  consent_at      timestamptz NOT NULL DEFAULT now(),
+  consent_ip      text,
+  consent_ua      text,
+  consent_page    text,
+  consent_version text,
+  raw             jsonb
+);
+CREATE INDEX IF NOT EXISTS sms_consent_log_phone ON sms_consent_log (phone);
+CREATE INDEX IF NOT EXISTS sms_consent_log_event ON sms_consent_log (event, consent_at DESC);
+
+-- pg_cron: schedule alex-followup to run every hour
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.unschedule('alex-followup-hourly');
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.unschedule('alex-dedup-prune');
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
+    AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'alex_dedup') THEN
+    PERFORM cron.schedule(
+      'alex-dedup-prune',
+      '0 3 * * 0',
+      'DELETE FROM alex_dedup WHERE created_at < NOW() - INTERVAL ''7 days'''
+    );
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
+    AND EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_net') THEN
+    PERFORM cron.schedule(
+      'alex-followup-hourly',
+      '0 * * * *',
+      $cron$
+      SELECT net.http_post(
+        url     := 'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-followup',
+        headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDY3MTEwNiwiZXhwIjoyMDkwMjQ3MTA2fQ.u7QUFCApAkFctGb1qydG03i8sfbezlFsXhzvj9bAJa0"}'::jsonb,
+        body    := '{}'::jsonb
+      );
+      $cron$
+    );
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 `
 
 Deno.serve(async (req: Request) => {

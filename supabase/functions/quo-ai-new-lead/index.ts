@@ -86,21 +86,33 @@ async function fireMetaCAPI(payload: any): Promise<void> {
 }
 
 // ── CREATE QUO CONTACT ────────────────────────────────────────────────────────
-// Creates a named contact in Quo so the inbox shows the lead's name.
+// Creates a named contact in Quo so the inbox shows the lead's name + all form info.
 // IMPORTANT: Quo API requires every phoneNumbers[] entry to have BOTH `name` and `value`.
 // Sending only `value` returns 400 and the contact is silently never created.
-async function createQuoContact(firstName: string, lastName: string, phone: string): Promise<void> {
+async function createQuoContact(
+  firstName: string,
+  lastName: string,
+  phone: string,
+  email?: string,
+  address?: string,
+): Promise<void> {
   try {
+    const defaultFields: Record<string, unknown> = {
+      firstName,
+      lastName: lastName || '',
+      phoneNumbers: [{ name: 'Mobile', value: phone }],
+    }
+    if (email) {
+      defaultFields.emails = [{ name: 'Work', value: email }]
+    }
+    if (address) {
+      defaultFields.addresses = [{ name: 'Home', value: address }]
+    }
+
     const res = await fetch('https://api.openphone.com/v1/contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
-      body: JSON.stringify({
-        defaultFields: {
-          firstName,
-          lastName: lastName || '',
-          phoneNumbers: [{ name: 'Mobile', value: phone }],
-        },
-      }),
+      body: JSON.stringify({ defaultFields }),
     })
     if (!res.ok) {
       const errBody = await res.text()
@@ -139,20 +151,45 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'invalid json' }), { status: 400, headers: CORS_HEADERS })
   }
 
-  const {
-    firstName, lastName, phone, email,
-    address, addressCity, addressState, addressCounty,
-    panelLocation, genVoltage,
-  } = body || {}
+  const rawBody = body || {}
 
-  // ── FILTER: phone + firstName must exist (same as Zapier filter) ─────────
-  if (!phone || !firstName) {
+  // Security audit #7: sanitize form-submitted strings before persisting.
+  // Strip bracket markers, newlines, and common injection patterns; length-cap
+  // per-field. These fields later feed into Alex's [INTERNAL BRIEFING] context.
+  const sanitize = (s: any, max = 120): string | null => {
+    if (s == null) return null
+    return String(s)
+      .replace(/[\r\n\t]+/g, ' ')
+      .replace(/\[(END|INTERNAL|\/|SYSTEM|ASSISTANT|USER)/gi, '(')
+      .replace(/ignore\s+(all\s+)?previous|ignore\s+above|disregard\s+(all\s+)?previous/gi, '---')
+      .slice(0, max)
+      .trim() || null
+  }
+
+  const firstName      = sanitize(rawBody.firstName, 50)
+  const lastName       = sanitize(rawBody.lastName, 50)
+  const phoneRaw       = rawBody.phone
+  const email          = sanitize(rawBody.email, 120)
+  const address        = sanitize(rawBody.address, 200)
+  const addressCity    = sanitize(rawBody.addressCity, 80)
+  const addressState   = sanitize(rawBody.addressState, 40)
+  const addressCounty  = sanitize(rawBody.addressCounty, 80)
+  const addressZip     = sanitize(rawBody.addressZip, 16)
+  const panelLocation  = sanitize(rawBody.panelLocation, 80)
+  const genVoltage     = sanitize(rawBody.genVoltage, 40)
+
+  // ── FILTER: phone + firstName must exist ─────────────────────────────────
+  if (!phoneRaw || !firstName) {
     console.log('[filter] missing phone or firstName — skipping')
     return new Response(JSON.stringify({ skipped: true }), { status: 200, headers: CORS_HEADERS })
   }
 
   // Normalize phone
-  const digits = phone.replace(/\D/g, '')
+  const digits = String(phoneRaw).replace(/\D/g, '')
+  if (digits.length < 10 || digits.length > 15) {
+    // Obviously bad phone — reject before any SMS/CAPI fires
+    return new Response(JSON.stringify({ error: 'invalid phone' }), { status: 400, headers: CORS_HEADERS })
+  }
   const normalizedPhone = digits.length === 10 ? `+1${digits}` : `+${digits}`
   const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
   const fullAddress = address || [addressCity, addressState].filter(Boolean).join(', ') || ''
@@ -162,16 +199,38 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
 
-  // ── CHECK IF CONTACT ALREADY EXISTS ──────────────────────────────────────
-  const last10 = normalizedPhone.slice(-10)
+  // ── CHECK IF CONTACT ALREADY EXISTS (security #9: exact E.164 match) ─────
   const { data: existing } = await supabase
     .from('contacts')
     .select('*')
-    .ilike('phone', `%${last10}%`)
+    .eq('phone', normalizedPhone)
     .limit(1)
 
   let contact: any = existing?.[0] ?? null
   const isNew = !contact
+
+  // ── LEGAL C3: DNC check — never re-engage an opted-out contact ───────────
+  // Even if the same phone fills out the form again, honor their prior STOP.
+  if (contact?.do_not_contact) {
+    console.log('[new-lead] DNC flag set on contact; dropping submission')
+    // Still record the submission in the consent log for audit trail
+    supabase.from('sms_consent_log').insert({
+      contact_id: contact.id,
+      phone: normalizedPhone,
+      event: 'submit_blocked_dnc',
+      consent_at: new Date().toISOString(),
+      consent_ip: req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || null,
+      consent_ua: req.headers.get('user-agent') || null,
+      consent_page: rawBody.pageUrl || null,
+      raw: rawBody as any,
+    }).then(() => {}, () => {})
+    return new Response(JSON.stringify({ skipped: true, reason: 'do_not_contact' }), { status: 200, headers: CORS_HEADERS })
+  }
+
+  const nowIso = new Date().toISOString()
+  const consentIp = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || ''
+  const consentUa = req.headers.get('user-agent') || ''
+  const consentPage = String(rawBody.pageUrl || '')
 
   if (!contact) {
     const { data: c } = await supabase
@@ -187,7 +246,13 @@ Deno.serve(async (req) => {
           panelLocation ? `Panel location: ${panelLocation}` : null,
           genVoltage     ? `Generator voltage: ${genVoltage}` : null,
           addressCounty  ? `County: ${addressCounty}` : null,
+          addressZip     ? `Zip: ${addressZip}` : null,
         ].filter(Boolean).join(' | ') || null,
+        // Legal audit H6: durable consent record on the contact row
+        consent_at: nowIso,
+        consent_ip: consentIp || null,
+        consent_ua: consentUa || null,
+        consent_page: consentPage || null,
       })
       .select()
       .single()
@@ -198,9 +263,22 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'failed to create contact' }), { status: 500, headers: CORS_HEADERS })
   }
 
+  // Legal audit H6: immutable consent log (per-submission, survives contact deletion)
+  supabase.from('sms_consent_log').insert({
+    contact_id: contact.id,
+    phone: normalizedPhone,
+    event: 'submit',
+    consent_at: nowIso,
+    consent_ip: consentIp || null,
+    consent_ua: consentUa || null,
+    consent_page: consentPage || null,
+    consent_version: 'v1-2026-04-17',
+    raw: rawBody as any,
+  }).then(() => {}, () => {})
+
   // ── CREATE QUO CONTACT (non-blocking) ────────────────────────────────────
   // Always upsert so the Quo inbox shows the lead's name from first message.
-  createQuoContact(firstName, lastName || '', normalizedPhone).catch(err => console.error('[quo-contact] unhandled:', err))
+  createQuoContact(firstName, lastName || '', normalizedPhone, email || undefined, fullAddress || undefined).catch(err => console.error('[quo-contact] unhandled:', err))
 
   // ── FIRE META CAPI (non-blocking) ────────────────────────────────────────
   // Run in background — don't let CAPI delay the text to the lead
@@ -212,7 +290,10 @@ Deno.serve(async (req) => {
   }
 
   // ── FIRST MESSAGE ─────────────────────────────────────────────────────────
-  const firstMessage = `Hey ${firstName}, thanks for reaching out to Backup Power Pro! We got your request and will be in touch shortly to get you a quote. Do you already have a generator or are you looking to get one soon?`
+  // Legal audit H1: first message must identify brand (CTIA 10DLC) and include
+  // STOP instruction. Alex's subsequent texts stay conversational; this is the
+  // one "clean first impression" that carriers + TCPA compliance scan for.
+  const firstMessage = `Hey ${firstName}, this is Alex with Backup Power Pro — got your generator-inlet request. To build your quote, can you send a quick photo of your electrical panel (door open)? Takes 30 seconds and lets Key give you an accurate price with no surprises. Reply STOP to opt out.`
 
   // ── TYPING DELAY (feels human) ────────────────────────────────────────────
   const typingMs = Math.min(8000, 1500 + Math.random() * 2000)

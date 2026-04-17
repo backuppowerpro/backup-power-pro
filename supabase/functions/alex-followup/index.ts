@@ -175,6 +175,13 @@ async function sendSms(to: string, content: string): Promise<boolean> {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
 
+  // Security audit #14: require service-role bearer auth (prior: anyone could
+  // trigger the followup engine on demand, firing every queued reminder).
+  const expectedAuth = `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`
+  if (req.headers.get('authorization') !== expectedAuth) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: CORS })
+  }
+
   const db = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -217,13 +224,19 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Look up name for personalization
-        const digits = phone.replace(/\D/g, '').slice(-10)
+        // Look up contact + DNC status (security #9: exact E.164 match)
         const { data: contacts } = await db
           .from('contacts')
-          .select('name')
-          .ilike('phone', `%${digits}`)
+          .select('name, do_not_contact')
+          .eq('phone', phone)
           .limit(1)
+        if (contacts?.[0]?.do_not_contact) {
+          // Legal audit C3: do not send ANY reminder to an opted-out contact,
+          // even if previously queued. Drop the reminder silently.
+          console.log('[followup] Reminder suppressed: DNC flag set for ***', phone.slice(-4))
+          await db.from('sparky_memory').delete().eq('key', rem.key)
+          continue
+        }
         const firstName = contacts?.[0]?.name?.split(' ')?.[0] || ''
         const hi = firstName ? `Hey ${firstName}, j` : 'J'
 
@@ -291,7 +304,7 @@ Deno.serve(async (req) => {
       const { data: contacts } = await db
         .from('contacts')
         .select('name')
-        .ilike('phone', `%${digits}`)
+        .eq('phone', lead.phone)
         .limit(1)
       const firstName = contacts?.[0]?.name?.split(' ')?.[0] || ''
       const hi = firstName ? `Hey ${firstName}, g` : 'G'
@@ -354,22 +367,28 @@ Deno.serve(async (req) => {
       if (!baseline) continue
       if (now - new Date(baseline).getTime() < required) continue
 
-      // Look up CRM contact
-      const digits = (session.phone || '').replace(/\D/g, '').slice(-10)
+      // Look up CRM contact + DNC status (security #9: exact E.164 match)
       const { data: contacts } = await db
         .from('contacts')
-        .select('name, stage')
-        .ilike('phone', `%${digits}`)
+        .select('name, stage, do_not_contact')
+        .eq('phone', session.phone)
         .limit(1)
 
       const contact   = contacts?.[0]
       const firstName = contact?.name?.split(' ')?.[0] || ''
       const crmStage  = contact?.stage || null
 
+      // Legal audit C3: drop to silent if contact is DNC'd (cross-channel opt-out)
+      if (contact?.do_not_contact) {
+        await db.from('alex_sessions').update({ alex_active: false, opted_out: true, status: 'opted_out' }).eq('session_id', session.session_id)
+        console.log('[followup] DNC flag on contact, session deactivated: ***', String(session.phone).slice(-4))
+        continue
+      }
+
       // Stop if lead is a customer now
       if (crmStage && STOP_STAGES.some(s => crmStage.toLowerCase().includes(s))) {
         await db.from('alex_sessions').update({ alex_active: false }).eq('session_id', session.session_id)
-        console.log('[followup] Stage complete, stopped:', session.phone)
+        console.log('[followup] Stage complete, stopped: ***', String(session.phone).slice(-4))
         continue
       }
 
