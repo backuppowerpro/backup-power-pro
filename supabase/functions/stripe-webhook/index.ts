@@ -9,6 +9,91 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 
+// ── META CAPI (server-side Purchase event) ────────────────────────────────────
+// Fires when a customer approves a proposal AND pays (deposit or full). This
+// teaches Meta's optimizer to find customers who BUY, not just form-fillers.
+// Expected impact: ~20% CPL drop over 30 days as algorithm re-optimizes.
+const FB_ACCESS_TOKEN = Deno.env.get('FB_ACCESS_TOKEN') || ''
+const FB_PIXEL_ID     = '1389648775800936'
+
+async function sha256Hex(input: string): Promise<string> {
+  const normalized = (input || '').trim().toLowerCase()
+  if (!normalized) return ''
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function fireMetaCAPIPurchase(params: {
+  eventId: string
+  amount: number
+  contactName?: string | null
+  contactPhone?: string | null
+  contactEmail?: string | null
+  proposalId?: number | null
+}): Promise<void> {
+  if (!FB_ACCESS_TOKEN) {
+    console.warn('[capi-purchase] FB_ACCESS_TOKEN not set — skipping')
+    return
+  }
+
+  try {
+    // Parse phone into digits-only (US country code stripping)
+    const phoneDigits = (params.contactPhone || '').replace(/\D/g, '').replace(/^1/, '')
+    const [firstName, ...lastParts] = (params.contactName || '').trim().split(/\s+/)
+    const lastName = lastParts.join(' ')
+
+    const [ph, em, fn, ln, country] = await Promise.all([
+      phoneDigits ? sha256Hex(phoneDigits) : '',
+      params.contactEmail ? sha256Hex(params.contactEmail) : '',
+      firstName ? sha256Hex(firstName) : '',
+      lastName ? sha256Hex(lastName) : '',
+      sha256Hex('us'),
+    ])
+
+    const capiBody = {
+      data: [{
+        event_name: 'Purchase',
+        event_time: Math.floor(Date.now() / 1000),
+        event_id: params.eventId,
+        event_source_url: 'https://backuppowerpro.com/proposal.html',
+        action_source: 'website',
+        user_data: {
+          ph: ph ? [ph] : undefined,
+          em: em ? [em] : undefined,
+          fn: fn ? [fn] : undefined,
+          ln: ln ? [ln] : undefined,
+          country: [country],
+        },
+        custom_data: {
+          content_name: 'generator-inlet-install',
+          content_category: 'generator-installation',
+          content_ids: params.proposalId ? [String(params.proposalId)] : undefined,
+          value: params.amount,
+          currency: 'USD',
+          num_items: 1,
+        },
+      }],
+    }
+
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/${FB_PIXEL_ID}/events?access_token=${FB_ACCESS_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(capiBody),
+      },
+    )
+    const data = await res.json().catch(() => ({}))
+    if (data?.error) {
+      console.error('[capi-purchase] Error:', JSON.stringify(data.error))
+    } else {
+      console.log('[capi-purchase] OK — events_received:', data?.events_received, '| proposal:', params.proposalId, '| amount:', params.amount)
+    }
+  } catch (err) {
+    console.error('[capi-purchase] Fetch failed:', err)
+  }
+}
+
 serve(async (req) => {
   // Instantiate per-request to avoid cold-start state leak across invocations
   const supabase = createClient(
@@ -111,6 +196,17 @@ serve(async (req) => {
           // Return 500 so Stripe retries — but the idempotency check above will prevent double-processing
           return new Response(JSON.stringify({ error: 'DB write failed' }), { status: 500 })
         }
+
+        // Fire Meta CAPI Purchase event (non-blocking).
+        // Teaches Meta's optimizer to find buyers, not form-fillers. Expected
+        // 20% CPL drop over 30 days as the algorithm re-optimizes.
+        fireMetaCAPIPurchase({
+          eventId: `bpp_purchase_${session.id}`,
+          amount: amountPaid,
+          contactName: invoice?.contact_name,
+          contactPhone: invoice?.contact_phone,
+          proposalId: invoice?.proposal_id,
+        }).catch(e => console.error('[capi-purchase] unhandled:', e))
 
         // Auto-advance contact to Complete (stage 9)
         const { data: contact, error: contactErr } = await supabase
