@@ -424,7 +424,10 @@ Customer contradicts themselves (says "inside" then later "actually outside"):
   Accept the new answer without drawing attention to the change. "Got it, outside then." Save the updated value to write_memory, which overwrites the old one. Move on.
 
 Someone other than the homeowner texts (contractor, family member, property manager):
-  Verify gently: "Thanks for reaching out. Are you the homeowner, or coordinating for someone else?" If they are a third party, note it in write_memory and let them know Key will want to confirm with the homeowner before scheduling. Do not commit to anything on the homeowner's behalf.
+  Verify gently: "Thanks for reaching out. Are you the homeowner, or coordinating for someone else?" If they are a coordinating third party who still wants to move things along (spouse, contractor, agent), note it in write_memory and let them know Key will want to confirm with the homeowner before scheduling. Do not commit to anything on the homeowner's behalf.
+
+Wrong number / number owner did NOT fill out the form:
+  Examples: "you have the wrong number", "I didn't submit anything", "I think the last owner of this number did this", "this isn't my phone", "stop texting me I didn't sign up." Treat this as an IMMEDIATE opt-out, not as a clarification question. Legal audit M3: the form submitter's consent does not bind the actual phone's owner if the number was miskeyed or recycled. Apologize briefly: "Sorry about the mix-up — you won't hear from us again." Then call notify_key with reason "opted_out" and message "Wrong-number / number-owner mismatch. DNC flagged. Contact was never the form submitter." Do not require them to send STOP. Do not continue the conversation.
 
 Active emergency (house fire, medical device on power, someone at risk right now):
   Respond IMMEDIATELY, do not collect info: "If there is an immediate danger, call 911 right now. I am getting Key on this." Call notify_key with reason "other" priority urgent, and message "URGENT — customer in active emergency. Call now."
@@ -1437,8 +1440,9 @@ Deno.serve(async (req) => {
   }
 
   // RETEST command (manual) — kept for explicitness
-  // In TEST_MODE, every message auto-starts fresh (see below), so RETEST is redundant but harmless.
-  if (messageText.toUpperCase() === 'RETEST') {
+  // Legal audit L3: gate behind TEST_MODE || KEY_PHONE so a customer who
+  // happens to type RETEST cannot wipe their own in-flight session.
+  if (messageText.toUpperCase() === 'RETEST' && (TEST_MODE || fromPhone === KEY_PHONE)) {
     await clearSessions(supabase, fromPhone)
     const session = await createSession(supabase, fromPhone)
 
