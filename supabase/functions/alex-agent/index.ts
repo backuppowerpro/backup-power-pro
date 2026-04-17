@@ -56,7 +56,14 @@ const CORS = {
 
 async function verifyWebhookSignature(rawBody: string, req: Request): Promise<boolean> {
   const secret = Deno.env.get('QUO_WEBHOOK_SECRET')
-  if (!secret) return true // no secret configured — allow (set secret to enforce)
+  if (!secret) {
+    // In production (TEST_MODE=false), require the secret — fail closed
+    if (!TEST_MODE) {
+      console.error('[alex] QUO_WEBHOOK_SECRET missing in production — rejecting unsigned webhook')
+      return false
+    }
+    return true // dev/test only
+  }
 
   const signature = (
     req.headers.get('openphone-signature') ||
@@ -758,11 +765,11 @@ async function executeTool(
     }
 
     // Fire Sparky inbox notification
-    reportToSparkyImmediate(supabase, contactId, phone, priority, summary, actions[reason]).catch(() => {})
+    reportToSparkyImmediate(supabase, contactId, phone, priority, summary, actions[reason]).catch((e) => console.error("[alex] notify failed:", e))
 
     // Also fire internal Quo SMS to Key
     const quoMsg = `ALEX → ${contactName}\n${reason.replace('_', ' ').toUpperCase()}: ${message}${photoLine}\nPhone: ${phone}`
-    notifyKeyQuo(phone, quoMsg).catch(() => {})
+    notifyKeyQuo(phone, quoMsg).catch((e) => console.error("[alex] notify failed:", e))
 
     console.log('[alex] notify_key fired:', reason)
     return { result: `Key notified: ${reason}`, complete: false }
@@ -1075,7 +1082,7 @@ Deno.serve(async (req) => {
         supabase, contacts?.[0]?.id || null, normalized, 'urgent',
         `SMS delivery failed to ${contacts?.[0]?.name || normalized}. Number may be a landline, disconnected, or wrong. All AI messaging stopped.`,
         'Verify the phone number. Reach out by other means if needed.',
-      ).catch(() => {})
+      ).catch((e) => console.error("[alex] notify failed:", e))
 
       console.warn('[alex] Delivery failed for', normalized, '— session deactivated')
     }
@@ -1152,7 +1159,7 @@ Deno.serve(async (req) => {
             reportToSparkyImmediate(supabase, data?.[0]?.id || null, fromPhone, 'urgent',
               `Possible spam from ${data?.[0]?.name || fromPhone}: ${unanswered} unanswered messages in a row. Alex stopped responding.`,
               'Check if this is a real customer or spam. Resume manually if needed.',
-            ).catch(() => {})
+            ).catch((e) => console.error("[alex] notify failed:", e))
           })
         console.warn('[alex] Spam detected:', fromPhone, `(${unanswered} unanswered msgs)`)
         return new Response(JSON.stringify({ skipped: true, reason: 'rate_limited' }), { status: 200, headers: CORS })
@@ -1166,12 +1173,20 @@ Deno.serve(async (req) => {
             reportToSparkyImmediate(supabase, data?.[0]?.id || null, fromPhone, 'normal',
               `Unusually long session with ${data?.[0]?.name || fromPhone}: ${msgs.length} messages. May need manual review.`,
               'Check conversation. Could be a very engaged lead or something stuck.',
-            ).catch(() => {})
+            ).catch((e) => console.error("[alex] notify failed:", e))
           })
         console.warn('[alex] Session too long:', fromPhone, `(${msgs.length} total msgs)`)
         return new Response(JSON.stringify({ skipped: true, reason: 'session_too_long' }), { status: 200, headers: CORS })
       }
     }
+  }
+
+  // ── HELP keyword (TCPA best practice) ─────────────────────────────────────
+  const HELP_KEYWORD = /^\s*(help|info)\s*[.?!]*\s*$/i
+  if (HELP_KEYWORD.test(messageText)) {
+    await sendQuoMessage(fromPhone, 'Backup Power Pro: Generator connection installs in Upstate SC. Reply STOP to opt out. Questions? Text us anytime or call (864) 400-5302.')
+    console.log('[alex] HELP keyword responded for', fromPhone)
+    return new Response(JSON.stringify({ ok: true, reason: 'help_keyword' }), { status: 200, headers: CORS })
   }
 
   // ── STOP / opt-out detection (TCPA) ────────────────────────────────────────
@@ -1201,11 +1216,11 @@ Deno.serve(async (req) => {
       supabase, contactId, fromPhone, 'urgent',
       `${contactName} texted STOP. All AI messaging halted.`,
       'Customer opted out. Do not send automated messages. Reach out manually if needed.',
-    ).catch(() => {})
+    ).catch((e) => console.error("[alex] notify failed:", e))
 
     notifyKeyQuo(fromPhone,
       `STOP received from ${contactName} (${fromPhone})\nAll AI messaging halted. Manual follow-up only.`,
-    ).catch(() => {})
+    ).catch((e) => console.error("[alex] notify failed:", e))
 
     // Cancel any pending reminder
     await supabase.from('sparky_memory').delete().eq('key', `reminder:${fromPhone}`)
@@ -1273,7 +1288,7 @@ Deno.serve(async (req) => {
             supabase, data?.[0]?.id || null, fromPhone, 'normal',
             `${data?.[0]?.name || fromPhone} texted back after opting out: "${messageText.slice(0, 120)}"`,
             'Customer previously opted out but sent a new message. May want to re-engage manually.',
-          ).catch(() => {})
+          ).catch((e) => console.error("[alex] notify failed:", e))
         })
     }
     console.log('[alex] Opted-out lead messaged in, notified Key:', fromPhone)
@@ -1292,7 +1307,7 @@ Deno.serve(async (req) => {
             supabase, data?.[0]?.id || null, fromPhone, 'normal',
             `${data?.[0]?.name || fromPhone} replied after Alex was deactivated: "${messageText.slice(0, 120)}"`,
             'Check if follow-up is needed.',
-          ).catch(() => {})
+          ).catch((e) => console.error("[alex] notify failed:", e))
         })
     }
     console.log('[alex] Alex deactivated for', fromPhone)
@@ -1376,7 +1391,7 @@ Deno.serve(async (req) => {
       reportToSparkyImmediate(supabase, c?.[0]?.id || null, fromPhone, 'urgent',
         `Alex could not deliver opener to ${c?.[0]?.name || fromPhone}. Number may be a landline or invalid.`,
         'Verify phone number. Reach out by other means if needed.',
-      ).catch(() => {})
+      ).catch((e) => console.error("[alex] notify failed:", e))
 
       console.warn('[alex] Opener delivery failed, session deactivated:', fromPhone)
       return new Response(JSON.stringify({ error: 'delivery_failed' }), { status: 200, headers: CORS })
@@ -1477,7 +1492,7 @@ Deno.serve(async (req) => {
           supabase, data?.[0]?.id || null, fromPhone, 'urgent',
           `Alex errored for ${data?.[0]?.name || fromPhone}: ${String(err).slice(0, 200)}`,
           'Alex could not respond. Follow up manually.',
-        ).catch(() => {})
+        ).catch((e) => console.error("[alex] notify failed:", e))
       })
   }
 
@@ -1507,8 +1522,8 @@ Deno.serve(async (req) => {
     reportToSparky(supabase, contactId, fromPhone, 'urgent',
       `${contactName} is ready for a quote. Alex collected panel info and photos.`,
       'Open contact, review photos, send proposal.',
-    ).catch(() => {})
-    notifyKeyQuo(fromPhone, summary).catch(() => {})
+    ).catch((e) => console.error("[alex] notify failed:", e))
+    notifyKeyQuo(fromPhone, summary).catch((e) => console.error("[alex] notify failed:", e))
   }
 
   if (response) {
@@ -1537,7 +1552,7 @@ Deno.serve(async (req) => {
       reportToSparkyImmediate(supabase, c?.[0]?.id || null, fromPhone, 'urgent',
         `SMS delivery failed mid-conversation to ${c?.[0]?.name || fromPhone}. Number may have issues.`,
         'Verify phone number.',
-      ).catch(() => {})
+      ).catch((e) => console.error("[alex] notify failed:", e))
       console.warn('[alex] Delivery failed mid-convo:', fromPhone)
     }
   }
