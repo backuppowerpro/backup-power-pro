@@ -2751,8 +2751,12 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .fq-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
   .urg-modal-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 
-  /* Ensure main view containers clear the floating tab bar — scoped to actual views */
-  #main-content, .main-content, #view-leads, #view-calendar, #view-invoices, #view-messages{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+  /* Ensure all tab view containers clear the floating tab bar */
+  [id^="tab-"] > main,
+  #main-content, .main-content,
+  #view-leads, #view-calendar, #view-invoices, #view-messages,
+  #fintab-proposals, #fintab-invoices,
+  .inv-list, #docs-quotes-list{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 }
 
 :root{--kb:0px}
