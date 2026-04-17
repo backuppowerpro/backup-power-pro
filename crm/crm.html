@@ -4501,14 +4501,16 @@ function _renderMobileCard(c) {
   const dupIds = getDupIds(c.id);
   const dupEl = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:1px 5px;border-radius: 0;font-weight:700;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
   // Second line: stage if past form-submit, OR phone number, OR address fragment
+  // Skip phone sub-line if display name IS the phone (avoid duplicate)
   const phoneShort = fmtPhoneShort(c.phone);
   const addrShort = c.address ? esc(c.address.split(',')[0].trim().slice(0, 32)) : '';
+  const nameIsPhone = !c.name || (phoneShort && displayName.includes(phoneShort));
   let subLine = '';
   if (isArchived) {
     subLine = `<div class="mlc-stage" style="color:var(--text3)">archived</div>`;
   } else if (stageInfo.id !== 1) {
     subLine = `<div class="mlc-stage" style="color:${stageInfo.color}">${esc(stageInfo.label)}</div>`;
-  } else if (phoneShort) {
+  } else if (phoneShort && !nameIsPhone) {
     subLine = `<div class="mlc-stage" style="color:var(--text3)">${phoneShort}${addrShort ? ' · ' + addrShort : ''}</div>`;
   } else if (addrShort) {
     subLine = `<div class="mlc-stage" style="color:var(--text3)">${addrShort}</div>`;
