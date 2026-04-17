@@ -1465,6 +1465,8 @@ html.dark .drill-head{border-bottom-color:rgba(255,255,255,.06)}
   .toolbar{flex-direction:column;align-items:stretch}
   .search-input{min-width:0}
   .view-toggle{margin-left:0;align-self:stretch;justify-content:center}
+  /* Hide the standalone Pipeline view-toggle on mobile — filter pills already do this job */
+  #view-toggle-wrap{display:none!important}
   .modal{max-height:95vh}
   .modal-body{-webkit-overflow-scrolling:touch}
   /* Inbox: hide Sparky scan button — use floating Sparky launcher instead */
@@ -2738,8 +2740,8 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .fq-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
   .urg-modal-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 
-  /* Ensure all main view containers clear the floating tab bar */
-  #main-content, .main-content, [id^="view-"]{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+  /* Ensure main view containers clear the floating tab bar — scoped to actual views */
+  #main-content, .main-content, #view-leads, #view-calendar, #view-invoices, #view-messages{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 }
 
 :root{--kb:0px}
