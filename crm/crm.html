@@ -4500,11 +4500,24 @@ function _renderMobileCard(c) {
   const isArchived = c.status === 'Archived';
   const dupIds = getDupIds(c.id);
   const dupEl = dupIds.length ? `<span style="font-size:9px;background:rgba(220,38,38,.1);color:var(--red);padding:1px 5px;border-radius: 0;font-weight:700;border:1px solid rgba(220,38,38,.2)">DUP</span>` : '';
+  // Second line: stage if past form-submit, OR phone number, OR address fragment
+  const phoneShort = fmtPhoneShort(c.phone);
+  const addrShort = c.address ? esc(c.address.split(',')[0].trim().slice(0, 32)) : '';
+  let subLine = '';
+  if (isArchived) {
+    subLine = `<div class="mlc-stage" style="color:var(--text3)">archived</div>`;
+  } else if (stageInfo.id !== 1) {
+    subLine = `<div class="mlc-stage" style="color:${stageInfo.color}">${esc(stageInfo.label)}</div>`;
+  } else if (phoneShort) {
+    subLine = `<div class="mlc-stage" style="color:var(--text3)">${phoneShort}${addrShort ? ' · ' + addrShort : ''}</div>`;
+  } else if (addrShort) {
+    subLine = `<div class="mlc-stage" style="color:var(--text3)">${addrShort}</div>`;
+  }
   return `<div class="mlc${isArchived?' mlc-archived':''}" onclick="if(!window._mobileCtxJustOpened)openPanel('${c.id}')">
     ${avatarHtml}
     <div class="mlc-body">
       <div class="mlc-name">${displayName}${unreadEl}${actEl}${dupEl}</div>
-      ${stageInfo.id !== 1 || isArchived ? `<div class="mlc-stage" style="color:${stageInfo.color}">${stageInfo.id === 1 ? '' : esc(stageInfo.label)}${isArchived?'<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px">archived</span>':''}</div>` : ''}
+      ${subLine}
     </div>
     <div class="mlc-right">${urgEl}<span class="mlc-chevron">›</span></div>
   </div>`;
