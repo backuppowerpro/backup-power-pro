@@ -2563,8 +2563,16 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
     border:none!important;outline:none!important;
     box-shadow:var(--shadow-neu)!important;
     justify-content:space-around;overflow:visible;z-index:51;
-    transition:none
+    transition:none;
+    /* iOS stability: force GPU layer so tab bar doesn't jump during momentum scroll */
+    transform:translateZ(0);
+    -webkit-transform:translateZ(0);
+    -webkit-backface-visibility:hidden;
+    backface-visibility:hidden;
+    will-change:transform
   }
+  /* Reserve bottom safe area + tab bar space so content doesn't hide under it */
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}
   html.dark .tab-bar{
     background:var(--card)!important;
     box-shadow:var(--shadow-neu)!important
@@ -3871,7 +3879,7 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
       </div><!-- end panel-details-content -->
 
       <!-- Archive/Lost: at bottom of scroll, not in sticky footer -->
-      <div id="panel-archive-row" style="display:flex;gap:10px;padding:24px 0 40px;margin-top:24px;border-top:0.5px solid var(--border)">
+      <div id="panel-archive-row" style="display:flex;gap:10px;padding:16px 0 20px;margin-top:16px;border-top:0.5px solid var(--border)">
         <button class="btn btn-sm panel-archive-btn" style="flex:1;min-height:44px;font-size:13px;font-weight:700;border-radius:var(--r-md)" onclick="panelNameArchive()">Archive</button>
         <button class="btn btn-sm panel-lost-btn-style" id="panel-lost-btn" style="flex:1;min-height:44px;font-size:13px;font-weight:700;border-radius:var(--r-md)" onclick="panelMarkLost()">Lost</button>
       </div>
