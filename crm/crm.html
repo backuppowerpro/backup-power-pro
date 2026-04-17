@@ -4161,7 +4161,7 @@ function _bannerHtml(c) {
   const displayName = esc(dispName(c.name, 'Unnamed'));
   // Fallback initials only show until/unless the Street View image loads.
   // We tag them so the async image loader can hide them when the photo arrives.
-  const fallbackInitials = `<div class="bnr-fallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;transition: opacity .25s steps(4)"><span style="font-size:64px;font-weight:800;color:rgba(255,255,255,0.32);font-family:'VT323',monospace;letter-spacing:.02em">${initials}</span></div>`;
+  const fallbackInitials = `<div class="bnr-fallback" style="position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:16px;z-index:0;transition: opacity .25s steps(4)"><span style="font-size:56px;font-weight:800;color:rgba(255,255,255,0.18);font-family:'VT323',monospace;letter-spacing:.02em;line-height:1">${initials}</span></div>`;
   // Name + quick action buttons sit on a dark bar at the very bottom.
   const gradient = '';
   const nameGrad = '';
