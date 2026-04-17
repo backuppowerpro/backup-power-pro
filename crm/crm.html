@@ -2732,11 +2732,14 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   html.dark .pa-stat,html.dark .inv-stat{background:rgba(255,255,255,.05)!important}
 
   /* Calendar: single-column on phones so jobs are readable */
-  .cal-grid{grid-template-columns:1fr;gap:12px}
+  .cal-grid{grid-template-columns:1fr;gap:12px;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
 
   /* Follow-up queue: lift panel above floating pill tab bar */
   .fq-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
   .urg-modal-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+
+  /* Ensure all main view containers clear the floating tab bar */
+  #main-content, .main-content, [id^="view-"]{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 }
 
 :root{--kb:0px}
