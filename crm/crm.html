@@ -2532,13 +2532,23 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
    ══════════════════════════════════════════════════════════ */
 @media(max-width:640px){
   /* On mobile the tab-bar moves to bottom — body only needs nav-height clearance */
-  body{padding-top:calc(56px + env(safe-area-inset-top,0px))!important}
-  /* ── LIQUID GLASS top nav (iOS 26 — translucent glass nav bar) ── */
+  body{padding-top:calc(56px + env(safe-area-inset-top,0px))!important;overscroll-behavior-y:none!important}
+  /* ── Top nav: SOLID background on mobile to prevent iOS scroll jitter ──
+     Previously rgba(.88) translucent — on iOS momentum scroll this caused
+     rendering artifacts where the nav appeared to float or double-expose
+     content behind it. Solid nav color + full GPU isolation = stable. */
   .nav{
-    background:rgba(22,18,12,.88)!important;
-    
+    background:var(--navy)!important;
     box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 1px 16px rgba(0,0,0,.36)!important;
-    gap:2px!important;padding-left:10px!important;padding-right:10px!important
+    gap:2px!important;padding-left:10px!important;padding-right:10px!important;
+    /* Force compositor layer with full isolation — stronger than translateZ alone */
+    transform:translate3d(0,0,0)!important;
+    -webkit-transform:translate3d(0,0,0)!important;
+    -webkit-backface-visibility:hidden!important;
+    backface-visibility:hidden!important;
+    will-change:transform!important;
+    contain:layout paint!important;
+    isolation:isolate!important
   }
   .nav-icon-btn{padding:8px!important;position:relative!important;z-index:2!important}
   .bell-wrap{position:relative!important;z-index:2!important;margin-left:auto!important}
@@ -2566,12 +2576,17 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
     box-shadow:var(--shadow-neu)!important;
     justify-content:space-around;overflow:visible;z-index:51;
     transition:none;
-    /* iOS stability: force GPU layer so tab bar doesn't jump during momentum scroll */
-    transform:translateZ(0);
-    -webkit-transform:translateZ(0);
-    -webkit-backface-visibility:hidden;
-    backface-visibility:hidden;
-    will-change:transform
+    /* iOS stability: force GPU layer + opaque bg so tab bar doesn't jump
+       during momentum scroll / address bar collapse. Stronger than translate3d. */
+    transform:translate3d(0,0,0)!important;
+    -webkit-transform:translate3d(0,0,0)!important;
+    -webkit-backface-visibility:hidden!important;
+    backface-visibility:hidden!important;
+    will-change:transform!important;
+    /* Use contain to isolate this element from the parent layout */
+    contain:layout paint!important;
+    /* Critical: must be isolate so compositor doesn't composite with content behind */
+    isolation:isolate!important
   }
   /* Reserve bottom safe area + tab bar space so content doesn't hide under it */
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))!important}
