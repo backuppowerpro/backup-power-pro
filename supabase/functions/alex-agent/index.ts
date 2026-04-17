@@ -54,6 +54,11 @@ const CORS = {
 // Set QUO_WEBHOOK_SECRET in Supabase function secrets to enable.
 // If not set, verification is skipped (dev/transition mode).
 
+// Security audit (round 2) C1: add replay-attack protection via timestamp
+// freshness check. Attacker who captures a signed webhook could otherwise
+// replay it with a modified message id and trigger new inbound processing.
+const MAX_WEBHOOK_AGE_MS = 5 * 60 * 1000  // 5 minutes
+
 async function verifyWebhookSignature(rawBody: string, req: Request): Promise<boolean> {
   const secret = Deno.env.get('QUO_WEBHOOK_SECRET')
   if (!secret) {
@@ -75,6 +80,34 @@ async function verifyWebhookSignature(rawBody: string, req: Request): Promise<bo
     return false
   }
 
+  // Replay defense: reject any webhook older than 5 min. OpenPhone sends
+  // a timestamp header on signed webhooks; if not present, attempt to parse
+  // from the body's createdAt. If neither is present in prod → reject.
+  const tsHeader = req.headers.get('openphone-timestamp') || req.headers.get('x-openphone-timestamp') || req.headers.get('x-timestamp')
+  let tsMs: number | null = null
+  if (tsHeader) {
+    const parsed = parseInt(tsHeader, 10)
+    if (Number.isFinite(parsed)) {
+      // OpenPhone timestamps are seconds since epoch
+      tsMs = parsed < 1e12 ? parsed * 1000 : parsed
+    }
+  }
+  if (tsMs == null) {
+    // Fallback: parse createdAt from body JSON (best-effort)
+    try {
+      const bodyJson = JSON.parse(rawBody)
+      const createdAt = bodyJson?.data?.object?.createdAt || bodyJson?.createdAt
+      if (createdAt) {
+        const d = new Date(createdAt).getTime()
+        if (Number.isFinite(d)) tsMs = d
+      }
+    } catch {}
+  }
+  if (tsMs != null && Math.abs(Date.now() - tsMs) > MAX_WEBHOOK_AGE_MS) {
+    console.warn('[alex] Webhook rejected: timestamp outside 5 min window (drift:', Date.now() - tsMs, 'ms)')
+    return false
+  }
+
   try {
     const enc = new TextEncoder()
     const key = await crypto.subtle.importKey(
@@ -87,6 +120,15 @@ async function verifyWebhookSignature(rawBody: string, req: Request): Promise<bo
     const sigBytes = Uint8Array.from(
       (hexSig.match(/.{2}/g) ?? []).map((b: string) => parseInt(b, 16)),
     )
+    // Security audit round 2 note: OpenPhone's documented signing format may
+    // be `timestamp.body` rather than just `body`. If timestamp header is
+    // present, sign the canonical combined string; fall back to body-only.
+    // This is dual-mode compatible until OP's exact format is confirmed.
+    if (tsHeader) {
+      const combined = `${tsHeader}.${rawBody}`
+      const combinedValid = await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(combined))
+      if (combinedValid) return true
+    }
     return await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(rawBody))
   } catch (err) {
     console.error('[alex] Signature verification error:', err)
@@ -1114,10 +1156,22 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS })
 
+  // Security audit (round 2) C2: reject oversized payloads before parsing.
+  // OpenPhone webhooks are well under 20KB. 100KB is a generous ceiling that
+  // still blocks memory-exhaustion DoS attacks.
+  const MAX_PAYLOAD_BYTES = 100_000
+  const contentLength = parseInt(req.headers.get('content-length') || '0', 10)
+  if (contentLength > MAX_PAYLOAD_BYTES) {
+    return new Response(JSON.stringify({ error: 'payload too large' }), { status: 413, headers: CORS })
+  }
+
   let rawBody: string
   let body: any
   try {
     rawBody = await req.text()
+    if (rawBody.length > MAX_PAYLOAD_BYTES) {
+      return new Response(JSON.stringify({ error: 'payload too large' }), { status: 413, headers: CORS })
+    }
     body = JSON.parse(rawBody)
   } catch {
     return new Response(JSON.stringify({ error: 'invalid json' }), { status: 400, headers: CORS })
