@@ -2739,6 +2739,14 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
   .cal-day{min-height:52px!important}
   .cal-day.has-events{min-height:auto!important}
 
+  /* Finance list rows: tighten on mobile so names don't truncate */
+  .inv-row{padding:10px 12px!important;gap:10px!important}
+  /* Remind button: smaller on mobile so there's room for names */
+  .fin-remind-btn{width:32px!important;height:32px!important;min-width:32px!important;padding:5px!important}
+  .fin-remind-btn svg{width:14px!important;height:14px!important}
+  /* Status badge: tighter */
+  .inv-row .prop-badge{font-size:10px!important;padding:3px 7px!important;letter-spacing:.02em!important}
+
   /* Follow-up queue: lift panel above floating pill tab bar */
   .fq-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
   .urg-modal-overlay{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
