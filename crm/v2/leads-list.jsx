@@ -210,11 +210,11 @@ function LoadMoreRow() {
 }
 
 /* ────────── Mobile list ────────── */
-function LeadsListMobile({ rows: rowsProp, onSelect }) {
+function LeadsListMobile({ rows: rowsProp, onSelect, showToolbar = false }) {
   const data = rowsProp || rows;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <ListToolbar mobile />
+      {showToolbar ? <ListToolbar mobile /> : null}
       <div style={{
         flex: 1, overflowY: 'auto',
         padding: '0 0 88px',
@@ -233,11 +233,11 @@ function LeadsListMobile({ rows: rowsProp, onSelect }) {
 }
 
 /* ────────── Desktop list — 3-column row grid ────────── */
-function LeadsListDesktop({ rows: rowsProp, onSelect }) {
+function LeadsListDesktop({ rows: rowsProp, onSelect, showToolbar = false }) {
   const data = rowsProp || rows;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <ListToolbar />
+      {showToolbar ? <ListToolbar /> : null}
       <div style={{
         flex: 1,
         padding: '0 16px 88px',
