@@ -3612,7 +3612,7 @@ function App() {
           />
         ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>
-      {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} /> : null}
+      {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} badges={unreadCount > 0 ? { messages: unreadCount } : {}} /> : null}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }} className="grid-bg">
         <ErrorBoundary label={tab.toUpperCase()}>
           {content}

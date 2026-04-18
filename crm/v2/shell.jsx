@@ -97,7 +97,7 @@ function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
 }
 
 /* ────────── Tab bar (top, same on both platforms) ────────── */
-function TabBar({ active = 'leads', scrollable = false, onChange }) {
+function TabBar({ active = 'leads', scrollable = false, onChange, badges = {} }) {
   return (
     <div role="tablist" aria-label="Main navigation" style={{
       height: 44, display: 'flex', alignItems: 'stretch',
@@ -110,11 +110,12 @@ function TabBar({ active = 'leads', scrollable = false, onChange }) {
     }}>
       {TABS.map(t => {
         const isActive = t.id === active;
+        const badge = badges[t.id];
         return (
           <button key={t.id} className="chrome-label"
             role="tab"
             aria-selected={isActive}
-            aria-label={t.label}
+            aria-label={badge ? `${t.label} (${badge})` : t.label}
             onClick={() => onChange && onChange(t.id)}
             style={{
               height: '100%', padding: '0 20px',
@@ -128,6 +129,13 @@ function TabBar({ active = 'leads', scrollable = false, onChange }) {
             }}>
             <span style={{ display: 'flex', opacity: isActive ? 1 : .75 }} aria-hidden="true">{t.icon}</span>
             <span>{t.label}</span>
+            {badge ? (
+              <span className="mono" style={{
+                fontSize: 10, padding: '1px 5px', letterSpacing: '.04em',
+                color: '#fff', background: 'var(--ms-3)',
+                marginLeft: -4,
+              }}>{badge}</span>
+            ) : null}
           </button>
         );
       })}
