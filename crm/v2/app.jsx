@@ -3124,6 +3124,9 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
       const actionHits = [
         { type: 'action', id: 'export_csv', label: 'Export contacts as CSV' },
         { type: 'action', id: 'show_help', label: 'Show keyboard shortcuts' },
+        { type: 'action', id: 'open_briefing', label: 'Open morning briefing' },
+        { type: 'action', id: 'new_lead', label: 'New lead' },
+        { type: 'action', id: 'toggle_dark', label: 'Toggle dark mode' },
       ].filter(a => a.label.toLowerCase().includes(q.toLowerCase()));
       const sparkyHit = [{ type: 'sparky', label: `Ask Sparky: "${q}"` }];
       setResults([...contactHits, ...navHits, ...actionHits, ...sparkyHit]);
@@ -3560,6 +3563,9 @@ function App() {
         onAction={id => {
           if (id === 'export_csv') exportContactsCsv();
           else if (id === 'show_help') setHelpOpen(true);
+          else if (id === 'open_briefing') setBriefOpen(true);
+          else if (id === 'new_lead') setNewLeadOpen(true);
+          else if (id === 'toggle_dark') setIsDark(d => !d);
         }}
       />
       {briefOpen ? <LiveMorningBriefing
