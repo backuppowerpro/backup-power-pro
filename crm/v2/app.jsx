@@ -351,6 +351,7 @@ function contactToCard(c) {
     dots: { photo: hasPhoto ? 1 : 0, quote: hasQuote ? 1 : 0, permit: hasPermit ? 1 : 0 },
     overdue: days > 7 && (c.stage || 1) < 4,
     dnc: !!c.do_not_contact,
+    jurisdiction: c._jurisdiction_name || null,
   };
 }
 
@@ -394,12 +395,17 @@ function LivePipeline({ onCardClick, onSubView }) {
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    const { data } = await db
-      .from('contacts')
-      .select('id, name, phone, address, stage, install_notes, created_at, do_not_contact, quote_amount')
-      .order('created_at', { ascending: false })
-      .limit(500);
-    setContacts(data || []);
+    const [{ data: contacts }, { data: jurisdictions }] = await Promise.all([
+      db.from('contacts')
+        .select('id, name, phone, address, stage, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id')
+        .order('created_at', { ascending: false })
+        .limit(500),
+      db.from('permit_jurisdictions').select('id, name'),
+    ]);
+    // Attach jurisdiction name inline so contactToCard can render it
+    const jMap = Object.fromEntries((jurisdictions || []).map(j => [j.id, j.name]));
+    const withJ = (contacts || []).map(c => ({ ...c, _jurisdiction_name: jMap[c.jurisdiction_id] || null }));
+    setContacts(withJ);
   }, []);
 
   useEffect(() => {

@@ -90,6 +90,12 @@ function LeadCard({ c }) {
           paddingLeft: 32,
         }}>{c.addr}</div>
       )}
+      {c.jurisdiction && (
+        <div className="mono" style={{
+          fontSize: 9, color: 'var(--text-faint)', letterSpacing: '.06em',
+          paddingLeft: 32, textTransform: 'uppercase',
+        }}>{c.jurisdiction}</div>
+      )}
     </div>
   );
 }
