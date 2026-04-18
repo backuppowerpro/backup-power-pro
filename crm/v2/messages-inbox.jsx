@@ -118,25 +118,27 @@ function ThreadRow({ t, compact = false, active = false }) {
 function MsgChips({ active = 'all', onChange }) {
   // Minimal — text tabs, no LCD count, no raised pills.
   const chips = [
-    { id:'all',   label:'All' },
-    { id:'un',    label:'Waiting' }, // waiting on Key's reply
-    { id:'alex',  label:'Alex' },
-    { id:'key',   label:'Me' },
-    { id:'call',  label:'Calls' },
+    { id:'all',   label:'All',     title: 'All threads' },
+    { id:'un',    label:'Waiting', title: 'Threads where the customer sent the last message' },
+    { id:'alex',  label:'Alex',    title: 'Threads where Alex sent the latest outbound' },
+    { id:'key',   label:'Me',      title: "Threads where you sent the latest outbound" },
+    { id:'call',  label:'Calls',   title: 'Threads containing voice calls' },
   ];
   return (
     <div style={{ display:'flex', gap:18, padding:'14px 16px 10px' }}>
       {chips.map(c => {
         const on = c.id === active;
         return (
-          <button key={c.id} onClick={() => onChange && onChange(c.id)} style={{
-            padding: '4px 0', fontSize: 12,
-            fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
-            color: on ? 'var(--text)' : 'var(--text-muted)',
-            borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent',
-            background: 'transparent', border: 'none',
-            borderBottomStyle: 'solid', cursor: 'pointer',
-          }}>{c.label}</button>
+          <button key={c.id} onClick={() => onChange && onChange(c.id)}
+            title={c.title}
+            style={{
+              padding: '4px 0', fontSize: 12,
+              fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
+              color: on ? 'var(--text)' : 'var(--text-muted)',
+              borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent',
+              background: 'transparent', border: 'none',
+              borderBottomStyle: 'solid', cursor: 'pointer',
+            }}>{c.label}</button>
         );
       })}
     </div>
