@@ -3124,6 +3124,7 @@ function LiveSparky({ currentContactId = null }) {
         <div style={{ flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
           <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>sparky</span>
           <input value={input} onChange={e => setInput(e.target.value)}
+            autoFocus
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Ask anything…"
             style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none' }}
