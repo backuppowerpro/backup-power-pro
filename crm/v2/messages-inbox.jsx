@@ -22,7 +22,7 @@ const THREADS = [
 
 const TINTS = { navy:'var(--navy)', gold:'var(--gold)', red:'var(--ms-3)', green:'var(--ms-2)' };
 
-function Avatar({ t, size = 48 }) {
+function ThreadAvatar({ t, size = 48 }) {
   if (!t) return null;
   const tint = t.tint || 'navy';
   return (
@@ -90,7 +90,7 @@ function ThreadRow({ t, compact = false, active = false }) {
       boxShadow: active ? 'var(--pressed-2)' : 'none',
       borderBottom: '1px solid rgba(0,0,0,.06)',
     }}>
-      <Avatar t={t} />
+      <ThreadAvatar t={t} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{
