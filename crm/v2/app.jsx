@@ -1516,9 +1516,24 @@ function MessageBody({ body, isOut }) {
 }
 
 function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) {
-  const [text, setText] = useState('');
+  // Auto-save drafts per contact in localStorage so Key doesn't lose a
+  // half-typed SMS when he switches contacts or reloads the tab.
+  const draftKey = contactId ? `bpp_v2_draft_${contactId}` : null;
+  const [text, setText] = useState(() => (draftKey && localStorage.getItem(draftKey)) || '');
   const [sending, setSending] = useState(false);
   const [snippetsOpen, setSnippetsOpen] = useState(false);
+
+  // Persist draft on every keystroke (cheap; localStorage is synchronous)
+  useEffect(() => {
+    if (!draftKey) return;
+    if (text) localStorage.setItem(draftKey, text);
+    else localStorage.removeItem(draftKey);
+  }, [text, draftKey]);
+
+  // When the contact changes, re-load its draft
+  useEffect(() => {
+    if (draftKey) setText(localStorage.getItem(draftKey) || '');
+  }, [draftKey]);
 
   // Listen for broadcasted prefill from sibling components (e.g. Quote tab "Remind").
   useEffect(() => {
