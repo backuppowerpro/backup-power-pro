@@ -2068,7 +2068,7 @@ function LiveSparky() {
         },
       });
       if (error) throw error;
-      const reply = (data?.response || data?.message || data?.text || JSON.stringify(data)).toString();
+      const reply = (data?.answer || data?.response || data?.message || data?.text || JSON.stringify(data)).toString();
       setMessages(prev => [...prev, { who: 'sparky', text: reply }]);
     } catch (e) {
       setMessages(prev => [...prev, { who: 'sparky', text: `Error: ${e.message || 'something went wrong'}` }]);
