@@ -509,15 +509,15 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
       {/* Stage strip (click to open picker) */}
       <button
         onClick={() => setStagePickerOpen(true)}
-        className="lcd"
         style={{
-          height: 40, padding: '0 16px',
+          height: 36, padding: '0 14px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           width: '100%', cursor: 'pointer',
+          background: 'var(--card)', boxShadow: 'var(--raised-2)',
           border: 0, textAlign: 'left',
         }}>
-        <span className="pixel" style={{ fontSize: 14 }}>{stageAbbr}</span>
-        <span className="pixel lcd--amber" style={{ fontSize: 11 }}>STAGE {contact?.stage || 1} ▸</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--text)' }}>{stageAbbr}</span>
+        <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>stage {contact?.stage || 1} ›</span>
       </button>
       {stagePickerOpen ? (
         <StagePickerModal
