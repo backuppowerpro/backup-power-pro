@@ -464,6 +464,14 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
   // Track which contact the user last explicitly clicked a tab on, so we
   // can auto-pick a smart default when switching between contacts.
   const [manualTabContactId, setManualTabContactId] = useState(null);
+  const msgScrollRef = useRef(null);
+
+  // Auto-scroll message thread to bottom when messages change or tab opens
+  useEffect(() => {
+    if (detailTab === 'MESSAGES' && msgScrollRef.current) {
+      msgScrollRef.current.scrollTop = msgScrollRef.current.scrollHeight;
+    }
+  }, [messages, detailTab]);
 
   useEffect(() => {
     let alive = true;
@@ -654,7 +662,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
 
       {/* Tab content */}
       {detailTab === 'MESSAGES' ? (
-      <div style={{
+      <div ref={msgScrollRef} style={{
         flex: 1, overflowY: 'auto', padding: 16,
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
