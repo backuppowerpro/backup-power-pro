@@ -528,7 +528,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         padding: '0 8px',
         boxShadow: 'var(--pressed-2)',
       }}>
-        {['MESSAGES', 'TIMELINE', 'QUOTE', 'PERMITS', 'NOTES'].map(t => (
+        {['MESSAGES', 'TIMELINE', 'QUOTE', 'PERMITS', 'NOTES', 'EDIT'].map(t => (
           <button key={t} onClick={() => setDetailTab(t)} className="chrome-label" style={{
             height: '100%', padding: '0 14px', fontSize: 11,
             color: t === detailTab ? 'var(--text)' : 'var(--text-muted)',
@@ -584,6 +584,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
       {detailTab === 'QUOTE' ? <DetailQuote contactId={contactId} /> : null}
       {detailTab === 'PERMITS' ? <DetailPermits contact={contact} /> : null}
       {detailTab === 'NOTES' ? <DetailNotes contact={contact} onUpdate={(notes) => setContact(c => ({ ...c, install_notes: notes }))} /> : null}
+      {detailTab === 'EDIT' ? <DetailEditContact contact={contact} onUpdate={(patch) => setContact(c => ({ ...c, ...patch }))} /> : null}
 
       {/* Compose — only show on MESSAGES tab */}
       {detailTab === 'MESSAGES' ? (
@@ -688,6 +689,79 @@ function DetailPermits({ contact }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function DetailEditContact({ contact, onUpdate }) {
+  const [form, setForm] = useState({
+    name: contact?.name || '',
+    phone: contact?.phone || '',
+    email: contact?.email || '',
+    address: contact?.address || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function save(e) {
+    e?.preventDefault();
+    if (!contact) return;
+    setSaving(true);
+    const { error } = await db
+      .from('contacts')
+      .update({
+        name: form.name.trim() || null,
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        address: form.address.trim() || null,
+      })
+      .eq('id', contact.id);
+    setSaving(false);
+    if (!error) {
+      setSaved(true);
+      onUpdate && onUpdate(form);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  }
+
+  return (
+    <form onSubmit={save} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <EditField label="NAME" value={form.name} onChange={v => setForm({ ...form, name: v })} />
+      <EditField label="PHONE" value={form.phone} onChange={v => setForm({ ...form, phone: v })} placeholder="+18645550100" />
+      <EditField label="EMAIL" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
+      <EditField label="ADDRESS" value={form.address} onChange={v => setForm({ ...form, address: v })} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+        {saved ? (
+          <span className="mono lcd--green" style={{ fontSize: 11, color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)' }}>
+            SAVED
+          </span>
+        ) : <span />}
+        <button type="submit" disabled={saving} className="tactile-raised" style={{
+          height: 40, padding: '0 20px',
+          background: 'var(--navy)', color: '#fff',
+          fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 12,
+          letterSpacing: '.08em', textTransform: 'uppercase',
+          boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.2), inset -2px -2px 0 rgba(0,0,0,.5)',
+          cursor: saving ? 'wait' : 'pointer',
+          opacity: saving ? 0.6 : 1,
+        }}>{saving ? 'SAVING...' : 'SAVE'}</button>
+      </div>
+    </form>
+  );
+}
+
+function EditField({ label, value, onChange, placeholder, type = 'text' }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <label className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{label}</label>
+      <input
+        type={type}
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="pressed-2"
+        style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }}
+      />
     </div>
   );
 }
@@ -2160,17 +2234,47 @@ function App() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // ⌘K / Ctrl+K to open command palette
+  // Global keyboard shortcuts
+  //   ⌘K / Ctrl+K → command palette
+  //   Esc → close detail panel / modal (handled per-modal)
+  //   g then L/C/F/M/S → nav to tab (2-key chord, vim-style)
+  //   ⌘/ → show keyboard help modal (future)
+  const [gPending, setGPending] = useState(false);
   useEffect(() => {
     const onKey = (e) => {
+      // Skip if focus is in an input/textarea
+      const t = e.target;
+      const editable = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setPaletteOpen(o => !o);
+        return;
       }
+      if (editable) return;
+
+      // g-chord: g then l/c/f/m/s
+      if (gPending) {
+        const map = { l: 'leads', c: 'calendar', f: 'finance', m: 'messages', s: 'sparky' };
+        const target = map[e.key.toLowerCase()];
+        if (target) {
+          e.preventDefault();
+          setTab(target);
+        }
+        setGPending(false);
+        return;
+      }
+      if (e.key === 'g') {
+        e.preventDefault();
+        setGPending(true);
+        setTimeout(() => setGPending(false), 1000);
+        return;
+      }
+      // ? → help (future)
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [gPending]);
 
   // Auth bootstrap
   useEffect(() => {
