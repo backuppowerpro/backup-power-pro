@@ -581,18 +581,34 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
 
       {/* Detail tabs */}
       <div style={{
-        height: 44, display: 'flex', alignItems: 'stretch',
-        padding: '0 8px',
-        boxShadow: 'var(--pressed-2)',
+        height: 42, display: 'flex', alignItems: 'stretch',
+        padding: '0 16px', gap: 16,
+        borderBottom: '1px solid rgba(0,0,0,.08)',
+        overflowX: 'auto',
       }}>
-        {['MESSAGES', 'TIMELINE', 'QUOTE', 'PERMITS', 'NOTES', 'EDIT'].map(t => (
-          <button key={t} onClick={() => { setDetailTab(t); setManualTabContactId(contactId); }} className="chrome-label" style={{
-            height: '100%', padding: '0 14px', fontSize: 11,
-            color: t === detailTab ? 'var(--text)' : 'var(--text-muted)',
-            boxShadow: t === detailTab ? 'inset 0 -3px 0 var(--gold)' : 'none',
-            cursor: 'pointer',
-          }}>{t}</button>
-        ))}
+        {[
+          { id: 'MESSAGES', label: 'Messages' },
+          { id: 'TIMELINE', label: 'Timeline' },
+          { id: 'QUOTE',    label: 'Quote' },
+          { id: 'PERMITS',  label: 'Permits' },
+          { id: 'NOTES',    label: 'Notes' },
+          { id: 'EDIT',     label: 'Edit' },
+        ].map(t => {
+          const on = t.id === detailTab;
+          return (
+            <button key={t.id}
+              onClick={() => { setDetailTab(t.id); setManualTabContactId(contactId); }}
+              style={{
+                height: '100%', padding: '0 4px', fontSize: 13,
+                fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
+                color: on ? 'var(--text)' : 'var(--text-muted)',
+                borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent',
+                borderBottomStyle: 'solid',
+                background: 'transparent', border: 'none',
+                cursor: 'pointer', flex: '0 0 auto',
+              }}>{t.label}</button>
+          );
+        })}
       </div>
 
       {/* Tab content */}
