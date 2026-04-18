@@ -2519,7 +2519,6 @@ function LiveSparky() {
             placeholder="ASK ANYTHING..."
             style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 13 }}
           />
-          <span className="lcd lcd--green" style={{ padding: '2px 6px', fontSize: 10 }}>SONNET-4-6</span>
         </div>
         <button onClick={send} disabled={sending || !input.trim()} style={{
           width: 40, height: 40, background: 'var(--navy)', color: '#fff',
