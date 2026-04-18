@@ -920,12 +920,16 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
     if (!text.trim() || !contactId) return;
     setSending(true);
     try {
-      await db.functions.invoke('send-sms', {
+      const { data, error } = await db.functions.invoke('send-sms', {
         body: { contactId, body: text.trim() },
       });
+      if (error) throw error;
+      if (data && data.success === false) throw new Error(data.error || 'send failed');
       setText('');
     } catch (e) {
       console.error('send failed', e);
+      const msg = e?.message || 'Send failed — check network + Twilio credits';
+      window.__bpp_toast && window.__bpp_toast(msg, 'error');
     } finally {
       setSending(false);
     }
@@ -1526,9 +1530,40 @@ function parseMaterials(notes) {
   return out;
 }
 
+// Serialize materials state back to the __pm_* line-prefix format inside
+// install_notes. Preserves any non-materials lines the user has typed.
+function materialsToNotes(existingNotes, mat) {
+  const keepLines = String(existingNotes || '')
+    .split('\n')
+    .filter(line => !/^__pm_\w+:/.test(line));
+  const matLines = [
+    `__pm_amp: ${mat.amp}`,
+    `__pm_box: ${mat.box ? 1 : 0}`,
+    `__pm_interlock: ${mat.interlock ? 1 : 0}`,
+    `__pm_cord: ${mat.cord ? 1 : 0}`,
+    `__pm_breaker: ${mat.breaker ? 1 : 0}`,
+    `__pm_surge: ${mat.surge ? 1 : 0}`,
+    `__pm_order: ${mat.order}`,
+  ];
+  return [...keepLines.filter(l => l.trim()), ...matLines].join('\n');
+}
+
+// Save a materials change back to contacts.install_notes. Toast on success/fail.
+async function saveMaterialsForContact(contactId, mat) {
+  const { data: existing } = await db.from('contacts').select('install_notes').eq('id', contactId).maybeSingle();
+  const newNotes = materialsToNotes(existing?.install_notes, mat);
+  const { error } = await db.from('contacts').update({ install_notes: newNotes }).eq('id', contactId);
+  if (error) {
+    window.__bpp_toast && window.__bpp_toast(`Materials save failed: ${error.message}`, 'error');
+    return false;
+  }
+  return true;
+}
+
 function LiveMaterials() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -1545,6 +1580,31 @@ function LiveMaterials() {
       setLoading(false);
     })();
   }, []);
+
+  // Apply a change to one row optimistically then persist
+  const updateRow = useCallback(async (rowId, nextMat) => {
+    setRows(prev => prev.map(r => r.id === rowId ? { ...r, mat: nextMat } : r));
+    setSavingId(rowId);
+    const ok = await saveMaterialsForContact(rowId, nextMat);
+    setSavingId(null);
+    if (!ok) {
+      // Re-fetch to rollback on error
+      const { data } = await db.from('contacts').select('id, install_notes').eq('id', rowId).maybeSingle();
+      if (data) {
+        const mat = parseMaterials(data.install_notes);
+        setRows(prev => prev.map(r => r.id === rowId ? { ...r, mat } : r));
+      }
+    }
+  }, []);
+
+  const toggleField = (row, field) => updateRow(row.id, { ...row.mat, [field]: row.mat[field] ? 0 : 1 });
+  const setAmp = (row, amp) => updateRow(row.id, { ...row.mat, amp });
+  const cycleOrder = (row) => {
+    const order = row.mat.order === 'not-ordered' ? 'pending'
+                : row.mat.order === 'pending'     ? 'received'
+                                                  : 'not-ordered';
+    updateRow(row.id, { ...row.mat, order });
+  };
 
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING MATERIALS...</div>;
 
@@ -1585,29 +1645,33 @@ function LiveMaterials() {
           }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
             <div style={{ display: 'flex', height: 28, boxShadow: 'var(--raised-2)' }}>
-              <span className="chrome-label" style={{
+              <button onClick={() => setAmp(r, '30')} className="chrome-label" style={{
                 flex: 1, fontSize: 10, display: 'grid', placeItems: 'center',
                 background: r.mat.amp === '30' ? 'var(--navy)' : 'transparent',
                 color: r.mat.amp === '30' ? 'var(--gold)' : 'var(--text-muted)',
-              }}>30A</span>
-              <span className="chrome-label" style={{
+                border: 'none', cursor: 'pointer',
+              }}>30A</button>
+              <button onClick={() => setAmp(r, '50')} className="chrome-label" style={{
                 flex: 1, fontSize: 10, display: 'grid', placeItems: 'center',
                 background: r.mat.amp === '50' ? 'var(--navy)' : 'transparent',
                 color: r.mat.amp === '50' ? 'var(--gold)' : 'var(--text-muted)',
-              }}>50A</span>
+                border: 'none', cursor: 'pointer',
+              }}>50A</button>
             </div>
-            <MatCheck on={r.mat.box} />
-            <MatCheck on={r.mat.interlock} />
-            <MatCheck on={r.mat.cord} />
-            <MatCheck on={r.mat.breaker} />
-            <MatCheck on={r.mat.surge} />
-            <span className="chrome-label" style={{
+            <MatCheck on={r.mat.box} onClick={() => toggleField(r, 'box')} />
+            <MatCheck on={r.mat.interlock} onClick={() => toggleField(r, 'interlock')} />
+            <MatCheck on={r.mat.cord} onClick={() => toggleField(r, 'cord')} />
+            <MatCheck on={r.mat.breaker} onClick={() => toggleField(r, 'breaker')} />
+            <MatCheck on={r.mat.surge} onClick={() => toggleField(r, 'surge')} />
+            <button onClick={() => cycleOrder(r)} className="chrome-label" style={{
               height: 24, padding: '0 8px',
               display: 'grid', placeItems: 'center',
               background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
               color: orderColor, textShadow: orderGlow,
               fontSize: 10, letterSpacing: '.04em',
-            }}>{(r.mat.order || 'NOT ORDERED').toUpperCase()}</span>
+              border: 'none', cursor: 'pointer',
+              opacity: savingId === r.id ? 0.5 : 1,
+            }}>{(r.mat.order || 'NOT ORDERED').toUpperCase()}</button>
           </div>
         );
       })}
@@ -1616,20 +1680,23 @@ function LiveMaterials() {
   );
 }
 
-function MatCheck({ on }) {
+function MatCheck({ on, onClick }) {
+  const base = {
+    width: 32, height: 32, background: 'var(--card)',
+    cursor: onClick ? 'pointer' : 'default',
+    border: 'none', padding: 0,
+  };
   if (on) {
-    return <div style={{
-      width: 32, height: 32, boxShadow: 'var(--pressed-2)', background: 'var(--card)',
+    return <button onClick={onClick} style={{
+      ...base, boxShadow: 'var(--pressed-2)',
       display: 'grid', placeItems: 'center', color: 'var(--green)',
     }}>
       <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
         <path d="M3 8 L7 12 L13 4"/>
       </svg>
-    </div>;
+    </button>;
   }
-  return <div style={{
-    width: 32, height: 32, boxShadow: 'var(--raised-2)', background: 'var(--card)',
-  }}/>;
+  return <button onClick={onClick} style={{ ...base, boxShadow: 'var(--raised-2)' }} aria-label="Check off" />;
 }
 
 // ── Live Finance (KPI strip + proposals/invoices/payments tables) ──────────
