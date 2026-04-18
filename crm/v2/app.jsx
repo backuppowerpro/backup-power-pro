@@ -379,6 +379,7 @@ function LivePipeline({ onCardClick, onSubView }) {
       from_stage: oldStage,
       to_stage: newStage,
     }).then(() => {}, () => {});
+    window.__bpp_toast && window.__bpp_toast(`${contact.name || 'Lead'} → stage ${newStage}`, 'success');
   }, [contacts]);
 
   const LeadsPipelineComp = window.LeadsPipeline;
@@ -720,7 +721,10 @@ function DetailEditContact({ contact, onUpdate }) {
     if (!error) {
       setSaved(true);
       onUpdate && onUpdate(form);
+      window.__bpp_toast && window.__bpp_toast(`Contact updated`, 'success');
       setTimeout(() => setSaved(false), 2000);
+    } else {
+      window.__bpp_toast && window.__bpp_toast(`Update failed: ${error.message}`, 'error');
     }
   }
 
@@ -779,7 +783,10 @@ function DetailNotes({ contact, onUpdate }) {
     if (!error) {
       setSaved(true);
       onUpdate && onUpdate(text);
+      window.__bpp_toast && window.__bpp_toast(`Notes saved for ${contact.name || 'contact'}`, 'success');
       setTimeout(() => setSaved(false), 2000);
+    } else {
+      window.__bpp_toast && window.__bpp_toast(`Save failed: ${error.message}`, 'error');
     }
   }
 
@@ -934,6 +941,56 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
   );
 }
 
+// ── Toast notification system ───────────────────────────────────────────────
+// Simple pub/sub. Any component calls window.__bpp_toast(text, kind?) and a
+// toast appears bottom-right for 4 seconds.
+const toastSubs = new Set();
+window.__bpp_toast = (text, kind = 'info') => {
+  toastSubs.forEach(fn => fn({ id: Date.now() + Math.random(), text, kind }));
+};
+
+function ToastRoot() {
+  const [toasts, setToasts] = useState([]);
+  useEffect(() => {
+    const sub = (t) => {
+      setToasts(prev => [...prev, t]);
+      setTimeout(() => setToasts(prev => prev.filter(x => x.id !== t.id)), 4000);
+    };
+    toastSubs.add(sub);
+    return () => toastSubs.delete(sub);
+  }, []);
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 16, right: 16, zIndex: 110,
+      display: 'flex', flexDirection: 'column', gap: 8,
+      paddingBottom: 'env(safe-area-inset-bottom)',
+      maxWidth: 320,
+    }}>
+      {toasts.map(t => {
+        const color =
+          t.kind === 'success' ? 'var(--green)' :
+          t.kind === 'error'   ? 'var(--red)'   :
+          t.kind === 'warn'    ? 'var(--lcd-amber)' :
+                                  'var(--navy)';
+        return (
+          <div key={t.id} className="raised" style={{
+            padding: '10px 14px',
+            background: 'var(--card)',
+            boxShadow: 'var(--raised)',
+            borderLeft: `4px solid ${color}`,
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 13,
+          }}>
+            <span style={{ width: 8, height: 8, background: color, flex: '0 0 auto' }} />
+            <span>{t.text}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Keyboard Help Overlay (?) ───────────────────────────────────────────────
 function KeyboardHelp({ open, onClose }) {
   if (!open) return null;
@@ -1005,6 +1062,7 @@ async function exportContactsCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  window.__bpp_toast && window.__bpp_toast(`Exported ${data.length} contacts`, 'success');
 }
 
 // ── New Lead Modal (action triggered by "+" button) ────────────────────────
@@ -1046,6 +1104,7 @@ function NewLeadModal({ open, onClose, onCreated }) {
     setBusy(false);
     if (error) { setErr(error.message); return; }
     onCreated && onCreated(data);
+    window.__bpp_toast && window.__bpp_toast(`New lead: ${data.name}`, 'success');
     setName(''); setPhone(''); setAddress('');
     onClose();
   }
@@ -2471,6 +2530,7 @@ function App() {
       />
       <KeyboardHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       <VoiceCallModal voice={voice} />
+      <ToastRoot />
     </div>
   );
 }
