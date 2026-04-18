@@ -1575,6 +1575,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'D', label: 'Dial selected contact' },
     { keys: 'N', label: 'New lead' },
     { keys: 'B', label: 'Open morning briefing' },
+    { keys: '/', label: 'Focus search (Messages / Sparky)' },
     { keys: 'Esc', label: 'Close detail or modal' },
     { keys: '?', label: 'Show this help' },
   ];
@@ -3230,6 +3231,11 @@ function App() {
       if (e.key === 'n' && !newLeadOpen) {
         e.preventDefault();
         setNewLeadOpen(true);
+      }
+      // / → focus a visible search input on whatever tab is active
+      if (e.key === '/') {
+        const search = document.querySelector('input[placeholder="Search threads…"], input[placeholder="Ask anything…"]');
+        if (search) { e.preventDefault(); search.focus(); }
       }
     };
     window.addEventListener('keydown', onKey);
