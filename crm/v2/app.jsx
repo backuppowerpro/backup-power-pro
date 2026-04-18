@@ -2215,20 +2215,21 @@ function LiveFinance() {
   }, []);
 
   const kpis = useMemo(() => {
-    const weekAgo = Date.now() - 7 * 86400000;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     const outstanding = data.invoices
-      .filter(i => i.status !== 'paid')
+      .filter(i => i.status !== 'paid' && i.status !== 'cancelled')
       .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
-    const paidThisWeek = data.invoices
-      .filter(i => i.status === 'paid' && i.paid_at && new Date(i.paid_at).getTime() > weekAgo)
+    const paidThisMonth = data.invoices
+      .filter(i => i.status === 'paid' && i.paid_at && new Date(i.paid_at).getTime() >= monthStart)
       .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
     const awaitingDeposit = data.invoices.filter(i => i.notes === 'deposit' && i.status !== 'paid').length;
     const overdue = data.invoices.filter(i => {
-      if (i.status === 'paid') return false;
+      if (i.status === 'paid' || i.status === 'cancelled') return false;
       const age = (Date.now() - new Date(i.created_at).getTime()) / 86400000;
       return age > 14;
     }).length;
-    return { outstanding, paidThisWeek, awaitingDeposit, overdue };
+    return { outstanding, paidThisMonth, awaitingDeposit, overdue };
   }, [data]);
 
   const subTabs = [
@@ -2246,7 +2247,7 @@ function LiveFinance() {
       {/* KPI strip */}
       <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         <KpiCard label="OUTSTANDING" value={`$${kpis.outstanding.toLocaleString()}`} tone="red" />
-        <KpiCard label="PAID THIS WEEK" value={`$${kpis.paidThisWeek.toLocaleString()}`} tone="green" />
+        <KpiCard label="THIS MONTH" value={`$${kpis.paidThisMonth.toLocaleString()}`} tone="green" />
         <KpiCard label="DEPOSITS PENDING" value={String(kpis.awaitingDeposit).padStart(2, '0')} tone="amber" />
         <KpiCard label="OVERDUE" value={String(kpis.overdue).padStart(2, '0')} tone={kpis.overdue > 0 ? 'red' : 'green'} />
       </div>
