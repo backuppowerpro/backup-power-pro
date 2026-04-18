@@ -260,4 +260,11 @@ function LeadsListDesktop({ rows: rowsProp, onSelect, showToolbar = false }) {
   );
 }
 
-Object.assign(window, { LeadsListMobile, LeadsListDesktop, LeadRow, ListToolbar, LoadMoreRow, Avatar });
+// Memoize LeadRow so each row only re-renders when its own `r` object
+// changes, not every time the parent list state ticks (realtime inserts,
+// scroll, etc). At 200 rows this noticeably cuts re-render work.
+const MemoLeadRow = React.memo(LeadRow, (prev, next) =>
+  prev.r === next.r && prev.desktop === next.desktop
+);
+
+Object.assign(window, { LeadsListMobile, LeadsListDesktop, LeadRow: MemoLeadRow, ListToolbar, LoadMoreRow, Avatar });

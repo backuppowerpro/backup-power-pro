@@ -146,17 +146,15 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
             onClick={() => onCardClick && c.id && onCardClick(c.id)}
             style={{ cursor: onCardClick ? 'pointer' : 'default' }}
           >
-            <LeadCard c={c} />
+            <MemoLeadCard c={c} />
           </div>
         ))}
         {list.length === 0 && (
           <div style={{
-            height: 72, display: 'grid', placeItems: 'center',
-            background: 'var(--card)', boxShadow: 'var(--pressed-2)',
-            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 11,
-            letterSpacing: '.14em', textTransform: 'uppercase',
+            height: 56, display: 'grid', placeItems: 'center',
+            fontFamily: 'var(--font-mono)', fontSize: 11,
             color: 'var(--text-faint)',
-          }}>EMPTY</div>
+          }}>empty</div>
         )}
       </div>
     </div>
@@ -231,4 +229,8 @@ function LeadsPipeline({ buckets, counts, onCardClick, onDropCard, toolbar }) {
   );
 }
 
-Object.assign(window, { LeadsPipeline, columns: columns, LeadCard, Column });
+// Memoize LeadCard — same card keeps rendering as the parent state churns
+// (drag state, realtime fetches); keep re-renders scoped to card identity.
+const MemoLeadCard = React.memo(LeadCard, (a, b) => a.c === b.c);
+
+Object.assign(window, { LeadsPipeline, columns: columns, LeadCard: MemoLeadCard, Column });
