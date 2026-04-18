@@ -191,15 +191,14 @@ function ListToolbar({ mobile }) {
 
 function LoadMoreRow() {
   return (
-    <button className="tactile-flat" style={{
-      width: '100%', height: 48,
+    <button style={{
+      width: '100%', height: 42,
       display: 'grid', placeItems: 'center',
       background: 'var(--card)',
       boxShadow: 'var(--pressed-2)',
-      fontFamily: 'var(--font-pixel)', fontSize: 16,
-      letterSpacing: '.12em', textTransform: 'uppercase',
-      color: 'var(--text-muted)',
-    }}>LOAD 20 MORE</button>
+      fontFamily: 'var(--font-body)', fontSize: 13,
+      color: 'var(--text-muted)', border: 'none', cursor: 'pointer',
+    }}>Load 20 more</button>
   );
 }
 
