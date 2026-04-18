@@ -453,8 +453,25 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
             position: 'absolute', left: 12, top: mobile ? 'calc(12px + env(safe-area-inset-top))' : 12,
             width: 32, height: 32, display: 'grid', placeItems: 'center',
             fontSize: 18, lineHeight: 1, color: 'var(--text)',
+            cursor: 'pointer',
           }}
         >{mobile ? '‹' : '×'}</button>
+        {contact?.phone ? (
+          <button
+            onClick={() => window.__bpp_dial && window.__bpp_dial(contact.phone)}
+            className="tactile-raised"
+            title="Call"
+            style={{
+              position: 'absolute', right: 12, top: mobile ? 'calc(12px + env(safe-area-inset-top))' : 12,
+              width: 36, height: 36, display: 'grid', placeItems: 'center',
+              background: 'var(--green)', color: '#fff', cursor: 'pointer',
+            }}
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+              <path d="M3 3 L5 3 L6 6 L5 7 A5 5 0 0 0 9 11 L10 10 L13 11 L13 13 A1 1 0 0 1 12 14 A11 11 0 0 1 2 4 A1 1 0 0 1 3 3 Z"/>
+            </svg>
+          </button>
+        ) : null}
         <div style={{
           width: 64, height: 64,
           clipPath: 'var(--avatar-clip)',
@@ -583,6 +600,175 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
           <path d="M1 2 L15 8 L1 14 L3 8 L1 2 Z M3 8 L9 8"/>
         </svg>
       </button>
+    </div>
+  );
+}
+
+// ── Twilio Voice SDK ────────────────────────────────────────────────────────
+// Loads Twilio Voice SDK (v2.18.1) lazily + mints access token via
+// twilio-token edge function + exposes global hooks for outbound dial /
+// incoming ring handling.
+const VOICE_SDK_URL = 'https://sdk.twilio.com/js/client/v2.18.1/twilio.min.js';
+
+function useVoiceDevice(user) {
+  const [device, setDevice] = useState(null);
+  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState('idle'); // idle | connecting | ringing | on-call
+  const [incoming, setIncoming] = useState(null);
+  const [activeCall, setActiveCall] = useState(null);
+  const [err, setErr] = useState(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    async function loadSdk() {
+      if (window.Twilio?.Device) return;
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = VOICE_SDK_URL;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function boot() {
+      try {
+        await loadSdk();
+        if (cancelled) return;
+        const { data: tokenRes, error } = await db.functions.invoke('twilio-token');
+        if (error || !tokenRes?.token) throw new Error(error?.message || 'no token');
+        const dev = new window.Twilio.Device(tokenRes.token, {
+          logLevel: 1,
+          codecPreferences: ['opus', 'pcmu'],
+          enableRingingState: true,
+        });
+        dev.on('registered', () => { if (!cancelled) setReady(true); });
+        dev.on('error', e => { setErr(e?.message || String(e)); });
+        dev.on('incoming', call => {
+          setIncoming(call);
+          setStatus('ringing');
+          call.on('accept', () => { setStatus('on-call'); setActiveCall(call); setIncoming(null); });
+          call.on('disconnect', () => { setStatus('idle'); setActiveCall(null); setIncoming(null); });
+          call.on('cancel', () => { setStatus('idle'); setIncoming(null); });
+          call.on('reject', () => { setStatus('idle'); setIncoming(null); });
+        });
+        dev.on('tokenWillExpire', async () => {
+          const { data } = await db.functions.invoke('twilio-token');
+          if (data?.token) dev.updateToken(data.token);
+        });
+        await dev.register();
+        if (!cancelled) setDevice(dev);
+      } catch (e) {
+        if (!cancelled) setErr(e?.message || String(e));
+      }
+    }
+    boot();
+    return () => { cancelled = true; try { device?.destroy(); } catch {} };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  async function dial(phone) {
+    if (!device) return;
+    try {
+      setStatus('connecting');
+      const call = await device.connect({ params: { To: phone } });
+      setActiveCall(call);
+      call.on('accept', () => setStatus('on-call'));
+      call.on('disconnect', () => { setStatus('idle'); setActiveCall(null); });
+      call.on('error', e => { setErr(e?.message || String(e)); setStatus('idle'); });
+    } catch (e) {
+      setErr(e?.message || String(e));
+      setStatus('idle');
+    }
+  }
+
+  function accept() { incoming?.accept(); }
+  function decline() { incoming?.reject(); setIncoming(null); setStatus('idle'); }
+  function hangup() { activeCall?.disconnect(); }
+
+  return { ready, status, err, incoming, activeCall, dial, accept, decline, hangup };
+}
+
+function VoiceCallModal({ voice, onClose }) {
+  if (voice.status === 'idle' && !voice.incoming) return null;
+
+  if (voice.incoming) {
+    const from = voice.incoming.parameters?.From || 'UNKNOWN';
+    return (
+      <CallCard title="INCOMING CALL" color="var(--lcd-red)" name={formatPhone(from)}>
+        <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
+          <button onClick={voice.decline} style={{
+            width: 72, height: 72, background: 'var(--red)', color: '#fff',
+            clipPath: 'var(--avatar-clip)', cursor: 'pointer',
+            display: 'grid', placeItems: 'center',
+          }}>
+            <svg viewBox="0 0 16 16" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+              <path d="M3 3 L13 13 M13 3 L3 13"/>
+            </svg>
+          </button>
+          <button onClick={voice.accept} style={{
+            width: 72, height: 72, background: 'var(--green)', color: '#fff',
+            clipPath: 'var(--avatar-clip)', cursor: 'pointer',
+            display: 'grid', placeItems: 'center',
+          }}>
+            <svg viewBox="0 0 16 16" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+              <path d="M3 3 L5 3 L6 6 L5 7 A5 5 0 0 0 9 11 L10 10 L13 11 L13 13 A1 1 0 0 1 12 14 A11 11 0 0 1 2 4 A1 1 0 0 1 3 3 Z"/>
+            </svg>
+          </button>
+        </div>
+      </CallCard>
+    );
+  }
+
+  // on-call or connecting
+  return (
+    <CallCard
+      title={voice.status === 'connecting' ? 'CONNECTING...' : 'ON CALL'}
+      color={voice.status === 'connecting' ? 'var(--lcd-amber)' : 'var(--lcd-green)'}
+      name={voice.activeCall?.parameters?.To || voice.activeCall?.customParameters?.get?.('To') || 'OUTBOUND'}
+    >
+      <button onClick={voice.hangup} style={{
+        width: '80%', margin: '0 auto', height: 56, background: 'var(--red)', color: '#fff',
+        fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 16, letterSpacing: '.1em',
+        boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.2), inset -2px -2px 0 rgba(0,0,0,.4)',
+        cursor: 'pointer', display: 'block',
+      }}>HANG UP</button>
+    </CallCard>
+  );
+}
+
+function CallCard({ title, color, name, children }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 80,
+      background: 'rgba(0,0,0,.7)',
+      display: 'grid', placeItems: 'center',
+    }}>
+      <div style={{
+        width: 320, padding: 24,
+        background: 'var(--card)', boxShadow: 'var(--raised)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+      }}>
+        <div style={{
+          width: 140, height: 140, background: 'var(--navy)',
+          clipPath: 'var(--avatar-clip)',
+          display: 'grid', placeItems: 'center',
+        }}>
+          <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 36 }}>
+            {String(name || '?').slice(0, 2).toUpperCase()}
+          </span>
+        </div>
+        <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 20, textAlign: 'center' }}>{name}</div>
+        <div style={{
+          padding: '4px 12px', background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
+          fontFamily: 'var(--font-pixel)', fontSize: 14,
+          color, textShadow: color === 'var(--lcd-red)' ? 'var(--lcd-glow-red)' : color === 'var(--lcd-green)' ? 'var(--lcd-glow-green)' : 'var(--lcd-glow-amber)',
+          letterSpacing: '.08em',
+        }}>{title}</div>
+        {children}
+      </div>
     </div>
   );
 }
@@ -1602,6 +1788,14 @@ function App() {
     localStorage.setItem('bpp_v2_theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
+  // Voice device (outbound dial + incoming ring)
+  const voice = useVoiceDevice(user);
+
+  // Expose dial globally so the contact detail can call it via window.__bpp_dial
+  useEffect(() => {
+    window.__bpp_dial = (phone) => voice.dial(phone);
+  }, [voice]);
+
   // Morning briefing trigger — once per day on first load
   useEffect(() => {
     if (!user) return;
@@ -1729,6 +1923,7 @@ function App() {
         onSwitchTab={id => setTab(id)}
       />
       {briefOpen ? <LiveMorningBriefing onClose={() => setBriefOpen(false)} /> : null}
+      <VoiceCallModal voice={voice} />
     </div>
   );
 }
