@@ -2043,47 +2043,50 @@ function LiveFinance() {
 }
 
 function KpiCard({ label, value, tone = 'red' }) {
-  const color = tone === 'green' ? 'var(--lcd-green)' : tone === 'amber' ? 'var(--lcd-amber)' : 'var(--lcd-red)';
-  const glow = tone === 'green' ? 'var(--lcd-glow-green)' : tone === 'amber' ? 'var(--lcd-glow-amber)' : 'var(--lcd-glow-red)';
+  // Minimal: a big number over a tiny label. Color tone tints only the
+  // label — the number stays plain so the 4 cards read as a row of stats
+  // rather than a dashboard of glowing LCDs.
+  const toneColor = tone === 'green' ? 'var(--ms-2)' : tone === 'amber' ? 'var(--ms-4)' : 'var(--ms-3)';
   return (
-    <div className="raised" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div style={{
+      padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 4,
+      background: 'var(--card)', boxShadow: 'var(--raised-2)',
+    }}>
       <div style={{
-        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        padding: '6px 10px', fontFamily: 'var(--font-pixel)', fontSize: 24,
-        color, textShadow: glow, letterSpacing: '.06em',
+        fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700,
+        color: 'var(--text)', letterSpacing: '-.01em',
       }}>{value}</div>
-      <div className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{label}</div>
+      <div className="chrome-label" style={{ fontSize: 10, color: toneColor, letterSpacing: '.08em' }}>{label}</div>
     </div>
   );
 }
 
 function ProposalsLiveTable({ rows }) {
   if (rows.length === 0) return <Empty label="NO PROPOSALS" />;
-  const statusColor = {
+  const statusTint = {
     sent: 'var(--ms-1)', viewed: 'var(--ms-4)', approved: 'var(--ms-2)',
     expired: 'var(--ms-5)', declined: 'var(--ms-3)',
   };
   return (
-    <div style={{ boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+    <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
       {rows.map((p, i) => {
         const status = (p.status || 'sent').toLowerCase();
-        const color = statusColor[status] || 'var(--ms-8)';
+        const tint = statusTint[status] || 'var(--text-faint)';
         return (
           <div key={p.id} style={{
             display: 'grid',
             gridTemplateColumns: '1fr 100px 100px 100px',
             gap: 12, alignItems: 'center',
-            padding: '10px 14px',
-            borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+            padding: '12px 16px',
+            borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
           }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{p.contact_name || '—'}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
             </span>
             <span className="chrome-label" style={{
-              fontSize: 10, padding: '4px 8px', background: color, color: '#fff',
-              boxShadow: 'var(--raised-2)', textAlign: 'center',
-            }}>{status.toUpperCase()}</span>
+              fontSize: 10, color: tint, textAlign: 'center', letterSpacing: '.08em',
+            }}>{status.toLowerCase()}</span>
             <span className="mono" style={{ fontSize: 13, fontWeight: 700, textAlign: 'right' }}>
               ${(Number(p.total) || 0).toLocaleString()}
             </span>
@@ -2097,30 +2100,28 @@ function ProposalsLiveTable({ rows }) {
 function InvoicesLiveTable({ rows }) {
   if (rows.length === 0) return <Empty label="NO INVOICES" />;
   return (
-    <div style={{ boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+    <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
       {rows.map((inv, i) => {
         const paid = inv.status === 'paid';
+        const tint = paid ? 'var(--ms-2)' : 'var(--ms-3)';
         return (
           <div key={inv.id} style={{
             display: 'grid',
             gridTemplateColumns: '1fr 100px 100px 100px',
             gap: 12, alignItems: 'center',
-            padding: '10px 14px',
-            borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+            padding: '12px 16px',
+            borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
           }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{inv.contact_name || '—'}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}
             </span>
             <span className="chrome-label" style={{
-              fontSize: 10, padding: '4px 8px',
-              background: paid ? 'var(--ms-2)' : 'var(--ms-3)', color: '#fff',
-              boxShadow: 'var(--raised-2)', textAlign: 'center',
-            }}>{(inv.status || 'sent').toUpperCase()}</span>
-            <span className={`mono ${paid ? 'lcd--green' : ''}`} style={{
-              fontSize: 14, fontWeight: 700, textAlign: 'right',
-              color: paid ? 'var(--lcd-green)' : 'var(--lcd-red)',
-              textShadow: paid ? 'var(--lcd-glow-green)' : 'var(--lcd-glow-red)',
+              fontSize: 10, color: tint, textAlign: 'center', letterSpacing: '.08em',
+            }}>{(inv.status || 'sent').toLowerCase()}</span>
+            <span className="mono" style={{
+              fontSize: 13, fontWeight: 700, textAlign: 'right',
+              color: paid ? 'var(--ms-2)' : 'var(--text)',
             }}>
               ${(Number(inv.total) || 0).toLocaleString()}
             </span>
