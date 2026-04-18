@@ -2767,17 +2767,20 @@ function LiveCalendar() {
       </div>
       <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
         {events.map((e, i) => (
-          <div key={e.id} style={{
-            display: 'grid', gridTemplateColumns: '80px 1fr 80px',
-            gap: 12, alignItems: 'center', padding: '12px 16px',
-            borderBottom: i < events.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
-          }}>
+          <div key={e.id}
+            onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
+            style={{
+              display: 'grid', gridTemplateColumns: '80px 1fr 80px',
+              gap: 12, alignItems: 'center', padding: '12px 16px',
+              borderBottom: i < events.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+              cursor: 'pointer',
+            }}>
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>stage {e.stage}</span>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{e.name || '—'}</span>
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right' }}>tbd</span>
           </div>
         ))}
-        {events.length === 0 ? <Empty label="NO UPCOMING INSTALLS" /> : null}
+        {events.length === 0 ? <Empty label="No upcoming installs" /> : null}
       </div>
     </div>
   );
