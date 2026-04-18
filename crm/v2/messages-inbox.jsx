@@ -103,15 +103,11 @@ function ThreadRow({ t, compact = false, active = false }) {
         <Preview t={t} />
       </div>
       <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-        <span style={{ fontFamily:'var(--font-pixel)', fontSize:13, color:'var(--text-muted)', letterSpacing:'.06em' }}>{t.ts}</span>
+        <span className="mono" style={{ fontSize:11, color:'var(--text-faint)', letterSpacing:'.04em' }}>{t.ts}</span>
         {t.unread > 0 && (
-          <span style={{
-            minWidth: 22, padding: '0 4px', height: 18,
-            background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-            color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-            fontFamily: 'var(--font-pixel)', fontSize: 13,
-            display: 'inline-grid', placeItems: 'center',
-          }}>{String(t.unread).padStart(2, '0')}</span>
+          <span className="mono" style={{
+            fontSize: 11, color: 'var(--ms-3)',
+          }}>{t.unread}</span>
         )}
       </div>
     </div>
@@ -119,34 +115,27 @@ function ThreadRow({ t, compact = false, active = false }) {
 }
 
 function MsgChips({ active = 'all' }) {
+  // Minimal — text tabs, no LCD count, no raised pills.
   const chips = [
-    { id:'all',   label:'ALL' },
-    { id:'un',    label:'UNREAD', count:'12' },
-    { id:'alex',  label:'ALEX' },
-    { id:'key',   label:'KEY' },
-    { id:'call',  label:'CALLS' },
+    { id:'all',   label:'All' },
+    { id:'un',    label:'Unread' },
+    { id:'alex',  label:'Alex' },
+    { id:'key',   label:'Key' },
+    { id:'call',  label:'Calls' },
   ];
   return (
-    <div style={{ display:'flex', gap:6, padding:'14px 16px 10px', flexWrap:'wrap' }}>
+    <div style={{ display:'flex', gap:18, padding:'14px 16px 10px' }}>
       {chips.map(c => {
         const on = c.id === active;
         return (
-          <button key={c.id} className="chrome-label" style={{
-            height: 28, padding: '0 12px', fontSize: 11,
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: on ? 'var(--navy)' : 'var(--card)',
-            color: on ? '#fff' : 'var(--text)',
-            boxShadow: on ? 'var(--pressed-2)' : 'var(--raised-2)',
-          }}>
-            {c.label}
-            {c.count && (
-              <span style={{
-                padding:'0 4px', background:'var(--lcd-bg)', boxShadow:'var(--pressed-2)',
-                color:'var(--lcd-red)', textShadow:'var(--lcd-glow-red)',
-                fontFamily:'var(--font-pixel)', fontSize:12,
-              }}>{c.count}</span>
-            )}
-          </button>
+          <button key={c.id} style={{
+            padding: '4px 0', fontSize: 12,
+            fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
+            color: on ? 'var(--text)' : 'var(--text-muted)',
+            borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent',
+            background: 'transparent', border: 'none',
+            borderBottomStyle: 'solid', cursor: 'pointer',
+          }}>{c.label}</button>
         );
       })}
     </div>
@@ -160,7 +149,7 @@ function MessagesInbox({ compact = false, threads, onSelect, activeId }) {
       <MsgChips active="all" />
       <div style={{
         flex: 1, overflowY: 'auto', margin: '0 16px 88px',
-        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+        background: 'var(--card)',
       }}>
         {data.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-faint)' }}>
