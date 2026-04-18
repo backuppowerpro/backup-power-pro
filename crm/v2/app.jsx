@@ -87,6 +87,37 @@ function formatPhone(p) {
   return `(${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6)}`;
 }
 
+// ── Error Boundary ──────────────────────────────────────────────────────────
+// Catches render-time exceptions in any subtree. Without it, one bad
+// component throw blanks the entire app. With it, the subtree shows a
+// reset button and the rest of the app keeps working.
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err, info) {
+    console.error('[ErrorBoundary]', this.props.label || '', err, info);
+  }
+  render() {
+    if (this.state.err) {
+      const msg = this.state.err?.message || String(this.state.err);
+      return (
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
+          <div className="chrome-label" style={{ fontSize: 12, color: 'var(--ms-3)' }}>
+            {this.props.label || 'SECTION'} CRASHED
+          </div>
+          <div className="lcd" style={{ padding: 10, fontSize: 12, maxHeight: 160, overflow: 'auto' }}>{msg}</div>
+          <button
+            className="chrome-label"
+            style={{ padding: '8px 14px', height: 36, width: 140, boxShadow: 'var(--raised-2)', cursor: 'pointer' }}
+            onClick={() => this.setState({ err: null })}
+          >RETRY</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ── Auth Gate ───────────────────────────────────────────────────────────────
 function AuthGate({ onAuth }) {
   const [email, setEmail] = useState('');
@@ -2544,7 +2575,9 @@ function App() {
       </div>
       {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} /> : null}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }} className="grid-bg">
-        {content}
+        <ErrorBoundary label={tab.toUpperCase()}>
+          {content}
+        </ErrorBoundary>
         {selectedContact ? (
           <div style={{
             position: 'absolute',
@@ -2552,11 +2585,13 @@ function App() {
             width: isMobile ? '100%' : 480,
             zIndex: 20,
           }}>
-            <LiveContactDetail
-              contactId={selectedContact}
-              onBack={() => setSelectedContact(null)}
-              mobile={isMobile}
-            />
+            <ErrorBoundary label="CONTACT DETAIL">
+              <LiveContactDetail
+                contactId={selectedContact}
+                onBack={() => setSelectedContact(null)}
+                mobile={isMobile}
+              />
+            </ErrorBoundary>
           </div>
         ) : null}
       </div>
