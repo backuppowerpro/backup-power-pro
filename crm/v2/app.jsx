@@ -784,6 +784,19 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
                 }}>alex</span>
               ) : null}
               {m.body}
+              {m.recording_url ? (
+                <audio
+                  controls
+                  src={m.recording_url}
+                  preload="none"
+                  style={{ display: 'block', marginTop: 6, width: '100%', height: 32 }}
+                />
+              ) : null}
+              {m.duration_seconds ? (
+                <div className="mono" style={{ fontSize: 10, color: isOut ? 'rgba(255,255,255,.65)' : 'var(--text-faint)', marginTop: 4 }}>
+                  {Math.floor(m.duration_seconds / 60)}:{String(m.duration_seconds % 60).padStart(2, '0')} call
+                </div>
+              ) : null}
             </div>
             </React.Fragment>
           );
