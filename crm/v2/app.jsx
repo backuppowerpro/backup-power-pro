@@ -1411,6 +1411,11 @@ function DetailNotes({ contact, onUpdate }) {
     setText(contact?.install_notes || '');
   }, [contact?.id]);
 
+  // Cmd/Ctrl+S to save while textarea is focused
+  function onKeyDown(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); }
+  }
+
   async function save() {
     if (!contact) return;
     setSaving(true);
@@ -1431,7 +1436,8 @@ function DetailNotes({ contact, onUpdate }) {
       <textarea
         value={text}
         onChange={e => setText(e.target.value)}
-        placeholder="Add notes..."
+        onKeyDown={onKeyDown}
+        placeholder="Add notes... (⌘S to save)"
         style={{
           flex: 1, minHeight: 240, padding: 14,
           fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.5,
