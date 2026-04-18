@@ -260,7 +260,7 @@ function LiveLeadsList({ desktop = false, onSelect }) {
         .from('contacts')
         .select('id, name, phone, email, address, stage, status, do_not_contact, created_at')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(200);
       if (!alive) return;
       if (error) { setErr(error.message); setLoading(false); return; }
       setRows((data || []).map(contactToRow));
@@ -277,7 +277,7 @@ function LiveLeadsList({ desktop = false, onSelect }) {
           .from('contacts')
           .select('id, name, phone, email, address, stage, status, do_not_contact, created_at')
           .order('created_at', { ascending: false })
-          .limit(50);
+          .limit(200);
         setRows((data || []).map(contactToRow));
       })
       .subscribe();
