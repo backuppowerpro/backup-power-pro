@@ -3343,7 +3343,7 @@ function App() {
       : 'BPP CRM v2';
   }, [unreadCount]);
 
-  // Global new-inbound-SMS listener → toast + unread bump
+  // Global new-inbound-SMS listener → toast + unread bump + desktop notification
   useEffect(() => {
     if (!user) return;
     const ch = db.channel('global-inbound-sms')
@@ -3356,6 +3356,22 @@ function App() {
         const name = c?.name || 'Unknown';
         const preview = (m.body || '').slice(0, 60);
         window.__bpp_toast(`SMS from ${name}: "${preview}"`, 'info');
+        // Native desktop notification when tab isn't focused
+        if (!tabFocusedRef.current && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            const n = new Notification(`SMS from ${name}`, {
+              body: preview,
+              tag: `bpp-sms-${m.contact_id}`,
+              icon: '/assets/images/logo-main.png',
+            });
+            n.onclick = () => {
+              window.focus();
+              window.location.hash = `#contact=${m.contact_id}`;
+              setSelectedContact(m.contact_id);
+              n.close();
+            };
+          } catch {}
+        }
         // Only bump unread if viewer isn't looking at this contact
         if (!tabFocusedRef.current || m.contact_id !== selectedContact) {
           setUnreadCount(c => c + 1);
@@ -3364,6 +3380,16 @@ function App() {
       .subscribe();
     return () => { db.removeChannel(ch); };
   }, [user, selectedContact]);
+
+  // One-shot: ask for Notification permission once per user
+  useEffect(() => {
+    if (!user) return;
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission === 'default' && !localStorage.getItem('bpp_v2_notif_asked')) {
+      localStorage.setItem('bpp_v2_notif_asked', '1');
+      Notification.requestPermission().catch(() => {});
+    }
+  }, [user]);
 
   // Expose dial globally so the contact detail can call it via window.__bpp_dial
   useEffect(() => {
