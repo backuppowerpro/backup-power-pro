@@ -2625,13 +2625,16 @@ function ProposalsLiveTable({ rows }) {
         const status = (p.status || 'sent').toLowerCase();
         const tint = statusTint[status] || 'var(--text-faint)';
         return (
-          <div key={p.id} style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 100px 100px 100px',
-            gap: 12, alignItems: 'center',
-            padding: '12px 16px',
-            borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
-          }}>
+          <div key={p.id}
+            onClick={() => p.contact_id && (window.location.hash = `#contact=${p.contact_id}`)}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 100px 100px 100px',
+              gap: 12, alignItems: 'center',
+              padding: '12px 16px',
+              borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+              cursor: p.contact_id ? 'pointer' : 'default',
+            }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{p.contact_name || '—'}</span>
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
@@ -2657,13 +2660,16 @@ function InvoicesLiveTable({ rows }) {
         const paid = inv.status === 'paid';
         const tint = paid ? 'var(--ms-2)' : 'var(--ms-3)';
         return (
-          <div key={inv.id} style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 100px 100px 100px',
-            gap: 12, alignItems: 'center',
-            padding: '12px 16px',
-            borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
-          }}>
+          <div key={inv.id}
+            onClick={() => inv.contact_id && (window.location.hash = `#contact=${inv.contact_id}`)}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 100px 100px 100px',
+              gap: 12, alignItems: 'center',
+              padding: '12px 16px',
+              borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+              cursor: inv.contact_id ? 'pointer' : 'default',
+            }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{inv.contact_name || '—'}</span>
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}
@@ -3400,6 +3406,20 @@ function App() {
       // replaceState so we don't flood the history stack
       window.history.replaceState(null, '', window.location.pathname + window.location.search + target);
     }
+  }, [tab, selectedContact]);
+
+  // Listen for hashchange — lets other components (Finance tables, Sparky links)
+  // navigate by setting window.location.hash = #contact=uuid
+  useEffect(() => {
+    const onHash = () => {
+      const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+      const hashTab = h.get('tab');
+      const hashContact = h.get('contact');
+      if (hashTab && hashTab !== tab) setTab(hashTab);
+      if (hashContact && hashContact !== selectedContact) setSelectedContact(hashContact);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
   }, [tab, selectedContact]);
 
   // Voice device (outbound dial + incoming ring)
