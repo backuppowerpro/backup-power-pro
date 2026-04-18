@@ -1037,6 +1037,27 @@ function DetailQuote({ contactId }) {
     window.__bpp_toast && window.__bpp_toast('Reminder drafted — review + send', 'info');
   }
 
+  async function depositLink(proposal) {
+    if (!proposal.token) return;
+    window.__bpp_toast && window.__bpp_toast('Creating deposit checkout…', 'info');
+    try {
+      const { data, error } = await db.functions.invoke('proposal-deposit-checkout', {
+        body: { proposal_token: proposal.token, pay_full: false },
+      });
+      if (error) throw error;
+      const url = data?.url || data?.checkout_url;
+      if (!url) throw new Error('no checkout url returned');
+      await navigator.clipboard.writeText(url);
+      const first = (contact?.name || '').split(' ')[0] || 'there';
+      const deposit = Math.round((Number(proposal.total) || 0) * 0.5);
+      const msg = `Hi ${first}, here's the deposit link to lock in your install slot — $${deposit.toLocaleString()}: ${url}`;
+      window.dispatchEvent(new CustomEvent('bpp:compose-prefill', { detail: { text: msg } }));
+      window.__bpp_toast && window.__bpp_toast('Deposit link copied + SMS drafted', 'success');
+    } catch (e) {
+      window.__bpp_toast && window.__bpp_toast(`Deposit link failed: ${e.message || e}`, 'error');
+    }
+  }
+
   async function onQuoteCreated(newProposal) {
     setProposals(prev => [newProposal, ...prev]);
     setQuickOpen(false);
@@ -1115,6 +1136,11 @@ function DetailQuote({ contactId }) {
                 boxShadow: 'var(--raised-2)', cursor: 'pointer',
                 border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
               }}>Remind</button>
+              <button onClick={() => depositLink(p)} style={{
+                padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
+                boxShadow: 'var(--raised-2)', cursor: 'pointer',
+                border: 'none', background: 'var(--card)', color: 'var(--ms-2)',
+              }}>Deposit</button>
             </div>
           ) : null}
         </div>
