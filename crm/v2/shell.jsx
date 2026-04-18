@@ -35,7 +35,7 @@ const TABS = [
 ];
 
 /* ────────── Top bar (desktop + mobile share layout) ────────── */
-function TopBar({ compact = false }) {
+function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
   const h = compact ? 48 : 56;
   return (
     <div style={{
@@ -67,13 +67,13 @@ function TopBar({ compact = false }) {
 
       {/* Right cluster */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button className="tactile-raised" style={{
+        <button onClick={onToggleDark} title={isDark ? 'Light mode' : 'Dark mode'} className="tactile-raised" style={{
           width: 28, height: 28, display: 'grid', placeItems: 'center',
-          color: 'var(--text)',
+          color: 'var(--text)', cursor: 'pointer',
         }}>{Ico.sun}</button>
-        <button className="tactile-raised" style={{
+        <button onClick={onNewLead} title="New lead / action" className="tactile-raised" style={{
           width: 36, height: 36, display: 'grid', placeItems: 'center',
-          background: 'var(--navy)', color: '#fff',
+          background: 'var(--navy)', color: '#fff', cursor: 'pointer',
         }}>{Ico.plus}</button>
         <div style={{
           width: 36, height: 36, background: 'var(--navy)',

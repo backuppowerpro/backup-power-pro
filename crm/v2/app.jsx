@@ -587,6 +587,282 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
   );
 }
 
+// ── Live Permits sub-view (7-step tiled board) ─────────────────────────────
+// Step index: 0=SUBMIT 1=PAY 2=PAID 3=PRINT 4=PRINTED 5=INSPECT 6=PASS
+// Stage → completed-step count:
+//   3=BOOKED (nothing submitted yet)
+//   4=PERMIT SUBMITTED (step 0 complete)
+//   5=READY TO PAY     (step 0-1 in progress — we show 1 in-progress)
+//   6=PAID             (step 0-2 complete)
+//   7=READY TO PRINT   (0-2 complete, 3 in-progress)
+//   8=PRINTED          (0-4 complete, 5 in-progress)
+//   9=INSPECTED        (all 7 complete)
+function stageToPermitCells(stage) {
+  const cells = Array(7).fill('flat');
+  const s = Number(stage) || 1;
+  if (s >= 4) cells[0] = 'done';                      // SUBMIT
+  if (s === 5) cells[1] = 'progress';
+  else if (s >= 6) cells[1] = 'done';                 // PAY
+  if (s >= 6) cells[2] = 'done';                      // PAID
+  if (s === 7) cells[3] = 'progress';
+  else if (s >= 8) cells[3] = 'done';                 // PRINT
+  if (s >= 8) cells[4] = 'done';                      // PRINTED
+  if (s === 8) cells[5] = 'progress';
+  else if (s >= 9) cells[5] = 'done';                 // INSPECT SCHED
+  if (s >= 9) cells[6] = 'done';                      // INSPECT PASS
+  return cells;
+}
+
+function LivePermits() {
+  const [rows, setRows] = useState([]);
+  const [jurisdictions, setJurisdictions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [cRes, jRes] = await Promise.all([
+        db.from('contacts').select('id, name, address, stage, jurisdiction_id').in('stage', [3, 4, 5, 6, 7, 8, 9]).limit(100),
+        db.from('permit_jurisdictions').select('id, name').order('name'),
+      ]);
+      const jurById = Object.fromEntries((jRes.data || []).map(j => [j.id, j]));
+      const sorted = (cRes.data || []).sort((a, b) => {
+        const ja = a.jurisdiction_id ? 0 : -1; // rows without jurisdiction float to top
+        const jb = b.jurisdiction_id ? 0 : -1;
+        return ja - jb;
+      });
+      setRows(sorted.map(c => ({
+        id: c.id, name: c.name || '—', address: c.address || '—',
+        stage: c.stage,
+        jurisdiction: c.jurisdiction_id ? jurById[c.jurisdiction_id]?.name : null,
+        cells: stageToPermitCells(c.stage),
+      })));
+      setJurisdictions(jRes.data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING PERMITS...</div>;
+
+  const headers = ['SUBMIT', 'PAY', 'PAID', 'PRINT', 'PRINTED', 'INSPECT', 'PASS'];
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', padding: 16 }}>
+      {/* Column headers */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
+        gap: 8, alignItems: 'center',
+        padding: '8px 14px',
+        boxShadow: 'var(--pressed-2)', background: 'var(--card)',
+        marginBottom: 8,
+      }}>
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>CUSTOMER</span>
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>JURISDICTION</span>
+        {headers.map(h => (
+          <span key={h} className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', textAlign: 'center' }}>{h}</span>
+        ))}
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>NEXT</span>
+      </div>
+      {rows.map(r => (
+        <div key={r.id} style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
+          gap: 8, alignItems: 'center',
+          padding: '8px 14px',
+          background: 'var(--card)',
+          borderBottom: '1px solid rgba(0,0,0,.06)',
+        }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+          <span className="chrome-label" style={{
+            fontSize: 10,
+            color: r.jurisdiction ? 'var(--text)' : 'var(--lcd-amber)',
+          }}>{r.jurisdiction || 'NOT SET'}</span>
+          {r.cells.map((state, i) => <PermitStepCell key={i} state={state} />)}
+          <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>
+            {!r.jurisdiction ? 'SET JURISDICTION' : stageToLabel(r.stage)}
+          </span>
+        </div>
+      ))}
+      {rows.length === 0 ? <Empty label="NO ACTIVE PERMITS" /> : null}
+    </div>
+  );
+}
+
+function PermitStepCell({ state }) {
+  // state: 'flat' | 'progress' | 'done' | 'blocked'
+  if (state === 'done') {
+    return <div style={{
+      width: 40, height: 40, boxShadow: 'var(--pressed-2)', background: 'var(--card)',
+      display: 'grid', placeItems: 'center', color: 'var(--green)',
+    }}>
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+        <path d="M3 8 L7 12 L13 4"/>
+      </svg>
+    </div>;
+  }
+  if (state === 'progress') {
+    return <div className="tactile-raised" style={{
+      width: 40, height: 40, boxShadow: 'var(--raised-2)', background: 'var(--card)',
+      display: 'grid', placeItems: 'center', color: 'var(--lcd-amber)',
+    }}>
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
+        <circle cx="8" cy="8" r="5"/>
+        <path d="M8 4 L8 8 L11 10"/>
+      </svg>
+    </div>;
+  }
+  if (state === 'blocked') {
+    return <div className="lcd" style={{
+      width: 40, height: 40,
+      display: 'grid', placeItems: 'center',
+    }}>×</div>;
+  }
+  return <div style={{
+    width: 40, height: 40, boxShadow: 'var(--pressed-2)', background: 'var(--card)',
+  }}/>;
+}
+
+function stageToLabel(stage) {
+  const s = Number(stage) || 1;
+  if (s <= 3) return 'AWAITING SUBMIT';
+  if (s === 4) return 'AWAITING PAYMENT';
+  if (s === 5) return 'PAY PENDING';
+  if (s === 6) return 'READY TO PRINT';
+  if (s === 7) return 'PRINT PENDING';
+  if (s === 8) return 'INSPECTION SOON';
+  if (s === 9) return 'COMPLETE';
+  return '—';
+}
+
+// ── Live Materials sub-view ─────────────────────────────────────────────────
+// install_notes uses __pm_* prefix convention (from current crm.html):
+//   __pm_amp: 30 | 50
+//   __pm_box: 0|1
+//   __pm_interlock: 0|1
+//   __pm_cord: 0|1
+//   __pm_breaker: 0|1
+//   __pm_surge: 0|1
+//   __pm_order: not-ordered | pending | received
+function parseMaterials(notes) {
+  const out = { amp: '30', box: 0, interlock: 0, cord: 0, breaker: 0, surge: 0, order: 'not-ordered' };
+  if (!notes) return out;
+  for (const line of String(notes).split('\n')) {
+    const m = line.match(/^__pm_(\w+):\s*(.+)$/);
+    if (!m) continue;
+    const [, k, v] = m;
+    if (k === 'amp') out.amp = v.trim();
+    else if (k === 'order') out.order = v.trim();
+    else out[k] = v.trim() === '1' ? 1 : 0;
+  }
+  return out;
+}
+
+function LiveMaterials() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await db
+        .from('contacts')
+        .select('id, name, address, stage, install_notes')
+        .in('stage', [3, 4, 5, 6, 7, 8])
+        .limit(50);
+      setRows((data || []).map(c => ({
+        id: c.id, name: c.name || '—', address: c.address || '—',
+        stage: c.stage,
+        mat: parseMaterials(c.install_notes),
+      })));
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING MATERIALS...</div>;
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', padding: 16 }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 80px repeat(5, 44px) 100px',
+        gap: 8, alignItems: 'center',
+        padding: '8px 14px',
+        boxShadow: 'var(--pressed-2)', background: 'var(--card)',
+        marginBottom: 8,
+      }}>
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>CUSTOMER</span>
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>AMP</span>
+        {['BOX', 'LOCK', 'CORD', 'BRKR', 'SRGE'].map(l => (
+          <span key={l} className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', textAlign: 'center' }}>{l}</span>
+        ))}
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>ORDER</span>
+      </div>
+      {rows.map(r => {
+        const orderColor =
+          r.mat.order === 'received' ? 'var(--lcd-green)' :
+          r.mat.order === 'pending'  ? 'var(--lcd-amber)' :
+                                        'var(--lcd-red)';
+        const orderGlow =
+          r.mat.order === 'received' ? 'var(--lcd-glow-green)' :
+          r.mat.order === 'pending'  ? 'var(--lcd-glow-amber)' :
+                                        'var(--lcd-glow-red)';
+        return (
+          <div key={r.id} style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 80px repeat(5, 44px) 100px',
+            gap: 8, alignItems: 'center',
+            padding: '8px 14px',
+            background: 'var(--card)',
+            borderBottom: '1px solid rgba(0,0,0,.06)',
+          }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+            <div style={{ display: 'flex', height: 28, boxShadow: 'var(--raised-2)' }}>
+              <span className="chrome-label" style={{
+                flex: 1, fontSize: 10, display: 'grid', placeItems: 'center',
+                background: r.mat.amp === '30' ? 'var(--navy)' : 'transparent',
+                color: r.mat.amp === '30' ? 'var(--gold)' : 'var(--text-muted)',
+              }}>30A</span>
+              <span className="chrome-label" style={{
+                flex: 1, fontSize: 10, display: 'grid', placeItems: 'center',
+                background: r.mat.amp === '50' ? 'var(--navy)' : 'transparent',
+                color: r.mat.amp === '50' ? 'var(--gold)' : 'var(--text-muted)',
+              }}>50A</span>
+            </div>
+            <MatCheck on={r.mat.box} />
+            <MatCheck on={r.mat.interlock} />
+            <MatCheck on={r.mat.cord} />
+            <MatCheck on={r.mat.breaker} />
+            <MatCheck on={r.mat.surge} />
+            <span className="chrome-label" style={{
+              height: 24, padding: '0 8px',
+              display: 'grid', placeItems: 'center',
+              background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
+              color: orderColor, textShadow: orderGlow,
+              fontSize: 10, letterSpacing: '.04em',
+            }}>{(r.mat.order || 'NOT ORDERED').toUpperCase()}</span>
+          </div>
+        );
+      })}
+      {rows.length === 0 ? <Empty label="NO ACTIVE MATERIALS" /> : null}
+    </div>
+  );
+}
+
+function MatCheck({ on }) {
+  if (on) {
+    return <div style={{
+      width: 32, height: 32, boxShadow: 'var(--pressed-2)', background: 'var(--card)',
+      display: 'grid', placeItems: 'center', color: 'var(--green)',
+    }}>
+      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+        <path d="M3 8 L7 12 L13 4"/>
+      </svg>
+    </div>;
+  }
+  return <div style={{
+    width: 32, height: 32, boxShadow: 'var(--raised-2)', background: 'var(--card)',
+  }}/>;
+}
+
 // ── Live Finance (KPI strip + proposals/invoices/payments tables) ──────────
 function LiveFinance() {
   const [data, setData] = useState({ proposals: [], invoices: [], payments: [], loading: true });
@@ -1283,6 +1559,31 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab }) {
   );
 }
 
+// ── Leads sub-view toolbar (shared across list/permits/materials) ──────────
+function LeadsSubToolbar({ active, onChange }) {
+  const subs = [
+    { id: 'pipeline', label: 'PIPELINE' },
+    { id: 'list',     label: 'LIST' },
+    { id: 'permits',  label: 'PERMITS' },
+    { id: 'mat',      label: 'MATERIALS' },
+  ];
+  return (
+    <div style={{ padding: '16px 16px 8px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
+        {subs.map(s => (
+          <button key={s.id} onClick={() => onChange(s.id)} className="chrome-label" style={{
+            height: 36, padding: '0 16px', fontSize: 12,
+            background: s.id === active ? 'var(--navy)' : 'transparent',
+            color: s.id === active ? 'var(--gold)' : 'var(--text)',
+            boxShadow: s.id === active ? 'var(--pressed-2)' : 'none',
+            cursor: 'pointer',
+          }}>{s.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ────────────────────────────────────────────────────────────────
 function App() {
   const [user, setUser] = useState(null);
@@ -1293,6 +1594,13 @@ function App() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('bpp_v2_theme') === 'dark');
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+    localStorage.setItem('bpp_v2_theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   // Morning briefing trigger — once per day on first load
   useEffect(() => {
@@ -1351,7 +1659,31 @@ function App() {
       if (leadsSubView === 'pipeline') {
         return <LivePipeline onCardClick={handleCardClick} onSubView={setLeadsSubView} />;
       }
-      return <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />;
+      if (leadsSubView === 'permits') {
+        return (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <LeadsSubToolbar active="permits" onChange={setLeadsSubView} />
+            <div style={{ flex: 1, overflow: 'hidden' }}><LivePermits /></div>
+          </div>
+        );
+      }
+      if (leadsSubView === 'mat') {
+        return (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <LeadsSubToolbar active="mat" onChange={setLeadsSubView} />
+            <div style={{ flex: 1, overflow: 'hidden' }}><LiveMaterials /></div>
+          </div>
+        );
+      }
+      // list view
+      return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <LeadsSubToolbar active="list" onChange={setLeadsSubView} />
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />
+          </div>
+        </div>
+      );
     }
     if (tab === 'calendar') return <LiveCalendar />;
     if (tab === 'finance') return <LiveFinance />;
@@ -1363,7 +1695,14 @@ function App() {
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       <div style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        {TopBar ? <TopBar compact={isMobile} /> : <div style={{ padding: 16 }}>BPP CRM</div>}
+        {TopBar ? (
+          <TopBar
+            compact={isMobile}
+            isDark={isDark}
+            onToggleDark={() => setIsDark(d => !d)}
+            onNewLead={() => setPaletteOpen(true)}
+          />
+        ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>
       {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} /> : null}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }} className="grid-bg">
