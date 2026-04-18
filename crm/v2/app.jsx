@@ -2246,10 +2246,10 @@ function LiveFinance() {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* KPI strip */}
       <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <KpiCard label="OUTSTANDING" value={`$${kpis.outstanding.toLocaleString()}`} tone="red" />
-        <KpiCard label="THIS MONTH" value={`$${kpis.paidThisMonth.toLocaleString()}`} tone="green" />
-        <KpiCard label="DEPOSITS PENDING" value={String(kpis.awaitingDeposit).padStart(2, '0')} tone="amber" />
-        <KpiCard label="OVERDUE" value={String(kpis.overdue).padStart(2, '0')} tone={kpis.overdue > 0 ? 'red' : 'green'} />
+        <KpiCard label="OUTSTANDING" value={`$${kpis.outstanding.toLocaleString()}`} tone="red" onClick={() => setSubView('inv')} />
+        <KpiCard label="THIS MONTH" value={`$${kpis.paidThisMonth.toLocaleString()}`} tone="green" onClick={() => setSubView('pay')} />
+        <KpiCard label="DEPOSITS PENDING" value={String(kpis.awaitingDeposit).padStart(2, '0')} tone="amber" onClick={() => setSubView('inv')} />
+        <KpiCard label="OVERDUE" value={String(kpis.overdue).padStart(2, '0')} tone={kpis.overdue > 0 ? 'red' : 'green'} onClick={() => setSubView('inv')} />
       </div>
       {/* Sub tabs */}
       <div style={{ padding: '0 16px', display: 'flex', gap: 0, borderBottom: '1px solid rgba(0,0,0,.08)' }}>
@@ -2274,22 +2274,24 @@ function LiveFinance() {
   );
 }
 
-function KpiCard({ label, value, tone = 'red' }) {
+function KpiCard({ label, value, tone = 'red', onClick }) {
   // Minimal: a big number over a tiny label. Color tone tints only the
-  // label — the number stays plain so the 4 cards read as a row of stats
-  // rather than a dashboard of glowing LCDs.
+  // label. Clickable cards get a subtle hover state.
   const toneColor = tone === 'green' ? 'var(--ms-2)' : tone === 'amber' ? 'var(--ms-4)' : 'var(--ms-3)';
+  const Wrap = onClick ? 'button' : 'div';
   return (
-    <div style={{
+    <Wrap onClick={onClick} style={{
       padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 4,
       background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      border: 'none', textAlign: 'left',
+      cursor: onClick ? 'pointer' : 'default',
     }}>
       <div style={{
         fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700,
         color: 'var(--text)', letterSpacing: '-.01em',
       }}>{value}</div>
       <div className="chrome-label" style={{ fontSize: 10, color: toneColor, letterSpacing: '.08em' }}>{label}</div>
-    </div>
+    </Wrap>
   );
 }
 
