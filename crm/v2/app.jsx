@@ -118,6 +118,38 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// ── Shared button primitives ────────────────────────────────────────────────
+// PrimaryButton: navy background, white text, hard inset bevel. Use for the
+// primary confirmation action in modals and forms. SecondaryButton: flat
+// card background, muted text, raised-2 bevel. Cancel / secondary actions.
+const PRIMARY_BTN_BEVEL = 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)';
+function PrimaryButton({ children, disabled, onClick, type = 'button', style, ...rest }) {
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} style={{
+      height: 40, padding: '0 20px',
+      background: disabled ? 'var(--text-muted)' : 'var(--navy)',
+      color: '#fff',
+      fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
+      boxShadow: PRIMARY_BTN_BEVEL,
+      cursor: disabled ? 'wait' : 'pointer',
+      border: 'none', opacity: disabled ? 0.7 : 1,
+      ...style,
+    }} {...rest}>{children}</button>
+  );
+}
+function SecondaryButton({ children, onClick, type = 'button', style, ...rest }) {
+  return (
+    <button type={type} onClick={onClick} style={{
+      height: 40, padding: '0 18px',
+      background: 'var(--card)', color: 'var(--text-muted)',
+      fontFamily: 'var(--font-body)', fontSize: 13, letterSpacing: '.04em',
+      boxShadow: 'var(--raised-2)', border: 'none',
+      cursor: 'pointer',
+      ...style,
+    }} {...rest}>{children}</button>
+  );
+}
+
 // ── Auth Gate ───────────────────────────────────────────────────────────────
 function AuthGate({ onAuth }) {
   const [email, setEmail] = useState('');
@@ -419,6 +451,9 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
   const [loading, setLoading] = useState(true);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('MESSAGES');
+  // Track which contact the user last explicitly clicked a tab on, so we
+  // can auto-pick a smart default when switching between contacts.
+  const [manualTabContactId, setManualTabContactId] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -432,6 +467,14 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
       setContact(cRes.data || null);
       setMessages(mRes.data || []);
       setLoading(false);
+      // Smart default tab based on stage, unless user manually picked one for this contact
+      if (cRes.data && manualTabContactId !== contactId) {
+        const s = cRes.data.stage || 1;
+        let smart = 'MESSAGES';
+        if (s === 1) smart = 'QUOTE';         // NEW → send a quote
+        else if (s >= 4 && s <= 8) smart = 'PERMITS'; // permit / install phases
+        setDetailTab(smart);
+      }
     })();
     return () => { alive = false; };
   }, [contactId]);
@@ -543,7 +586,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         boxShadow: 'var(--pressed-2)',
       }}>
         {['MESSAGES', 'TIMELINE', 'QUOTE', 'PERMITS', 'NOTES', 'EDIT'].map(t => (
-          <button key={t} onClick={() => setDetailTab(t)} className="chrome-label" style={{
+          <button key={t} onClick={() => { setDetailTab(t); setManualTabContactId(contactId); }} className="chrome-label" style={{
             height: '100%', padding: '0 14px', fontSize: 11,
             color: t === detailTab ? 'var(--text)' : 'var(--text-muted)',
             boxShadow: t === detailTab ? 'inset 0 -3px 0 var(--gold)' : 'none',
