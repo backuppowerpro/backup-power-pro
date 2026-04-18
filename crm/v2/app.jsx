@@ -665,17 +665,111 @@ function DetailTimeline({ contactId }) {
 
 const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
 
+// ── Quick Quote pricing engine ──────────────────────────────────────────────
+// Mirrors the legacy QB_S/QB_C constants in crm/crm.html. Kept in sync by
+// convention: whenever those constants change, update these too.
+const QB_C_V2 = {
+  inlet30: 55, inlet50: 85, interlock: 25,
+  permitActual: 75, permitCustomer: 125, licenseAmortized: 25,
+  mainBreaker: 125, twinQuad: 35, surgeProtector: 85,
+  cord30Cost: 60, cord50Cost: 125,
+  adCost: 150, minProfit: 500,
+};
+const QB_S_V2 = {
+  base30: 1197, base50: 1497,
+  longRun30perFt: 12, longRun50perFt: 14,
+  mainBreaker: 224, twinQuad: 129, surge: 375, pom: 447,
+  cordValue30: 129, cordValue50: 198,
+  permitCustomer: 125, // charged as a line item when include_permit=true
+};
+
+// Compute total price + line-items for a single amp variant, matching the
+// legacy pBuildPricing output shape that proposal.html expects.
+function quickQuoteCompute({ amp, runFt, cordIncluded, includeSurge, includePom, includePermit }) {
+  const is50 = amp === '50';
+  const extraFt = Math.max(0, (Number(runFt) || 5) - 5);
+  const baseCordCost = is50 ? QB_C_V2.cord50Cost : QB_C_V2.cord30Cost;
+  const cordValue = is50 ? QB_S_V2.cordValue50 : QB_S_V2.cordValue30;
+  const yourSupplies =
+    (is50 ? QB_C_V2.inlet50 : QB_C_V2.inlet30) + QB_C_V2.interlock + QB_C_V2.permitActual + QB_C_V2.licenseAmortized +
+    (cordIncluded ? baseCordCost : 0) +
+    (includeSurge ? QB_C_V2.surgeProtector : 0);
+  const totalCost = yourSupplies + QB_C_V2.adCost;
+  const longRunSell = extraFt * (is50 ? QB_S_V2.longRun50perFt : QB_S_V2.longRun30perFt);
+  const cordDiscount = cordIncluded ? 0 : cordValue;
+  const addonSell = (includeSurge ? QB_S_V2.surge : 0) + (includePom ? QB_S_V2.pom : 0) + (includePermit ? QB_S_V2.permitCustomer : 0);
+  const standardSell = (is50 ? QB_S_V2.base50 : QB_S_V2.base30) + longRunSell + addonSell - cordDiscount;
+  let totalSell = Math.round(Math.max(standardSell, totalCost + QB_C_V2.minProfit));
+  if (totalSell % 2 === 0) totalSell += 1;
+  return {
+    total: totalSell,
+    base: (is50 ? QB_S_V2.base50 : QB_S_V2.base30) + longRunSell,
+    cord: cordIncluded ? 0 : cordValue, // discount shown if cord not bundled
+    cordIncluded,
+    mainBreaker: 0, twinQuad: 0,
+    surge: includeSurge ? QB_S_V2.surge : 0,
+    pom: includePom ? QB_S_V2.pom : 0,
+    permit: includePermit ? QB_S_V2.permitCustomer : 0,
+    longRun: longRunSell,
+    permitInspection: 0,
+    extraFt,
+    items: [], // proposal.html tolerates empty
+  };
+}
+
+// Build a proposals row payload matching the legacy schema so proposal.html
+// renders correctly. pricing_30 + pricing_50 are both computed so the
+// customer's amp toggle on the proposal page still works.
+function quickQuoteBuildPayload({ contact, state }) {
+  const pricing30 = quickQuoteCompute({ ...state, amp: '30' });
+  const pricing50 = quickQuoteCompute({ ...state, amp: '50' });
+  const primary = state.amp === '50' ? pricing50 : pricing30;
+  return {
+    contact_id: contact.id,
+    contact_name: contact.name || '',
+    contact_email: contact.email || '',
+    contact_phone: contact.phone || '',
+    contact_address: contact.address || '',
+    amp_type: state.amp,
+    selected_amp: state.amp,
+    run_ft: Number(state.runFt) || 5,
+    mode: 'standard',
+    include_cord: !!state.cordIncluded,
+    cord_included: !!state.cordIncluded,
+    price_cord: state.cordIncluded ? 0 : (state.amp === '50' ? QB_S_V2.cordValue50 : QB_S_V2.cordValue30),
+    include_surge: !!state.includeSurge,
+    price_surge: state.includeSurge ? QB_S_V2.surge : 0,
+    surge_price: QB_S_V2.surge,
+    include_pom: !!state.includePom,
+    pom_price: QB_S_V2.pom,
+    include_permit: !!state.includePermit,
+    include_main_breaker: false,
+    include_twin_quad: false,
+    pricing_30: pricing30,
+    pricing_50: pricing50,
+    total: primary.total,
+    price_base: primary.total,
+    notes: (state.notes || '').trim(),
+    custom_items: [],
+    status: 'Created',
+    require_deposit: true,
+  };
+}
+
 function DetailQuote({ contactId }) {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [contact, setContact] = useState(null);
+
   useEffect(() => {
     (async () => {
-      const { data } = await db
-        .from('proposals')
-        .select('*')
-        .eq('contact_id', contactId)
-        .order('created_at', { ascending: false });
-      setProposals(data || []);
+      const [{ data: props }, { data: c }] = await Promise.all([
+        db.from('proposals').select('*').eq('contact_id', contactId).order('created_at', { ascending: false }),
+        db.from('contacts').select('id, name, email, phone, address').eq('id', contactId).maybeSingle(),
+      ]);
+      setProposals(props || []);
+      setContact(c);
       setLoading(false);
     })();
   }, [contactId]);
@@ -687,61 +781,190 @@ function DetailQuote({ contactId }) {
       .catch(() => window.__bpp_toast && window.__bpp_toast('Copy failed — select + ⌘C manually', 'error'));
   }
 
-  function newQuoteLegacy() {
-    // Legacy CRM doesn't accept URL-focused contact — open it, user navigates to contact
-    window.open('/crm/crm.html', '_blank', 'noopener');
-    window.__bpp_toast && window.__bpp_toast('Legacy CRM opened — find this contact + create quote', 'info');
+  async function onQuoteCreated(newProposal) {
+    setProposals(prev => [newProposal, ...prev]);
+    setQuickOpen(false);
+    // Build the SMS body and copy to clipboard
+    const fname = (contact?.name || '').split(' ')[0] || 'there';
+    const totalAmt = newProposal.total;
+    const depositAmt = Math.round(totalAmt * 0.5);
+    const link = `${PROPOSAL_BASE_URL}?token=${newProposal.token}`;
+    const msg = `Hi ${fname}! Here's your quote for the Storm-Ready Connection System — $${totalAmt.toLocaleString()} all in. A 50% deposit ($${depositAmt.toLocaleString()}) is due to confirm your spot. Review & approve here: ${link}`;
+    try {
+      await navigator.clipboard.writeText(msg);
+      window.__bpp_toast && window.__bpp_toast(`Quote created + SMS copied — $${totalAmt.toLocaleString()}`, 'success');
+    } catch {
+      window.__bpp_toast && window.__bpp_toast(`Quote created — link: ${link}`, 'success');
+    }
+    // Bump stage to 2 (QUOTED) if still on NEW
+    db.from('contacts').update({ stage: 2, quote_amount: totalAmt }).eq('id', contactId)
+      .then(() => db.from('stage_history').insert({ contact_id: contactId, from_stage: 1, to_stage: 2 }).then(() => {}, () => {}));
   }
 
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12 }}>LOADING...</div>;
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-      <button onClick={newQuoteLegacy} className="chrome-label" style={{
-        width: '100%', height: 40, marginBottom: 12,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+      <button onClick={() => setQuickOpen(true)} style={{
+        width: '100%', height: 40, marginBottom: 16,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'var(--navy)', color: 'var(--gold)',
         boxShadow: 'var(--raised-2)', cursor: 'pointer',
-        border: 'none', fontSize: 12, letterSpacing: '.08em',
+        border: 'none', fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
       }}>
-        <span>+ NEW QUOTE</span>
-        <span style={{ fontSize: 9, opacity: 0.6 }}>(LEGACY)</span>
+        New quote
       </button>
+      {quickOpen && contact && (
+        <QuickQuoteModal contact={contact} onClose={() => setQuickOpen(false)} onCreated={onQuoteCreated} />
+      )}
 
       {proposals.length === 0 ? (
-        <Empty label="NO PROPOSALS FOR THIS LEAD" />
+        <div style={{ padding: '32px 0', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
+          No proposals yet
+        </div>
       ) : proposals.map(p => (
-        <div key={p.id} className="raised" style={{ padding: 14, marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              {(p.status || 'sent').toUpperCase()}
-            </span>
-            <span className="mono lcd--green" style={{
-              padding: '2px 8px', background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-              color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-              fontFamily: 'var(--font-pixel)', fontSize: 16,
-            }}>${(Number(p.total) || 0).toLocaleString()}</span>
-          </div>
-          <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
-            Created: {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
-            {p.viewed_at && <span style={{ marginLeft: 10 }}>· Viewed: {new Date(p.viewed_at).toLocaleDateString()}</span>}
-            {p.view_count ? <span style={{ marginLeft: 10 }}>· {p.view_count} view{p.view_count === 1 ? '' : 's'}</span> : null}
+        <div key={p.id} style={{
+          padding: '14px 0',
+          borderTop: '1px solid rgba(0,0,0,.08)',
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700 }}>
+                ${(Number(p.total) || 0).toLocaleString()}
+              </span>
+              <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'lowercase' }}>
+                {p.status || 'sent'}
+              </span>
+            </div>
+            <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
+              {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
+              {p.view_count ? ` · ${p.view_count} view${p.view_count === 1 ? '' : 's'}` : ''}
+            </div>
           </div>
           {p.token ? (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <a href={`${PROPOSAL_BASE_URL}?token=${p.token}`} target="_blank" rel="noopener" className="chrome-label" style={{
-                flex: 1, height: 32, display: 'grid', placeItems: 'center',
+            <div style={{ display: 'flex', gap: 4 }}>
+              <a href={`${PROPOSAL_BASE_URL}?token=${p.token}`} target="_blank" rel="noopener" style={{
+                padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
                 boxShadow: 'var(--raised-2)', textDecoration: 'none',
-                color: 'var(--text)', fontSize: 11,
-              }}>VIEW</a>
-              <button onClick={() => copyLink(p.token)} className="chrome-label" style={{
-                flex: 1, height: 32, boxShadow: 'var(--raised-2)', cursor: 'pointer',
-                border: 'none', background: 'var(--card)', color: 'var(--text)', fontSize: 11,
-              }}>COPY LINK</button>
+                color: 'var(--text-muted)',
+              }}>View</a>
+              <button onClick={() => copyLink(p.token)} style={{
+                padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
+                boxShadow: 'var(--raised-2)', cursor: 'pointer',
+                border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+              }}>Copy</button>
             </div>
           ) : null}
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Quick Quote Modal ──────────────────────────────────────────────────────
+// Minimal — just a total that updates as you toggle. No section labels, no
+// sub-prices on chips, no cross-amp preview. Complex quotes go to legacy.
+function QuickQuoteModal({ contact, onClose, onCreated }) {
+  const [state, setState] = useState({
+    amp: '30',
+    runFt: 5,
+    cordIncluded: true,
+    includeSurge: false,
+    includePom: false,
+    includePermit: true,
+    notes: '',
+  });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const primary = useMemo(() => quickQuoteCompute(state), [state]);
+
+  async function submit() {
+    if (busy) return;
+    setBusy(true); setErr(null);
+    const payload = quickQuoteBuildPayload({ contact, state });
+    const { data, error } = await db.from('proposals').insert([payload]).select().single();
+    setBusy(false);
+    if (error || !data) { setErr(error?.message || 'insert failed'); return; }
+    onCreated(data);
+  }
+
+  const toggle = k => setState(s => ({ ...s, [k]: !s[k] }));
+  const chips = [
+    { key: 'cordIncluded', label: 'Cord' },
+    { key: 'includeSurge', label: 'Surge' },
+    { key: 'includePom',   label: 'POM' },
+    { key: 'includePermit',label: 'Permit' },
+  ];
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 95,
+      background: 'rgba(0,0,0,.45)',
+      display: 'grid', placeItems: 'center', padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 380, maxWidth: '100%',
+        padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 20,
+        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      }}>
+        {/* Amp — two buttons, no label */}
+        <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
+          {['30', '50'].map(a => (
+            <button key={a} onClick={() => setState(s => ({ ...s, amp: a }))} style={{
+              flex: 1, fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: 600,
+              background: state.amp === a ? 'var(--navy)' : 'transparent',
+              color: state.amp === a ? 'var(--gold)' : 'var(--text-muted)',
+              boxShadow: state.amp === a ? 'var(--pressed-2)' : 'none',
+              border: 'none', cursor: 'pointer', letterSpacing: '.04em',
+            }}>{a}A</button>
+          ))}
+        </div>
+
+        {/* Run ft — just the slider + value, no label */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <input type="range" min={5} max={50} value={state.runFt} onChange={e => setState(s => ({ ...s, runFt: Number(e.target.value) }))}
+            style={{ flex: 1 }} />
+          <span className="mono" style={{ fontSize: 13, minWidth: 40, textAlign: 'right', color: 'var(--text-muted)' }}>{state.runFt}ft</span>
+        </div>
+
+        {/* Includes — tiny chips, name only */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {chips.map(c => (
+            <button key={c.key} onClick={() => toggle(c.key)} style={{
+              padding: '6px 12px', fontSize: 12, fontFamily: 'var(--font-body)',
+              background: state[c.key] ? 'var(--navy)' : 'transparent',
+              color: state[c.key] ? 'var(--gold)' : 'var(--text-muted)',
+              boxShadow: state[c.key] ? 'var(--pressed-2)' : 'var(--raised-2)',
+              border: 'none', cursor: 'pointer',
+            }}>{c.label}</button>
+          ))}
+        </div>
+
+        {/* Total — big, no LCD chrome, just the number */}
+        <div style={{ textAlign: 'center', padding: '6px 0' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 42, fontWeight: 700, letterSpacing: '-.02em' }}>
+            ${primary.total.toLocaleString()}
+          </div>
+        </div>
+
+        {err ? <div className="mono" style={{ fontSize: 11, color: 'var(--ms-3)', textAlign: 'center' }}>{err}</div> : null}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onClose} style={{
+            flex: 1, height: 40, boxShadow: 'var(--raised-2)', cursor: 'pointer',
+            background: 'var(--card)', color: 'var(--text-muted)', border: 'none', fontSize: 12,
+            fontFamily: 'var(--font-body)', letterSpacing: '.04em',
+          }}>Cancel</button>
+          <button onClick={submit} disabled={busy} style={{
+            flex: 2, height: 40, background: busy ? 'var(--text-muted)' : 'var(--navy)', color: '#fff',
+            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
+            boxShadow: busy ? 'var(--pressed-2)' : 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            cursor: busy ? 'wait' : 'pointer', border: 'none',
+          }}>{busy ? 'Creating...' : 'Create & Copy SMS'}</button>
+        </div>
+      </div>
     </div>
   );
 }
