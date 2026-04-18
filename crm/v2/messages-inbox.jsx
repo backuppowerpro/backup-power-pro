@@ -115,13 +115,13 @@ function ThreadRow({ t, compact = false, active = false }) {
   );
 }
 
-function MsgChips({ active = 'all' }) {
+function MsgChips({ active = 'all', onChange }) {
   // Minimal — text tabs, no LCD count, no raised pills.
   const chips = [
     { id:'all',   label:'All' },
-    { id:'un',    label:'Unread' },
+    { id:'un',    label:'Waiting' }, // waiting on Key's reply
     { id:'alex',  label:'Alex' },
-    { id:'key',   label:'Key' },
+    { id:'key',   label:'Me' },
     { id:'call',  label:'Calls' },
   ];
   return (
@@ -129,7 +129,7 @@ function MsgChips({ active = 'all' }) {
       {chips.map(c => {
         const on = c.id === active;
         return (
-          <button key={c.id} style={{
+          <button key={c.id} onClick={() => onChange && onChange(c.id)} style={{
             padding: '4px 0', fontSize: 12,
             fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
             color: on ? 'var(--text)' : 'var(--text-muted)',
@@ -146,10 +146,14 @@ function MsgChips({ active = 'all' }) {
 function MessagesInbox({ compact = false, threads, onSelect, activeId }) {
   const raw = threads || THREADS;
   const [q, setQ] = React.useState('');
+  const [filter, setFilter] = React.useState('all');
   const query = q.trim().toLowerCase();
-  const data = query
-    ? raw.filter(t => (t.name || '').toLowerCase().includes(query) || (t.prev || '').toLowerCase().includes(query))
-    : raw;
+  let data = raw;
+  if (filter === 'un')    data = data.filter(t => t.waiting);
+  if (filter === 'alex')  data = data.filter(t => t.alex);
+  if (filter === 'key')   data = data.filter(t => t.dir === 'out' && !t.alex);
+  if (filter === 'call')  data = data.filter(t => t.dir === 'call' || t.call);
+  if (query) data = data.filter(t => (t.name || '').toLowerCase().includes(query) || (t.prev || '').toLowerCase().includes(query));
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
       <div style={{ padding: '12px 16px 4px' }}>
@@ -165,7 +169,7 @@ function MessagesInbox({ compact = false, threads, onSelect, activeId }) {
           }}
         />
       </div>
-      <MsgChips active="all" />
+      <MsgChips active={filter} onChange={setFilter} />
       <div style={{
         flex: 1, overflowY: 'auto', margin: '0 16px 88px',
         background: 'var(--card)',
