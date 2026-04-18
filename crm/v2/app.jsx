@@ -1017,19 +1017,19 @@ function DetailEditContact({ contact, onUpdate }) {
       <EditField label="ADDRESS" value={form.address} onChange={v => setForm({ ...form, address: v })} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
         {saved ? (
-          <span className="mono lcd--green" style={{ fontSize: 11, color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)' }}>
-            SAVED
+          <span className="mono" style={{ fontSize: 11, color: 'var(--ms-2)' }}>
+            Saved
           </span>
         ) : <span />}
-        <button type="submit" disabled={saving} className="tactile-raised" style={{
+        <button type="submit" disabled={saving} style={{
           height: 40, padding: '0 20px',
           background: 'var(--navy)', color: '#fff',
-          fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 12,
-          letterSpacing: '.08em', textTransform: 'uppercase',
-          boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.2), inset -2px -2px 0 rgba(0,0,0,.5)',
+          fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
+          letterSpacing: '.04em',
+          boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
           cursor: saving ? 'wait' : 'pointer',
-          opacity: saving ? 0.6 : 1,
-        }}>{saving ? 'SAVING...' : 'SAVE'}</button>
+          opacity: saving ? 0.6 : 1, border: 'none',
+        }}>{saving ? 'Saving…' : 'Save'}</button>
       </div>
     </form>
   );
@@ -1076,33 +1076,32 @@ function DetailNotes({ contact, onUpdate }) {
       <textarea
         value={text}
         onChange={e => setText(e.target.value)}
-        placeholder="ADD NOTES..."
-        className="pressed-2"
+        placeholder="Add notes..."
         style={{
           flex: 1, minHeight: 240, padding: 14,
-          fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.5,
+          fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.5,
           background: 'var(--card)', resize: 'vertical',
+          boxShadow: 'var(--pressed-2)', border: 'none',
         }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {saved ? (
-          <span className="mono lcd--green" style={{ fontSize: 11, textShadow: 'var(--lcd-glow-green)', color: 'var(--lcd-green)' }}>
-            SAVED
+          <span className="mono" style={{ fontSize: 11, color: 'var(--ms-2)' }}>
+            Saved
           </span>
         ) : <span />}
         <button
           onClick={save}
           disabled={saving}
-          className="tactile-raised"
           style={{
-            height: 36, padding: '0 16px',
+            height: 36, padding: '0 20px',
             background: 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 12,
-            letterSpacing: '.08em', textTransform: 'uppercase',
-            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.2), inset -2px -2px 0 rgba(0,0,0,.5)',
+            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
+            letterSpacing: '.04em',
+            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
             cursor: saving ? 'wait' : 'pointer',
-            opacity: saving ? 0.6 : 1,
-          }}>{saving ? 'SAVING...' : 'SAVE'}</button>
+            opacity: saving ? 0.6 : 1, border: 'none',
+          }}>{saving ? 'Saving…' : 'Save'}</button>
       </div>
     </div>
   );
@@ -1127,31 +1126,33 @@ function StagePickerModal({ currentStage, onPick, onClose }) {
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        width: 340, background: 'var(--card)', boxShadow: 'var(--raised)',
-        padding: 16,
+        width: 320, background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        padding: 20,
       }}>
-        <div className="chrome-label" style={{ fontSize: 12, marginBottom: 12, color: 'var(--text-muted)' }}>
-          CHANGE STAGE
+        <div style={{
+          fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700,
+          marginBottom: 14, letterSpacing: '-.01em',
+        }}>
+          Change stage
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {stages.map(s => {
             const active = s.num === currentStage;
             return (
               <button
                 key={s.num}
                 onClick={() => onPick(s.num)}
-                className="chrome-label"
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 14px', marginBottom: 4,
-                  background: active ? 'var(--navy)' : 'var(--card)',
+                  padding: '10px 14px',
+                  background: active ? 'var(--navy)' : 'transparent',
                   color: active ? 'var(--gold)' : 'var(--text)',
-                  boxShadow: active ? 'var(--pressed-2)' : 'var(--raised-2)',
-                  fontSize: 12, cursor: 'pointer',
-                  borderLeft: `4px solid ${s.color}`,
+                  fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: active ? 600 : 500,
+                  letterSpacing: '.02em',
+                  border: 'none', cursor: 'pointer', textAlign: 'left',
                 }}>
-                <span>{s.label}</span>
-                <span className="pixel" style={{ fontSize: 10, opacity: 0.7 }}>{String(s.num).padStart(2, '0')}</span>
+                <span>{s.label.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                <span className="mono" style={{ fontSize: 11, opacity: 0.5 }}>{s.num}</span>
               </button>
             );
           })}

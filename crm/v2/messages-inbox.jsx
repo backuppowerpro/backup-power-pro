@@ -44,12 +44,11 @@ function ThreadAvatar({ t, size = 48 }) {
 function AlexBadge() {
   return (
     <span style={{
-      marginLeft: 6, width: 18, height: 18,
-      background: 'var(--gold)', color: '#1a1a1a',
-      display: 'inline-grid', placeItems: 'center',
-      fontFamily: 'var(--font-pixel)', fontSize: 14,
-      boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35)',
-    }}>A</span>
+      marginLeft: 6, padding: '1px 5px',
+      color: 'var(--text-faint)',
+      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '.08em',
+      border: '1px solid rgba(0,0,0,.15)',
+    }}>alex</span>
   );
 }
 
@@ -72,7 +71,7 @@ function Preview({ t }) {
         }}>{t.call}</span>
       )}
       <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-        {t.alex && <span style={{ color: 'var(--gold)', fontWeight: 700, marginRight: 4 }}>ALEX:</span>}
+        {t.alex && <span style={{ color: 'var(--text-faint)', marginRight: 4 }}>Alex:</span>}
         {t.prev}
       </span>
     </div>
