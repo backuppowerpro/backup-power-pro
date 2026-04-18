@@ -993,6 +993,17 @@ function DetailQuote({ contactId }) {
       .catch(() => window.__bpp_toast && window.__bpp_toast('Copy failed — select + ⌘C manually', 'error'));
   }
 
+  function sendReminder(proposal) {
+    const first = (contact?.name || '').split(' ')[0] || 'there';
+    const total = Number(proposal.total) || 0;
+    const deposit = Math.round(total * 0.5);
+    const link = `${PROPOSAL_BASE_URL}?token=${proposal.token}`;
+    const msg = `Hi ${first}, just sending the quote back — $${total.toLocaleString()} all in, 50% deposit ($${deposit.toLocaleString()}) to lock it in: ${link}`;
+    // Broadcast to the compose bar input
+    window.dispatchEvent(new CustomEvent('bpp:compose-prefill', { detail: { text: msg } }));
+    window.__bpp_toast && window.__bpp_toast('Reminder drafted — review + send', 'info');
+  }
+
   async function onQuoteCreated(newProposal) {
     setProposals(prev => [newProposal, ...prev]);
     setQuickOpen(false);
@@ -1066,6 +1077,11 @@ function DetailQuote({ contactId }) {
                 boxShadow: 'var(--raised-2)', cursor: 'pointer',
                 border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
               }}>Copy</button>
+              <button onClick={() => sendReminder(p)} style={{
+                padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
+                boxShadow: 'var(--raised-2)', cursor: 'pointer',
+                border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+              }}>Remind</button>
             </div>
           ) : null}
         </div>
@@ -1438,6 +1454,23 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
   const [sending, setSending] = useState(false);
   const [snippetsOpen, setSnippetsOpen] = useState(false);
 
+  // Listen for broadcasted prefill from sibling components (e.g. Quote tab "Remind").
+  useEffect(() => {
+    const handler = (ev) => {
+      const t = ev?.detail?.text;
+      if (typeof t === 'string' && t.length) {
+        setText(t);
+        // After state updates, focus the input for immediate edit/send
+        setTimeout(() => {
+          const input = document.querySelector('input[placeholder="Type a message…"]');
+          if (input) input.focus();
+        }, 50);
+      }
+    };
+    window.addEventListener('bpp:compose-prefill', handler);
+    return () => window.removeEventListener('bpp:compose-prefill', handler);
+  }, []);
+
   // GSM-7 characters fit 160/segment. Unicode (emoji, curly quotes, em dash)
   // fall back to UCS-2 which is 70/segment. Quick heuristic: any non-ASCII
   // char → unicode.
@@ -1595,21 +1628,25 @@ function ToastRoot() {
           t.kind === 'error'   ? 'var(--red)'   :
           t.kind === 'warn'    ? 'var(--lcd-amber)' :
                                   'var(--navy)';
+        const dismiss = () => setToasts(prev => prev.filter(x => x.id !== t.id));
         return (
-          <div key={t.id} style={{
-            padding: '10px 14px',
-            background: 'var(--card)',
-            boxShadow: 'var(--raised)',
-            borderLeft: `4px solid ${color}`,
-            display: 'flex', alignItems: 'center', gap: 10,
-            fontSize: 13,
-          }}>
+          <div key={t.id}
+            onClick={e => { if (!e.target.closest('button')) dismiss(); }}
+            title="Click to dismiss"
+            style={{
+              padding: '10px 14px',
+              background: 'var(--card)',
+              boxShadow: 'var(--raised)',
+              borderLeft: `4px solid ${color}`,
+              display: 'flex', alignItems: 'center', gap: 10,
+              fontSize: 13, cursor: 'pointer',
+            }}>
             <span style={{ width: 8, height: 8, background: color, flex: '0 0 auto' }} />
             <span style={{ flex: 1 }}>{t.text}</span>
             {t.action ? (
               <button onClick={() => {
                 try { t.action.onClick(); } catch {}
-                setToasts(prev => prev.filter(x => x.id !== t.id));
+                dismiss();
               }} style={{
                 padding: '4px 10px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
                 background: 'transparent', color: 'var(--navy)',
