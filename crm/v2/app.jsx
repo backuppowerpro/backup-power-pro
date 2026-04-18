@@ -146,13 +146,14 @@ function AuthGate({ onAuth }) {
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, opacity: .85 }}>{error}</span>
             </div>
           ) : null}
-          <button type="submit" disabled={busy} style={{
+          <button type="submit" disabled={busy} className="tactile-raised" style={{
             width: '100%', height: 44,
             background: 'var(--navy)', color: '#fff',
             fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 14,
             letterSpacing: '.08em', textTransform: 'uppercase',
-            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            boxShadow: 'inset 3px 3px 0 rgba(255,255,255,.25), inset -3px -3px 0 rgba(0,0,0,.55)',
             opacity: busy ? 0.6 : 1,
+            cursor: busy ? 'wait' : 'pointer',
           }}>{busy ? 'AUTHENTICATING…' : 'SIGN IN'}</button>
         </form>
         <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
@@ -402,6 +403,8 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stagePickerOpen, setStagePickerOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState('MESSAGES');
 
   useEffect(() => {
     let alive = true;
@@ -488,16 +491,55 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         </div>
       </div>
 
-      {/* Stage strip */}
-      <div className="lcd" style={{
-        height: 40, padding: '0 16px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
+      {/* Stage strip (click to open picker) */}
+      <button
+        onClick={() => setStagePickerOpen(true)}
+        className="lcd"
+        style={{
+          height: 40, padding: '0 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', cursor: 'pointer',
+          border: 0, textAlign: 'left',
+        }}>
         <span className="pixel" style={{ fontSize: 14 }}>{stageAbbr}</span>
-        <span className="pixel lcd--amber" style={{ fontSize: 11 }}>STAGE {contact?.stage || 1}</span>
+        <span className="pixel lcd--amber" style={{ fontSize: 11 }}>STAGE {contact?.stage || 1} ▸</span>
+      </button>
+      {stagePickerOpen ? (
+        <StagePickerModal
+          currentStage={contact?.stage || 1}
+          onPick={async newStage => {
+            if (newStage !== contact.stage) {
+              const oldStage = contact.stage || 1;
+              await db.from('contacts').update({ stage: newStage }).eq('id', contactId);
+              await db.from('stage_history').insert({
+                contact_id: contactId, from_stage: oldStage, to_stage: newStage,
+              }).then(() => {}, () => {});
+              setContact(c => ({ ...c, stage: newStage }));
+            }
+            setStagePickerOpen(false);
+          }}
+          onClose={() => setStagePickerOpen(false)}
+        />
+      ) : null}
+
+      {/* Detail tabs */}
+      <div style={{
+        height: 44, display: 'flex', alignItems: 'stretch',
+        padding: '0 8px',
+        boxShadow: 'var(--pressed-2)',
+      }}>
+        {['MESSAGES', 'TIMELINE', 'QUOTE', 'PERMITS', 'NOTES'].map(t => (
+          <button key={t} onClick={() => setDetailTab(t)} className="chrome-label" style={{
+            height: '100%', padding: '0 14px', fontSize: 11,
+            color: t === detailTab ? 'var(--text)' : 'var(--text-muted)',
+            boxShadow: t === detailTab ? 'inset 0 -3px 0 var(--gold)' : 'none',
+            cursor: 'pointer',
+          }}>{t}</button>
+        ))}
       </div>
 
-      {/* Messages */}
+      {/* Tab content */}
+      {detailTab === 'MESSAGES' ? (
       <div style={{
         flex: 1, overflowY: 'auto', padding: 16,
         display: 'flex', flexDirection: 'column', gap: 8,
@@ -536,9 +578,223 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
           );
         })}
       </div>
+      ) : null}
 
-      {/* Compose */}
-      <ComposeBar contactId={contactId} contactName={contact?.name} contactPhone={contact?.phone} />
+      {detailTab === 'TIMELINE' ? <DetailTimeline contactId={contactId} /> : null}
+      {detailTab === 'QUOTE' ? <DetailQuote contactId={contactId} /> : null}
+      {detailTab === 'PERMITS' ? <DetailPermits contact={contact} /> : null}
+      {detailTab === 'NOTES' ? <DetailNotes contact={contact} onUpdate={(notes) => setContact(c => ({ ...c, install_notes: notes }))} /> : null}
+
+      {/* Compose — only show on MESSAGES tab */}
+      {detailTab === 'MESSAGES' ? (
+        <ComposeBar contactId={contactId} contactName={contact?.name} contactPhone={contact?.phone} />
+      ) : null}
+    </div>
+  );
+}
+
+function DetailTimeline({ contactId }) {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    (async () => {
+      const { data } = await db
+        .from('stage_history')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      setEvents(data || []);
+      setLoading(false);
+    })();
+  }, [contactId]);
+  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12 }}>LOADING...</div>;
+  if (events.length === 0) return <Empty label="NO TIMELINE EVENTS" />;
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+      {events.map(e => (
+        <div key={e.id} style={{
+          display: 'grid', gridTemplateColumns: '120px 1fr',
+          gap: 12, padding: '10px 0',
+          borderBottom: '1px solid rgba(0,0,0,.08)',
+        }}>
+          <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            {new Date(e.created_at).toLocaleString()}
+          </span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
+            Stage {e.from_stage} → Stage {e.to_stage}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DetailQuote({ contactId }) {
+  const [proposals, setProposals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    (async () => {
+      const { data } = await db
+        .from('proposals')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false });
+      setProposals(data || []);
+      setLoading(false);
+    })();
+  }, [contactId]);
+  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12 }}>LOADING...</div>;
+  if (proposals.length === 0) return <Empty label="NO PROPOSALS FOR THIS LEAD" />;
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+      {proposals.map(p => (
+        <div key={p.id} className="raised" style={{ padding: 14, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {(p.status || 'sent').toUpperCase()}
+            </span>
+            <span className="mono lcd--green" style={{
+              padding: '2px 8px', background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
+              color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
+              fontFamily: 'var(--font-pixel)', fontSize: 16,
+            }}>${(Number(p.total) || 0).toLocaleString()}</span>
+          </div>
+          <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            Sent: {p.sent_at ? new Date(p.sent_at).toLocaleDateString() : '—'}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DetailPermits({ contact }) {
+  if (!contact) return null;
+  const cells = stageToPermitCells(contact.stage);
+  const headers = ['SUBMIT', 'PAY', 'PAID', 'PRINT', 'PRINTED', 'INSPECT', 'PASS'];
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+      <div className="raised" style={{ padding: 14, marginBottom: 12 }}>
+        <div className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+          PERMIT PIPELINE
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {cells.map((state, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <PermitStepCell state={state} />
+              <span className="chrome-label" style={{ fontSize: 8, color: 'var(--text-faint)' }}>{headers[i]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailNotes({ contact, onUpdate }) {
+  const [text, setText] = useState(contact?.install_notes || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function save() {
+    if (!contact) return;
+    setSaving(true);
+    const { error } = await db.from('contacts').update({ install_notes: text }).eq('id', contact.id);
+    setSaving(false);
+    if (!error) {
+      setSaved(true);
+      onUpdate && onUpdate(text);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  }
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <textarea
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="ADD NOTES..."
+        className="pressed-2"
+        style={{
+          flex: 1, minHeight: 240, padding: 14,
+          fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.5,
+          background: 'var(--card)', resize: 'vertical',
+        }}
+      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {saved ? (
+          <span className="mono lcd--green" style={{ fontSize: 11, textShadow: 'var(--lcd-glow-green)', color: 'var(--lcd-green)' }}>
+            SAVED
+          </span>
+        ) : <span />}
+        <button
+          onClick={save}
+          disabled={saving}
+          className="tactile-raised"
+          style={{
+            height: 36, padding: '0 16px',
+            background: 'var(--navy)', color: '#fff',
+            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 12,
+            letterSpacing: '.08em', textTransform: 'uppercase',
+            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.2), inset -2px -2px 0 rgba(0,0,0,.5)',
+            cursor: saving ? 'wait' : 'pointer',
+            opacity: saving ? 0.6 : 1,
+          }}>{saving ? 'SAVING...' : 'SAVE'}</button>
+      </div>
+    </div>
+  );
+}
+
+function StagePickerModal({ currentStage, onPick, onClose }) {
+  const stages = [
+    { num: 1, label: 'NEW LEAD',         color: 'var(--ms-1)' },
+    { num: 2, label: 'QUOTED',           color: 'var(--ms-4)' },
+    { num: 3, label: 'BOOKED',           color: 'var(--ms-2)' },
+    { num: 4, label: 'PERMIT SUBMITTED', color: 'var(--ms-5)' },
+    { num: 5, label: 'READY TO PAY',     color: 'var(--ms-3)' },
+    { num: 6, label: 'PAID',             color: 'var(--ms-2)' },
+    { num: 7, label: 'READY TO PRINT',   color: 'var(--ms-5)' },
+    { num: 8, label: 'PRINTED',          color: 'var(--ms-6)' },
+    { num: 9, label: 'INSPECTION',       color: 'var(--ms-7)' },
+  ];
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 95,
+      background: 'rgba(0,0,0,.5)',
+      display: 'grid', placeItems: 'center', padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 340, background: 'var(--card)', boxShadow: 'var(--raised)',
+        padding: 16,
+      }}>
+        <div className="chrome-label" style={{ fontSize: 12, marginBottom: 12, color: 'var(--text-muted)' }}>
+          CHANGE STAGE
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {stages.map(s => {
+            const active = s.num === currentStage;
+            return (
+              <button
+                key={s.num}
+                onClick={() => onPick(s.num)}
+                className="chrome-label"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px', marginBottom: 4,
+                  background: active ? 'var(--navy)' : 'var(--card)',
+                  color: active ? 'var(--gold)' : 'var(--text)',
+                  boxShadow: active ? 'var(--pressed-2)' : 'var(--raised-2)',
+                  fontSize: 12, cursor: 'pointer',
+                  borderLeft: `4px solid ${s.color}`,
+                }}>
+                <span>{s.label}</span>
+                <span className="pixel" style={{ fontSize: 10, opacity: 0.7 }}>{String(s.num).padStart(2, '0')}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
