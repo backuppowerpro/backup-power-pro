@@ -334,7 +334,7 @@ function contactToCard(c) {
   };
 }
 
-function LivePipelineToolbar({ active = 'pipeline', onSubView }) {
+function LivePipelineToolbar({ active = 'pipeline', onSubView, stats }) {
   // Sub-view switch only — the MINE/ALL/OVERDUE/HAS-PHOTO filter row
   // was not wired up and was visual noise. Re-add when the filters
   // are actually functional.
@@ -345,7 +345,7 @@ function LivePipelineToolbar({ active = 'pipeline', onSubView }) {
     { id: 'mat',      label: 'MATERIALS' },
   ];
   return (
-    <div style={{ padding: '16px 16px 8px', display: 'flex' }}>
+    <div style={{ padding: '16px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
         {subs.map(s => (
           <button key={s.id} className="chrome-label"
@@ -359,6 +359,12 @@ function LivePipelineToolbar({ active = 'pipeline', onSubView }) {
             }}>{s.label}</button>
         ))}
       </div>
+      {stats ? (
+        <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', display: 'flex', gap: 14 }}>
+          <span><span style={{ color: 'var(--text)', fontWeight: 600 }}>{stats.count}</span> active</span>
+          {stats.value > 0 ? <span><span style={{ color: 'var(--ms-2)', fontWeight: 600 }}>${stats.value.toLocaleString()}</span> pipeline</span> : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -370,7 +376,7 @@ function LivePipeline({ onCardClick, onSubView }) {
   const fetchAll = useCallback(async () => {
     const { data } = await db
       .from('contacts')
-      .select('id, name, phone, address, stage, install_notes, created_at, do_not_contact')
+      .select('id, name, phone, address, stage, install_notes, created_at, do_not_contact, quote_amount')
       .order('created_at', { ascending: false })
       .limit(500);
     setContacts(data || []);
@@ -448,7 +454,17 @@ function LivePipeline({ onCardClick, onSubView }) {
       counts={counts}
       onCardClick={onCardClick}
       onDropCard={handleDrop}
-      toolbar={<LivePipelineToolbar active="pipeline" onSubView={onSubView} />}
+      toolbar={
+        <LivePipelineToolbar
+          active="pipeline"
+          onSubView={onSubView}
+          stats={(() => {
+            const active = contacts.filter(c => (c.stage || 1) < 9 && !c.do_not_contact);
+            const value = active.reduce((s, c) => s + (Number(c.quote_amount) || 0), 0);
+            return { count: active.length, value };
+          })()}
+        />
+      }
     />
   );
 }
