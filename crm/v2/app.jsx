@@ -3140,7 +3140,7 @@ function LiveSparky({ currentContactId = null }) {
               maxWidth: '72%', background: 'var(--navy)', color: '#fff',
               padding: '10px 14px', boxShadow: 'var(--raised-2)',
               fontSize: 14, lineHeight: 1.4,
-            }}>{m.text}</div>
+            }}><MessageBody body={m.text} isOut={true} /></div>
           </div>
         ) : (
           <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-start' }}>
@@ -3156,7 +3156,7 @@ function LiveSparky({ currentContactId = null }) {
               boxShadow: 'var(--pressed-2)', padding: '10px 14px',
               fontSize: 14, lineHeight: 1.4, color: 'var(--text)',
               whiteSpace: 'pre-wrap',
-            }}>{m.text}</div>
+            }}><MessageBody body={m.text} isOut={false} /></div>
           </div>
         ))}
         {sending ? (
