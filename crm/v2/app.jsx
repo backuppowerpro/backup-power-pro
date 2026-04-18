@@ -1289,6 +1289,8 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'G S', label: 'Go to Sparky' },
     { keys: 'R', label: 'Reply (focus compose bar)' },
     { keys: 'D', label: 'Dial selected contact' },
+    { keys: 'N', label: 'New lead' },
+    { keys: 'B', label: 'Open morning briefing' },
     { keys: 'Esc', label: 'Close detail or modal' },
     { keys: '?', label: 'Show this help' },
   ];
@@ -2906,10 +2908,20 @@ function App() {
       if (e.key === 'Escape' && selectedContact) {
         setSelectedContact(null);
       }
+      // b → reopen morning briefing
+      if (e.key === 'b' && !briefOpen) {
+        e.preventDefault();
+        setBriefOpen(true);
+      }
+      // n → new lead modal
+      if (e.key === 'n' && !newLeadOpen) {
+        e.preventDefault();
+        setNewLeadOpen(true);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [gPending, selectedContact]);
+  }, [gPending, selectedContact, briefOpen, newLeadOpen]);
 
   // Auth bootstrap
   useEffect(() => {
