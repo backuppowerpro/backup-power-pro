@@ -635,7 +635,7 @@ function DetailTimeline({ contactId }) {
         .from('stage_history')
         .select('*')
         .eq('contact_id', contactId)
-        .order('created_at', { ascending: false })
+        .order('changed_at', { ascending: false })
         .limit(50);
       setEvents(data || []);
       setLoading(false);
@@ -652,10 +652,10 @@ function DetailTimeline({ contactId }) {
           borderBottom: '1px solid rgba(0,0,0,.08)',
         }}>
           <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            {new Date(e.created_at).toLocaleString()}
+            {e.changed_at ? new Date(e.changed_at).toLocaleString() : '—'}
           </span>
           <span style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
-            Stage {e.from_stage} → Stage {e.to_stage}
+            Stage {e.from_stage ?? '—'} → Stage {e.to_stage ?? '—'}
           </span>
         </div>
       ))}
