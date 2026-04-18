@@ -860,6 +860,95 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
   );
 }
 
+// ── New Lead Modal (action triggered by "+" button) ────────────────────────
+function NewLeadModal({ open, onClose, onCreated }) {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  if (!open) return null;
+
+  function formatPhoneInput(v) {
+    const digits = v.replace(/\D/g, '').slice(0, 10);
+    if (digits.length >= 7) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    if (digits.length >= 4) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    if (digits.length >= 1) return `(${digits}`;
+    return '';
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setErr(null);
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length !== 10) { setErr('Phone must be 10 digits'); return; }
+    setBusy(true);
+    const { data, error } = await db
+      .from('contacts')
+      .insert({
+        name: name.trim() || 'New Lead',
+        phone: `+1${digits}`,
+        address: address.trim() || null,
+        stage: 1,
+        status: 'New Lead',
+        ai_enabled: false, // Manual lead — don't fire Alex
+      })
+      .select()
+      .single();
+    setBusy(false);
+    if (error) { setErr(error.message); return; }
+    onCreated && onCreated(data);
+    setName(''); setPhone(''); setAddress('');
+    onClose();
+  }
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 90,
+      background: 'rgba(0,0,0,.5)',
+      display: 'grid', placeItems: 'center', padding: 16,
+    }}>
+      <form onSubmit={submit} onClick={e => e.stopPropagation()} className="raised" style={{
+        width: 420, maxWidth: '100%',
+        padding: 24, display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        <div className="chrome-label" style={{ fontSize: 14 }}>NEW LEAD</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>FIRST NAME</label>
+          <input value={name} onChange={e => setName(e.target.value)} className="pressed-2" placeholder="Sarah M" autoFocus
+            style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>PHONE *</label>
+          <input value={phone} onChange={e => setPhone(formatPhoneInput(e.target.value))} className="pressed-2" placeholder="(864) 555-0100"
+            style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>ADDRESS</label>
+          <input value={address} onChange={e => setAddress(e.target.value)} className="pressed-2" placeholder="412 Laurel Ridge Rd"
+            style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }} />
+        </div>
+        {err ? <div className="lcd" style={{ padding: '6px 12px', fontSize: 12 }}>{err}</div> : null}
+        <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+          <button type="button" onClick={onClose} className="chrome-label" style={{
+            flex: 1, height: 40, fontSize: 12, cursor: 'pointer',
+            boxShadow: 'var(--raised-2)', background: 'var(--card)',
+          }}>CANCEL</button>
+          <button type="submit" disabled={busy} className="tactile-raised" style={{
+            flex: 2, height: 40,
+            background: 'var(--navy)', color: '#fff',
+            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 12,
+            letterSpacing: '.08em', textTransform: 'uppercase',
+            boxShadow: 'inset 3px 3px 0 rgba(255,255,255,.25), inset -3px -3px 0 rgba(0,0,0,.55)',
+            opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer',
+          }}>{busy ? 'SAVING...' : 'CREATE LEAD'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ── Twilio Voice SDK ────────────────────────────────────────────────────────
 // Loads Twilio Voice SDK (v2.18.1) lazily + mints access token via
 // twilio-token edge function + exposes global hooks for outbound dial /
@@ -2036,6 +2125,7 @@ function App() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
+  const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('bpp_v2_theme') === 'dark');
 
   // Apply theme
@@ -2150,7 +2240,7 @@ function App() {
             compact={isMobile}
             isDark={isDark}
             onToggleDark={() => setIsDark(d => !d)}
-            onNewLead={() => setPaletteOpen(true)}
+            onNewLead={() => setNewLeadOpen(true)}
           />
         ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>
@@ -2179,6 +2269,14 @@ function App() {
         onSwitchTab={id => setTab(id)}
       />
       {briefOpen ? <LiveMorningBriefing onClose={() => setBriefOpen(false)} /> : null}
+      <NewLeadModal
+        open={newLeadOpen}
+        onClose={() => setNewLeadOpen(false)}
+        onCreated={c => {
+          setSelectedContact(c.id);
+          setTab('leads');
+        }}
+      />
       <VoiceCallModal voice={voice} />
     </div>
   );
