@@ -304,23 +304,17 @@ function contactToCard(c) {
 }
 
 function LivePipelineToolbar({ active = 'pipeline', onSubView }) {
+  // Sub-view switch only — the MINE/ALL/OVERDUE/HAS-PHOTO filter row
+  // was not wired up and was visual noise. Re-add when the filters
+  // are actually functional.
   const subs = [
     { id: 'pipeline', label: 'PIPELINE' },
     { id: 'list',     label: 'LIST' },
     { id: 'permits',  label: 'PERMITS' },
     { id: 'mat',      label: 'MATERIALS' },
   ];
-  const filters = [
-    { id: 'mine',    label: 'MINE' },
-    { id: 'all',     label: 'ALL', active: true },
-    { id: 'overdue', label: 'OVERDUE' },
-    { id: 'photo',   label: 'HAS PHOTO' },
-  ];
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '16px 16px 8px', gap: 16, flexWrap: 'wrap',
-    }}>
+    <div style={{ padding: '16px 16px 8px', display: 'flex' }}>
       <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
         {subs.map(s => (
           <button key={s.id} className="chrome-label"
@@ -330,19 +324,8 @@ function LivePipelineToolbar({ active = 'pipeline', onSubView }) {
               background: s.id === active ? 'var(--navy)' : 'transparent',
               color: s.id === active ? 'var(--gold)' : 'var(--text)',
               boxShadow: s.id === active ? 'var(--pressed-2)' : 'none',
-              cursor: 'pointer',
+              cursor: 'pointer', border: 'none',
             }}>{s.label}</button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {filters.map(f => (
-          <button key={f.id} className="chrome-label" style={{
-            height: 28, padding: '0 12px', fontSize: 11,
-            background: f.active ? 'var(--navy)' : 'var(--card)',
-            color: f.active ? '#fff' : 'var(--text)',
-            boxShadow: f.active ? 'var(--pressed-2)' : 'var(--raised-2)',
-            cursor: 'pointer',
-          }}>{f.label}</button>
         ))}
       </div>
     </div>

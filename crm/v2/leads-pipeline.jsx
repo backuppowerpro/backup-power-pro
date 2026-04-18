@@ -44,49 +44,25 @@ const cards = {
 };
 
 function DaysChip({ n }) {
-  let color = 'var(--lcd-green)', glow = 'var(--lcd-glow-green)';
-  if (n >= 3 && n < 7) { color = 'var(--lcd-amber)'; glow = 'var(--lcd-glow-amber)'; }
-  if (n >= 7)         { color = 'var(--lcd-red)';   glow = 'var(--lcd-glow-red)'; }
+  // Just a subtle mono number — no LCD chrome.
+  // Tone shifts red past 7d, otherwise a muted gray.
+  const color = n >= 7 ? 'var(--ms-3)' : 'var(--text-faint)';
   return (
-    <span style={{
-      height: 20, padding: '0 6px',
-      display: 'inline-flex', alignItems: 'center',
-      background: 'var(--lcd-bg)',
-      boxShadow: 'var(--pressed-2)',
-      color, textShadow: glow,
-      fontFamily: 'var(--font-pixel)', fontSize: 14,
-      letterSpacing: '.08em',
-    }}>{String(n).padStart(2, '0')}D</span>
-  );
-}
-
-function Dot({ on, tone = 'var(--ms-2)' }) {
-  return (
-    <span title={on ? 'done' : 'pending'} style={{
-      width: 8, height: 8,
-      background: on ? tone : 'transparent',
-      boxShadow: on
-        ? 'inset 1px 1px 0 rgba(255,255,255,.4), inset -1px -1px 0 rgba(0,0,0,.3)'
-        : 'var(--pressed-2)',
-    }}/>
+    <span className="mono" style={{
+      fontSize: 11, color, letterSpacing: '.02em',
+    }}>{n}d</span>
   );
 }
 
 function LeadCard({ c }) {
   return (
-    <div className="tactile-raised" style={{
+    <div style={{
       position: 'relative',
-      minHeight: 88, padding: '10px 12px 10px 14px',
-      display: 'flex', flexDirection: 'column', gap: 6,
-      boxShadow: 'var(--raised)',
+      minHeight: 72, padding: '10px 12px',
+      display: 'flex', flexDirection: 'column', gap: 4,
+      background: 'var(--card)',
+      boxShadow: 'var(--raised-2)',
     }}>
-      {c.overdue && (
-        <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
-          background: 'var(--red)',
-          boxShadow: 'inset 0 2px 0 rgba(255,255,255,.3), inset 0 -2px 0 rgba(0,0,0,.35)',
-        }}/>
-      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
           width: 24, height: 24, background: 'var(--navy)',
@@ -101,26 +77,18 @@ function LeadCard({ c }) {
         <div style={{
           flex: 1, minWidth: 0,
           fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-          color: 'var(--text)',
+          color: c.overdue ? 'var(--ms-3)' : 'var(--text)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{c.name}</div>
-      </div>
-      <div style={{
-        fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)',
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        lineHeight: 1.3,
-      }}>{c.addr}</div>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginTop: 'auto',
-      }}>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <Dot on={c.dots.photo} tone="var(--ms-2)" />
-          <Dot on={c.dots.quote} tone="var(--ms-1)" />
-          <Dot on={c.dots.permit} tone="var(--ms-5)" />
-        </div>
         <DaysChip n={c.days} />
       </div>
+      {c.addr && (
+        <div style={{
+          fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-faint)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          paddingLeft: 32,
+        }}>{c.addr}</div>
+      )}
     </div>
   );
 }
@@ -149,29 +117,18 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
         transition: 'background var(--dur) var(--step)',
       }}>
       <div style={{
-        height: 44, padding: '6px 10px',
-        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-        background: 'var(--card)',
-        boxShadow: 'var(--pressed-2)',
+        padding: '10px 4px 8px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
+        borderBottom: '1px solid rgba(0,0,0,.08)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-          <span className="chrome-label" style={{
-            fontSize: 10, color: col.color, lineHeight: 1,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>{col.label}</span>
-          <span style={{
-            height: 18, padding: '0 6px',
-            display: 'inline-flex', alignItems: 'center', flex: '0 0 auto',
-            background: 'var(--lcd-bg)',
-            boxShadow: 'var(--pressed-2)',
-            color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-            fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em', lineHeight: 1,
-          }}>{String(displayCount).padStart(2, '0')}</span>
-        </div>
-        <div style={{
-          height: 4, background: col.color,
-          boxShadow: 'inset 1px 0 0 rgba(255,255,255,.25), inset -1px 0 0 rgba(0,0,0,.3)',
-        }}/>
+        <span className="chrome-label" style={{
+          fontSize: 10, color: 'var(--text-muted)', lineHeight: 1,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          letterSpacing: '.12em',
+        }}>{col.label}</span>
+        <span className="mono" style={{
+          fontSize: 11, color: 'var(--text-faint)', flex: '0 0 auto',
+        }}>{displayCount}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', paddingBottom: 8 }}>
         {list.map((c, i) => (
