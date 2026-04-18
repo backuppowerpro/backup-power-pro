@@ -1349,6 +1349,14 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
   const [sending, setSending] = useState(false);
   const [snippetsOpen, setSnippetsOpen] = useState(false);
 
+  // GSM-7 characters fit 160/segment. Unicode (emoji, curly quotes, em dash)
+  // fall back to UCS-2 which is 70/segment. Quick heuristic: any non-ASCII
+  // char → unicode.
+  const isUnicode = /[^\x00-\x7F]/.test(text);
+  const perSegment = isUnicode ? 70 : 160;
+  const len = text.length;
+  const segments = len === 0 ? 0 : Math.ceil(len / perSegment);
+
   function applySnippet(body) {
     const first = (contactName || '').split(' ')[0] || 'there';
     setText(body.replace(/\{name\}/g, first));
@@ -1438,6 +1446,11 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
               flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none',
             }}
           />
+          {len > 0 ? (
+            <span className="mono" title={`${len} chars · ${segments} SMS segment${segments === 1 ? '' : 's'}${isUnicode ? ' · unicode' : ''}`} style={{
+              fontSize: 10, color: segments > 1 ? 'var(--ms-4)' : 'var(--text-faint)',
+            }}>{len}{segments > 1 ? `/${segments}` : ''}</span>
+          ) : null}
         </div>
         <button
           onClick={send}
