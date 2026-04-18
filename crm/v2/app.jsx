@@ -2691,7 +2691,11 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
           dir: isOut ? 'out' : 'in',
           prev: (latest.body || '').slice(0, 120),
           ts: relTimestamp(latest.created_at),
-          unread: 0, // TODO: track read state — for now, inbound=1, hide for outbound
+          // If the latest message in the thread is inbound AND it's from
+          // the customer (not a system log), treat the thread as "waiting
+          // on Key" — used by MessagesInbox to draw a gold bar on the row.
+          waiting: !isOut && latest.sender !== 'ai',
+          unread: 0,
           alex: isAi && isOut,
         };
       })

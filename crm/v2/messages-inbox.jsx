@@ -88,6 +88,8 @@ function ThreadRow({ t, compact = false, active = false }) {
       background: 'var(--card)',
       boxShadow: active ? 'var(--pressed-2)' : 'none',
       borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderLeft: t.waiting ? '3px solid var(--gold)' : '3px solid transparent',
+      paddingLeft: 11,
     }}>
       <ThreadAvatar t={t} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
