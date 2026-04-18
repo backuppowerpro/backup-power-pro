@@ -2627,8 +2627,8 @@ function LiveSparky() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  async function send() {
-    const q = input.trim();
+  async function send(overrideText) {
+    const q = (overrideText ?? input).trim();
     if (!q || sending) return;
     setSending(true);
     const newMsgs = [...messages, { who: 'key', text: q }];
@@ -2652,6 +2652,14 @@ function LiveSparky() {
       setSending(false);
     }
   }
+
+  // Common daily questions Key asks — tap to send without typing.
+  const quickAsks = [
+    "Who hasn't replied in 3+ days?",
+    'Pipeline summary for today',
+    'Leads with no address on file',
+    'Which bookings need materials ordered?',
+  ];
 
   const modes = [
     { id: 'chat', label: 'Chat' },
@@ -2679,6 +2687,20 @@ function LiveSparky() {
           );
         })}
       </div>
+
+      {/* Quick-ask suggestions — only while chat is empty-ish */}
+      {messages.length <= 1 && !sending ? (
+        <div style={{ padding: '0 16px 4px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {quickAsks.map(q => (
+            <button key={q} onClick={() => send(q)} style={{
+              padding: '6px 12px', fontSize: 12,
+              fontFamily: 'var(--font-body)', color: 'var(--text-muted)',
+              background: 'var(--card)', boxShadow: 'var(--raised-2)',
+              border: 'none', cursor: 'pointer',
+            }}>{q}</button>
+          ))}
+        </div>
+      ) : null}
 
       {/* Chat scroll */}
       <div ref={scrollRef} style={{
@@ -2732,7 +2754,7 @@ function LiveSparky() {
             style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none' }}
           />
         </div>
-        <button onClick={send} disabled={sending || !input.trim()} style={{
+        <button onClick={() => send()} disabled={sending || !input.trim()} style={{
           width: 40, height: 40, background: 'var(--navy)', color: '#fff',
           boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
           opacity: sending || !input.trim() ? 0.5 : 1, display: 'grid', placeItems: 'center',
