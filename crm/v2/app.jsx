@@ -764,16 +764,24 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
                     : thisTime.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                 </div>
               ) : null}
-            <div style={{
-              alignSelf: isOut ? 'flex-end' : 'flex-start',
-              maxWidth: '78%',
-              padding: '10px 14px',
-              background: isOut ? 'var(--navy)' : 'var(--card)',
-              color: isOut ? '#fff' : 'var(--text)',
-              boxShadow: 'var(--raised-2)',
-              fontSize: 15, lineHeight: 1.4,
-              position: 'relative',
-            }}>
+            <div
+              onDoubleClick={() => {
+                if (m.body) navigator.clipboard.writeText(m.body)
+                  .then(() => window.__bpp_toast && window.__bpp_toast('Message copied', 'success'))
+                  .catch(() => {});
+              }}
+              title="Double-click to copy"
+              style={{
+                alignSelf: isOut ? 'flex-end' : 'flex-start',
+                maxWidth: '78%',
+                padding: '10px 14px',
+                background: isOut ? 'var(--navy)' : 'var(--card)',
+                color: isOut ? '#fff' : 'var(--text)',
+                boxShadow: 'var(--raised-2)',
+                fontSize: 15, lineHeight: 1.4,
+                position: 'relative',
+                cursor: 'pointer',
+              }}>
               {isOut && m.sender === 'ai' ? (
                 <span style={{
                   position: 'absolute', left: -6, top: -6,
