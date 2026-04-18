@@ -118,6 +118,25 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// ── Offline indicator — thin banner when navigator.onLine flips false ──────
+function OfflineBanner() {
+  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  useEffect(() => {
+    const up = () => setOnline(true);
+    const down = () => setOnline(false);
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down); };
+  }, []);
+  if (online) return null;
+  return (
+    <div style={{
+      padding: '6px 16px', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+      background: 'var(--ms-3)', color: '#fff', textAlign: 'center', letterSpacing: '.04em',
+    }}>Offline — changes queued until you reconnect</div>
+  );
+}
+
 // ── Shared button primitives ────────────────────────────────────────────────
 // PrimaryButton: navy background, white text, hard inset bevel. Use for the
 // primary confirmation action in modals and forms. SecondaryButton: flat
@@ -3403,6 +3422,7 @@ function App() {
       />
       <KeyboardHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       <VoiceCallModal voice={voice} />
+      <OfflineBanner />
       <ToastRoot />
     </div>
   );
