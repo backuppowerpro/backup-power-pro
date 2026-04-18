@@ -1191,19 +1191,20 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
       boxShadow: 'var(--raised)',
       display: 'flex', alignItems: 'center', gap: 8,
     }}>
-      <div className="pressed-2" style={{
+      <div style={{
         flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
+        boxShadow: 'var(--pressed-2)', background: 'var(--card)',
       }}>
-        <span className="pixel" style={{ fontSize: 10, color: 'var(--gold)' }}>
-          TO: {contactName ? contactName.toUpperCase() : '—'} »
+        <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+          to {contactName || '—'}
         </span>
         <input
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="TYPE A MESSAGE..."
+          placeholder="Type a message…"
           style={{
-            flex: 1, fontFamily: 'var(--font-mono)', fontSize: 13,
+            flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none',
           }}
         />
       </div>
@@ -2318,21 +2319,47 @@ function LiveMorningBriefing({ onClose }) {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      // Overdue: stage < 4 and created > 5 days ago
       const fiveDaysAgo = new Date(Date.now() - 5 * 86400000).toISOString();
       const today = new Date().toISOString().slice(0, 10);
-      const [overdueRes, recentRes] = await Promise.all([
-        db.from('contacts').select('id, name, created_at, stage').lt('created_at', fiveDaysAgo).lt('stage', 4).eq('do_not_contact', false).limit(5),
-        db.from('contacts').select('id, name, created_at, stage').gte('created_at', today + 'T00:00:00').limit(5),
+      const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString();
+
+      // Parallel fetches: overdue (stale leads pre-book), new-today leads,
+      // contacts in booked/permit stages that still have no materials notes,
+      // and invoices that got paid in the last 48h.
+      const [overdueRes, recentRes, awaitingMatRes, paidRes] = await Promise.all([
+        db.from('contacts')
+          .select('id, name, created_at, stage').lt('created_at', fiveDaysAgo)
+          .lt('stage', 4).eq('do_not_contact', false).limit(5),
+        db.from('contacts')
+          .select('id, name, created_at, stage')
+          .gte('created_at', today + 'T00:00:00').limit(5),
+        db.from('contacts')
+          .select('id, name, stage, install_notes')
+          .in('stage', [3, 4]).limit(10),
+        db.from('invoices')
+          .select('id, contact_name, total, paid_at')
+          .eq('status', 'paid').gte('paid_at', twoDaysAgo).limit(5),
       ]);
+
+      // Materials: booked/permit leads whose install_notes don't yet have any __pm_ line
+      const awaitingMaterials = (awaitingMatRes.data || [])
+        .filter(c => !/__pm_/.test(c.install_notes || ''))
+        .slice(0, 5)
+        .map(c => ({ text: `Pick materials for ${c.name || 'lead'}`, id: c.id }));
+
       setSections({
         overdue: (overdueRes.data || []).map(c => ({
-          text: `Follow up with ${c.name} — ${Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)} days silent`,
+          text: `${c.name || 'Lead'} — ${Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)} days silent`,
           id: c.id,
         })),
-        today: [], // TODO: integrate calendar/events table
-        materials: [], // TODO: integrate materials state
-        goodNews: (recentRes.data || []).map(c => ({ text: `New lead: ${c.name || 'Unknown'}`, id: c.id })),
+        today: (recentRes.data || []).map(c => ({
+          text: `New today: ${c.name || 'Unknown'}`, id: c.id,
+        })),
+        materials: awaitingMaterials,
+        goodNews: (paidRes.data || []).map(inv => ({
+          text: `${inv.contact_name || 'Customer'} paid $${Number(inv.total || 0).toLocaleString()}`,
+          id: inv.id,
+        })),
       });
       setLoading(false);
     })();
@@ -2522,12 +2549,12 @@ function LiveSparky() {
         background: 'var(--card)', boxShadow: 'var(--raised)',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
-        <div className="pressed-2" style={{ flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="pixel" style={{ fontSize: 10, color: 'var(--gold)' }}>ASK SPARKY »</span>
+        <div style={{ flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>sparky</span>
           <input value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="ASK ANYTHING..."
-            style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 13 }}
+            placeholder="Ask anything…"
+            style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none' }}
           />
         </div>
         <button onClick={send} disabled={sending || !input.trim()} style={{
@@ -2627,7 +2654,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
         <div style={{ maxHeight: 400, overflowY: 'auto', borderTop: '1px solid rgba(0,0,0,.1)' }}>
           {results.length === 0 ? (
             <div style={{ padding: 24, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
-              {query.trim() ? 'NO RESULTS' : 'TYPE TO SEARCH CONTACTS, NAVIGATION, OR ASK SPARKY'}
+              {query.trim() ? 'No results' : 'Type to search contacts, navigation, or ask Sparky'}
             </div>
           ) : results.map((r, i) => {
             const active = i === cursor;
