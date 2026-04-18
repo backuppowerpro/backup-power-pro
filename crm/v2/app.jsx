@@ -350,6 +350,7 @@ function contactToCard(c) {
     days,
     dots: { photo: hasPhoto ? 1 : 0, quote: hasQuote ? 1 : 0, permit: hasPermit ? 1 : 0 },
     overdue: days > 7 && (c.stage || 1) < 4,
+    dnc: !!c.do_not_contact,
   };
 }
 

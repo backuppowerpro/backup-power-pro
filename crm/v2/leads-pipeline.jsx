@@ -62,10 +62,11 @@ function LeadCard({ c }) {
       display: 'flex', flexDirection: 'column', gap: 4,
       background: 'var(--card)',
       boxShadow: 'var(--raised-2)',
+      opacity: c.dnc ? 0.55 : 1,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
-          width: 24, height: 24, background: 'var(--navy)',
+          width: 24, height: 24, background: c.dnc ? 'var(--ms-3)' : 'var(--navy)',
           clipPath: 'var(--avatar-clip)',
           display: 'grid', placeItems: 'center', flex: '0 0 auto',
         }}>
