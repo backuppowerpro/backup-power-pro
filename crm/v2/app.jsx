@@ -2350,6 +2350,25 @@ function App() {
   // Voice device (outbound dial + incoming ring)
   const voice = useVoiceDevice(user);
 
+  // Global new-inbound-SMS listener → toast + optional ping
+  useEffect(() => {
+    if (!user) return;
+    const ch = db.channel('global-inbound-sms')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'messages',
+        filter: 'direction=eq.inbound',
+      }, async (payload) => {
+        const m = payload.new;
+        // Fetch contact name for the toast
+        const { data: c } = await db.from('contacts').select('name').eq('id', m.contact_id).maybeSingle();
+        const name = c?.name || 'Unknown';
+        const preview = (m.body || '').slice(0, 60);
+        window.__bpp_toast(`SMS from ${name}: "${preview}"`, 'info');
+      })
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [user]);
+
   // Expose dial globally so the contact detail can call it via window.__bpp_dial
   useEffect(() => {
     window.__bpp_dial = (phone) => voice.dial(phone);
