@@ -1291,6 +1291,17 @@ function DetailEditContact({ contact, onUpdate }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Re-seed form when the open contact swaps
+  useEffect(() => {
+    setForm({
+      name: contact?.name || '',
+      phone: contact?.phone || '',
+      email: contact?.email || '',
+      address: contact?.address || '',
+      do_not_contact: !!contact?.do_not_contact,
+    });
+  }, [contact?.id]);
+
   async function save(e) {
     e?.preventDefault();
     if (!contact) return;
