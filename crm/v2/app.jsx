@@ -2949,14 +2949,16 @@ function LiveSparky({ currentContactId = null }) {
     setMessages(newMsgs);
     setInput('');
     try {
-      const { data, error } = await db.functions.invoke('ai-taskmaster', {
-        body: {
-          mode,
-          question: q,
-          history: newMsgs.slice(-10).map(m => ({ role: m.who === 'key' ? 'user' : 'assistant', content: m.text })),
-          context_source: 'sparky',
-        },
-      });
+      const body = {
+        mode,
+        question: q,
+        history: newMsgs.slice(-10).map(m => ({ role: m.who === 'key' ? 'user' : 'assistant', content: m.text })),
+        context_source: 'sparky',
+      };
+      // If a contact is currently open in the detail panel, pass its id so
+      // Sparky can skip the lookup and jump straight to answering about them.
+      if (currentContactId) body.contact = { id: currentContactId };
+      const { data, error } = await db.functions.invoke('ai-taskmaster', { body });
       if (error) throw error;
       const reply = (data?.answer || data?.response || data?.message || data?.text || JSON.stringify(data)).toString();
       setMessages(prev => [...prev, { who: 'sparky', text: reply }]);
