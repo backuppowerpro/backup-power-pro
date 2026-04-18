@@ -615,19 +615,28 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         </div>
         <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
           {displayPhone ? (
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(contact?.phone || '')
-                  .then(() => window.__bpp_toast && window.__bpp_toast(`Phone copied — ${displayPhone}`, 'success'))
-                  .catch(() => {});
-              }}
-              title="Copy phone"
-              style={{
-                background: 'transparent', border: 'none', padding: 0,
-                color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
-                cursor: 'pointer',
-              }}
-            >{displayPhone}</button>
+            mobile ? (
+              <a href={`tel:${contact?.phone || ''}`}
+                title="Call via phone"
+                style={{
+                  color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
+                  textDecoration: 'none', borderBottom: '1px dashed rgba(0,0,0,.2)',
+                }}>{displayPhone}</a>
+            ) : (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(contact?.phone || '')
+                    .then(() => window.__bpp_toast && window.__bpp_toast(`Phone copied — ${displayPhone}`, 'success'))
+                    .catch(() => {});
+                }}
+                title="Copy phone"
+                style={{
+                  background: 'transparent', border: 'none', padding: 0,
+                  color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
+                  cursor: 'pointer',
+                }}
+              >{displayPhone}</button>
+            )
           ) : <span>—</span>}
           <br/>
           {contact?.address ? (
