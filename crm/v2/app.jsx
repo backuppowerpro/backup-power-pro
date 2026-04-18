@@ -2915,14 +2915,27 @@ function BriefSection({ label, tint, items, onPick }) {
 }
 
 // ── Live Sparky AI Chat ─────────────────────────────────────────────────────
-function LiveSparky() {
+function LiveSparky({ currentContactId = null }) {
   const [messages, setMessages] = useState([
     { who: 'sparky', text: "Standing by. Ask anything about the pipeline, a lead, or tell me what to draft." },
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState('chat');
+  const [currentContactName, setCurrentContactName] = useState(null);
   const scrollRef = useRef(null);
+
+  // When entering Sparky with a contact already selected, fetch that
+  // contact's name so the quick-asks can offer to do things about them.
+  useEffect(() => {
+    if (!currentContactId) { setCurrentContactName(null); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await db.from('contacts').select('name').eq('id', currentContactId).maybeSingle();
+      if (alive) setCurrentContactName(data?.name || null);
+    })();
+    return () => { alive = false; };
+  }, [currentContactId]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -2955,7 +2968,15 @@ function LiveSparky() {
   }
 
   // Common daily questions Key asks — tap to send without typing.
-  const quickAsks = [
+  // When a contact is open, show that contact's first name in the first two
+  // suggestions so Key can jump straight into asking about them.
+  const firstName = (currentContactName || '').split(' ')[0];
+  const quickAsks = firstName ? [
+    `Tell me what I need to know about ${firstName}`,
+    `Draft a follow-up SMS for ${firstName}`,
+    "Who hasn't replied in 3+ days?",
+    'Pipeline summary for today',
+  ] : [
     "Who hasn't replied in 3+ days?",
     'Pipeline summary for today',
     'Leads with no address on file',
@@ -3491,7 +3512,7 @@ function App() {
     if (tab === 'calendar') return <LiveCalendar />;
     if (tab === 'finance') return <LiveFinance />;
     if (tab === 'messages') return <LiveMessages onSelect={id => setSelectedContact(id)} activeId={selectedContact} />;
-    if (tab === 'sparky') return <LiveSparky />;
+    if (tab === 'sparky') return <LiveSparky currentContactId={selectedContact} />;
     return null;
   })();
 
