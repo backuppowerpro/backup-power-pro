@@ -587,6 +587,185 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
   );
 }
 
+// ── Live Messages Inbox ─────────────────────────────────────────────────────
+// For each contact, pull their latest message as the preview + count unread.
+function LiveMessages({ onSelect, activeId, compact = false }) {
+  const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchThreads = useCallback(async () => {
+    // Latest 50 messages joined on contact — we group client-side.
+    const { data: msgs } = await db
+      .from('messages')
+      .select('id, contact_id, direction, body, sender, created_at')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    if (!msgs) { setThreads([]); return; }
+
+    // Group by contact_id, take latest per contact
+    const byContact = {};
+    for (const m of msgs) {
+      if (!byContact[m.contact_id]) byContact[m.contact_id] = { latest: m, count: 0 };
+      if (m.direction === 'inbound') byContact[m.contact_id].count++;
+    }
+
+    const ids = Object.keys(byContact).slice(0, 50);
+    if (ids.length === 0) { setThreads([]); return; }
+
+    const { data: contacts } = await db
+      .from('contacts')
+      .select('id, name, stage')
+      .in('id', ids);
+    const contactMap = Object.fromEntries((contacts || []).map(c => [c.id, c]));
+
+    // Build threads
+    const out = ids
+      .map(id => {
+        const c = contactMap[id];
+        if (!c) return null;
+        const { latest, count } = byContact[id];
+        const isOut = latest.direction === 'outbound';
+        const isAi = latest.sender === 'ai';
+        return {
+          contactId: id,
+          name: c.name || '—',
+          i: initials(c.name),
+          tint: 'navy',
+          dir: isOut ? 'out' : 'in',
+          prev: (latest.body || '').slice(0, 120),
+          ts: relTimestamp(latest.created_at),
+          unread: 0, // TODO: track read state — for now, inbound=1, hide for outbound
+          alex: isAi && isOut,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        // Sort by most recent (already sorted by messages order)
+        return 0;
+      });
+    setThreads(out);
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchThreads().finally(() => setLoading(false));
+  }, [fetchThreads]);
+
+  // Realtime — refresh on any message insert
+  useEffect(() => {
+    const ch = db.channel('messages-inbox')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchThreads)
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [fetchThreads]);
+
+  if (loading) {
+    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING INBOX...</div>;
+  }
+
+  const MessagesInbox = window.MessagesInbox;
+  return <MessagesInbox threads={threads} onSelect={t => onSelect(t.contactId)} activeId={activeId} compact={compact} />;
+}
+
+// ── Morning Briefing modal — once per day ───────────────────────────────────
+function LiveMorningBriefing({ onClose }) {
+  const [sections, setSections] = useState({ overdue: [], today: [], materials: [], goodNews: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      // Overdue: stage < 4 and created > 5 days ago
+      const fiveDaysAgo = new Date(Date.now() - 5 * 86400000).toISOString();
+      const today = new Date().toISOString().slice(0, 10);
+      const [overdueRes, recentRes] = await Promise.all([
+        db.from('contacts').select('id, name, created_at, stage').lt('created_at', fiveDaysAgo).lt('stage', 4).eq('do_not_contact', false).limit(5),
+        db.from('contacts').select('id, name, created_at, stage').gte('created_at', today + 'T00:00:00').limit(5),
+      ]);
+      setSections({
+        overdue: (overdueRes.data || []).map(c => ({
+          text: `Follow up with ${c.name} — ${Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)} days silent`,
+          id: c.id,
+        })),
+        today: [], // TODO: integrate calendar/events table
+        materials: [], // TODO: integrate materials state
+        goodNews: (recentRes.data || []).map(c => ({ text: `New lead: ${c.name || 'Unknown'}`, id: c.id })),
+      });
+      setLoading(false);
+    })();
+  }, []);
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 90,
+      background: 'rgba(0,0,0,.5)',
+      display: 'grid', placeItems: 'center', padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 640, maxWidth: '100%', maxHeight: 'calc(100vh - 64px)', overflowY: 'auto',
+        background: 'var(--card)', boxShadow: 'var(--raised)',
+      }}>
+        <div style={{ padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-pixel)', fontSize: 32, color: 'var(--lcd-red)',
+              textShadow: 'var(--lcd-glow-red)', background: 'var(--lcd-bg)', padding: '2px 12px',
+              display: 'inline-block', boxShadow: 'var(--pressed-2)',
+            }}>GOOD MORNING, KEY</div>
+            <div className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+              {new Date().toDateString().toUpperCase()}
+            </div>
+          </div>
+          <button onClick={onClose} className="tactile-raised" style={{ width: 32, height: 32, fontSize: 18, display: 'grid', placeItems: 'center' }}>×</button>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13 }}>LOADING BRIEF...</div>
+        ) : (
+          <>
+            <BriefSection label="OVERDUE" color="var(--lcd-red)" items={sections.overdue} />
+            <BriefSection label="TODAY" color="var(--lcd-amber)" items={sections.today} />
+            <BriefSection label="MATERIALS TO ORDER" color="var(--navy)" items={sections.materials} />
+            <BriefSection label="GOOD NEWS" color="var(--lcd-green)" items={sections.goodNews} />
+          </>
+        )}
+
+        <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--raised)' }}>
+          <button onClick={onClose} className="chrome-label" style={{ fontSize: 12, padding: '8px 16px', cursor: 'pointer' }}>DISMISS</button>
+          <button onClick={onClose} style={{
+            padding: '12px 24px', background: 'var(--navy)', color: '#fff',
+            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 13, letterSpacing: '.08em',
+            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            cursor: 'pointer',
+          }}>OPEN CRM</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BriefSection({ label, color, items }) {
+  return (
+    <div style={{ margin: '0 20px 16px', boxShadow: 'var(--pressed-2)' }}>
+      <div className="chrome-label" style={{
+        padding: '6px 12px', fontSize: 11,
+        background: color, color: color === 'var(--navy)' ? '#fff' : (color.includes('amber') || color.includes('green') ? '#1a1a1a' : '#fff'),
+        boxShadow: 'inset 0 -1px 0 rgba(0,0,0,.3)',
+      }}>{label} · {items.length}</div>
+      <div>
+        {items.length === 0 ? (
+          <div style={{ padding: 16, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>NOTHING HERE</div>
+        ) : items.map((it, i) => (
+          <div key={i} style={{
+            padding: '10px 14px', fontSize: 14,
+            borderBottom: i < items.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+          }}>{it.text}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Live Sparky AI Chat ─────────────────────────────────────────────────────
 function LiveSparky() {
   const [messages, setMessages] = useState([
@@ -855,6 +1034,18 @@ function App() {
   const [selectedContact, setSelectedContact] = useState(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(false);
+
+  // Morning briefing trigger — once per day on first load
+  useEffect(() => {
+    if (!user) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const lastShown = localStorage.getItem('bpp_v2_brief_shown');
+    if (lastShown !== today) {
+      setBriefOpen(true);
+      localStorage.setItem('bpp_v2_brief_shown', today);
+    }
+  }, [user]);
 
   // Responsive
   useEffect(() => {
@@ -906,7 +1097,7 @@ function App() {
     }
     if (tab === 'calendar') return <Placeholder name="CALENDAR" />;
     if (tab === 'finance') return <Placeholder name="FINANCE" />;
-    if (tab === 'messages') return <Placeholder name="MESSAGES" />;
+    if (tab === 'messages') return <LiveMessages onSelect={id => setSelectedContact(id)} activeId={selectedContact} />;
     if (tab === 'sparky') return <LiveSparky />;
     return null;
   })();
@@ -940,6 +1131,7 @@ function App() {
         onSelectContact={id => { setSelectedContact(id); setTab('leads'); }}
         onSwitchTab={id => setTab(id)}
       />
+      {briefOpen ? <LiveMorningBriefing onClose={() => setBriefOpen(false)} /> : null}
     </div>
   );
 }

@@ -23,18 +23,20 @@ const THREADS = [
 const TINTS = { navy:'var(--navy)', gold:'var(--gold)', red:'var(--ms-3)', green:'var(--ms-2)' };
 
 function Avatar({ t, size = 48 }) {
+  if (!t) return null;
+  const tint = t.tint || 'navy';
   return (
     <div style={{
       width: size, height: size, flex: '0 0 auto',
-      background: TINTS[t.tint] || 'var(--navy)',
+      background: TINTS[tint] || 'var(--navy)',
       clipPath: 'var(--avatar-clip)',
       display: 'grid', placeItems: 'center',
     }}>
       <span style={{
         fontFamily: 'var(--font-chrome)', fontWeight: 700,
-        color: t.tint === 'gold' ? '#1a1a1a' : 'var(--gold)',
+        color: tint === 'gold' ? '#1a1a1a' : 'var(--gold)',
         fontSize: size >= 48 ? 14 : 11, letterSpacing: '.04em',
-      }}>{t.i}</span>
+      }}>{t.i || '?'}</span>
     </div>
   );
 }
@@ -151,7 +153,8 @@ function MsgChips({ active = 'all' }) {
   );
 }
 
-function MessagesInbox({ compact = false }) {
+function MessagesInbox({ compact = false, threads, onSelect, activeId }) {
+  const data = threads || THREADS;
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
       <MsgChips active="all" />
@@ -159,8 +162,14 @@ function MessagesInbox({ compact = false }) {
         flex: 1, overflowY: 'auto', margin: '0 16px 88px',
         background: 'var(--card)', boxShadow: 'var(--pressed-2)',
       }}>
-        {THREADS.map((t, i) => (
-          <ThreadRow key={i} t={t} compact={compact} active={compact && t.active} />
+        {data.length === 0 ? (
+          <div style={{ padding: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-faint)' }}>
+            INBOX CLEAR
+          </div>
+        ) : data.map((t, i) => (
+          <div key={t.contactId || i} onClick={() => onSelect && onSelect(t)} style={{ cursor: onSelect ? 'pointer' : 'default' }}>
+            <ThreadRow t={t} compact={compact} active={activeId ? t.contactId === activeId : t.active} />
+          </div>
         ))}
       </div>
     </div>
