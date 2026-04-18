@@ -1307,9 +1307,24 @@ function StagePickerModal({ currentStage, onPick, onClose }) {
   );
 }
 
+// Quick-insert SMS templates. {name} is replaced with the contact's first name.
+const SMS_SNIPPETS = [
+  { label: 'Intro', body: "Hi {name}! This is Key with Backup Power Pro. Thanks for reaching out — I can get you a quote today once I know a couple details. Do you already have a generator, or looking to add one?" },
+  { label: 'Quote sent', body: "Hi {name}, just sent over your quote. Let me know if you have any questions — happy to hop on a quick call if that's easier." },
+  { label: 'Follow up', body: "Hey {name}, just checking in. Want me to hold that install slot, or shift it out a week?" },
+  { label: 'Deposit', body: "Hi {name}! To lock in your install date, a 50% deposit is all that's needed. I'll send the link over now." },
+];
+
 function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [snippetsOpen, setSnippetsOpen] = useState(false);
+
+  function applySnippet(body) {
+    const first = (contactName || '').split(' ')[0] || 'there';
+    setText(body.replace(/\{name\}/g, first));
+    setSnippetsOpen(false);
+  }
 
   async function send() {
     if (!text.trim() || !contactId || disabled) return;
@@ -1348,40 +1363,69 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
       padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
       background: 'var(--card)',
       boxShadow: 'var(--raised)',
-      display: 'flex', alignItems: 'center', gap: 8,
+      display: 'flex', flexDirection: 'column', gap: 6,
+      position: 'relative',
     }}>
-      <div style={{
-        flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
-        boxShadow: 'var(--pressed-2)', background: 'var(--card)',
-      }}>
-        <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-          to {contactName || '—'}
-        </span>
-        <input
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="Type a message…"
+      {snippetsOpen ? (
+        <div style={{
+          position: 'absolute', left: 12, right: 12, bottom: '100%',
+          marginBottom: 4, padding: 6, zIndex: 5,
+          background: 'var(--card)', boxShadow: 'var(--raised-2)',
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
+          {SMS_SNIPPETS.map(s => (
+            <button key={s.label} onClick={() => applySnippet(s.body)} style={{
+              padding: '8px 10px', textAlign: 'left',
+              fontFamily: 'var(--font-body)', fontSize: 12,
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--text)',
+            }}>
+              <span style={{ fontWeight: 600, marginRight: 8 }}>{s.label}</span>
+              <span style={{ color: 'var(--text-faint)' }}>{s.body.slice(0, 60)}…</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setSnippetsOpen(o => !o)} title="Snippets" style={{
+          width: 36, height: 36,
+          background: 'var(--card)', boxShadow: 'var(--raised-2)',
+          border: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--text-muted)',
+        }}>…</button>
+        <div style={{
+          flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
+          boxShadow: 'var(--pressed-2)', background: 'var(--card)',
+        }}>
+          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+            to {contactName || '—'}
+          </span>
+          <input
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="Type a message…"
+            style={{
+              flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none',
+            }}
+          />
+        </div>
+        <button
+          onClick={send}
+          disabled={sending || !text.trim()}
           style={{
-            flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none',
+            width: 40, height: 40,
+            background: 'var(--navy)', color: '#fff',
+            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            opacity: sending || !text.trim() ? 0.5 : 1,
+            display: 'grid', placeItems: 'center', border: 'none',
           }}
-        />
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+            <path d="M1 2 L15 8 L1 14 L3 8 L1 2 Z M3 8 L9 8"/>
+          </svg>
+        </button>
       </div>
-      <button
-        onClick={send}
-        disabled={sending || !text.trim()}
-        style={{
-          width: 40, height: 40,
-          background: 'var(--navy)', color: '#fff',
-          boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
-          opacity: sending || !text.trim() ? 0.5 : 1,
-          display: 'grid', placeItems: 'center',
-        }}
-      >
-        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
-          <path d="M1 2 L15 8 L1 14 L3 8 L1 2 Z M3 8 L9 8"/>
-        </svg>
-      </button>
     </div>
   );
 }
