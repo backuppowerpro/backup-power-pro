@@ -1247,20 +1247,35 @@ function useVoiceDevice(user) {
   const [incoming, setIncoming] = useState(null);
   const [activeCall, setActiveCall] = useState(null);
   const [err, setErr] = useState(null);
+  // Identity-stable key so auth token refreshes (which recreate the user
+  // object reference) don't reboot the device in a tight loop.
+  const userId = user?.id || null;
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let cancelled = false;
 
     async function loadSdk() {
       if (window.Twilio?.Device) return;
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = VOICE_SDK_URL;
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-      });
+      // Single in-flight promise shared across mounts — prevents dozens of
+      // <script> tags on retries/rerenders, especially when the CDN is
+      // blocked by CORS/ORB (e.g., preview sandboxes).
+      if (!window.__bpp_twilio_sdk_promise) {
+        window.__bpp_twilio_sdk_promise = new Promise((resolve, reject) => {
+          const existing = document.querySelector(`script[src="${VOICE_SDK_URL}"]`);
+          if (existing) {
+            existing.addEventListener('load', () => resolve());
+            existing.addEventListener('error', () => reject(new Error('twilio sdk load error')));
+            return;
+          }
+          const s = document.createElement('script');
+          s.src = VOICE_SDK_URL;
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error('twilio sdk load error'));
+          document.head.appendChild(s);
+        });
+      }
+      return window.__bpp_twilio_sdk_promise;
     }
 
     async function boot() {
@@ -1297,7 +1312,7 @@ function useVoiceDevice(user) {
     boot();
     return () => { cancelled = true; try { device?.destroy(); } catch {} };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [userId]);
 
   async function dial(phone) {
     if (!device) return;
@@ -2015,9 +2030,13 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
       .limit(300);
     if (!msgs) { setThreads([]); return; }
 
-    // Group by contact_id, take latest per contact
+    // Group by contact_id, take latest per contact. Skip rows with no
+    // contact_id (e.g., legacy call-log entries) — passing a null id into
+    // .in() below yields a PostgREST "invalid uuid" error that silently
+    // drops ALL rows from the lookup and empties the inbox.
     const byContact = {};
     for (const m of msgs) {
+      if (!m.contact_id) continue;
       if (!byContact[m.contact_id]) byContact[m.contact_id] = { latest: m, count: 0 };
       if (m.direction === 'inbound') byContact[m.contact_id].count++;
     }

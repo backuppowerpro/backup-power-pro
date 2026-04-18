@@ -39,7 +39,7 @@ const TWILIO_TWIML_APP_SID  = Deno.env.get('TWILIO_TWIML_APP_SID') || ''
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
 }
 
 const json = (status: number, body: unknown) =>

@@ -8,7 +8,7 @@
  * Bumps CACHE_VERSION on any shell change so clients get the new files.
  */
 
-const CACHE_VERSION = 'bpp-v2-2026-04-18-01';
+const CACHE_VERSION = 'bpp-v2-2026-04-18-02';
 const SHELL_FILES = [
   '/crm/v2/',
   '/crm/v2/index.html',

@@ -36,7 +36,7 @@ const TWILIO_FROM        = Deno.env.get('TWILIO_PHONE_NUMBER') || ''
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
 }
 
 const json = (status: number, body: unknown) =>
