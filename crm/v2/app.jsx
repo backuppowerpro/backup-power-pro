@@ -1815,6 +1815,8 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'N', label: 'New lead' },
     { keys: 'B', label: 'Open morning briefing' },
     { keys: '/', label: 'Focus search (Messages / Sparky)' },
+    { keys: '1–9', label: 'Set stage on open contact' },
+    { keys: '⌘S', label: 'Save notes' },
     { keys: 'Esc', label: 'Close detail or modal' },
     { keys: '?', label: 'Show this help' },
   ];
@@ -3551,6 +3553,31 @@ function App() {
       if (e.key === 'n' && !newLeadOpen) {
         e.preventDefault();
         setNewLeadOpen(true);
+      }
+      // 1–9 → change stage on the currently selected contact
+      if (/^[1-9]$/.test(e.key) && selectedContact) {
+        e.preventDefault();
+        const newStage = Number(e.key);
+        (async () => {
+          const { data } = await db.from('contacts').select('stage, name').eq('id', selectedContact).maybeSingle();
+          const oldStage = data?.stage || 1;
+          if (oldStage === newStage) {
+            window.__bpp_toast && window.__bpp_toast(`${data?.name || 'Contact'} already at ${STAGE_MAP[newStage] || 'stage ' + newStage}`, 'info');
+            return;
+          }
+          await db.from('contacts').update({ stage: newStage }).eq('id', selectedContact);
+          await db.from('stage_history').insert({
+            contact_id: selectedContact, from_stage: oldStage, to_stage: newStage,
+          }).then(() => {}, () => {});
+          window.__bpp_toast && window.__bpp_toast(
+            `${data?.name || 'Contact'} → ${STAGE_MAP[newStage] || 'stage ' + newStage}`,
+            'success',
+            { label: 'Undo', onClick: async () => {
+              await db.from('contacts').update({ stage: oldStage }).eq('id', selectedContact);
+              await db.from('stage_history').insert({ contact_id: selectedContact, from_stage: newStage, to_stage: oldStage }).then(()=>{}, ()=>{});
+            }}
+          );
+        })();
       }
       // / → focus a visible search input on whatever tab is active
       if (e.key === '/') {
