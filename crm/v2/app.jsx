@@ -516,7 +516,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
             cursor: 'pointer',
           }}
         >{mobile ? '‹' : '×'}</button>
-        {contact?.phone ? (
+        {contact?.phone && !contact?.do_not_contact ? (
           <button
             onClick={() => window.__bpp_dial && window.__bpp_dial(contact.phone)}
             className="tactile-raised"
@@ -542,7 +542,19 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
             {initials(displayName)}
           </span>
         </div>
-        <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 18 }}>{displayName}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 18,
+            color: contact?.do_not_contact ? 'var(--ms-3)' : 'var(--text)',
+            textDecoration: contact?.do_not_contact ? 'line-through' : 'none',
+          }}>{displayName}</div>
+          {contact?.do_not_contact ? (
+            <span className="mono" title="Do not contact" style={{
+              fontSize: 9, padding: '2px 6px', letterSpacing: '.08em',
+              color: '#fff', background: 'var(--ms-3)',
+            }}>DNC</span>
+          ) : null}
+        </div>
         <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
           {displayPhone}<br/>{contact?.address || '—'}
         </div>
@@ -661,7 +673,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
 
       {/* Compose — only show on MESSAGES tab */}
       {detailTab === 'MESSAGES' ? (
-        <ComposeBar contactId={contactId} contactName={contact?.name} contactPhone={contact?.phone} />
+        <ComposeBar contactId={contactId} contactName={contact?.name} contactPhone={contact?.phone} disabled={!!contact?.do_not_contact} />
       ) : null}
     </div>
   );
@@ -1242,12 +1254,12 @@ function StagePickerModal({ currentStage, onPick, onClose }) {
   );
 }
 
-function ComposeBar({ contactId, contactName, contactPhone }) {
+function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
 
   async function send() {
-    if (!text.trim() || !contactId) return;
+    if (!text.trim() || !contactId || disabled) return;
     setSending(true);
     try {
       const { data, error } = await db.functions.invoke('send-sms', {
@@ -1263,6 +1275,19 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
     } finally {
       setSending(false);
     }
+  }
+
+  if (disabled) {
+    return (
+      <div style={{
+        padding: '12px 14px calc(12px + env(safe-area-inset-bottom))',
+        background: 'var(--card)', boxShadow: 'var(--raised)',
+        textAlign: 'center',
+        fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--ms-3)',
+      }}>
+        This contact is marked Do Not Contact — messaging is disabled.
+      </div>
+    );
   }
 
   return (
@@ -2977,7 +3002,11 @@ function App() {
       // d → dial the selected contact via Twilio Voice
       if (e.key === 'd' && selectedContact) {
         (async () => {
-          const { data } = await db.from('contacts').select('phone').eq('id', selectedContact).maybeSingle();
+          const { data } = await db.from('contacts').select('phone, do_not_contact, name').eq('id', selectedContact).maybeSingle();
+          if (data?.do_not_contact) {
+            window.__bpp_toast && window.__bpp_toast(`${data?.name || 'Contact'} is DNC — not dialing`, 'error');
+            return;
+          }
           if (data?.phone && window.__bpp_dial) {
             e.preventDefault();
             window.__bpp_dial(data.phone);
