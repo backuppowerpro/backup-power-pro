@@ -1457,27 +1457,43 @@ function DetailNotes({ contact, onUpdate }) {
   const [text, setText] = useState(contact?.install_notes || '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const lastSavedRef = useRef(contact?.install_notes || '');
+  const debounceRef = useRef(null);
 
   // When the contact changes, re-seed with that contact's notes
   useEffect(() => {
-    setText(contact?.install_notes || '');
+    const t = contact?.install_notes || '';
+    setText(t);
+    lastSavedRef.current = t;
   }, [contact?.id]);
+
+  // Autosave 1.5s after last keystroke if text changed
+  useEffect(() => {
+    if (!contact) return;
+    if (text === lastSavedRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      save({ silent: true });
+    }, 1500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [text, contact?.id]);
 
   // Cmd/Ctrl+S to save while textarea is focused
   function onKeyDown(e) {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); save(); }
   }
 
-  async function save() {
+  async function save({ silent = false } = {}) {
     if (!contact) return;
     setSaving(true);
     const { error } = await db.from('contacts').update({ install_notes: text }).eq('id', contact.id);
     setSaving(false);
     if (!error) {
+      lastSavedRef.current = text;
       setSaved(true);
       onUpdate && onUpdate(text);
-      window.__bpp_toast && window.__bpp_toast(`Notes saved for ${contact.name || 'contact'}`, 'success');
-      setTimeout(() => setSaved(false), 2000);
+      if (!silent) window.__bpp_toast && window.__bpp_toast(`Notes saved for ${contact.name || 'contact'}`, 'success');
+      setTimeout(() => setSaved(false), 1500);
     } else {
       window.__bpp_toast && window.__bpp_toast(`Save failed: ${error.message}`, 'error');
     }
@@ -1489,7 +1505,7 @@ function DetailNotes({ contact, onUpdate }) {
         value={text}
         onChange={e => setText(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Add notes... (⌘S to save)"
+        placeholder="Add notes... (auto-saves)"
         style={{
           flex: 1, minHeight: 240, padding: 14,
           fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.5,
