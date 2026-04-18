@@ -2699,11 +2699,14 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
           alex: isAi && isOut,
         };
       })
-      .filter(Boolean)
-      .sort((a, b) => {
-        // Sort by most recent (already sorted by messages order)
-        return 0;
-      });
+      .filter(Boolean);
+    // Sort: waiting-on-Key threads first, then by latest message time (desc).
+    // Rank uses inserted order of byContact which is already newest-first.
+    const order = Object.fromEntries(ids.map((id, i) => [id, i]));
+    out.sort((a, b) => {
+      if (a.waiting !== b.waiting) return a.waiting ? -1 : 1;
+      return (order[a.contactId] ?? 0) - (order[b.contactId] ?? 0);
+    });
     setThreads(out);
   }, []);
 
