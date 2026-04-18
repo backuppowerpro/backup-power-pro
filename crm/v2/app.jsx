@@ -587,6 +587,264 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
   );
 }
 
+// ── Live Finance (KPI strip + proposals/invoices/payments tables) ──────────
+function LiveFinance() {
+  const [data, setData] = useState({ proposals: [], invoices: [], payments: [], loading: true });
+  const [subView, setSubView] = useState('prop');
+
+  useEffect(() => {
+    (async () => {
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [propRes, invRes, payRes] = await Promise.all([
+        db.from('proposals').select('id, contact_id, contact_name, total, status, sent_at, signed_at, created_at').order('created_at', { ascending: false }).limit(20),
+        db.from('invoices').select('id, contact_id, contact_name, total, status, notes, paid_at, created_at').order('created_at', { ascending: false }).limit(20),
+        db.from('payments').select('id, contact_id, amount, method, created_at').order('created_at', { ascending: false }).limit(20),
+      ]);
+      setData({
+        proposals: propRes.data || [],
+        invoices: invRes.data || [],
+        payments: payRes.data || [],
+        loading: false,
+      });
+    })();
+  }, []);
+
+  const kpis = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 86400000;
+    const outstanding = data.invoices
+      .filter(i => i.status !== 'paid')
+      .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
+    const paidThisWeek = data.invoices
+      .filter(i => i.status === 'paid' && i.paid_at && new Date(i.paid_at).getTime() > weekAgo)
+      .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
+    const awaitingDeposit = data.invoices.filter(i => i.notes === 'deposit' && i.status !== 'paid').length;
+    const overdue = data.invoices.filter(i => {
+      if (i.status === 'paid') return false;
+      const age = (Date.now() - new Date(i.created_at).getTime()) / 86400000;
+      return age > 14;
+    }).length;
+    return { outstanding, paidThisWeek, awaitingDeposit, overdue };
+  }, [data]);
+
+  const subTabs = [
+    { id: 'prop', label: 'PROPOSALS', count: data.proposals.length },
+    { id: 'inv',  label: 'INVOICES',  count: data.invoices.length },
+    { id: 'pay',  label: 'PAYMENTS',  count: data.payments.length },
+  ];
+
+  if (data.loading) {
+    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING FINANCE...</div>;
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* KPI strip */}
+      <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <KpiCard label="OUTSTANDING" value={`$${kpis.outstanding.toLocaleString()}`} tone="red" />
+        <KpiCard label="PAID THIS WEEK" value={`$${kpis.paidThisWeek.toLocaleString()}`} tone="green" />
+        <KpiCard label="DEPOSITS PENDING" value={String(kpis.awaitingDeposit).padStart(2, '0')} tone="amber" />
+        <KpiCard label="OVERDUE" value={String(kpis.overdue).padStart(2, '0')} tone={kpis.overdue > 0 ? 'red' : 'green'} />
+      </div>
+      {/* Sub tabs */}
+      <div style={{ padding: '0 16px', display: 'flex', gap: 0, boxShadow: 'inset 0 -1px 0 rgba(0,0,0,.1)' }}>
+        {subTabs.map(s => (
+          <button key={s.id} onClick={() => setSubView(s.id)} className="chrome-label" style={{
+            height: 40, padding: '0 20px', fontSize: 12,
+            color: s.id === subView ? 'var(--text)' : 'var(--text-muted)',
+            boxShadow: s.id === subView ? 'inset 0 -3px 0 var(--gold)' : 'none',
+            cursor: 'pointer',
+          }}>{s.label} · {s.count}</button>
+        ))}
+      </div>
+      {/* Table */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+        {subView === 'prop' && <ProposalsLiveTable rows={data.proposals} />}
+        {subView === 'inv'  && <InvoicesLiveTable  rows={data.invoices} />}
+        {subView === 'pay'  && <PaymentsLiveFeed   rows={data.payments} />}
+      </div>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, tone = 'red' }) {
+  const color = tone === 'green' ? 'var(--lcd-green)' : tone === 'amber' ? 'var(--lcd-amber)' : 'var(--lcd-red)';
+  const glow = tone === 'green' ? 'var(--lcd-glow-green)' : tone === 'amber' ? 'var(--lcd-glow-amber)' : 'var(--lcd-glow-red)';
+  return (
+    <div className="raised" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{
+        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
+        padding: '6px 10px', fontFamily: 'var(--font-pixel)', fontSize: 24,
+        color, textShadow: glow, letterSpacing: '.06em',
+      }}>{value}</div>
+      <div className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{label}</div>
+    </div>
+  );
+}
+
+function ProposalsLiveTable({ rows }) {
+  if (rows.length === 0) return <Empty label="NO PROPOSALS" />;
+  const statusColor = {
+    sent: 'var(--ms-1)', viewed: 'var(--ms-4)', approved: 'var(--ms-2)',
+    expired: 'var(--ms-5)', declined: 'var(--ms-3)',
+  };
+  return (
+    <div style={{ boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+      {rows.map((p, i) => {
+        const status = (p.status || 'sent').toLowerCase();
+        const color = statusColor[status] || 'var(--ms-8)';
+        return (
+          <div key={p.id} style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 100px 100px 100px',
+            gap: 12, alignItems: 'center',
+            padding: '10px 14px',
+            borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+          }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{p.contact_name || '—'}</span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
+            </span>
+            <span className="chrome-label" style={{
+              fontSize: 10, padding: '4px 8px', background: color, color: '#fff',
+              boxShadow: 'var(--raised-2)', textAlign: 'center',
+            }}>{status.toUpperCase()}</span>
+            <span className="mono" style={{ fontSize: 13, fontWeight: 700, textAlign: 'right' }}>
+              ${(Number(p.total) || 0).toLocaleString()}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function InvoicesLiveTable({ rows }) {
+  if (rows.length === 0) return <Empty label="NO INVOICES" />;
+  return (
+    <div style={{ boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+      {rows.map((inv, i) => {
+        const paid = inv.status === 'paid';
+        return (
+          <div key={inv.id} style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 100px 100px 100px',
+            gap: 12, alignItems: 'center',
+            padding: '10px 14px',
+            borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+          }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{inv.contact_name || '—'}</span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}
+            </span>
+            <span className="chrome-label" style={{
+              fontSize: 10, padding: '4px 8px',
+              background: paid ? 'var(--ms-2)' : 'var(--ms-3)', color: '#fff',
+              boxShadow: 'var(--raised-2)', textAlign: 'center',
+            }}>{(inv.status || 'sent').toUpperCase()}</span>
+            <span className={`mono ${paid ? 'lcd--green' : ''}`} style={{
+              fontSize: 14, fontWeight: 700, textAlign: 'right',
+              color: paid ? 'var(--lcd-green)' : 'var(--lcd-red)',
+              textShadow: paid ? 'var(--lcd-glow-green)' : 'var(--lcd-glow-red)',
+            }}>
+              ${(Number(inv.total) || 0).toLocaleString()}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PaymentsLiveFeed({ rows }) {
+  if (rows.length === 0) return <Empty label="NO PAYMENTS YET" />;
+  return (
+    <div style={{ boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+      {rows.map((p, i) => (
+        <div key={p.id} style={{
+          display: 'grid',
+          gridTemplateColumns: '90px 1fr 120px',
+          gap: 12, alignItems: 'center',
+          padding: '10px 14px',
+          borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+        }}>
+          <span className="pixel" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
+          </span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
+            {p.method || 'PAYMENT'} · {p.contact_id?.slice(0, 8) || '—'}
+          </span>
+          <span className="mono" style={{
+            fontSize: 14, fontWeight: 700, textAlign: 'right',
+            color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
+          }}>
+            ${(Number(p.amount) || 0).toLocaleString()}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Empty({ label }) {
+  return (
+    <div style={{
+      padding: 48, display: 'grid', placeItems: 'center',
+      fontFamily: 'var(--font-pixel)', fontSize: 20,
+      color: 'var(--text-faint)', textAlign: 'center',
+    }}>{label}</div>
+  );
+}
+
+// ── Live Calendar (week view based on stage_history / install dates) ────────
+function LiveCalendar() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      // Use install_notes heuristic + recent stage_history to infer upcoming installs.
+      // Proper calendar requires an events table — stub until one exists.
+      const { data: contacts } = await db
+        .from('contacts')
+        .select('id, name, stage, install_notes, created_at')
+        .in('stage', [3, 4, 5, 6, 7, 8])
+        .limit(20);
+      setEvents((contacts || []).map(c => ({
+        id: c.id, name: c.name, stage: c.stage,
+      })));
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING CALENDAR...</div>;
+
+  return (
+    <div style={{ height: '100%', padding: 24, overflow: 'auto' }}>
+      <div className="raised" style={{ padding: 20, marginBottom: 16 }}>
+        <div className="chrome-label" style={{ fontSize: 12, marginBottom: 8 }}>UPCOMING — {events.length} LEADS POST-BOOKING</div>
+        <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          Full weekly/agenda calendar UI wires in after the events table is added to Supabase. For now, this surface shows contacts booked or in the install pipeline.
+        </div>
+      </div>
+      <div style={{ boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+        {events.map((e, i) => (
+          <div key={e.id} style={{
+            display: 'grid', gridTemplateColumns: '80px 1fr 80px',
+            gap: 12, alignItems: 'center', padding: '10px 14px',
+            borderBottom: i < events.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+          }}>
+            <span className="pixel" style={{ fontSize: 11, color: 'var(--text-muted)' }}>STAGE {e.stage}</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14 }}>{e.name || '—'}</span>
+            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'right' }}>TBD</span>
+          </div>
+        ))}
+        {events.length === 0 ? <Empty label="NO UPCOMING INSTALLS" /> : null}
+      </div>
+    </div>
+  );
+}
+
 // ── Live Messages Inbox ─────────────────────────────────────────────────────
 // For each contact, pull their latest message as the preview + count unread.
 function LiveMessages({ onSelect, activeId, compact = false }) {
@@ -1095,8 +1353,8 @@ function App() {
       }
       return <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />;
     }
-    if (tab === 'calendar') return <Placeholder name="CALENDAR" />;
-    if (tab === 'finance') return <Placeholder name="FINANCE" />;
+    if (tab === 'calendar') return <LiveCalendar />;
+    if (tab === 'finance') return <LiveFinance />;
     if (tab === 'messages') return <LiveMessages onSelect={id => setSelectedContact(id)} activeId={selectedContact} />;
     if (tab === 'sparky') return <LiveSparky />;
     return null;
