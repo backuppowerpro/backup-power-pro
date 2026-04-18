@@ -415,16 +415,25 @@ function LivePipeline({ onCardClick, onSubView }) {
 
     // Optimistic update
     setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage: newStage } : c));
-
-    // Persist
     await db.from('contacts').update({ stage: newStage }).eq('id', contactId);
-    // Record stage history
     await db.from('stage_history').insert({
-      contact_id: contactId,
-      from_stage: oldStage,
-      to_stage: newStage,
+      contact_id: contactId, from_stage: oldStage, to_stage: newStage,
     }).then(() => {}, () => {});
-    window.__bpp_toast && window.__bpp_toast(`${contact.name || 'Lead'} → stage ${newStage}`, 'success');
+
+    // Toast with Undo action (6s window)
+    const undo = async () => {
+      setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage: oldStage } : c));
+      await db.from('contacts').update({ stage: oldStage }).eq('id', contactId);
+      await db.from('stage_history').insert({
+        contact_id: contactId, from_stage: newStage, to_stage: oldStage,
+      }).then(() => {}, () => {});
+      window.__bpp_toast && window.__bpp_toast(`Reverted ${contact.name || 'Lead'} to ${STAGE_MAP[oldStage] || 'stage ' + oldStage}`, 'info');
+    };
+    window.__bpp_toast && window.__bpp_toast(
+      `${contact.name || 'Lead'} → ${STAGE_MAP[newStage] || 'stage ' + newStage}`,
+      'success',
+      { label: 'Undo', onClick: undo }
+    );
   }, [contacts]);
 
   const LeadsPipelineComp = window.LeadsPipeline;
@@ -1452,10 +1461,10 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
 
 // ── Toast notification system ───────────────────────────────────────────────
 // Simple pub/sub. Any component calls window.__bpp_toast(text, kind?) and a
-// toast appears bottom-right for 4 seconds.
+// toast appears bottom-right for 4 seconds. Optional action = { label, onClick }
 const toastSubs = new Set();
-window.__bpp_toast = (text, kind = 'info') => {
-  toastSubs.forEach(fn => fn({ id: Date.now() + Math.random(), text, kind }));
+window.__bpp_toast = (text, kind = 'info', action = null) => {
+  toastSubs.forEach(fn => fn({ id: Date.now() + Math.random(), text, kind, action }));
 };
 
 function ToastRoot() {
@@ -1463,7 +1472,9 @@ function ToastRoot() {
   useEffect(() => {
     const sub = (t) => {
       setToasts(prev => [...prev, t]);
-      setTimeout(() => setToasts(prev => prev.filter(x => x.id !== t.id)), 4000);
+      // Give action toasts a longer window (6s) so the user can click Undo
+      const ttl = t.action ? 6000 : 4000;
+      setTimeout(() => setToasts(prev => prev.filter(x => x.id !== t.id)), ttl);
     };
     toastSubs.add(sub);
     return () => toastSubs.delete(sub);
@@ -1474,7 +1485,7 @@ function ToastRoot() {
       position: 'fixed', bottom: 16, right: 16, zIndex: 110,
       display: 'flex', flexDirection: 'column', gap: 8,
       paddingBottom: 'env(safe-area-inset-bottom)',
-      maxWidth: 320,
+      maxWidth: 360,
     }}>
       {toasts.map(t => {
         const color =
@@ -1483,7 +1494,7 @@ function ToastRoot() {
           t.kind === 'warn'    ? 'var(--lcd-amber)' :
                                   'var(--navy)';
         return (
-          <div key={t.id} className="raised" style={{
+          <div key={t.id} style={{
             padding: '10px 14px',
             background: 'var(--card)',
             boxShadow: 'var(--raised)',
@@ -1492,7 +1503,17 @@ function ToastRoot() {
             fontSize: 13,
           }}>
             <span style={{ width: 8, height: 8, background: color, flex: '0 0 auto' }} />
-            <span>{t.text}</span>
+            <span style={{ flex: 1 }}>{t.text}</span>
+            {t.action ? (
+              <button onClick={() => {
+                try { t.action.onClick(); } catch {}
+                setToasts(prev => prev.filter(x => x.id !== t.id));
+              }} style={{
+                padding: '4px 10px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
+                background: 'transparent', color: 'var(--navy)',
+                boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+              }}>{t.action.label}</button>
+            ) : null}
           </div>
         );
       })}
