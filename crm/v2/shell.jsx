@@ -67,11 +67,17 @@ function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
 
       {/* Right cluster */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={onToggleDark} title={isDark ? 'Light mode' : 'Dark mode'} className="tactile-raised" style={{
+        <button onClick={onToggleDark}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={isDark ? 'Light mode' : 'Dark mode'}
+          className="tactile-raised" style={{
           width: 28, height: 28, display: 'grid', placeItems: 'center',
           color: 'var(--text)', cursor: 'pointer',
         }}>{Ico.sun}</button>
-        <button onClick={onNewLead} title="New lead / action" className="tactile-raised" style={{
+        <button onClick={onNewLead}
+          aria-label="Create new lead"
+          title="New lead"
+          className="tactile-raised" style={{
           width: 36, height: 36, display: 'grid', placeItems: 'center',
           background: 'var(--navy)', color: '#fff', cursor: 'pointer',
         }}>{Ico.plus}</button>
@@ -93,7 +99,7 @@ function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
 /* ────────── Tab bar (top, same on both platforms) ────────── */
 function TabBar({ active = 'leads', scrollable = false, onChange }) {
   return (
-    <div style={{
+    <div role="tablist" aria-label="Main navigation" style={{
       height: 44, display: 'flex', alignItems: 'stretch',
       padding: '0 8px',
       background: 'var(--card)',
@@ -106,6 +112,9 @@ function TabBar({ active = 'leads', scrollable = false, onChange }) {
         const isActive = t.id === active;
         return (
           <button key={t.id} className="chrome-label"
+            role="tab"
+            aria-selected={isActive}
+            aria-label={t.label}
             onClick={() => onChange && onChange(t.id)}
             style={{
               height: '100%', padding: '0 20px',
@@ -117,7 +126,7 @@ function TabBar({ active = 'leads', scrollable = false, onChange }) {
               transition: 'box-shadow var(--dur) var(--step), color var(--dur) var(--step)',
               cursor: 'pointer',
             }}>
-            <span style={{ display: 'flex', opacity: isActive ? 1 : .75 }}>{t.icon}</span>
+            <span style={{ display: 'flex', opacity: isActive ? 1 : .75 }} aria-hidden="true">{t.icon}</span>
             <span>{t.label}</span>
           </button>
         );

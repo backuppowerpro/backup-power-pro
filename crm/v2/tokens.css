@@ -181,3 +181,66 @@ button svg { stroke-width: 3; }
 }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .pixel { font-family: var(--font-pixel); text-transform: uppercase; letter-spacing: .06em; }
+
+/* ============================================================
+   Accessibility
+   ============================================================ */
+
+/* Visible focus ring: gold outline with hard offset.
+   Keyboard users see clear focus; mouse users don't (focus-visible). */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Screen-reader-only content */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link — visible only on focus, jumps over the chrome */
+.skip-link {
+  position: absolute;
+  top: -40px; left: 8px;
+  padding: 8px 16px;
+  background: var(--navy);
+  color: #fff;
+  font-family: var(--font-chrome);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-decoration: none;
+  z-index: 1000;
+  transition: top var(--dur) var(--step);
+  box-shadow: var(--raised);
+}
+.skip-link:focus {
+  top: 8px;
+}
+
+/* Reduced motion — honor user preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Touch target minimum 44px on coarse pointers (iOS / Android) */
+@media (pointer: coarse) {
+  button, [role="button"], a {
+    min-height: 44px;
+  }
+}
