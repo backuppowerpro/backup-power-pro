@@ -667,15 +667,33 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
         {loading ? (
-          <div className="mono" style={{ fontSize: 13, color: 'var(--text-muted)' }}>LOADING MESSAGES...</div>
+          <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
         ) : messages.length === 0 ? (
-          <div className="mono" style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '48px 0' }}>
-            NO MESSAGES YET
+          <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '48px 0' }}>
+            No messages yet
           </div>
-        ) : messages.map(m => {
+        ) : messages.map((m, idx) => {
           const isOut = m.direction === 'outbound';
+          // Show timestamp on the first message and on a new day or ≥10m gap.
+          const prev = messages[idx - 1];
+          const thisTime = m.created_at ? new Date(m.created_at) : null;
+          const prevTime = prev?.created_at ? new Date(prev.created_at) : null;
+          const sameDay = prev && thisTime && prevTime && thisTime.toDateString() === prevTime.toDateString();
+          const gapOk = prev && thisTime && prevTime && (thisTime - prevTime) < 10 * 60 * 1000;
+          const showTs = !prev || !sameDay || !gapOk;
           return (
-            <div key={m.id} style={{
+            <React.Fragment key={m.id}>
+              {showTs && thisTime ? (
+                <div className="mono" style={{
+                  alignSelf: 'center', fontSize: 10, color: 'var(--text-faint)',
+                  margin: '6px 0 2px', letterSpacing: '.04em',
+                }}>
+                  {sameDay
+                    ? thisTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                    : thisTime.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                </div>
+              ) : null}
+            <div style={{
               alignSelf: isOut ? 'flex-end' : 'flex-start',
               maxWidth: '78%',
               padding: '10px 14px',
@@ -697,6 +715,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
               ) : null}
               {m.body}
             </div>
+            </React.Fragment>
           );
         })}
       </div>
