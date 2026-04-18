@@ -243,13 +243,12 @@ function LiveLeadsList({ desktop = false, onSelect }) {
     return (
       <div style={{
         padding: 48, display: 'grid', placeItems: 'center',
-        fontFamily: 'var(--font-pixel)', fontSize: 20,
         color: 'var(--text-muted)', textAlign: 'center',
       }}>
         <div>
-          <div>NO CONTACTS YET</div>
-          <div style={{ fontSize: 13, fontFamily: 'var(--font-chrome)', letterSpacing: '.12em', marginTop: 8 }}>
-            WAITING FOR FIRST LEAD
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 600 }}>No contacts yet</div>
+          <div style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', marginTop: 8 }}>
+            Waiting for first lead
           </div>
         </div>
       </div>
@@ -580,13 +579,13 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
             }}>
               {isOut && m.sender === 'ai' ? (
                 <span style={{
-                  position: 'absolute', left: -8, top: -8,
-                  width: 16, height: 16,
-                  background: 'var(--gold)', color: 'var(--navy)',
-                  fontFamily: 'var(--font-pixel)', fontSize: 12,
-                  display: 'grid', placeItems: 'center',
-                  boxShadow: 'var(--raised-2)',
-                }}>A</span>
+                  position: 'absolute', left: -6, top: -6,
+                  padding: '0 4px',
+                  background: 'var(--card)',
+                  color: 'var(--text-faint)',
+                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '.08em',
+                  border: '1px solid rgba(0,0,0,.15)',
+                }}>alex</span>
               ) : null}
               {m.body}
             </div>
@@ -2168,9 +2167,10 @@ function Empty({ label }) {
   return (
     <div style={{
       padding: 48, display: 'grid', placeItems: 'center',
-      fontFamily: 'var(--font-pixel)', fontSize: 20,
+      fontFamily: 'var(--font-mono)', fontSize: 12,
       color: 'var(--text-faint)', textAlign: 'center',
-    }}>{label}</div>
+      letterSpacing: '.04em',
+    }}>{(label || '').toLowerCase()}</div>
   );
 }
 
@@ -2665,14 +2665,15 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
             );
           })}
         </div>
-        <div className="pressed-2" style={{
-          padding: '8px 16px', fontFamily: 'var(--font-pixel)', fontSize: 10,
-          letterSpacing: '.12em', color: 'var(--text-muted)',
+        <div style={{
+          padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 10,
+          letterSpacing: '.04em', color: 'var(--text-faint)',
           display: 'flex', gap: 16,
+          borderTop: '1px solid rgba(0,0,0,.06)',
         }}>
-          <span>↑↓ NAVIGATE</span>
-          <span>↵ SELECT</span>
-          <span>ESC CLOSE</span>
+          <span>↑↓ navigate</span>
+          <span>↵ select</span>
+          <span>esc close</span>
         </div>
       </div>
     </div>
@@ -2970,13 +2971,12 @@ function Placeholder({ name }) {
   return (
     <div style={{
       height: '100%', display: 'grid', placeItems: 'center',
-      fontFamily: 'var(--font-pixel)', fontSize: 32, letterSpacing: '.08em',
-      color: 'var(--text-muted)', textTransform: 'uppercase',
+      color: 'var(--text-muted)',
     }}>
       <div style={{ textAlign: 'center' }}>
-        <div>{name}</div>
-        <div style={{ fontFamily: 'var(--font-chrome)', fontSize: 11, letterSpacing: '.12em', color: 'var(--text-faint)', marginTop: 8 }}>
-          WIRING IN NEXT SESSION
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 20, fontWeight: 600 }}>{name}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
+          Wiring in next session
         </div>
       </div>
     </div>
