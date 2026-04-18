@@ -3246,15 +3246,55 @@ function LiveSparky({ currentContactId = null }) {
 }
 
 // ── Command Palette ⌘K ──────────────────────────────────────────────────────
+// Track recently viewed contacts in localStorage so the command palette
+// can show "Recent" when there's no query. Called from App each time
+// selectedContact changes.
+function recordRecentContact(id) {
+  if (!id) return;
+  try {
+    const raw = localStorage.getItem('bpp_v2_recent_contacts');
+    const arr = raw ? JSON.parse(raw) : [];
+    const filtered = arr.filter(x => x !== id);
+    filtered.unshift(id);
+    localStorage.setItem('bpp_v2_recent_contacts', JSON.stringify(filtered.slice(0, 10)));
+  } catch {}
+}
+
 function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
 
+  // Show recent contacts when palette opens without a query
+  useEffect(() => {
+    if (!open || query.trim()) return;
+    let alive = true;
+    (async () => {
+      let ids = [];
+      try {
+        const raw = localStorage.getItem('bpp_v2_recent_contacts');
+        if (raw) ids = JSON.parse(raw).slice(0, 5);
+      } catch {}
+      if (ids.length === 0) { setResults([]); return; }
+      const { data } = await db
+        .from('contacts').select('id, name, phone, stage, address').in('id', ids);
+      if (!alive) return;
+      const byId = Object.fromEntries((data || []).map(c => [c.id, c]));
+      const hits = ids.map(id => byId[id]).filter(Boolean).map(c => ({
+        type: 'contact', id: c.id, name: c.name, phone: formatPhone(c.phone),
+        stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        _recent: true,
+      }));
+      setResults(hits);
+      setCursor(0);
+    })();
+    return () => { alive = false; };
+  }, [open, query]);
+
   // Search
   useEffect(() => {
-    if (!open || !query.trim()) { setResults([]); return; }
+    if (!open || !query.trim()) return;
     let alive = true;
     const q = query.trim();
     (async () => {
@@ -3329,6 +3369,12 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
           <span className="pixel" style={{ fontSize: 10, padding: '4px 8px', boxShadow: 'var(--raised-2)', color: 'var(--text-muted)' }}>ESC</span>
         </div>
         <div style={{ maxHeight: 400, overflowY: 'auto', borderTop: '1px solid rgba(0,0,0,.1)' }}>
+          {!query.trim() && results.length > 0 && results[0]._recent ? (
+            <div className="mono" style={{
+              padding: '8px 14px 4px', fontSize: 10, letterSpacing: '.08em',
+              color: 'var(--text-faint)', textTransform: 'uppercase',
+            }}>Recent</div>
+          ) : null}
           {results.length === 0 ? (
             <div style={{ padding: 24, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
               {query.trim() ? 'No results' : 'Type to search contacts, navigation, or ask Sparky'}
@@ -3483,9 +3529,12 @@ function App() {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
-  // Reset unread when opening a contact detail
+  // Reset unread when opening a contact detail; record recents for palette
   useEffect(() => {
-    if (selectedContact) setUnreadCount(0);
+    if (selectedContact) {
+      setUnreadCount(0);
+      recordRecentContact(selectedContact);
+    }
   }, [selectedContact]);
 
   // Update page title
