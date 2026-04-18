@@ -629,7 +629,18 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
               }}
             >{displayPhone}</button>
           ) : <span>—</span>}
-          <br/>{contact?.address || '—'}
+          <br/>
+          {contact?.address ? (
+            <a
+              href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
+              target="_blank" rel="noopener"
+              title="Open in Google Maps"
+              style={{
+                color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
+                textDecoration: 'none', borderBottom: '1px dashed rgba(0,0,0,.2)',
+              }}
+            >{contact.address}</a>
+          ) : <span>—</span>}
         </div>
       </div>
 
