@@ -1828,6 +1828,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'D', label: 'Dial selected contact' },
     { keys: 'N', label: 'New lead' },
     { keys: 'B', label: 'Open morning briefing' },
+    { keys: 'T', label: 'Toggle dark mode' },
     { keys: '/', label: 'Focus search (Messages / Sparky)' },
     { keys: '1–9', label: 'Set stage on open contact' },
     { keys: '⌘S', label: 'Save notes' },
@@ -3575,6 +3576,11 @@ function App() {
       if (e.key === 'b' && !briefOpen) {
         e.preventDefault();
         setBriefOpen(true);
+      }
+      // t → toggle theme (dark/light)
+      if (e.key === 't') {
+        e.preventDefault();
+        setIsDark(d => !d);
       }
       // n → new lead modal
       if (e.key === 'n' && !newLeadOpen) {
