@@ -1395,6 +1395,11 @@ function DetailNotes({ contact, onUpdate }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // When the contact changes, re-seed with that contact's notes
+  useEffect(() => {
+    setText(contact?.install_notes || '');
+  }, [contact?.id]);
+
   async function save() {
     if (!contact) return;
     setSaving(true);
