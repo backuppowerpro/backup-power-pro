@@ -1078,18 +1078,18 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
 function DetailPermits({ contact }) {
   if (!contact) return null;
   const cells = stageToPermitCells(contact.stage);
-  const headers = ['SUBMIT', 'PAY', 'PAID', 'PRINT', 'PRINTED', 'INSPECT', 'PASS'];
+  const headers = ['Submit', 'Pay', 'Paid', 'Print', 'Printed', 'Inspect', 'Pass'];
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-      <div className="raised" style={{ padding: 14, marginBottom: 12 }}>
-        <div className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
-          PERMIT PIPELINE
+      <div style={{ padding: '14px 16px', marginBottom: 12, background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.08em', color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 12 }}>
+          Permit pipeline
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between' }}>
           {cells.map((state, i) => (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
               <PermitStepCell state={state} />
-              <span className="chrome-label" style={{ fontSize: 8, color: 'var(--text-faint)' }}>{headers[i]}</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--text-faint)' }}>{headers[i]}</span>
             </div>
           ))}
         </div>
