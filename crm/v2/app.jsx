@@ -783,7 +783,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
                   border: '1px solid rgba(0,0,0,.15)',
                 }}>alex</span>
               ) : null}
-              {m.body}
+              <MessageBody body={m.body} isOut={isOut} />
               {m.recording_url ? (
                 <audio
                   controls
@@ -1481,6 +1481,39 @@ const SMS_SNIPPETS = [
   { label: 'Follow up', body: "Hey {name}, just checking in. Want me to hold that install slot, or shift it out a week?" },
   { label: 'Deposit', body: "Hi {name}! To lock in your install date, a 50% deposit is all that's needed. I'll send the link over now." },
 ];
+
+// Parse a message body and render inline:
+// - "[media:https://...] optional caption" → render as <img> + caption
+// - URLs inside the text → render as clickable links
+// - Otherwise plain text
+function MessageBody({ body, isOut }) {
+  if (!body) return null;
+  // Media prefix (send-sms stores `[media:URL] optional text`)
+  const mediaMatch = /^\[media:([^\]]+)\]\s*(.*)$/s.exec(body);
+  if (mediaMatch) {
+    const [, mediaUrl, caption] = mediaMatch;
+    return (
+      <>
+        <img src={mediaUrl} alt="" style={{
+          display: 'block', maxWidth: '100%', maxHeight: 260, marginBottom: caption ? 6 : 0,
+        }} />
+        {caption ? <MessageBody body={caption.trim()} isOut={isOut} /> : null}
+      </>
+    );
+  }
+  // URL linkification — split on URLs, render links as <a>
+  const parts = body.split(/(https?:\/\/[^\s]+)/g);
+  if (parts.length === 1) return <span>{body}</span>;
+  return (
+    <span>
+      {parts.map((p, i) => /^https?:\/\//.test(p) ? (
+        <a key={i} href={p} target="_blank" rel="noopener"
+          style={{ color: isOut ? 'var(--gold)' : 'var(--navy)', wordBreak: 'break-all' }}
+        >{p}</a>
+      ) : <React.Fragment key={i}>{p}</React.Fragment>)}
+    </span>
+  );
+}
 
 function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) {
   const [text, setText] = useState('');
