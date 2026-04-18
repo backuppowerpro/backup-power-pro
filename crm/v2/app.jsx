@@ -500,6 +500,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [outstandingBalance, setOutstandingBalance] = useState(0);
+  const [alexSession, setAlexSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('MESSAGES');
@@ -531,6 +532,18 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         .filter(i => i.status !== 'paid' && i.status !== 'cancelled')
         .reduce((s, i) => s + (Number(i.total) || 0), 0);
       setOutstandingBalance(outstanding);
+      // Alex session lookup by phone (alex_sessions table keys on phone, not contact_id)
+      if (cRes.data?.phone) {
+        const { data: sess } = await db.from('alex_sessions')
+          .select('alex_active, opted_out, followup_count, status, summary, updated_at')
+          .eq('phone', cRes.data.phone)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (alive) setAlexSession(sess || null);
+      } else {
+        setAlexSession(null);
+      }
       setLoading(false);
       // Smart default tab based on stage, unless user manually picked one for this contact
       if (cRes.data && manualTabContactId !== contactId) {
@@ -684,6 +697,31 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         }}>
           <span style={{ color: 'var(--text-muted)' }}>Outstanding</span>
           <span style={{ color: 'var(--ms-3)', fontWeight: 700 }}>${outstandingBalance.toLocaleString()}</span>
+        </div>
+      ) : null}
+
+      {alexSession ? (
+        <div style={{
+          padding: '6px 14px',
+          background: 'var(--card)',
+          borderBottom: '1px solid rgba(0,0,0,.06)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontFamily: 'var(--font-body)', fontSize: 11,
+          color: 'var(--text-muted)',
+        }}>
+          <span>
+            Alex
+            <span style={{
+              marginLeft: 6, padding: '1px 6px', fontSize: 10, letterSpacing: '.04em',
+              color: alexSession.alex_active ? 'var(--ms-2)' : 'var(--text-faint)',
+              border: '1px solid currentColor',
+            }}>
+              {alexSession.opted_out ? 'opted out' : alexSession.alex_active ? 'active' : 'handed off'}
+            </span>
+          </span>
+          <span className="mono" style={{ fontSize: 10 }}>
+            {alexSession.followup_count > 0 ? `${alexSession.followup_count} follow-up${alexSession.followup_count === 1 ? '' : 's'}` : '—'}
+          </span>
         </div>
       ) : null}
 
