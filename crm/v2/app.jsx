@@ -1039,6 +1039,7 @@ function DetailEditContact({ contact, onUpdate }) {
     phone: contact?.phone || '',
     email: contact?.email || '',
     address: contact?.address || '',
+    do_not_contact: !!contact?.do_not_contact,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1047,20 +1048,25 @@ function DetailEditContact({ contact, onUpdate }) {
     e?.preventDefault();
     if (!contact) return;
     setSaving(true);
-    const { error } = await db
-      .from('contacts')
-      .update({
-        name: form.name.trim() || null,
-        phone: form.phone.trim() || null,
-        email: form.email.trim() || null,
-        address: form.address.trim() || null,
-      })
-      .eq('id', contact.id);
+    const dncChanged = !!contact.do_not_contact !== !!form.do_not_contact;
+    const patch = {
+      name: form.name.trim() || null,
+      phone: form.phone.trim() || null,
+      email: form.email.trim() || null,
+      address: form.address.trim() || null,
+      do_not_contact: !!form.do_not_contact,
+    };
+    // Record compliance metadata when flipping DNC on
+    if (dncChanged && form.do_not_contact) {
+      patch.dnc_at = new Date().toISOString();
+      patch.dnc_source = 'crm-manual';
+    }
+    const { error } = await db.from('contacts').update(patch).eq('id', contact.id);
     setSaving(false);
     if (!error) {
       setSaved(true);
-      onUpdate && onUpdate(form);
-      window.__bpp_toast && window.__bpp_toast(`Contact updated`, 'success');
+      onUpdate && onUpdate(patch);
+      window.__bpp_toast && window.__bpp_toast('Contact updated', 'success');
       setTimeout(() => setSaved(false), 2000);
     } else {
       window.__bpp_toast && window.__bpp_toast(`Update failed: ${error.message}`, 'error');
@@ -1073,37 +1079,53 @@ function DetailEditContact({ contact, onUpdate }) {
       <EditField label="PHONE" value={form.phone} onChange={v => setForm({ ...form, phone: v })} placeholder="+18645550100" />
       <EditField label="EMAIL" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
       <EditField label="ADDRESS" value={form.address} onChange={v => setForm({ ...form, address: v })} />
+
+      <label style={{
+        marginTop: 8, padding: '12px 14px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        cursor: 'pointer',
+      }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: form.do_not_contact ? 'var(--ms-3)' : 'var(--text)' }}>
+            Do not contact
+          </div>
+          <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
+            Stop all SMS + calls. Compliance sensitive.
+          </div>
+        </div>
+        <input type="checkbox" checked={form.do_not_contact}
+          onChange={e => setForm({ ...form, do_not_contact: e.target.checked })}
+          style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--ms-3)' }}
+        />
+      </label>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
         {saved ? (
-          <span className="mono" style={{ fontSize: 11, color: 'var(--ms-2)' }}>
-            Saved
-          </span>
+          <span className="mono" style={{ fontSize: 11, color: 'var(--ms-2)' }}>Saved</span>
         ) : <span />}
-        <button type="submit" disabled={saving} style={{
-          height: 40, padding: '0 20px',
-          background: 'var(--navy)', color: '#fff',
-          fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
-          letterSpacing: '.04em',
-          boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
-          cursor: saving ? 'wait' : 'pointer',
-          opacity: saving ? 0.6 : 1, border: 'none',
-        }}>{saving ? 'Saving…' : 'Save'}</button>
+        <PrimaryButton type="submit" disabled={saving}>
+          {saving ? 'Saving…' : 'Save'}
+        </PrimaryButton>
       </div>
     </form>
   );
 }
 
 function EditField({ label, value, onChange, placeholder, type = 'text' }) {
+  const niceLabel = label ? label.charAt(0) + label.slice(1).toLowerCase() : label;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{label}</label>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{niceLabel}</label>
       <input
         type={type}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="pressed-2"
-        style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }}
+        style={{
+          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+        }}
       />
     </div>
   );
