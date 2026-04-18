@@ -1400,40 +1400,42 @@ function NewLeadModal({ open, onClose, onCreated }) {
       background: 'rgba(0,0,0,.5)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
-      <form onSubmit={submit} onClick={e => e.stopPropagation()} className="raised" style={{
-        width: 420, maxWidth: '100%',
-        padding: 24, display: 'flex', flexDirection: 'column', gap: 14,
+      <form onSubmit={submit} onClick={e => e.stopPropagation()} style={{
+        width: 380, maxWidth: '100%',
+        padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 16,
+        background: 'var(--card)', boxShadow: 'var(--raised-2)',
       }}>
-        <div className="chrome-label" style={{ fontSize: 14 }}>NEW LEAD</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>FIRST NAME</label>
-          <input value={name} onChange={e => setName(e.target.value)} className="pressed-2" placeholder="Sarah M" autoFocus
-            style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }} />
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 700, letterSpacing: '-.01em' }}>
+          New lead
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>PHONE *</label>
-          <input value={phone} onChange={e => setPhone(formatPhoneInput(e.target.value))} className="pressed-2" placeholder="(864) 555-0100"
-            style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>ADDRESS</label>
-          <input value={address} onChange={e => setAddress(e.target.value)} className="pressed-2" placeholder="412 Laurel Ridge Rd"
-            style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }} />
-        </div>
-        {err ? <div className="lcd" style={{ padding: '6px 12px', fontSize: 12 }}>{err}</div> : null}
-        <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-          <button type="button" onClick={onClose} className="chrome-label" style={{
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Name" autoFocus style={{
+          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+        }} />
+        <input value={phone} onChange={e => setPhone(formatPhoneInput(e.target.value))} placeholder="Phone" style={{
+          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+        }} />
+        <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Address (optional)" style={{
+          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+        }} />
+        {err ? <div className="mono" style={{ fontSize: 11, color: 'var(--ms-3)' }}>{err}</div> : null}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button type="button" onClick={onClose} style={{
             flex: 1, height: 40, fontSize: 12, cursor: 'pointer',
-            boxShadow: 'var(--raised-2)', background: 'var(--card)',
-          }}>CANCEL</button>
-          <button type="submit" disabled={busy} className="tactile-raised" style={{
+            fontFamily: 'var(--font-body)', letterSpacing: '.04em',
+            boxShadow: 'var(--raised-2)', background: 'var(--card)', color: 'var(--text-muted)',
+            border: 'none',
+          }}>Cancel</button>
+          <button type="submit" disabled={busy} style={{
             flex: 2, height: 40,
             background: 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 12,
-            letterSpacing: '.08em', textTransform: 'uppercase',
-            boxShadow: 'inset 3px 3px 0 rgba(255,255,255,.25), inset -3px -3px 0 rgba(0,0,0,.55)',
-            opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer',
-          }}>{busy ? 'SAVING...' : 'CREATE LEAD'}</button>
+            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
+            letterSpacing: '.04em',
+            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer', border: 'none',
+          }}>{busy ? 'Saving…' : 'Create lead'}</button>
         </div>
       </form>
     </div>
@@ -1890,35 +1892,37 @@ function LiveMaterials() {
         <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>ORDER</span>
       </div>
       {rows.map(r => {
-        const orderColor =
-          r.mat.order === 'received' ? 'var(--lcd-green)' :
-          r.mat.order === 'pending'  ? 'var(--lcd-amber)' :
-                                        'var(--lcd-red)';
-        const orderGlow =
-          r.mat.order === 'received' ? 'var(--lcd-glow-green)' :
-          r.mat.order === 'pending'  ? 'var(--lcd-glow-amber)' :
-                                        'var(--lcd-glow-red)';
+        const orderTint =
+          r.mat.order === 'received' ? 'var(--ms-2)' :
+          r.mat.order === 'pending'  ? 'var(--ms-4)' :
+                                        'var(--ms-3)';
+        const orderText =
+          r.mat.order === 'received' ? 'received' :
+          r.mat.order === 'pending'  ? 'pending'  :
+                                        'not ordered';
         return (
           <div key={r.id} style={{
             display: 'grid',
             gridTemplateColumns: '1fr 80px repeat(5, 44px) 100px',
             gap: 8, alignItems: 'center',
-            padding: '8px 14px',
+            padding: '10px 14px',
             background: 'var(--card)',
             borderBottom: '1px solid rgba(0,0,0,.06)',
           }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-            <div style={{ display: 'flex', height: 28, boxShadow: 'var(--raised-2)' }}>
-              <button onClick={() => setAmp(r, '30')} className="chrome-label" style={{
-                flex: 1, fontSize: 10, display: 'grid', placeItems: 'center',
+            <div style={{ display: 'flex', height: 24, boxShadow: 'var(--raised-2)' }}>
+              <button onClick={() => setAmp(r, '30')} style={{
+                flex: 1, fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
+                display: 'grid', placeItems: 'center',
                 background: r.mat.amp === '30' ? 'var(--navy)' : 'transparent',
-                color: r.mat.amp === '30' ? 'var(--gold)' : 'var(--text-muted)',
+                color: r.mat.amp === '30' ? 'var(--gold)' : 'var(--text-faint)',
                 border: 'none', cursor: 'pointer',
               }}>30A</button>
-              <button onClick={() => setAmp(r, '50')} className="chrome-label" style={{
-                flex: 1, fontSize: 10, display: 'grid', placeItems: 'center',
+              <button onClick={() => setAmp(r, '50')} style={{
+                flex: 1, fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
+                display: 'grid', placeItems: 'center',
                 background: r.mat.amp === '50' ? 'var(--navy)' : 'transparent',
-                color: r.mat.amp === '50' ? 'var(--gold)' : 'var(--text-muted)',
+                color: r.mat.amp === '50' ? 'var(--gold)' : 'var(--text-faint)',
                 border: 'none', cursor: 'pointer',
               }}>50A</button>
             </div>
@@ -1927,15 +1931,12 @@ function LiveMaterials() {
             <MatCheck on={r.mat.cord} onClick={() => toggleField(r, 'cord')} />
             <MatCheck on={r.mat.breaker} onClick={() => toggleField(r, 'breaker')} />
             <MatCheck on={r.mat.surge} onClick={() => toggleField(r, 'surge')} />
-            <button onClick={() => cycleOrder(r)} className="chrome-label" style={{
-              height: 24, padding: '0 8px',
-              display: 'grid', placeItems: 'center',
-              background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-              color: orderColor, textShadow: orderGlow,
-              fontSize: 10, letterSpacing: '.04em',
-              border: 'none', cursor: 'pointer',
+            <button onClick={() => cycleOrder(r)} style={{
+              padding: '4px 8px', textAlign: 'center',
+              color: orderTint, fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.04em',
+              border: 'none', cursor: 'pointer', background: 'transparent',
               opacity: savingId === r.id ? 0.5 : 1,
-            }}>{(r.mat.order || 'NOT ORDERED').toUpperCase()}</button>
+            }}>{orderText}</button>
           </div>
         );
       })}
@@ -2198,22 +2199,24 @@ function LiveCalendar() {
 
   return (
     <div style={{ height: '100%', padding: 24, overflow: 'auto' }}>
-      <div className="raised" style={{ padding: 20, marginBottom: 16 }}>
-        <div className="chrome-label" style={{ fontSize: 12, marginBottom: 8 }}>UPCOMING — {events.length} LEADS POST-BOOKING</div>
-        <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          Full weekly/agenda calendar UI wires in after the events table is added to Supabase. For now, this surface shows contacts booked or in the install pipeline.
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700, letterSpacing: '-.01em' }}>
+          Upcoming installs
+        </div>
+        <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
+          {events.length} lead{events.length === 1 ? '' : 's'} post-booking · weekly grid wires in once an events table exists
         </div>
       </div>
-      <div style={{ boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+      <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
         {events.map((e, i) => (
           <div key={e.id} style={{
             display: 'grid', gridTemplateColumns: '80px 1fr 80px',
-            gap: 12, alignItems: 'center', padding: '10px 14px',
-            borderBottom: i < events.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+            gap: 12, alignItems: 'center', padding: '12px 16px',
+            borderBottom: i < events.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
           }}>
-            <span className="pixel" style={{ fontSize: 11, color: 'var(--text-muted)' }}>STAGE {e.stage}</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14 }}>{e.name || '—'}</span>
-            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'right' }}>TBD</span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>stage {e.stage}</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{e.name || '—'}</span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right' }}>tbd</span>
           </div>
         ))}
         {events.length === 0 ? <Empty label="NO UPCOMING INSTALLS" /> : null}
@@ -2344,60 +2347,66 @@ function LiveMorningBriefing({ onClose }) {
         width: 640, maxWidth: '100%', maxHeight: 'calc(100vh - 64px)', overflowY: 'auto',
         background: 'var(--card)', boxShadow: 'var(--raised)',
       }}>
-        <div style={{ padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '24px 24px 16px', display: 'flex', alignItems: 'start', justifyContent: 'space-between' }}>
           <div>
             <div style={{
-              fontFamily: 'var(--font-pixel)', fontSize: 32, color: 'var(--lcd-red)',
-              textShadow: 'var(--lcd-glow-red)', background: 'var(--lcd-bg)', padding: '2px 12px',
-              display: 'inline-block', boxShadow: 'var(--pressed-2)',
-            }}>GOOD MORNING, KEY</div>
-            <div className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
-              {new Date().toDateString().toUpperCase()}
+              fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700, letterSpacing: '-.01em',
+            }}>Good morning, Key</div>
+            <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
+              {new Date().toDateString().toLowerCase()}
             </div>
           </div>
-          <button onClick={onClose} className="tactile-raised" style={{ width: 32, height: 32, fontSize: 18, display: 'grid', placeItems: 'center' }}>×</button>
+          <button onClick={onClose} style={{
+            width: 28, height: 28, fontSize: 16, display: 'grid', placeItems: 'center',
+            background: 'var(--card)', boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+          }}>×</button>
         </div>
 
         {loading ? (
-          <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13 }}>LOADING BRIEF...</div>
+          <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>Loading brief…</div>
         ) : (
-          <>
-            <BriefSection label="OVERDUE" color="var(--lcd-red)" items={sections.overdue} />
-            <BriefSection label="TODAY" color="var(--lcd-amber)" items={sections.today} />
-            <BriefSection label="MATERIALS TO ORDER" color="var(--navy)" items={sections.materials} />
-            <BriefSection label="GOOD NEWS" color="var(--lcd-green)" items={sections.goodNews} />
-          </>
+          <div style={{ padding: '0 24px' }}>
+            <BriefSection label="Overdue" tint="var(--ms-3)" items={sections.overdue} />
+            <BriefSection label="Today" tint="var(--ms-4)" items={sections.today} />
+            <BriefSection label="Materials" tint="var(--text-muted)" items={sections.materials} />
+            <BriefSection label="Good news" tint="var(--ms-2)" items={sections.goodNews} />
+          </div>
         )}
 
-        <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--raised)' }}>
-          <button onClick={onClose} className="chrome-label" style={{ fontSize: 12, padding: '8px 16px', cursor: 'pointer' }}>DISMISS</button>
+        <div style={{ padding: '20px 24px 24px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button onClick={onClose} style={{
-            padding: '12px 24px', background: 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 13, letterSpacing: '.08em',
+            fontSize: 12, padding: '10px 16px', cursor: 'pointer',
+            background: 'var(--card)', boxShadow: 'var(--raised-2)', border: 'none',
+            fontFamily: 'var(--font-body)', color: 'var(--text-muted)',
+          }}>Dismiss</button>
+          <button onClick={onClose} style={{
+            padding: '10px 20px', background: 'var(--navy)', color: '#fff',
+            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
             boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
-            cursor: 'pointer',
-          }}>OPEN CRM</button>
+            cursor: 'pointer', border: 'none',
+          }}>Open CRM</button>
         </div>
       </div>
     </div>
   );
 }
 
-function BriefSection({ label, color, items }) {
+function BriefSection({ label, tint, items }) {
   return (
-    <div style={{ margin: '0 20px 16px', boxShadow: 'var(--pressed-2)' }}>
-      <div className="chrome-label" style={{
-        padding: '6px 12px', fontSize: 11,
-        background: color, color: color === 'var(--navy)' ? '#fff' : (color.includes('amber') || color.includes('green') ? '#1a1a1a' : '#fff'),
-        boxShadow: 'inset 0 -1px 0 rgba(0,0,0,.3)',
-      }}>{label} · {items.length}</div>
+    <div style={{ marginBottom: 18 }}>
+      <div style={{
+        paddingBottom: 6, marginBottom: 4,
+        fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.12em',
+        color: tint, textTransform: 'uppercase',
+        borderBottom: '1px solid rgba(0,0,0,.08)',
+      }}>{label} <span style={{ color: 'var(--text-faint)', marginLeft: 4 }}>{items.length}</span></div>
       <div>
         {items.length === 0 ? (
-          <div style={{ padding: 16, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>NOTHING HERE</div>
+          <div style={{ padding: '8px 0', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>—</div>
         ) : items.map((it, i) => (
           <div key={i} style={{
-            padding: '10px 14px', fontSize: 14,
-            borderBottom: i < items.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+            padding: '8px 0', fontSize: 13,
+            fontFamily: 'var(--font-body)', color: 'var(--text)',
           }}>{it.text}</div>
         ))}
       </div>
