@@ -2936,7 +2936,12 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           <div>
             <div style={{
               fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700, letterSpacing: '-.01em',
-            }}>Good morning, Key</div>
+            }}>{(() => {
+              const h = new Date().getHours();
+              if (h < 12) return 'Good morning, Key';
+              if (h < 17) return 'Good afternoon, Key';
+              return 'Good evening, Key';
+            })()}</div>
             <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
               {new Date().toDateString().toLowerCase()}
             </div>
