@@ -2350,7 +2350,35 @@ function App() {
   // Voice device (outbound dial + incoming ring)
   const voice = useVoiceDevice(user);
 
-  // Global new-inbound-SMS listener → toast + optional ping
+  // Track "unread" count for page-title badge (simple heuristic: count
+  // inbound messages that arrived while the tab was either unfocused OR
+  // the user wasn't viewing their specific thread). Reset on visibility +
+  // on detail panel open.
+  const [unreadCount, setUnreadCount] = useState(0);
+  const tabFocusedRef = useRef(!document.hidden);
+
+  useEffect(() => {
+    const onVis = () => {
+      tabFocusedRef.current = !document.hidden;
+      if (!document.hidden) setUnreadCount(0);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  // Reset unread when opening a contact detail
+  useEffect(() => {
+    if (selectedContact) setUnreadCount(0);
+  }, [selectedContact]);
+
+  // Update page title
+  useEffect(() => {
+    document.title = unreadCount > 0
+      ? `(${unreadCount}) BPP CRM`
+      : 'BPP CRM v2';
+  }, [unreadCount]);
+
+  // Global new-inbound-SMS listener → toast + unread bump
   useEffect(() => {
     if (!user) return;
     const ch = db.channel('global-inbound-sms')
@@ -2359,15 +2387,18 @@ function App() {
         filter: 'direction=eq.inbound',
       }, async (payload) => {
         const m = payload.new;
-        // Fetch contact name for the toast
         const { data: c } = await db.from('contacts').select('name').eq('id', m.contact_id).maybeSingle();
         const name = c?.name || 'Unknown';
         const preview = (m.body || '').slice(0, 60);
         window.__bpp_toast(`SMS from ${name}: "${preview}"`, 'info');
+        // Only bump unread if viewer isn't looking at this contact
+        if (!tabFocusedRef.current || m.contact_id !== selectedContact) {
+          setUnreadCount(c => c + 1);
+        }
       })
       .subscribe();
     return () => { db.removeChannel(ch); };
-  }, [user]);
+  }, [user, selectedContact]);
 
   // Expose dial globally so the contact detail can call it via window.__bpp_dial
   useEffect(() => {
