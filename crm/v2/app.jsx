@@ -1829,6 +1829,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'N', label: 'New lead' },
     { keys: 'B', label: 'Open morning briefing' },
     { keys: 'T', label: 'Toggle dark mode' },
+    { keys: 'J', label: 'Jump to next waiting thread' },
     { keys: '/', label: 'Focus search (Messages / Sparky)' },
     { keys: '1–9', label: 'Set stage on open contact' },
     { keys: '⌘S', label: 'Save notes' },
@@ -3604,6 +3605,34 @@ function App() {
       if (e.key === 't') {
         e.preventDefault();
         setIsDark(d => !d);
+      }
+      // j → jump to next waiting thread (customer sent last message).
+      // Works from anywhere — opens Messages tab + the top waiting contact.
+      if (e.key === 'j') {
+        e.preventDefault();
+        (async () => {
+          // Pull the latest 300 messages, group by contact, find contacts
+          // where the most recent message is inbound + sender != 'ai'.
+          const { data: msgs } = await db.from('messages')
+            .select('contact_id, direction, sender, created_at')
+            .order('created_at', { ascending: false }).limit(300);
+          if (!msgs) return;
+          const seen = new Set();
+          for (const m of msgs) {
+            if (!m.contact_id) continue;
+            if (seen.has(m.contact_id)) continue;
+            seen.add(m.contact_id);
+            if (m.direction === 'inbound' && m.sender !== 'ai') {
+              // Skip the currently-selected one (jump should move forward)
+              if (m.contact_id === selectedContact) continue;
+              setSelectedContact(m.contact_id);
+              setTab('leads'); // slide-over renders over Leads tab
+              window.__bpp_toast && window.__bpp_toast('Next waiting thread', 'info');
+              return;
+            }
+          }
+          window.__bpp_toast && window.__bpp_toast('No waiting threads', 'info');
+        })();
       }
       // n → new lead modal
       if (e.key === 'n' && !newLeadOpen) {
