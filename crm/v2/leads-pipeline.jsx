@@ -125,12 +125,29 @@ function LeadCard({ c }) {
   );
 }
 
-function Column({ col }) {
+function Column({ col, items, count, onCardClick, onDropCard }) {
+  const list = items || cards[col.id] || [];
+  const displayCount = count ?? (items ? list.length : col.count);
+  const [dragOver, setDragOver] = React.useState(false);
   return (
-    <div style={{
-      flex: '1 1 0', minWidth: 0,
-      display: 'flex', flexDirection: 'column', gap: 8,
-    }}>
+    <div
+      onDragOver={e => { if (onDropCard) { e.preventDefault(); setDragOver(true); } }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={e => {
+        if (!onDropCard) return;
+        e.preventDefault();
+        setDragOver(false);
+        const id = e.dataTransfer.getData('text/contact-id');
+        if (id) onDropCard(id, col.id);
+      }}
+      style={{
+        flex: '1 1 0', minWidth: 0,
+        display: 'flex', flexDirection: 'column', gap: 8,
+        background: dragOver ? 'rgba(255,186,0,.08)' : 'transparent',
+        outline: dragOver ? '2px solid var(--gold)' : 'none',
+        outlineOffset: -2,
+        transition: 'background var(--dur) var(--step)',
+      }}>
       <div style={{
         height: 44, padding: '6px 10px',
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
@@ -149,16 +166,26 @@ function Column({ col }) {
             boxShadow: 'var(--pressed-2)',
             color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
             fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em', lineHeight: 1,
-          }}>{String(col.count).padStart(2, '0')}</span>
+          }}>{String(displayCount).padStart(2, '0')}</span>
         </div>
         <div style={{
           height: 4, background: col.color,
           boxShadow: 'inset 1px 0 0 rgba(255,255,255,.25), inset -1px 0 0 rgba(0,0,0,.3)',
         }}/>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {(cards[col.id] || []).map((c, i) => <LeadCard key={i} c={c} />)}
-        {col.count === 0 && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', paddingBottom: 8 }}>
+        {list.map((c, i) => (
+          <div
+            key={c.id || i}
+            draggable={!!onDropCard}
+            onDragStart={e => { if (c.id && onDropCard) e.dataTransfer.setData('text/contact-id', c.id); }}
+            onClick={() => onCardClick && c.id && onCardClick(c.id)}
+            style={{ cursor: onCardClick ? 'pointer' : 'default' }}
+          >
+            <LeadCard c={c} />
+          </div>
+        ))}
+        {list.length === 0 && (
           <div style={{
             height: 72, display: 'grid', placeItems: 'center',
             background: 'var(--card)', boxShadow: 'var(--pressed-2)',
@@ -214,20 +241,30 @@ function LeadsToolbar() {
   );
 }
 
-function LeadsPipeline() {
+function LeadsPipeline({ buckets, counts, onCardClick, onDropCard, toolbar }) {
+  // buckets: { new: [rows], quoted: [rows], ... } OR undefined → use mock
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <LeadsToolbar />
+      {toolbar || <LeadsToolbar />}
       <div style={{
         flex: 1,
         display: 'flex', gap: 8,
         padding: '0 16px 88px',
         overflow: 'hidden',
       }}>
-        {columns.map(col => <Column key={col.id} col={col} />)}
+        {columns.map(col => (
+          <Column
+            key={col.id}
+            col={col}
+            items={buckets ? (buckets[col.id] || []) : undefined}
+            count={counts ? counts[col.id] : undefined}
+            onCardClick={onCardClick}
+            onDropCard={onDropCard}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-Object.assign(window, { LeadsPipeline });
+Object.assign(window, { LeadsPipeline, columns: columns, LeadCard, Column });

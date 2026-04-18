@@ -232,6 +232,171 @@ function LiveLeadsList({ desktop = false, onSelect }) {
     : <LeadsListMobile  rows={rows} onSelect={onSelect} />;
 }
 
+// ── Live Pipeline (9-column kanban with live data + drag stage transitions) ─
+// Column id → contact.stage number (Supabase schema)
+const PIPELINE_COL_TO_STAGE = {
+  new: 1,
+  quoted: 2,
+  booked: 3,
+  permit: 4,
+  pay: 5,
+  paid: 6,
+  rprint: 7,
+  printed: 8,
+  inspect: 9,
+};
+// Reverse: contact.stage (1-9) → column id
+const STAGE_TO_PIPELINE_COL = Object.fromEntries(
+  Object.entries(PIPELINE_COL_TO_STAGE).map(([k, v]) => [v, k])
+);
+
+function contactToCard(c) {
+  const days = c.created_at
+    ? Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)
+    : 0;
+  // Best-effort dots: photo flag lives in Alex session, quote in proposals,
+  // permit in install_notes. For MVP we heuristic-flag from install_notes + stage.
+  const notes = (c.install_notes || '').toLowerCase();
+  const hasPhoto = /photo|image|panel_photo/.test(notes) || (c.stage || 1) >= 2;
+  const hasQuote = (c.stage || 1) >= 2;
+  const hasPermit = (c.stage || 1) >= 4;
+  return {
+    id: c.id,
+    name: c.name || '—',
+    initials: initials(c.name),
+    addr: c.address || '—',
+    days,
+    dots: { photo: hasPhoto ? 1 : 0, quote: hasQuote ? 1 : 0, permit: hasPermit ? 1 : 0 },
+    overdue: days > 7 && (c.stage || 1) < 4,
+  };
+}
+
+function LivePipelineToolbar({ active = 'pipeline', onSubView }) {
+  const subs = [
+    { id: 'pipeline', label: 'PIPELINE' },
+    { id: 'list',     label: 'LIST' },
+    { id: 'permits',  label: 'PERMITS' },
+    { id: 'mat',      label: 'MATERIALS' },
+  ];
+  const filters = [
+    { id: 'mine',    label: 'MINE' },
+    { id: 'all',     label: 'ALL', active: true },
+    { id: 'overdue', label: 'OVERDUE' },
+    { id: 'photo',   label: 'HAS PHOTO' },
+  ];
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '16px 16px 8px', gap: 16, flexWrap: 'wrap',
+    }}>
+      <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
+        {subs.map(s => (
+          <button key={s.id} className="chrome-label"
+            onClick={() => onSubView && onSubView(s.id)}
+            style={{
+              height: 36, padding: '0 16px', fontSize: 12,
+              background: s.id === active ? 'var(--navy)' : 'transparent',
+              color: s.id === active ? 'var(--gold)' : 'var(--text)',
+              boxShadow: s.id === active ? 'var(--pressed-2)' : 'none',
+              cursor: 'pointer',
+            }}>{s.label}</button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {filters.map(f => (
+          <button key={f.id} className="chrome-label" style={{
+            height: 28, padding: '0 12px', fontSize: 11,
+            background: f.active ? 'var(--navy)' : 'var(--card)',
+            color: f.active ? '#fff' : 'var(--text)',
+            boxShadow: f.active ? 'var(--pressed-2)' : 'var(--raised-2)',
+            cursor: 'pointer',
+          }}>{f.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LivePipeline({ onCardClick, onSubView }) {
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAll = useCallback(async () => {
+    const { data } = await db
+      .from('contacts')
+      .select('id, name, phone, address, stage, install_notes, created_at, do_not_contact')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    setContacts(data || []);
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchAll().finally(() => setLoading(false));
+  }, [fetchAll]);
+
+  useEffect(() => {
+    const ch = db.channel('pipeline-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, fetchAll)
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [fetchAll]);
+
+  // Bucket by column id using stage number
+  const buckets = useMemo(() => {
+    const b = {};
+    Object.keys(PIPELINE_COL_TO_STAGE).forEach(k => { b[k] = []; });
+    for (const c of contacts) {
+      const colId = STAGE_TO_PIPELINE_COL[c.stage || 1] || 'new';
+      b[colId].push(contactToCard(c));
+    }
+    return b;
+  }, [contacts]);
+
+  const counts = useMemo(() => {
+    const c = {};
+    Object.keys(buckets).forEach(k => { c[k] = buckets[k].length; });
+    return c;
+  }, [buckets]);
+
+  const handleDrop = useCallback(async (contactId, toColId) => {
+    const newStage = PIPELINE_COL_TO_STAGE[toColId];
+    if (!newStage) return;
+    const contact = contacts.find(c => c.id === contactId);
+    if (!contact) return;
+    const oldStage = contact.stage || 1;
+    if (oldStage === newStage) return;
+
+    // Optimistic update
+    setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage: newStage } : c));
+
+    // Persist
+    await db.from('contacts').update({ stage: newStage }).eq('id', contactId);
+    // Record stage history
+    await db.from('stage_history').insert({
+      contact_id: contactId,
+      from_stage: oldStage,
+      to_stage: newStage,
+    }).then(() => {}, () => {});
+  }, [contacts]);
+
+  const LeadsPipelineComp = window.LeadsPipeline;
+
+  if (loading) {
+    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING PIPELINE...</div>;
+  }
+
+  return (
+    <LeadsPipelineComp
+      buckets={buckets}
+      counts={counts}
+      onCardClick={onCardClick}
+      onDropCard={handleDrop}
+      toolbar={<LivePipelineToolbar active="pipeline" onSubView={onSubView} />}
+    />
+  );
+}
+
 // ── Live Contact Detail (replaces mock messages in contact-detail.jsx) ──────
 function LiveContactDetail({ contactId, onBack, mobile = false }) {
   const [contact, setContact] = useState(null);
@@ -427,8 +592,9 @@ function App() {
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [tab, setTab] = useState('leads');
+  const [leadsSubView, setLeadsSubView] = useState(() => window.innerWidth < 768 ? 'list' : 'pipeline');
   const [selectedContact, setSelectedContact] = useState(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   // Responsive
   useEffect(() => {
@@ -457,8 +623,15 @@ function App() {
   const TopBar = window.TopBar;
   const TabBar = window.TabBar;
 
+  const handleCardClick = (id) => setSelectedContact(id);
+
   const content = (() => {
-    if (tab === 'leads') return <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />;
+    if (tab === 'leads') {
+      if (leadsSubView === 'pipeline') {
+        return <LivePipeline onCardClick={handleCardClick} onSubView={setLeadsSubView} />;
+      }
+      return <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />;
+    }
     if (tab === 'calendar') return <Placeholder name="CALENDAR" />;
     if (tab === 'finance') return <Placeholder name="FINANCE" />;
     if (tab === 'messages') return <Placeholder name="MESSAGES" />;
