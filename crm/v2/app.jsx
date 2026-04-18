@@ -934,6 +934,79 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
   );
 }
 
+// ── Keyboard Help Overlay (?) ───────────────────────────────────────────────
+function KeyboardHelp({ open, onClose }) {
+  if (!open) return null;
+  const shortcuts = [
+    { keys: '⌘K', label: 'Open command palette' },
+    { keys: 'G L', label: 'Go to Leads tab' },
+    { keys: 'G C', label: 'Go to Calendar' },
+    { keys: 'G F', label: 'Go to Finance' },
+    { keys: 'G M', label: 'Go to Messages' },
+    { keys: 'G S', label: 'Go to Sparky' },
+    { keys: '?', label: 'Show this help' },
+    { keys: 'Esc', label: 'Close modal / detail' },
+  ];
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 85,
+      background: 'rgba(0,0,0,.5)',
+      display: 'grid', placeItems: 'center', padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} className="raised" style={{
+        width: 420, padding: 20,
+      }}>
+        <div className="chrome-label" style={{ fontSize: 14, marginBottom: 14 }}>KEYBOARD SHORTCUTS</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {shortcuts.map((s, i) => (
+            <div key={i} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '10px 12px',
+              background: i % 2 === 0 ? 'var(--card)' : 'transparent',
+              boxShadow: i % 2 === 0 ? 'var(--pressed-2)' : 'none',
+            }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>{s.label}</span>
+              <span className="pixel" style={{
+                fontSize: 12,
+                padding: '3px 10px',
+                boxShadow: 'var(--raised-2)',
+                background: 'var(--card)', color: 'var(--text)',
+              }}>{s.keys}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── CSV export — download contacts as .csv ──────────────────────────────────
+async function exportContactsCsv() {
+  const { data } = await db
+    .from('contacts')
+    .select('id, name, phone, email, address, stage, status, do_not_contact, created_at, install_notes')
+    .order('created_at', { ascending: false });
+  if (!data || data.length === 0) return;
+
+  const header = ['id', 'name', 'phone', 'email', 'address', 'stage', 'status', 'do_not_contact', 'created_at', 'install_notes'];
+  const esc = v => {
+    if (v == null) return '';
+    const s = String(v).replace(/"/g, '""');
+    return /[",\n]/.test(s) ? `"${s}"` : s;
+  };
+  const rows = data.map(r => header.map(h => esc(r[h])).join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bpp-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── New Lead Modal (action triggered by "+" button) ────────────────────────
 function NewLeadModal({ open, onClose, onCreated }) {
   const [name, setName] = useState('');
@@ -2036,7 +2109,7 @@ function LiveSparky() {
 }
 
 // ── Command Palette ⌘K ──────────────────────────────────────────────────────
-function CommandPalette({ open, onClose, onSelectContact, onSwitchTab }) {
+function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [cursor, setCursor] = useState(0);
@@ -2064,8 +2137,12 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab }) {
         { type: 'nav', id: 'messages', label: 'Go to Messages' },
         { type: 'nav', id: 'sparky', label: 'Go to Sparky' },
       ].filter(n => n.label.toLowerCase().includes(q.toLowerCase()));
+      const actionHits = [
+        { type: 'action', id: 'export_csv', label: 'Export contacts as CSV' },
+        { type: 'action', id: 'show_help', label: 'Show keyboard shortcuts' },
+      ].filter(a => a.label.toLowerCase().includes(q.toLowerCase()));
       const sparkyHit = [{ type: 'sparky', label: `Ask Sparky: "${q}"` }];
-      setResults([...contactHits, ...navHits, ...sparkyHit]);
+      setResults([...contactHits, ...navHits, ...actionHits, ...sparkyHit]);
       setCursor(0);
     })();
     return () => { alive = false; };
@@ -2086,6 +2163,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab }) {
       if (!hit) return;
       if (hit.type === 'contact') { onSelectContact(hit.id); onClose(); }
       else if (hit.type === 'nav') { onSwitchTab(hit.id); onClose(); }
+      else if (hit.type === 'action') { onAction && onAction(hit.id); onClose(); }
       else if (hit.type === 'sparky') { onSwitchTab('sparky'); onClose(); }
     }
   }
@@ -2123,6 +2201,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab }) {
               <div key={i} onClick={() => {
                 if (r.type === 'contact') { onSelectContact(r.id); onClose(); }
                 else if (r.type === 'nav') { onSwitchTab(r.id); onClose(); }
+                else if (r.type === 'action') { onAction && onAction(r.id); onClose(); }
                 else { onSwitchTab('sparky'); onClose(); }
               }} style={{
                 padding: '10px 16px', cursor: 'pointer', background: bg, boxShadow,
@@ -2200,6 +2279,7 @@ function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('bpp_v2_theme') === 'dark');
 
   // Apply theme
@@ -2270,7 +2350,11 @@ function App() {
         setTimeout(() => setGPending(false), 1000);
         return;
       }
-      // ? → help (future)
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setHelpOpen(o => !o);
+        return;
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -2371,6 +2455,10 @@ function App() {
         onClose={() => setPaletteOpen(false)}
         onSelectContact={id => { setSelectedContact(id); setTab('leads'); }}
         onSwitchTab={id => setTab(id)}
+        onAction={id => {
+          if (id === 'export_csv') exportContactsCsv();
+          else if (id === 'show_help') setHelpOpen(true);
+        }}
       />
       {briefOpen ? <LiveMorningBriefing onClose={() => setBriefOpen(false)} /> : null}
       <NewLeadModal
@@ -2381,6 +2469,7 @@ function App() {
           setTab('leads');
         }}
       />
+      <KeyboardHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       <VoiceCallModal voice={voice} />
     </div>
   );
