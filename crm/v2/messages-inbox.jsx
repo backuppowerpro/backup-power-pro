@@ -1,0 +1,201 @@
+/* global React */
+// Messages — Inbox list + open-thread split view
+
+const MsgIcons = {
+  arrL:  <svg viewBox="0 0 16 16" width="10" height="10"><path d="M10 3 L4 8 L10 13"/></svg>,
+  arrR:  <svg viewBox="0 0 16 16" width="10" height="10"><path d="M6 3 L12 8 L6 13"/></svg>,
+  phone: <svg viewBox="0 0 16 16" width="11" height="11"><path d="M3 3 L5 3 L6 6 L5 7 A5 5 0 0 0 9 11 L10 10 L13 11 L13 13 A1 1 0 0 1 12 14 A11 11 0 0 1 2 4 A1 1 0 0 1 3 3 Z"/></svg>,
+};
+
+const THREADS = [
+  { name:'Sarah M',  i:'SM', tint:'navy',  dir:'in',    prev:'ok I need to talk to my husband', ts:'3:12 PM',  unread:2, active:true },
+  { name:'Dave H',   i:'DH', tint:'navy',  dir:'photo', prev:'[photo]',                          ts:'2:48 PM',  unread:1 },
+  { name:'Robert K', i:'RK', tint:'navy',  dir:'in',    prev:'thanks Key sounds good',           ts:'1:20 PM',  unread:0 },
+  { name:'Mark L',   i:'ML', tint:'gold',  dir:'call',  prev:'voice call · incoming',            call:'0:43',   ts:'11:42 AM', unread:0 },
+  { name:'Mike J',   i:'MJ', tint:'navy',  dir:'in',    prev:'Just checking in — Key is holding your install slot...', ts:'10:05 AM', unread:3, alex:true },
+  { name:'Linda W',  i:'LW', tint:'red',   dir:'out',   prev:'Final check — still want to move forward?', ts:'YESTERDAY', unread:0, alex:true },
+  { name:'Helen S',  i:'HS', tint:'green', dir:'in',    prev:'see you Thursday',                 ts:'YESTERDAY', unread:0 },
+  { name:'Ashley P', i:'AP', tint:'gold',  dir:'photo', prev:'[photo] · Perfect, Key will get back to you...', ts:'YESTERDAY', unread:1, alex:true },
+  { name:'Tom B',    i:'TB', tint:'navy',  dir:'in',    prev:'$1,497? seems steep',              ts:'APR 12',   unread:0 },
+  { name:'Carl W',   i:'CW', tint:'red',   dir:'in',    prev:'I decided to go with another company', ts:'APR 11', unread:0 },
+];
+
+const TINTS = { navy:'var(--navy)', gold:'var(--gold)', red:'var(--ms-3)', green:'var(--ms-2)' };
+
+function Avatar({ t, size = 48 }) {
+  return (
+    <div style={{
+      width: size, height: size, flex: '0 0 auto',
+      background: TINTS[t.tint] || 'var(--navy)',
+      clipPath: 'var(--avatar-clip)',
+      display: 'grid', placeItems: 'center',
+    }}>
+      <span style={{
+        fontFamily: 'var(--font-chrome)', fontWeight: 700,
+        color: t.tint === 'gold' ? '#1a1a1a' : 'var(--gold)',
+        fontSize: size >= 48 ? 14 : 11, letterSpacing: '.04em',
+      }}>{t.i}</span>
+    </div>
+  );
+}
+
+function AlexBadge() {
+  return (
+    <span style={{
+      marginLeft: 6, width: 18, height: 18,
+      background: 'var(--gold)', color: '#1a1a1a',
+      display: 'inline-grid', placeItems: 'center',
+      fontFamily: 'var(--font-pixel)', fontSize: 14,
+      boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35)',
+    }}>A</span>
+  );
+}
+
+function Preview({ t }) {
+  const icon = t.dir === 'out' ? MsgIcons.arrR : t.dir === 'call' ? MsgIcons.phone : MsgIcons.arrL;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      fontFamily: 'var(--font-body)', fontSize: 13,
+      color: t.unread ? 'var(--text)' : 'var(--text-muted)',
+      fontWeight: t.unread ? 500 : 400,
+      overflow: 'hidden',
+    }}>
+      <span style={{ color: 'var(--text-faint)', display:'inline-flex', flex:'0 0 auto' }}>{icon}</span>
+      {t.call && (
+        <span style={{
+          padding:'0 4px', background:'var(--lcd-bg)', boxShadow:'var(--pressed-2)',
+          color:'var(--lcd-red)', textShadow:'var(--lcd-glow-red)',
+          fontFamily:'var(--font-pixel)', fontSize:12,
+        }}>{t.call}</span>
+      )}
+      <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+        {t.alex && <span style={{ color: 'var(--gold)', fontWeight: 700, marginRight: 4 }}>ALEX:</span>}
+        {t.prev}
+      </span>
+    </div>
+  );
+}
+
+function ThreadRow({ t, compact = false, active = false }) {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: compact ? '48px 1fr 64px' : '48px 1fr 100px',
+      gap: 12, alignItems: 'center',
+      padding: '10px 14px', minHeight: 72,
+      background: 'var(--card)',
+      boxShadow: active ? 'var(--pressed-2)' : 'none',
+      borderBottom: '1px solid rgba(0,0,0,.06)',
+    }}>
+      <Avatar t={t} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{
+            fontFamily: 'var(--font-body)', fontSize: 15,
+            fontWeight: t.unread ? 700 : 600, color: 'var(--text)',
+          }}>{t.name}</span>
+          {t.unread > 0 && <span style={{ width:6, height:6, background:'var(--gold)', display:'inline-block' }} />}
+          {t.alex && <AlexBadge />}
+        </div>
+        <Preview t={t} />
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+        <span style={{ fontFamily:'var(--font-pixel)', fontSize:13, color:'var(--text-muted)', letterSpacing:'.06em' }}>{t.ts}</span>
+        {t.unread > 0 && (
+          <span style={{
+            minWidth: 22, padding: '0 4px', height: 18,
+            background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
+            color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
+            fontFamily: 'var(--font-pixel)', fontSize: 13,
+            display: 'inline-grid', placeItems: 'center',
+          }}>{String(t.unread).padStart(2, '0')}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MsgChips({ active = 'all' }) {
+  const chips = [
+    { id:'all',   label:'ALL' },
+    { id:'un',    label:'UNREAD', count:'12' },
+    { id:'alex',  label:'ALEX' },
+    { id:'key',   label:'KEY' },
+    { id:'call',  label:'CALLS' },
+  ];
+  return (
+    <div style={{ display:'flex', gap:6, padding:'14px 16px 10px', flexWrap:'wrap' }}>
+      {chips.map(c => {
+        const on = c.id === active;
+        return (
+          <button key={c.id} className="chrome-label" style={{
+            height: 28, padding: '0 12px', fontSize: 11,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: on ? 'var(--navy)' : 'var(--card)',
+            color: on ? '#fff' : 'var(--text)',
+            boxShadow: on ? 'var(--pressed-2)' : 'var(--raised-2)',
+          }}>
+            {c.label}
+            {c.count && (
+              <span style={{
+                padding:'0 4px', background:'var(--lcd-bg)', boxShadow:'var(--pressed-2)',
+                color:'var(--lcd-red)', textShadow:'var(--lcd-glow-red)',
+                fontFamily:'var(--font-pixel)', fontSize:12,
+              }}>{c.count}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function MessagesInbox({ compact = false }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
+      <MsgChips active="all" />
+      <div style={{
+        flex: 1, overflowY: 'auto', margin: '0 16px 88px',
+        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      }}>
+        {THREADS.map((t, i) => (
+          <ThreadRow key={i} t={t} compact={compact} active={compact && t.active} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* Thread-open split view (uses existing ContactDetail components loaded globally) */
+function MessagesSplit() {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <div style={{ display:'flex', flex:1, minHeight:0 }}>
+        <div style={{ width: 360, flex:'0 0 auto', borderRight:'1px solid rgba(0,0,0,.1)', display:'flex', flexDirection:'column' }}>
+          <MsgChips active="all" />
+          <div style={{ flex:1, overflowY:'auto' }}>
+            {THREADS.map((t, i) => (
+              <ThreadRow key={i} t={t} compact active={t.active} />
+            ))}
+          </div>
+        </div>
+        <div style={{ flex:1, position:'relative', display:'flex', flexDirection:'column', minWidth:0 }}>
+          <div style={{
+            position:'absolute', left:0, top:0, bottom:0, width:4,
+            background:'var(--navy)',
+            boxShadow:'inset 0 2px 0 rgba(255,255,255,.15), inset 0 -2px 0 rgba(0,0,0,.3)',
+          }}/>
+          <div style={{ flex:1, minHeight:0 }}>
+            {window.ContactDetail && <window.ContactDetail tab="MESSAGES" />}
+          </div>
+          <div>
+            {window.BottomBar && <window.BottomBar mode="sms" thread={{ name:'Sarah M', phone:'(864) 555-0101' }} />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { MessagesInbox, MessagesSplit, ThreadRow, MsgChips });

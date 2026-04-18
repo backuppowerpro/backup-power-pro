@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#c0c0c0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="BPP" />
+<title>BPP CRM v2</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  html, body { height: 100%; background: var(--bg); }
+  body { overscroll-behavior-y: none; }
+  #app { min-height: 100vh; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<!-- React 18 + Babel standalone (matches Claude Design's export runtime) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+<!-- Supabase v2 JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+
+<!-- Design system components (order matters — shell first, then data-specific) -->
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="leads-list.jsx"></script>
+<script type="text/babel" src="leads-pipeline.jsx"></script>
+<script type="text/babel" src="contact-detail.jsx"></script>
+<script type="text/babel" src="messages-inbox.jsx"></script>
+<script type="text/babel" src="calendar.jsx"></script>
+<script type="text/babel" src="finance.jsx"></script>
+<script type="text/babel" src="leads-permits.jsx"></script>
+<script type="text/babel" src="leads-materials.jsx"></script>
+<script type="text/babel" src="sparky.jsx"></script>
+<script type="text/babel" src="briefing.jsx"></script>
+<script type="text/babel" src="command-palette.jsx"></script>
+<script type="text/babel" src="voice-call.jsx"></script>
+
+<!-- Live app orchestrator — queries Supabase, wires auth, routes tabs, handles morphing bar -->
+<script type="text/babel" src="app.jsx"></script>
+
+</body>
+</html>

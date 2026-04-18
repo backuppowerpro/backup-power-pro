@@ -1,0 +1,183 @@
+/* ============================================================
+   BPP CRM — LOCKED DESIGN TOKENS
+   Do not reinvent. Every value here is non-negotiable.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  /* ---------- Surfaces (light mode default) ---------- */
+  --bg: #c0c0c0;
+  --card: #c0c0c0;
+  --text: #181818;
+  --text-muted: #555555;
+  --text-faint: #888888;
+
+  /* ---------- Brand ---------- */
+  --navy: #0b1f3b;
+  --gold: #d4911a;
+
+  /* ---------- Status ---------- */
+  --green: #10b981;
+  --red: #dc2626;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+
+  /* ---------- Minesweeper number palette ---------- */
+  --ms-1: #1d4ed8;
+  --ms-2: #047857;
+  --ms-3: #dc2626;
+  --ms-4: #6d28d9;
+  --ms-5: #b45309;
+  --ms-6: #0891b2;
+  --ms-7: #111111;
+  --ms-8: #6b7280;
+
+  /* ---------- Bevel atoms ---------- */
+  --bevel-hi: #ffffff;
+  --bevel-lo: #5a5e63;
+
+  --raised:  inset 3px 3px 0 var(--bevel-hi), inset -3px -3px 0 var(--bevel-lo);
+  --pressed: inset 3px 3px 0 var(--bevel-lo), inset -3px -3px 0 var(--bevel-hi);
+
+  /* thin 2px variant for smaller controls */
+  --raised-2:  inset 2px 2px 0 var(--bevel-hi), inset -2px -2px 0 var(--bevel-lo);
+  --pressed-2: inset 2px 2px 0 var(--bevel-lo), inset -2px -2px 0 var(--bevel-hi);
+
+  /* ---------- LCD screen ---------- */
+  --lcd-bg: #0a0a0a;
+  --lcd-red: #ff2e2e;
+  --lcd-green: #2aff5f;
+  --lcd-amber: #ffb700;
+  --lcd-glow-red: 0 0 6px rgba(255, 46, 46, .55);
+  --lcd-glow-green: 0 0 6px rgba(42, 255, 95, .55);
+  --lcd-glow-amber: 0 0 6px rgba(255, 183, 0, .55);
+
+  /* ---------- Type ---------- */
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-pixel: 'VT323', monospace;
+  --font-chrome: 'Rajdhani', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ---------- Motion ---------- */
+  --step: steps(4, end);
+  --dur: 120ms;
+
+  /* ---------- Avatar clip ---------- */
+  --avatar-clip: polygon(
+    37.5% 0, 62.5% 0, 75% 12.5%, 87.5% 12.5%,
+    100% 37.5%, 100% 62.5%, 87.5% 87.5%, 75% 87.5%,
+    62.5% 100%, 37.5% 100%, 25% 87.5%, 12.5% 87.5%,
+    0 62.5%, 0 37.5%, 12.5% 12.5%, 25% 12.5%
+  );
+}
+
+[data-theme="dark"] {
+  --bg: #3d3d3d;
+  --card: #3d3d3d;
+  --text: #e8eaec;
+  --text-muted: #b0b4b8;
+  --text-faint: #7e8388;
+  --bevel-hi: #7b8088;
+  --bevel-lo: #0d0f12;
+}
+
+/* ============================================================
+   Resets + base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11";
+}
+button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+input, textarea, select {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  outline: 0;
+}
+svg {
+  shape-rendering: crispEdges;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+button svg { stroke-width: 3; }
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+.raised   { box-shadow: var(--raised); background: var(--card); }
+.pressed  { box-shadow: var(--pressed); background: var(--card); }
+.raised-2 { box-shadow: var(--raised-2); background: var(--card); }
+.pressed-2{ box-shadow: var(--pressed-2); background: var(--card); }
+
+/* Raised → flatten on click */
+.tactile-raised {
+  background: var(--card);
+  box-shadow: var(--raised);
+  transition: box-shadow var(--dur) var(--step), transform var(--dur) var(--step);
+}
+.tactile-raised:active { box-shadow: none; }
+
+/* Flat → depress on click */
+.tactile-flat {
+  background: var(--card);
+  box-shadow: none;
+  transition: box-shadow var(--dur) var(--step);
+}
+.tactile-flat:active { box-shadow: var(--pressed-2); }
+
+/* Graph-paper background for content areas */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(0,0,0,.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,.04) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+[data-theme="dark"] .grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+}
+
+/* Avatar clip */
+.avatar-clip { clip-path: var(--avatar-clip); }
+
+/* LCD text */
+.lcd {
+  background: var(--lcd-bg);
+  color: var(--lcd-red);
+  font-family: var(--font-pixel);
+  text-shadow: var(--lcd-glow-red);
+  box-shadow: var(--pressed-2);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.lcd--green { color: var(--lcd-green); text-shadow: var(--lcd-glow-green); }
+.lcd--amber { color: var(--lcd-amber); text-shadow: var(--lcd-glow-amber); }
+
+/* Chrome label */
+.chrome-label {
+  font-family: var(--font-chrome);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.pixel { font-family: var(--font-pixel); text-transform: uppercase; letter-spacing: .06em; }
