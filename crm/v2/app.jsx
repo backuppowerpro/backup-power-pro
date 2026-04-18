@@ -684,32 +684,85 @@ function DetailTimeline({ contactId }) {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     (async () => {
-      const { data } = await db
-        .from('stage_history')
-        .select('*')
-        .eq('contact_id', contactId)
-        .order('changed_at', { ascending: false })
-        .limit(50);
-      setEvents(data || []);
+      setLoading(true);
+      // Collect every event type for this contact, merge by timestamp.
+      const [stageRes, propRes, invRes, msgRes, payRes] = await Promise.all([
+        db.from('stage_history').select('id, from_stage, to_stage, changed_at').eq('contact_id', contactId).order('changed_at', { ascending: false }).limit(50),
+        db.from('proposals').select('id, total, status, created_at, signed_at, viewed_at').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(20),
+        db.from('invoices').select('id, total, status, created_at, paid_at').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(20),
+        db.from('messages').select('id, direction, body, sender, created_at').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(30),
+        db.from('payments').select('id, amount, method, created_at').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(10),
+      ]);
+
+      const items = [];
+      for (const s of (stageRes.data || [])) items.push({
+        id: `s-${s.id}`, at: s.changed_at, kind: 'stage',
+        label: `Stage ${s.from_stage ?? '—'} → ${s.to_stage ?? '—'} (${STAGE_MAP[s.to_stage] || '—'})`,
+      });
+      for (const p of (propRes.data || [])) {
+        items.push({ id: `pc-${p.id}`, at: p.created_at, kind: 'proposal', label: `Proposal created · $${Number(p.total||0).toLocaleString()}` });
+        if (p.viewed_at) items.push({ id: `pv-${p.id}`, at: p.viewed_at, kind: 'proposal', label: `Proposal viewed by customer` });
+        if (p.signed_at) items.push({ id: `ps-${p.id}`, at: p.signed_at, kind: 'proposal', label: `Proposal approved` });
+      }
+      for (const i of (invRes.data || [])) {
+        items.push({ id: `ic-${i.id}`, at: i.created_at, kind: 'invoice', label: `Invoice · $${Number(i.total||0).toLocaleString()}` });
+        if (i.paid_at) items.push({ id: `ip-${i.id}`, at: i.paid_at, kind: 'invoice', label: `Invoice paid · $${Number(i.total||0).toLocaleString()}` });
+      }
+      for (const m of (msgRes.data || [])) {
+        const who = m.sender === 'ai' ? 'Alex' : (m.direction === 'inbound' ? 'Customer' : 'Key');
+        const preview = (m.body || '').slice(0, 80);
+        items.push({ id: `m-${m.id}`, at: m.created_at, kind: 'msg', label: `${who}: ${preview}` });
+      }
+      for (const p of (payRes.data || [])) {
+        items.push({ id: `py-${p.id}`, at: p.created_at, kind: 'payment', label: `Payment · $${Number(p.amount||0).toLocaleString()} · ${p.method || '—'}` });
+      }
+
+      items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+      setEvents(items.slice(0, 80));
       setLoading(false);
     })();
   }, [contactId]);
-  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12 }}>LOADING...</div>;
-  if (events.length === 0) return <Empty label="NO TIMELINE EVENTS" />;
+
+  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>;
+  if (events.length === 0) return <Empty label="No activity yet" />;
+
+  // Group by day for readability
+  const groups = [];
+  let currentDay = null;
+  for (const e of events) {
+    const day = e.at ? new Date(e.at).toDateString() : 'Unknown';
+    if (day !== currentDay) { groups.push({ day, items: [] }); currentDay = day; }
+    groups[groups.length - 1].items.push(e);
+  }
+  const kindTint = {
+    stage: 'var(--ms-1)', proposal: 'var(--ms-4)', invoice: 'var(--ms-3)',
+    msg: 'var(--text-muted)', payment: 'var(--ms-2)',
+  };
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-      {events.map(e => (
-        <div key={e.id} style={{
-          display: 'grid', gridTemplateColumns: '120px 1fr',
-          gap: 12, padding: '10px 0',
-          borderBottom: '1px solid rgba(0,0,0,.08)',
-        }}>
-          <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            {e.changed_at ? new Date(e.changed_at).toLocaleString() : '—'}
-          </span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
-            Stage {e.from_stage ?? '—'} → Stage {e.to_stage ?? '—'}
-          </span>
+      {groups.map((g, gi) => (
+        <div key={gi} style={{ marginBottom: 18 }}>
+          <div style={{
+            fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.08em',
+            color: 'var(--text-faint)', textTransform: 'uppercase',
+            paddingBottom: 4, marginBottom: 4,
+            borderBottom: '1px solid rgba(0,0,0,.06)',
+          }}>{g.day}</div>
+          {g.items.map(e => (
+            <div key={e.id} style={{
+              display: 'grid', gridTemplateColumns: '70px 1fr',
+              gap: 12, padding: '6px 0',
+            }}>
+              <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+                {e.at ? new Date(e.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—'}
+              </span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'start', gap: 6 }}>
+                <span style={{ width: 6, height: 6, marginTop: 6, background: kindTint[e.kind] || 'var(--text-faint)', flex: '0 0 auto' }} />
+                {e.label}
+              </span>
+            </div>
+          ))}
         </div>
       ))}
     </div>
