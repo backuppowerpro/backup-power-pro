@@ -587,6 +587,265 @@ function ComposeBar({ contactId, contactName, contactPhone }) {
   );
 }
 
+// ── Live Sparky AI Chat ─────────────────────────────────────────────────────
+function LiveSparky() {
+  const [messages, setMessages] = useState([
+    { who: 'sparky', text: "Standing by. Ask anything about the pipeline, a lead, or tell me what to draft." },
+  ]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [mode, setMode] = useState('chat');
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages]);
+
+  async function send() {
+    const q = input.trim();
+    if (!q || sending) return;
+    setSending(true);
+    const newMsgs = [...messages, { who: 'key', text: q }];
+    setMessages(newMsgs);
+    setInput('');
+    try {
+      const { data, error } = await db.functions.invoke('ai-taskmaster', {
+        body: {
+          mode,
+          question: q,
+          history: newMsgs.slice(-10).map(m => ({ role: m.who === 'key' ? 'user' : 'assistant', content: m.text })),
+          context_source: 'sparky',
+        },
+      });
+      if (error) throw error;
+      const reply = (data?.response || data?.message || data?.text || JSON.stringify(data)).toString();
+      setMessages(prev => [...prev, { who: 'sparky', text: reply }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { who: 'sparky', text: `Error: ${e.message || 'something went wrong'}` }]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const modes = [
+    { id: 'chat', label: 'CHAT' },
+    { id: 'briefing', label: 'BRIEFING' },
+    { id: 'contact_insight', label: 'INSIGHT' },
+    { id: 'suggest_reply', label: 'REPLY' },
+    { id: 'draft_followup', label: 'DRAFT' },
+  ];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Mode selector */}
+      <div style={{ padding: '12px 16px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {modes.map(m => (
+          <button key={m.id} onClick={() => setMode(m.id)} className="chrome-label" style={{
+            height: 28, padding: '0 12px', fontSize: 10,
+            background: m.id === mode ? 'var(--navy)' : 'var(--card)',
+            color: m.id === mode ? 'var(--gold)' : 'var(--text)',
+            boxShadow: m.id === mode ? 'var(--pressed-2)' : 'var(--raised-2)',
+            cursor: 'pointer',
+          }}>{m.label}</button>
+        ))}
+      </div>
+
+      {/* Chat scroll */}
+      <div ref={scrollRef} style={{
+        flex: 1, overflowY: 'auto', padding: '8px 16px 16px',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {messages.map((m, i) => m.who === 'key' ? (
+          <div key={i} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+            <div style={{
+              maxWidth: '72%', background: 'var(--navy)', color: '#fff',
+              padding: '10px 14px', boxShadow: 'var(--raised-2)',
+              fontSize: 14, lineHeight: 1.4,
+            }}>{m.text}</div>
+          </div>
+        ) : (
+          <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-start' }}>
+            <span style={{
+              width: 20, height: 20, flex: '0 0 auto',
+              background: 'var(--gold)', color: '#1a1a1a',
+              display: 'grid', placeItems: 'center',
+              fontFamily: 'var(--font-pixel)', fontSize: 14,
+              boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35)',
+            }}>S</span>
+            <div style={{
+              maxWidth: '72%', background: 'var(--card)',
+              boxShadow: 'var(--pressed-2)', padding: '10px 14px',
+              fontSize: 14, lineHeight: 1.4, color: 'var(--text)',
+              whiteSpace: 'pre-wrap',
+            }}>{m.text}</div>
+          </div>
+        ))}
+        {sending ? (
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <span style={{ width: 20, height: 20, background: 'var(--gold)', boxShadow: 'var(--raised-2)' }} />
+            <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>THINKING...</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Sparky compose bar — bottom */}
+      <div style={{
+        padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
+        background: 'var(--card)', boxShadow: 'var(--raised)',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <div className="pressed-2" style={{ flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="pixel" style={{ fontSize: 10, color: 'var(--gold)' }}>ASK SPARKY »</span>
+          <input value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="ASK ANYTHING..."
+            style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 13 }}
+          />
+          <span className="lcd lcd--green" style={{ padding: '2px 6px', fontSize: 10 }}>SONNET-4-6</span>
+        </div>
+        <button onClick={send} disabled={sending || !input.trim()} style={{
+          width: 40, height: 40, background: 'var(--navy)', color: '#fff',
+          boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+          opacity: sending || !input.trim() ? 0.5 : 1, display: 'grid', placeItems: 'center',
+        }}>
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+            <path d="M1 2 L15 8 L1 14 L3 8 L1 2 Z M3 8 L9 8"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Command Palette ⌘K ──────────────────────────────────────────────────────
+function CommandPalette({ open, onClose, onSelectContact, onSwitchTab }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [cursor, setCursor] = useState(0);
+  const inputRef = useRef(null);
+
+  // Search
+  useEffect(() => {
+    if (!open || !query.trim()) { setResults([]); return; }
+    let alive = true;
+    const q = query.trim();
+    (async () => {
+      const { data } = await db
+        .from('contacts')
+        .select('id, name, phone, stage, address')
+        .or(`name.ilike.%${q}%,phone.ilike.%${q}%,address.ilike.%${q}%`)
+        .limit(8);
+      if (!alive) return;
+      const contactHits = (data || []).map(c => ({
+        type: 'contact', id: c.id, name: c.name, phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+      }));
+      const navHits = [
+        { type: 'nav', id: 'leads', label: 'Go to Leads' },
+        { type: 'nav', id: 'calendar', label: 'Go to Calendar' },
+        { type: 'nav', id: 'finance', label: 'Go to Finance' },
+        { type: 'nav', id: 'messages', label: 'Go to Messages' },
+        { type: 'nav', id: 'sparky', label: 'Go to Sparky' },
+      ].filter(n => n.label.toLowerCase().includes(q.toLowerCase()));
+      const sparkyHit = [{ type: 'sparky', label: `Ask Sparky: "${q}"` }];
+      setResults([...contactHits, ...navHits, ...sparkyHit]);
+      setCursor(0);
+    })();
+    return () => { alive = false; };
+  }, [query, open]);
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  // Keyboard nav
+  function onKey(e) {
+    if (e.key === 'Escape') { onClose(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setCursor(c => Math.min(c + 1, results.length - 1)); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setCursor(c => Math.max(c - 1, 0)); return; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const hit = results[cursor];
+      if (!hit) return;
+      if (hit.type === 'contact') { onSelectContact(hit.id); onClose(); }
+      else if (hit.type === 'nav') { onSwitchTab(hit.id); onClose(); }
+      else if (hit.type === 'sparky') { onSwitchTab('sparky'); onClose(); }
+    }
+  }
+
+  if (!open) return null;
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      background: 'rgba(0,0,0,.5)',
+      display: 'grid', placeItems: 'start center', paddingTop: 120,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 560, maxWidth: 'calc(100vw - 32px)',
+        background: 'var(--card)', boxShadow: 'var(--raised)',
+      }}>
+        <div style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKey}
+            placeholder="SEARCH OR RUN COMMAND..."
+            className="pressed-2"
+            style={{ flex: 1, padding: '10px 14px', height: 48, fontFamily: 'var(--font-mono)', fontSize: 16 }}
+          />
+          <span className="pixel" style={{ fontSize: 10, padding: '4px 8px', boxShadow: 'var(--raised-2)', color: 'var(--text-muted)' }}>ESC</span>
+        </div>
+        <div style={{ maxHeight: 400, overflowY: 'auto', borderTop: '1px solid rgba(0,0,0,.1)' }}>
+          {results.length === 0 ? (
+            <div style={{ padding: 24, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
+              {query.trim() ? 'NO RESULTS' : 'TYPE TO SEARCH CONTACTS, NAVIGATION, OR ASK SPARKY'}
+            </div>
+          ) : results.map((r, i) => {
+            const active = i === cursor;
+            const bg = active ? 'var(--card)' : 'transparent';
+            const boxShadow = active ? 'inset 3px 0 0 var(--gold), var(--pressed-2)' : 'none';
+            return (
+              <div key={i} onClick={() => {
+                if (r.type === 'contact') { onSelectContact(r.id); onClose(); }
+                else if (r.type === 'nav') { onSwitchTab(r.id); onClose(); }
+                else { onSwitchTab('sparky'); onClose(); }
+              }} style={{
+                padding: '10px 16px', cursor: 'pointer', background: bg, boxShadow,
+                display: 'flex', alignItems: 'center', gap: 12,
+              }}>
+                {r.type === 'contact' ? (
+                  <>
+                    <span style={{
+                      width: 32, height: 32, background: 'var(--navy)',
+                      clipPath: 'var(--avatar-clip)',
+                      display: 'grid', placeItems: 'center', flex: '0 0 auto',
+                    }}><span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 11 }}>{initials(r.name)}</span></span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{r.name}</div>
+                      <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.phone} · {r.stage}</div>
+                    </div>
+                  </>
+                ) : (
+                  <span className="chrome-label" style={{ fontSize: 12, color: r.type === 'sparky' ? 'var(--gold)' : 'var(--text)' }}>
+                    {r.type === 'sparky' ? '→ ' : '• '}{r.label}
+                  </span>
+                )}
+                <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>↵</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="pressed-2" style={{
+          padding: '8px 16px', fontFamily: 'var(--font-pixel)', fontSize: 10,
+          letterSpacing: '.12em', color: 'var(--text-muted)',
+          display: 'flex', gap: 16,
+        }}>
+          <span>↑↓ NAVIGATE</span>
+          <span>↵ SELECT</span>
+          <span>ESC CLOSE</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ────────────────────────────────────────────────────────────────
 function App() {
   const [user, setUser] = useState(null);
@@ -595,12 +854,25 @@ function App() {
   const [leadsSubView, setLeadsSubView] = useState(() => window.innerWidth < 768 ? 'list' : 'pipeline');
   const [selectedContact, setSelectedContact] = useState(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   // Responsive
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // ⌘K / Ctrl+K to open command palette
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen(o => !o);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   // Auth bootstrap
@@ -635,7 +907,7 @@ function App() {
     if (tab === 'calendar') return <Placeholder name="CALENDAR" />;
     if (tab === 'finance') return <Placeholder name="FINANCE" />;
     if (tab === 'messages') return <Placeholder name="MESSAGES" />;
-    if (tab === 'sparky') return <Placeholder name="SPARKY" />;
+    if (tab === 'sparky') return <LiveSparky />;
     return null;
   })();
 
@@ -662,6 +934,12 @@ function App() {
           </div>
         ) : null}
       </div>
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onSelectContact={id => { setSelectedContact(id); setTab('leads'); }}
+        onSwitchTab={id => setTab(id)}
+      />
     </div>
   );
 }
