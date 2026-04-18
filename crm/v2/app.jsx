@@ -1201,6 +1201,18 @@ function DetailEditContact({ contact, onUpdate }) {
       <EditField label="EMAIL" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
       <EditField label="ADDRESS" value={form.address} onChange={v => setForm({ ...form, address: v })} />
 
+      {contact?.created_at ? (
+        <div className="mono" style={{
+          marginTop: 4, padding: '8px 14px',
+          display: 'flex', justifyContent: 'space-between',
+          color: 'var(--text-faint)', fontSize: 11,
+          borderBottom: '1px solid rgba(0,0,0,.06)',
+        }}>
+          <span>Created</span>
+          <span>{new Date(contact.created_at).toLocaleDateString()} · {Math.round((Date.now() - new Date(contact.created_at).getTime()) / 86400000)}d ago</span>
+        </div>
+      ) : null}
+
       <label style={{
         marginTop: 8, padding: '12px 14px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
