@@ -1685,6 +1685,7 @@ window.__bpp_toast = (text, kind = 'info', action = null) => {
 
 function ToastRoot() {
   const [toasts, setToasts] = useState([]);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
     const sub = (t) => {
       setToasts(prev => [...prev, t]);
@@ -1693,11 +1694,20 @@ function ToastRoot() {
       setTimeout(() => setToasts(prev => prev.filter(x => x.id !== t.id)), ttl);
     };
     toastSubs.add(sub);
-    return () => toastSubs.delete(sub);
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => { toastSubs.delete(sub); window.removeEventListener('resize', onResize); };
   }, []);
 
   return (
-    <div style={{
+    <div style={isMobile ? {
+      // Mobile: top-center, below the top nav, above everything else.
+      // Avoids the compose bar at the bottom of the screen.
+      position: 'fixed', top: 'calc(100px + env(safe-area-inset-top))',
+      left: 12, right: 12, zIndex: 110,
+      display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center',
+    } : {
+      // Desktop: bottom-right corner, above safe-area.
       position: 'fixed', bottom: 16, right: 16, zIndex: 110,
       display: 'flex', flexDirection: 'column', gap: 8,
       paddingBottom: 'env(safe-area-inset-bottom)',
