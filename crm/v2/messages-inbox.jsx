@@ -142,17 +142,35 @@ function MsgChips({ active = 'all' }) {
 }
 
 function MessagesInbox({ compact = false, threads, onSelect, activeId }) {
-  const data = threads || THREADS;
+  const raw = threads || THREADS;
+  const [q, setQ] = React.useState('');
+  const query = q.trim().toLowerCase();
+  const data = query
+    ? raw.filter(t => (t.name || '').toLowerCase().includes(query) || (t.prev || '').toLowerCase().includes(query))
+    : raw;
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
+      <div style={{ padding: '12px 16px 4px' }}>
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          placeholder="Search threads…"
+          style={{
+            width: '100%', height: 36, padding: '0 12px',
+            fontFamily: 'var(--font-body)', fontSize: 14,
+            background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+            border: 'none',
+          }}
+        />
+      </div>
       <MsgChips active="all" />
       <div style={{
         flex: 1, overflowY: 'auto', margin: '0 16px 88px',
         background: 'var(--card)',
       }}>
         {data.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-faint)' }}>
-            INBOX CLEAR
+          <div style={{ padding: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
+            {query ? 'no matches' : 'inbox clear'}
           </div>
         ) : data.map((t, i) => (
           <div key={t.contactId || i} onClick={() => onSelect && onSelect(t)} style={{ cursor: onSelect ? 'pointer' : 'default' }}>
