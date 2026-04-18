@@ -663,6 +663,8 @@ function DetailTimeline({ contactId }) {
   );
 }
 
+const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
+
 function DetailQuote({ contactId }) {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -677,11 +679,38 @@ function DetailQuote({ contactId }) {
       setLoading(false);
     })();
   }, [contactId]);
+
+  function copyLink(token) {
+    const url = `${PROPOSAL_BASE_URL}?token=${token}`;
+    navigator.clipboard.writeText(url)
+      .then(() => window.__bpp_toast && window.__bpp_toast('Proposal link copied', 'success'))
+      .catch(() => window.__bpp_toast && window.__bpp_toast('Copy failed — select + ⌘C manually', 'error'));
+  }
+
+  function newQuoteLegacy() {
+    // Legacy CRM doesn't accept URL-focused contact — open it, user navigates to contact
+    window.open('/crm/crm.html', '_blank', 'noopener');
+    window.__bpp_toast && window.__bpp_toast('Legacy CRM opened — find this contact + create quote', 'info');
+  }
+
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12 }}>LOADING...</div>;
-  if (proposals.length === 0) return <Empty label="NO PROPOSALS FOR THIS LEAD" />;
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-      {proposals.map(p => (
+      <button onClick={newQuoteLegacy} className="chrome-label" style={{
+        width: '100%', height: 40, marginBottom: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        background: 'var(--navy)', color: 'var(--gold)',
+        boxShadow: 'var(--raised-2)', cursor: 'pointer',
+        border: 'none', fontSize: 12, letterSpacing: '.08em',
+      }}>
+        <span>+ NEW QUOTE</span>
+        <span style={{ fontSize: 9, opacity: 0.6 }}>(LEGACY)</span>
+      </button>
+
+      {proposals.length === 0 ? (
+        <Empty label="NO PROPOSALS FOR THIS LEAD" />
+      ) : proposals.map(p => (
         <div key={p.id} className="raised" style={{ padding: 14, marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <span className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -693,10 +722,24 @@ function DetailQuote({ contactId }) {
               fontFamily: 'var(--font-pixel)', fontSize: 16,
             }}>${(Number(p.total) || 0).toLocaleString()}</span>
           </div>
-          <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
             Created: {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
             {p.viewed_at && <span style={{ marginLeft: 10 }}>· Viewed: {new Date(p.viewed_at).toLocaleDateString()}</span>}
+            {p.view_count ? <span style={{ marginLeft: 10 }}>· {p.view_count} view{p.view_count === 1 ? '' : 's'}</span> : null}
           </div>
+          {p.token ? (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <a href={`${PROPOSAL_BASE_URL}?token=${p.token}`} target="_blank" rel="noopener" className="chrome-label" style={{
+                flex: 1, height: 32, display: 'grid', placeItems: 'center',
+                boxShadow: 'var(--raised-2)', textDecoration: 'none',
+                color: 'var(--text)', fontSize: 11,
+              }}>VIEW</a>
+              <button onClick={() => copyLink(p.token)} className="chrome-label" style={{
+                flex: 1, height: 32, boxShadow: 'var(--raised-2)', cursor: 'pointer',
+                border: 'none', background: 'var(--card)', color: 'var(--text)', fontSize: 11,
+              }}>COPY LINK</button>
+            </div>
+          ) : null}
         </div>
       ))}
     </div>
