@@ -3181,9 +3181,17 @@ function LeadsSubToolbar({ active, onChange }) {
 function App() {
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
-  const [tab, setTab] = useState('leads');
+  // Initial tab + selected contact can be supplied via URL hash:
+  //   #tab=finance
+  //   #contact=<uuid>
+  // (handy for bookmarks / deep-links from Sparky or briefing)
+  const initial = (() => {
+    const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+    return { tab: h.get('tab') || 'leads', contact: h.get('contact') || null };
+  })();
+  const [tab, setTab] = useState(initial.tab);
   const [leadsSubView, setLeadsSubView] = useState(() => window.innerWidth < 768 ? 'list' : 'pipeline');
-  const [selectedContact, setSelectedContact] = useState(null);
+  const [selectedContact, setSelectedContact] = useState(initial.contact);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
@@ -3196,6 +3204,19 @@ function App() {
     document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
     localStorage.setItem('bpp_v2_theme', isDark ? 'dark' : 'light');
   }, [isDark]);
+
+  // Keep URL hash in sync so reload preserves tab + selected contact
+  useEffect(() => {
+    const h = new URLSearchParams();
+    if (tab && tab !== 'leads') h.set('tab', tab);
+    if (selectedContact) h.set('contact', selectedContact);
+    const next = h.toString();
+    const target = next ? `#${next}` : '';
+    if (window.location.hash !== target) {
+      // replaceState so we don't flood the history stack
+      window.history.replaceState(null, '', window.location.pathname + window.location.search + target);
+    }
+  }, [tab, selectedContact]);
 
   // Voice device (outbound dial + incoming ring)
   const voice = useVoiceDevice(user);
