@@ -93,9 +93,8 @@ function LeadRow({ r, desktop = false }) {
     }}>
       {r.overdue && (
         <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
-          background: 'var(--red)',
-          boxShadow: 'inset 0 2px 0 rgba(255,255,255,.3), inset 0 -2px 0 rgba(0,0,0,.35)',
+          position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+          background: 'var(--ms-3)',
         }}/>
       )}
 
@@ -127,24 +126,19 @@ function LeadRow({ r, desktop = false }) {
         display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4,
         flex: '0 0 auto',
       }}>
-        <span className="chrome-label" style={{
+        <span style={{
           fontSize: 10, color: stage.color, lineHeight: 1,
+          fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase',
         }}>{stage.abbr}</span>
         {r.done ? (
-          <span style={{
-            height: 18, padding: '0 6px',
-            display: 'inline-flex', alignItems: 'center',
-            background: 'var(--lcd-bg)',
-            boxShadow: 'var(--pressed-2)',
-            color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-            fontFamily: 'var(--font-pixel)', fontSize: 13, letterSpacing: '.08em',
-            lineHeight: 1,
-          }}>DONE</span>
+          <span className="mono" style={{
+            fontSize: 11, color: 'var(--ms-2)',
+          }}>done</span>
         ) : (
-          <span style={{
-            fontFamily: 'var(--font-pixel)', fontSize: 13,
-            color: 'var(--text-muted)',
-            letterSpacing: '.08em', lineHeight: 1,
+          <span className="mono" style={{
+            fontSize: 11,
+            color: 'var(--text-faint)',
+            letterSpacing: '.02em',
           }}>{r.ts}</span>
         )}
       </div>
