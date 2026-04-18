@@ -2005,9 +2005,9 @@ function LiveFinance() {
   }, [data]);
 
   const subTabs = [
-    { id: 'prop', label: 'PROPOSALS', count: data.proposals.length },
-    { id: 'inv',  label: 'INVOICES',  count: data.invoices.length },
-    { id: 'pay',  label: 'PAYMENTS',  count: data.payments.length },
+    { id: 'prop', label: 'Proposals', count: data.proposals.length },
+    { id: 'inv',  label: 'Invoices',  count: data.invoices.length },
+    { id: 'pay',  label: 'Payments',  count: data.payments.length },
   ];
 
   if (data.loading) {
@@ -2024,14 +2024,16 @@ function LiveFinance() {
         <KpiCard label="OVERDUE" value={String(kpis.overdue).padStart(2, '0')} tone={kpis.overdue > 0 ? 'red' : 'green'} />
       </div>
       {/* Sub tabs */}
-      <div style={{ padding: '0 16px', display: 'flex', gap: 0, boxShadow: 'inset 0 -1px 0 rgba(0,0,0,.1)' }}>
+      <div style={{ padding: '0 16px', display: 'flex', gap: 0, borderBottom: '1px solid rgba(0,0,0,.08)' }}>
         {subTabs.map(s => (
-          <button key={s.id} onClick={() => setSubView(s.id)} className="chrome-label" style={{
-            height: 40, padding: '0 20px', fontSize: 12,
+          <button key={s.id} onClick={() => setSubView(s.id)} style={{
+            height: 40, padding: '0 16px', fontSize: 13,
+            fontFamily: 'var(--font-body)', fontWeight: s.id === subView ? 600 : 500,
             color: s.id === subView ? 'var(--text)' : 'var(--text-muted)',
-            boxShadow: s.id === subView ? 'inset 0 -3px 0 var(--gold)' : 'none',
-            cursor: 'pointer',
-          }}>{s.label} · {s.count}</button>
+            borderBottom: s.id === subView ? '2px solid var(--gold)' : '2px solid transparent',
+            cursor: 'pointer', background: 'transparent', border: 'none',
+            borderBottomStyle: 'solid',
+          }}>{s.label} <span style={{ color: 'var(--text-faint)', marginLeft: 4, fontWeight: 400 }}>{s.count}</span></button>
         ))}
       </div>
       {/* Table */}
@@ -2483,26 +2485,30 @@ function LiveSparky() {
   }
 
   const modes = [
-    { id: 'chat', label: 'CHAT' },
-    { id: 'briefing', label: 'BRIEFING' },
-    { id: 'contact_insight', label: 'INSIGHT' },
-    { id: 'suggest_reply', label: 'REPLY' },
-    { id: 'draft_followup', label: 'DRAFT' },
+    { id: 'chat', label: 'Chat' },
+    { id: 'briefing', label: 'Briefing' },
+    { id: 'contact_insight', label: 'Insight' },
+    { id: 'suggest_reply', label: 'Reply' },
+    { id: 'draft_followup', label: 'Draft' },
   ];
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Mode selector */}
-      <div style={{ padding: '12px 16px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {modes.map(m => (
-          <button key={m.id} onClick={() => setMode(m.id)} className="chrome-label" style={{
-            height: 28, padding: '0 12px', fontSize: 10,
-            background: m.id === mode ? 'var(--navy)' : 'var(--card)',
-            color: m.id === mode ? 'var(--gold)' : 'var(--text)',
-            boxShadow: m.id === mode ? 'var(--pressed-2)' : 'var(--raised-2)',
-            cursor: 'pointer',
-          }}>{m.label}</button>
-        ))}
+      <div style={{ padding: '14px 16px 10px', display: 'flex', gap: 18 }}>
+        {modes.map(m => {
+          const on = m.id === mode;
+          return (
+            <button key={m.id} onClick={() => setMode(m.id)} style={{
+              padding: '4px 0', fontSize: 12,
+              fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
+              color: on ? 'var(--text)' : 'var(--text-muted)',
+              borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent',
+              background: 'transparent', border: 'none',
+              borderBottomStyle: 'solid', cursor: 'pointer',
+            }}>{m.label}</button>
+          );
+        })}
       </div>
 
       {/* Chat scroll */}
