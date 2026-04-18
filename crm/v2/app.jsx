@@ -663,7 +663,8 @@ function DetailQuote({ contactId }) {
             }}>${(Number(p.total) || 0).toLocaleString()}</span>
           </div>
           <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            Sent: {p.sent_at ? new Date(p.sent_at).toLocaleDateString() : '—'}
+            Created: {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
+            {p.viewed_at && <span style={{ marginLeft: 10 }}>· Viewed: {new Date(p.viewed_at).toLocaleDateString()}</span>}
           </div>
         </div>
       ))}
@@ -1609,7 +1610,7 @@ function LiveFinance() {
     (async () => {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
       const [propRes, invRes, payRes] = await Promise.all([
-        db.from('proposals').select('id, contact_id, contact_name, total, status, sent_at, signed_at, created_at').order('created_at', { ascending: false }).limit(20),
+        db.from('proposals').select('id, contact_id, contact_name, total, status, signed_at, viewed_at, created_at').order('created_at', { ascending: false }).limit(20),
         db.from('invoices').select('id, contact_id, contact_name, total, status, notes, paid_at, created_at').order('created_at', { ascending: false }).limit(20),
         db.from('payments').select('id, contact_id, amount, method, created_at').order('created_at', { ascending: false }).limit(20),
       ]);
