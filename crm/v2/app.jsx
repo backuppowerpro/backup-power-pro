@@ -1282,38 +1282,40 @@ function KeyboardHelp({ open, onClose }) {
   if (!open) return null;
   const shortcuts = [
     { keys: '⌘K', label: 'Open command palette' },
-    { keys: 'G L', label: 'Go to Leads tab' },
+    { keys: 'G L', label: 'Go to Leads' },
     { keys: 'G C', label: 'Go to Calendar' },
     { keys: 'G F', label: 'Go to Finance' },
     { keys: 'G M', label: 'Go to Messages' },
     { keys: 'G S', label: 'Go to Sparky' },
+    { keys: 'R', label: 'Reply (focus compose bar)' },
+    { keys: 'D', label: 'Dial selected contact' },
+    { keys: 'Esc', label: 'Close detail or modal' },
     { keys: '?', label: 'Show this help' },
-    { keys: 'Esc', label: 'Close modal / detail' },
   ];
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 85,
-      background: 'rgba(0,0,0,.5)',
+      background: 'rgba(0,0,0,.45)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
-      <div onClick={e => e.stopPropagation()} className="raised" style={{
-        width: 420, padding: 20,
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 380, padding: 24,
+        background: 'var(--card)', boxShadow: 'var(--raised-2)',
       }}>
-        <div className="chrome-label" style={{ fontSize: 14, marginBottom: 14 }}>KEYBOARD SHORTCUTS</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700, marginBottom: 14, letterSpacing: '-.01em' }}>
+          Keyboard shortcuts
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {shortcuts.map((s, i) => (
             <div key={i} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '10px 12px',
-              background: i % 2 === 0 ? 'var(--card)' : 'transparent',
-              boxShadow: i % 2 === 0 ? 'var(--pressed-2)' : 'none',
+              padding: '8px 0',
+              borderBottom: i < shortcuts.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
             }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>{s.label}</span>
-              <span className="pixel" style={{
-                fontSize: 12,
-                padding: '3px 10px',
-                boxShadow: 'var(--raised-2)',
-                background: 'var(--card)', color: 'var(--text)',
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)' }}>{s.label}</span>
+              <span className="mono" style={{
+                fontSize: 11, color: 'var(--text-muted)',
+                padding: '2px 8px', boxShadow: 'var(--raised-2)', background: 'var(--card)',
               }}>{s.keys}</span>
             </div>
           ))}
@@ -2314,7 +2316,7 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
 }
 
 // ── Morning Briefing modal — once per day ───────────────────────────────────
-function LiveMorningBriefing({ onClose }) {
+function LiveMorningBriefing({ onClose, onPickContact }) {
   const [sections, setSections] = useState({ overdue: [], today: [], materials: [], goodNews: [] });
   const [loading, setLoading] = useState(true);
 
@@ -2396,9 +2398,9 @@ function LiveMorningBriefing({ onClose }) {
           <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>Loading brief…</div>
         ) : (
           <div style={{ padding: '0 24px' }}>
-            <BriefSection label="Overdue" tint="var(--ms-3)" items={sections.overdue} />
-            <BriefSection label="Today" tint="var(--ms-4)" items={sections.today} />
-            <BriefSection label="Materials" tint="var(--text-muted)" items={sections.materials} />
+            <BriefSection label="Overdue" tint="var(--ms-3)" items={sections.overdue} onPick={onPickContact} />
+            <BriefSection label="Today" tint="var(--ms-4)" items={sections.today} onPick={onPickContact} />
+            <BriefSection label="Materials" tint="var(--text-muted)" items={sections.materials} onPick={onPickContact} />
             <BriefSection label="Good news" tint="var(--ms-2)" items={sections.goodNews} />
           </div>
         )}
@@ -2421,7 +2423,7 @@ function LiveMorningBriefing({ onClose }) {
   );
 }
 
-function BriefSection({ label, tint, items }) {
+function BriefSection({ label, tint, items, onPick }) {
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{
@@ -2434,10 +2436,16 @@ function BriefSection({ label, tint, items }) {
         {items.length === 0 ? (
           <div style={{ padding: '8px 0', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>—</div>
         ) : items.map((it, i) => (
-          <div key={i} style={{
+          <button key={i} onClick={() => onPick && it.id && onPick(it.id)} style={{
+            display: 'block', width: '100%', textAlign: 'left',
             padding: '8px 0', fontSize: 13,
             fontFamily: 'var(--font-body)', color: 'var(--text)',
-          }}>{it.text}</div>
+            background: 'transparent', border: 'none',
+            cursor: onPick && it.id ? 'pointer' : 'default',
+          }}
+          onMouseEnter={e => { if (onPick && it.id) e.currentTarget.style.color = 'var(--navy)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text)'; }}
+          >{it.text}</button>
         ))}
       </div>
     </div>
@@ -2875,10 +2883,33 @@ function App() {
         setHelpOpen(o => !o);
         return;
       }
+      // r → focus SMS compose bar when contact detail is open
+      if (e.key === 'r' && selectedContact) {
+        const composeInput = document.querySelector('input[placeholder="Type a message…"]');
+        if (composeInput) {
+          e.preventDefault();
+          composeInput.focus();
+        }
+      }
+      // d → dial the selected contact via Twilio Voice
+      if (e.key === 'd' && selectedContact) {
+        (async () => {
+          const { data } = await db.from('contacts').select('phone').eq('id', selectedContact).maybeSingle();
+          if (data?.phone && window.__bpp_dial) {
+            e.preventDefault();
+            window.__bpp_dial(data.phone);
+            window.__bpp_toast && window.__bpp_toast(`Dialing ${data.phone}…`, 'info');
+          }
+        })();
+      }
+      // Esc → close detail panel
+      if (e.key === 'Escape' && selectedContact) {
+        setSelectedContact(null);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [gPending]);
+  }, [gPending, selectedContact]);
 
   // Auth bootstrap
   useEffect(() => {
@@ -2984,7 +3015,10 @@ function App() {
           else if (id === 'show_help') setHelpOpen(true);
         }}
       />
-      {briefOpen ? <LiveMorningBriefing onClose={() => setBriefOpen(false)} /> : null}
+      {briefOpen ? <LiveMorningBriefing
+        onClose={() => setBriefOpen(false)}
+        onPickContact={id => { setSelectedContact(id); setTab('leads'); setBriefOpen(false); }}
+      /> : null}
       <NewLeadModal
         open={newLeadOpen}
         onClose={() => setNewLeadOpen(false)}
