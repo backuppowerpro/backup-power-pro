@@ -448,6 +448,7 @@ function LivePipeline({ onCardClick, onSubView }) {
 function LiveContactDetail({ contactId, onBack, mobile = false }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [outstandingBalance, setOutstandingBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('MESSAGES');
@@ -459,13 +460,18 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [cRes, mRes] = await Promise.all([
+      const [cRes, mRes, invRes] = await Promise.all([
         db.from('contacts').select('*').eq('id', contactId).maybeSingle(),
         db.from('messages').select('*').eq('contact_id', contactId).order('created_at', { ascending: true }).limit(200),
+        db.from('invoices').select('total, status').eq('contact_id', contactId),
       ]);
       if (!alive) return;
       setContact(cRes.data || null);
       setMessages(mRes.data || []);
+      const outstanding = (invRes.data || [])
+        .filter(i => i.status !== 'paid' && i.status !== 'cancelled')
+        .reduce((s, i) => s + (Number(i.total) || 0), 0);
+      setOutstandingBalance(outstanding);
       setLoading(false);
       // Smart default tab based on stage, unless user manually picked one for this contact
       if (cRes.data && manualTabContactId !== contactId) {
@@ -573,6 +579,20 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--text)' }}>{stageAbbr}</span>
         <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>stage {contact?.stage || 1} ›</span>
       </button>
+
+      {outstandingBalance > 0 ? (
+        <div style={{
+          padding: '8px 14px',
+          background: 'var(--card)',
+          borderBottom: '2px solid var(--ms-3)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontFamily: 'var(--font-body)', fontSize: 12,
+        }}>
+          <span style={{ color: 'var(--text-muted)' }}>Outstanding</span>
+          <span style={{ color: 'var(--ms-3)', fontWeight: 700 }}>${outstandingBalance.toLocaleString()}</span>
+        </div>
+      ) : null}
+
       {stagePickerOpen ? (
         <StagePickerModal
           currentStage={contact?.stage || 1}
