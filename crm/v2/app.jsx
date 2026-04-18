@@ -2865,6 +2865,7 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
 function LiveMorningBriefing({ onClose, onPickContact }) {
   const [sections, setSections] = useState({ overdue: [], today: [], materials: [], goodNews: [] });
   const [loading, setLoading] = useState(true);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -2913,7 +2914,7 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       });
       setLoading(false);
     })();
-  }, []);
+  }, [refreshTick]);
 
   return (
     <div onClick={onClose} style={{
@@ -2951,18 +2952,25 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           </div>
         )}
 
-        <div style={{ padding: '20px 24px 24px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={{
+        <div style={{ padding: '20px 24px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <button onClick={() => setRefreshTick(t => t + 1)} style={{
             fontSize: 12, padding: '10px 16px', cursor: 'pointer',
             background: 'var(--card)', boxShadow: 'var(--raised-2)', border: 'none',
             fontFamily: 'var(--font-body)', color: 'var(--text-muted)',
-          }}>Dismiss</button>
-          <button onClick={onClose} style={{
-            padding: '10px 20px', background: 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
-            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
-            cursor: 'pointer', border: 'none',
-          }}>Open CRM</button>
+          }}>Refresh</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onClose} style={{
+              fontSize: 12, padding: '10px 16px', cursor: 'pointer',
+              background: 'var(--card)', boxShadow: 'var(--raised-2)', border: 'none',
+              fontFamily: 'var(--font-body)', color: 'var(--text-muted)',
+            }}>Dismiss</button>
+            <button onClick={onClose} style={{
+              padding: '10px 20px', background: 'var(--navy)', color: '#fff',
+              fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
+              boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+              cursor: 'pointer', border: 'none',
+            }}>Open CRM</button>
+          </div>
         </div>
       </div>
     </div>
