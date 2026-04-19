@@ -609,6 +609,7 @@ function LivePipeline({ onCardClick, onSubView }) {
 // to update the DB directly to pause Alex.
 function AlexSessionStrip({ session, contactId, contactPhone }) {
   const [expanded, setExpanded] = React.useState(false);
+  const [transcriptOpen, setTranscriptOpen] = React.useState(false);
   const [toggling, setToggling] = React.useState(false);
   const [localActive, setLocalActive] = React.useState(session.alex_active);
   // Keep local in sync with realtime pushes of session
@@ -616,6 +617,20 @@ function AlexSessionStrip({ session, contactId, contactPhone }) {
   const status = session.opted_out ? 'opted out' : localActive ? 'active' : 'handed off';
   const statusColor = session.opted_out ? 'var(--ms-3)' : localActive ? 'var(--ms-2)' : 'var(--text-faint)';
   const hasSummary = !!(session.summary && session.summary.trim());
+  // Alex stores messages[].content as EITHER a string or an array of
+  // {text, type: 'text'} blocks (Claude Agent SDK output). Normalise so
+  // the transcript rail can treat every message the same.
+  const normalisedMessages = React.useMemo(() => {
+    const arr = Array.isArray(session?.messages) ? session.messages : [];
+    return arr.map(m => {
+      let text = '';
+      if (typeof m.content === 'string') text = m.content;
+      else if (Array.isArray(m.content)) {
+        text = m.content.filter(b => b && b.type === 'text').map(b => b.text || '').join(' ').trim();
+      }
+      return { role: m.role || 'user', text };
+    }).filter(m => m.text);
+  }, [session?.messages]);
   const canToggle = !session.opted_out; // never override an opt-out; DNC/compliance path only
 
   async function toggleAlex(e) {
@@ -684,6 +699,58 @@ function AlexSessionStrip({ session, contactId, contactPhone }) {
           padding: '4px 0 2px', fontSize: 12, lineHeight: 1.4,
           color: 'var(--text)', whiteSpace: 'pre-wrap',
         }}>{session.summary}</div>
+      ) : null}
+      {/* Transcript toggle — quality-audit tool. Lets Key see Alex's actual
+          responses instead of only the summary so he can spot bad replies
+          and feed them back into the prompt. Collapsed by default so the
+          strip stays compact. */}
+      {normalisedMessages.length > 0 ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+          <button onClick={e => { e.stopPropagation(); setTranscriptOpen(v => !v); }} style={{
+            padding: '1px 6px', fontSize: 10, letterSpacing: '.04em',
+            background: 'transparent', color: 'var(--text-muted)',
+            border: '1px solid rgba(0,0,0,.15)', cursor: 'pointer',
+            fontFamily: 'var(--font-body)',
+          }}>
+            {transcriptOpen ? 'hide transcript' : `${normalisedMessages.length} msg transcript`}
+          </button>
+          {transcriptOpen ? (
+            <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+              {normalisedMessages.filter(m => m.role === 'assistant').length} Alex · {normalisedMessages.filter(m => m.role === 'user').length} user
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      {transcriptOpen ? (
+        <div onClick={e => e.stopPropagation()} style={{
+          marginTop: 6, maxHeight: 260, overflowY: 'auto',
+          padding: 8, background: 'var(--bg)',
+          boxShadow: 'var(--raised-inset-1)',
+          display: 'flex', flexDirection: 'column', gap: 6,
+        }}>
+          {normalisedMessages.map((m, i) => {
+            // First user message is almost always the internal kickstart
+            // ("Send your opening message now.") — dim it so the real
+            // conversation pops.
+            const isKickstart = i === 0 && m.role === 'user' && /send your opening/i.test(m.text);
+            return (
+              <div key={i} style={{
+                display: 'flex', flexDirection: 'column', gap: 2,
+                opacity: isKickstart ? 0.45 : 1,
+              }}>
+                <span className="mono" style={{
+                  fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase',
+                  color: m.role === 'assistant' ? 'var(--ms-2)' : 'var(--text-faint)',
+                }}>
+                  {m.role === 'assistant' ? 'Alex' : isKickstart ? 'system' : 'customer'}
+                </span>
+                <span style={{ fontSize: 12, lineHeight: 1.4, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
+                  {m.text}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       ) : null}
     </div>
   );
@@ -812,7 +879,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
       // Alex session lookup by phone (alex_sessions table keys on phone, not contact_id)
       if (cRes.data?.phone) {
         const { data: sess } = await db.from('alex_sessions')
-          .select('alex_active, opted_out, followup_count, status, summary, updated_at')
+          .select('alex_active, opted_out, followup_count, status, summary, updated_at, messages')
           .eq('phone', cRes.data.phone)
           .order('updated_at', { ascending: false })
           .limit(1)
