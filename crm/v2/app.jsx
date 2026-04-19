@@ -1179,18 +1179,18 @@ function DetailQuote({ contactId }) {
   async function onQuoteCreated(newProposal) {
     setProposals(prev => [newProposal, ...prev]);
     setQuickOpen(false);
-    // Build the SMS body and copy to clipboard
+    // Build the SMS body, prefill compose bar, also copy to clipboard as a
+    // fallback for workflows outside the CRM (desktop Messages.app, etc.)
     const fname = (contact?.name || '').split(' ')[0] || 'there';
     const totalAmt = newProposal.total;
     const depositAmt = Math.round(totalAmt * 0.5);
     const link = `${PROPOSAL_BASE_URL}?token=${newProposal.token}`;
     const msg = `Hi ${fname}! Here's your quote for the Storm-Ready Connection System — $${totalAmt.toLocaleString()} all in. A 50% deposit ($${depositAmt.toLocaleString()}) is due to confirm your spot. Review & approve here: ${link}`;
-    try {
-      await navigator.clipboard.writeText(msg);
-      window.__bpp_toast && window.__bpp_toast(`Quote created + SMS copied — $${totalAmt.toLocaleString()}`, 'success');
-    } catch {
-      window.__bpp_toast && window.__bpp_toast(`Quote created — link: ${link}`, 'success');
-    }
+    // Prefill the compose bar so Key can review + send in one click instead
+    // of pasting from clipboard. Same event depositLink / sendReminder use.
+    window.dispatchEvent(new CustomEvent('bpp:compose-prefill', { detail: { text: msg } }));
+    try { await navigator.clipboard.writeText(msg); } catch { /* ignore */ }
+    window.__bpp_toast && window.__bpp_toast(`Quote created — SMS drafted, $${totalAmt.toLocaleString()}`, 'success');
     // Bump stage to 2 (QUOTED) if still on NEW
     db.from('contacts').update({ stage: 2, quote_amount: totalAmt }).eq('id', contactId)
       .then(() => db.from('stage_history').insert({ contact_id: contactId, from_stage: 1, to_stage: 2 }).then(() => {}, () => {}));
