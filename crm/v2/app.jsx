@@ -752,7 +752,7 @@ function ReviewAskStrip({ contactName }) {
   );
 }
 
-function LiveContactDetail({ contactId, onBack, mobile = false }) {
+function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [outstandingBalance, setOutstandingBalance] = useState(0);
@@ -826,13 +826,24 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         setDuplicates([]);
       }
       setLoading(false);
-      // Smart default tab based on stage, unless user manually picked one for this contact
+      // Default tab priority:
+      //   1. Caller's defaultTab prop (mapped from current main tab — lets
+      //      clicking a contact from Finance land on Quote, Calendar/Permits
+      //      land on Permits, etc.)
+      //   2. Stage-based smart default (stage 1 → QUOTE, stage 4-8 → PERMITS)
+      //   3. MESSAGES fallback
+      // All three are skipped if the user manually clicked a different tab
+      // for this contact — respect their intent.
       if (cRes.data && manualTabContactId !== contactId) {
-        const s = cRes.data.stage || 1;
-        let smart = 'MESSAGES';
-        if (s === 1) smart = 'QUOTE';         // NEW → send a quote
-        else if (s >= 4 && s <= 8) smart = 'PERMITS'; // permit / install phases
-        setDetailTab(smart);
+        if (defaultTab) {
+          setDetailTab(defaultTab);
+        } else {
+          const s = cRes.data.stage || 1;
+          let smart = 'MESSAGES';
+          if (s === 1) smart = 'QUOTE';
+          else if (s >= 4 && s <= 8) smart = 'PERMITS';
+          setDetailTab(smart);
+        }
       }
     })();
     return () => { alive = false; };
@@ -5299,22 +5310,65 @@ function App() {
         ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>
       {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} badges={unreadCount > 0 ? { messages: unreadCount } : {}} /> : null}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }} className="grid-bg">
-        <ErrorBoundary label={tab.toUpperCase()}>
-          {content}
-        </ErrorBoundary>
-        {selectedContact ? (
+      {/* Desktop: two-column layout. Left = current tab content. Right = a
+          persistent 480px panel — Sparky by default, contact detail when a
+          contact is selected. Mobile keeps the old overlay behavior since
+          a phone viewport can't show both columns meaningfully. */}
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', position: 'relative' }} className="grid-bg">
+        <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
+          <ErrorBoundary label={tab.toUpperCase()}>
+            {content}
+          </ErrorBoundary>
+        </div>
+        {!isMobile ? (
+          <div style={{
+            flex: '0 0 480px',
+            width: 480,
+            borderLeft: '1px solid rgba(0,0,0,.08)',
+            display: 'flex', flexDirection: 'column',
+            background: 'var(--card)',
+          }}>
+            {selectedContact ? (
+              <ErrorBoundary label="CONTACT DETAIL">
+                <LiveContactDetail
+                  contactId={selectedContact}
+                  onBack={() => setSelectedContact(null)}
+                  mobile={false}
+                  defaultTab={(() => {
+                    // Map the main tab Key is currently viewing to the detail
+                    // tab that makes the most sense to open. Clicking a
+                    // contact from Finance → lands on Quote. From Calendar
+                    // or the Permits sub-view → lands on Permits. Etc.
+                    if (tab === 'finance') return 'QUOTE';
+                    if (tab === 'calendar') return 'PERMITS';
+                    if (tab === 'messages') return 'MESSAGES';
+                    if (tab === 'sparky') return 'MESSAGES';
+                    if (tab === 'leads') {
+                      if (leadsSubView === 'permits' || leadsSubView === 'mat') return 'PERMITS';
+                      return 'MESSAGES';
+                    }
+                    return undefined;
+                  })()}
+                />
+              </ErrorBoundary>
+            ) : (
+              <ErrorBoundary label="SPARKY SIDEBAR">
+                <LiveSparky currentContactId={null} />
+              </ErrorBoundary>
+            )}
+          </div>
+        ) : selectedContact ? (
           <div style={{
             position: 'absolute',
             top: 0, right: 0, bottom: 0,
-            width: isMobile ? '100%' : 480,
+            width: '100%',
             zIndex: 20,
           }}>
             <ErrorBoundary label="CONTACT DETAIL">
               <LiveContactDetail
                 contactId={selectedContact}
                 onBack={() => setSelectedContact(null)}
-                mobile={isMobile}
+                mobile={true}
               />
             </ErrorBoundary>
           </div>

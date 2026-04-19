@@ -78,6 +78,66 @@ const CITIES = {
     ],
   },
   greer: null, // already hand-written; don't overwrite
+  easley: {
+    name: 'Easley',
+    state: 'SC',
+    countyContext: 'Pickens County',
+    permitOffice: "Pickens County's EnerGov portal (energovweb.pickenscountysc.us)",
+    driveContext: "25–35 minutes from our base — we batch Pickens County work to minimize drive time",
+    neighborhoodMentions: 'Alice Street, near Easley High, or the newer builds along Rice Road',
+    localColor: "Easley sits on the Pickens/Greenville county line but most of the city is Pickens County for permit purposes. Older core homes (the Alice Street / Pendleton Street area) often have 100A panels that need a breaker-box upgrade before the interlock is code-safe — we flag that on the quote. Newer builds along Rice Road + 153 are mostly clean 200A Square D or Eaton work.",
+    turnaroundDays: '5–12',
+    heroTagline: "Generator inlet installation in Easley, SC.",
+    uniqueFAQ: [
+      { q: "Why does Easley take longer than Greenville?", a: "Pickens County EnerGov portal requires manual submission (Google SSO gates automation). We pull the permit same-day we quote, but the jurisdiction's processing adds a few days." },
+      { q: "Do you service Powdersville and Liberty too?", a: "Yes, same Pickens County jurisdiction, same $1,197–$1,497 price." },
+    ],
+  },
+  taylors: {
+    name: 'Taylors',
+    state: 'SC',
+    countyContext: 'Greenville County',
+    permitOffice: "Greenville County's eTRAKiT portal",
+    driveContext: "15–20 minutes from our base",
+    neighborhoodMentions: 'the Wade Hampton corridor, Paris Mountain area, or Taylors First Baptist neighborhood',
+    localColor: "Taylors is technically unincorporated Greenville County — means we pull the county permit rather than a city permit. Same price, same process, usually faster turnaround than Greenville proper because the county eTRAKiT portal moves quicker than city hall.",
+    turnaroundDays: '2–6',
+    heroTagline: "Storm-ready inlet + interlock for Taylors homes.",
+    uniqueFAQ: [
+      { q: "What about homes up on Paris Mountain?", a: "We serve Paris Mountain addresses. Drive time adds ~10 minutes but the install is the same price. Most Paris Mountain homes have modern 200A panels." },
+      { q: "Do Taylors homes have any quirks?", a: "The older ranches along Wade Hampton sometimes have sub-panels in the garage. We'll check whether the interlock goes in the main or the sub during the quote — affects wiring route, not price." },
+    ],
+  },
+  'fountain-inn': {
+    name: 'Fountain Inn',
+    state: 'SC',
+    countyContext: 'Greenville County',
+    permitOffice: "City of Fountain Inn's portal (fountaininnsc.portal.iworq.net)",
+    driveContext: "30–40 minutes from our base",
+    neighborhoodMentions: 'near downtown Fountain Inn, out toward Laurens Road, or the newer subdivisions off 14',
+    localColor: "Fountain Inn sits on the southern edge of Greenville County right up against Laurens County. Most of our Fountain Inn installs are on newer builds — well under 20 years old — which means clean 200A panels and same-day interlock fits. Older in-town homes near Main Street sometimes need a service upgrade first.",
+    turnaroundDays: '4–10',
+    heroTagline: "Generator inlet installation for Fountain Inn, SC.",
+    uniqueFAQ: [
+      { q: "Do you also serve Gray Court / Simpsonville border?", a: "Yes — if your address is Fountain Inn 29644, you're in Greenville County and we handle it the same way." },
+      { q: "Does Fountain Inn have a permit fee?", a: "Yes, usually $50–$100 depending on scope. Included in the all-in $1,197–$1,497 price — you don't pay the city separately." },
+    ],
+  },
+  duncan: {
+    name: 'Duncan',
+    state: 'SC',
+    countyContext: 'Spartanburg County',
+    permitOffice: "Spartanburg County's EnerGov portal (civicaccess.spartanburgcounty.gov)",
+    driveContext: "35–45 minutes from our base — we batch Duncan + Greer runs",
+    neighborhoodMentions: 'near Tyger River, the 290 corridor, or the Startex area',
+    localColor: "Duncan is mostly Spartanburg County jurisdiction (occasionally City of Duncan for in-city addresses). Mix of newer builds along 290 and older farmhouses with original 100A service. Spartanburg County permits take longer than Greenville County — 5–10 days is typical — so we pull the permit same-day we quote.",
+    turnaroundDays: '6–14',
+    heroTagline: "Generator inlet installation for Duncan, SC.",
+    uniqueFAQ: [
+      { q: "Why does Spartanburg County take so long?", a: "The permit portal is Google-SSO gated and reviewers work M–F 9–5. A permit filed Monday usually gets issued by end of week. We schedule your install right after the permit lands." },
+      { q: "Are there any 50A generators common out here?", a: "Yes — larger 10–12kW portable generators are common on rural Duncan properties for well pumps + shop tools. The 50A inlet handles those cleanly." },
+    ],
+  },
 };
 
 const TEMPLATE = ({
