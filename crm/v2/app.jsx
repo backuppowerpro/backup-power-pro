@@ -3440,6 +3440,15 @@ function ProposalsLiveTable({ rows }) {
 
 function InvoicesLiveTable({ rows }) {
   if (rows.length === 0) return <Empty label="NO INVOICES" />;
+  // invoices.notes is populated by proposal-deposit-checkout as either
+  // 'deposit' (50%) or 'full_payment' (100%). Distinguish in the UI so Key
+  // can tell at a glance whether a "$1,197 paid" row is the half-deposit
+  // (more to collect) or the full project amount (done).
+  const kindLabel = (n) => {
+    if (n === 'deposit') return 'deposit';
+    if (n === 'full_payment') return 'full';
+    return '—';
+  };
   return (
     <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
       {rows.map((inv, i) => {
@@ -3450,7 +3459,7 @@ function InvoicesLiveTable({ rows }) {
             onClick={() => inv.contact_id && (window.location.hash = `#contact=${inv.contact_id}`)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 100px 100px 100px',
+              gridTemplateColumns: '1fr 100px 70px 100px 100px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
               borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
@@ -3459,6 +3468,9 @@ function InvoicesLiveTable({ rows }) {
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{inv.contact_name || '—'}</span>
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}
+            </span>
+            <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', letterSpacing: '.04em' }}>
+              {kindLabel(inv.notes)}
             </span>
             <span className="chrome-label" style={{
               fontSize: 10, color: tint, textAlign: 'center', letterSpacing: '.08em',
