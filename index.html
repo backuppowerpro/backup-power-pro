@@ -1212,13 +1212,53 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       fbq('track','Lead',{content_name:'generator-inlet-quote',content_category:'generator-installation',value:1197,currency:'USD'},{eventID:eventId});
     }
 
-    try{
-      fetch(BPP_NEW_LEAD_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify(payload)}).catch(()=>{});
-      firePixel();
-      if(typeof posthog!=='undefined') posthog.capture('lead_captured',{source:'landing_page_inline',page:window.location.pathname});
-    }catch(e){
-      firePixel();
-      if(typeof posthog!=='undefined') posthog.capture('lead_captured',{source:'landing_page_inline',page:window.location.pathname});
+    // Same robust-delivery treatment as the VARIANT form (see the detailed
+    // comment further down in this file). Previously fire-and-forget fetch
+    // was cancelled by mobile app-browsers on page swap, losing leads
+    // silently. keepalive:true + sync-XHR fallback + PostHog failure logging.
+    var submitBody = JSON.stringify(payload);
+    var delivered = false;
+    var deliveryMethod = 'none';
+    var submitStartMs = Date.now();
+    try {
+      var resp = await fetch(BPP_NEW_LEAD_URL, {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+        body: submitBody,
+      });
+      delivered = resp.ok;
+      deliveryMethod = 'fetch';
+      if (!resp.ok && typeof posthog !== 'undefined') {
+        posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch', form: 'inline' });
+      }
+    } catch (fetchErr) {
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', BPP_NEW_LEAD_URL, false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+        xhr.send(submitBody);
+        delivered = xhr.status >= 200 && xhr.status < 300;
+        deliveryMethod = 'xhr';
+        if (!delivered && typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
+        }
+      } catch (xhrErr) {
+        if (typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
+        }
+      }
+    }
+    firePixel();
+    if (typeof posthog !== 'undefined') {
+      posthog.capture('lead_captured', {
+        source: 'landing_page_inline',
+        page: window.location.pathname,
+        delivery: deliveryMethod,
+        delivered: delivered,
+        latency_ms: Date.now() - submitStartMs,
+      });
     }
 
     document.getElementById('qfFormWrap').style.display='none';
@@ -1326,9 +1366,73 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       hashedPhone:phH, hashedFirstName:fnH, hashedCountry:countryH
     };
 
-    fetch(BPP_NEW_LEAD_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON_KEY},body:JSON.stringify(payload)}).catch(()=>{});
-    if(typeof fbq==='function'){fbq('init',META_PIXEL_ID,{ph:phH,fn:fnH,country:countryH});fbq('track','Lead',{content_name:'generator-inlet-quote',content_category:'generator-installation',value:1197,currency:'USD'},{eventID:eventId});}
-    if(typeof posthog!=='undefined') posthog.capture('lead_captured',{source:'landing_page_variant_minimal',page:window.location.pathname});
+    // Robust lead delivery — Apr 19 2026 fix.
+    // Previous code used fire-and-forget fetch().catch(() => {}) which lost
+    // leads silently when mobile in-app browsers (Meta/Instagram) cancelled
+    // the request on page unload. 3+ consecutive zero-lead days at the same
+    // ad delivery rate — traffic and impressions normal, but 0 leads hit
+    // Supabase while PostHog recorded lead_captured events. Clear signature
+    // of fetch being cancelled by mobile app-browser after page transition.
+    //
+    // Fix: use keepalive:true so the browser completes the POST even if the
+    // page unloads / the in-app browser is backgrounded. Await the result
+    // and fall back to sync XHR if the network call throws. Any failure is
+    // logged to PostHog so a drop-off like this can never be invisible again.
+    var submitUrl = BPP_NEW_LEAD_URL;
+    var submitBody = JSON.stringify(payload);
+    var delivered = false;
+    var deliveryMethod = 'none';
+    var submitStartMs = Date.now();
+    try {
+      // Await so we know the fetch actually kicked off before we swap the UI.
+      // keepalive:true is the important part — it lets the request complete
+      // even if the user closes the tab or the app-browser is backgrounded.
+      var resp = await fetch(submitUrl, {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+        body: submitBody,
+      });
+      delivered = resp.ok;
+      deliveryMethod = 'fetch';
+      if (!resp.ok && typeof posthog !== 'undefined') {
+        posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch' });
+      }
+    } catch (fetchErr) {
+      // Fallback: synchronous XHR. Blocks the thread briefly but guarantees
+      // the request completes before the success screen renders.
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', submitUrl, false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+        xhr.send(submitBody);
+        delivered = xhr.status >= 200 && xhr.status < 300;
+        deliveryMethod = 'xhr';
+        if (!delivered && typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', fetchErr: String(fetchErr).slice(0, 200) });
+        }
+      } catch (xhrErr) {
+        if (typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', fetchErr: String(fetchErr).slice(0, 200) });
+        }
+      }
+    }
+    var submitLatencyMs = Date.now() - submitStartMs;
+
+    if (typeof fbq === 'function') {
+      fbq('init', META_PIXEL_ID, { ph: phH, fn: fnH, country: countryH });
+      fbq('track', 'Lead', { content_name: 'generator-inlet-quote', content_category: 'generator-installation', value: 1197, currency: 'USD' }, { eventID: eventId });
+    }
+    if (typeof posthog !== 'undefined') {
+      posthog.capture('lead_captured', {
+        source: 'landing_page_variant_minimal',
+        page: window.location.pathname,
+        delivery: deliveryMethod,
+        delivered: delivered,
+        latency_ms: submitLatencyMs,
+      });
+    }
 
     document.getElementById('varFormWrap').style.display='none';
     document.getElementById('varSuccessName').textContent=name;
