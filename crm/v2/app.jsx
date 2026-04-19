@@ -2217,8 +2217,34 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
   }
 
   // Sparky-backed reply suggestion. Pulls the thread + contact, calls
-  // ai-taskmaster with mode=suggest_reply, drops the response into the
-  // compose bar. Key reviews + sends — nothing auto-sends.
+  // ai-taskmaster with mode=suggest_reply, drops the drafted message into
+  // the compose bar. Key reviews + sends — nothing auto-sends.
+  //
+  // ai-taskmaster returns the full agentic output in `answer` — which often
+  // includes Sparky's reasoning ("Looking at this thread…", "Info check:…")
+  // before the actual drafted SMS. Strip the thinking so only the customer-
+  // facing message lands in the compose bar.
+  function extractReply(raw) {
+    if (!raw) return '';
+    const text = String(raw).trim();
+    // Split into paragraphs; the drafted SMS is usually the final
+    // conversational paragraph. Drop markdown-headed ones (**, ##), anything
+    // that starts with agent-thinking patterns, and "Updated: …" annotations.
+    const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+    const agentPrefixes = /^(looking at|let me|i'll|i will|checking|info check|scanning|first|step \d|thinking|analysis|reasoning)/i;
+    const candidates = paragraphs.filter(p =>
+      !p.includes('**') &&
+      !/^#{1,6}\s/.test(p) &&
+      !/^updated[: ]/i.test(p) &&
+      !/^-\s/.test(p) &&
+      !agentPrefixes.test(p)
+    );
+    // Prefer the last matching paragraph (the final output), or fall back to
+    // last paragraph overall.
+    const reply = candidates[candidates.length - 1] || paragraphs[paragraphs.length - 1] || text;
+    return reply.trim();
+  }
+
   async function suggestReply() {
     if (!contactId || suggesting) return;
     setSuggesting(true);
@@ -2231,8 +2257,8 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
         body: { mode: 'suggest_reply', contact: c, thread: msgs || [] },
       });
       if (error) throw error;
-      // Response shape from ai-taskmaster: { reply: "..." } or { text: "..." } or raw string.
-      const reply = (typeof data === 'string' ? data : (data?.reply || data?.text || data?.answer || '')).trim();
+      const raw = typeof data === 'string' ? data : (data?.reply || data?.text || data?.answer || '');
+      const reply = extractReply(raw);
       if (!reply) throw new Error('empty reply from sparky');
       setText(reply);
       // Focus the input so Enter sends immediately
