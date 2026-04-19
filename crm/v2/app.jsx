@@ -1217,52 +1217,77 @@ function DetailQuote({ contactId }) {
         <div style={{ padding: '32px 0', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
           No proposals yet
         </div>
-      ) : proposals.map(p => (
+      ) : proposals.map(p => {
+        // Proposals become "Approved" when the stripe webhook confirms deposit
+        // payment. When approved, hide the Deposit button (the money is in) and
+        // show a green paid badge instead — Key shouldn't be nudged to send
+        // another link for a customer who already paid.
+        const isPaid = p.status === 'Approved';
+        return (
         <div key={p.id} style={{
           padding: '14px 0',
           borderTop: '1px solid rgba(0,0,0,.08)',
-          display: 'flex', alignItems: 'center', gap: 12,
+          display: 'flex', flexDirection: 'column', gap: 10,
         }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700 }}>
-                ${(Number(p.total) || 0).toLocaleString()}
-              </span>
-              <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'lowercase' }}>
-                {p.status || 'sent'}
-              </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700 }}>
+                  ${(Number(p.total) || 0).toLocaleString()}
+                </span>
+                {isPaid ? (
+                  <span className="mono" style={{
+                    fontSize: 10, color: 'var(--ms-2)', letterSpacing: '.08em',
+                    padding: '2px 6px', boxShadow: 'var(--raised-2)', textTransform: 'uppercase',
+                  }}>✓ Paid</span>
+                ) : (
+                  <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'lowercase' }}>
+                    {p.status || 'sent'}
+                  </span>
+                )}
+              </div>
+              <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
+                {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
+                {p.view_count ? ` · ${p.view_count} view${p.view_count === 1 ? '' : 's'}` : ''}
+              </div>
             </div>
-            <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
-              {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
-              {p.view_count ? ` · ${p.view_count} view${p.view_count === 1 ? '' : 's'}` : ''}
-            </div>
+            {p.token ? (
+              <div style={{ display: 'flex', gap: 4 }}>
+                <a href={`${PROPOSAL_BASE_URL}?token=${p.token}`} target="_blank" rel="noopener" style={{
+                  padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
+                  boxShadow: 'var(--raised-2)', textDecoration: 'none',
+                  color: 'var(--text-muted)',
+                }}>View</a>
+                <button onClick={() => copyLink(p.token)} style={{
+                  padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
+                  boxShadow: 'var(--raised-2)', cursor: 'pointer',
+                  border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+                }}>Copy</button>
+                <button onClick={() => sendReminder(p)} style={{
+                  padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
+                  boxShadow: 'var(--raised-2)', cursor: 'pointer',
+                  border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+                }}>Remind</button>
+              </div>
+            ) : null}
           </div>
-          {p.token ? (
-            <div style={{ display: 'flex', gap: 4 }}>
-              <a href={`${PROPOSAL_BASE_URL}?token=${p.token}`} target="_blank" rel="noopener" style={{
-                padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
-                boxShadow: 'var(--raised-2)', textDecoration: 'none',
-                color: 'var(--text-muted)',
-              }}>View</a>
-              <button onClick={() => copyLink(p.token)} style={{
-                padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
-                boxShadow: 'var(--raised-2)', cursor: 'pointer',
-                border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
-              }}>Copy</button>
-              <button onClick={() => sendReminder(p)} style={{
-                padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
-                boxShadow: 'var(--raised-2)', cursor: 'pointer',
-                border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
-              }}>Remind</button>
-              <button onClick={() => depositLink(p)} style={{
-                padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
-                boxShadow: 'var(--raised-2)', cursor: 'pointer',
-                border: 'none', background: 'var(--card)', color: 'var(--ms-2)',
-              }}>Deposit</button>
-            </div>
+          {/* Primary action when the deposit is still owed. Full-width so it's
+              the obvious next move when Key opens a proposal the customer
+              approved verbally but hasn't paid yet. */}
+          {p.token && !isPaid ? (
+            <button onClick={() => depositLink(p)} style={{
+              width: '100%', height: 36,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              background: 'var(--ms-2)', color: '#fff',
+              boxShadow: 'var(--raised-2)', cursor: 'pointer',
+              border: 'none', fontSize: 12, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
+            }}>
+              Send deposit link — ${Math.round((Number(p.total) || 0) * 0.5).toLocaleString()}
+            </button>
           ) : null}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
