@@ -251,6 +251,7 @@ function LiveLeadsList({ desktop = false, onSelect }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  const [query, setQuery] = useState('');
   // CRITICAL: all hooks MUST be called before any early return. Previously the
   // pin-sort hooks lived below the loading/err/empty early returns, which
   // caused React error #310 (rendered more hooks than previous render) every
@@ -299,10 +300,18 @@ function LiveLeadsList({ desktop = false, onSelect }) {
 
   const sortedRows = useMemo(() => {
     const pinSet = new Set(readPins());
-    return rows
+    const q = query.trim().toLowerCase();
+    const filtered = !q ? rows : rows.filter(r => {
+      // Cheap multi-field match: name, phone (digits-only), address.
+      if ((r.name || '').toLowerCase().includes(q)) return true;
+      if ((r.phone || '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))) return true;
+      if ((r.address || '').toLowerCase().includes(q)) return true;
+      return false;
+    });
+    return filtered
       .map(r => ({ ...r, pinned: pinSet.has(r.id) }))
       .sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
-  }, [rows, pinsTick]);
+  }, [rows, pinsTick, query]);
 
   if (loading) {
     return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING CONTACTS...</div>;
@@ -329,9 +338,33 @@ function LiveLeadsList({ desktop = false, onSelect }) {
   const LeadsListDesktop = window.LeadsListDesktop;
   const LeadsListMobile  = window.LeadsListMobile;
 
-  return desktop
-    ? <LeadsListDesktop rows={sortedRows} onSelect={onSelect} />
-    : <LeadsListMobile  rows={sortedRows} onSelect={onSelect} />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <div style={{ padding: '8px 16px 0' }}>
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder={`Search ${rows.length} contacts by name, phone, address…`}
+          style={{
+            width: '100%', height: 36, padding: '0 12px',
+            fontFamily: 'var(--font-body)', fontSize: 14,
+            background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+            border: 'none',
+          }}
+        />
+        {query && sortedRows.length === 0 ? (
+          <div className="mono" style={{ padding: '16px 0', fontSize: 11, color: 'var(--text-faint)' }}>
+            No matches for "{query}"
+          </div>
+        ) : null}
+      </div>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        {desktop
+          ? <LeadsListDesktop rows={sortedRows} onSelect={onSelect} />
+          : <LeadsListMobile  rows={sortedRows} onSelect={onSelect} />}
+      </div>
+    </div>
+  );
 }
 
 // ── Live Pipeline (9-column kanban with live data + drag stage transitions) ─
