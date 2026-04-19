@@ -3007,14 +3007,18 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         .map(c => ({ text: `Pick materials for ${c.name || 'lead'}`, id: c.id }));
 
       setSections({
-        overdue: (overdueRes.data || []).map(c => ({
-          text: `${c.name || 'Lead'} — ${Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)} days silent`,
-          id: c.id,
-        })),
+        // Hide contacts the user has actively snoozed — they'll resurface
+        // automatically when the snooze period expires
+        overdue: (overdueRes.data || [])
+          .filter(c => !isSnoozedFor(c.id))
+          .map(c => ({
+            text: `${c.name || 'Lead'} — ${Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)} days silent`,
+            id: c.id,
+          })),
         today: (recentRes.data || []).map(c => ({
           text: `New today: ${c.name || 'Unknown'}`, id: c.id,
         })),
-        materials: awaitingMaterials,
+        materials: awaitingMaterials.filter(m => !isSnoozedFor(m.id)),
         goodNews: (paidRes.data || []).map(inv => ({
           text: `${inv.contact_name || 'Customer'} paid $${Number(inv.total || 0).toLocaleString()}`,
           id: inv.id,
