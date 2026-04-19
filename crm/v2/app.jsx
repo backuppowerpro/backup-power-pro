@@ -3674,7 +3674,7 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
 
 // ── Morning Briefing modal — once per day ───────────────────────────────────
 function LiveMorningBriefing({ onClose, onPickContact }) {
-  const [sections, setSections] = useState({ installsToday: [], waiting: [], overdue: [], today: [], materials: [], goodNews: [] });
+  const [sections, setSections] = useState({ installsToday: [], waiting: [], stuckQuotes: [], overdue: [], today: [], materials: [], goodNews: [] });
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -3693,8 +3693,9 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString();
 
       // Parallel fetches: installs today / overdue / new-today /
-      // materials-awaiting / paid / waiting-on-Key.
-      const [installsRes, overdueRes, recentRes, awaitingMatRes, paidRes, waitingMsgsRes] = await Promise.all([
+      // materials-awaiting / paid / waiting-on-Key / stuck quotes.
+      const twoDaysAgoIso = new Date(Date.now() - 2 * 86400000).toISOString();
+      const [installsRes, overdueRes, recentRes, awaitingMatRes, paidRes, waitingMsgsRes, stuckPropsRes] = await Promise.all([
         db.from('contacts')
           .select('id, name, address, install_date')
           .gte('install_date', todayIso)
@@ -3720,6 +3721,14 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         db.from('messages')
           .select('contact_id, direction, sender, body, created_at')
           .order('created_at', { ascending: false }).limit(200),
+        // Stuck quotes: proposals older than 2 days still in Created/Copied
+        // (not Approved, not Cancelled). Same definition the F/U chips use.
+        db.from('proposals')
+          .select('id, contact_id, contact_name, total, status, created_at')
+          .in('status', ['Created', 'Copied'])
+          .lt('created_at', twoDaysAgoIso)
+          .order('created_at', { ascending: true })
+          .limit(10),
       ]);
 
       // Materials: booked/permit leads whose install_notes don't yet have any __pm_ line
@@ -3759,12 +3768,28 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         })
         .filter(Boolean);
 
+      // Stuck quotes: turn each into a row with the age-based F/U label
+      // (F/U 1 / F/U 2 / EXIT), same rule the Finance chips use. Cap 5.
+      const stuckQuotes = (stuckPropsRes.data || [])
+        .filter(p => p.contact_id && !isSnoozedFor(p.contact_id))
+        .slice(0, 5)
+        .map(p => {
+          const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
+          const label = days >= 7 ? 'EXIT' : days >= 4 ? 'F/U 2' : 'F/U 1';
+          const total = Number(p.total) || 0;
+          return {
+            text: `[${label}] ${p.contact_name || 'Customer'} · $${total.toLocaleString()} · ${Math.round(days)}d silent`,
+            id: p.contact_id,
+          };
+        });
+
       setSections({
         installsToday: (installsRes.data || []).map(c => ({
           text: `${new Date(c.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — ${c.name || 'Customer'}${c.address ? ' · ' + c.address.split(',')[0] : ''}`,
           id: c.id,
         })),
         waiting,
+        stuckQuotes,
         overdue: (overdueRes.data || [])
           .filter(c => !isSnoozedFor(c.id))
           .map(c => ({
@@ -3826,6 +3851,12 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
             ) : null}
             {/* Waiting on Key — most actionable list. */}
             <BriefSection label="Waiting" tint="var(--gold)" items={sections.waiting} onPick={onPickContact} />
+            {/* Stuck quotes — proposals 2d+ old still unpaid. Same F/U chips
+                the Finance tab uses, but surfaced here so Key sees them
+                without navigating. Hidden when empty. */}
+            {sections.stuckQuotes.length > 0 ? (
+              <BriefSection label="Stuck quotes" tint="var(--ms-4)" items={sections.stuckQuotes} onPick={onPickContact} />
+            ) : null}
             <BriefSection label="Overdue" tint="var(--ms-3)" items={sections.overdue} onPick={onPickContact} />
             <BriefSection label="Today" tint="var(--ms-4)" items={sections.today} onPick={onPickContact} />
             <BriefSection label="Materials" tint="var(--text-muted)" items={sections.materials} onPick={onPickContact} />
