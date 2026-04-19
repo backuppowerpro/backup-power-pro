@@ -1949,6 +1949,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'B', label: 'Open morning briefing' },
     { keys: 'T', label: 'Toggle dark mode' },
     { keys: 'P', label: 'Pin / unpin open contact' },
+    { keys: 'Y', label: 'Yank contact summary to clipboard' },
     { keys: 'J', label: 'Jump to next waiting thread' },
     { keys: '/', label: 'Focus search (Messages / Sparky)' },
     { keys: '1–9', label: 'Set stage on open contact' },
@@ -3939,6 +3940,27 @@ function App() {
         e.preventDefault();
         const nowPinned = togglePin(selectedContact);
         window.__bpp_toast && window.__bpp_toast(nowPinned ? 'Pinned' : 'Unpinned', 'info');
+      }
+      // y → yank (copy) a formatted contact summary to clipboard
+      if (e.key === 'y' && selectedContact) {
+        e.preventDefault();
+        (async () => {
+          const { data: c } = await db.from('contacts').select('name, phone, email, address, stage').eq('id', selectedContact).maybeSingle();
+          if (!c) return;
+          const block = [
+            c.name || 'Unknown',
+            c.phone ? formatPhone(c.phone) : null,
+            c.email || null,
+            c.address || null,
+            `Stage: ${STAGE_MAP[c.stage || 1] || 'NEW'}`,
+          ].filter(Boolean).join('\n');
+          try {
+            await navigator.clipboard.writeText(block);
+            window.__bpp_toast && window.__bpp_toast('Contact summary copied', 'success');
+          } catch {
+            window.__bpp_toast && window.__bpp_toast('Copy failed', 'error');
+          }
+        })();
       }
       // j → jump to next waiting thread (customer sent last message).
       // Works from anywhere — opens Messages tab + the top waiting contact.
