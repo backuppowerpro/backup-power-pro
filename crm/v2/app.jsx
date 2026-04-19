@@ -306,12 +306,26 @@ function LiveLeadsList({ desktop = false, onSelect }) {
     );
   }
 
+  // Apply pin state + sort pinned first
+  const [pinsTick, setPinsTick] = useState(0);
+  useEffect(() => {
+    const on = () => setPinsTick(t => t + 1);
+    window.addEventListener('bpp:pins-changed', on);
+    return () => window.removeEventListener('bpp:pins-changed', on);
+  }, []);
+  const sortedRows = useMemo(() => {
+    const pinSet = new Set(readPins());
+    return rows
+      .map(r => ({ ...r, pinned: pinSet.has(r.id) }))
+      .sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
+  }, [rows, pinsTick]);
+
   const LeadsListDesktop = window.LeadsListDesktop;
   const LeadsListMobile  = window.LeadsListMobile;
 
   return desktop
-    ? <LeadsListDesktop rows={rows} onSelect={onSelect} />
-    : <LeadsListMobile  rows={rows} onSelect={onSelect} />;
+    ? <LeadsListDesktop rows={sortedRows} onSelect={onSelect} />
+    : <LeadsListMobile  rows={sortedRows} onSelect={onSelect} />;
 }
 
 // ── Live Pipeline (9-column kanban with live data + drag stage transitions) ─

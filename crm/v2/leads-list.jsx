@@ -102,6 +102,11 @@ function LeadRow({ r, desktop = false }) {
 
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          {r.pinned ? (
+            <span title="Pinned" aria-label="Pinned" style={{
+              color: 'var(--gold)', fontSize: 13, lineHeight: 1, flex: '0 0 auto',
+            }}>★</span>
+          ) : null}
           <span style={{
             fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600,
             color: 'var(--text)',
