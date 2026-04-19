@@ -5174,6 +5174,137 @@ function App() {
           setUnreadCount(c => c + 1);
         }
       })
+      // New-lead notification — contacts INSERT fires the instant a form
+      // submission lands in Supabase. After the Apr 15-18 silent drop the
+      // cost of NOT knowing a lead came in is a lost sale; ping Key the
+      // second it happens so he can fire the first text within minutes
+      // (inside the 5-minute speed-to-lead window).
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'contacts',
+      }, async (payload) => {
+        const c = payload.new;
+        if (!c) return;
+        const name = c.name || 'New lead';
+        const addr = c.address || c.city || '';
+        window.__bpp_toast && window.__bpp_toast(
+          `🟢 New lead: ${name}${addr ? ` · ${addr.slice(0, 40)}` : ''}`,
+          'success',
+          {
+            label: 'Open',
+            onClick: () => {
+              setSelectedContact(c.id);
+              setTab('leads');
+              window.location.hash = `#tab=leads&contact=${c.id}`;
+            },
+          }
+        );
+        if (!tabFocusedRef.current && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            const n = new Notification(`🟢 New lead — ${name}`, {
+              body: addr || (c.phone || ''),
+              tag: `bpp-lead-${c.id}`,
+              icon: '/assets/images/logo-main.png',
+              requireInteraction: true, // new-lead = speed-to-lead window, don't let it dismiss itself
+            });
+            n.onclick = () => {
+              window.focus();
+              window.location.hash = `#tab=leads&contact=${c.id}`;
+              setSelectedContact(c.id);
+              n.close();
+            };
+          } catch {}
+        }
+      })
+      // Proposal-viewed notification — customer opens /proposal.html?token=X
+      // and it patches viewed_at on first view. That's peak-interest timing
+      // for a follow-up ("saw you opened the quote, any questions?"). Fires
+      // only on the null → non-null transition; subsequent re-opens just
+      // bump view_count without re-notifying.
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'proposals',
+      }, async (payload) => {
+        const p = payload.new, prev = payload.old;
+        if (!p || !prev) return;
+        if (!prev.viewed_at && p.viewed_at) {
+          const { data: c } = p.contact_id
+            ? await db.from('contacts').select('name').eq('id', p.contact_id).maybeSingle()
+            : { data: null };
+          const name = c?.name || p.contact_name || 'Customer';
+          window.__bpp_toast && window.__bpp_toast(
+            `👀 ${name} opened their quote`,
+            'info',
+            {
+              label: 'Open',
+              onClick: () => {
+                if (!p.contact_id) return;
+                setSelectedContact(p.contact_id);
+                setTab('leads');
+                window.location.hash = `#tab=leads&contact=${p.contact_id}`;
+              },
+            }
+          );
+          if (!tabFocusedRef.current && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            try {
+              const n = new Notification(`${name} opened the quote`, {
+                body: `$${Number(p.total || 0).toLocaleString()} — first view`,
+                tag: `bpp-quote-view-${p.id}`,
+                icon: '/assets/images/logo-main.png',
+              });
+              n.onclick = () => {
+                window.focus();
+                if (p.contact_id) {
+                  window.location.hash = `#contact=${p.contact_id}`;
+                  setSelectedContact(p.contact_id);
+                }
+                n.close();
+              };
+            } catch {}
+          }
+        }
+      })
+      // Deposit-paid notification — invoices status flips to paid via
+      // stripe-webhook. Celebrate the win, open to the contact so Key can
+      // reply with install-date confirmation.
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'invoices',
+      }, async (payload) => {
+        const i = payload.new, prev = payload.old;
+        if (!i || !prev) return;
+        if (prev.status !== 'paid' && i.status === 'paid') {
+          const name = i.contact_name || 'Customer';
+          const amt = Number(i.total || 0).toLocaleString();
+          window.__bpp_toast && window.__bpp_toast(
+            `💸 ${name} paid $${amt}`,
+            'success',
+            {
+              label: 'Open',
+              onClick: () => {
+                if (!i.contact_id) return;
+                setSelectedContact(i.contact_id);
+                setTab('leads');
+                window.location.hash = `#tab=leads&contact=${i.contact_id}`;
+              },
+            }
+          );
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            try {
+              const n = new Notification(`💸 ${name} paid $${amt}`, {
+                body: i.notes === 'deposit' ? 'Deposit received — schedule install' : 'Payment received',
+                tag: `bpp-paid-${i.id}`,
+                icon: '/assets/images/logo-main.png',
+              });
+              n.onclick = () => {
+                window.focus();
+                if (i.contact_id) {
+                  window.location.hash = `#contact=${i.contact_id}`;
+                  setSelectedContact(i.contact_id);
+                }
+                n.close();
+              };
+            } catch {}
+          }
+        }
+      })
       // Outbound-failed toast — the delivery-status callback (twilio-status-
       // callback, fixed this session) patches status sent → failed /
       // undelivered when the carrier rejects a message (bad number, spam
