@@ -369,6 +369,23 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 <script>
   if (typeof posthog !== 'undefined') {
     posthog.register({ channel: 'meta', landing_page: '/m/' });
+    // Feature-flag driven hero variant. Flag: 'meta-hero-v1' (create in
+    // PostHog dashboard with variants: control / emotional / price). Until
+    // the flag exists or while it's loading, control stays visible.
+    posthog.onFeatureFlags(function() {
+      var v = posthog.getFeatureFlag('meta-hero-v1');
+      if (!v || v === 'control') return; // default already visible
+      var el = document.getElementById('hero-' + v);
+      if (!el) return;
+      // Hide control, show the selected variant
+      var ctrl = document.getElementById('hero-control');
+      if (ctrl) ctrl.style.display = 'none';
+      el.style.display = 'block';
+      // Track the experiment exposure so PostHog's Experiments tab can
+      // compute significance against lead_captured / lead_delivered.
+      posthog.capture('$feature_flag_called', { '$feature_flag': 'meta-hero-v1', '$feature_flag_response': v });
+      posthog.register({ hero_variant: v });
+    });
   }
 </script>
 <script>
@@ -441,12 +458,28 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
 <!-- ==================== VARIANT B: STRIPPED HERO ==================== -->
 <section id="bpp-var-hero">
   <div class="var-hero-text" style="width:100%;max-width:660px;padding:48px 28px 64px;text-align:center">
-    <!-- Meta-tuned hero: mid-scroll mobile user, low-intent curiosity.
-         Shorter copy, emotional anchor first, price proof second, trust
-         compressed to one line. Tested against /index.html baseline. -->
-    <p style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:20px">Upstate SC &nbsp;·&nbsp; 100+ ★★★★★</p>
-    <h1 style="font-family:'Outfit',sans-serif;font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-2px;line-height:1.1;color:#fff;margin-bottom:24px">Your Generator.<br>Without the<br><span style="color:var(--gold)">Extension Cord.</span></h1>
-    <p style="font-size:clamp(16px,2vw,19px);line-height:1.6;color:rgba(255,255,255,.82);margin-bottom:36px"><strong style="color:#fff">One day install.</strong> Plug in, flip the interlock, whole house on backup. <strong style="color:#fff">$1,197–$1,497</strong>, permit and inspection included.</p>
+    <!-- Meta-tuned hero — PostHog feature-flag driven A/B.
+         Three variants: control / emotional / price-forward.
+         PostHog assigns sticky bucketing via distinct_id so a user always
+         sees the same variant across visits. Create the flag in PostHog:
+           Key: meta-hero-v1
+           Variants: control (33%), emotional (33%), price (34%)
+         Stats + significance auto-computed in the Experiments tab. -->
+    <div id="hero-control" class="hero-variant" style="display:block">
+      <p style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:20px">Upstate SC &nbsp;·&nbsp; 100+ ★★★★★</p>
+      <h1 style="font-family:'Outfit',sans-serif;font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-2px;line-height:1.1;color:#fff;margin-bottom:24px">Your Generator.<br>Without the<br><span style="color:var(--gold)">Extension Cord.</span></h1>
+      <p style="font-size:clamp(16px,2vw,19px);line-height:1.6;color:rgba(255,255,255,.82);margin-bottom:36px"><strong style="color:#fff">One day install.</strong> Plug in, flip the interlock, whole house on backup. <strong style="color:#fff">$1,197–$1,497</strong>, permit and inspection included.</p>
+    </div>
+    <div id="hero-emotional" class="hero-variant" style="display:none">
+      <p style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:20px">Next outage won't catch you cold</p>
+      <h1 style="font-family:'Outfit',sans-serif;font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-2px;line-height:1.1;color:#fff;margin-bottom:24px">Lights on.<br>Fridge cold.<br><span style="color:var(--gold)">WiFi working.</span></h1>
+      <p style="font-size:clamp(16px,2vw,19px);line-height:1.6;color:rgba(255,255,255,.82);margin-bottom:36px">Your generator. The right way. One day to install, permit and inspection included. <strong style="color:#fff">$1,197–$1,497 all-in</strong> — no extension cord, no window cracked open, no guesswork.</p>
+    </div>
+    <div id="hero-price" class="hero-variant" style="display:none">
+      <p style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:20px">SC License #2942 · Permit + Inspection Included</p>
+      <h1 style="font-family:'Outfit',sans-serif;font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-2px;line-height:1.1;color:#fff;margin-bottom:24px"><span style="color:var(--gold)">$1,197–$1,497.</span><br>Installed in a Day.<br>Done Right.</h1>
+      <p style="font-size:clamp(16px,2vw,19px);line-height:1.6;color:rgba(255,255,255,.82);margin-bottom:36px">A $15,000 standby generator is overkill. One permitted inlet + interlock turns your existing portable into whole-house backup for a tenth the cost. Price locked before we start.</p>
+    </div>
     <div id="varFormWrap" style="width:100%;max-width:520px;margin:0 auto">
       <div style="display:flex;flex-direction:column;gap:12px">
 
