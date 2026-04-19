@@ -794,6 +794,17 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts', filter: `id=eq.${contactId}` }, (payload) => {
         if (payload.new) setContact(c => c ? { ...c, ...payload.new } : payload.new);
       })
+      // Invoices for this contact — refetch outstanding balance live when a
+      // deposit lands (payment → invoice goes paid) or a new invoice is
+      // created. Without this the header keeps showing the stale red
+      // "Outstanding $X" number after the customer has already paid.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices', filter: `contact_id=eq.${contactId}` }, async () => {
+        const { data: invs } = await db.from('invoices').select('total, status').eq('contact_id', contactId);
+        const outstanding = (invs || [])
+          .filter(i => i.status !== 'paid' && i.status !== 'cancelled')
+          .reduce((s, i) => s + (Number(i.total) || 0), 0);
+        setOutstandingBalance(outstanding);
+      })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `contact_id=eq.${contactId}` }, (payload) => {
         setMessages(prev => {
           const id = payload.new?.id;
