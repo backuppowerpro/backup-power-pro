@@ -38,3 +38,6 @@ _backups/
 scripts/brain/.last-refresh.log
 scripts/brain/.stdout.log
 scripts/brain/.stderr.log
+supabase/STRIPE-SETUP.md
+supabase/functions/.env
+supabase/.temp/

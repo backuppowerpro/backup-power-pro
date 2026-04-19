@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BPP — My Schedule</title>
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --navy: #0b1f3b;
+    --gold: #ffba00;
+    --red: #dc2626;
+    --green: #16a34a;
+    --bg: #f4f4f2;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #8a8a8a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px 14px calc(24px + env(safe-area-inset-bottom));
+    padding-top: calc(16px + env(safe-area-inset-top));
+    min-height: 100vh;
+  }
+  .hdr {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 16px;
+  }
+  .hdr h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .hdr .sub { color: var(--text-faint); font-size: 12px; margin-top: 2px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-muted);
+    margin: 20px 0 8px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  }
+  .card .time {
+    display: inline-block;
+    background: var(--navy); color: var(--gold);
+    font-weight: 700; font-size: 13px;
+    padding: 4px 10px; border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .card .name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .card .addr a { color: var(--navy); text-decoration: none; border-bottom: 1px solid rgba(0,0,0,.1); }
+  .card .addr { font-size: 14px; color: var(--text-muted); margin-bottom: 10px; }
+  .card .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .card .actions a, .card .actions button {
+    flex: 1 1 auto; text-align: center;
+    padding: 10px 12px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; text-decoration: none;
+    border: none; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--navy); color: #fff; }
+  .btn-secondary { background: rgba(11,31,59,.08); color: var(--navy); }
+  .btn-tel { background: var(--green); color: #fff; }
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: var(--text-faint); margin-top: 6px;
+  }
+  .meta-row .pay { color: var(--green); font-weight: 700; }
+  .jur { font-size: 11px; color: var(--text-faint); margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .empty {
+    padding: 40px 16px; text-align: center; color: var(--text-faint); font-size: 14px;
+  }
+  .err {
+    padding: 20px; background: #ffe5e5; color: var(--red);
+    border-radius: 8px; font-size: 14px; margin-top: 20px;
+  }
+  .loading { color: var(--text-faint); font-size: 14px; padding: 20px 0; }
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <div>
+      <h1>My Schedule</h1>
+      <div class="sub" id="sub-name">Loading…</div>
+    </div>
+    <div class="sub" id="sub-count"></div>
+  </div>
+
+  <div id="sub-today"></div>
+  <div id="sub-upcoming"></div>
+  <div id="sub-err"></div>
+
+<script>
+(async function(){
+  const ENDPOINT = 'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/sub-schedule';
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  if (!token) {
+    document.getElementById('sub-err').innerHTML = '<div class="err">No access token. Ask Key for your link.</div>';
+    document.getElementById('sub-name').textContent = '—';
+    return;
+  }
+  let res;
+  try {
+    res = await fetch(ENDPOINT + '?token=' + encodeURIComponent(token));
+  } catch (e) {
+    document.getElementById('sub-err').innerHTML = '<div class="err">Can\'t reach the server. Check your connection and refresh.</div>';
+    return;
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    document.getElementById('sub-err').innerHTML = '<div class="err">' + (res.status === 401 ? 'Your link is invalid or was revoked. Ask Key for a new one.' : 'Error: ' + text) + '</div>';
+    return;
+  }
+  const data = await res.json();
+  document.getElementById('sub-name').textContent = 'for ' + (data.installer || '—');
+  const total = (data.today?.length || 0) + (data.upcoming?.length || 0);
+  document.getElementById('sub-count').textContent = total + ' upcoming';
+
+  function renderCard(install) {
+    const d = new Date(install.install_date);
+    const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const dayLabel = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    const addr = install.address || '';
+    const mapsHref = addr ? 'https://maps.google.com/?q=' + encodeURIComponent(addr) : null;
+    const telHref = install.phone ? 'tel:' + install.phone.replace(/\\D/g, '') : null;
+    const payStr = install.installer_pay ? '$' + Number(install.installer_pay).toLocaleString() : '';
+    const jurName = install.jurisdiction?.name || '';
+    const portalUrl = install.jurisdiction?.link1_url || '';
+    return `
+      <div class="card">
+        <div class="time">${time} · ${dayLabel}</div>
+        <div class="name">${escapeHtml(install.name || 'Install')}</div>
+        <div class="addr">${addr ? '<a href="' + mapsHref + '" target="_blank" rel="noopener">' + escapeHtml(addr) + '</a>' : '<span class="text-faint">No address on file</span>'}</div>
+        ${jurName ? '<div class="jur">' + escapeHtml(jurName) + ' · stage ' + (install.stage || 1) + '</div>' : ''}
+        <div class="actions">
+          ${telHref ? '<a class="btn-tel" href="' + telHref + '">📞 Call</a>' : ''}
+          ${mapsHref ? '<a class="btn-secondary" href="' + mapsHref + '" target="_blank" rel="noopener">🗺️ Map</a>' : ''}
+          ${portalUrl ? '<a class="btn-secondary" href="' + portalUrl + '" target="_blank" rel="noopener">📄 Permit</a>' : ''}
+        </div>
+        ${payStr ? '<div class="meta-row"><span>Pay</span><span class="pay">' + payStr + '</span></div>' : ''}
+      </div>
+    `;
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  const todayEl = document.getElementById('sub-today');
+  if (data.today?.length) {
+    todayEl.innerHTML = '<div class="section-label">Today</div>' + data.today.map(renderCard).join('');
+  }
+  const upcomingEl = document.getElementById('sub-upcoming');
+  if (data.upcoming?.length) {
+    upcomingEl.innerHTML = '<div class="section-label">Next 7 days</div>' + data.upcoming.map(renderCard).join('');
+  }
+  if (!data.today?.length && !data.upcoming?.length) {
+    todayEl.innerHTML = '<div class="empty">Nothing scheduled in the next 7 days.<br>Key will text you when there\'s work.</div>';
+  }
+})();
+</script>
+</body>
+</html>

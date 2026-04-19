@@ -1985,6 +1985,8 @@ function DetailEditContact({ contact, onUpdate }) {
     address: contact?.address || '',
     install_date: toLocalDatetimeInput(contact?.install_date),
     jurisdiction_id: contact?.jurisdiction_id || '',
+    assigned_installer: contact?.assigned_installer || '',
+    installer_pay: contact?.installer_pay || '',
     do_not_contact: !!contact?.do_not_contact,
   });
   const [saving, setSaving] = useState(false);
@@ -2008,6 +2010,8 @@ function DetailEditContact({ contact, onUpdate }) {
       address: contact?.address || '',
       install_date: toLocalDatetimeInput(contact?.install_date),
       jurisdiction_id: contact?.jurisdiction_id || '',
+      assigned_installer: contact?.assigned_installer || '',
+      installer_pay: contact?.installer_pay || '',
       do_not_contact: !!contact?.do_not_contact,
     });
   }, [contact?.id]);
@@ -2026,6 +2030,8 @@ function DetailEditContact({ contact, onUpdate }) {
       address: form.address.trim() || null,
       install_date: installIso,
       jurisdiction_id: form.jurisdiction_id || null,
+      assigned_installer: form.assigned_installer.trim() || null,
+      installer_pay: form.installer_pay ? Number(form.installer_pay) : null,
       do_not_contact: !!form.do_not_contact,
     };
     // Record compliance metadata when flipping DNC on
@@ -2067,6 +2073,15 @@ function DetailEditContact({ contact, onUpdate }) {
             <option key={j.id} value={j.id}>{j.name}</option>
           ))}
         </select>
+      </div>
+
+      {/* Sub-labor prep (phase 1). Free-text installer name so Key can start
+          assigning installs without building a full installers table. When
+          sub onboarding matures, migrate to a proper installers table with
+          login + portal access. installer_pay is per-job for margin tracking. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 8 }}>
+        <EditField label="ASSIGNED INSTALLER" value={form.assigned_installer} onChange={v => setForm({ ...form, assigned_installer: v })} placeholder="Key" />
+        <EditField label="PAY $" value={form.installer_pay} onChange={v => setForm({ ...form, installer_pay: v.replace(/[^\d.]/g, '') })} placeholder="0" type="text" />
       </div>
 
       {contact?.created_at ? (
@@ -3697,6 +3712,8 @@ function Empty({ label }) {
 function LiveCalendar() {
   const [scheduled, setScheduled] = useState([]);
   const [unscheduled, setUnscheduled] = useState([]);
+  const [installers, setInstallers] = useState([]); // distinct assigned_installer values
+  const [installerFilter, setInstallerFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -3718,13 +3735,13 @@ function LiveCalendar() {
       const nowIso = new Date().toISOString();
       const [schedRes, unschedRes] = await Promise.all([
         db.from('contacts')
-          .select('id, name, address, stage, install_date')
+          .select('id, name, address, stage, install_date, assigned_installer, installer_pay')
           .not('install_date', 'is', null)
           .gte('install_date', new Date(Date.now() - 7 * 86400000).toISOString())
           .order('install_date', { ascending: true })
           .limit(50),
         db.from('contacts')
-          .select('id, name, address, stage')
+          .select('id, name, address, stage, assigned_installer')
           .is('install_date', null)
           .in('stage', [3, 4, 5, 6, 7, 8])
           .eq('do_not_contact', false)
@@ -3733,6 +3750,12 @@ function LiveCalendar() {
       ]);
       setScheduled(schedRes.data || []);
       setUnscheduled(unschedRes.data || []);
+      // Collect distinct installer names across both buckets for the filter
+      const installerSet = new Set();
+      for (const r of [...(schedRes.data || []), ...(unschedRes.data || [])]) {
+        if (r.assigned_installer) installerSet.add(r.assigned_installer);
+      }
+      setInstallers(Array.from(installerSet).sort());
       setLoading(false);
     })();
   }, [refreshTick]);
@@ -3751,9 +3774,21 @@ function LiveCalendar() {
     if (ds.getTime() === ystr.getTime()) return 'Yesterday';
     return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   };
+  // Apply installer filter — "all" shows everything, "unassigned" shows
+  // rows without an assigned_installer, and specific names filter to that
+  // installer. Sub-labor prep: Key uses this to plan his own day AND to
+  // review what each sub has on their plate.
+  const filterFn = (e) => {
+    if (installerFilter === 'all') return true;
+    if (installerFilter === 'unassigned') return !e.assigned_installer;
+    return e.assigned_installer === installerFilter;
+  };
+  const filteredScheduled = scheduled.filter(filterFn);
+  const filteredUnscheduled = unscheduled.filter(filterFn);
+
   const groups = (() => {
     const by = new Map();
-    for (const e of scheduled) {
+    for (const e of filteredScheduled) {
       const k = dayLabel(e.install_date);
       if (!by.has(k)) by.set(k, []);
       by.get(k).push(e);
@@ -3768,9 +3803,25 @@ function LiveCalendar() {
           Installs
         </div>
         <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
-          {scheduled.length} scheduled · {unscheduled.length} awaiting date
+          {filteredScheduled.length} scheduled · {filteredUnscheduled.length} awaiting date
+          {installerFilter !== 'all' ? ` · filtered: ${installerFilter}` : ''}
         </div>
       </div>
+
+      {/* Installer filter chips. Hidden when no installers are assigned yet. */}
+      {installers.length > 0 ? (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+          {['all', 'unassigned', ...installers].map(i => (
+            <button key={i} onClick={() => setInstallerFilter(i)} style={{
+              padding: '4px 12px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
+              background: installerFilter === i ? 'var(--navy)' : 'var(--card)',
+              color: installerFilter === i ? 'var(--gold)' : 'var(--text-muted)',
+              boxShadow: installerFilter === i ? 'var(--pressed-2)' : 'var(--raised-2)',
+              cursor: 'pointer', border: 'none', letterSpacing: '.06em', textTransform: 'uppercase',
+            }}>{i}</button>
+          ))}
+        </div>
+      ) : null}
 
       {groups.length > 0 ? groups.map(([label, items]) => (
         <div key={label} style={{ marginBottom: 18 }}>
@@ -3809,20 +3860,20 @@ function LiveCalendar() {
       )}
 
       {/* Awaiting date — contacts past booking that haven't been scheduled yet */}
-      {unscheduled.length > 0 ? (
+      {filteredUnscheduled.length > 0 ? (
         <div style={{ marginTop: 28 }}>
           <div className="chrome-label" style={{
             fontSize: 11, letterSpacing: '.1em', color: 'var(--ms-3)',
             padding: '6px 0', marginBottom: 4, borderBottom: '1px solid rgba(0,0,0,.08)',
-          }}>Awaiting date ({unscheduled.length})</div>
+          }}>Awaiting date ({filteredUnscheduled.length})</div>
           <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
-            {unscheduled.map((e, i) => (
+            {filteredUnscheduled.map((e, i) => (
               <div key={e.id}
                 onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
                 style={{
                   display: 'grid', gridTemplateColumns: '1fr 90px',
                   gap: 12, alignItems: 'center', padding: '12px 16px',
-                  borderBottom: i < unscheduled.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+                  borderBottom: i < filteredUnscheduled.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
                   cursor: 'pointer',
                 }}>
                 <span>
