@@ -208,6 +208,36 @@ serve(async (req) => {
           proposalId: invoice?.proposal_id,
         }).catch(e => console.error('[capi-purchase] unhandled:', e))
 
+        // Fire PostHog server-side deposit_paid event. Closes the funnel on
+        // the server so we get conversion data even when the customer's
+        // browser session ended (common: they pay via the invoice link
+        // minutes/hours after leaving the /proposal.html tab). distinct_id
+        // prefers the identified contactId — the client posthog.identify()
+        // call from the landing page form-submit bridges anonymous →
+        // contact, and proposal.html re-registers with proposal_token, so
+        // passing contactId here lines up with both person profiles.
+        const phKey = Deno.env.get('POSTHOG_API_KEY') || 'phc_qoA51lePZqXYtPJYkrIpdA4U8iMDJ79L1kje7r4pD4O'
+        if (phKey) {
+          fetch('https://us.i.posthog.com/capture/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              api_key: phKey,
+              event: 'deposit_paid',
+              distinct_id: contactId || `anon-${session.id}`,
+              timestamp: new Date().toISOString(),
+              properties: {
+                amount: amountPaid,
+                is_deposit: invoice?.notes === 'deposit',
+                proposal_id: invoice?.proposal_id,
+                stripe_session_id: session.id,
+                contact_name: invoice?.contact_name,
+                $lib: 'stripe-webhook-server',
+              },
+            }),
+          }).catch(e => console.error('[posthog] deposit_paid capture failed:', e))
+        }
+
         // Auto-advance contact to BOOKED (stage 4) when a deposit is paid.
         // Only advances if the contact is pre-booking (stages 1-3), so a
         // customer paying a final/additional invoice after booking doesn't
