@@ -406,12 +406,24 @@ function contactToCard(c, waiting = false) {
   const hasPhoto = /photo|image|panel_photo/.test(notes) || (c.stage || 1) >= 2;
   const hasQuote = (c.stage || 1) >= 2;
   const hasPermit = (c.stage || 1) >= 4;
+  // Install-date awareness. Once a contact is booked (stage ≥ 4) the number
+  // that matters isn't "how old is this lead" but "how close is install?"
+  // Compute a forward-looking offset so the card can replace the days-ago
+  // chip with an install-day chip in those stages.
+  let installOffsetDays = null;
+  if (c.install_date) {
+    const instMs = new Date(c.install_date).getTime();
+    if (!isNaN(instMs)) {
+      installOffsetDays = Math.round((instMs - Date.now()) / 86400000);
+    }
+  }
   return {
     id: c.id,
     name: c.name || '—',
     initials: initials(c.name),
     addr: c.address || '—',
     days,
+    installOffsetDays, // null when no install_date set; negative = past-due, 0 = today, + = future
     dots: { photo: hasPhoto ? 1 : 0, quote: hasQuote ? 1 : 0, permit: hasPermit ? 1 : 0 },
     overdue: days > 7 && (c.stage || 1) < 4,
     dnc: !!c.do_not_contact,
@@ -464,7 +476,7 @@ function LivePipeline({ onCardClick, onSubView }) {
   const fetchAll = useCallback(async () => {
     const [{ data: contacts }, { data: jurisdictions }, { data: recentMsgs }] = await Promise.all([
       db.from('contacts')
-        .select('id, name, phone, address, stage, status, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id')
+        .select('id, name, phone, address, stage, status, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id, install_date')
         .neq('status', 'Archived')
         .order('created_at', { ascending: false })
         .limit(500),

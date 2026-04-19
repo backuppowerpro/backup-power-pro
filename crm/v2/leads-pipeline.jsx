@@ -58,6 +58,44 @@ function DaysChip({ n }) {
   );
 }
 
+// Install-date chip. Replaces DaysChip for booked contacts so the card
+// answers "when am I installing this?" instead of "when did the lead come
+// in?" — once you're past BOOKED the former is the actionable info.
+// Renders as:
+//   past-due (negative) → red
+//   today (0)           → gold
+//   1–6 days out        → navy
+//   7+ days out         → muted gray
+// Text format: "TODAY", "+1d", "+4d", "-2d", "Apr 28" (7+ days out)
+function InstallChip({ n }) {
+  if (typeof n !== 'number' || isNaN(n)) return null;
+  let color = 'var(--text-faint)';
+  let label = '';
+  if (n < 0) {
+    color = 'var(--ms-3)';
+    label = `-${Math.abs(n)}d`;
+  } else if (n === 0) {
+    color = 'var(--gold)';
+    label = 'TODAY';
+  } else if (n <= 6) {
+    color = 'var(--navy)';
+    label = `+${n}d`;
+  } else {
+    // Show short-form date for anything a week+ out so the card still
+    // gives a landmark without cluttering with "+14d".
+    const d = new Date(Date.now() + n * 86400000);
+    label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  return (
+    <span className="mono" title={`Install ${n === 0 ? 'today' : n < 0 ? `${Math.abs(n)} days ago (overdue)` : `in ${n} day${n === 1 ? '' : 's'}`}`} style={{
+      fontSize: 10, color, letterSpacing: '.04em', fontWeight: 600,
+      padding: '1px 5px', boxShadow: 'var(--raised-2)',
+      background: 'var(--card)',
+      whiteSpace: 'nowrap',
+    }}>{label}</span>
+  );
+}
+
 function LeadCard({ c }) {
   const [hover, setHover] = React.useState(false);
   return (
@@ -98,7 +136,9 @@ function LeadCard({ c }) {
           {c.pinned ? <span style={{ color: 'var(--gold)', fontSize: 11, flex: '0 0 auto' }}>★</span> : null}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
         </div>
-        <DaysChip n={c.days} />
+        {typeof c.installOffsetDays === 'number'
+          ? <InstallChip n={c.installOffsetDays} />
+          : <DaysChip n={c.days} />}
       </div>
       {c.addr && (
         <div style={{
