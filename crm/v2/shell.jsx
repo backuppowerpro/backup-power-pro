@@ -98,8 +98,21 @@ function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
 
 /* ────────── Tab bar (top, same on both platforms) ────────── */
 function TabBar({ active = 'leads', scrollable = false, onChange, badges = {} }) {
+  // On mobile the tab bar overflows horizontally (5 tabs × 100px+ per tab
+  // exceeds a 375px viewport). Without this effect, switching to a tab
+  // that's off-screen (e.g. MESSAGES when viewport shows LEADS/CALENDAR/
+  // FINANCE) left no visible active indicator — Key couldn't tell which
+  // tab he was on. Scroll the active tab into view whenever it changes.
+  const barRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!scrollable || !barRef.current) return;
+    const btn = barRef.current.querySelector(`button[data-tab-id="${active}"]`);
+    if (btn && typeof btn.scrollIntoView === 'function') {
+      btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [active, scrollable]);
   return (
-    <div role="tablist" aria-label="Main navigation" style={{
+    <div ref={barRef} role="tablist" aria-label="Main navigation" style={{
       height: 44, display: 'flex', alignItems: 'stretch',
       padding: '0 8px',
       background: 'var(--card)',
@@ -114,6 +127,7 @@ function TabBar({ active = 'leads', scrollable = false, onChange, badges = {} })
         return (
           <button key={t.id} className="chrome-label"
             role="tab"
+            data-tab-id={t.id}
             aria-selected={isActive}
             aria-label={badge ? `${t.label} (${badge})` : t.label}
             onClick={() => onChange && onChange(t.id)}
