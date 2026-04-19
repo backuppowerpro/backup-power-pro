@@ -2132,6 +2132,7 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
   const [text, setText] = useState(() => (draftKey && localStorage.getItem(draftKey)) || '');
   const [sending, setSending] = useState(false);
   const [snippetsOpen, setSnippetsOpen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
 
   // Persist draft on every keystroke (cheap; localStorage is synchronous)
   useEffect(() => {
@@ -2174,6 +2175,37 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
     const first = (contactName || '').split(' ')[0] || 'there';
     setText(body.replace(/\{name\}/g, first));
     setSnippetsOpen(false);
+  }
+
+  // Sparky-backed reply suggestion. Pulls the thread + contact, calls
+  // ai-taskmaster with mode=suggest_reply, drops the response into the
+  // compose bar. Key reviews + sends — nothing auto-sends.
+  async function suggestReply() {
+    if (!contactId || suggesting) return;
+    setSuggesting(true);
+    try {
+      const [{ data: c }, { data: msgs }] = await Promise.all([
+        db.from('contacts').select('*').eq('id', contactId).maybeSingle(),
+        db.from('messages').select('direction, body, sender, created_at').eq('contact_id', contactId).order('created_at', { ascending: true }).limit(60),
+      ]);
+      const { data, error } = await db.functions.invoke('ai-taskmaster', {
+        body: { mode: 'suggest_reply', contact: c, thread: msgs || [] },
+      });
+      if (error) throw error;
+      // Response shape from ai-taskmaster: { reply: "..." } or { text: "..." } or raw string.
+      const reply = (typeof data === 'string' ? data : (data?.reply || data?.text || data?.answer || '')).trim();
+      if (!reply) throw new Error('empty reply from sparky');
+      setText(reply);
+      // Focus the input so Enter sends immediately
+      setTimeout(() => {
+        const input = document.querySelector('input[placeholder="Type a message…"]');
+        if (input) input.focus();
+      }, 30);
+    } catch (e) {
+      window.__bpp_toast && window.__bpp_toast(`Suggest failed: ${e.message || e}`, 'error');
+    } finally {
+      setSuggesting(false);
+    }
   }
 
   async function send() {
@@ -2243,6 +2275,14 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
           border: 'none', cursor: 'pointer',
           fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--text-muted)',
         }}>…</button>
+        <button onClick={suggestReply} disabled={suggesting} title="Suggest reply (Sparky)" style={{
+          width: 36, height: 36,
+          background: suggesting ? 'var(--navy)' : 'var(--card)',
+          color: suggesting ? 'var(--gold)' : 'var(--text-muted)',
+          boxShadow: suggesting ? 'var(--pressed-2)' : 'var(--raised-2)',
+          border: 'none', cursor: suggesting ? 'wait' : 'pointer',
+          fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+        }}>{suggesting ? '…' : 'AI'}</button>
         <div style={{
           flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
           boxShadow: 'var(--pressed-2)', background: 'var(--card)',
