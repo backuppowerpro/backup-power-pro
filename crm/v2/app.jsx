@@ -1096,6 +1096,25 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
                   {Math.floor(m.duration_seconds / 60)}:{String(m.duration_seconds % 60).padStart(2, '0')} call
                 </div>
               ) : null}
+              {/* Delivery status on outbound SMS. Twilio's status-callback
+                  updates this column from 'sent' → 'delivered' (successfully
+                  reached the handset) or 'failed'/'undelivered' (carrier
+                  blocked, number bad, or recipient opted out). Before the
+                  JWT-disable fix on twilio-status-callback, this column was
+                  permanently stuck at 'sent' — Key had no visibility when a
+                  text failed. Now failed shows red so he sees it at a glance. */}
+              {isOut && (m.status === 'failed' || m.status === 'undelivered') ? (
+                <div className="mono" style={{
+                  fontSize: 9, marginTop: 4, letterSpacing: '.08em',
+                  color: 'var(--ms-3)', textTransform: 'uppercase',
+                }}>⚠ Not delivered</div>
+              ) : null}
+              {isOut && m.status === 'delivered' ? (
+                <div className="mono" style={{
+                  fontSize: 9, marginTop: 4, letterSpacing: '.06em',
+                  color: 'rgba(255,255,255,.45)', textTransform: 'lowercase',
+                }}>delivered</div>
+              ) : null}
             </div>
             </React.Fragment>
           );
