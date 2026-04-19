@@ -733,16 +733,20 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
       </button>
 
       {outstandingBalance > 0 ? (
-        <div style={{
-          padding: '8px 14px',
-          background: 'var(--card)',
-          borderBottom: '2px solid var(--ms-3)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          fontFamily: 'var(--font-body)', fontSize: 12,
-        }}>
+        <button
+          onClick={() => { window.location.hash = '#tab=finance'; }}
+          title="Open Finance → Invoices"
+          style={{
+            padding: '8px 14px',
+            background: 'var(--card)',
+            borderBottom: '2px solid var(--ms-3)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            fontFamily: 'var(--font-body)', fontSize: 12,
+            width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left',
+          }}>
           <span style={{ color: 'var(--text-muted)' }}>Outstanding</span>
           <span style={{ color: 'var(--ms-3)', fontWeight: 700 }}>${outstandingBalance.toLocaleString()}</span>
-        </div>
+        </button>
       ) : null}
 
       {alexSession ? (
@@ -1659,7 +1663,7 @@ function MessageBody({ body, isOut }) {
     const [, mediaUrl, caption] = mediaMatch;
     return (
       <>
-        <img src={mediaUrl} alt="" style={{
+        <img src={mediaUrl} alt="" loading="lazy" decoding="async" style={{
           display: 'block', maxWidth: '100%', maxHeight: 260, marginBottom: caption ? 6 : 0,
         }} />
         {caption ? <MessageBody body={caption.trim()} isOut={isOut} /> : null}
