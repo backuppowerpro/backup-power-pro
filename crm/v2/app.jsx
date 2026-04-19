@@ -263,9 +263,13 @@ function LiveLeadsList({ desktop = false, onSelect }) {
     let alive = true;
     (async () => {
       setLoading(true);
+      // Archived contacts don't show in the active LIST view. They still
+      // exist in DB and can be reached via direct link or by unarchiving
+      // from the Edit tab. Mirrors the v1 filter behavior.
       const { data, error } = await db
         .from('contacts')
         .select('id, name, phone, email, address, stage, status, do_not_contact, created_at')
+        .neq('status', 'Archived')
         .order('created_at', { ascending: false })
         .limit(200);
       if (!alive) return;
@@ -283,6 +287,7 @@ function LiveLeadsList({ desktop = false, onSelect }) {
         const { data } = await db
           .from('contacts')
           .select('id, name, phone, email, address, stage, status, do_not_contact, created_at')
+          .neq('status', 'Archived')
           .order('created_at', { ascending: false })
           .limit(200);
         setRows((data || []).map(contactToRow));
@@ -457,7 +462,8 @@ function LivePipeline({ onCardClick, onSubView }) {
   const fetchAll = useCallback(async () => {
     const [{ data: contacts }, { data: jurisdictions }] = await Promise.all([
       db.from('contacts')
-        .select('id, name, phone, address, stage, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id')
+        .select('id, name, phone, address, stage, status, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id')
+        .neq('status', 'Archived')
         .order('created_at', { ascending: false })
         .limit(500),
       db.from('permit_jurisdictions').select('id, name'),
@@ -1995,6 +2001,44 @@ function DetailEditContact({ contact, onUpdate }) {
         <PrimaryButton type="submit" disabled={saving}>
           {saving ? 'Saving…' : 'Save'}
         </PrimaryButton>
+      </div>
+
+      {/* Archive — light cleanup path for dead leads. Unlike DNC, this
+          doesn't set compliance flags or block messaging; it just hides
+          the contact from the active pipeline/LIST views. Reversible by
+          changing status back in the database. Separate from Save so Key
+          doesn't accidentally archive on every edit. */}
+      <div style={{ marginTop: 12, padding: 12, background: 'var(--card)', boxShadow: 'var(--pressed-2)' }}>
+        <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 6, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+          Archive
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.4 }}>
+          Hide this contact from the pipeline and LIST. Does not affect messaging rules — use DNC for compliance.
+        </div>
+        <button type="button" disabled={saving || contact?.status === 'Archived'}
+          onClick={async () => {
+            if (!contact) return;
+            const isArchived = contact.status === 'Archived';
+            const next = isArchived ? 'New Lead' : 'Archived';
+            const { error } = await db.from('contacts').update({ status: next }).eq('id', contact.id);
+            if (error) { window.__bpp_toast && window.__bpp_toast(`Failed: ${error.message}`, 'error'); return; }
+            onUpdate && onUpdate({ status: next });
+            window.__bpp_toast && window.__bpp_toast(isArchived ? 'Unarchived' : 'Archived', 'success', {
+              label: 'Undo',
+              onClick: async () => {
+                await db.from('contacts').update({ status: isArchived ? 'Archived' : 'New Lead' }).eq('id', contact.id);
+                onUpdate && onUpdate({ status: isArchived ? 'Archived' : 'New Lead' });
+              },
+            });
+          }}
+          style={{
+            padding: '8px 14px', fontSize: 12, fontFamily: 'var(--font-body)', fontWeight: 600,
+            background: contact?.status === 'Archived' ? 'var(--ms-2)' : 'var(--card)',
+            color: contact?.status === 'Archived' ? '#fff' : 'var(--text-muted)',
+            boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+          }}>
+          {contact?.status === 'Archived' ? 'Unarchive' : 'Archive contact'}
+        </button>
       </div>
     </form>
   );
