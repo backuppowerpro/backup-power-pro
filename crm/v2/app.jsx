@@ -2567,21 +2567,25 @@ function MatCheck({ on, onClick }) {
 
 // ── Live Finance (KPI strip + proposals/invoices/payments tables) ──────────
 function LiveFinance() {
-  const [data, setData] = useState({ proposals: [], invoices: [], payments: [], loading: true });
+  const [data, setData] = useState({ proposals: [], invoices: [], payments: [], installsThisWeek: 0, loading: true });
   const [subView, setSubView] = useState('prop');
 
   useEffect(() => {
     (async () => {
-      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-      const [propRes, invRes, payRes] = await Promise.all([
+      const weekAgoIso = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [propRes, invRes, payRes, historyRes] = await Promise.all([
         db.from('proposals').select('id, contact_id, contact_name, total, status, signed_at, viewed_at, created_at').order('created_at', { ascending: false }).limit(20),
         db.from('invoices').select('id, contact_id, contact_name, total, status, notes, paid_at, created_at').order('created_at', { ascending: false }).limit(20),
         db.from('payments').select('id, contact_id, amount, method, created_at').order('created_at', { ascending: false }).limit(20),
+        // Installs-this-week: transitions to stage 9 (inspection/done) in last 7 days
+        db.from('stage_history').select('contact_id, to_stage, changed_at').eq('to_stage', 9).gte('changed_at', weekAgoIso),
       ]);
+      const uniqueInstalls = new Set((historyRes.data || []).map(r => r.contact_id));
       setData({
         proposals: propRes.data || [],
         invoices: invRes.data || [],
         payments: payRes.data || [],
+        installsThisWeek: uniqueInstalls.size,
         loading: false,
       });
     })();
@@ -2618,7 +2622,8 @@ function LiveFinance() {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* KPI strip */}
-      <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+        <KpiCard label="INSTALLS THIS WEEK" value={String(data.installsThisWeek).padStart(2, '0')} tone="green" />
         <KpiCard label="OUTSTANDING" value={`$${kpis.outstanding.toLocaleString()}`} tone="red" onClick={() => setSubView('inv')} />
         <KpiCard label="THIS MONTH" value={`$${kpis.paidThisMonth.toLocaleString()}`} tone="green" onClick={() => setSubView('pay')} />
         <KpiCard label="DEPOSITS PENDING" value={String(kpis.awaitingDeposit).padStart(2, '0')} tone="amber" onClick={() => setSubView('inv')} />
