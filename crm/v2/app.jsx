@@ -2154,6 +2154,25 @@ function InspectionChecklist({ contactId }) {
   );
 }
 
+// Parse permit metadata stored as __pm_*: lines inside contacts.install_notes.
+// Pattern set by ai-taskmaster when it submits / tracks a permit. Keys used:
+//   __pm_pnum: permit number (e.g. ELE-2026-00123)
+//   __pm_psub: submitted date (ISO / free-form)
+//   __pm_pdoc: issued-permit PDF URL
+//   __pm_mnotes / __pm_minlet / __pm_msurge: materials notes (not surfaced here)
+function parsePermitNotes(installNotes) {
+  const s = String(installNotes || '');
+  const read = key => {
+    const m = s.match(new RegExp('^__pm_' + key + ':\\s*(.*)$', 'm'));
+    return m ? (m[1] || '').trim() : '';
+  };
+  return {
+    number: read('pnum'),
+    submittedAt: read('psub'),
+    docUrl: read('pdoc'),
+  };
+}
+
 function DetailPermits({ contact }) {
   const [jur, setJur] = useState(null);
   useEffect(() => {
@@ -2175,6 +2194,7 @@ function DetailPermits({ contact }) {
     jur.link2_url ? { title: jur.link2_title || 'Link 2', url: jur.link2_url } : null,
     jur.link3_url ? { title: jur.link3_title || 'Link 3', url: jur.link3_url } : null,
   ].filter(Boolean) : [];
+  const permitMeta = parsePermitNotes(contact.install_notes);
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
       <div style={{ padding: '14px 16px', marginBottom: 12, background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
@@ -2189,6 +2209,46 @@ function DetailPermits({ contact }) {
             </div>
           ))}
         </div>
+        {/* Permit metadata parsed from install_notes. Shown only when at
+            least one field is populated — avoids empty clutter on pre-
+            submission contacts. Permit # is click-to-copy; doc URL opens
+            the issued permit PDF in a new tab. */}
+        {(permitMeta.number || permitMeta.submittedAt || permitMeta.docUrl) ? (
+          <div className="mono" style={{
+            marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(0,0,0,.06)',
+            fontSize: 11, color: 'var(--text-muted)',
+            display: 'flex', flexDirection: 'column', gap: 4,
+          }}>
+            {permitMeta.number ? (
+              <div>
+                permit #: <button
+                  onClick={() => navigator.clipboard.writeText(permitMeta.number)
+                    .then(() => window.__bpp_toast && window.__bpp_toast(`Permit # copied — ${permitMeta.number}`, 'success'))}
+                  title="Click to copy"
+                  style={{
+                    padding: 0, background: 'transparent', border: 'none',
+                    color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit',
+                    borderBottom: '1px dashed rgba(0,0,0,.2)',
+                  }}
+                >{permitMeta.number}</button>
+              </div>
+            ) : null}
+            {permitMeta.submittedAt ? (
+              <div>submitted: <span style={{ color: 'var(--text)' }}>{permitMeta.submittedAt}</span></div>
+            ) : null}
+            {permitMeta.docUrl ? (
+              <div>
+                doc: <a
+                  href={permitMeta.docUrl} target="_blank" rel="noopener"
+                  style={{
+                    color: 'var(--navy)', textDecoration: 'none',
+                    borderBottom: '1px dashed rgba(0,0,0,.2)',
+                  }}
+                >open PDF ↗</a>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       {/* Jurisdiction block — surfaces portal links + credentials when this
           contact's jurisdiction is set. One-click portal access from the
