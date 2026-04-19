@@ -83,14 +83,19 @@ function Avatar({ row, size = 48 }) {
 
 function LeadRow({ r, desktop = false }) {
   const stage = STAGE[r.stage];
+  const [hover, setHover] = React.useState(false);
   return (
-    <div className="tactile-flat" style={{
-      position: 'relative',
-      minHeight: 72, padding: '12px 14px',
-      display: 'flex', alignItems: 'center', gap: 12,
-      background: 'var(--card)',
-      borderBottom: '1px solid rgba(0,0,0,.08)',
-    }}>
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        position: 'relative',
+        minHeight: 72, padding: '12px 14px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: hover ? 'var(--bg)' : 'var(--card)',
+        borderBottom: '1px solid rgba(0,0,0,.08)',
+        transition: 'background var(--dur, 80ms) var(--step, linear)',
+      }}>
       {r.overdue && (
         <div style={{
           position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,

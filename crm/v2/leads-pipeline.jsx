@@ -55,15 +55,20 @@ function DaysChip({ n }) {
 }
 
 function LeadCard({ c }) {
+  const [hover, setHover] = React.useState(false);
   return (
-    <div style={{
-      position: 'relative',
-      minHeight: 72, padding: '10px 12px',
-      display: 'flex', flexDirection: 'column', gap: 4,
-      background: 'var(--card)',
-      boxShadow: 'var(--raised-2)',
-      opacity: c.dnc ? 0.55 : 1,
-    }}>
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        position: 'relative',
+        minHeight: 72, padding: '10px 12px',
+        display: 'flex', flexDirection: 'column', gap: 4,
+        background: hover ? 'var(--bg)' : 'var(--card)',
+        boxShadow: hover ? 'var(--raised)' : 'var(--raised-2)',
+        opacity: c.dnc ? 0.55 : 1,
+        transition: 'background 80ms linear, box-shadow 80ms linear',
+      }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
           width: 24, height: 24, background: c.dnc ? 'var(--ms-3)' : 'var(--navy)',
