@@ -366,6 +366,7 @@ function contactToCard(c) {
     overdue: days > 7 && (c.stage || 1) < 4,
     dnc: !!c.do_not_contact,
     jurisdiction: c._jurisdiction_name || null,
+    pinned: isPinned(c.id),
   };
 }
 
@@ -434,7 +435,16 @@ function LivePipeline({ onCardClick, onSubView }) {
     return () => { db.removeChannel(ch); };
   }, [fetchAll]);
 
-  // Bucket by column id using stage number
+  // Re-bucket when pins change so cards get the latest pinned flag
+  const [pipelinePinsTick, setPipelinePinsTick] = useState(0);
+  useEffect(() => {
+    const on = () => setPipelinePinsTick(t => t + 1);
+    window.addEventListener('bpp:pins-changed', on);
+    return () => window.removeEventListener('bpp:pins-changed', on);
+  }, []);
+
+  // Bucket by column id using stage number; pinned cards float to the top of
+  // each column. Re-computes on contacts change OR pins change.
   const buckets = useMemo(() => {
     const b = {};
     Object.keys(PIPELINE_COL_TO_STAGE).forEach(k => { b[k] = []; });
@@ -442,8 +452,12 @@ function LivePipeline({ onCardClick, onSubView }) {
       const colId = STAGE_TO_PIPELINE_COL[c.stage || 1] || 'new';
       b[colId].push(contactToCard(c));
     }
+    for (const k of Object.keys(b)) {
+      b[k].sort((a, x) => (a.pinned === x.pinned ? 0 : a.pinned ? -1 : 1));
+    }
     return b;
-  }, [contacts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contacts, pipelinePinsTick]);
 
   const counts = useMemo(() => {
     const c = {};

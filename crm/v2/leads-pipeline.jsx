@@ -76,11 +76,14 @@ function LeadCard({ c }) {
           }}>{c.initials}</span>
         </div>
         <div style={{
-          flex: 1, minWidth: 0,
+          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4,
           fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
           color: c.overdue ? 'var(--ms-3)' : 'var(--text)',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{c.name}</div>
+          overflow: 'hidden',
+        }}>
+          {c.pinned ? <span style={{ color: 'var(--gold)', fontSize: 11, flex: '0 0 auto' }}>★</span> : null}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+        </div>
         <DaysChip n={c.days} />
       </div>
       {c.addr && (
