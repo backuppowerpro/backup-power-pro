@@ -642,12 +642,18 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
     return () => { alive = false; };
   }, [contactId]);
 
-  // Realtime messages for this contact
+  // Realtime messages for this contact.
+  // Dedup by id on append: if the initial fetch and the realtime INSERT race
+  // (or if the channel replays an event on reconnect), the same message can
+  // arrive twice and render as two identical bubbles. Guard with an id set.
   useEffect(() => {
     if (!contactId) return;
     const channel = db.channel(`messages-${contactId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `contact_id=eq.${contactId}` }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
+        setMessages(prev => {
+          if (payload.new?.id && prev.some(m => m.id === payload.new.id)) return prev;
+          return [...prev, payload.new];
+        });
       })
       .subscribe();
     return () => { db.removeChannel(channel); };
@@ -3078,7 +3084,13 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
     (async () => {
       setLoading(true);
       const fiveDaysAgo = new Date(Date.now() - 5 * 86400000).toISOString();
-      const today = new Date().toISOString().slice(0, 10);
+      // Start of TODAY in Key's local timezone (SC, UTC-4/-5), not UTC midnight.
+      // The old query built `YYYY-MM-DDT00:00:00` with no timezone — Postgres
+      // interpreted that as UTC, so leads created 8pm–midnight last night
+      // (still "yesterday" locally) showed up under "New today".
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const todayIso = startOfToday.toISOString();
       const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString();
 
       // Parallel fetches: overdue (stale leads pre-book), new-today leads,
@@ -3090,7 +3102,7 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           .lt('stage', 4).eq('do_not_contact', false).limit(5),
         db.from('contacts')
           .select('id, name, created_at, stage')
-          .gte('created_at', today + 'T00:00:00').limit(5),
+          .gte('created_at', todayIso).limit(5),
         db.from('contacts')
           .select('id, name, stage, install_notes')
           .in('stage', [3, 4]).limit(10),
