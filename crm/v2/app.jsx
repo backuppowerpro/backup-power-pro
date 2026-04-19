@@ -2883,6 +2883,23 @@ function KpiCard({ label, value, tone = 'red', onClick }) {
   );
 }
 
+// Turn an unpaid proposal's age into a follow-up prompt, per Key's
+// 3-move silent-prospect framework:
+//   < 48hr              — normal (no nudge)
+//   48hr → 4d           — F/U 1 (amber, send new info)
+//   4d → 7d             — F/U 2 (orange, reference their specific concern)
+//   7d+                 — EXIT (red, exit message)
+// Approved / Cancelled proposals get no nudge (either closed or dead).
+function followUpState(p) {
+  if (p.status === 'Approved' || p.status === 'Cancelled') return null;
+  if (!p.created_at) return null;
+  const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
+  if (days < 2)  return null;
+  if (days < 4)  return { label: 'F/U 1',  tint: 'var(--ms-4)' };
+  if (days < 7)  return { label: 'F/U 2',  tint: 'var(--ms-3)' };
+  return                { label: 'EXIT',   tint: 'var(--ms-3)' };
+}
+
 function ProposalsLiveTable({ rows }) {
   if (rows.length === 0) return <Empty label="NO PROPOSALS" />;
   const statusTint = {
@@ -2894,12 +2911,13 @@ function ProposalsLiveTable({ rows }) {
       {rows.map((p, i) => {
         const status = (p.status || 'sent').toLowerCase();
         const tint = statusTint[status] || 'var(--text-faint)';
+        const fu = followUpState(p);
         return (
           <div key={p.id}
             onClick={() => p.contact_id && (window.location.hash = `#contact=${p.contact_id}`)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 100px 100px 100px',
+              gridTemplateColumns: '1fr 80px 70px 90px 100px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
               borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
@@ -2909,6 +2927,12 @@ function ProposalsLiveTable({ rows }) {
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
             </span>
+            {fu ? (
+              <span className="chrome-label" style={{
+                fontSize: 10, color: fu.tint, textAlign: 'center', letterSpacing: '.08em',
+                border: `1px solid ${fu.tint}`, padding: '2px 4px',
+              }}>{fu.label}</span>
+            ) : <span />}
             <span className="chrome-label" style={{
               fontSize: 10, color: tint, textAlign: 'center', letterSpacing: '.08em',
             }}>{status.toLowerCase()}</span>
