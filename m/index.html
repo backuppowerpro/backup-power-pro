@@ -1447,7 +1447,11 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     var delivered = false;
     var deliveryMethod = 'none';
     var submitStartMs = Date.now();
+    var createdContactId = null; // populated from edge-fn response when available
     // Tier 1: sendBeacon — OS-level, survives everything short of network loss.
+    // Note: beacon is fire-and-forget so we can't read the response body and
+    // won't get the contactId back. That's fine — fetch is next in the chain
+    // and will populate contactId in the common case.
     try {
       if (navigator.sendBeacon) {
         var blob = new Blob([submitBody], { type: 'application/json' });
@@ -1458,7 +1462,10 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       }
     } catch (e) { /* fall through */ }
     // Tier 2: keepalive fetch. Await so UI doesn't swap before the request
-    // actually hits the wire.
+    // actually hits the wire. Parse the response so we can identify the
+    // session with the created contactId — links landing-page PostHog
+    // events to the CRM contact record, so we can trace a session all the
+    // way through to deposit paid / install complete.
     if (!delivered) {
       try {
         var resp = await fetch(submitUrl, {
@@ -1469,6 +1476,9 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
         });
         delivered = resp.ok;
         deliveryMethod = 'fetch';
+        if (resp.ok) {
+          try { var json = await resp.json(); createdContactId = json?.contactId || null; } catch (_) {}
+        }
         if (!resp.ok && typeof posthog !== 'undefined') {
           posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch' });
         }
@@ -1506,6 +1516,13 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
         delivered: delivered,
         latency_ms: submitLatencyMs,
       });
+      // Bridge the identity: if we got a contactId back from the edge fn,
+      // alias this anonymous PostHog session to it. That lets PostHog
+      // connect the full funnel — a pageview from a Meta ad through to
+      // the deposit-paid event captured server-side from stripe-webhook.
+      if (createdContactId) {
+        try { posthog.identify(createdContactId, { first_name: name, phone: rawPhone, channel: 'meta', landed_via: '/m/' }); } catch (_) {}
+      }
     }
 
     // Swap Sending… → ✅ once POST has actually gone out.
