@@ -70,6 +70,10 @@ function LeadCard({ c }) {
         display: 'flex', flexDirection: 'column', gap: 4,
         background: hover ? 'var(--bg)' : 'var(--card)',
         boxShadow: hover ? 'var(--raised)' : 'var(--raised-2)',
+        // Gold left-stripe when customer's last SMS is unreplied, matching
+        // the same visual channel used on the messages inbox. Lets Key scan
+        // any column and spot who's waiting on him without opening threads.
+        borderLeft: c.waiting ? '3px solid var(--gold)' : '3px solid transparent',
         opacity: c.dnc ? 0.55 : 1,
         transition: 'background 80ms linear, box-shadow 80ms linear',
       }}>

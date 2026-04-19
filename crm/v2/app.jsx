@@ -396,7 +396,7 @@ const STAGE_TO_PIPELINE_COL = Object.fromEntries(
   Object.entries(PIPELINE_COL_TO_STAGE).map(([k, v]) => [v, k])
 );
 
-function contactToCard(c) {
+function contactToCard(c, waiting = false) {
   const days = c.created_at
     ? Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)
     : 0;
@@ -417,6 +417,7 @@ function contactToCard(c) {
     dnc: !!c.do_not_contact,
     jurisdiction: c._jurisdiction_name || null,
     pinned: isPinned(c.id),
+    waiting,  // customer's last SMS is unreplied — renders gold corner mark
   };
 }
 
@@ -457,21 +458,38 @@ function LivePipelineToolbar({ active = 'pipeline', onSubView, stats }) {
 
 function LivePipeline({ onCardClick, onSubView }) {
   const [contacts, setContacts] = useState([]);
+  const [waitingIds, setWaitingIds] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    const [{ data: contacts }, { data: jurisdictions }] = await Promise.all([
+    const [{ data: contacts }, { data: jurisdictions }, { data: recentMsgs }] = await Promise.all([
       db.from('contacts')
         .select('id, name, phone, address, stage, status, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id')
         .neq('status', 'Archived')
         .order('created_at', { ascending: false })
         .limit(500),
       db.from('permit_jurisdictions').select('id, name'),
+      // Latest 300 messages to compute "waiting on Key" per contact. Same
+      // definition the inbox uses — most recent message is inbound + sender
+      // is not Alex. Cards get a gold dot so Key can scan the pipeline and
+      // see who owes him a reply without opening each thread.
+      db.from('messages')
+        .select('contact_id, direction, sender, created_at')
+        .order('created_at', { ascending: false }).limit(300),
     ]);
     // Attach jurisdiction name inline so contactToCard can render it
     const jMap = Object.fromEntries((jurisdictions || []).map(j => [j.id, j.name]));
     const withJ = (contacts || []).map(c => ({ ...c, _jurisdiction_name: jMap[c.jurisdiction_id] || null }));
     setContacts(withJ);
+    // Build waiting set: first-seen message per contact decides direction.
+    const seen = new Set();
+    const waiting = new Set();
+    for (const m of (recentMsgs || [])) {
+      if (!m.contact_id || seen.has(m.contact_id)) continue;
+      seen.add(m.contact_id);
+      if (m.direction === 'inbound' && m.sender !== 'ai') waiting.add(m.contact_id);
+    }
+    setWaitingIds(waiting);
   }, []);
 
   useEffect(() => {
@@ -495,20 +513,25 @@ function LivePipeline({ onCardClick, onSubView }) {
   }, []);
 
   // Bucket by column id using stage number; pinned cards float to the top of
-  // each column. Re-computes on contacts change OR pins change.
+  // each column, then waiting-on-Key cards next. Re-computes on contacts /
+  // waiting / pin changes.
   const buckets = useMemo(() => {
     const b = {};
     Object.keys(PIPELINE_COL_TO_STAGE).forEach(k => { b[k] = []; });
     for (const c of contacts) {
       const colId = STAGE_TO_PIPELINE_COL[c.stage || 1] || 'new';
-      b[colId].push(contactToCard(c));
+      b[colId].push(contactToCard(c, waitingIds.has(c.id)));
     }
     for (const k of Object.keys(b)) {
-      b[k].sort((a, x) => (a.pinned === x.pinned ? 0 : a.pinned ? -1 : 1));
+      b[k].sort((a, x) => {
+        if (a.pinned !== x.pinned) return a.pinned ? -1 : 1;
+        if (a.waiting !== x.waiting) return a.waiting ? -1 : 1;
+        return 0;
+      });
     }
     return b;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contacts, pipelinePinsTick]);
+  }, [contacts, waitingIds, pipelinePinsTick]);
 
   const counts = useMemo(() => {
     const c = {};
