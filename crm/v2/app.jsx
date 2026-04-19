@@ -1915,6 +1915,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'N', label: 'New lead' },
     { keys: 'B', label: 'Open morning briefing' },
     { keys: 'T', label: 'Toggle dark mode' },
+    { keys: 'P', label: 'Pin / unpin open contact' },
     { keys: 'J', label: 'Jump to next waiting thread' },
     { keys: '/', label: 'Focus search (Messages / Sparky)' },
     { keys: '1–9', label: 'Set stage on open contact' },
@@ -3899,6 +3900,12 @@ function App() {
       if (e.key === 't') {
         e.preventDefault();
         setIsDark(d => !d);
+      }
+      // p → pin/unpin the currently open contact
+      if (e.key === 'p' && selectedContact) {
+        e.preventDefault();
+        const nowPinned = togglePin(selectedContact);
+        window.__bpp_toast && window.__bpp_toast(nowPinned ? 'Pinned' : 'Unpinned', 'info');
       }
       // j → jump to next waiting thread (customer sent last message).
       // Works from anywhere — opens Messages tab + the top waiting contact.
