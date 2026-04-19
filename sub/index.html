@@ -66,6 +66,8 @@
   .btn-primary { background: var(--navy); color: #fff; }
   .btn-secondary { background: rgba(11,31,59,.08); color: var(--navy); }
   .btn-tel { background: var(--green); color: #fff; }
+  .btn-complete { background: var(--gold); color: var(--navy); font-weight: 700; grid-column: 1 / -1; margin-top: 8px; }
+  .btn-complete.done { background: #d1d5db; color: var(--text-muted); }
   .meta-row {
     display: flex; justify-content: space-between; align-items: center;
     font-size: 12px; color: var(--text-faint); margin-top: 6px;
@@ -132,8 +134,9 @@
     const payStr = install.installer_pay ? '$' + Number(install.installer_pay).toLocaleString() : '';
     const jurName = install.jurisdiction?.name || '';
     const portalUrl = install.jurisdiction?.link1_url || '';
+    const isComplete = install.stage === 9;
     return `
-      <div class="card">
+      <div class="card" data-contact-id="${install.id}">
         <div class="time">${time} · ${dayLabel}</div>
         <div class="name">${escapeHtml(install.name || 'Install')}</div>
         <div class="addr">${addr ? '<a href="' + mapsHref + '" target="_blank" rel="noopener">' + escapeHtml(addr) + '</a>' : '<span class="text-faint">No address on file</span>'}</div>
@@ -142,10 +145,45 @@
           ${telHref ? '<a class="btn-tel" href="' + telHref + '">📞 Call</a>' : ''}
           ${mapsHref ? '<a class="btn-secondary" href="' + mapsHref + '" target="_blank" rel="noopener">🗺️ Map</a>' : ''}
           ${portalUrl ? '<a class="btn-secondary" href="' + portalUrl + '" target="_blank" rel="noopener">📄 Permit</a>' : ''}
+          <button class="btn-complete${isComplete ? ' done' : ''}" data-action="complete" data-id="${install.id}">
+            ${isComplete ? '✓ Complete' : '✅ Mark install complete'}
+          </button>
         </div>
         ${payStr ? '<div class="meta-row"><span>Pay</span><span class="pay">' + payStr + '</span></div>' : ''}
       </div>
     `;
+  }
+
+  // Wire up the "Mark install complete" buttons after render. Click confirms,
+  // posts to sub-mark-complete edge fn, updates the card on success.
+  function wireCompleteButtons() {
+    document.querySelectorAll('[data-action="complete"]').forEach(btn => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', async () => {
+        if (btn.classList.contains('done')) return;
+        if (!confirm('Mark this install complete? This advances the stage to Done.')) return;
+        const id = btn.dataset.id;
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+        try {
+          const r = await fetch(ENDPOINT.replace('sub-schedule', 'sub-mark-complete'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, contactId: id }),
+          });
+          const json = await r.json();
+          if (!r.ok || json.error) throw new Error(json.error || 'save failed');
+          btn.classList.add('done');
+          btn.textContent = '✓ Complete';
+          btn.disabled = false;
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = '✅ Mark install complete';
+          alert('Failed to mark complete: ' + e.message);
+        }
+      });
+    });
   }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -162,6 +200,7 @@
   if (!data.today?.length && !data.upcoming?.length) {
     todayEl.innerHTML = '<div class="empty">Nothing scheduled in the next 7 days.<br>Key will text you when there\'s work.</div>';
   }
+  wireCompleteButtons();
 })();
 </script>
 </body>
