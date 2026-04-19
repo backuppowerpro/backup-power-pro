@@ -251,6 +251,12 @@ function LiveLeadsList({ desktop = false, onSelect }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  // CRITICAL: all hooks MUST be called before any early return. Previously the
+  // pin-sort hooks lived below the loading/err/empty early returns, which
+  // caused React error #310 (rendered more hooks than previous render) every
+  // time the list transitioned from loading → loaded. This crashed the whole
+  // LIST view on first load.
+  const [pinsTick, setPinsTick] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -284,6 +290,20 @@ function LiveLeadsList({ desktop = false, onSelect }) {
     return () => { db.removeChannel(channel); };
   }, []);
 
+  // Pin change listener — moved up from below the early returns (see comment above)
+  useEffect(() => {
+    const on = () => setPinsTick(t => t + 1);
+    window.addEventListener('bpp:pins-changed', on);
+    return () => window.removeEventListener('bpp:pins-changed', on);
+  }, []);
+
+  const sortedRows = useMemo(() => {
+    const pinSet = new Set(readPins());
+    return rows
+      .map(r => ({ ...r, pinned: pinSet.has(r.id) }))
+      .sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
+  }, [rows, pinsTick]);
+
   if (loading) {
     return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING CONTACTS...</div>;
   }
@@ -305,20 +325,6 @@ function LiveLeadsList({ desktop = false, onSelect }) {
       </div>
     );
   }
-
-  // Apply pin state + sort pinned first
-  const [pinsTick, setPinsTick] = useState(0);
-  useEffect(() => {
-    const on = () => setPinsTick(t => t + 1);
-    window.addEventListener('bpp:pins-changed', on);
-    return () => window.removeEventListener('bpp:pins-changed', on);
-  }, []);
-  const sortedRows = useMemo(() => {
-    const pinSet = new Set(readPins());
-    return rows
-      .map(r => ({ ...r, pinned: pinSet.has(r.id) }))
-      .sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
-  }, [rows, pinsTick]);
 
   const LeadsListDesktop = window.LeadsListDesktop;
   const LeadsListMobile  = window.LeadsListMobile;
