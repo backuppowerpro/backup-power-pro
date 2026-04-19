@@ -25,6 +25,31 @@ Read these two files before doing anything else:
 
 > If you're unfamiliar with how the wiki works, also read `wiki/CLAUDE.md` first.
 
+## Step 3 — PostHog review (every session)
+
+Before shipping anything that touches the landing page, CRM form flow, or conversion funnel, check:
+
+```bash
+bash scripts/brain/fetch-posthog.sh
+# then read the refreshed doc:
+cat "wiki/Website/Site Analytics.md"
+```
+
+What to look for (in order of impact):
+
+1. **Per-Channel Funnel table.** If any channel has `captures > delivered` the resilient-submit path is failing. Look at `lead_submit_failed` events to diagnose. This is the bug that cost 3 days of ads in Apr 2026.
+2. **Channel captures %.** Compare `/m/`, `/g/`, `/city/*/`, and baseline. A variant converting <50% of baseline's rate is hurting more than helping — revert or redesign.
+3. **Scroll depth dropoff.** If 25% → 50% drops by half on `/m/`, the first screen isn't hooking mobile users. Copy change needed.
+4. **Form starts vs captures.** Big gap = people start filling but don't submit. Form friction.
+5. **Zero-day alerts from pg_cron.** If you got an SMS at 8:30am that said "0 leads yesterday", drop everything and diagnose before shipping anything else.
+
+Don't just read the numbers — act on them. If a channel is underperforming, either ship a variant test via PostHog feature flag, update the copy, or pause the traffic source.
+
+Post-install, also check the growth loop:
+- `auto-review-ask` cron fires at 10am EDT for stage-9 contacts 24–72h old
+- Each successful ask should correlate with a GBP review within a week
+- Reviews → organic lift → more `channel=baseline` or `channel=organic` traffic → more leads → more installs. Verify this loop is tightening over time.
+
 ---
 
 ## Credentials

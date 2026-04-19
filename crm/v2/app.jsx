@@ -4624,6 +4624,8 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
         { type: 'action', id: 'open_briefing', label: 'Open morning briefing' },
         { type: 'action', id: 'new_lead', label: 'New lead' },
         { type: 'action', id: 'toggle_dark', label: 'Toggle dark mode' },
+        { type: 'action', id: 'create_installer_token', label: 'Create installer access token' },
+        { type: 'action', id: 'list_installer_tokens', label: 'List installer access tokens' },
       ].filter(a => a.label.toLowerCase().includes(q.toLowerCase()));
       const sparkyHit = [{ type: 'sparky', label: `Ask Sparky: "${q}"` }];
       setResults([...contactHits, ...navHits, ...actionHits, ...sparkyHit]);
@@ -5329,6 +5331,32 @@ function App() {
           else if (id === 'open_briefing') setBriefOpen(true);
           else if (id === 'new_lead') setNewLeadOpen(true);
           else if (id === 'toggle_dark') setIsDark(d => !d);
+          else if (id === 'create_installer_token') {
+            (async () => {
+              const name = window.prompt('Installer name (e.g. "Marcus")');
+              if (!name || !name.trim()) return;
+              const token = (crypto.randomUUID && crypto.randomUUID()) || Math.random().toString(36).slice(2) + Date.now().toString(36);
+              const { error } = await db.from('installer_tokens').insert({ token, installer_name: name.trim() });
+              if (error) { window.__bpp_toast && window.__bpp_toast(`Failed: ${error.message}`, 'error'); return; }
+              const url = `https://backuppowerpro.com/sub/?token=${token}`;
+              try { await navigator.clipboard.writeText(url); } catch {}
+              window.__bpp_toast && window.__bpp_toast(`Token for ${name.trim()} copied. Text it to them.`, 'success', {
+                label: 'View',
+                onClick: () => window.open(url, '_blank'),
+              });
+            })();
+          }
+          else if (id === 'list_installer_tokens') {
+            (async () => {
+              const { data } = await db.from('installer_tokens').select('token, installer_name, created_at, revoked_at').order('created_at', { ascending: false });
+              if (!data || data.length === 0) {
+                window.__bpp_toast && window.__bpp_toast('No installer tokens yet. Use "Create installer access token".', 'info');
+                return;
+              }
+              const summary = data.map(t => `${t.installer_name}${t.revoked_at ? ' (revoked)' : ''} — /sub/?token=${t.token}`).join('\n');
+              window.prompt('Installer tokens (copy to share; revoke via SQL if leaked):', summary);
+            })();
+          }
         }}
       />
       {briefOpen ? <LiveMorningBriefing

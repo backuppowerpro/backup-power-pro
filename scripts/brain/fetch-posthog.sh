@@ -94,6 +94,63 @@ except Exception as e:
     print(f'| (error: {e}) | - |')
 ")
 
+# 7. Per-channel funnel (pageviews vs form starts vs captures vs delivered)
+# Channel is registered on every event via posthog.register() on /m/, /g/,
+# /city/*/ pages. Null channel = baseline /index.html traffic.
+CHANNEL_QUERY="SELECT coalesce(properties.channel, 'baseline') AS channel,
+countIf(event = '\$pageview') AS pageviews,
+countIf(event = 'lead_form_started') AS form_starts,
+countIf(event = 'lead_captured') AS captures,
+countIf(event = 'lead_captured' AND properties.delivered = true) AS delivered,
+countIf(event = 'lead_submit_failed') AS failures
+FROM events
+WHERE timestamp >= now() - INTERVAL 7 DAY
+GROUP BY channel
+ORDER BY pageviews DESC"
+CHANNEL_RESULT=$(run_hogql "$CHANNEL_QUERY")
+CHANNEL_BREAKDOWN=$(echo "$CHANNEL_RESULT" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    rows=[]
+    for r in (d.get('results') or []):
+        channel=str(r[0])
+        pv,fs,cap,delv,fail=r[1],r[2],r[3],r[4],r[5]
+        # Funnel percents
+        fs_pct=f'{round(fs/pv*100,1)}%' if pv else '—'
+        cap_pct=f'{round(cap/pv*100,1)}%' if pv else '—'
+        delv_pct=f'{round(delv/cap*100,1)}%' if cap else '—'
+        rows.append(f'| {channel} | {pv} | {fs} ({fs_pct}) | {cap} ({cap_pct}) | {delv} ({delv_pct}) | {fail} |')
+    print('\n'.join(rows) if rows else '| (no channel data) | - | - | - | - | - |')
+except Exception as e:
+    print(f'| (error: {e}) | - | - | - | - | - |')
+")
+
+# 8. Scroll-depth dropoff per channel (lead_scroll_depth events)
+SCROLL_QUERY="SELECT coalesce(properties.channel, 'baseline') AS channel,
+countIf(properties.depth = 25) AS d25,
+countIf(properties.depth = 50) AS d50,
+countIf(properties.depth = 75) AS d75,
+countIf(properties.depth = 100) AS d100
+FROM events
+WHERE event = 'lead_scroll_depth' AND timestamp >= now() - INTERVAL 7 DAY
+GROUP BY channel
+ORDER BY d25 DESC"
+SCROLL_RESULT=$(run_hogql "$SCROLL_QUERY")
+SCROLL_BREAKDOWN=$(echo "$SCROLL_RESULT" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    rows=[]
+    for r in (d.get('results') or []):
+        channel=str(r[0])
+        d25,d50,d75,d100=r[1],r[2],r[3],r[4]
+        rows.append(f'| {channel} | {d25} | {d50} | {d75} | {d100} |')
+    print('\n'.join(rows) if rows else '| (no scroll data) | - | - | - | - |')
+except Exception as e:
+    print(f'| (error: {e}) | - | - | - | - |')
+")
+
 # Conversion rate = lead_captured / unique visitors
 CONV_RATE=$(python3 -c "
 uv=int('$UNIQ_VISITORS' or 0)
@@ -144,6 +201,26 @@ $TOP_REFS
 | Device | Views |
 |--------|-------|
 $DEV_BREAKDOWN
+
+## Per-Channel Funnel (last 7d)
+
+Channel is registered on every event for /m/ (meta), /g/ (google), and /city/*/ (organic) pages. 'baseline' is the default / organic / direct traffic to /index.html.
+
+| Channel | Pageviews | Form Starts | Captures | Delivered | Failures |
+|---------|-----------|-------------|----------|-----------|----------|
+$CHANNEL_BREAKDOWN
+
+**How to read:** captures % = form completions / pageviews. Delivered % = how many of those captures actually landed in Supabase. A gap between captures and delivered means the resilient-submit path is having issues — investigate \`lead_submit_failed\` events.
+
+## Scroll Depth — where users bail
+
+Only fires on pages with the instrumentation (/m/, /g/, /city/*/). Higher counts at lower depths = user stopped reading early.
+
+| Channel | 25% | 50% | 75% | 100% |
+|---------|-----|-----|-----|------|
+$SCROLL_BREAKDOWN
+
+**How to read:** if 25% > 50% by a large margin, the first screen isn't hooking them. If 75% → 100% drops sharply, the bottom of the page is boring or the CTA isn't compelling.
 
 ## What to Watch
 
