@@ -62,6 +62,7 @@ function LeadCard({ c }) {
   const [hover, setHover] = React.useState(false);
   return (
     <div
+      title={c.name + (c.addr ? '\n' + c.addr : '')}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
