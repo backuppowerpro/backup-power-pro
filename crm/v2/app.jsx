@@ -1707,9 +1707,26 @@ function InspectionChecklist({ contactId }) {
 }
 
 function DetailPermits({ contact }) {
+  const [jur, setJur] = useState(null);
+  useEffect(() => {
+    if (!contact?.jurisdiction_id) { setJur(null); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await db.from('permit_jurisdictions')
+        .select('id, name, phone, link1_title, link1_url, link2_title, link2_url, link3_title, link3_url, username, password')
+        .eq('id', contact.jurisdiction_id).maybeSingle();
+      if (alive) setJur(data || null);
+    })();
+    return () => { alive = false; };
+  }, [contact?.jurisdiction_id]);
   if (!contact) return null;
   const cells = stageToPermitCells(contact.stage);
   const headers = ['Submit', 'Pay', 'Paid', 'Print', 'Printed', 'Inspect', 'Pass'];
+  const jurLinks = jur ? [
+    jur.link1_url ? { title: jur.link1_title || 'Portal', url: jur.link1_url } : null,
+    jur.link2_url ? { title: jur.link2_title || 'Link 2', url: jur.link2_url } : null,
+    jur.link3_url ? { title: jur.link3_title || 'Link 3', url: jur.link3_url } : null,
+  ].filter(Boolean) : [];
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
       <div style={{ padding: '14px 16px', marginBottom: 12, background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
@@ -1725,6 +1742,40 @@ function DetailPermits({ contact }) {
           ))}
         </div>
       </div>
+      {/* Jurisdiction block — surfaces portal links + credentials when this
+          contact's jurisdiction is set. One-click portal access from the
+          contact instead of hunting through saved bookmarks. */}
+      {jur ? (
+        <div style={{ padding: '14px 16px', marginBottom: 12, background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+            <span className="chrome-label" style={{ fontSize: 11, letterSpacing: '.08em', color: 'var(--text-faint)' }}>
+              Jurisdiction
+            </span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600 }}>{jur.name}</span>
+          </div>
+          {jurLinks.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: jur.username || jur.phone ? 10 : 0 }}>
+              {jurLinks.map((l, i) => (
+                <a key={i} href={l.url} target="_blank" rel="noopener" style={{
+                  padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
+                  background: 'var(--navy)', color: 'var(--gold)',
+                  boxShadow: 'var(--raised-2)', textDecoration: 'none', letterSpacing: '.04em',
+                }}>{l.title} ↗</a>
+              ))}
+            </div>
+          ) : null}
+          {(jur.username || jur.password || jur.phone) ? (
+            <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {jur.username ? <span>user: <span style={{ color: 'var(--text-muted)' }}>{jur.username}</span></span> : null}
+              {jur.password ? <span>pw:   <button
+                onClick={() => navigator.clipboard.writeText(jur.password).then(() => window.__bpp_toast && window.__bpp_toast('Portal password copied', 'success'))}
+                style={{ padding: 0, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}
+                title="Click to copy">•••••••• (copy)</button></span> : null}
+              {jur.phone ? <span>ph:   <span style={{ color: 'var(--text-muted)' }}>{jur.phone}</span></span> : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <InspectionChecklist contactId={contact.id} />
     </div>
   );
@@ -1747,10 +1798,20 @@ function DetailEditContact({ contact, onUpdate }) {
     email: contact?.email || '',
     address: contact?.address || '',
     install_date: toLocalDatetimeInput(contact?.install_date),
+    jurisdiction_id: contact?.jurisdiction_id || '',
     do_not_contact: !!contact?.do_not_contact,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [jurisdictions, setJurisdictions] = useState([]);
+
+  // Load jurisdictions once; rarely change
+  useEffect(() => {
+    (async () => {
+      const { data } = await db.from('permit_jurisdictions').select('id, name').order('name');
+      setJurisdictions(data || []);
+    })();
+  }, []);
 
   // Re-seed form when the open contact swaps
   useEffect(() => {
@@ -1760,6 +1821,7 @@ function DetailEditContact({ contact, onUpdate }) {
       email: contact?.email || '',
       address: contact?.address || '',
       install_date: toLocalDatetimeInput(contact?.install_date),
+      jurisdiction_id: contact?.jurisdiction_id || '',
       do_not_contact: !!contact?.do_not_contact,
     });
   }, [contact?.id]);
@@ -1777,6 +1839,7 @@ function DetailEditContact({ contact, onUpdate }) {
       email: form.email.trim() || null,
       address: form.address.trim() || null,
       install_date: installIso,
+      jurisdiction_id: form.jurisdiction_id || null,
       do_not_contact: !!form.do_not_contact,
     };
     // Record compliance metadata when flipping DNC on
@@ -1803,6 +1866,22 @@ function DetailEditContact({ contact, onUpdate }) {
       <EditField label="EMAIL" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
       <EditField label="ADDRESS" value={form.address} onChange={v => setForm({ ...form, address: v })} />
       <EditField label="INSTALL DATE" value={form.install_date} onChange={v => setForm({ ...form, install_date: v })} type="datetime-local" placeholder="" />
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <label style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>Jurisdiction</label>
+        <select
+          value={form.jurisdiction_id || ''}
+          onChange={e => setForm({ ...form, jurisdiction_id: e.target.value ? Number(e.target.value) : '' })}
+          style={{
+            padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+            background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+          }}>
+          <option value="">— select —</option>
+          {jurisdictions.map(j => (
+            <option key={j.id} value={j.id}>{j.name}</option>
+          ))}
+        </select>
+      </div>
 
       {contact?.created_at ? (
         <div className="mono" style={{
