@@ -699,6 +699,19 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
               }}
             >{contact.address}</a>
           ) : <span>—</span>}
+          {contact?.email ? (
+            <>
+              <br/>
+              <a
+                href={`mailto:${contact.email}`}
+                title="Email contact"
+                style={{
+                  color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
+                  textDecoration: 'none', borderBottom: '1px dashed rgba(0,0,0,.2)',
+                }}
+              >{contact.email}</a>
+            </>
+          ) : null}
         </div>
         {messages.length > 0 ? (() => {
           const latest = messages[messages.length - 1];
