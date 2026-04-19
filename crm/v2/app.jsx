@@ -1658,6 +1658,33 @@ function DetailQuote({ contactId }) {
     }
   }
 
+  // v1 parity: copyReceiptLink — for Approved proposals, grab the existing
+  // paid invoice's /invoice.html token which renders receipt mode, copy to
+  // clipboard. Lets Key re-send a receipt when a customer asks "do you have
+  // a copy of my payment" without rummaging through Stripe.
+  async function copyReceiptLink(proposal) {
+    try {
+      const { data: inv } = await db.from('invoices')
+        .select('token, status')
+        .eq('proposal_id', proposal.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!inv || !inv.token) {
+        window.__bpp_toast && window.__bpp_toast('No invoice on this proposal yet', 'error');
+        return;
+      }
+      const url = `${INVOICE_BASE_URL}?token=${inv.token}`;
+      await navigator.clipboard.writeText(url);
+      window.__bpp_toast && window.__bpp_toast(
+        inv.status === 'paid' ? 'Receipt link copied' : 'Invoice link copied',
+        'success'
+      );
+    } catch (e) {
+      window.__bpp_toast && window.__bpp_toast(`Receipt link failed: ${e.message || e}`, 'error');
+    }
+  }
+
   // v1 parity: markPaidOffline — when the customer pays cash/check at the
   // install, Key needs to record the payment, flip the invoice to paid, and
   // fire the auto review text. Mirrors crm.html:5850-5870 markProposalComplete.
@@ -1876,6 +1903,16 @@ function DetailQuote({ contactId }) {
                 border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
               }} title="Record cash/check payment + approve this proposal">Mark paid (offline)</button>
             </div>
+          ) : null}
+          {/* Approved proposals — surface a "Copy receipt" so Key can
+              re-send the paid-invoice link when a customer asks for their
+              payment confirmation. */}
+          {p.token && isPaid ? (
+            <button onClick={() => copyReceiptLink(p)} style={{
+              height: 30, fontSize: 11, fontFamily: 'var(--font-body)',
+              boxShadow: 'var(--raised-2)', cursor: 'pointer',
+              border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+            }} title="Copy /invoice.html link in receipt mode">Copy receipt</button>
           ) : null}
         </div>
         );
