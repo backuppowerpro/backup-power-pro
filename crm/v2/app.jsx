@@ -524,6 +524,57 @@ function LivePipeline({ onCardClick, onSubView }) {
 }
 
 // ── Live Contact Detail (replaces mock messages in contact-detail.jsx) ──────
+// Compact Alex session strip shown above the message thread. Single line by
+// default showing status + summary; click to expand for the full summary and
+// follow-up count. The status chip always shows regardless of expansion —
+// it's the at-a-glance signal Key scans during triage.
+function AlexSessionStrip({ session }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const status = session.opted_out ? 'opted out' : session.alex_active ? 'active' : 'handed off';
+  const statusColor = session.opted_out ? 'var(--ms-3)' : session.alex_active ? 'var(--ms-2)' : 'var(--text-faint)';
+  const hasSummary = !!(session.summary && session.summary.trim());
+  return (
+    <div
+      onClick={() => hasSummary && setExpanded(v => !v)}
+      title={hasSummary ? 'Click to expand Alex summary' : ''}
+      style={{
+        padding: '6px 14px',
+        background: 'var(--card)',
+        borderBottom: '1px solid rgba(0,0,0,.06)',
+        fontFamily: 'var(--font-body)', fontSize: 11,
+        color: 'var(--text-muted)',
+        cursor: hasSummary ? 'pointer' : 'default',
+        display: 'flex', flexDirection: 'column', gap: 3,
+      }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+          <span style={{ flex: '0 0 auto' }}>Alex</span>
+          <span style={{
+            padding: '1px 6px', fontSize: 10, letterSpacing: '.04em', flex: '0 0 auto',
+            color: statusColor,
+            border: '1px solid currentColor',
+          }}>{status}</span>
+          {hasSummary && !expanded ? (
+            <span style={{
+              flex: 1, minWidth: 0, color: 'var(--text-faint)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>{session.summary}</span>
+          ) : null}
+        </span>
+        <span className="mono" style={{ fontSize: 10, flex: '0 0 auto' }}>
+          {session.followup_count > 0 ? `${session.followup_count} f/u` : '—'}
+        </span>
+      </div>
+      {hasSummary && expanded ? (
+        <div style={{
+          padding: '4px 0 2px', fontSize: 12, lineHeight: 1.4,
+          color: 'var(--text)', whiteSpace: 'pre-wrap',
+        }}>{session.summary}</div>
+      ) : null}
+    </div>
+  );
+}
+
 function LiveContactDetail({ contactId, onBack, mobile = false }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -763,28 +814,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
       ) : null}
 
       {alexSession ? (
-        <div style={{
-          padding: '6px 14px',
-          background: 'var(--card)',
-          borderBottom: '1px solid rgba(0,0,0,.06)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          fontFamily: 'var(--font-body)', fontSize: 11,
-          color: 'var(--text-muted)',
-        }}>
-          <span>
-            Alex
-            <span style={{
-              marginLeft: 6, padding: '1px 6px', fontSize: 10, letterSpacing: '.04em',
-              color: alexSession.alex_active ? 'var(--ms-2)' : 'var(--text-faint)',
-              border: '1px solid currentColor',
-            }}>
-              {alexSession.opted_out ? 'opted out' : alexSession.alex_active ? 'active' : 'handed off'}
-            </span>
-          </span>
-          <span className="mono" style={{ fontSize: 10 }}>
-            {alexSession.followup_count > 0 ? `${alexSession.followup_count} follow-up${alexSession.followup_count === 1 ? '' : 's'}` : '—'}
-          </span>
-        </div>
+        <AlexSessionStrip session={alexSession} />
       ) : null}
 
       <SnoozeRow contactId={contactId} contactName={contact?.name} />
