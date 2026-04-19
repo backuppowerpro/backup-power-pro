@@ -119,6 +119,7 @@ function MsgChips({ active = 'all', onChange }) {
   // Minimal — text tabs, no LCD count, no raised pills.
   const chips = [
     { id:'all',   label:'All',     title: 'All threads' },
+    { id:'pin',   label:'Pinned',  title: 'Only pinned contacts' },
     { id:'un',    label:'Waiting', title: 'Threads where the customer sent the last message' },
     { id:'alex',  label:'Alex',    title: 'Threads where Alex sent the latest outbound' },
     { id:'key',   label:'Me',      title: "Threads where you sent the latest outbound" },
@@ -152,6 +153,10 @@ function MessagesInbox({ compact = false, threads, onSelect, activeId }) {
   const query = q.trim().toLowerCase();
   let data = raw;
   if (filter === 'un')    data = data.filter(t => t.waiting);
+  if (filter === 'pin')   {
+    const pins = (() => { try { return new Set(JSON.parse(localStorage.getItem('bpp_v2_pinned_contacts') || '[]')); } catch { return new Set(); } })();
+    data = data.filter(t => pins.has(t.contactId));
+  }
   if (filter === 'alex')  data = data.filter(t => t.alex);
   if (filter === 'key')   data = data.filter(t => t.dir === 'out' && !t.alex);
   if (filter === 'call')  data = data.filter(t => t.dir === 'call' || t.call);
