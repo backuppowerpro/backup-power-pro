@@ -1,16 +1,20 @@
 /* global React */
 // Leads Pipeline — 9-column kanban
 
+// weight: relative flex weight for this column (1 = normal, 1.5 = gets ~50%
+// more horizontal space when viewport has room). Triage-heavy columns (NEW,
+// QUOTED) are wider because that's where daily volume lives; quiet columns
+// (RTR, PRINTED, INSPECTION) stay compact.
 const columns = [
-  { id: 'new',     label: 'NEW LEAD',         color: 'var(--ms-1)', count: 42 },
-  { id: 'quoted',  label: 'QUOTED',           color: 'var(--ms-4)', count: 8 },
-  { id: 'booked',  label: 'BOOKED',           color: 'var(--ms-2)', count: 3 },
-  { id: 'permit',  label: 'PERMIT SUBMITTED', color: 'var(--ms-5)', count: 2 },
-  { id: 'pay',     label: 'READY TO PAY',     color: 'var(--ms-3)', count: 1 },
-  { id: 'paid',    label: 'PAID',             color: 'var(--ms-2)', count: 1 },
-  { id: 'rprint',  label: 'READY TO PRINT',   color: 'var(--ms-5)', count: 0 },
-  { id: 'printed', label: 'PRINTED',          color: 'var(--ms-6)', count: 1 },
-  { id: 'inspect', label: 'INSPECTION',       color: 'var(--ms-7)', count: 1 },
+  { id: 'new',     label: 'NEW LEAD',         color: 'var(--ms-1)', count: 42, weight: 1.6 },
+  { id: 'quoted',  label: 'QUOTED',           color: 'var(--ms-4)', count: 8,  weight: 1.3 },
+  { id: 'booked',  label: 'BOOKED',           color: 'var(--ms-2)', count: 3,  weight: 1 },
+  { id: 'permit',  label: 'PERMIT SUBMITTED', color: 'var(--ms-5)', count: 2,  weight: 1 },
+  { id: 'pay',     label: 'READY TO PAY',     color: 'var(--ms-3)', count: 1,  weight: 1 },
+  { id: 'paid',    label: 'PAID',             color: 'var(--ms-2)', count: 1,  weight: 1 },
+  { id: 'rprint',  label: 'READY TO PRINT',   color: 'var(--ms-5)', count: 0,  weight: .8 },
+  { id: 'printed', label: 'PRINTED',          color: 'var(--ms-6)', count: 1,  weight: .8 },
+  { id: 'inspect', label: 'INSPECTION',       color: 'var(--ms-7)', count: 1,  weight: 1 },
 ];
 
 const dots = ([photo, quote, permit]) => ({ photo, quote, permit });
@@ -124,7 +128,10 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
         if (id) onDropCard(id, col.id);
       }}
       style={{
-        flex: '1 1 0', minWidth: 0,
+        // Weight-based flex: triage columns get more room when there's space,
+        // but every column keeps a legible minimum so cards don't crush.
+        flex: `${col.weight || 1} 1 ${col.weight && col.weight < 1 ? 140 : 200}px`,
+        minWidth: col.weight && col.weight < 1 ? 140 : 200,
         display: 'flex', flexDirection: 'column', gap: 8,
         background: dragOver ? 'rgba(255,186,0,.08)' : 'transparent',
         outline: dragOver ? '2px solid var(--gold)' : 'none',
@@ -220,7 +227,11 @@ function LeadsPipeline({ buckets, counts, onCardClick, onDropCard, toolbar }) {
         flex: 1,
         display: 'flex', gap: 8,
         padding: '0 16px 88px',
-        overflow: 'hidden',
+        // Let the pipeline scroll horizontally when 9 columns × minWidth can't
+        // fit the viewport (common on laptops <1600px). Vertical scroll stays
+        // inside each column's card list so the header stays pinned.
+        overflowX: 'auto',
+        overflowY: 'hidden',
       }}>
         {columns.map(col => (
           <Column
