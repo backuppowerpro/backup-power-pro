@@ -1434,6 +1434,21 @@ function DetailQuote({ contactId }) {
     })();
   }, [contactId]);
 
+  // Realtime — proposal.view_count bumps when the customer opens the quote
+  // page; stripe-webhook flips status to Approved when deposit lands. Both
+  // should reflect in this tab live, especially if Key is watching while
+  // the customer is actively looking at their quote.
+  useEffect(() => {
+    if (!contactId) return;
+    const ch = db.channel(`quote-${contactId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals', filter: `contact_id=eq.${contactId}` }, async () => {
+        const { data: props } = await db.from('proposals').select('*').eq('contact_id', contactId).order('created_at', { ascending: false });
+        setProposals(props || []);
+      })
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [contactId]);
+
   function copyLink(token) {
     const url = `${PROPOSAL_BASE_URL}?token=${token}`;
     navigator.clipboard.writeText(url)
