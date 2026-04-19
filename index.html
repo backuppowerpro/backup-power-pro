@@ -514,9 +514,15 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
       </div>
     </div>
     <div id="varSuccess" style="display:none;text-align:center">
-      <div style="font-size:48px;margin-bottom:16px">✅</div>
-      <h3 style="font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;color:#fff;margin-bottom:8px">You're all set, <span id="varSuccessName"></span>!</h3>
-      <p style="color:rgba(255,255,255,.7);font-size:16px">We'll text you within minutes from <strong style="color:#fff">(864) 400-5302</strong>, save the number.<br>Keep an eye on your phone.</p>
+      <div id="varSuccessSending" style="display:none">
+        <div style="width:48px;height:48px;margin:0 auto 16px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>
+        <p style="color:rgba(255,255,255,.6);font-size:15px;font-family:'Outfit',sans-serif">Sending…</p>
+      </div>
+      <div id="varSuccessDone" style="display:none">
+        <div style="font-size:48px;margin-bottom:16px">✅</div>
+        <h3 style="font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;color:#fff;margin-bottom:8px">You're all set, <span id="varSuccessName"></span>!</h3>
+        <p style="color:rgba(255,255,255,.7);font-size:16px">We'll text you within minutes from <strong style="color:#fff">(864) 400-5302</strong>, save the number.<br>Keep an eye on your phone.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -1212,41 +1218,51 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       fbq('track','Lead',{content_name:'generator-inlet-quote',content_category:'generator-installation',value:1197,currency:'USD'},{eventID:eventId});
     }
 
-    // Same robust-delivery treatment as the VARIANT form (see the detailed
-    // comment further down in this file). Previously fire-and-forget fetch
-    // was cancelled by mobile app-browsers on page swap, losing leads
-    // silently. keepalive:true + sync-XHR fallback + PostHog failure logging.
+    // Same robust-delivery treatment as the VARIANT form (see comment on
+    // that handler for full rationale). sendBeacon first, keepalive fetch
+    // second, sync XHR third. Edge fn deployed --no-verify-jwt so beacons
+    // (which can't set Authorization headers) land cleanly.
     var submitBody = JSON.stringify(payload);
     var delivered = false;
     var deliveryMethod = 'none';
     var submitStartMs = Date.now();
     try {
-      var resp = await fetch(BPP_NEW_LEAD_URL, {
-        method: 'POST',
-        keepalive: true,
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
-        body: submitBody,
-      });
-      delivered = resp.ok;
-      deliveryMethod = 'fetch';
-      if (!resp.ok && typeof posthog !== 'undefined') {
-        posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch', form: 'inline' });
-      }
-    } catch (fetchErr) {
-      try {
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', BPP_NEW_LEAD_URL, false);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
-        xhr.send(submitBody);
-        delivered = xhr.status >= 200 && xhr.status < 300;
-        deliveryMethod = 'xhr';
-        if (!delivered && typeof posthog !== 'undefined') {
-          posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
+      if (navigator.sendBeacon) {
+        var blob = new Blob([submitBody], { type: 'application/json' });
+        if (navigator.sendBeacon(BPP_NEW_LEAD_URL, blob)) {
+          delivered = true;
+          deliveryMethod = 'beacon';
         }
-      } catch (xhrErr) {
-        if (typeof posthog !== 'undefined') {
-          posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
+      }
+    } catch (e) { /* fall through */ }
+    if (!delivered) {
+      try {
+        var resp = await fetch(BPP_NEW_LEAD_URL, {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: submitBody,
+        });
+        delivered = resp.ok;
+        deliveryMethod = 'fetch';
+        if (!resp.ok && typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch', form: 'inline' });
+        }
+      } catch (fetchErr) {
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', BPP_NEW_LEAD_URL, false);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.send(submitBody);
+          delivered = xhr.status >= 200 && xhr.status < 300;
+          deliveryMethod = 'xhr';
+          if (!delivered && typeof posthog !== 'undefined') {
+            posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
+          }
+        } catch (xhrErr) {
+          if (typeof posthog !== 'undefined') {
+            posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
+          }
         }
       }
     }
@@ -1366,55 +1382,72 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       hashedPhone:phH, hashedFirstName:fnH, hashedCountry:countryH
     };
 
-    // Robust lead delivery — Apr 19 2026 fix.
-    // Previous code used fire-and-forget fetch().catch(() => {}) which lost
-    // leads silently when mobile in-app browsers (Meta/Instagram) cancelled
-    // the request on page unload. 3+ consecutive zero-lead days at the same
-    // ad delivery rate — traffic and impressions normal, but 0 leads hit
-    // Supabase while PostHog recorded lead_captured events. Clear signature
-    // of fetch being cancelled by mobile app-browser after page transition.
+    // Robust lead delivery — Apr 19 2026 fix (sendBeacon-first).
+    // Previous fire-and-forget fetch().catch(() => {}) was being cancelled
+    // by mobile in-app browsers (Meta/Instagram) on page-state transition,
+    // losing leads silently. 3 confirmed silent drops Apr 15-17 before fix.
     //
-    // Fix: use keepalive:true so the browser completes the POST even if the
-    // page unloads / the in-app browser is backgrounded. Await the result
-    // and fall back to sync XHR if the network call throws. Any failure is
-    // logged to PostHog so a drop-off like this can never be invisible again.
+    // The quo-ai-new-lead edge fn is now deployed with --no-verify-jwt, so
+    // sendBeacon() (which cannot set an Authorization header) works as the
+    // first-choice path. Beacons are OS-level fire-and-forget — browsers
+    // guarantee delivery even during page unload. Fetch keepalive + sync
+    // XHR remain as fallbacks for the ~5% of browsers without beacon support.
+    // Show "Sending…" state immediately so the user sees we received their
+    // submit; swap to ✅ done state only after the POST actually kicks off.
+    // That 200–800ms window is where the request lands on the wire, so the
+    // visual feedback also doubles as a network-time buffer.
+    document.getElementById('varFormWrap').style.display = 'none';
+    document.getElementById('varSuccessName').textContent = name;
+    document.getElementById('varSuccess').style.display = 'block';
+    document.getElementById('varSuccessSending').style.display = 'block';
+
     var submitUrl = BPP_NEW_LEAD_URL;
     var submitBody = JSON.stringify(payload);
     var delivered = false;
     var deliveryMethod = 'none';
     var submitStartMs = Date.now();
+    // Tier 1: sendBeacon — OS-level, survives everything short of network loss.
     try {
-      // Await so we know the fetch actually kicked off before we swap the UI.
-      // keepalive:true is the important part — it lets the request complete
-      // even if the user closes the tab or the app-browser is backgrounded.
-      var resp = await fetch(submitUrl, {
-        method: 'POST',
-        keepalive: true,
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
-        body: submitBody,
-      });
-      delivered = resp.ok;
-      deliveryMethod = 'fetch';
-      if (!resp.ok && typeof posthog !== 'undefined') {
-        posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch' });
-      }
-    } catch (fetchErr) {
-      // Fallback: synchronous XHR. Blocks the thread briefly but guarantees
-      // the request completes before the success screen renders.
-      try {
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', submitUrl, false);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
-        xhr.send(submitBody);
-        delivered = xhr.status >= 200 && xhr.status < 300;
-        deliveryMethod = 'xhr';
-        if (!delivered && typeof posthog !== 'undefined') {
-          posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', fetchErr: String(fetchErr).slice(0, 200) });
+      if (navigator.sendBeacon) {
+        var blob = new Blob([submitBody], { type: 'application/json' });
+        if (navigator.sendBeacon(submitUrl, blob)) {
+          delivered = true;
+          deliveryMethod = 'beacon';
         }
-      } catch (xhrErr) {
-        if (typeof posthog !== 'undefined') {
-          posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', fetchErr: String(fetchErr).slice(0, 200) });
+      }
+    } catch (e) { /* fall through */ }
+    // Tier 2: keepalive fetch. Await so UI doesn't swap before the request
+    // actually hits the wire.
+    if (!delivered) {
+      try {
+        var resp = await fetch(submitUrl, {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: submitBody,
+        });
+        delivered = resp.ok;
+        deliveryMethod = 'fetch';
+        if (!resp.ok && typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch' });
+        }
+      } catch (fetchErr) {
+        // Tier 3: synchronous XHR. Blocks the thread briefly but guarantees
+        // the request completes before the success screen renders.
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', submitUrl, false);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.send(submitBody);
+          delivered = xhr.status >= 200 && xhr.status < 300;
+          deliveryMethod = 'xhr';
+          if (!delivered && typeof posthog !== 'undefined') {
+            posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', fetchErr: String(fetchErr).slice(0, 200) });
+          }
+        } catch (xhrErr) {
+          if (typeof posthog !== 'undefined') {
+            posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', fetchErr: String(fetchErr).slice(0, 200) });
+          }
         }
       }
     }
@@ -1434,9 +1467,9 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       });
     }
 
-    document.getElementById('varFormWrap').style.display='none';
-    document.getElementById('varSuccessName').textContent=name;
-    document.getElementById('varSuccess').style.display='block';
+    // Swap Sending… → ✅ once POST has actually gone out.
+    document.getElementById('varSuccessSending').style.display = 'none';
+    document.getElementById('varSuccessDone').style.display = 'block';
   });
 })();
 </script>
