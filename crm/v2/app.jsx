@@ -1950,6 +1950,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'T', label: 'Toggle dark mode' },
     { keys: 'P', label: 'Pin / unpin open contact' },
     { keys: 'Y', label: 'Yank contact summary to clipboard' },
+    { keys: 'X', label: 'Export SMS thread transcript' },
     { keys: 'J', label: 'Jump to next waiting thread' },
     { keys: '/', label: 'Focus search (Messages / Sparky)' },
     { keys: '1–9', label: 'Set stage on open contact' },
@@ -3957,6 +3958,37 @@ function App() {
           try {
             await navigator.clipboard.writeText(block);
             window.__bpp_toast && window.__bpp_toast('Contact summary copied', 'success');
+          } catch {
+            window.__bpp_toast && window.__bpp_toast('Copy failed', 'error');
+          }
+        })();
+      }
+      // x → export SMS thread transcript for the open contact
+      if (e.key === 'x' && selectedContact) {
+        e.preventDefault();
+        (async () => {
+          const [{ data: c }, { data: msgs }] = await Promise.all([
+            db.from('contacts').select('name, phone').eq('id', selectedContact).maybeSingle(),
+            db.from('messages').select('direction, body, sender, created_at').eq('contact_id', selectedContact).order('created_at', { ascending: true }).limit(500),
+          ]);
+          if (!msgs || msgs.length === 0) {
+            window.__bpp_toast && window.__bpp_toast('No messages to export', 'info');
+            return;
+          }
+          const header = [
+            `Transcript: ${c?.name || 'Unknown'} ${c?.phone ? '('+formatPhone(c.phone)+')' : ''}`.trim(),
+            `Exported: ${new Date().toLocaleString()}`,
+            '—'.repeat(40),
+            '',
+          ].join('\n');
+          const body = msgs.map(m => {
+            const who = m.sender === 'ai' ? 'Alex' : (m.direction === 'inbound' ? 'Customer' : 'Key');
+            const ts = m.created_at ? new Date(m.created_at).toLocaleString() : '';
+            return `[${ts}] ${who}:\n${m.body || ''}\n`;
+          }).join('\n');
+          try {
+            await navigator.clipboard.writeText(header + body);
+            window.__bpp_toast && window.__bpp_toast(`Transcript copied (${msgs.length} messages)`, 'success');
           } catch {
             window.__bpp_toast && window.__bpp_toast('Copy failed', 'error');
           }
