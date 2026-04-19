@@ -726,10 +726,17 @@ function DuplicateStrip({ duplicates }) {
 // one-tap CTA to draft a Google-review request SMS. Post-install is peak
 // happiness and the single highest-leverage moment for a review ask; every
 // 5-star review permanently lifts GBP ranking.
+// Same Google Place review shortlink `quo-ai-review` edge function uses. Keeps
+// the copy the customer sees byte-identical regardless of whether the SMS was
+// auto-fired at stage-9 advance or drafted manually from this strip.
+const GOOGLE_REVIEW_URL = 'https://g.page/r/CVxLI9ZsiZS_EAE/review';
+
 function ReviewAskStrip({ contactName }) {
   const draft = () => {
     const first = (contactName || '').split(' ')[0] || 'there';
-    const msg = `Hi ${first} — thanks again for trusting BPP with your install! If you had a good experience, a quick Google review means the world to a small local shop. Search "Backup Power Pro" on Google and click the Reviews link. Takes 30 seconds and helps more Upstate SC folks find us. — Key`;
+    // Matches the quo-ai-review fallback body so manual + auto paths send the
+    // same text. Link goes on its own line per v1's SMS formatting.
+    const msg = `Hey ${first}, really glad everything went smoothly today. If you've got 2 minutes, a Google review would mean a lot to us. And if you know anyone else who could use this, we'd love the intro.\n${GOOGLE_REVIEW_URL}`;
     window.dispatchEvent(new CustomEvent('bpp:compose-prefill', { detail: { text: msg } }));
     window.__bpp_toast && window.__bpp_toast('Review ask drafted — review + send', 'info');
   };
@@ -1105,6 +1112,19 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
                 contact_id: contactId, from_stage: oldStage, to_stage: newStage,
               }).then(() => {}, () => {});
               setContact(c => ({ ...c, stage: newStage }));
+              // v1 parity — when an install is marked complete (stage 9) fire
+              // quo-ai-review so the customer receives a warm Google review
+              // request SMS automatically. The edge function de-dupes via a
+              // messages-table g.page ILIKE scan so this is safe to call
+              // multiple times.
+              if (newStage === 9 && oldStage !== 9 && !contact.do_not_contact) {
+                db.functions.invoke('quo-ai-review', { body: { contactId } })
+                  .then(({ error }) => {
+                    if (error) console.warn('[review] auto-fire failed', error);
+                    else window.__bpp_toast && window.__bpp_toast('Review ask sent to customer', 'success');
+                  })
+                  .catch(err => console.warn('[review] auto-fire error', err));
+              }
             }
             setStagePickerOpen(false);
           }}
@@ -1351,6 +1371,7 @@ function DetailTimeline({ contactId }) {
 }
 
 const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
+const INVOICE_BASE_URL  = 'https://backuppowerpro.com/invoice.html';
 
 // ── Quick Quote pricing engine ──────────────────────────────────────────────
 // Mirrors the legacy QB_S/QB_C constants in crm/crm.html. Kept in sync by
@@ -1481,6 +1502,115 @@ function DetailQuote({ contactId }) {
     navigator.clipboard.writeText(url)
       .then(() => window.__bpp_toast && window.__bpp_toast('Proposal link copied', 'success'))
       .catch(() => window.__bpp_toast && window.__bpp_toast('Copy failed — select + ⌘C manually', 'error'));
+    // v1 parity: flip Created → Copied so the "stuck quote" briefing section
+    // (app.jsx:4056) can distinguish "I sent it" from "I just drafted it"
+    // 48 h old and still Created = never left Key's laptop.
+    setProposals(prev => prev.map(p => p.token === token && p.status === 'Created'
+      ? { ...p, status: 'Copied', copied_at: new Date().toISOString() }
+      : p));
+    db.from('proposals').update({ status: 'Copied', copied_at: new Date().toISOString() })
+      .eq('token', token).eq('status', 'Created').then(() => {}, () => {});
+  }
+
+  // v1 parity: copyInvoiceLink — generates an unpaid invoice row (or reuses
+  // the existing one for this contact) and copies /invoice.html?token=... .
+  // Matches crm.html:5920-5947. Used when Key wants to send an invoice link
+  // for the REMAINING balance or for a cash/check pay-at-install scenario.
+  async function copyInvoiceLink(proposal) {
+    try {
+      const total = Number(proposal.total) || 0;
+      // Check for an existing live invoice on this contact first.
+      const existing = await db.from('invoices')
+        .select('token, status, total')
+        .eq('contact_id', contactId)
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      let token = existing.data?.[0]?.token;
+      if (!token) {
+        const lineItems = [{
+          name: `Storm-Ready Connection System (${proposal.selected_amp || '30'}A)`,
+          amount: total,
+        }];
+        if (proposal.include_surge && !proposal.selected_surge) lineItems.push({ name: 'Whole-Home Surge Protector', amount: 375 });
+        const { data, error } = await db.from('invoices').insert([{
+          contact_id: contactId,
+          proposal_id: proposal.id,
+          contact_name: contact?.name || '',
+          contact_email: contact?.email || '',
+          contact_phone: contact?.phone || '',
+          contact_address: contact?.address || '',
+          line_items: lineItems,
+          total: total,
+          status: 'unpaid',
+        }]).select('token').single();
+        if (error) throw error;
+        token = data.token;
+      }
+      const url = `${INVOICE_BASE_URL}?token=${token}`;
+      await navigator.clipboard.writeText(url);
+      window.__bpp_toast && window.__bpp_toast('Invoice link copied', 'success');
+    } catch (e) {
+      window.__bpp_toast && window.__bpp_toast(`Invoice link failed: ${e.message || e}`, 'error');
+    }
+  }
+
+  // v1 parity: markPaidOffline — when the customer pays cash/check at the
+  // install, Key needs to record the payment, flip the invoice to paid, and
+  // fire the auto review text. Mirrors crm.html:5850-5870 markProposalComplete.
+  async function markPaidOffline(proposal) {
+    const method = window.prompt('Payment method? (Cash / Check / Other)', 'Cash');
+    if (!method) return;
+    const total = Number(proposal.total) || 0;
+    try {
+      // Upsert invoice row so we always have a "paid" record for stage-9 books.
+      let invoiceId = null;
+      const { data: existing } = await db.from('invoices')
+        .select('id, status').eq('proposal_id', proposal.id).limit(1);
+      if (existing && existing.length) {
+        invoiceId = existing[0].id;
+        await db.from('invoices').update({
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          payment_method: method,
+        }).eq('id', invoiceId);
+      } else {
+        const lineItems = [{
+          name: `Storm-Ready Connection System (${proposal.selected_amp || '30'}A)`,
+          amount: total,
+        }];
+        const { data: inv } = await db.from('invoices').insert([{
+          contact_id: contactId,
+          proposal_id: proposal.id,
+          contact_name: contact?.name || '',
+          contact_email: contact?.email || '',
+          contact_phone: contact?.phone || '',
+          contact_address: contact?.address || '',
+          line_items: lineItems,
+          total: total,
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          payment_method: method,
+        }]).select('id').single();
+        invoiceId = inv?.id;
+      }
+      // Record in payments table (matches v1 + stripe-webhook row shape).
+      await db.from('payments').insert([{
+        contact_id: contactId,
+        amount: total,
+        method: method,
+        status: 'completed',
+      }]);
+      // Approve the proposal so briefing + timeline line up.
+      await db.from('proposals').update({ status: 'Approved', is_locked: true })
+        .eq('id', proposal.id).neq('status', 'Approved');
+      // Optimistic UI bump.
+      setProposals(prev => prev.map(p => p.id === proposal.id
+        ? { ...p, status: 'Approved' } : p));
+      window.__bpp_toast && window.__bpp_toast(`Marked paid · ${method} · $${total.toLocaleString()}`, 'success');
+    } catch (e) {
+      window.__bpp_toast && window.__bpp_toast(`Mark paid failed: ${e.message || e}`, 'error');
+    }
   }
 
   function sendReminder(proposal) {
@@ -1625,6 +1755,24 @@ function DetailQuote({ contactId }) {
             }}>
               Send deposit link — ${Math.round((Number(p.total) || 0) * 0.5).toLocaleString()}
             </button>
+          ) : null}
+          {/* Secondary row — v1 parity. Invoice link (for remaining-balance or
+              cash-pay scenarios) + offline "Mark paid" for when a customer
+              hands Key a check at install. Hidden once the proposal is
+              Approved (Stripe already handled it) or Cancelled. */}
+          {p.token && !isPaid && !isCancelled ? (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => copyInvoiceLink(p)} style={{
+                flex: 1, height: 30, fontSize: 11, fontFamily: 'var(--font-body)',
+                boxShadow: 'var(--raised-2)', cursor: 'pointer',
+                border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+              }} title="Generate /invoice.html link for this contact">Copy invoice</button>
+              <button onClick={() => markPaidOffline(p)} style={{
+                flex: 1, height: 30, fontSize: 11, fontFamily: 'var(--font-body)',
+                boxShadow: 'var(--raised-2)', cursor: 'pointer',
+                border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+              }} title="Record cash/check payment + approve this proposal">Mark paid (offline)</button>
+            </div>
           ) : null}
         </div>
         );
@@ -2335,11 +2483,24 @@ function StagePickerModal({ currentStage, onPick, onClose }) {
 }
 
 // Quick-insert SMS templates. {name} is replaced with the contact's first name.
+// SMS snippets — {name} is replaced with the contact's first name at insert.
+// Full template set ported from crm.html:11335-11366 for v1 parity. [date] is
+// a literal placeholder Key replaces before sending; v1 substituted it from
+// contacts.scheduled_install_date when set, but the date's usually in his
+// head at send time so typing it is fine.
 const SMS_SNIPPETS = [
-  { label: 'Intro', body: "Hi {name}! This is Key with Backup Power Pro. Thanks for reaching out — I can get you a quote today once I know a couple details. Do you already have a generator, or looking to add one?" },
-  { label: 'Quote sent', body: "Hi {name}, just sent over your quote. Let me know if you have any questions — happy to hop on a quick call if that's easier." },
-  { label: 'Follow up', body: "Hey {name}, just checking in. Want me to hold that install slot, or shift it out a week?" },
-  { label: 'Deposit', body: "Hi {name}! To lock in your install date, a 50% deposit is all that's needed. I'll send the link over now." },
+  { label: 'Intro',           body: "Hi {name}! This is Key with Backup Power Pro. Thanks for reaching out — I can get you a quote today once I know a couple details. Do you already have a generator, or looking to add one?" },
+  { label: 'Send quote offer',body: "Hey {name}, thanks for getting back to me! Based on what you've got, I can get you fully connected — generator inlet, interlock kit, cord, permit, inspection, and cleanup — all in one day for $1,197 all in. Want me to send you a full itemized quote?" },
+  { label: 'Quote sent',      body: "Hi {name}, just sent over your quote. Let me know if you have any questions — happy to hop on a quick call if that's easier." },
+  { label: 'Follow up',       body: "Hey {name}, just checking in. Want me to hold that install slot, or shift it out a week?" },
+  { label: 'Price anchor',    body: "Hey {name} — following up on your quote. Just wanted to mention: most homeowners compare us to standby generators, which run $10–20K installed. Our $1,197 all-in installation gives you the same directly-connected result at a fraction of the cost. Happy to answer any questions!" },
+  { label: 'Deposit',         body: "Hi {name}! To lock in your install date, a 50% deposit is all that's needed. I'll send the link over now." },
+  { label: 'Install confirm', body: "Hi {name}! Just confirming your installation for [date]. I'll plan to arrive around 8–9 AM and we'll be wrapped up in a few hours. Feel free to text me if anything comes up beforehand." },
+  { label: 'Day-before',      body: "Hey {name}, just a heads up — I'll be there tomorrow for your generator inlet installation. No prep needed on your end. See you in the morning!" },
+  { label: 'Permit update',   body: "Hey {name}, quick update — your permit is moving along. I'll keep you posted as we get closer to your install date. Let me know if you have any questions!" },
+  { label: 'Post-install',    body: "Hey {name}, great meeting you today! Quick reminder for when the power goes out: 1) Roll your generator outside (at least 20 ft from windows), 2) Start it up, 3) Plug the cord into the inlet we installed, 4) Flip your transfer switch on the breaker panel. You're all set — feel free to reach out with any questions!" },
+  { label: 'Review ask',      body: "Hey {name}, really glad we could get you set up! If you have a minute, an honest Google review goes a long way for a small business like mine. Here's the link: https://g.page/r/CVxLI9ZsiZS_EAE/review — thanks so much!" },
+  { label: 'No response',     body: "Hey {name}, just checking in — still have your spot available if you're still interested. Happy to answer any questions or adjust anything on the quote. No pressure at all!" },
 ];
 
 // Parse a message body and render inline:
