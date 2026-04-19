@@ -614,6 +614,36 @@ function DuplicateStrip({ duplicates }) {
   );
 }
 
+// Review-ask strip — renders on stage 9 contacts (install complete) as a
+// one-tap CTA to draft a Google-review request SMS. Post-install is peak
+// happiness and the single highest-leverage moment for a review ask; every
+// 5-star review permanently lifts GBP ranking.
+function ReviewAskStrip({ contactName }) {
+  const draft = () => {
+    const first = (contactName || '').split(' ')[0] || 'there';
+    const msg = `Hi ${first} — thanks again for trusting BPP with your install! If you had a good experience, a quick Google review means the world to a small local shop. Search "Backup Power Pro" on Google and click the Reviews link. Takes 30 seconds and helps more Upstate SC folks find us. — Key`;
+    window.dispatchEvent(new CustomEvent('bpp:compose-prefill', { detail: { text: msg } }));
+    window.__bpp_toast && window.__bpp_toast('Review ask drafted — review + send', 'info');
+  };
+  return (
+    <div style={{
+      padding: '8px 14px',
+      background: 'var(--card)',
+      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderLeft: '3px solid var(--gold)',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+      fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)',
+    }}>
+      <span>Install complete — ask for a Google review?</span>
+      <button onClick={draft} style={{
+        padding: '4px 10px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
+        background: 'var(--navy)', color: 'var(--gold)',
+        boxShadow: 'var(--raised-2)', cursor: 'pointer', border: 'none', letterSpacing: '.04em',
+      }}>Draft ask</button>
+    </div>
+  );
+}
+
 function LiveContactDetail({ contactId, onBack, mobile = false }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -889,6 +919,13 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
 
       {duplicates.length > 0 ? (
         <DuplicateStrip duplicates={duplicates} />
+      ) : null}
+
+      {/* Post-install review-ask prompt. Stage 9 means the install is done;
+          this is the right moment to ask for a Google review (peak happy).
+          Clicking drafts the SMS into the compose bar; Key reviews + sends. */}
+      {contact?.stage === 9 && !contact?.do_not_contact ? (
+        <ReviewAskStrip contactName={contact?.name} />
       ) : null}
 
       <SnoozeRow contactId={contactId} contactName={contact?.name} />
