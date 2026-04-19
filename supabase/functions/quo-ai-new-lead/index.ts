@@ -126,9 +126,21 @@ async function createQuoContact(
 }
 
 // ── NOTIFY KEY ────────────────────────────────────────────────────────────────
-// Sends a quick heads-up to Key's phone when a new lead comes in.
-async function notifyKey(firstName: string): Promise<void> {
-  const message = `LEAD: ${firstName || 'Unknown'}`
+// Sends a triage-ready heads-up to Key's phone when a new lead comes in.
+// Content: first name, city (from the address), phone, panel-location if
+// captured. Goal: Key decides in 2 seconds whether to drop everything and
+// reply now (speed-to-lead) or handle in 10 minutes.
+async function notifyKey(opts: {
+  firstName: string
+  city?: string
+  phone?: string
+  panelLocation?: string
+}): Promise<void> {
+  const parts = [`LEAD: ${opts.firstName || 'Unknown'}`]
+  if (opts.city) parts.push(opts.city)
+  if (opts.phone) parts.push(opts.phone)
+  if (opts.panelLocation) parts.push(`panel: ${opts.panelLocation}`)
+  const message = parts.join(' · ')
 
   try {
     await fetch('https://api.openphone.com/v1/messages', {
@@ -136,7 +148,7 @@ async function notifyKey(firstName: string): Promise<void> {
       headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
       body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [KEY_PHONE], content: message }),
     })
-    console.log('[notify-key] sent')
+    console.log('[notify-key] sent:', message)
   } catch (err) {
     console.error('[notify-key] failed:', err)
   }
@@ -286,7 +298,16 @@ Deno.serve(async (req) => {
 
   // ── NOTIFY KEY (non-blocking) ────────────────────────────────────────────
   if (isNew) {
-    notifyKey(firstName).catch(err => console.error('[notify-key] unhandled:', err))
+    // Format phone as (864) 863-7800 for a native tap-to-call on Key's iPhone.
+    const phoneDisplay = normalizedPhone && normalizedPhone.length === 12
+      ? `(${normalizedPhone.slice(2, 5)}) ${normalizedPhone.slice(5, 8)}-${normalizedPhone.slice(8)}`
+      : normalizedPhone || ''
+    notifyKey({
+      firstName,
+      city: addressCity || undefined,
+      phone: phoneDisplay || undefined,
+      panelLocation: panelLocation || undefined,
+    }).catch(err => console.error('[notify-key] unhandled:', err))
   }
 
   // ── FIRST MESSAGE ─────────────────────────────────────────────────────────
