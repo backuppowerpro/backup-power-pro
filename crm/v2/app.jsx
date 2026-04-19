@@ -3235,7 +3235,7 @@ function LiveFinance() {
     (async () => {
       const weekAgoIso = new Date(Date.now() - 7 * 86400000).toISOString();
       const [propRes, invRes, payRes, historyRes, newLeadsRes, proposals7dRes, deposits7dRes] = await Promise.all([
-        db.from('proposals').select('id, contact_id, contact_name, total, status, signed_at, viewed_at, created_at').order('created_at', { ascending: false }).limit(20),
+        db.from('proposals').select('id, contact_id, contact_name, total, status, signed_at, viewed_at, view_count, created_at').order('created_at', { ascending: false }).limit(20),
         db.from('invoices').select('id, contact_id, contact_name, total, status, notes, paid_at, created_at').order('created_at', { ascending: false }).limit(20),
         db.from('payments').select('id, contact_id, amount, method, created_at').order('created_at', { ascending: false }).limit(20),
         // Installs-this-week: transitions to stage 9 (inspection/done) in last 7 days
@@ -3396,12 +3396,16 @@ function ProposalsLiveTable({ rows }) {
         const status = (p.status || 'sent').toLowerCase();
         const tint = statusTint[status] || 'var(--text-faint)';
         const fu = followUpState(p);
+        // View count — meaningful follow-up signal. A proposal at F/U 2 with
+        // 0 views = customer never opened the link (push the quote). 5+ views
+        // = customer is interested but stuck (different nudge strategy).
+        const views = Number(p.view_count) || 0;
         return (
           <div key={p.id}
             onClick={() => p.contact_id && (window.location.hash = `#contact=${p.contact_id}`)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 80px 70px 90px 100px',
+              gridTemplateColumns: '1fr 80px 54px 70px 90px 100px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
               borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
@@ -3411,6 +3415,10 @@ function ProposalsLiveTable({ rows }) {
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
             </span>
+            <span className="mono" title={views === 0 ? 'Customer has not opened the quote' : `Customer opened the quote ${views} time${views === 1 ? '' : 's'}`} style={{
+              fontSize: 11, textAlign: 'center',
+              color: views === 0 ? 'var(--ms-3)' : views >= 3 ? 'var(--ms-2)' : 'var(--text-muted)',
+            }}>{views === 0 ? '👁 0' : `👁 ${views}`}</span>
             {fu ? (
               <span className="chrome-label" style={{
                 fontSize: 10, color: fu.tint, textAlign: 'center', letterSpacing: '.08em',
