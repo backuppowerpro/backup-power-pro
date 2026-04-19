@@ -602,11 +602,43 @@ function LivePipeline({ onCardClick, onSubView }) {
 // default showing status + summary; click to expand for the full summary and
 // follow-up count. The status chip always shows regardless of expansion —
 // it's the at-a-glance signal Key scans during triage.
-function AlexSessionStrip({ session }) {
+//
+// Also carries a pause/resume toggle: flips alex_sessions.alex_active +
+// contacts.ai_enabled together so Key can take over a conversation manually
+// (Alex stops auto-responding) or hand it back. Without this toggle Key had
+// to update the DB directly to pause Alex.
+function AlexSessionStrip({ session, contactId, contactPhone }) {
   const [expanded, setExpanded] = React.useState(false);
-  const status = session.opted_out ? 'opted out' : session.alex_active ? 'active' : 'handed off';
-  const statusColor = session.opted_out ? 'var(--ms-3)' : session.alex_active ? 'var(--ms-2)' : 'var(--text-faint)';
+  const [toggling, setToggling] = React.useState(false);
+  const [localActive, setLocalActive] = React.useState(session.alex_active);
+  // Keep local in sync with realtime pushes of session
+  React.useEffect(() => { setLocalActive(session.alex_active); }, [session.alex_active]);
+  const status = session.opted_out ? 'opted out' : localActive ? 'active' : 'handed off';
+  const statusColor = session.opted_out ? 'var(--ms-3)' : localActive ? 'var(--ms-2)' : 'var(--text-faint)';
   const hasSummary = !!(session.summary && session.summary.trim());
+  const canToggle = !session.opted_out; // never override an opt-out; DNC/compliance path only
+
+  async function toggleAlex(e) {
+    e.stopPropagation();
+    if (!contactPhone || toggling || !canToggle) return;
+    setToggling(true);
+    const nextActive = !localActive;
+    // Optimistic: flip local state immediately so the chip reacts
+    setLocalActive(nextActive);
+    const sessUpdate = db.from('alex_sessions').update({ alex_active: nextActive }).eq('phone', contactPhone);
+    const contactUpdate = contactId
+      ? db.from('contacts').update({ ai_enabled: nextActive }).eq('id', contactId)
+      : Promise.resolve();
+    const [sessRes, contactRes] = await Promise.all([sessUpdate, contactUpdate]);
+    setToggling(false);
+    if (sessRes.error || contactRes.error) {
+      setLocalActive(!nextActive); // revert
+      window.__bpp_toast && window.__bpp_toast(`Toggle failed: ${sessRes.error?.message || contactRes.error?.message}`, 'error');
+      return;
+    }
+    window.__bpp_toast && window.__bpp_toast(nextActive ? 'Alex resumed' : 'Alex paused — replies are on you', 'info');
+  }
+
   return (
     <div
       onClick={() => hasSummary && setExpanded(v => !v)}
@@ -628,6 +660,14 @@ function AlexSessionStrip({ session }) {
             color: statusColor,
             border: '1px solid currentColor',
           }}>{status}</span>
+          {canToggle ? (
+            <button onClick={toggleAlex} disabled={toggling} title={localActive ? 'Pause Alex — Key takes over' : 'Resume Alex — auto-respond'} style={{
+              padding: '1px 6px', fontSize: 10, letterSpacing: '.04em', flex: '0 0 auto',
+              background: 'transparent', color: 'var(--text-muted)',
+              border: '1px solid rgba(0,0,0,.15)', cursor: toggling ? 'wait' : 'pointer',
+              fontFamily: 'var(--font-body)',
+            }}>{toggling ? '…' : localActive ? 'pause' : 'resume'}</button>
+          ) : null}
           {hasSummary && !expanded ? (
             <span style={{
               flex: 1, minWidth: 0, color: 'var(--text-faint)',
@@ -1010,7 +1050,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
       ) : null}
 
       {alexSession ? (
-        <AlexSessionStrip session={alexSession} />
+        <AlexSessionStrip session={alexSession} contactId={contactId} contactPhone={contact?.phone} />
       ) : null}
 
       {duplicates.length > 0 ? (
