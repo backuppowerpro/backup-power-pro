@@ -700,6 +700,22 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
             >{contact.address}</a>
           ) : <span>—</span>}
         </div>
+        {messages.length > 0 ? (() => {
+          const latest = messages[messages.length - 1];
+          const latestTime = latest?.created_at ? new Date(latest.created_at) : null;
+          if (!latestTime) return null;
+          const mins = Math.floor((Date.now() - latestTime.getTime()) / 60000);
+          const ago = mins < 60
+            ? `${mins}m ago`
+            : mins < 1440
+              ? `${Math.floor(mins / 60)}h ago`
+              : `${Math.floor(mins / 1440)}d ago`;
+          return (
+            <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
+              Last activity · {ago}
+            </div>
+          );
+        })() : null}
       </div>
 
       {/* Stage strip (click to open picker) */}
