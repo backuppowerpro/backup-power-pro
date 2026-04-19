@@ -581,11 +581,45 @@ function AlexSessionStrip({ session }) {
   );
 }
 
+// Duplicate-phone warning strip — renders when another contact shares the
+// open contact's phone number. Amber to draw attention; each dupe is a link
+// that swaps the panel to that contact so Key can compare and decide.
+function DuplicateStrip({ duplicates }) {
+  return (
+    <div style={{
+      padding: '6px 14px',
+      background: 'var(--card)',
+      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderLeft: '3px solid var(--ms-4)',
+      fontFamily: 'var(--font-body)', fontSize: 11,
+      color: 'var(--text-muted)',
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+    }}>
+      <span style={{ color: 'var(--ms-4)' }}>⚠</span>
+      <span>
+        {duplicates.length === 1 ? 'Duplicate phone:' : `${duplicates.length} duplicates:`}
+      </span>
+      {duplicates.map((d, i) => (
+        <button key={d.id}
+          onClick={() => { window.location.hash = `#contact=${d.id}`; }}
+          style={{
+            padding: '2px 6px', fontSize: 11, fontFamily: 'var(--font-body)',
+            background: 'transparent', color: 'var(--navy)',
+            border: 'none', cursor: 'pointer', textDecoration: 'underline',
+          }}>
+          {d.name || 'Unnamed'} · stage {d.stage || 1}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function LiveContactDetail({ contactId, onBack, mobile = false }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [outstandingBalance, setOutstandingBalance] = useState(0);
   const [alexSession, setAlexSession] = useState(null);
+  const [duplicates, setDuplicates] = useState([]); // other contacts with same phone
   const [loading, setLoading] = useState(true);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('MESSAGES');
@@ -639,8 +673,19 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
           .limit(1)
           .maybeSingle();
         if (alive) setAlexSession(sess || null);
+        // Duplicate detection by phone — other contacts sharing this number
+        // are almost always the same person (same lead came in twice, or
+        // household member filled out the form). Surface them so Key can
+        // decide which record to keep before responding to the wrong thread.
+        const { data: dupes } = await db.from('contacts')
+          .select('id, name, stage, created_at')
+          .eq('phone', cRes.data.phone)
+          .neq('id', contactId)
+          .limit(3);
+        if (alive) setDuplicates(dupes || []);
       } else {
         setAlexSession(null);
+        setDuplicates([]);
       }
       setLoading(false);
       // Smart default tab based on stage, unless user manually picked one for this contact
@@ -840,6 +885,10 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
 
       {alexSession ? (
         <AlexSessionStrip session={alexSession} />
+      ) : null}
+
+      {duplicates.length > 0 ? (
+        <DuplicateStrip duplicates={duplicates} />
       ) : null}
 
       <SnoozeRow contactId={contactId} contactName={contact?.name} />
