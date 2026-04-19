@@ -2716,20 +2716,52 @@ function MatCheck({ on, onClick }) {
   return <button onClick={onClick} style={{ ...base, boxShadow: 'var(--raised-2)' }} aria-label="Check off" />;
 }
 
+// ── Funnel widget primitives ───────────────────────────────────────────────
+// Compact stage-count + conversion-arrow used in the Finance 7-day funnel.
+// Kept deliberately plain — no LCD chrome, no bevels beyond the parent strip.
+function FunnelStep({ label, count }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+      <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+      <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '.08em' }}>{label}</span>
+    </span>
+  );
+}
+function FunnelArrow({ rate }) {
+  return (
+    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 1, color: 'var(--text-faint)' }}>
+      <span className="mono" style={{ fontSize: 9, letterSpacing: '.04em' }}>{rate}</span>
+      <span style={{ fontSize: 12, lineHeight: 1 }}>→</span>
+    </span>
+  );
+}
+
 // ── Live Finance (KPI strip + proposals/invoices/payments tables) ──────────
 function LiveFinance() {
-  const [data, setData] = useState({ proposals: [], invoices: [], payments: [], installsThisWeek: 0, loading: true });
+  const [data, setData] = useState({
+    proposals: [], invoices: [], payments: [],
+    installsThisWeek: 0,
+    // 7-day funnel counts — top-of-funnel to bottom
+    newLeads7d: 0, proposals7d: 0, depositsPaid7d: 0, installs7d: 0,
+    loading: true,
+  });
   const [subView, setSubView] = useState('prop');
 
   useEffect(() => {
     (async () => {
       const weekAgoIso = new Date(Date.now() - 7 * 86400000).toISOString();
-      const [propRes, invRes, payRes, historyRes] = await Promise.all([
+      const [propRes, invRes, payRes, historyRes, newLeadsRes, proposals7dRes, deposits7dRes] = await Promise.all([
         db.from('proposals').select('id, contact_id, contact_name, total, status, signed_at, viewed_at, created_at').order('created_at', { ascending: false }).limit(20),
         db.from('invoices').select('id, contact_id, contact_name, total, status, notes, paid_at, created_at').order('created_at', { ascending: false }).limit(20),
         db.from('payments').select('id, contact_id, amount, method, created_at').order('created_at', { ascending: false }).limit(20),
         // Installs-this-week: transitions to stage 9 (inspection/done) in last 7 days
         db.from('stage_history').select('contact_id, to_stage, changed_at').eq('to_stage', 9).gte('changed_at', weekAgoIso),
+        // Funnel: new leads in last 7d (head=count-only keeps the query cheap)
+        db.from('contacts').select('id', { count: 'exact', head: true }).gte('created_at', weekAgoIso),
+        // Funnel: proposals created in last 7d
+        db.from('proposals').select('id', { count: 'exact', head: true }).gte('created_at', weekAgoIso),
+        // Funnel: deposits paid in last 7d (invoices with notes=deposit that went to paid)
+        db.from('invoices').select('id', { count: 'exact', head: true }).eq('status', 'paid').eq('notes', 'deposit').gte('paid_at', weekAgoIso),
       ]);
       const uniqueInstalls = new Set((historyRes.data || []).map(r => r.contact_id));
       setData({
@@ -2737,6 +2769,10 @@ function LiveFinance() {
         invoices: invRes.data || [],
         payments: payRes.data || [],
         installsThisWeek: uniqueInstalls.size,
+        newLeads7d: newLeadsRes.count || 0,
+        proposals7d: proposals7dRes.count || 0,
+        depositsPaid7d: deposits7dRes.count || 0,
+        installs7d: uniqueInstalls.size,
         loading: false,
       });
     })();
@@ -2770,8 +2806,31 @@ function LiveFinance() {
     return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING FINANCE...</div>;
   }
 
+  // 7-day conversion funnel — top-of-funnel to bottom. Conversion percent
+  // is shown between stages so Key sees where leads drop off.
+  // e.g. 20 NEW → 10 QUOTED (50%) → 3 PAID (30%) → 1 INSTALLED (33%)
+  const pct = (num, den) => den > 0 ? Math.round((num / den) * 100) + '%' : '—';
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* 7-day funnel — the CEO glance: top-of-funnel + conversion rates */}
+      <div style={{
+        margin: '16px 16px 0', padding: '10px 14px',
+        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+        fontFamily: 'var(--font-body)', fontSize: 12,
+      }}>
+        <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.08em', marginRight: 4 }}>
+          LAST 7 DAYS
+        </span>
+        <FunnelStep label="NEW" count={data.newLeads7d} />
+        <FunnelArrow rate={pct(data.proposals7d, data.newLeads7d)} />
+        <FunnelStep label="QUOTED" count={data.proposals7d} />
+        <FunnelArrow rate={pct(data.depositsPaid7d, data.proposals7d)} />
+        <FunnelStep label="PAID" count={data.depositsPaid7d} />
+        <FunnelArrow rate={pct(data.installs7d, data.depositsPaid7d)} />
+        <FunnelStep label="INSTALLED" count={data.installs7d} />
+      </div>
       {/* KPI strip */}
       <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <KpiCard label="INSTALLS THIS WEEK" value={String(data.installsThisWeek).padStart(2, '0')} tone="green" />
