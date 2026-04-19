@@ -593,6 +593,19 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
   // can auto-pick a smart default when switching between contacts.
   const [manualTabContactId, setManualTabContactId] = useState(null);
   const msgScrollRef = useRef(null);
+  const detailTabsRef = useRef(null);
+
+  // On mobile the 6 detail tabs (Messages/Timeline/Quote/Permits/Notes/Edit)
+  // overflow a 375px viewport. Without this effect, picking a later tab via
+  // smart-default (e.g. stage 4 → PERMITS) leaves it off-screen with no
+  // visible active indicator.
+  useEffect(() => {
+    if (!detailTabsRef.current) return;
+    const btn = detailTabsRef.current.querySelector(`button[data-detail-tab-id="${detailTab}"]`);
+    if (btn && typeof btn.scrollIntoView === 'function') {
+      btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [detailTab]);
 
   // Auto-scroll message thread to bottom when messages change or tab opens
   useEffect(() => {
@@ -851,7 +864,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
       ) : null}
 
       {/* Detail tabs */}
-      <div style={{
+      <div ref={detailTabsRef} style={{
         height: 42, display: 'flex', alignItems: 'stretch',
         padding: '0 16px', gap: 16,
         borderBottom: '1px solid rgba(0,0,0,.08)',
@@ -868,6 +881,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
           const on = t.id === detailTab;
           return (
             <button key={t.id}
+              data-detail-tab-id={t.id}
               onClick={() => { setDetailTab(t.id); setManualTabContactId(contactId); }}
               style={{
                 height: '100%', padding: '0 4px', fontSize: 13,
