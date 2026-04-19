@@ -883,6 +883,22 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
     return () => { db.removeChannel(channel); };
   }, [contactId]);
 
+  // Realtime: alex_sessions row for THIS contact's phone. Required so the
+  // pause/resume toggle reflects changes made on another device (or by Alex
+  // itself updating state during ghost/followup flows). Separate channel
+  // since it's keyed on phone, which becomes available after the contact
+  // fetch completes — can't bake into the contactId-scoped channel above.
+  useEffect(() => {
+    if (!contact?.phone) return;
+    const phone = contact.phone;
+    const ch = db.channel(`alex-session-${phone}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'alex_sessions', filter: `phone=eq.${phone}` }, (payload) => {
+        if (payload.new) setAlexSession(s => s ? { ...s, ...payload.new } : payload.new);
+      })
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [contact?.phone]);
+
   const stageAbbr = contact?.stage ? (STAGE_MAP[contact.stage] || 'NEW') : 'NEW';
   const displayName = contact?.name || 'LOADING...';
   const displayPhone = contact?.phone ? formatPhone(contact.phone) : '';
