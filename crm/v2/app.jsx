@@ -3558,11 +3558,40 @@ function App() {
     }
   }, [selectedContact]);
 
-  // Update page title
+  // Update page title + favicon dot for unread count
   useEffect(() => {
     document.title = unreadCount > 0
       ? `(${unreadCount}) BPP CRM`
       : 'BPP CRM v2';
+    // Paint a tiny favicon with a red dot if unread > 0
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      // BPP navy square base
+      ctx.fillStyle = '#0b1f3b';
+      ctx.fillRect(0, 0, 64, 64);
+      ctx.fillStyle = '#ffba00';
+      ctx.font = 'bold 38px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('B', 32, 34);
+      if (unreadCount > 0) {
+        // Red dot top-right
+        ctx.beginPath();
+        ctx.arc(50, 14, 12, 0, Math.PI * 2);
+        ctx.fillStyle = '#dc2626';
+        ctx.fill();
+      }
+      const url = canvas.toDataURL('image/png');
+      let link = document.querySelector("link[rel='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = url;
+    } catch {}
   }, [unreadCount]);
 
   // Global new-inbound-SMS listener → toast + unread bump + desktop notification
