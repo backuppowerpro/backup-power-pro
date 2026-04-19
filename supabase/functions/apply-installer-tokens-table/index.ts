@@ -26,12 +26,17 @@ Deno.serve(async (req) => {
     `
     await sql`CREATE INDEX IF NOT EXISTS installer_tokens_name_idx ON installer_tokens (installer_name)`
 
-    // Insert Key's own token so the portal works for him too (useful while
-    // testing). Token is deterministic here; rotate via UPDATE if leaked.
+    // Seed Key's own token ONLY if no token exists for him yet. Uses
+    // gen_random_uuid() so a fresh install starts with an unguessable
+    // value. The old hardcoded 'key-dev-token-please-rotate' seed is
+    // kept out intentionally — it was rotated on 2026-04-19 and
+    // re-running this one-shot should not recreate a weak default.
     await sql`
       INSERT INTO installer_tokens (token, installer_name)
-      VALUES ('key-dev-token-please-rotate', 'Key')
-      ON CONFLICT (token) DO NOTHING
+      SELECT gen_random_uuid()::text, 'Key'
+      WHERE NOT EXISTS (
+        SELECT 1 FROM installer_tokens WHERE installer_name = 'Key' AND revoked_at IS NULL
+      )
     `
     const count = await sql`SELECT count(*) AS n FROM installer_tokens`
     return new Response(JSON.stringify({ ok: true, rowCount: count[0].n }), { headers: { ...CORS, 'Content-Type': 'application/json' } })
