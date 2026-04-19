@@ -143,7 +143,9 @@ function TabBar({ active = 'leads', scrollable = false, onChange, badges = {} })
   );
 }
 
-/* ────────── Morphing bottom bar ────────── */
+/* ────────── Morphing bottom bar — unused in current app.jsx
+ * Kept as design-canvas reference. app.jsx uses ComposeBar and the
+ * LiveSparky compose instead of mounting this. Safe to remove later. */
 const SEARCH_PLACEHOLDERS = {
   leads:    { chip: 'LEADS »',    ph: 'SEARCH CUSTOMERS, PHONES, ADDRESSES...' },
   permits:  { chip: 'PERMITS »',  ph: 'SEARCH BY CUSTOMER OR JURISDICTION...' },

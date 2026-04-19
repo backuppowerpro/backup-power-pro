@@ -1953,7 +1953,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'X', label: 'Export SMS thread transcript' },
     { keys: 'J', label: 'Jump to next waiting thread' },
     { keys: '/', label: 'Focus search (Messages / Sparky)' },
-    { keys: '1–9', label: 'Set stage on open contact' },
+    { keys: '1–9', label: 'Set stage → auto-advance to next waiting' },
     { keys: '⌘S', label: 'Save notes' },
     { keys: 'Esc', label: 'Close detail or modal' },
     { keys: '?', label: 'Show this help' },
@@ -3994,32 +3994,38 @@ function App() {
           }
         })();
       }
+      // Helper: find the next waiting thread (customer sent last message, not AI).
+      // Skips `skipId` so "next" advances rather than re-selecting the current one.
+      const findNextWaiting = async (skipId) => {
+        const { data: msgs } = await db.from('messages')
+          .select('contact_id, direction, sender, created_at')
+          .order('created_at', { ascending: false }).limit(300);
+        if (!msgs) return null;
+        const seen = new Set();
+        for (const m of msgs) {
+          if (!m.contact_id) continue;
+          if (seen.has(m.contact_id)) continue;
+          seen.add(m.contact_id);
+          if (m.direction === 'inbound' && m.sender !== 'ai') {
+            if (m.contact_id === skipId) continue;
+            return m.contact_id;
+          }
+        }
+        return null;
+      };
       // j → jump to next waiting thread (customer sent last message).
-      // Works from anywhere — opens Messages tab + the top waiting contact.
+      // Works from anywhere — opens the slide-over on the Leads tab.
       if (e.key === 'j') {
         e.preventDefault();
         (async () => {
-          // Pull the latest 300 messages, group by contact, find contacts
-          // where the most recent message is inbound + sender != 'ai'.
-          const { data: msgs } = await db.from('messages')
-            .select('contact_id, direction, sender, created_at')
-            .order('created_at', { ascending: false }).limit(300);
-          if (!msgs) return;
-          const seen = new Set();
-          for (const m of msgs) {
-            if (!m.contact_id) continue;
-            if (seen.has(m.contact_id)) continue;
-            seen.add(m.contact_id);
-            if (m.direction === 'inbound' && m.sender !== 'ai') {
-              // Skip the currently-selected one (jump should move forward)
-              if (m.contact_id === selectedContact) continue;
-              setSelectedContact(m.contact_id);
-              setTab('leads'); // slide-over renders over Leads tab
-              window.__bpp_toast && window.__bpp_toast('Next waiting thread', 'info');
-              return;
-            }
+          const next = await findNextWaiting(selectedContact);
+          if (next) {
+            setSelectedContact(next);
+            setTab('leads');
+            window.__bpp_toast && window.__bpp_toast('Next waiting thread', 'info');
+          } else {
+            window.__bpp_toast && window.__bpp_toast('No waiting threads', 'info');
           }
-          window.__bpp_toast && window.__bpp_toast('No waiting threads', 'info');
         })();
       }
       // n → new lead modal
@@ -4027,29 +4033,42 @@ function App() {
         e.preventDefault();
         setNewLeadOpen(true);
       }
-      // 1–9 → change stage on the currently selected contact
+      // 1–9 → change stage on the currently selected contact, then auto-advance
+      // to the next waiting thread. This turns morning triage into a rhythm:
+      // open card → press 2 → next card appears → press 3 → next card appears.
       if (/^[1-9]$/.test(e.key) && selectedContact) {
         e.preventDefault();
         const newStage = Number(e.key);
+        const fromId = selectedContact; // capture for undo closure
         (async () => {
-          const { data } = await db.from('contacts').select('stage, name').eq('id', selectedContact).maybeSingle();
+          const { data } = await db.from('contacts').select('stage, name').eq('id', fromId).maybeSingle();
           const oldStage = data?.stage || 1;
           if (oldStage === newStage) {
             window.__bpp_toast && window.__bpp_toast(`${data?.name || 'Contact'} already at ${STAGE_MAP[newStage] || 'stage ' + newStage}`, 'info');
             return;
           }
-          await db.from('contacts').update({ stage: newStage }).eq('id', selectedContact);
+          await db.from('contacts').update({ stage: newStage }).eq('id', fromId);
           await db.from('stage_history').insert({
-            contact_id: selectedContact, from_stage: oldStage, to_stage: newStage,
+            contact_id: fromId, from_stage: oldStage, to_stage: newStage,
           }).then(() => {}, () => {});
           window.__bpp_toast && window.__bpp_toast(
             `${data?.name || 'Contact'} → ${STAGE_MAP[newStage] || 'stage ' + newStage}`,
             'success',
             { label: 'Undo', onClick: async () => {
-              await db.from('contacts').update({ stage: oldStage }).eq('id', selectedContact);
-              await db.from('stage_history').insert({ contact_id: selectedContact, from_stage: newStage, to_stage: oldStage }).then(()=>{}, ()=>{});
+              await db.from('contacts').update({ stage: oldStage }).eq('id', fromId);
+              await db.from('stage_history').insert({ contact_id: fromId, from_stage: newStage, to_stage: oldStage }).then(()=>{}, ()=>{});
+              setSelectedContact(fromId); // bring the user back to the undone contact
             }}
           );
+          // Auto-advance: find next waiting thread (skip the one we just moved)
+          const next = await findNextWaiting(fromId);
+          if (next) {
+            setSelectedContact(next);
+          } else {
+            // Caught up — close the slide-over so the pipeline is visible
+            setSelectedContact(null);
+            window.__bpp_toast && window.__bpp_toast('Inbox clear — caught up', 'info');
+          }
         })();
       }
       // / → focus a visible search input on whatever tab is active
