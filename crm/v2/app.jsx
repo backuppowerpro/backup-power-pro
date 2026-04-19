@@ -775,14 +775,13 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
     return () => { alive = false; };
   }, [contactId]);
 
-  // Realtime messages for this contact. Listens for both INSERT (new bubble)
-  // and UPDATE (status sent → delivered / failed). The UPDATE subscription is
-  // what lets the delivered/⚠ markers flip live without a page reload as soon
-  // as Twilio's status-callback webhook patches the row.
-  //
-  // Dedup on INSERT: if the initial fetch and realtime race, or the channel
-  // replays on reconnect, the same message can arrive twice. UPDATE replaces
-  // the matching row in place; non-match is a no-op.
+  // Realtime: messages (INSERT + UPDATE) and the contact row itself (UPDATE).
+  //   - message INSERT: new bubble appended, dedup'd by id
+  //   - message UPDATE: status sent → delivered / failed flips live
+  //   - contact UPDATE: stage change, DNC flip, install_date edit, address
+  //     edit — Key sees it in the header without navigating away. Important
+  //     when Alex or the permit-automation edge fns mutate the contact while
+  //     Key has the detail panel open.
   useEffect(() => {
     if (!contactId) return;
     const channel = db.channel(`messages-${contactId}`)
@@ -791,6 +790,9 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
           if (payload.new?.id && prev.some(m => m.id === payload.new.id)) return prev;
           return [...prev, payload.new];
         });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts', filter: `id=eq.${contactId}` }, (payload) => {
+        if (payload.new) setContact(c => c ? { ...c, ...payload.new } : payload.new);
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `contact_id=eq.${contactId}` }, (payload) => {
         setMessages(prev => {
@@ -3741,10 +3743,11 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
   const [loading, setLoading] = useState(true);
 
   const fetchThreads = useCallback(async () => {
-    // Latest 50 messages joined on contact — we group client-side.
+    // Latest 300 messages; we group client-side.
+    // Include `status` so the inbox row can flag failed outbound delivery.
     const { data: msgs } = await db
       .from('messages')
-      .select('id, contact_id, direction, body, sender, created_at')
+      .select('id, contact_id, direction, body, sender, status, created_at')
       .order('created_at', { ascending: false })
       .limit(300);
     if (!msgs) { setThreads([]); return; }
@@ -3777,11 +3780,17 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
         const { latest, count } = byContact[id];
         const isOut = latest.direction === 'outbound';
         const isAi = latest.sender === 'ai';
+        // Latest outbound failed delivery — flag the thread so the inbox
+        // row renders red. This is the single most actionable signal: Key
+        // thought he texted the customer, carrier rejected it, customer
+        // never heard back.
+        const failed = isOut && (latest.status === 'failed' || latest.status === 'undelivered');
         return {
           contactId: id,
           name: c.name || '—',
           i: initials(c.name),
-          tint: 'navy',
+          // Red tint for failed-delivery threads draws the eye immediately.
+          tint: failed ? 'red' : 'navy',
           dir: isOut ? 'out' : 'in',
           prev: (latest.body || '').slice(0, 120),
           ts: relTimestamp(latest.created_at),
@@ -3791,6 +3800,7 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
           waiting: !isOut && latest.sender !== 'ai',
           unread: 0,
           alex: isAi && isOut,
+          failed,
         };
       })
       .filter(Boolean);
@@ -3798,6 +3808,8 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
     // Rank uses inserted order of byContact which is already newest-first.
     const order = Object.fromEntries(ids.map((id, i) => [id, i]));
     out.sort((a, b) => {
+      // Failed-delivery first (most urgent), waiting second, then recency.
+      if (a.failed !== b.failed) return a.failed ? -1 : 1;
       if (a.waiting !== b.waiting) return a.waiting ? -1 : 1;
       return (order[a.contactId] ?? 0) - (order[b.contactId] ?? 0);
     });
