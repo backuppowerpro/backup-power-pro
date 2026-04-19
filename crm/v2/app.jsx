@@ -3274,6 +3274,19 @@ function LiveFinance() {
     loading: true,
   });
   const [subView, setSubView] = useState('prop');
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  // Realtime: re-run the fetch when anything Finance-relevant changes.
+  // Debounces via refreshTick; the dependency below picks up the next tick.
+  useEffect(() => {
+    const bump = () => setRefreshTick(n => n + 1);
+    const ch = db.channel('finance-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, bump)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, bump)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, bump)
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -3304,7 +3317,7 @@ function LiveFinance() {
         loading: false,
       });
     })();
-  }, []);
+  }, [refreshTick]);
 
   const kpis = useMemo(() => {
     const now = new Date();
@@ -3578,6 +3591,16 @@ function LiveCalendar() {
   const [scheduled, setScheduled] = useState([]);
   const [unscheduled, setUnscheduled] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  // Realtime: any contacts UPDATE (install_date, stage, do_not_contact)
+  // can shift what belongs in scheduled vs awaiting-date. Cheap refetch.
+  useEffect(() => {
+    const ch = db.channel('calendar-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => setRefreshTick(n => n + 1))
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -3605,7 +3628,7 @@ function LiveCalendar() {
       setUnscheduled(unschedRes.data || []);
       setLoading(false);
     })();
-  }, []);
+  }, [refreshTick]);
 
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING CALENDAR...</div>;
 
@@ -3938,6 +3961,16 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       setLoading(false);
     })();
   }, [refreshTick]);
+
+  // Auto-refresh the brief every 60s while it's open. Without this the
+  // "Waiting" and "Installing today" counts freeze at whatever they were
+  // when the modal was opened — if a customer replies at 8:05 while Key
+  // has the brief up from 8:00, the count stays stale. 60s is a cheap
+  // cadence since the parallel queries are all count-only or limit-5.
+  useEffect(() => {
+    const t = setInterval(() => setRefreshTick(n => n + 1), 60000);
+    return () => clearInterval(t);
+  }, []);
 
   return (
     <div onClick={onClose} style={{
