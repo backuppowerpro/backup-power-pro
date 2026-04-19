@@ -3821,10 +3821,23 @@ function App() {
         filter: 'direction=eq.inbound',
       }, async (payload) => {
         const m = payload.new;
+        // Skip the toast if the viewer is already on that thread — they can
+        // see the new bubble arrive, no need to nudge them.
+        if (tabFocusedRef.current && m.contact_id === selectedContact) return;
         const { data: c } = await db.from('contacts').select('name').eq('id', m.contact_id).maybeSingle();
         const name = c?.name || 'Unknown';
         const preview = (m.body || '').slice(0, 60);
-        window.__bpp_toast(`SMS from ${name}: "${preview}"`, 'info');
+        // Action toast: one click opens the thread + switches to Leads tab so
+        // the contact slide-over surfaces over the pipeline. Replaces the old
+        // "notice the tab badge → navigate manually" flow.
+        window.__bpp_toast(`SMS from ${name}: "${preview}"`, 'info', {
+          label: 'Open',
+          onClick: () => {
+            setSelectedContact(m.contact_id);
+            setTab('leads');
+            window.location.hash = `#tab=leads&contact=${m.contact_id}`;
+          },
+        });
         // Native desktop notification when tab isn't focused
         if (!tabFocusedRef.current && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
           try {
