@@ -754,6 +754,9 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         </div>
       ) : null}
 
+      <SnoozeRow contactId={contactId} contactName={contact?.name} />
+
+
       {stagePickerOpen ? (
         <StagePickerModal
           currentStage={contact?.stage || 1}
@@ -3316,6 +3319,53 @@ function togglePin(id) {
 }
 function isPinned(id) { return id && readPins().includes(id); }
 
+function SnoozeRow({ contactId, contactName }) {
+  const [daysLeft, setDaysLeft] = useState(() => isSnoozedFor(contactId));
+  useEffect(() => {
+    setDaysLeft(isSnoozedFor(contactId));
+    const on = () => setDaysLeft(isSnoozedFor(contactId));
+    window.addEventListener('bpp:snoozes-changed', on);
+    return () => window.removeEventListener('bpp:snoozes-changed', on);
+  }, [contactId]);
+  if (!contactId) return null;
+  const presets = [1, 3, 7];
+  if (daysLeft > 0) {
+    return (
+      <div style={{
+        padding: '6px 14px', borderBottom: '1px solid rgba(0,0,0,.06)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)',
+      }}>
+        <span>Snoozed · {daysLeft} day{daysLeft === 1 ? '' : 's'} left</span>
+        <button onClick={() => { unsnoozeContact(contactId); window.__bpp_toast && window.__bpp_toast('Snooze cleared', 'info'); }} style={{
+          padding: '2px 8px', fontSize: 11, fontFamily: 'var(--font-body)',
+          background: 'transparent', color: 'var(--text-muted)',
+          boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+        }}>Clear</button>
+      </div>
+    );
+  }
+  return (
+    <div style={{
+      padding: '4px 14px', borderBottom: '1px solid rgba(0,0,0,.06)',
+      display: 'flex', alignItems: 'center', gap: 6,
+      fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--text-faint)',
+    }}>
+      <span>Snooze</span>
+      {presets.map(n => (
+        <button key={n} onClick={() => {
+          snoozeContact(contactId, n);
+          window.__bpp_toast && window.__bpp_toast(`${contactName || 'Contact'} snoozed ${n} day${n === 1 ? '' : 's'}`, 'info');
+        }} style={{
+          padding: '2px 8px', fontSize: 10, fontFamily: 'var(--font-body)',
+          background: 'transparent', color: 'var(--text-muted)',
+          boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+        }}>{n}d</button>
+      ))}
+    </div>
+  );
+}
+
 function PinButton({ contactId }) {
   const [pinned, setPinned] = useState(() => isPinned(contactId));
   useEffect(() => {
@@ -3340,6 +3390,34 @@ function PinButton({ contactId }) {
       }}
     >{pinned ? '★' : '☆'}</button>
   );
+}
+
+// Snooze — Key marks a contact to resurface later. Per-contact,
+// { contactId: unixMsDue }. readSnoozes/writeSnoozes/isSnoozedFor/snoozeContact
+// keep the store boring; due contacts surface in the morning briefing.
+function readSnoozes() {
+  try { return JSON.parse(localStorage.getItem('bpp_v2_snoozes') || '{}'); } catch { return {}; }
+}
+function writeSnoozes(obj) {
+  try { localStorage.setItem('bpp_v2_snoozes', JSON.stringify(obj)); } catch {}
+  window.dispatchEvent(new CustomEvent('bpp:snoozes-changed'));
+}
+function snoozeContact(id, days) {
+  const obj = readSnoozes();
+  obj[id] = Date.now() + (days * 86400000);
+  writeSnoozes(obj);
+}
+function unsnoozeContact(id) {
+  const obj = readSnoozes();
+  if (obj[id]) { delete obj[id]; writeSnoozes(obj); }
+}
+function isSnoozedFor(id) {
+  const obj = readSnoozes();
+  const due = obj[id];
+  if (!due) return 0;
+  const ms = due - Date.now();
+  if (ms <= 0) return 0;
+  return Math.ceil(ms / 86400000); // whole days remaining
 }
 
 // Track recently viewed contacts in localStorage so the command palette
