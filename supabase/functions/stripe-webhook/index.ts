@@ -208,7 +208,12 @@ serve(async (req) => {
           proposalId: invoice?.proposal_id,
         }).catch(e => console.error('[capi-purchase] unhandled:', e))
 
-        // Auto-advance contact to Complete (stage 9)
+        // Auto-advance contact to BOOKED (stage 4) when a deposit is paid.
+        // Only advances if the contact is pre-booking (stages 1-3), so a
+        // customer paying a final/additional invoice after booking doesn't
+        // get bumped backwards. Stage_history MUST match the UPDATE above —
+        // prior version recorded to_stage=9 (COMPLETE) while only setting
+        // stage=4 (BOOKED), leaving the two tables permanently divergent.
         const { data: contact, error: contactErr } = await supabase
           .from('contacts')
           .select('stage')
@@ -229,7 +234,7 @@ serve(async (req) => {
           } else {
             await supabase
               .from('stage_history')
-              .insert([{ contact_id: contactId, from_stage: oldStage, to_stage: 9 }])
+              .insert([{ contact_id: contactId, from_stage: oldStage, to_stage: 4 }])
           }
         }
       }
