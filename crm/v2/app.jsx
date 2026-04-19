@@ -3874,6 +3874,15 @@ function App() {
         // Skip the toast if the viewer is already on that thread — they can
         // see the new bubble arrive, no need to nudge them.
         if (tabFocusedRef.current && m.contact_id === selectedContact) return;
+        // Respect snoozes: if Key snoozed this contact (localStorage), the
+        // whole point was to mute interruptions. Unread count still bumps
+        // silently so the badge/favicon accurately reflects pending work.
+        if (m.contact_id && isSnoozedFor(m.contact_id)) {
+          if (!tabFocusedRef.current || m.contact_id !== selectedContact) {
+            setUnreadCount(c => c + 1);
+          }
+          return;
+        }
         const { data: c } = await db.from('contacts').select('name').eq('id', m.contact_id).maybeSingle();
         const name = c?.name || 'Unknown';
         const preview = (m.body || '').slice(0, 60);
