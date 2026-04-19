@@ -3090,7 +3090,7 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
 
 // ── Morning Briefing modal — once per day ───────────────────────────────────
 function LiveMorningBriefing({ onClose, onPickContact }) {
-  const [sections, setSections] = useState({ overdue: [], today: [], materials: [], goodNews: [] });
+  const [sections, setSections] = useState({ waiting: [], overdue: [], today: [], materials: [], goodNews: [] });
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -3107,10 +3107,9 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       const todayIso = startOfToday.toISOString();
       const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString();
 
-      // Parallel fetches: overdue (stale leads pre-book), new-today leads,
-      // contacts in booked/permit stages that still have no materials notes,
-      // and invoices that got paid in the last 48h.
-      const [overdueRes, recentRes, awaitingMatRes, paidRes] = await Promise.all([
+      // Parallel fetches: overdue / new-today / materials-awaiting / paid /
+      // waiting-on-Key (customer's last message is inbound + non-AI).
+      const [overdueRes, recentRes, awaitingMatRes, paidRes, waitingMsgsRes] = await Promise.all([
         db.from('contacts')
           .select('id, name, created_at, stage').lt('created_at', fiveDaysAgo)
           .lt('stage', 4).eq('do_not_contact', false).limit(5),
@@ -3123,6 +3122,13 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         db.from('invoices')
           .select('id, contact_name, total, paid_at')
           .eq('status', 'paid').gte('paid_at', twoDaysAgo).limit(5),
+        // Pull the latest 200 messages, group by contact, flag threads where
+        // the most recent one came from the customer (inbound + non-AI). Same
+        // logic as the J shortcut — surfacing it here means Key sees who's
+        // waiting before he even opens the inbox.
+        db.from('messages')
+          .select('contact_id, direction, sender, body, created_at')
+          .order('created_at', { ascending: false }).limit(200),
       ]);
 
       // Materials: booked/permit leads whose install_notes don't yet have any __pm_ line
@@ -3131,9 +3137,39 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         .slice(0, 5)
         .map(c => ({ text: `Pick materials for ${c.name || 'lead'}`, id: c.id }));
 
+      // Waiting on Key: for each contact, pick the newest message; keep only
+      // if it's inbound-from-customer. Cap at 5 so the briefing stays scannable.
+      const waitingSeen = new Set();
+      const waitingIds = [];
+      const waitingPreviewByContact = {};
+      for (const m of (waitingMsgsRes.data || [])) {
+        if (!m.contact_id || waitingSeen.has(m.contact_id)) continue;
+        waitingSeen.add(m.contact_id);
+        if (m.direction === 'inbound' && m.sender !== 'ai') {
+          waitingIds.push(m.contact_id);
+          waitingPreviewByContact[m.contact_id] = (m.body || '').slice(0, 60);
+        }
+      }
+      const capped = waitingIds.slice(0, 5);
+      const waitingContactsRes = capped.length
+        ? await db.from('contacts').select('id, name, do_not_contact').in('id', capped)
+        : { data: [] };
+      const waitingContactMap = Object.fromEntries((waitingContactsRes.data || []).map(c => [c.id, c]));
+      const waiting = capped
+        .map(id => {
+          const c = waitingContactMap[id];
+          if (!c || c.do_not_contact) return null;
+          if (isSnoozedFor(id)) return null;
+          const preview = waitingPreviewByContact[id];
+          const text = preview
+            ? `${c.name || 'Customer'} — "${preview}${preview.length >= 60 ? '…' : ''}"`
+            : (c.name || 'Customer');
+          return { text, id };
+        })
+        .filter(Boolean);
+
       setSections({
-        // Hide contacts the user has actively snoozed — they'll resurface
-        // automatically when the snooze period expires
+        waiting,
         overdue: (overdueRes.data || [])
           .filter(c => !isSnoozedFor(c.id))
           .map(c => ({
@@ -3187,6 +3223,10 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>Loading brief…</div>
         ) : (
           <div style={{ padding: '0 24px' }}>
+            {/* Waiting on Key first — it's the most actionable list. If there
+                are no waiting threads, BriefSection still renders the label
+                with a 0 count so Key can glance and know the inbox is clear. */}
+            <BriefSection label="Waiting" tint="var(--gold)" items={sections.waiting} onPick={onPickContact} />
             <BriefSection label="Overdue" tint="var(--ms-3)" items={sections.overdue} onPick={onPickContact} />
             <BriefSection label="Today" tint="var(--ms-4)" items={sections.today} onPick={onPickContact} />
             <BriefSection label="Materials" tint="var(--text-muted)" items={sections.materials} onPick={onPickContact} />
