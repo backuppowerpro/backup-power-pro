@@ -132,10 +132,13 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
         if (id) onDropCard(id, col.id);
       }}
       style={{
-        // Weight-based flex: triage columns get more room when there's space,
-        // but every column keeps a legible minimum so cards don't crush.
-        flex: `${col.weight || 1} 1 ${col.weight && col.weight < 1 ? 140 : 200}px`,
-        minWidth: col.weight && col.weight < 1 ? 140 : 200,
+        // Weight-based flex with aggressive minWidth so all 9 columns fit
+        // beside the permanent 480px right panel at 1440px viewport. At 960px
+        // available width, 9 cols × 100px + gaps ≈ fits with single-word names
+        // in card headers. Card contents truncate with ellipsis; full name
+        // accessible by clicking into the contact.
+        flex: `${col.weight || 1} 1 ${col.weight && col.weight < 1 ? 90 : 110}px`,
+        minWidth: col.weight && col.weight < 1 ? 90 : 110,
         display: 'flex', flexDirection: 'column', gap: 8,
         background: dragOver ? 'rgba(255,186,0,.08)' : 'transparent',
         outline: dragOver ? '2px solid var(--gold)' : 'none',
