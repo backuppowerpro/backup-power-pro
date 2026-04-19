@@ -1457,6 +1457,169 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
   );
 }
 
+// Inspection checklist — 20 panel-readiness items Key steps through during
+// the physical install. Same schema as v1 (inspections table: contact_id,
+// checklist jsonb, status, items_total/completed, notes) so v1 data migrates
+// cleanly. One row per contact (upsert by contact_id on first yes/no tap).
+const INSPECTION_ITEMS = [
+  'Main breaker rating verified',
+  'Panel amperage matches service',
+  'All breakers properly labeled',
+  'No double-tapped breakers',
+  'No signs of overheating or scorching',
+  'Proper wire gauge for breaker size',
+  'Ground bus and neutral bus separated (sub-panels)',
+  'Grounding electrode conductor present',
+  'Panel cover fits properly',
+  'No exposed/damaged wiring',
+  'AFCI breakers where required',
+  'GFCI protection verified',
+  'Working space clearance adequate (30" wide, 36" deep)',
+  'Panel accessible (not blocked)',
+  'Weatherproof enclosure if outdoor',
+  'Bonding jumper present',
+  'Wire connections tight',
+  'No aluminum wiring concerns',
+  'Correct breaker types for panel',
+  'Overall panel condition acceptable',
+];
+
+function InspectionChecklist({ contactId }) {
+  const [checklist, setChecklist] = useState({});
+  const [notes, setNotes] = useState('');
+  const [inspId, setInspId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const notesDebounceRef = useRef(null);
+
+  // Load existing inspection (if any)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      const { data } = await db.from('inspections')
+        .select('id, checklist, notes')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (!alive) return;
+      const row = data && data[0];
+      setChecklist(row?.checklist || {});
+      setNotes(row?.notes || '');
+      setInspId(row?.id || null);
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [contactId]);
+
+  // Compute status from answers — same rules v1 uses
+  const answered = Object.keys(checklist).length;
+  const total = INSPECTION_ITEMS.length;
+  const hasNo = Object.values(checklist).includes('no');
+  const status = answered === 0 ? 'not_started'
+    : answered < total ? 'in_progress'
+    : hasNo ? 'failed' : 'passed';
+  const statusColor = status === 'passed' ? 'var(--ms-2)'
+    : status === 'failed' ? 'var(--ms-3)'
+    : status === 'in_progress' ? 'var(--ms-4)'
+    : 'var(--text-faint)';
+
+  async function persist(nextChecklist, nextNotes) {
+    const payload = {
+      contact_id: contactId,
+      checklist: nextChecklist,
+      notes: nextNotes || null,
+      status: (() => {
+        const ans = Object.keys(nextChecklist).length;
+        if (ans === 0) return 'not_started';
+        if (ans < total) return 'in_progress';
+        return Object.values(nextChecklist).includes('no') ? 'failed' : 'passed';
+      })(),
+      items_total: total,
+      items_completed: Object.keys(nextChecklist).length,
+    };
+    setSaving(true);
+    if (inspId) {
+      await db.from('inspections').update(payload).eq('id', inspId);
+    } else {
+      const { data } = await db.from('inspections').insert([payload]).select('id').single();
+      if (data?.id) setInspId(data.id);
+    }
+    setSaving(false);
+  }
+
+  function toggle(item) {
+    const cur = checklist[item];
+    // tri-state cycle: unset → yes → no → unset
+    const next = { ...checklist };
+    if (!cur) next[item] = 'yes';
+    else if (cur === 'yes') next[item] = 'no';
+    else delete next[item];
+    setChecklist(next);
+    persist(next, notes);
+  }
+
+  function onNotesChange(v) {
+    setNotes(v);
+    if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current);
+    notesDebounceRef.current = setTimeout(() => persist(checklist, v), 800);
+  }
+
+  if (loading) return <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', padding: 14 }}>Loading inspection…</div>;
+
+  return (
+    <div style={{ padding: 14, background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+        marginBottom: 12,
+      }}>
+        <span className="chrome-label" style={{ fontSize: 11, letterSpacing: '.08em', color: 'var(--text-faint)' }}>
+          Inspection
+        </span>
+        <span className="mono" style={{ fontSize: 10, color: statusColor, letterSpacing: '.06em' }}>
+          {answered}/{total} · {status.replace('_', ' ')}
+          {saving ? ' · saving' : ''}
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {INSPECTION_ITEMS.map((item, i) => {
+          const v = checklist[item];
+          const bg = v === 'yes' ? 'var(--ms-2)' : v === 'no' ? 'var(--ms-3)' : 'transparent';
+          const fg = v ? '#fff' : 'var(--text)';
+          return (
+            <button key={i} onClick={() => toggle(item)} style={{
+              display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
+              padding: '8px 10px', fontSize: 12, fontFamily: 'var(--font-body)',
+              background: bg, color: fg, border: 'none', cursor: 'pointer',
+              boxShadow: v ? 'var(--pressed-2)' : 'var(--raised-2)',
+            }}>
+              <span style={{
+                width: 18, height: 18, display: 'inline-grid', placeItems: 'center',
+                fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                background: v ? 'rgba(255,255,255,.25)' : 'var(--card)',
+                boxShadow: v ? 'none' : 'var(--pressed-2)',
+                flex: '0 0 auto',
+              }}>{v === 'yes' ? '✓' : v === 'no' ? '✗' : ''}</span>
+              <span style={{ flex: 1 }}>{item}</span>
+            </button>
+          );
+        })}
+      </div>
+      <textarea
+        value={notes}
+        onChange={e => onNotesChange(e.target.value)}
+        placeholder="Inspection notes (auto-saves)…"
+        style={{
+          width: '100%', minHeight: 60, marginTop: 12, padding: 10,
+          fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.4,
+          background: 'var(--card)', resize: 'vertical',
+          boxShadow: 'var(--pressed-2)', border: 'none',
+        }}
+      />
+    </div>
+  );
+}
+
 function DetailPermits({ contact }) {
   if (!contact) return null;
   const cells = stageToPermitCells(contact.stage);
@@ -1476,6 +1639,7 @@ function DetailPermits({ contact }) {
           ))}
         </div>
       </div>
+      <InspectionChecklist contactId={contact.id} />
     </div>
   );
 }
