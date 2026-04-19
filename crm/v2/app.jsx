@@ -769,10 +769,14 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
     return () => { alive = false; };
   }, [contactId]);
 
-  // Realtime messages for this contact.
-  // Dedup by id on append: if the initial fetch and the realtime INSERT race
-  // (or if the channel replays an event on reconnect), the same message can
-  // arrive twice and render as two identical bubbles. Guard with an id set.
+  // Realtime messages for this contact. Listens for both INSERT (new bubble)
+  // and UPDATE (status sent → delivered / failed). The UPDATE subscription is
+  // what lets the delivered/⚠ markers flip live without a page reload as soon
+  // as Twilio's status-callback webhook patches the row.
+  //
+  // Dedup on INSERT: if the initial fetch and realtime race, or the channel
+  // replays on reconnect, the same message can arrive twice. UPDATE replaces
+  // the matching row in place; non-match is a no-op.
   useEffect(() => {
     if (!contactId) return;
     const channel = db.channel(`messages-${contactId}`)
@@ -780,6 +784,17 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
         setMessages(prev => {
           if (payload.new?.id && prev.some(m => m.id === payload.new.id)) return prev;
           return [...prev, payload.new];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `contact_id=eq.${contactId}` }, (payload) => {
+        setMessages(prev => {
+          const id = payload.new?.id;
+          if (!id) return prev;
+          const i = prev.findIndex(m => m.id === id);
+          if (i < 0) return prev; // row not in current view — ignore
+          const next = prev.slice();
+          next[i] = { ...prev[i], ...payload.new };
+          return next;
         });
       })
       .subscribe();
