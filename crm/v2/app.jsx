@@ -1693,12 +1693,23 @@ function DetailPermits({ contact }) {
   );
 }
 
+// `timestamptz` -> <input type="datetime-local"> format (YYYY-MM-DDTHH:MM).
+// datetime-local has no TZ; treat as local time. Round to nearest minute.
+function toLocalDatetimeInput(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function DetailEditContact({ contact, onUpdate }) {
   const [form, setForm] = useState({
     name: contact?.name || '',
     phone: contact?.phone || '',
     email: contact?.email || '',
     address: contact?.address || '',
+    install_date: toLocalDatetimeInput(contact?.install_date),
     do_not_contact: !!contact?.do_not_contact,
   });
   const [saving, setSaving] = useState(false);
@@ -1711,6 +1722,7 @@ function DetailEditContact({ contact, onUpdate }) {
       phone: contact?.phone || '',
       email: contact?.email || '',
       address: contact?.address || '',
+      install_date: toLocalDatetimeInput(contact?.install_date),
       do_not_contact: !!contact?.do_not_contact,
     });
   }, [contact?.id]);
@@ -1720,11 +1732,14 @@ function DetailEditContact({ contact, onUpdate }) {
     if (!contact) return;
     setSaving(true);
     const dncChanged = !!contact.do_not_contact !== !!form.do_not_contact;
+    // install_date: empty string clears the field; non-empty = parse as local.
+    const installIso = form.install_date ? new Date(form.install_date).toISOString() : null;
     const patch = {
       name: form.name.trim() || null,
       phone: form.phone.trim() || null,
       email: form.email.trim() || null,
       address: form.address.trim() || null,
+      install_date: installIso,
       do_not_contact: !!form.do_not_contact,
     };
     // Record compliance metadata when flipping DNC on
@@ -1750,6 +1765,7 @@ function DetailEditContact({ contact, onUpdate }) {
       <EditField label="PHONE" value={form.phone} onChange={v => setForm({ ...form, phone: v })} placeholder="+18645550100" />
       <EditField label="EMAIL" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
       <EditField label="ADDRESS" value={form.address} onChange={v => setForm({ ...form, address: v })} />
+      <EditField label="INSTALL DATE" value={form.install_date} onChange={v => setForm({ ...form, install_date: v })} type="datetime-local" placeholder="" />
 
       {contact?.created_at ? (
         <div className="mono" style={{
@@ -3240,55 +3256,138 @@ function Empty({ label }) {
 
 // ── Live Calendar (week view based on stage_history / install dates) ────────
 function LiveCalendar() {
-  const [events, setEvents] = useState([]);
+  const [scheduled, setScheduled] = useState([]);
+  const [unscheduled, setUnscheduled] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      // Use install_notes heuristic + recent stage_history to infer upcoming installs.
-      // Proper calendar requires an events table — stub until one exists.
-      const { data: contacts } = await db
-        .from('contacts')
-        .select('id, name, stage, install_notes, created_at')
-        .in('stage', [3, 4, 5, 6, 7, 8])
-        .limit(20);
-      setEvents((contacts || []).map(c => ({
-        id: c.id, name: c.name, stage: c.stage,
-      })));
+      // Two buckets:
+      //   scheduled   — contacts with an install_date set (sorted ascending)
+      //   unscheduled — booked+ stages (3-8) still without a date (needs scheduling)
+      const nowIso = new Date().toISOString();
+      const [schedRes, unschedRes] = await Promise.all([
+        db.from('contacts')
+          .select('id, name, address, stage, install_date')
+          .not('install_date', 'is', null)
+          .gte('install_date', new Date(Date.now() - 7 * 86400000).toISOString())
+          .order('install_date', { ascending: true })
+          .limit(50),
+        db.from('contacts')
+          .select('id, name, address, stage')
+          .is('install_date', null)
+          .in('stage', [3, 4, 5, 6, 7, 8])
+          .eq('do_not_contact', false)
+          .order('created_at', { ascending: false })
+          .limit(30),
+      ]);
+      setScheduled(schedRes.data || []);
+      setUnscheduled(unschedRes.data || []);
       setLoading(false);
     })();
   }, []);
 
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING CALENDAR...</div>;
 
+  // Group scheduled events by day label ("Today" / "Tomorrow" / weekday+date)
+  const dayLabel = (iso) => {
+    const d = new Date(iso);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tom = new Date(today.getTime() + 86400000);
+    const ystr = new Date(today.getTime() - 86400000);
+    const ds = new Date(d); ds.setHours(0,0,0,0);
+    if (ds.getTime() === today.getTime()) return 'Today';
+    if (ds.getTime() === tom.getTime()) return 'Tomorrow';
+    if (ds.getTime() === ystr.getTime()) return 'Yesterday';
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+  const groups = (() => {
+    const by = new Map();
+    for (const e of scheduled) {
+      const k = dayLabel(e.install_date);
+      if (!by.has(k)) by.set(k, []);
+      by.get(k).push(e);
+    }
+    return [...by.entries()];
+  })();
+
   return (
     <div style={{ height: '100%', padding: 24, overflow: 'auto' }}>
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700, letterSpacing: '-.01em' }}>
-          Upcoming installs
+          Installs
         </div>
         <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
-          {events.length} lead{events.length === 1 ? '' : 's'} post-booking · weekly grid wires in once an events table exists
+          {scheduled.length} scheduled · {unscheduled.length} awaiting date
         </div>
       </div>
-      <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
-        {events.map((e, i) => (
-          <div key={e.id}
-            onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
-            style={{
-              display: 'grid', gridTemplateColumns: '80px 1fr 80px',
-              gap: 12, alignItems: 'center', padding: '12px 16px',
-              borderBottom: i < events.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
-              cursor: 'pointer',
-            }}>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>stage {e.stage}</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{e.name || '—'}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right' }}>tbd</span>
+
+      {groups.length > 0 ? groups.map(([label, items]) => (
+        <div key={label} style={{ marginBottom: 18 }}>
+          <div className="chrome-label" style={{
+            fontSize: 11, letterSpacing: '.1em', color: 'var(--text-muted)',
+            padding: '6px 0', marginBottom: 4, borderBottom: '1px solid rgba(0,0,0,.08)',
+          }}>{label}</div>
+          <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
+            {items.map((e, i) => (
+              <div key={e.id}
+                onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
+                style={{
+                  display: 'grid', gridTemplateColumns: '72px 1fr 90px',
+                  gap: 12, alignItems: 'center', padding: '12px 16px',
+                  borderBottom: i < items.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+                  cursor: 'pointer',
+                }}>
+                <span className="mono" style={{ fontSize: 12, color: 'var(--text)' }}>
+                  {new Date(e.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{e.name || '—'}</div>
+                  <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {e.address || '—'}
+                  </div>
+                </span>
+                <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'right' }}>stage {e.stage}</span>
+              </div>
+            ))}
           </div>
-        ))}
-        {events.length === 0 ? <Empty label="No upcoming installs" /> : null}
-      </div>
+        </div>
+      )) : (
+        <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)', padding: 24 }}>
+          <Empty label="No installs scheduled — set a date in the Edit tab on a contact" />
+        </div>
+      )}
+
+      {/* Awaiting date — contacts past booking that haven't been scheduled yet */}
+      {unscheduled.length > 0 ? (
+        <div style={{ marginTop: 28 }}>
+          <div className="chrome-label" style={{
+            fontSize: 11, letterSpacing: '.1em', color: 'var(--ms-3)',
+            padding: '6px 0', marginBottom: 4, borderBottom: '1px solid rgba(0,0,0,.08)',
+          }}>Awaiting date ({unscheduled.length})</div>
+          <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
+            {unscheduled.map((e, i) => (
+              <div key={e.id}
+                onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
+                style={{
+                  display: 'grid', gridTemplateColumns: '1fr 90px',
+                  gap: 12, alignItems: 'center', padding: '12px 16px',
+                  borderBottom: i < unscheduled.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+                  cursor: 'pointer',
+                }}>
+                <span>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{e.name || '—'}</div>
+                  <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+                    {e.address || '—'}
+                  </div>
+                </span>
+                <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'right' }}>stage {e.stage}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
