@@ -3601,7 +3601,7 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
 
 // ── Morning Briefing modal — once per day ───────────────────────────────────
 function LiveMorningBriefing({ onClose, onPickContact }) {
-  const [sections, setSections] = useState({ waiting: [], overdue: [], today: [], materials: [], goodNews: [] });
+  const [sections, setSections] = useState({ installsToday: [], waiting: [], overdue: [], today: [], materials: [], goodNews: [] });
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -3616,11 +3616,18 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
       const todayIso = startOfToday.toISOString();
+      const endOfToday = new Date(startOfToday.getTime() + 86400000).toISOString();
       const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString();
 
-      // Parallel fetches: overdue / new-today / materials-awaiting / paid /
-      // waiting-on-Key (customer's last message is inbound + non-AI).
-      const [overdueRes, recentRes, awaitingMatRes, paidRes, waitingMsgsRes] = await Promise.all([
+      // Parallel fetches: installs today / overdue / new-today /
+      // materials-awaiting / paid / waiting-on-Key.
+      const [installsRes, overdueRes, recentRes, awaitingMatRes, paidRes, waitingMsgsRes] = await Promise.all([
+        db.from('contacts')
+          .select('id, name, address, install_date')
+          .gte('install_date', todayIso)
+          .lt('install_date', endOfToday)
+          .order('install_date', { ascending: true })
+          .limit(5),
         db.from('contacts')
           .select('id, name, created_at, stage').lt('created_at', fiveDaysAgo)
           .lt('stage', 4).eq('do_not_contact', false).limit(5),
@@ -3680,6 +3687,10 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         .filter(Boolean);
 
       setSections({
+        installsToday: (installsRes.data || []).map(c => ({
+          text: `${new Date(c.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — ${c.name || 'Customer'}${c.address ? ' · ' + c.address.split(',')[0] : ''}`,
+          id: c.id,
+        })),
         waiting,
         overdue: (overdueRes.data || [])
           .filter(c => !isSnoozedFor(c.id))
@@ -3734,9 +3745,13 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>Loading brief…</div>
         ) : (
           <div style={{ padding: '0 24px' }}>
-            {/* Waiting on Key first — it's the most actionable list. If there
-                are no waiting threads, BriefSection still renders the label
-                with a 0 count so Key can glance and know the inbox is clear. */}
+            {/* Installing today FIRST — if Key has an install today, that's
+                the single most important thing on the schedule. Renders only
+                when there's at least one install today (no empty-state noise). */}
+            {sections.installsToday.length > 0 ? (
+              <BriefSection label="Installing today" tint="var(--ms-2)" items={sections.installsToday} onPick={onPickContact} />
+            ) : null}
+            {/* Waiting on Key — most actionable list. */}
             <BriefSection label="Waiting" tint="var(--gold)" items={sections.waiting} onPick={onPickContact} />
             <BriefSection label="Overdue" tint="var(--ms-3)" items={sections.overdue} onPick={onPickContact} />
             <BriefSection label="Today" tint="var(--ms-4)" items={sections.today} onPick={onPickContact} />
