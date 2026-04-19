@@ -1129,6 +1129,30 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
             </div>
           );
         })() : null}
+        {/* Install date pill — surfaces the scheduled install directly in
+            the header so Key never has to open the edit tab to know when
+            he's coming out. Colour shifts as it approaches: red=past-due,
+            gold=today/tomorrow, navy=<=7d, muted otherwise. */}
+        {contact?.install_date ? (() => {
+          const inst = new Date(contact.install_date);
+          if (isNaN(inst.getTime())) return null;
+          const diffDays = Math.round((inst.getTime() - Date.now()) / 86400000);
+          let color = 'var(--text-faint)';
+          if (diffDays < 0) color = 'var(--ms-3)';
+          else if (diffDays <= 1) color = 'var(--gold)';
+          else if (diffDays <= 7) color = 'var(--navy)';
+          const dateLabel = inst.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+          const timeLabel = inst.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          return (
+            <div className="mono" title={`Install ${diffDays === 0 ? 'today' : diffDays < 0 ? `${Math.abs(diffDays)}d past-due` : `in ${diffDays}d`}`} style={{
+              fontSize: 10, color, letterSpacing: '.04em', fontWeight: 600,
+              padding: '3px 8px', marginTop: 4, boxShadow: 'var(--raised-2)',
+              background: 'var(--card)', whiteSpace: 'nowrap',
+            }}>
+              Install · {dateLabel} · {timeLabel}
+            </div>
+          );
+        })() : null}
       </div>
 
       {/* Stage strip (click to open picker) */}
