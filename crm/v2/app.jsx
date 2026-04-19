@@ -1254,11 +1254,12 @@ function DetailQuote({ contactId }) {
           No proposals yet
         </div>
       ) : proposals.map(p => {
-        // Proposals become "Approved" when the stripe webhook confirms deposit
-        // payment. When approved, hide the Deposit button (the money is in) and
-        // show a green paid badge instead — Key shouldn't be nudged to send
-        // another link for a customer who already paid.
-        const isPaid = p.status === 'Approved';
+        // Status taxonomy in the proposals table:
+        //   Created / Copied → live draft, deposit button visible
+        //   Approved          → stripe webhook confirmed deposit, show PAID badge
+        //   Cancelled         → proposal is dead, no deposit CTA
+        const isPaid     = p.status === 'Approved';
+        const isCancelled = p.status === 'Cancelled';
         return (
         <div key={p.id} style={{
           padding: '14px 0',
@@ -1309,8 +1310,9 @@ function DetailQuote({ contactId }) {
           </div>
           {/* Primary action when the deposit is still owed. Full-width so it's
               the obvious next move when Key opens a proposal the customer
-              approved verbally but hasn't paid yet. */}
-          {p.token && !isPaid ? (
+              approved verbally but hasn't paid yet. Hidden for Approved
+              (already paid) and Cancelled (dead) proposals. */}
+          {p.token && !isPaid && !isCancelled ? (
             <button onClick={() => depositLink(p)} style={{
               width: '100%', height: 36,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
