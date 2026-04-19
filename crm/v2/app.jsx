@@ -301,11 +301,17 @@ function LiveLeadsList({ desktop = false, onSelect }) {
   const sortedRows = useMemo(() => {
     const pinSet = new Set(readPins());
     const q = query.trim().toLowerCase();
+    // Digit-only query part is checked against the phone; skip if empty
+    // because "".includes("") === true would make the phone filter match
+    // every row (the exact bug that silently broke this feature on ship).
+    // r.raw.address is used because contactToRow doesn't copy address to
+    // the top level — only raw has it.
+    const qDigits = q.replace(/\D/g, '');
     const filtered = !q ? rows : rows.filter(r => {
-      // Cheap multi-field match: name, phone (digits-only), address.
       if ((r.name || '').toLowerCase().includes(q)) return true;
-      if ((r.phone || '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))) return true;
-      if ((r.address || '').toLowerCase().includes(q)) return true;
+      if (qDigits && (r.phone || '').replace(/\D/g, '').includes(qDigits)) return true;
+      const addr = r.raw?.address || r.address || '';
+      if (addr.toLowerCase().includes(q)) return true;
       return false;
     });
     return filtered
