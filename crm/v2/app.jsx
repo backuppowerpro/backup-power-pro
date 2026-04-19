@@ -4732,6 +4732,37 @@ function App() {
           setUnreadCount(c => c + 1);
         }
       })
+      // Outbound-failed toast — the delivery-status callback (twilio-status-
+      // callback, fixed this session) patches status sent → failed /
+      // undelivered when the carrier rejects a message (bad number, spam
+      // filter, opt-out). Surface that as a live toast so Key knows within
+      // seconds that his text didn't reach the customer, not days later
+      // when he checks the thread and wonders why they never replied.
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'messages',
+        filter: 'direction=eq.outbound',
+      }, async (payload) => {
+        const m = payload.new;
+        const prev = payload.old;
+        // Only fire on the sent → failed transition; subsequent status
+        // updates (e.g. webhook retry) shouldn't re-toast.
+        if (!m || !(m.status === 'failed' || m.status === 'undelivered')) return;
+        if (prev && (prev.status === 'failed' || prev.status === 'undelivered')) return;
+        const { data: c } = await db.from('contacts').select('name').eq('id', m.contact_id).maybeSingle();
+        const name = c?.name || 'Unknown';
+        window.__bpp_toast && window.__bpp_toast(
+          `⚠ SMS to ${name} failed to deliver`,
+          'error',
+          {
+            label: 'Open',
+            onClick: () => {
+              setSelectedContact(m.contact_id);
+              setTab('leads');
+              window.location.hash = `#tab=leads&contact=${m.contact_id}`;
+            },
+          }
+        );
+      })
       .subscribe();
     return () => { db.removeChannel(ch); };
   }, [user, selectedContact]);
