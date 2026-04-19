@@ -621,6 +621,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false }) {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <PinButton contactId={contactId} />
           <div style={{
             fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 18,
             color: contact?.do_not_contact ? 'var(--ms-3)' : 'var(--text)',
@@ -3267,6 +3268,52 @@ function LiveSparky({ currentContactId = null }) {
 }
 
 // ── Command Palette ⌘K ──────────────────────────────────────────────────────
+// Pinned contacts (localStorage) — Key's VIP list. Stored as an array of
+// contact UUIDs under bpp_v2_pinned_contacts. readPins/writePins/togglePin
+// keep the storage layer boring; PinButton is a small star toggle.
+function readPins() {
+  try { return JSON.parse(localStorage.getItem('bpp_v2_pinned_contacts') || '[]'); } catch { return []; }
+}
+function writePins(ids) {
+  try { localStorage.setItem('bpp_v2_pinned_contacts', JSON.stringify(ids)); } catch {}
+  // Broadcast so PinButton instances and list views can re-read
+  window.dispatchEvent(new CustomEvent('bpp:pins-changed'));
+}
+function togglePin(id) {
+  if (!id) return false;
+  const pins = readPins();
+  const i = pins.indexOf(id);
+  if (i >= 0) { pins.splice(i, 1); writePins(pins); return false; }
+  pins.unshift(id); writePins(pins); return true;
+}
+function isPinned(id) { return id && readPins().includes(id); }
+
+function PinButton({ contactId }) {
+  const [pinned, setPinned] = useState(() => isPinned(contactId));
+  useEffect(() => {
+    setPinned(isPinned(contactId));
+    const onChange = () => setPinned(isPinned(contactId));
+    window.addEventListener('bpp:pins-changed', onChange);
+    return () => window.removeEventListener('bpp:pins-changed', onChange);
+  }, [contactId]);
+  if (!contactId) return null;
+  return (
+    <button
+      onClick={() => {
+        const now = togglePin(contactId);
+        setPinned(now);
+        window.__bpp_toast && window.__bpp_toast(now ? 'Pinned' : 'Unpinned', 'info');
+      }}
+      title={pinned ? 'Unpin contact' : 'Pin contact'}
+      style={{
+        padding: 0, background: 'transparent', border: 'none',
+        color: pinned ? 'var(--gold)' : 'var(--text-faint)',
+        fontSize: 16, lineHeight: 1, cursor: 'pointer',
+      }}
+    >{pinned ? '★' : '☆'}</button>
+  );
+}
+
 // Track recently viewed contacts in localStorage so the command palette
 // can show "Recent" when there's no query. Called from App each time
 // selectedContact changes.
