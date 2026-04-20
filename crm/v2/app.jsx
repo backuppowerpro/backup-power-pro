@@ -3285,6 +3285,25 @@ function NewLeadModal({ open, onClose, onCreated }) {
   const [address, setAddress] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  // Duplicate-phone check. When the phone reaches 10 digits we query to see
+  // if a contact already owns that number; if so, show an inline link so
+  // Key can jump to the existing record instead of creating a duplicate.
+  const [dupe, setDupe] = useState(null);
+
+  // Debounced dupe lookup while Key types. Fires when digits length = 10.
+  useEffect(() => {
+    if (!open) return;
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length !== 10) { setDupe(null); return; }
+    const normalized = `+1${digits}`;
+    let alive = true;
+    const t = setTimeout(async () => {
+      const { data } = await db.from('contacts')
+        .select('id, name, stage, status').eq('phone', normalized).limit(1).maybeSingle();
+      if (alive) setDupe(data || null);
+    }, 200);
+    return () => { alive = false; clearTimeout(t); };
+  }, [phone, open]);
 
   if (!open) return null;
 
@@ -3301,6 +3320,12 @@ function NewLeadModal({ open, onClose, onCreated }) {
     setErr(null);
     const digits = phone.replace(/\D/g, '');
     if (digits.length !== 10) { setErr('Phone must be 10 digits'); return; }
+    // Block the insert if a dupe already exists — much better than
+    // creating two rows with the same phone that Key has to merge later.
+    if (dupe) {
+      setErr(`Phone already belongs to ${dupe.name || 'existing contact'} — click their name below to open.`);
+      return;
+    }
     setBusy(true);
     const { data, error } = await db
       .from('contacts')
@@ -3318,7 +3343,7 @@ function NewLeadModal({ open, onClose, onCreated }) {
     if (error) { setErr(error.message); return; }
     onCreated && onCreated(data);
     window.__bpp_toast && window.__bpp_toast(`New lead: ${data.name}`, 'success');
-    setName(''); setPhone(''); setAddress('');
+    setName(''); setPhone(''); setAddress(''); setDupe(null);
     onClose();
   }
 
@@ -3349,6 +3374,23 @@ function NewLeadModal({ open, onClose, onCreated }) {
           background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
         }} />
         {err ? <div className="mono" style={{ fontSize: 11, color: 'var(--ms-3)' }}>{err}</div> : null}
+        {dupe ? (
+          <div className="mono" style={{
+            padding: '8px 10px', fontSize: 11,
+            background: 'var(--card)', boxShadow: 'var(--raised-2)',
+            color: 'var(--ms-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+          }}>
+            <span>⚠ Existing contact with this phone</span>
+            <button type="button" onClick={() => {
+              window.location.hash = `#contact=${dupe.id}`;
+              onClose();
+            }} style={{
+              padding: '2px 6px', fontSize: 11, fontFamily: 'var(--font-body)',
+              background: 'transparent', color: 'var(--navy)', cursor: 'pointer',
+              border: 'none', textDecoration: 'underline',
+            }}>Open {dupe.name || 'contact'} →</button>
+          </div>
+        ) : null}
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <button type="button" onClick={onClose} style={{
             flex: 1, height: 40, fontSize: 12, cursor: 'pointer',
