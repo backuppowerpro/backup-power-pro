@@ -316,35 +316,14 @@ Deno.serve(async (req) => {
   // one "clean first impression" that carriers + TCPA compliance scan for.
   const firstMessage = `Hey ${firstName}, this is Alex with Backup Power Pro — got your generator-inlet request. To build your quote, can you send a quick photo of your electrical panel (door open)? Takes 30 seconds and lets Key give you an accurate price with no surprises. Reply STOP to opt out.`
 
-  // ── LEGAL AUDIT M2: quiet-hours gate on synchronous opener ───────────────
-  // Federal TCPA is 8am-9pm recipient-local; state mini-TCPAs (FL/OK/WA) are
-  // stricter. We don't yet map area code → timezone, so fall back to the most
-  // restrictive continental window: if current ET hour is <8 or >=21, queue
-  // a follow_up_queue row for 8:15 AM ET the next day instead of sending now.
-  // Real carriers won't flag a consent-driven opener in daytime hours, but
-  // late-night opener blasts are a documented complaint surface.
-  const nowEtOpener = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
-  const etHour = nowEtOpener.getHours()
-  const isQuietHours = etHour < 8 || etHour >= 21
-
-  if (isQuietHours) {
-    // Queue opener for 8:15 AM ET next morning. alex-followup picks this up.
-    const nextMorning = new Date(nowEtOpener)
-    nextMorning.setHours(8, 15 + Math.floor(Math.random() * 10), 0, 0)
-    if (nowEtOpener.getHours() >= 21) nextMorning.setDate(nextMorning.getDate() + 1)
-    // Convert ET to UTC for DB
-    const offsetMs = nowEtOpener.getTime() - new Date(nowEtOpener.toLocaleString('en-US', { timeZone: 'UTC' })).getTime()
-    const sendAtUtc = new Date(nextMorning.getTime() - offsetMs)
-    await supabase.from('follow_up_queue').insert({
-      contact_id: contact.id,
-      stage: 0,  // stage 0 = opener (not a follow-up)
-      send_after: sendAtUtc.toISOString(),
-    })
-    console.log('[new-lead] Quiet hours (ET hour', etHour, ') — opener queued for', sendAtUtc.toISOString())
-    return new Response(JSON.stringify({ success: true, contactId: contact.id, queued: true, sendAt: sendAtUtc.toISOString() }), {
-      status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-    })
-  }
+  // NO quiet-hours gate. Speed-to-lead trumps carrier cold-call compliance
+  // here — the lead expressly consented by submitting the form (consent_at
+  // + consent_ip + consent_ua + consent_page all recorded above). This is a
+  // direct response to their own expressed request, not unsolicited cold
+  // outreach. A customer filling out a form at 11 PM (storm rolling in) needs
+  // a reply within minutes, not the next morning. Key explicit decision
+  // 2026-04-19: "i want a response for every customer, when did i agree to
+  // this late night stop".
 
   // ── TYPING DELAY (feels human) ────────────────────────────────────────────
   const typingMs = Math.min(8000, 1500 + Math.random() * 2000)
