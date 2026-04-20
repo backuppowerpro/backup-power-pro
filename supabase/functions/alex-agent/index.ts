@@ -927,6 +927,56 @@ async function executeTool(
       .from('sparky_memory')
       .upsert({ key, value }, { onConflict: 'key' })
     console.log('[alex] Memory saved:', key)
+
+    // Enriched-lead-update SMS to Key — fires ONCE per contact, the first
+    // time Alex captures a profile field that's useful for triage (city,
+    // panel_location, generator, pain_point, motivation). The initial
+    // "LEAD: name · phone" SMS from quo-ai-new-lead fires at form-submit
+    // with only name+phone; this second, enriched alert lands a few
+    // minutes later once Alex has learned something real.
+    //
+    // Dedup: stores a flag key `contact:{phone}:__update_sent` after firing.
+    // Checks for its absence before sending. No double-alerts even if Alex
+    // keeps writing memory during the conversation.
+    const ENRICHING_FIELDS = new Set(['city', 'pain_point', 'motivation', 'panel_location', 'generator', 'current_state'])
+    if (ENRICHING_FIELDS.has(String(toolInput.key))) {
+      const flagKey = `contact:${phone}:__update_sent`
+      const { data: flagRow } = await supabase
+        .from('sparky_memory').select('key').eq('key', flagKey).maybeSingle()
+      if (!flagRow) {
+        // Gather everything useful we've learned so far.
+        const { data: memRows } = await supabase
+          .from('sparky_memory').select('key, value').like('key', `contact:${phone}:%`)
+        const kv: Record<string, string> = {}
+        for (const r of (memRows || [])) {
+          const field = r.key.split(':').slice(2).join(':')
+          if (!field.startsWith('__')) kv[field] = r.value
+        }
+        const parts: string[] = ['LEAD UPDATE']
+        const name = kv.name || ''
+        if (name) parts.push(name.split(' ')[0])
+        if (kv.city) parts.push(kv.city)
+        if (kv.panel_location) parts.push(`panel: ${kv.panel_location}`)
+        if (kv.current_state) parts.push(`setup: ${kv.current_state.slice(0, 40)}`)
+        else if (kv.generator) parts.push(`gen: ${kv.generator.slice(0, 40)}`)
+        if (kv.motivation) parts.push(`why: ${kv.motivation.slice(0, 50)}`)
+        else if (kv.pain_point) parts.push(`pain: ${kv.pain_point.slice(0, 50)}`)
+        const body = parts.join(' · ').slice(0, 320)
+        // Fire to Key's cell via Quo internal line (matches quo-ai-new-lead pattern)
+        try {
+          await fetch('https://api.openphone.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+            body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [KEY_PHONE], content: body }),
+          })
+          await supabase.from('sparky_memory').upsert({ key: flagKey, value: new Date().toISOString(), category: 'audit', importance: 1 }, { onConflict: 'key' })
+          console.log('[alex] Lead update SMS fired:', body)
+        } catch (e) {
+          console.error('[alex] lead-update SMS failed:', e)
+        }
+      }
+    }
+
     return { result: `Saved: ${toolInput.key}`, complete: false }
   }
 
