@@ -281,8 +281,39 @@ function AuthGate({ onAuth }) {
 }
 
 // ── Live Leads List (wraps LeadsListDesktop/Mobile with real Supabase data) ─
+//
+// Also computes a "waiting set" — the subset of contacts whose latest message
+// is a customer reply nobody has answered yet. Those rows sort to the top and
+// render with an amber dot, so "who needs me right now?" is answered at a
+// glance without opening every thread. Populates the `unread` field that was
+// previously a stubbed-out TODO in contactToRow.
+async function fetchWaitingSet() {
+  // Pull the most recent messages across the whole account; dedupe to one per
+  // contact (newest wins) and flag any whose latest is an inbound customer
+  // message (not an Alex bot reply, which is outbound anyway). 500 rows covers
+  // multi-day activity comfortably — the dashboard only shows ~200 contacts,
+  // so if a contact has any recent thread activity this batch will contain it.
+  const { data } = await db.from('messages')
+    .select('contact_id, direction, sender, created_at')
+    .order('created_at', { ascending: false })
+    .limit(500);
+  const seen = new Set();
+  const waiting = new Set();
+  for (const m of (data || [])) {
+    if (!m?.contact_id || seen.has(m.contact_id)) continue;
+    seen.add(m.contact_id);
+    // inbound from the customer. Alex replies are sender='ai' + direction='outbound',
+    // but guard sender anyway so we don't light up on any future inbound bot events.
+    if (m.direction === 'inbound' && m.sender !== 'ai') {
+      waiting.add(m.contact_id);
+    }
+  }
+  return waiting;
+}
+
 function LiveLeadsList({ desktop = false, onSelect }) {
   const [rows, setRows] = useState([]);
+  const [waitingSet, setWaitingSet] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [query, setQuery] = useState('');
@@ -300,15 +331,18 @@ function LiveLeadsList({ desktop = false, onSelect }) {
       // Archived contacts don't show in the active LIST view. They still
       // exist in DB and can be reached via direct link or by unarchiving
       // from the Edit tab. Mirrors the v1 filter behavior.
-      const { data, error } = await db
-        .from('contacts')
-        .select('id, name, phone, email, address, stage, status, do_not_contact, created_at')
-        .neq('status', 'Archived')
-        .order('created_at', { ascending: false })
-        .limit(200);
+      const [contactsRes, waiting] = await Promise.all([
+        db.from('contacts')
+          .select('id, name, phone, email, address, stage, status, do_not_contact, created_at')
+          .neq('status', 'Archived')
+          .order('created_at', { ascending: false })
+          .limit(200),
+        fetchWaitingSet(),
+      ]);
       if (!alive) return;
-      if (error) { setErr(error.message); setLoading(false); return; }
-      setRows((data || []).map(contactToRow));
+      if (contactsRes.error) { setErr(contactsRes.error.message); setLoading(false); return; }
+      setRows((contactsRes.data || []).map(contactToRow));
+      setWaitingSet(waiting);
       setLoading(false);
     })();
     return () => { alive = false; };
@@ -328,6 +362,19 @@ function LiveLeadsList({ desktop = false, onSelect }) {
       })
       .subscribe();
     return () => { db.removeChannel(channel); };
+  }, []);
+
+  // Realtime: messages. Any insert can flip the waiting set — a new inbound
+  // adds a contact, an outbound from Key removes one. Refetch is cheap (one
+  // query) and keeps the list's amber dots truthful without client-side
+  // bookkeeping about which row corresponds to which message.
+  useEffect(() => {
+    const ch = db.channel('leads-list-messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+        fetchWaitingSet().then(setWaitingSet);
+      })
+      .subscribe();
+    return () => { db.removeChannel(ch); };
   }, []);
 
   // Pin change listener — moved up from below the early returns (see comment above)
@@ -353,10 +400,17 @@ function LiveLeadsList({ desktop = false, onSelect }) {
       if (addr.toLowerCase().includes(q)) return true;
       return false;
     });
+    // Merge: `unread` from the waiting set (customer replied, not yet handled),
+    // `pinned` from localStorage. Sort order: pinned > waiting > recency (which
+    // is the natural DB order from the initial fetch).
     return filtered
-      .map(r => ({ ...r, pinned: pinSet.has(r.id) }))
-      .sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
-  }, [rows, pinsTick, query]);
+      .map(r => ({ ...r, pinned: pinSet.has(r.id), unread: waitingSet.has(r.id) }))
+      .sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        if (a.unread !== b.unread) return a.unread ? -1 : 1;
+        return 0;
+      });
+  }, [rows, pinsTick, query, waitingSet]);
 
   if (loading) {
     return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING CONTACTS...</div>;
