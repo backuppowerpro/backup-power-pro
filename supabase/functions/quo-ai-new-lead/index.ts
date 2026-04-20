@@ -338,7 +338,7 @@ Deno.serve(async (req) => {
   // current-state question. alex-agent picks up from the reply.
   const alexSessionId = crypto.randomUUID()
   const variant = 'D'
-  const openerText = `${hi}, this is Alex with Backup Power Pro. Thanks for reaching out. Before I get Key involved, mind if I ask: what are you using for backup power right now, or is this your first setup? Reply STOP to opt out.`
+  const openerText = `${hi}, this is Alex with Backup Power Pro. Thanks for reaching out. I help Key, our licensed electrician, line up his installs. Before we put a quote together, mind if I ask: what are you using for backup power right now, or is this your first setup? Reply STOP to opt out.`
 
   // Insert alex_sessions row
   await supabase.from('alex_sessions').insert({
