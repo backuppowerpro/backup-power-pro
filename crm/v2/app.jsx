@@ -1002,6 +1002,240 @@ function ReviewAskStrip({ contactName }) {
   );
 }
 
+// Install-day briefing modal — one-page view for Key on his phone during
+// drive-out. Pulls the contact, latest proposal, jurisdiction, profile
+// memory, permit meta, and recent messages into a dense scrollable sheet.
+// Everything is one-tap: tap phone → call, tap address → Maps, tap portal
+// link → jurisdiction site. Designed so Key never has to switch tabs during
+// an install day.
+function InstallBriefModal({ contact, onClose }) {
+  const [data, setData] = React.useState({ loading: true });
+  React.useEffect(() => {
+    if (!contact?.id) return;
+    let alive = true;
+    (async () => {
+      const [propRes, jurRes, memRes, msgRes] = await Promise.all([
+        db.from('proposals').select('selected_amp, selected_surge, include_permit, total, status, notes')
+          .eq('contact_id', contact.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        contact.jurisdiction_id
+          ? db.from('permit_jurisdictions').select('name, phone, link1_url, link1_title').eq('id', contact.jurisdiction_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        contact.phone
+          ? db.from('sparky_memory').select('key, value').like('key', `contact:${contact.phone}:%`).limit(50)
+          : Promise.resolve({ data: [] }),
+        db.from('messages').select('direction, sender, body, created_at').eq('contact_id', contact.id)
+          .order('created_at', { ascending: false }).limit(5),
+      ]);
+      const kv = {};
+      for (const m of (memRes.data || [])) {
+        const field = m.key.split(':').slice(2).join(':');
+        kv[field] = m.value;
+      }
+      if (alive) setData({
+        loading: false,
+        proposal: propRes.data || null,
+        jurisdiction: jurRes.data || null,
+        memory: kv,
+        recentMsgs: msgRes.data || [],
+      });
+    })();
+    return () => { alive = false; };
+  }, [contact?.id, contact?.phone, contact?.jurisdiction_id]);
+
+  // Esc closes
+  React.useEffect(() => {
+    const h = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  if (!contact) return null;
+  const displayPhone = contact.phone ? formatPhone(contact.phone) : '—';
+  const install = contact.install_date ? new Date(contact.install_date) : null;
+  const installLabel = install && !isNaN(install.getTime())
+    ? `${install.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} · ${install.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+    : 'not scheduled';
+  const permitMeta = parsePermitNotes(contact.install_notes);
+  const memField = k => (data.memory || {})[k];
+
+  const Section = ({ label, children, tint }) => (
+    <div style={{
+      padding: '12px 14px', marginBottom: 8,
+      background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      borderLeft: `3px solid ${tint || 'transparent'}`,
+    }}>
+      <div className="chrome-label" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.08em', marginBottom: 6, textTransform: 'uppercase' }}>{label}</div>
+      {children}
+    </div>
+  );
+  const Kv = ({ k, v }) => v ? (
+    <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 8, fontSize: 12, padding: '2px 0' }}>
+      <span className="mono" style={{ color: 'var(--text-faint)', fontSize: 10, paddingTop: 2, textTransform: 'lowercase' }}>{k}</span>
+      <span style={{ color: 'var(--text)', wordBreak: 'break-word' }}>{v}</span>
+    </div>
+  ) : null;
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 95,
+      background: 'rgba(0,0,0,.6)',
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      padding: 16, overflowY: 'auto',
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 520, maxWidth: '100%', margin: '12px 0',
+        background: 'var(--bg)', boxShadow: 'var(--raised-2)',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '14px 16px', background: 'var(--navy)', color: 'var(--gold)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span className="chrome-label" style={{ fontSize: 11, letterSpacing: '.12em' }}>INSTALL BRIEF</span>
+          <button onClick={onClose} style={{
+            width: 26, height: 26, fontSize: 14, display: 'grid', placeItems: 'center',
+            background: 'transparent', border: '1px solid rgba(255,186,0,.4)',
+            color: 'var(--gold)', cursor: 'pointer',
+          }}>×</button>
+        </div>
+
+        <div style={{ padding: 12 }}>
+          {/* WHO + WHEN */}
+          <Section label="Who" tint="var(--navy)">
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
+              {contact.name || '(unnamed)'}
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4, fontSize: 13 }}>
+              <a href={`tel:${contact.phone || ''}`} style={{
+                color: 'var(--navy)', textDecoration: 'none',
+                borderBottom: '1px dashed rgba(0,0,0,.25)',
+              }}>{displayPhone}</a>
+              {contact.email ? (
+                <a href={`mailto:${contact.email}`} style={{ color: 'var(--navy)', textDecoration: 'none', borderBottom: '1px dashed rgba(0,0,0,.25)' }}>{contact.email}</a>
+              ) : null}
+            </div>
+            {contact.do_not_contact ? (
+              <div className="mono" style={{ marginTop: 6, padding: '4px 8px', background: 'var(--ms-3)', color: '#fff', fontSize: 10, letterSpacing: '.08em', display: 'inline-block' }}>DNC — DO NOT CONTACT</div>
+            ) : null}
+          </Section>
+
+          <Section label="When" tint={install ? 'var(--gold)' : 'var(--text-faint)'}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{installLabel}</div>
+            {install ? (
+              <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
+                {(() => {
+                  const d = Math.round((install.getTime() - Date.now()) / 86400000);
+                  return d === 0 ? 'today' : d === 1 ? 'tomorrow' : d > 0 ? `in ${d} days` : `${Math.abs(d)} days past`;
+                })()}
+              </div>
+            ) : null}
+          </Section>
+
+          <Section label="Where" tint="var(--ms-2)">
+            {contact.address ? (
+              <a href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
+                target="_blank" rel="noopener" style={{
+                  color: 'var(--navy)', textDecoration: 'none', fontSize: 14,
+                  borderBottom: '1px dashed rgba(0,0,0,.25)',
+                }}>{contact.address}</a>
+            ) : <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>no address on file</span>}
+          </Section>
+
+          {/* PANEL + GENERATOR (what Key installs with) */}
+          <Section label="Panel & generator" tint="var(--ms-1)">
+            <Kv k="amp size" v={data.proposal?.selected_amp ? `${data.proposal.selected_amp}A` : memField('generator_voltage')} />
+            <Kv k="panel" v={memField('panel_location')} />
+            <Kv k="generator" v={memField('generator') || memField('current_state')} />
+            {data.proposal?.selected_surge ? <Kv k="add-ons" v="Whole-home surge protector" /> : null}
+          </Section>
+
+          {/* PERMIT */}
+          {(data.jurisdiction || permitMeta.number) ? (
+            <Section label="Permit" tint="var(--ms-5)">
+              {data.jurisdiction?.name ? (
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{data.jurisdiction.name}</div>
+              ) : null}
+              <Kv k="permit #" v={permitMeta.number} />
+              <Kv k="submitted" v={permitMeta.submittedAt} />
+              {data.jurisdiction?.link1_url ? (
+                <a href={data.jurisdiction.link1_url} target="_blank" rel="noopener" style={{
+                  display: 'inline-block', marginTop: 6, padding: '4px 10px',
+                  background: 'var(--navy)', color: 'var(--gold)', textDecoration: 'none',
+                  fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+                  boxShadow: 'var(--raised-2)',
+                }}>Portal ↗</a>
+              ) : null}
+              {permitMeta.docUrl ? (
+                <a href={permitMeta.docUrl} target="_blank" rel="noopener" style={{
+                  marginLeft: 6, display: 'inline-block', marginTop: 6, padding: '4px 10px',
+                  background: 'var(--card)', color: 'var(--navy)', textDecoration: 'none',
+                  fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+                  boxShadow: 'var(--raised-2)',
+                }}>Permit PDF ↗</a>
+              ) : null}
+            </Section>
+          ) : null}
+
+          {/* DEAL */}
+          {data.proposal ? (
+            <Section label="Deal" tint="var(--ms-2)">
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+                ${Number(data.proposal.total || 0).toLocaleString()}
+              </div>
+              <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2, textTransform: 'lowercase' }}>
+                {data.proposal.status}
+              </div>
+            </Section>
+          ) : null}
+
+          {/* WHAT THEY MENTIONED (profile) — facts only, no quotes, no labels */}
+          {(memField('current_state') || memField('pain_point') || memField('motivation')) ? (
+            <Section label="What they mentioned" tint="var(--ms-4)">
+              <Kv k="setup" v={memField('current_state')} />
+              <Kv k="pain point" v={memField('pain_point')} />
+              <Kv k="motivation" v={memField('motivation')} />
+            </Section>
+          ) : null}
+
+          {/* NOTES from the proposal + Key's install notes (free text Key wrote) */}
+          {(data.proposal?.notes || contact.install_notes?.replace(/^__pm_[a-z_]+:[^\n]*\n?/gm, '').trim()) ? (
+            <Section label="Notes" tint="var(--text-faint)">
+              {data.proposal?.notes ? (
+                <div style={{ fontSize: 12, whiteSpace: 'pre-wrap', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  {data.proposal.notes}
+                </div>
+              ) : null}
+              {contact.install_notes ? (() => {
+                const free = contact.install_notes.split('\n').filter(l => !/^__pm_/.test(l)).join('\n').trim();
+                return free ? <div style={{ fontSize: 12, whiteSpace: 'pre-wrap', color: 'var(--text-muted)' }}>{free}</div> : null;
+              })() : null}
+            </Section>
+          ) : null}
+
+          {/* LAST WORDS — most recent 3 messages so Key lands knowing where things left off */}
+          {data.recentMsgs?.length > 0 ? (
+            <Section label="Last words" tint="var(--text-muted)">
+              {data.recentMsgs.slice(0, 3).reverse().map((m, i) => (
+                <div key={i} style={{
+                  padding: '4px 0', fontSize: 12,
+                  color: 'var(--text)',
+                  borderTop: i > 0 ? '1px solid rgba(0,0,0,.06)' : 'none',
+                }}>
+                  <span className="mono" style={{ fontSize: 9, letterSpacing: '.08em', color: 'var(--text-faint)', marginRight: 6, textTransform: 'uppercase' }}>
+                    {m.direction === 'inbound' ? 'customer' : (m.sender === 'ai' ? 'alex' : 'key')}
+                  </span>
+                  {(m.body || '').slice(0, 160)}
+                </div>
+              ))}
+            </Section>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -1010,6 +1244,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
   const [duplicates, setDuplicates] = useState([]); // other contacts with same phone
   const [loading, setLoading] = useState(true);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('MESSAGES');
   // Incrementing counter — DetailQuote watches this via a prop + useEffect
   // and opens QuickQuoteModal on each bump. Lets the global `Q` keyboard
@@ -1137,6 +1372,15 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
     };
     window.addEventListener('bpp:open-quick-quote', handler);
     return () => window.removeEventListener('bpp:open-quick-quote', handler);
+  }, [contactId]);
+
+  // Listen for the global Shift+B shortcut → open the install brief modal
+  // for the currently-selected contact.
+  useEffect(() => {
+    if (!contactId) return;
+    const handler = () => setBriefOpen(true);
+    window.addEventListener('bpp:open-install-brief', handler);
+    return () => window.removeEventListener('bpp:open-install-brief', handler);
   }, [contactId]);
 
   // Realtime: messages (INSERT + UPDATE) and the contact row itself (UPDATE).
@@ -1359,19 +1603,37 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         })() : null}
       </div>
 
-      {/* Stage strip (click to open picker) */}
-      <button
-        onClick={() => setStagePickerOpen(true)}
-        style={{
-          height: 36, padding: '0 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          width: '100%', cursor: 'pointer',
-          background: 'var(--card)', boxShadow: 'var(--raised-2)',
-          border: 0, textAlign: 'left',
-        }}>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--text)' }}>{stageAbbr}</span>
-        <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>stage {contact?.stage || 1} ›</span>
-      </button>
+      {/* Stage strip (click to open picker) + install-brief trigger */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button
+          onClick={() => setStagePickerOpen(true)}
+          style={{
+            height: 36, padding: '0 14px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            flex: 1, cursor: 'pointer',
+            background: 'var(--card)', boxShadow: 'var(--raised-2)',
+            border: 0, textAlign: 'left',
+          }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--text)' }}>{stageAbbr}</span>
+          <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>stage {contact?.stage || 1} ›</span>
+        </button>
+        {/* Brief — one-page view of everything Key needs on install day.
+            Hidden on stages < 3 (no install scheduled yet = nothing to brief). */}
+        {(contact?.stage || 1) >= 3 ? (
+          <button
+            onClick={() => setBriefOpen(true)}
+            title="Install brief (B)"
+            style={{
+              height: 36, padding: '0 14px',
+              display: 'flex', alignItems: 'center', gap: 6,
+              cursor: 'pointer', background: 'var(--navy)', color: 'var(--gold)',
+              boxShadow: 'var(--raised-2)', border: 0,
+              fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 700, letterSpacing: '.08em',
+            }}>
+            BRIEF
+          </button>
+        ) : null}
+      </div>
 
       {outstandingBalance > 0 ? (
         <button
@@ -1411,6 +1673,10 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
 
       <SnoozeRow contactId={contactId} contactName={contact?.name} />
 
+
+      {briefOpen ? (
+        <InstallBriefModal contact={contact} onClose={() => setBriefOpen(false)} />
+      ) : null}
 
       {stagePickerOpen ? (
         <StagePickerModal
@@ -3322,6 +3588,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'N', label: 'New lead' },
     { keys: 'Q', label: 'Quick quote for open contact' },
     { keys: 'B', label: 'Open morning briefing' },
+    { keys: 'Shift+B', label: 'Install brief for open contact' },
     { keys: 'T', label: 'Toggle dark mode' },
     { keys: 'P', label: 'Pin / unpin open contact' },
     { keys: 'Y', label: 'Yank contact summary to clipboard' },
@@ -6049,9 +6316,15 @@ function App() {
         setSelectedContact(null);
       }
       // b → reopen morning briefing
-      if (e.key === 'b' && !briefOpen) {
+      if (e.key === 'b' && !e.shiftKey && !briefOpen) {
         e.preventDefault();
         setBriefOpen(true);
+      }
+      // Shift+B → install brief for the selected contact
+      if (e.key === 'B' && e.shiftKey && selectedContact) {
+        e.preventDefault();
+        setTab('leads');
+        window.dispatchEvent(new CustomEvent('bpp:open-install-brief'));
       }
       // t → toggle theme (dark/light)
       if (e.key === 't') {
