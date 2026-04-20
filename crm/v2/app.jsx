@@ -2159,7 +2159,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
 
       {/* Compose — only show on MESSAGES tab */}
       {detailTab === 'MESSAGES' ? (
-        <ComposeBar contactId={contactId} contactName={contact?.name} contactPhone={contact?.phone} disabled={!!contact?.do_not_contact} />
+        <ComposeBar contactId={contactId} contactName={contact?.name} contactPhone={contact?.phone} installDate={contact?.install_date} disabled={!!contact?.do_not_contact} />
       ) : null}
     </div>
   );
@@ -3579,7 +3579,7 @@ function MessageBody({ body, isOut }) {
   );
 }
 
-function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) {
+function ComposeBar({ contactId, contactName, contactPhone, installDate = null, disabled = false }) {
   // Auto-save drafts per contact in localStorage so Key doesn't lose a
   // half-typed SMS when he switches contacts or reloads the tab.
   const draftKey = contactId ? `bpp_v2_draft_${contactId}` : null;
@@ -3637,7 +3637,19 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
 
   function applySnippet(body) {
     const first = (contactName || '').split(' ')[0] || 'there';
-    setText(body.replace(/\{name\}/g, first));
+    let out = body.replace(/\{name\}/g, first);
+    // Auto-fill install date/time placeholders so Key doesn't have to re-type
+    // them for every "Install confirm" he fires. Leave the literal [date] /
+    // [time] markers intact if install_date isn't set yet — that way the
+    // snippet still draws the eye, and Key knows he needs to book a date
+    // before sending.
+    const inst = installDate ? new Date(installDate) : null;
+    if (inst && !isNaN(inst.getTime())) {
+      const dateLabel = inst.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      const timeLabel = inst.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      out = out.replace(/\[date\]/gi, dateLabel).replace(/\[time\]/gi, timeLabel);
+    }
+    setText(out);
     setSnippetsOpen(false);
   }
 
