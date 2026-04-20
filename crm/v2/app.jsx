@@ -932,6 +932,252 @@ function LeadProfileStrip({ contactPhone }) {
   );
 }
 
+// ── Next-action engine ──────────────────────────────────────────────────────
+// Computes the single highest-leverage next action for a contact based on
+// stage, last-reply recency, Alex session state, and profile depth. Pure
+// function — trivial to unit-test and tune as rules evolve. Returns null when
+// no action is pressing; the card renders nothing so quiet contacts stay quiet.
+//
+// Rule priority (first match wins):
+//   R1  Urgency flag in profile (medical / storm / safety) — Key must handle.
+//   R2  Customer replied <24h ago, no outbound since, Alex isn't active.
+//       The "customer waiting" scenario that drops leads.
+//   R3  Stage 3, quiet 48h–7d — time for a gentle follow-up nudge.
+//   R4  Stage 3, quiet 7d+ — consider a final check-in.
+//   R5  Stage 7 (approved, deposit paid) — schedule install + pull permit.
+//   R6  Stage ≤2 with <4 profile fields while Alex is actively discovering
+//       — informational only, no action for Key.
+//
+// Extending: append rules at the bottom or insert in priority order. Each
+// rule returns { tint, icon, headline, sub, buttons? } or null.
+function fmtAgo(hours) {
+  if (!Number.isFinite(hours)) return 'a while';
+  if (hours < 1) return `${Math.max(1, Math.round(hours * 60))}m`;
+  if (hours < 24) return `${Math.round(hours)}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
+function computeNextAction({ contact, messages, alexSession, profileEntries }) {
+  if (!contact || contact.do_not_contact) return null;
+  const stage = contact.stage || 1;
+  const now = Date.now();
+
+  // Walk messages in reverse — cheaper than sorting when only latest matters.
+  let lastInboundAt = null;
+  let lastOutboundAt = null;
+  const msgs = messages || [];
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (!m?.created_at) continue;
+    if (m.direction === 'inbound' && !lastInboundAt) lastInboundAt = m.created_at;
+    if (m.direction === 'outbound' && !lastOutboundAt) lastOutboundAt = m.created_at;
+    if (lastInboundAt && lastOutboundAt) break;
+  }
+  const hrsSince = (at) => at ? (now - new Date(at).getTime()) / 3600000 : Infinity;
+  const hoursSinceInbound = hrsSince(lastInboundAt);
+  const hoursSinceOutbound = hrsSince(lastOutboundAt);
+
+  // sparky_memory fields keyed as `contact:{phone}:{field}` — strip prefix
+  // to get the field name. Small result set so the linear scan is fine.
+  const fields = {};
+  for (const e of (profileEntries || [])) {
+    const name = String(e.key || '').split(':').slice(2).join(':');
+    if (name) fields[name] = e.value;
+  }
+  const fieldCount = Object.keys(fields).length;
+  const firstName = (contact.name || '').trim().split(/\s+/)[0] || 'there';
+
+  // R1 — Urgency. Trumps everything up through stage 7.
+  const urgency = fields.urgency_flag || fields.medical_need || fields.storm_urgency;
+  if (urgency && stage < 7) {
+    return {
+      tint: 'var(--ms-3)',
+      icon: '!',
+      headline: 'Urgent — respond personally',
+      sub: String(urgency).slice(0, 80),
+      buttons: contact.phone ? [{ label: 'Call', kind: 'call', phone: contact.phone }] : [],
+    };
+  }
+
+  // R2 — Customer waiting. Inbound strictly newer than outbound AND Alex is
+  // not actively handling (paused, done, or never enabled for this contact).
+  // 6-minute grace window gives Alex time to draft before we nag Key about it.
+  const alexHandling = alexSession?.alex_active === true;
+  if (
+    lastInboundAt
+    && hoursSinceInbound < 24
+    && hoursSinceInbound + 0.05 < hoursSinceOutbound
+    && !alexHandling
+    && hoursSinceInbound > 0.1
+  ) {
+    return {
+      tint: 'var(--ms-4)',
+      icon: '→',
+      headline: 'Customer waiting',
+      sub: `They replied ${fmtAgo(hoursSinceInbound)} ago — no response yet`,
+      buttons: [{ label: 'Draft with AI', kind: 'suggest' }],
+    };
+  }
+
+  // R3 — Stage 3, quiet 48h–7d. Use the existing "Follow up" snippet body so
+  // drafted copy matches what Key would pick from the snippets menu anyway.
+  if (stage === 3 && hoursSinceInbound > 48 && hoursSinceInbound <= 168) {
+    return {
+      tint: 'var(--gold)',
+      icon: '↻',
+      headline: '48-hour follow-up due',
+      sub: `Quiet for ${fmtAgo(hoursSinceInbound)}. Gentle nudge.`,
+      buttons: [{
+        label: 'Draft follow-up', kind: 'prefill',
+        text: `Hey ${firstName}, just checking in. Want me to hold that install slot, or shift it out a week?`,
+      }],
+    };
+  }
+
+  // R4 — Stage 3, quiet 7d+. Final soft check-in ("No response" snippet).
+  if (stage === 3 && hoursSinceInbound > 168) {
+    return {
+      tint: 'var(--text-muted)',
+      icon: '×',
+      headline: 'Long silence',
+      sub: `${Math.round(hoursSinceInbound / 24)} days quiet. Consider a final check-in.`,
+      buttons: [{
+        label: 'Draft check-in', kind: 'prefill',
+        text: `Hey ${firstName}, just checking in — still have your spot available if you're still interested. Happy to answer any questions or adjust anything on the quote. No pressure at all!`,
+      }],
+    };
+  }
+
+  // R5 — Stage 7. Approved, deposit paid, need to schedule install.
+  if (stage === 7) {
+    return {
+      tint: 'var(--gold)',
+      icon: '▶',
+      headline: 'Approved — schedule install',
+      sub: 'Deposit in. Pull permit + book a date.',
+      buttons: [{ label: 'Install brief', kind: 'event', event: 'bpp:open-install-brief' }],
+    };
+  }
+
+  // R6 — Alex learning phase. Informational; nothing for Key to do yet.
+  if (
+    stage <= 2
+    && fieldCount < 4
+    && lastInboundAt
+    && hoursSinceInbound < 72
+    && alexHandling
+  ) {
+    return {
+      tint: 'var(--ms-2)',
+      icon: '◈',
+      headline: 'Alex still learning',
+      sub: `${fieldCount} profile field${fieldCount === 1 ? '' : 's'} captured so far`,
+      buttons: [],
+    };
+  }
+
+  return null;
+}
+
+// Next-action card — renders the computed action as a compact strip above
+// the messages thread. Refetches profile entries whenever the contact, stage,
+// alex session, or message count changes (those are the inputs that flip the
+// rule cascade). Piggybacks on the parent's existing realtime subscriptions
+// instead of opening its own — one sparky_memory channel per contact is
+// enough (LeadProfileStrip already runs one).
+function NextActionCard({ contact, messages, alexSession }) {
+  const [profileEntries, setProfileEntries] = useState([]);
+  const phone = contact?.phone || null;
+  const msgCount = (messages || []).length;
+  const stage = contact?.stage || 1;
+  const alexActive = alexSession?.alex_active;
+
+  useEffect(() => {
+    if (!phone) { setProfileEntries([]); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await db.from('sparky_memory')
+        .select('key, value')
+        .like('key', `contact:${phone}:%`)
+        .limit(50);
+      if (alive) setProfileEntries(data || []);
+    })();
+    return () => { alive = false; };
+  }, [phone, msgCount, stage, alexActive]);
+
+  const action = useMemo(
+    () => computeNextAction({ contact, messages, alexSession, profileEntries }),
+    [contact, messages, alexSession, profileEntries]
+  );
+
+  if (!action) return null;
+
+  const run = (btn) => {
+    if (btn.kind === 'call' && btn.phone) {
+      // window.__bpp_dial is wired by useVoiceDevice at app top-level. Fallback
+      // to tel: link if Twilio device hasn't booted yet (fresh load on mobile).
+      if (typeof window.__bpp_dial === 'function') {
+        window.__bpp_dial(btn.phone);
+      } else {
+        window.location.href = `tel:${String(btn.phone).replace(/[^0-9+]/g, '')}`;
+      }
+      return;
+    }
+    if (btn.kind === 'prefill' && btn.text) {
+      window.dispatchEvent(new CustomEvent('bpp:compose-prefill', { detail: { text: btn.text } }));
+      window.__bpp_toast && window.__bpp_toast('Draft loaded — review + send', 'info');
+      return;
+    }
+    if (btn.kind === 'suggest') {
+      window.dispatchEvent(new CustomEvent('bpp:compose-suggest'));
+      return;
+    }
+    if (btn.kind === 'event' && btn.event) {
+      window.dispatchEvent(new CustomEvent(btn.event));
+    }
+  };
+
+  return (
+    <div style={{
+      padding: '10px 14px',
+      background: 'var(--card)',
+      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderLeft: `3px solid ${action.tint}`,
+      display: 'flex', alignItems: 'center', gap: 10,
+      fontFamily: 'var(--font-body)',
+    }}>
+      <span style={{
+        flex: '0 0 auto',
+        width: 22, height: 22,
+        display: 'grid', placeItems: 'center',
+        background: action.tint, color: '#fff',
+        fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700,
+        boxShadow: 'var(--raised-2)',
+      }}>{action.icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{action.headline}</div>
+        <div style={{
+          fontSize: 11, color: 'var(--text-muted)', marginTop: 1,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>{action.sub}</div>
+      </div>
+      {action.buttons?.length ? (
+        <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
+          {action.buttons.map((b, i) => (
+            <button key={i} onClick={() => run(b)} style={{
+              padding: '5px 10px', fontSize: 11,
+              fontFamily: 'var(--font-body)', fontWeight: 600,
+              background: 'var(--card)', color: 'var(--text)',
+              boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+              letterSpacing: '.02em',
+            }}>{b.label}</button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 // Duplicate-phone warning strip — renders when another contact shares the
 // open contact's phone number. Amber to draw attention; each dupe is a link
 // that swaps the panel to that contact so Key can compare and decide.
@@ -1658,6 +1904,14 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
 
       {contact?.phone ? (
         <LeadProfileStrip contactPhone={contact.phone} />
+      ) : null}
+
+      {contact ? (
+        <NextActionCard
+          contact={contact}
+          messages={messages}
+          alexSession={alexSession}
+        />
       ) : null}
 
       {duplicates.length > 0 ? (
@@ -3308,6 +3562,16 @@ function ComposeBar({ contactId, contactName, contactPhone, disabled = false }) 
     window.addEventListener('bpp:compose-prefill', handler);
     return () => window.removeEventListener('bpp:compose-prefill', handler);
   }, []);
+
+  // Listen for remote AI-suggest triggers (e.g. NextActionCard's "Draft with
+  // AI" button). Lets sibling components request a Sparky reply without
+  // needing a direct ref into this component.
+  useEffect(() => {
+    const handler = () => { suggestReply(); };
+    window.addEventListener('bpp:compose-suggest', handler);
+    return () => window.removeEventListener('bpp:compose-suggest', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contactId, suggesting]);
 
   // GSM-7 characters fit 160/segment. Unicode (emoji, curly quotes, em dash)
   // fall back to UCS-2 which is 70/segment. Quick heuristic: any non-ASCII
