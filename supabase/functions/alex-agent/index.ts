@@ -1220,7 +1220,12 @@ function cleanSms(text: string): string {
 }
 
 // Returns true if sent, false if delivery was rejected (bad number, landline, etc.)
+// Persists the outbound row to the `messages` table after a successful send so
+// the CRM thread shows what Alex said. Prior versions of alex-agent only updated
+// alex_sessions.messages (its internal transcript), which left the CRM inbox
+// blank for the entire Alex conversation.
 async function sendQuoMessage(to: string, content: string): Promise<boolean> {
+  let quoMsgId: string | null = null
   try {
     const resp = await fetch('https://api.openphone.com/v1/messages', {
       method: 'POST',
@@ -1232,12 +1237,29 @@ async function sendQuoMessage(to: string, content: string): Promise<boolean> {
       console.error(`[quo] Send failed (${resp.status}):`, errBody.slice(0, 200))
       return false
     }
+    try { const j = await resp.json(); quoMsgId = j?.data?.id || null } catch {}
     console.log('[quo] Sent to', to, ':', content.slice(0, 60))
-    return true
   } catch (err) {
     console.error('[quo] Send error:', err)
     return false
   }
+  // Persist to messages table — look up contact by phone, no-op if not found.
+  try {
+    const supabase = db()
+    const { data: matchedContact } = await supabase
+      .from('contacts').select('id').eq('phone', to).limit(1).maybeSingle()
+    if (matchedContact?.id) {
+      await supabase.from('messages').insert({
+        contact_id: matchedContact.id,
+        direction: 'outbound',
+        body: content,
+        sender: 'ai',
+        quo_message_id: quoMsgId,
+        status: 'sent',
+      })
+    }
+  } catch (e) { console.error('[quo] outbound persist failed:', e) }
+  return true
 }
 
 async function notifyKeyQuo(phone: string, summary: string): Promise<void> {
@@ -1424,6 +1446,27 @@ Deno.serve(async (req) => {
     console.log('[alex] Duplicate, skipping:', quoMsgId)
     return new Response(JSON.stringify({ skipped: true, reason: 'duplicate' }), { status: 200, headers: CORS })
   }
+
+  // Persist the inbound message to the `messages` table so the CRM thread
+  // shows what the customer said. Prior versions of alex-agent only wrote
+  // to alex_sessions.messages (the agent's internal transcript), which left
+  // the CRM inbox blind to the conversation. Resolve contact_id by phone so
+  // the thread groups under the right contact row. No-op if contact lookup
+  // fails — we still want alex-agent to process the message.
+  try {
+    const { data: matchedContact } = await supabase
+      .from('contacts').select('id').eq('phone', fromPhone).limit(1).maybeSingle()
+    if (matchedContact?.id) {
+      await supabase.from('messages').insert({
+        contact_id: matchedContact.id,
+        direction: 'inbound',
+        body: messageText,
+        sender: 'lead',
+        quo_message_id: quoMsgId,
+        status: 'received',
+      })
+    }
+  } catch (e) { console.error('[alex] inbound persist failed:', e) }
 
   // Timestamp this message immediately after dedup — used by debounce to detect
   // when a newer message arrived during processing. Must happen BEFORE any delays.

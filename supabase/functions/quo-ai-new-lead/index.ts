@@ -371,6 +371,13 @@ Deno.serve(async (req) => {
     await supabase.from('sparky_memory').upsert(seeds, { onConflict: 'key' }).then(() => {}, (e: any) => console.error('[new-lead] memory seed failed:', e?.message))
   }
 
+  // Human typing delay — 18-30s before the opener lands. A message that
+  // appears within 1 second of submit feels fake. 20s is close to what a
+  // real person texting from their couch looks like. Random within the
+  // window so consecutive test leads don't have identical timing patterns.
+  const typingMs = 18000 + Math.floor(Math.random() * 12000)
+  await new Promise(r => setTimeout(r, typingMs))
+
   // Fire the opener via Quo
   let quoMsgId: string | null = null
   try {
