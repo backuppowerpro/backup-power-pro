@@ -847,6 +847,10 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
   const [loading, setLoading] = useState(true);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('MESSAGES');
+  // Incrementing counter — DetailQuote watches this via a prop + useEffect
+  // and opens QuickQuoteModal on each bump. Lets the global `Q` keyboard
+  // shortcut fire a quote without requiring the QUOTE tab to be active yet.
+  const [quickQuoteTrigger, setQuickQuoteTrigger] = useState(0);
   // Track which contact the user last explicitly clicked a tab on, so we
   // can auto-pick a smart default when switching between contacts.
   const [manualTabContactId, setManualTabContactId] = useState(null);
@@ -933,6 +937,24 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
       }
     })();
     return () => { alive = false; };
+  }, [contactId]);
+
+  // Listen for the global `Q` shortcut event. Switch to QUOTE tab so
+  // DetailQuote is mounted, then bump the trigger so its useEffect fires
+  // and opens the QuickQuoteModal. One keypress → quote form in front of
+  // Key, no matter which tab he was on.
+  useEffect(() => {
+    if (!contactId) return;
+    const handler = () => {
+      setDetailTab('QUOTE');
+      setManualTabContactId(contactId);
+      // Bump on the next frame so DetailQuote has mounted before it sees
+      // the trigger change. Without this, the modal would try to open
+      // during the QUOTE tab's first render and miss.
+      requestAnimationFrame(() => setQuickQuoteTrigger(n => n + 1));
+    };
+    window.addEventListener('bpp:open-quick-quote', handler);
+    return () => window.removeEventListener('bpp:open-quick-quote', handler);
   }, [contactId]);
 
   // Realtime: messages (INSERT + UPDATE) and the contact row itself (UPDATE).
@@ -1370,7 +1392,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
       ) : null}
 
       {detailTab === 'TIMELINE' ? <DetailTimeline contactId={contactId} /> : null}
-      {detailTab === 'QUOTE' ? <DetailQuote contactId={contactId} /> : null}
+      {detailTab === 'QUOTE' ? <DetailQuote contactId={contactId} openTrigger={quickQuoteTrigger} /> : null}
       {detailTab === 'PERMITS' ? <DetailPermits contact={contact} /> : null}
       {detailTab === 'NOTES' ? <DetailNotes contact={contact} onUpdate={(notes) => setContact(c => ({ ...c, install_notes: notes }))} /> : null}
       {detailTab === 'EDIT' ? <DetailEditContact contact={contact} onUpdate={(patch) => setContact(c => ({ ...c, ...patch }))} /> : null}
@@ -1567,11 +1589,16 @@ function quickQuoteBuildPayload({ contact, state }) {
   };
 }
 
-function DetailQuote({ contactId }) {
+function DetailQuote({ contactId, openTrigger = 0 }) {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quickOpen, setQuickOpen] = useState(false);
   const [contact, setContact] = useState(null);
+  // Each bump of openTrigger means the global `Q` shortcut fired. Skip
+  // the initial 0 so the modal doesn't auto-open when the tab mounts.
+  useEffect(() => {
+    if (openTrigger > 0) setQuickOpen(true);
+  }, [openTrigger]);
 
   useEffect(() => {
     (async () => {
@@ -3107,6 +3134,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'R', label: 'Reply (focus compose bar)' },
     { keys: 'D', label: 'Dial selected contact' },
     { keys: 'N', label: 'New lead' },
+    { keys: 'Q', label: 'Quick quote for open contact' },
     { keys: 'B', label: 'Open morning briefing' },
     { keys: 'T', label: 'Toggle dark mode' },
     { keys: 'P', label: 'Pin / unpin open contact' },
@@ -5736,6 +5764,13 @@ function App() {
       if (e.key === 'n' && !newLeadOpen) {
         e.preventDefault();
         setNewLeadOpen(true);
+      }
+      // q → quick quote modal for the open contact (requires a selection).
+      // Switches to QUOTE tab if needed and opens the pricing chips.
+      if (e.key === 'q' && selectedContact) {
+        e.preventDefault();
+        setTab('leads');
+        window.dispatchEvent(new CustomEvent('bpp:open-quick-quote'));
       }
       // 1–9 → change stage on the currently selected contact, then auto-advance
       // to the next waiting thread. This turns morning triage into a rhythm:
