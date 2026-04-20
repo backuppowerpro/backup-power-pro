@@ -474,9 +474,19 @@ let selectedPayFull = false;
 window.addEventListener('DOMContentLoaded', async () => {
   const token = new URLSearchParams(window.location.search).get('token');
   if (!token) { showError('No proposal found.', 'This link is missing a proposal token.'); return; }
-  const { data, error } = await db.from('proposals').select('*').eq('token', token).single();
+  // Fetch proposal + profile context in parallel. Context is non-critical —
+  // proposal renders fine if the fetch fails. Context is ONLY used for
+  // subtle rendering variants (generator-size subtitle, etc.); no free-text
+  // customer quotes surface here — the edge fn strips those before return.
+  const [proposalRes, ctxRes] = await Promise.all([
+    db.from('proposals').select('*').eq('token', token).single(),
+    fetch(`https://reowtzedjflwmlptupbk.supabase.co/functions/v1/proposal-context?token=${encodeURIComponent(token)}`)
+      .then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+  const { data, error } = proposalRes;
   if (error || !data) { showError('Proposal not found.', 'This link may be invalid or has been removed.'); return; }
   P = data;
+  window.__bpp_ctx = ctxRes || {}; // exposed for downstream reads
   isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
   if (!isPreview) trackView(token);
   if (isPreview) {
@@ -811,6 +821,15 @@ function renderProposal() {
       <div style="padding-top:22px">
         <div class="hero-title">The Storm-Ready<br>Connection System</div>
         <div class="hero-sub" style="margin-top:8px">Your generator is already paid for.<br>We connect it to your panel, installed in a day. We handle the permit and inspection.</div>
+        ${(() => {
+          // Subtle generator-sized subtitle — only renders when the customer
+          // told us (directly or via form) that they already own a portable
+          // AND we know the amp size. Purely factual; reads as attention to
+          // detail, not surveillance.
+          const ctx = window.__bpp_ctx || {};
+          if (!ctx.storedGenerator || !ctx.ampSize) return '';
+          return `<div class="hero-sub" style="margin-top:6px;font-size:13px;color:rgba(255,255,255,.7)">Sized for a ${esc(ctx.ampSize)}A portable.</div>`;
+        })()}
         <div class="hero-footer-row">
           <span class="hero-date-text">${createdDate}</span>
           ${expiresBadge}
