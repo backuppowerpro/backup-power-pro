@@ -903,10 +903,28 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
     }
   }, [detailTab]);
 
-  // Auto-scroll message thread to bottom when messages change or tab opens
+  // Auto-scroll message thread — only when Key is already at the bottom OR
+  // on first mount of the tab. If he's scrolled up reading older messages,
+  // a new incoming bubble should NOT yank him back to the bottom; that's
+  // the Slack/iMessage anti-pattern. Track whether the next scroll should
+  // stick via prevMsgCountRef — always stick when message list length
+  // resets (contact change / tab switch).
+  const prevMsgCountRef = useRef(0);
   useEffect(() => {
-    if (detailTab === 'MESSAGES' && msgScrollRef.current) {
-      msgScrollRef.current.scrollTop = msgScrollRef.current.scrollHeight;
+    const el = msgScrollRef.current;
+    if (detailTab !== 'MESSAGES' || !el) return;
+    const prevCount = prevMsgCountRef.current;
+    const nextCount = messages.length;
+    prevMsgCountRef.current = nextCount;
+    // Hard-stick on tab mount / contact change (length shrunk OR stayed
+    // the same while landing on the tab for the first time). Otherwise
+    // only stick if the user was within 80px of the bottom before the new
+    // message arrived — gives them breathing room to read older history.
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const nearBottom = distanceFromBottom < 80;
+    const isInitialRender = prevCount === 0;
+    if (isInitialRender || nearBottom) {
+      el.scrollTop = el.scrollHeight;
     }
   }, [messages, detailTab]);
 
