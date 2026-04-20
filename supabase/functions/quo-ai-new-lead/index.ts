@@ -340,46 +340,59 @@ Deno.serve(async (req) => {
   const variant = 'D'
   const openerText = `${hi}, this is Alex with Backup Power Pro. Thanks for reaching out. I help Key, our licensed electrician, line up his installs. Before we put a quote together, what got you interested in finding a backup power solution? Reply STOP to opt out.`
 
-  // Insert alex_sessions row
-  await supabase.from('alex_sessions').insert({
-    phone: normalizedPhone,
-    session_id: alexSessionId,
-    status: 'active',
-    messages: [{ role: 'assistant', content: openerText }],
-    alex_active: true,
-    key_active: false,
-    followup_count: 0,
-    photo_received: false,
-    opted_out: false,
-    summary: `variant:${variant}`,
-    contact_name: fullName || null,
-    last_outbound_at: new Date().toISOString(),
-  })
+  // Everything below moves to a single background promise so the HTTP
+  // response returns in <1s (was 3s from sequential DB awaits).
+  // Execution order inside the background matters:
+  //   1. alex_sessions insert — must exist before alex-agent processes any
+  //      customer reply, but we've got 18-30s of typing delay before the
+  //      opener even goes out, which gives this insert plenty of headroom.
+  //   2. sparky_memory seeds — purely informational for Alex's context.
+  //   3. follow_up_queue insert — cron pickup if customer goes quiet.
+  //   4. typing delay + opener send + messages-table mirror.
+  const backgroundPromise = (async () => {
+    // alex_sessions row
+    await supabase.from('alex_sessions').insert({
+      phone: normalizedPhone,
+      session_id: alexSessionId,
+      status: 'active',
+      messages: [{ role: 'assistant', content: openerText }],
+      alex_active: true,
+      key_active: false,
+      followup_count: 0,
+      photo_received: false,
+      opted_out: false,
+      summary: `variant:${variant}`,
+      contact_name: fullName || null,
+      last_outbound_at: new Date().toISOString(),
+    }).then(() => {}, (e: any) => console.error('[bg] alex_sessions insert failed:', e?.message))
 
-  // Seed sparky_memory with known profile fields from the form submit.
-  // Discovery answers will get written here by alex-agent's write_memory
-  // tool as the conversation progresses.
-  const seeds: Array<{ key: string; value: string; category: string; importance: number }> = []
-  if (fullName) seeds.push({ key: `contact:${normalizedPhone}:name`, value: fullName, category: 'contact', importance: 3 })
-  if (fullAddress) seeds.push({ key: `contact:${normalizedPhone}:address`, value: fullAddress, category: 'contact', importance: 3 })
-  if (addressCity) seeds.push({ key: `contact:${normalizedPhone}:city`, value: addressCity, category: 'contact', importance: 2 })
-  if (panelLocation) seeds.push({ key: `contact:${normalizedPhone}:panel_location`, value: panelLocation, category: 'panel', importance: 3 })
-  if (genVoltage) seeds.push({ key: `contact:${normalizedPhone}:generator_voltage`, value: genVoltage, category: 'generator', importance: 2 })
-  if (addressZip) seeds.push({ key: `contact:${normalizedPhone}:zip`, value: addressZip, category: 'contact', importance: 1 })
-  if (rawBody?.source) seeds.push({ key: `contact:${normalizedPhone}:lead_source`, value: String(rawBody.source), category: 'attribution', importance: 2 })
-  if (seeds.length > 0) {
-    await supabase.from('sparky_memory').upsert(seeds, { onConflict: 'key' }).then(() => {}, (e: any) => console.error('[new-lead] memory seed failed:', e?.message))
-  }
+    // sparky_memory seeds
+    const seeds: Array<{ key: string; value: string; category: string; importance: number }> = []
+    if (fullName) seeds.push({ key: `contact:${normalizedPhone}:name`, value: fullName, category: 'contact', importance: 3 })
+    if (fullAddress) seeds.push({ key: `contact:${normalizedPhone}:address`, value: fullAddress, category: 'contact', importance: 3 })
+    if (addressCity) seeds.push({ key: `contact:${normalizedPhone}:city`, value: addressCity, category: 'contact', importance: 2 })
+    if (panelLocation) seeds.push({ key: `contact:${normalizedPhone}:panel_location`, value: panelLocation, category: 'panel', importance: 3 })
+    if (genVoltage) seeds.push({ key: `contact:${normalizedPhone}:generator_voltage`, value: genVoltage, category: 'generator', importance: 2 })
+    if (addressZip) seeds.push({ key: `contact:${normalizedPhone}:zip`, value: addressZip, category: 'contact', importance: 1 })
+    if (rawBody?.source) seeds.push({ key: `contact:${normalizedPhone}:lead_source`, value: String(rawBody.source), category: 'attribution', importance: 2 })
+    if (seeds.length > 0) {
+      await supabase.from('sparky_memory').upsert(seeds, { onConflict: 'key' }).then(() => {}, (e: any) => console.error('[bg] seed failed:', e?.message))
+    }
 
-  // Human typing delay + opener send — BACKGROUND. If we await here, the
-  // landing page's form submit hangs on the loading spinner for 20-30s
-  // (observed by Key 2026-04-20). EdgeRuntime.waitUntil keeps the function
-  // alive to complete the send after the HTTP response returns, so the
-  // customer sees a fast "submitted" confirmation while the opener arrives
-  // ~20s later feeling like a real person composing.
-  const openerPromise = (async () => {
+    // follow-up queue
+    if (isNew) {
+      await supabase.from('follow_up_queue').insert({
+        contact_id: contact.id,
+        stage: 1,
+        send_after: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      }).then(() => {}, (e: any) => console.error('[bg] follow_up insert failed:', e?.message))
+    }
+
+    // Human typing delay before the opener fires — 18-30s.
     const typingMs = 18000 + Math.floor(Math.random() * 12000)
     await new Promise(r => setTimeout(r, typingMs))
+
+    // Fire the opener via Quo
     let quoMsgId: string | null = null
     try {
       const quoRes = await fetch('https://api.openphone.com/v1/messages', {
@@ -390,33 +403,24 @@ Deno.serve(async (req) => {
       const quoData = await quoRes.json()
       quoMsgId = quoData.data?.id || null
     } catch (err) {
-      console.error('[QUO] opener send failed:', err)
+      console.error('[bg] QUO opener send failed:', err)
     }
-    // Mirror opener into messages table so CRM thread sees it
+
+    // Mirror opener into messages table
     await supabase.from('messages').insert({
       contact_id: contact.id,
       direction: 'outbound',
       body: openerText,
       sender: 'ai',
       quo_message_id: quoMsgId,
-    })
+    }).then(() => {}, (e: any) => console.error('[bg] messages mirror failed:', e?.message))
   })()
   // @ts-expect-error EdgeRuntime is a global on Supabase Edge Functions
   if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
     // @ts-expect-error
-    EdgeRuntime.waitUntil(openerPromise)
+    EdgeRuntime.waitUntil(backgroundPromise)
   } else {
-    // Fallback: just fire the promise; rely on the runtime keeping it alive
-    openerPromise.catch(e => console.error('[opener] background failed:', e))
-  }
-
-  // ── QUEUE FOLLOW-UP (24hrs if no reply) ───────────────────────────────────
-  if (isNew) {
-    await supabase.from('follow_up_queue').insert({
-      contact_id: contact.id,
-      stage: 1,
-      send_after: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    })
+    backgroundPromise.catch(e => console.error('[bg] top-level failed:', e))
   }
 
   return new Response(JSON.stringify({
