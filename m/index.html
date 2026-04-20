@@ -1261,51 +1261,46 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       fbq('track','Lead',{content_name:'generator-inlet-quote',content_category:'generator-installation',value:1197,currency:'USD'},{eventID:eventId});
     }
 
-    // Same robust-delivery treatment as the VARIANT form (see comment on
-    // that handler for full rationale). sendBeacon first, keepalive fetch
-    // second, sync XHR third. Edge fn deployed --no-verify-jwt so beacons
-    // (which can't set Authorization headers) land cleanly.
+    // Robust delivery v2 — beacon + fetch in parallel. See VARIANT form for
+    // full rationale. sendBeacon returning true does NOT guarantee server
+    // receipt, so fetch's awaited response is the authoritative signal.
     var submitBody = JSON.stringify(payload);
     var delivered = false;
     var deliveryMethod = 'none';
     var submitStartMs = Date.now();
+    // Redundancy net — fire-and-forget beacon for tab-close resilience.
     try {
       if (navigator.sendBeacon) {
-        var blob = new Blob([submitBody], { type: 'application/json' });
-        if (navigator.sendBeacon(BPP_NEW_LEAD_URL, blob)) {
-          delivered = true;
-          deliveryMethod = 'beacon';
-        }
+        navigator.sendBeacon(BPP_NEW_LEAD_URL, new Blob([submitBody], { type: 'application/json' }));
       }
-    } catch (e) { /* fall through */ }
-    if (!delivered) {
+    } catch (e) { /* ignore */ }
+    // Primary path — awaited keepalive fetch.
+    try {
+      var resp = await fetch(BPP_NEW_LEAD_URL, {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: submitBody,
+      });
+      delivered = resp.ok;
+      deliveryMethod = 'fetch';
+      if (!resp.ok && typeof posthog !== 'undefined') {
+        posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch', form: 'inline' });
+      }
+    } catch (fetchErr) {
       try {
-        var resp = await fetch(BPP_NEW_LEAD_URL, {
-          method: 'POST',
-          keepalive: true,
-          headers: { 'Content-Type': 'application/json' },
-          body: submitBody,
-        });
-        delivered = resp.ok;
-        deliveryMethod = 'fetch';
-        if (!resp.ok && typeof posthog !== 'undefined') {
-          posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch', form: 'inline' });
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', BPP_NEW_LEAD_URL, false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(submitBody);
+        delivered = xhr.status >= 200 && xhr.status < 300;
+        deliveryMethod = 'xhr';
+        if (!delivered && typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
         }
-      } catch (fetchErr) {
-        try {
-          var xhr = new XMLHttpRequest();
-          xhr.open('POST', BPP_NEW_LEAD_URL, false);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.send(submitBody);
-          delivered = xhr.status >= 200 && xhr.status < 300;
-          deliveryMethod = 'xhr';
-          if (!delivered && typeof posthog !== 'undefined') {
-            posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
-          }
-        } catch (xhrErr) {
-          if (typeof posthog !== 'undefined') {
-            posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
-          }
+      } catch (xhrErr) {
+        if (typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', form: 'inline', fetchErr: String(fetchErr).slice(0, 200) });
         }
       }
     }
@@ -1456,20 +1451,20 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
       hashedPhone:phH, hashedFirstName:fnH, hashedCountry:countryH
     };
 
-    // Robust lead delivery — Apr 19 2026 fix (sendBeacon-first).
-    // Previous fire-and-forget fetch().catch(() => {}) was being cancelled
-    // by mobile in-app browsers (Meta/Instagram) on page-state transition,
-    // losing leads silently. 3 confirmed silent drops Apr 15-17 before fix.
+    // Robust lead delivery — Apr 19 2026 fix v2 (beacon + fetch in parallel).
     //
-    // The quo-ai-new-lead edge fn is now deployed with --no-verify-jwt, so
-    // sendBeacon() (which cannot set an Authorization header) works as the
-    // first-choice path. Beacons are OS-level fire-and-forget — browsers
-    // guarantee delivery even during page unload. Fetch keepalive + sync
-    // XHR remain as fallbacks for the ~5% of browsers without beacon support.
-    // Show "Sending…" state immediately so the user sees we received their
-    // submit; swap to ✅ done state only after the POST actually kicks off.
-    // That 200–800ms window is where the request lands on the wire, so the
-    // visual feedback also doubles as a network-time buffer.
+    // V1 bug: sendBeacon returning true short-circuited the fetch path, but
+    // beacon's `true` only means "browser queued the request" — NOT that
+    // the server ever received it. Apr 19 PostHog logged 2 beacon-true
+    // lead_captured events that never produced a Supabase contact. Silent
+    // leak.
+    //
+    // V2 fix: fire BOTH beacon and fetch in parallel. Fetch's response is
+    // the authoritative signal ("edge function returned 200 with a
+    // contactId"). Beacon remains as a redundancy net for the rare case
+    // where the tab closes between click-submit and fetch-returning.
+    // The edge function has dedup-by-phone so the duplicate doesn't
+    // create two rows. lead_submit_failed fires if fetch comes back !ok.
     document.getElementById('varFormWrap').style.display = 'none';
     document.getElementById('varSuccessName').textContent = name;
     document.getElementById('varSuccess').style.display = 'block';
@@ -1480,58 +1475,52 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     var delivered = false;
     var deliveryMethod = 'none';
     var submitStartMs = Date.now();
-    var createdContactId = null; // populated from edge-fn response when available
-    // Tier 1: sendBeacon — OS-level, survives everything short of network loss.
-    // Note: beacon is fire-and-forget so we can't read the response body and
-    // won't get the contactId back. That's fine — fetch is next in the chain
-    // and will populate contactId in the common case.
+    var createdContactId = null;
+
+    // Redundancy net — fire-and-forget beacon in case fetch can't complete.
+    // Errors ignored; whether or not this actually delivers, fetch below
+    // drives the authoritative result.
     try {
       if (navigator.sendBeacon) {
-        var blob = new Blob([submitBody], { type: 'application/json' });
-        if (navigator.sendBeacon(submitUrl, blob)) {
-          delivered = true;
-          deliveryMethod = 'beacon';
-        }
+        navigator.sendBeacon(submitUrl, new Blob([submitBody], { type: 'application/json' }));
       }
-    } catch (e) { /* fall through */ }
-    // Tier 2: keepalive fetch. Await so UI doesn't swap before the request
-    // actually hits the wire. Parse the response so we can identify the
-    // session with the created contactId — links landing-page PostHog
-    // events to the CRM contact record, so we can trace a session all the
-    // way through to deposit paid / install complete.
-    if (!delivered) {
+    } catch (e) { /* ignore */ }
+
+    // Primary path — keepalive fetch. `keepalive: true` lets the request
+    // finish even if the tab is closing. We AWAIT the response so we know
+    // the edge function actually processed it (returns {contactId, success}).
+    try {
+      var resp = await fetch(submitUrl, {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: submitBody,
+      });
+      delivered = resp.ok;
+      deliveryMethod = 'fetch';
+      if (resp.ok) {
+        try { var json = await resp.json(); createdContactId = json?.contactId || null; } catch (_) {}
+      } else if (typeof posthog !== 'undefined') {
+        posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch' });
+      }
+    } catch (fetchErr) {
+      // Last-ditch — synchronous XHR. Blocks briefly but guarantees the
+      // request completes before the success screen fully renders.
       try {
-        var resp = await fetch(submitUrl, {
-          method: 'POST',
-          keepalive: true,
-          headers: { 'Content-Type': 'application/json' },
-          body: submitBody,
-        });
-        delivered = resp.ok;
-        deliveryMethod = 'fetch';
-        if (resp.ok) {
-          try { var json = await resp.json(); createdContactId = json?.contactId || null; } catch (_) {}
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', submitUrl, false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(submitBody);
+        delivered = xhr.status >= 200 && xhr.status < 300;
+        deliveryMethod = 'xhr';
+        if (delivered) {
+          try { var j2 = JSON.parse(xhr.responseText); createdContactId = j2?.contactId || null; } catch (_) {}
+        } else if (typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', fetchErr: String(fetchErr).slice(0, 200) });
         }
-        if (!resp.ok && typeof posthog !== 'undefined') {
-          posthog.capture('lead_submit_failed', { status: resp.status, method: 'fetch' });
-        }
-      } catch (fetchErr) {
-        // Tier 3: synchronous XHR. Blocks the thread briefly but guarantees
-        // the request completes before the success screen renders.
-        try {
-          var xhr = new XMLHttpRequest();
-          xhr.open('POST', submitUrl, false);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.send(submitBody);
-          delivered = xhr.status >= 200 && xhr.status < 300;
-          deliveryMethod = 'xhr';
-          if (!delivered && typeof posthog !== 'undefined') {
-            posthog.capture('lead_submit_failed', { status: xhr.status, method: 'xhr', fetchErr: String(fetchErr).slice(0, 200) });
-          }
-        } catch (xhrErr) {
-          if (typeof posthog !== 'undefined') {
-            posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', fetchErr: String(fetchErr).slice(0, 200) });
-          }
+      } catch (xhrErr) {
+        if (typeof posthog !== 'undefined') {
+          posthog.capture('lead_submit_failed', { err: String(xhrErr).slice(0, 200), method: 'xhr-threw', fetchErr: String(fetchErr).slice(0, 200) });
         }
       }
     }
