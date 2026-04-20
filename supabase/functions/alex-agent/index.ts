@@ -1632,10 +1632,26 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true, action: 'retest' }), { status: 200, headers: CORS })
   }
 
-  // TEST_MODE: auto-fresh-start on every incoming message — simulates a new form submission
-  // This means every text from Key starts a clean conversation, no need to type RETEST.
+  // TEST_MODE: auto-fresh-start on every incoming message — simulates a new
+  // form submission. HOWEVER: preserve sessions created in the last 60s.
+  // A session < 60s old was just created by quo-ai-new-lead at form submit
+  // (with the real opener Alex should continue from). Clearing it would
+  // trigger alex-agent's createSession → generic opener → double-message the
+  // customer. Only clear sessions older than 60s.
   if (TEST_MODE) {
-    await clearSessions(supabase, fromPhone)
+    const sixtySecAgo = new Date(Date.now() - 60000).toISOString()
+    const { data: recentSessions } = await supabase
+      .from('alex_sessions')
+      .select('session_id')
+      .eq('phone', fromPhone)
+      .eq('status', 'active')
+      .gte('created_at', sixtySecAgo)
+      .limit(1)
+    if (!recentSessions?.length) {
+      await clearSessions(supabase, fromPhone)
+    } else {
+      console.log('[alex] TEST_MODE preserving recent session (< 60s old)')
+    }
   }
 
   // Load or create session
