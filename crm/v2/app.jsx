@@ -118,9 +118,22 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// ── Offline indicator — thin banner when navigator.onLine flips false ──────
+// ── Connection banner — two failure modes ─────────────────────────────────
+// 1. navigator.onLine → false: device lost network (wifi dropped, airplane
+//    mode, etc). Nothing will reach Supabase.
+// 2. Realtime channel errored or closed: network is fine but Supabase
+//    realtime subscription is dead. CRUD still works, but live updates
+//    (new SMS, proposal viewed, stage change from another tab) stop
+//    arriving silently. Previously invisible — Key would wonder why the
+//    inbox hasn't updated.
+//
+// Listens to a window-level `bpp:realtime-status` event the main realtime
+// channels dispatch when their status callback fires. Any channel reporting
+// 'CHANNEL_ERROR' / 'TIMED_OUT' / 'CLOSED' flips the banner; any reporting
+// 'SUBSCRIBED' unflips.
 function OfflineBanner() {
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const [rtBroken, setRtBroken] = useState(false);
   useEffect(() => {
     const up = () => setOnline(true);
     const down = () => setOnline(false);
@@ -128,12 +141,33 @@ function OfflineBanner() {
     window.addEventListener('offline', down);
     return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down); };
   }, []);
-  if (online) return null;
+  useEffect(() => {
+    const brokenChannels = new Set();
+    const handler = (ev) => {
+      const { channel, status } = ev.detail || {};
+      if (!channel) return;
+      if (status === 'SUBSCRIBED' || status === 'CLOSED' && brokenChannels.size === 0) {
+        brokenChannels.delete(channel);
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        brokenChannels.add(channel);
+      } else if (status === 'CLOSED') {
+        brokenChannels.delete(channel);
+      }
+      setRtBroken(brokenChannels.size > 0);
+    };
+    window.addEventListener('bpp:realtime-status', handler);
+    return () => window.removeEventListener('bpp:realtime-status', handler);
+  }, []);
+  if (online && !rtBroken) return null;
+  const label = !online
+    ? 'Offline — changes queued until you reconnect'
+    : 'Live updates disconnected — reload to restore';
   return (
     <div style={{
       padding: '6px 16px', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
-      background: 'var(--ms-3)', color: '#fff', textAlign: 'center', letterSpacing: '.04em',
-    }}>Offline — changes queued until you reconnect</div>
+      background: !online ? 'var(--ms-3)' : 'var(--ms-4)',
+      color: '#fff', textAlign: 'center', letterSpacing: '.04em',
+    }}>{label}</div>
   );
 }
 
@@ -5553,7 +5587,13 @@ function App() {
           }
         );
       })
-      .subscribe();
+      .subscribe((status) => {
+        // Surface realtime connection health via the shared banner —
+        // SUBSCRIBED/CLOSED are healthy, CHANNEL_ERROR/TIMED_OUT are not.
+        window.dispatchEvent(new CustomEvent('bpp:realtime-status', {
+          detail: { channel: 'global-inbound-sms', status },
+        }));
+      });
     return () => { db.removeChannel(ch); };
   }, [user, selectedContact]);
 
