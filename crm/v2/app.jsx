@@ -802,6 +802,136 @@ function AlexSessionStrip({ session, contactId, contactPhone }) {
   );
 }
 
+// Lead profile strip — renders sparky_memory entries for the open contact's
+// phone as a compact glanceable summary. Accretes turn-by-turn as Alex runs
+// discovery (current_state, pain_point, cost_of_staying) and collects logistics
+// (panel_location, address, generator, etc.). Key's "profile every lead and
+// keep updating" direction — this is how he sees what Alex learned without
+// scrolling the full message thread.
+function LeadProfileStrip({ contactPhone }) {
+  const [entries, setEntries] = React.useState([]);
+  const [expanded, setExpanded] = React.useState(false);
+  React.useEffect(() => {
+    if (!contactPhone) { setEntries([]); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await db.from('sparky_memory')
+        .select('key, value, category, updated_at')
+        .like('key', `contact:${contactPhone}:%`)
+        .order('updated_at', { ascending: false });
+      if (alive) setEntries(data || []);
+    })();
+    return () => { alive = false; };
+  }, [contactPhone]);
+  // Realtime — memory rows update as Alex writes. Refetch on any change
+  // to the key namespace for this contact.
+  React.useEffect(() => {
+    if (!contactPhone) return;
+    const ch = db.channel(`memory-${contactPhone}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sparky_memory' }, (payload) => {
+        const row = payload.new || payload.old;
+        if (row?.key && String(row.key).startsWith(`contact:${contactPhone}:`)) {
+          // Simple refetch — small result set so this is cheap.
+          db.from('sparky_memory')
+            .select('key, value, category, updated_at')
+            .like('key', `contact:${contactPhone}:%`)
+            .order('updated_at', { ascending: false })
+            .then(({ data }) => setEntries(data || []));
+        }
+      })
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [contactPhone]);
+
+  if (entries.length === 0) return null;
+
+  // Order fields by a hand-picked priority — discovery answers first
+  // (those are what Alex learned), then panel/install logistics, then
+  // attribution / background.
+  const PRIORITY = [
+    'current_state', 'pain_point', 'cost_of_staying',
+    'panel_location', 'generator', 'generator_voltage', 'generator_model',
+    'address', 'city', 'zip',
+    'name', 'referral_source', 'lead_source',
+  ];
+  const fieldName = (key) => key.split(':').slice(2).join(':');
+  const sorted = [...entries].sort((a, b) => {
+    const af = fieldName(a.key), bf = fieldName(b.key);
+    const ai = PRIORITY.indexOf(af);
+    const bi = PRIORITY.indexOf(bf);
+    if (ai === -1 && bi === -1) return af.localeCompare(bf);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+
+  // Collapsed view: the 3 most recent / most important fields as compact
+  // chips. Expanded: all fields + their full values.
+  const preview = sorted.slice(0, 3);
+
+  return (
+    <div
+      onClick={() => setExpanded(v => !v)}
+      title="Click to expand the full lead profile"
+      style={{
+        padding: '6px 14px',
+        background: 'var(--card)',
+        borderBottom: '1px solid rgba(0,0,0,.06)',
+        borderLeft: '3px solid var(--ms-2)',
+        fontFamily: 'var(--font-body)', fontSize: 11,
+        color: 'var(--text-muted)', cursor: 'pointer',
+        display: 'flex', flexDirection: 'column', gap: 4,
+      }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+          <span style={{ flex: '0 0 auto', color: 'var(--ms-2)' }}>Profile</span>
+          {!expanded ? (
+            <span style={{
+              flex: 1, minWidth: 0,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              color: 'var(--text-muted)',
+            }}>
+              {preview.map((e, i) => (
+                <span key={e.key}>
+                  {i > 0 ? ' · ' : ''}
+                  <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>{fieldName(e.key)}:</span>
+                  {' '}{String(e.value).slice(0, 30)}
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </span>
+        <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', flex: '0 0 auto' }}>
+          {entries.length} field{entries.length === 1 ? '' : 's'}
+        </span>
+      </div>
+      {expanded ? (
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            marginTop: 6, padding: '8px 10px', background: 'var(--bg)',
+            boxShadow: 'var(--raised-inset-1)',
+            display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px',
+            fontSize: 12, color: 'var(--text)',
+          }}>
+          {sorted.map(e => (
+            <React.Fragment key={e.key}>
+              <span className="mono" style={{
+                fontSize: 10, letterSpacing: '.04em',
+                color: 'var(--text-faint)', textTransform: 'lowercase',
+                paddingTop: 2, whiteSpace: 'nowrap',
+              }}>{fieldName(e.key)}</span>
+              <span style={{ lineHeight: 1.4, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {String(e.value)}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 // Duplicate-phone warning strip — renders when another contact shares the
 // open contact's phone number. Amber to draw attention; each dupe is a link
 // that swaps the panel to that contact so Key can compare and decide.
@@ -1262,6 +1392,10 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
 
       {alexSession ? (
         <AlexSessionStrip session={alexSession} contactId={contactId} contactPhone={contact?.phone} />
+      ) : null}
+
+      {contact?.phone ? (
+        <LeadProfileStrip contactPhone={contact.phone} />
       ) : null}
 
       {duplicates.length > 0 ? (
