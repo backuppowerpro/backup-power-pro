@@ -4522,6 +4522,12 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
 // ── Morning Briefing modal — once per day ───────────────────────────────────
 function LiveMorningBriefing({ onClose, onPickContact }) {
   const [sections, setSections] = useState({ installsToday: [], waiting: [], stuckQuotes: [], overdue: [], today: [], materials: [], goodNews: [] });
+  // Lead-flow health — catches the "ads are spending but leads stopped"
+  // silent failure in real time. Daily lead-volume-alert SMS only fires
+  // at 8:30 AM; this surfaces the same signal every time Key opens the
+  // briefing. { last24h, priorWeekDailyAvg } — renders red bar when
+  // last24h=0 AND baseline>=1, amber when below half baseline.
+  const [leadHealth, setLeadHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -4540,9 +4546,12 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString();
 
       // Parallel fetches: installs today / overdue / new-today /
-      // materials-awaiting / paid / waiting-on-Key / stuck quotes.
+      // materials-awaiting / paid / waiting-on-Key / stuck quotes /
+      // lead flow health (24h vs 7-day baseline).
       const twoDaysAgoIso = new Date(Date.now() - 2 * 86400000).toISOString();
-      const [installsRes, overdueRes, recentRes, awaitingMatRes, paidRes, waitingMsgsRes, stuckPropsRes] = await Promise.all([
+      const oneDayAgoIso = new Date(Date.now() - 86400000).toISOString();
+      const eightDaysAgoIso = new Date(Date.now() - 8 * 86400000).toISOString();
+      const [installsRes, overdueRes, recentRes, awaitingMatRes, paidRes, waitingMsgsRes, stuckPropsRes, lead24Res, leadPrior7Res] = await Promise.all([
         db.from('contacts')
           .select('id, name, address, install_date')
           .gte('install_date', todayIso)
@@ -4576,7 +4585,32 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           .lt('created_at', twoDaysAgoIso)
           .order('created_at', { ascending: true })
           .limit(10),
+        // Lead count last 24h (head: true = count-only, no rows).
+        db.from('contacts').select('id', { count: 'exact', head: true }).gte('created_at', oneDayAgoIso),
+        // Lead count 8→1 days ago → compute 7-day prior daily average.
+        db.from('contacts').select('id', { count: 'exact', head: true })
+          .gte('created_at', eightDaysAgoIso).lt('created_at', oneDayAgoIso),
       ]);
+      // Compute lead-flow health. Alert tones:
+      //   red  — 0 leads in 24h AND prior 7-day avg >= 1
+      //   amber — <50% of prior avg (and prior avg >= 2 to avoid noise)
+      //   none — healthy OR prior baseline too thin to judge
+      const last24h = Number(lead24Res.count || 0);
+      const prior7dTotal = Number(leadPrior7Res.count || 0);
+      const prior7dAvg = prior7dTotal / 7;
+      let healthTone = null;
+      let healthLabel = '';
+      if (last24h === 0 && prior7dAvg >= 1) {
+        healthTone = 'red';
+        healthLabel = `No leads in 24h (7-day avg: ${prior7dAvg.toFixed(1)}/day)`;
+      } else if (prior7dAvg >= 2 && last24h < prior7dAvg * 0.5) {
+        healthTone = 'amber';
+        healthLabel = `${last24h} lead${last24h === 1 ? '' : 's'} in 24h — below half of ${prior7dAvg.toFixed(1)}/day baseline`;
+      } else if (prior7dAvg >= 1) {
+        healthTone = 'ok';
+        healthLabel = `${last24h} lead${last24h === 1 ? '' : 's'} in 24h · ${prior7dAvg.toFixed(1)}/day baseline`;
+      }
+      setLeadHealth(healthTone ? { tone: healthTone, label: healthLabel, last24h, baseline: prior7dAvg } : null);
 
       // Materials: booked/permit leads whose install_notes don't yet have any __pm_ line
       const awaitingMaterials = (awaitingMatRes.data || [])
@@ -4700,6 +4734,25 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>Loading brief…</div>
         ) : (
           <div style={{ padding: '0 24px' }}>
+            {/* Lead-flow health — first thing Key sees. Red bar = drought
+                (zero leads in 24h despite a real baseline). Would've caught
+                the Apr 15-19 silent-leak bug immediately. */}
+            {leadHealth ? (
+              <div style={{
+                padding: '10px 14px', marginBottom: 14,
+                background: leadHealth.tone === 'red' ? 'var(--ms-3)'
+                           : leadHealth.tone === 'amber' ? 'var(--ms-4)'
+                           : 'var(--card)',
+                color: leadHealth.tone === 'ok' ? 'var(--text-muted)' : '#fff',
+                boxShadow: leadHealth.tone === 'ok' ? 'var(--raised-2)' : 'none',
+                display: 'flex', alignItems: 'center', gap: 8,
+                fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: leadHealth.tone === 'ok' ? 500 : 700,
+                letterSpacing: '.02em',
+              }}>
+                <span style={{ fontSize: 14 }}>{leadHealth.tone === 'red' ? '■' : leadHealth.tone === 'amber' ? '▲' : '●'}</span>
+                <span>{leadHealth.label}</span>
+              </div>
+            ) : null}
             {/* Installing today FIRST — if Key has an install today, that's
                 the single most important thing on the schedule. Renders only
                 when there's at least one install today (no empty-state noise). */}
