@@ -3216,19 +3216,55 @@ function KeyboardHelp({ open, onClose }) {
 
 // ── CSV export — download contacts as .csv ──────────────────────────────────
 async function exportContactsCsv() {
-  const { data } = await db
+  // Broaden the select so the export is useful as a standalone snapshot
+  // — Key can open it in Numbers/Excel to segment by install_date,
+  // quote_amount, assigned_installer, or landing page (consent_page =
+  // which ad variant the lead came from). Prior export omitted all of
+  // those, so the CSV wasn't much more than a Rolodex.
+  const { data: contacts } = await db
     .from('contacts')
-    .select('id, name, phone, email, address, stage, status, do_not_contact, created_at, install_notes')
+    .select('id, name, phone, email, address, stage, status, do_not_contact, created_at, install_notes, install_date, quote_amount, jurisdiction_id, assigned_installer, installer_pay, consent_page')
     .order('created_at', { ascending: false });
-  if (!data || data.length === 0) return;
+  if (!contacts || contacts.length === 0) {
+    window.__bpp_toast && window.__bpp_toast('No contacts to export', 'info');
+    return;
+  }
+  window.__bpp_toast && window.__bpp_toast(`Building export (${contacts.length} contacts)…`, 'info');
 
-  const header = ['id', 'name', 'phone', 'email', 'address', 'stage', 'status', 'do_not_contact', 'created_at', 'install_notes'];
+  // Hydrate jurisdiction names in one roundtrip so the CSV reads as
+  // "Greenville" instead of a uuid.
+  const jurIds = Array.from(new Set(contacts.map(c => c.jurisdiction_id).filter(Boolean)));
+  let jurMap = {};
+  if (jurIds.length > 0) {
+    const { data: jurs } = await db.from('permit_jurisdictions').select('id, name').in('id', jurIds);
+    jurMap = Object.fromEntries((jurs || []).map(j => [j.id, j.name]));
+  }
+
+  const STAGE_LABEL = {
+    1: 'NEW', 2: 'QUOTED', 3: 'BOOKED', 4: 'PERMIT', 5: 'PAY',
+    6: 'PAID', 7: 'PRINT', 8: 'INSPECT', 9: 'COMPLETE',
+  };
+
+  const header = [
+    'id', 'name', 'phone', 'email', 'address',
+    'stage_num', 'stage_label', 'status', 'do_not_contact',
+    'created_at', 'install_date',
+    'quote_amount', 'jurisdiction', 'assigned_installer', 'installer_pay',
+    'consent_page', 'install_notes',
+  ];
   const esc = v => {
     if (v == null) return '';
     const s = String(v).replace(/"/g, '""');
     return /[",\n]/.test(s) ? `"${s}"` : s;
   };
-  const rows = data.map(r => header.map(h => esc(r[h])).join(','));
+  const rows = contacts.map(c => [
+    esc(c.id), esc(c.name), esc(c.phone), esc(c.email), esc(c.address),
+    esc(c.stage), esc(STAGE_LABEL[c.stage] || ''), esc(c.status), esc(c.do_not_contact),
+    esc(c.created_at), esc(c.install_date),
+    esc(c.quote_amount), esc(c.jurisdiction_id ? (jurMap[c.jurisdiction_id] || '') : ''),
+    esc(c.assigned_installer), esc(c.installer_pay),
+    esc(c.consent_page), esc(c.install_notes),
+  ].join(','));
   const csv = [header.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -3239,7 +3275,7 @@ async function exportContactsCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  window.__bpp_toast && window.__bpp_toast(`Exported ${data.length} contacts`, 'success');
+  window.__bpp_toast && window.__bpp_toast(`Exported ${contacts.length} contacts · ${header.length} columns`, 'success');
 }
 
 // ── New Lead Modal (action triggered by "+" button) ────────────────────────
