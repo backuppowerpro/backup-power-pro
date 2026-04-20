@@ -371,35 +371,44 @@ Deno.serve(async (req) => {
     await supabase.from('sparky_memory').upsert(seeds, { onConflict: 'key' }).then(() => {}, (e: any) => console.error('[new-lead] memory seed failed:', e?.message))
   }
 
-  // Human typing delay — 18-30s before the opener lands. A message that
-  // appears within 1 second of submit feels fake. 20s is close to what a
-  // real person texting from their couch looks like. Random within the
-  // window so consecutive test leads don't have identical timing patterns.
-  const typingMs = 18000 + Math.floor(Math.random() * 12000)
-  await new Promise(r => setTimeout(r, typingMs))
-
-  // Fire the opener via Quo
-  let quoMsgId: string | null = null
-  try {
-    const quoRes = await fetch('https://api.openphone.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
-      body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: openerText }),
+  // Human typing delay + opener send — BACKGROUND. If we await here, the
+  // landing page's form submit hangs on the loading spinner for 20-30s
+  // (observed by Key 2026-04-20). EdgeRuntime.waitUntil keeps the function
+  // alive to complete the send after the HTTP response returns, so the
+  // customer sees a fast "submitted" confirmation while the opener arrives
+  // ~20s later feeling like a real person composing.
+  const openerPromise = (async () => {
+    const typingMs = 18000 + Math.floor(Math.random() * 12000)
+    await new Promise(r => setTimeout(r, typingMs))
+    let quoMsgId: string | null = null
+    try {
+      const quoRes = await fetch('https://api.openphone.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+        body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: openerText }),
+      })
+      const quoData = await quoRes.json()
+      quoMsgId = quoData.data?.id || null
+    } catch (err) {
+      console.error('[QUO] opener send failed:', err)
+    }
+    // Mirror opener into messages table so CRM thread sees it
+    await supabase.from('messages').insert({
+      contact_id: contact.id,
+      direction: 'outbound',
+      body: openerText,
+      sender: 'ai',
+      quo_message_id: quoMsgId,
     })
-    const quoData = await quoRes.json()
-    quoMsgId = quoData.data?.id || null
-  } catch (err) {
-    console.error('[QUO] opener send failed:', err)
+  })()
+  // @ts-expect-error EdgeRuntime is a global on Supabase Edge Functions
+  if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+    // @ts-expect-error
+    EdgeRuntime.waitUntil(openerPromise)
+  } else {
+    // Fallback: just fire the promise; rely on the runtime keeping it alive
+    openerPromise.catch(e => console.error('[opener] background failed:', e))
   }
-
-  // Mirror opener into messages table so CRM thread sees it
-  await supabase.from('messages').insert({
-    contact_id: contact.id,
-    direction: 'outbound',
-    body: openerText,
-    sender: 'ai',
-    quo_message_id: quoMsgId,
-  })
 
   // ── QUEUE FOLLOW-UP (24hrs if no reply) ───────────────────────────────────
   if (isNew) {
