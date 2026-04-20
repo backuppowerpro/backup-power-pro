@@ -5301,10 +5301,15 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
     fetchThreads().finally(() => setLoading(false));
   }, [fetchThreads]);
 
-  // Realtime — refresh on any message insert
+  // Realtime — refresh on any message change. INSERTs surface new threads
+  // and inbound replies. UPDATEs matter because Twilio's status-callback
+  // flips `status` from 'sent' → 'delivered' OR 'failed'/'undelivered', and
+  // the failed state drives the red tint + sort-to-top ordering. Without the
+  // UPDATE subscription, a failed delivery wouldn't visibly escalate until
+  // Key refreshed the tab manually — exactly the signal he needs in real time.
   useEffect(() => {
     const ch = db.channel('messages-inbox')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchThreads)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchThreads)
       .subscribe();
     return () => { db.removeChannel(ch); };
   }, [fetchThreads]);
