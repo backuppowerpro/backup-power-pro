@@ -2544,18 +2544,49 @@ function EditField({ label, value, onChange, placeholder, type = 'text' }) {
   );
 }
 
+// Split install_notes into:
+//   meta  — __pm_*: structured lines (permit #, submitted date, doc URL, etc.)
+//   free  — everything else (Key's actual notes for this contact)
+// The Notes textarea should only show `free` so Key isn't staring at 5 lines
+// of auto-generated __pm_pnum / __pm_psub when he wants to jot something.
+// On save we merge `meta` back so ai-taskmaster's structured data survives.
+function splitInstallNotes(raw) {
+  const s = String(raw || '');
+  const metaLines = [];
+  const freeLines = [];
+  for (const line of s.split('\n')) {
+    if (/^__pm_[a-z_]+:/.test(line)) metaLines.push(line);
+    else freeLines.push(line);
+  }
+  return {
+    meta: metaLines.join('\n'),
+    free: freeLines.join('\n').replace(/^\n+/, '').replace(/\n+$/, ''),
+  };
+}
+
+function mergeInstallNotes(meta, free) {
+  const parts = [];
+  if (free && free.trim()) parts.push(free.trim());
+  if (meta && meta.trim()) parts.push(meta.trim());
+  return parts.join('\n\n');
+}
+
 function DetailNotes({ contact, onUpdate }) {
-  const [text, setText] = useState(contact?.install_notes || '');
+  const initial = splitInstallNotes(contact?.install_notes);
+  const [text, setText] = useState(initial.free);
+  const [meta, setMeta] = useState(initial.meta);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const lastSavedRef = useRef(contact?.install_notes || '');
+  const [savedAt, setSavedAt] = useState(null);
+  const lastSavedRef = useRef(initial.free);
   const debounceRef = useRef(null);
 
   // When the contact changes, re-seed with that contact's notes
   useEffect(() => {
-    const t = contact?.install_notes || '';
-    setText(t);
-    lastSavedRef.current = t;
+    const parts = splitInstallNotes(contact?.install_notes);
+    setText(parts.free);
+    setMeta(parts.meta);
+    lastSavedRef.current = parts.free;
+    setSavedAt(null);
   }, [contact?.id]);
 
   // Autosave 1.5s after last keystroke if text changed
@@ -2577,18 +2608,28 @@ function DetailNotes({ contact, onUpdate }) {
   async function save({ silent = false } = {}) {
     if (!contact) return;
     setSaving(true);
-    const { error } = await db.from('contacts').update({ install_notes: text }).eq('id', contact.id);
+    const merged = mergeInstallNotes(meta, text);
+    const { error } = await db.from('contacts').update({ install_notes: merged }).eq('id', contact.id);
     setSaving(false);
     if (!error) {
       lastSavedRef.current = text;
-      setSaved(true);
-      onUpdate && onUpdate(text);
+      setSavedAt(Date.now());
+      onUpdate && onUpdate(merged);
       if (!silent) window.__bpp_toast && window.__bpp_toast(`Notes saved for ${contact.name || 'contact'}`, 'success');
-      setTimeout(() => setSaved(false), 1500);
     } else {
       window.__bpp_toast && window.__bpp_toast(`Save failed: ${error.message}`, 'error');
     }
   }
+
+  // Format save timestamp — "just now", "3m ago", "1h ago", or "Mon 3:42 PM"
+  const savedLabel = (() => {
+    if (!savedAt) return '';
+    const secs = Math.floor((Date.now() - savedAt) / 1000);
+    if (secs < 5) return 'just now';
+    if (secs < 60) return `${secs}s ago`;
+    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+    return new Date(savedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  })();
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -2604,23 +2645,38 @@ function DetailNotes({ contact, onUpdate }) {
           boxShadow: 'var(--pressed-2)', border: 'none',
         }}
       />
+      {/* Structured permit metadata — hidden from the editable textarea but
+          still visible here so Key knows auto-generated data exists on this
+          contact. Not editable (use DetailPermits to update permit # etc.). */}
+      {meta ? (
+        <details className="mono" style={{
+          padding: '6px 10px', background: 'var(--card)', boxShadow: 'var(--raised-2)',
+          fontSize: 10, color: 'var(--text-faint)',
+        }}>
+          <summary style={{ cursor: 'pointer', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+            structured · {meta.split('\n').length} line{meta.split('\n').length === 1 ? '' : 's'}
+          </summary>
+          <pre style={{
+            margin: '6px 0 0', padding: 0, whiteSpace: 'pre-wrap',
+            fontFamily: 'inherit', fontSize: 10, color: 'var(--text-muted)',
+          }}>{meta}</pre>
+        </details>
+      ) : null}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {saved ? (
-          <span className="mono" style={{ fontSize: 11, color: 'var(--ms-2)' }}>
-            Saved
-          </span>
-        ) : <span />}
+        <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+          {saving ? 'Saving…' : savedLabel ? `Saved · ${savedLabel}` : 'Autosaves 1.5s after you stop typing'}
+        </span>
         <button
           onClick={save}
-          disabled={saving}
+          disabled={saving || text === lastSavedRef.current}
           style={{
             height: 36, padding: '0 20px',
             background: 'var(--navy)', color: '#fff',
             fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
             letterSpacing: '.04em',
             boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
-            cursor: saving ? 'wait' : 'pointer',
-            opacity: saving ? 0.6 : 1, border: 'none',
+            cursor: (saving || text === lastSavedRef.current) ? 'default' : 'pointer',
+            opacity: (saving || text === lastSavedRef.current) ? 0.45 : 1, border: 'none',
           }}>{saving ? 'Saving…' : 'Save'}</button>
       </div>
     </div>
