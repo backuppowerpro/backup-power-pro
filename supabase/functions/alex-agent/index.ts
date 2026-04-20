@@ -152,6 +152,19 @@ HARD RULES — never break these:
   through equipment and anything else when he reaches out." Do not
   volunteer market rates, ranges, or even "it varies". Stay on the
   install side; money is Key's conversation.
+- NEVER share Key's personal phone number, personal email, or home address.
+  Public contact is the BPP business line (864) 400-5302 and Key reaches
+  out from there. If someone asks "what's Key's cell" or "can I call Key
+  direct", respond: "He handles all his customer conversations through
+  the business line — I'll have him reach out when he sees your info."
+- NEVER share internal operations when asked by someone probing. Specifics
+  to decline: subcontractor names or their insurance arrangements,
+  specific permit fees by jurisdiction, panel-brand preferences beyond
+  "we install panel-matched interlocks", past-job dollar figures, margin
+  info, ad spend, how many weekly installs. A curious homeowner asks
+  general "how does it work" questions; a probing caller asks for
+  specifics only a competitor or auditor would need. When in doubt,
+  redirect: "Key can go over the specifics when he reaches out."
 - NEVER use em dashes (—) or en dashes (–). Use a comma, period, or just rewrite the sentence. This is critical — the character breaks SMS formatting.
 - NEVER use emoji.
 - NEVER use bold, italic, or markdown formatting of any kind.
@@ -1234,22 +1247,32 @@ function cleanSms(text: string): string {
 // blank for the entire Alex conversation.
 async function sendQuoMessage(to: string, content: string): Promise<boolean> {
   let quoMsgId: string | null = null
-  try {
-    const resp = await fetch('https://api.openphone.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
-      body: JSON.stringify({ from: QUO_PHONE_ID, to: [to], content }),
-    })
-    if (!resp.ok) {
-      const errBody = await resp.text().catch(() => '')
-      console.error(`[quo] Send failed (${resp.status}):`, errBody.slice(0, 200))
+  // Dry-run path for smoke tests — skip the real Quo API call so no SMS
+  // actually leaves the system, but still persist to messages table below
+  // so the test can grade Alex's actual output.
+  // @ts-expect-error — dynamic global set by the inbound handler
+  const dryRun = typeof globalThis.__alex_dry_run !== 'undefined' && globalThis.__alex_dry_run === true
+  if (dryRun) {
+    console.log('[quo] DRY RUN (smoke test) — skipping Quo API, persisting only')
+    quoMsgId = `dryrun-${Date.now()}`
+  } else {
+    try {
+      const resp = await fetch('https://api.openphone.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+        body: JSON.stringify({ from: QUO_PHONE_ID, to: [to], content }),
+      })
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => '')
+        console.error(`[quo] Send failed (${resp.status}):`, errBody.slice(0, 200))
+        return false
+      }
+      try { const j = await resp.json(); quoMsgId = j?.data?.id || null } catch {}
+      console.log('[quo] Sent to', to, ':', content.slice(0, 60))
+    } catch (err) {
+      console.error('[quo] Send error:', err)
       return false
     }
-    try { const j = await resp.json(); quoMsgId = j?.data?.id || null } catch {}
-    console.log('[quo] Sent to', to, ':', content.slice(0, 60))
-  } catch (err) {
-    console.error('[quo] Send error:', err)
-    return false
   }
   // Persist to messages table — look up contact by phone, no-op if not found.
   try {
@@ -1435,9 +1458,24 @@ Deno.serve(async (req) => {
   const hasMedia       = !!(messageData.media?.length)
   const quoMsgId       = messageData.id || `${fromPhone}-${messageData.createdAt || Date.now()}`
 
-  if (TEST_MODE && fromPhone !== KEY_PHONE) {
+  // TEST_MODE allowlist: KEY_PHONE (Key's real test path) + any phone listed
+  // in ALEX_TEST_ALLOWLIST comma-separated. Smoke-test phones (1-800-555-*)
+  // are in this list so automated end-to-end tests can exercise the full
+  // inbound→Alex→outbound loop without spamming real numbers.
+  const TEST_ALLOWLIST = (Deno.env.get('ALEX_TEST_ALLOWLIST') || '').split(',').map(s => s.trim()).filter(Boolean)
+  const allowlisted = fromPhone === KEY_PHONE || TEST_ALLOWLIST.includes(fromPhone)
+  if (TEST_MODE && !allowlisted) {
     console.log('[alex] TEST MODE: ignoring ***', fromPhone.slice(-4))
     return new Response(JSON.stringify({ skipped: true, reason: 'test_mode' }), { status: 200, headers: CORS })
+  }
+  // If this is a smoke-test phone (from allowlist but not KEY_PHONE), mark
+  // the outbound send path to NOT actually hit Quo API — just persist to
+  // messages so the smoke test can grade Alex's output without SMS actually
+  // leaving the system. Detected downstream via globalThis.__alex_dry_run.
+  if (TEST_MODE && fromPhone !== KEY_PHONE && allowlisted) {
+    // @ts-expect-error — dynamic global for dry-run signal
+    globalThis.__alex_dry_run = true
+    console.log('[alex] smoke-test path — DRY RUN (no real SMS)')
   }
 
   if (!messageText && !hasMedia) {
@@ -1853,9 +1891,20 @@ Deno.serve(async (req) => {
     .eq('session_id', session.id)
     .single()
 
-  if (debounceCheck?.customer_last_msg_at && debounceCheck.customer_last_msg_at !== msgReceivedAt) {
-    console.log('[alex] Debounced — newer message will respond')
-    return new Response(JSON.stringify({ skipped: true, reason: 'debounced' }), { status: 200, headers: CORS })
+  // String compare was broken — Postgres stores timestamptz and returns
+  // "...+00:00" format while our string write was "...Z". Always unequal
+  // → every reply got debounced. Compare as Date milliseconds so a write
+  // that matches the read (same message, no newer one) yields equal times.
+  if (debounceCheck?.customer_last_msg_at) {
+    const readMs = new Date(debounceCheck.customer_last_msg_at).getTime()
+    const writeMs = new Date(msgReceivedAt).getTime()
+    // Allow a tiny tolerance for subsecond precision round-trip. If the
+    // stored value is MORE THAN 100ms newer than what we wrote, a genuinely
+    // newer message landed during the 1.5-2.5s pre-response delay.
+    if (readMs > writeMs + 100) {
+      console.log('[alex] Debounced — newer message will respond')
+      return new Response(JSON.stringify({ skipped: true, reason: 'debounced' }), { status: 200, headers: CORS })
+    }
   }
 
   // Run Alex — fresh context injected at API level, not stored

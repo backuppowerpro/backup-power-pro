@@ -173,37 +173,83 @@ async function main() {
     const isTestModeSkip = inboundBody.skipped && inboundBody.reason === 'test_mode';
 
     if (isTestModeSkip) {
-      console.log('  (TEST_MODE is ON — alex-agent correctly skipped a non-KEY_PHONE inbound)');
-      console.log('  Full inbound→reply path cannot be validated in TEST_MODE.');
-      console.log('  When ALEX_TEST_MODE=false in production, this test will verify the full loop.');
-      pass(`alex-agent correctly gated by TEST_MODE (fromPhone !== KEY_PHONE)`);
-    } else {
-      // Production path — full validation
-      console.log('  waiting up to 45s for inbound persist + Alex reply...');
-      const state = await waitFor(async () => {
-        const r = await sbGet('messages', `?contact_id=eq.${contactId}&order=created_at.asc`);
-        const rows = JSON.parse(r.body);
-        const inbound = rows.filter(m => m.direction === 'inbound');
-        const outbound = rows.filter(m => m.direction === 'outbound');
-        if (inbound.length > 0 && outbound.length >= 2) return { inbound, outbound, all: rows };
-        return null;
-      }, { timeout: 45000, interval: 3000, label: 'inbound persist + Alex reply' }).catch(() => null);
+      fail('alex-agent processed smoke-test inbound',
+        `smoke phone not in ALEX_TEST_ALLOWLIST. Set ALEX_TEST_ALLOWLIST=${TEST_PHONE},...`);
+      return;
+    }
 
-      if (!state) {
-        const r = await sbGet('messages', `?contact_id=eq.${contactId}&order=created_at.asc`);
-        const rows = JSON.parse(r.body);
-        const inbound = rows.filter(m => m.direction === 'inbound');
-        const outbound = rows.filter(m => m.direction === 'outbound');
-        fail('alex-agent processes inbound + replies within 45s',
-          `inbound=${inbound.length}, outbound=${outbound.length}. Thread:\n` +
-          rows.map(m => `  [${m.created_at.slice(11, 19)}] ${m.direction}: ${(m.body || '').slice(0, 80)}`).join('\n'));
-      } else {
-        assert(state.inbound.length >= 1, 'inbound row persisted to messages table');
-        assert(state.outbound.length === 2, `exactly 2 outbound rows (opener + 1 Alex reply) — got ${state.outbound.length}`,
-          `double-opener bug. Thread:\n` +
-          state.all.map(m => `  [${m.created_at.slice(11, 19)}] ${m.direction}/${m.sender}: ${(m.body || '').slice(0, 60)}`).join('\n'));
-        assert(state.outbound[1]?.sender === 'ai', `Alex reply has sender='ai' (got ${state.outbound[1]?.sender})`);
-      }
+    // Full end-to-end — same path a real customer hits. Allowlisted phone
+    // means alex-agent runs normally but DRY-runs the Quo API call (no
+    // real SMS). We still verify the outbound row lands in messages table
+    // with Alex's actual generated content.
+    console.log('  waiting up to 45s for inbound persist + Alex dry-run reply...');
+    const state = await waitFor(async () => {
+      const r = await sbGet('messages', `?contact_id=eq.${contactId}&order=created_at.asc`);
+      const rows = JSON.parse(r.body);
+      const inbound = rows.filter(m => m.direction === 'inbound');
+      const outbound = rows.filter(m => m.direction === 'outbound');
+      if (inbound.length >= 1 && outbound.length >= 2) return { inbound, outbound, all: rows };
+      return null;
+    }, { timeout: 45000, interval: 3000, label: 'inbound persist + Alex reply' }).catch(() => null);
+
+    if (!state) {
+      const r = await sbGet('messages', `?contact_id=eq.${contactId}&order=created_at.asc`);
+      const rows = JSON.parse(r.body);
+      fail('alex-agent processes inbound + replies within 45s',
+        `got ${rows.length} total rows. Thread:\n` +
+        rows.map(m => `  [${m.created_at.slice(11, 19)}] ${m.direction}: ${(m.body || '').slice(0, 80)}`).join('\n'));
+      return;
+    }
+
+    assert(state.inbound.length === 1, `inbound persisted (got ${state.inbound.length} inbound rows)`);
+    assert(state.outbound.length === 2, `exactly 2 outbound rows (opener + Alex reply) — got ${state.outbound.length}`,
+      `double-opener bug. Thread:\n` +
+      state.all.map(m => `  [${m.created_at.slice(11, 19)}] ${m.direction}/${m.sender}: ${(m.body || '').slice(0, 70)}`).join('\n'));
+
+    const alexReply = state.outbound[1].body || '';
+    console.log(`  Alex replied: "${alexReply.slice(0, 100)}"`);
+    assert(state.outbound[1].sender === 'ai', `Alex reply sender='ai'`);
+    assert(!/—|–/.test(alexReply), 'no em/en dashes in Alex reply', `found dash in: ${alexReply}`);
+    assert(!/\$\d|dollar|\d+\s?(?:bucks|k\b)/i.test(alexReply), 'no dollar amounts in Alex reply',
+      `money reference in: ${alexReply}`);
+    assert(alexReply.length < 500, `reply fits in SMS (under 500 chars, got ${alexReply.length})`);
+
+    // Multi-turn: second inbound should get one more Alex response on the SAME session
+    console.log('\n  Multi-turn: send second inbound, verify no double-opener');
+    const secondInbound = await request(`${SB_URL}/functions/v1/alex-agent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'message.received',
+        data: { object: {
+          from: TEST_PHONE, to: ['+18644005302'], direction: 'incoming',
+          body: 'panel is in the garage',
+          id: `smoke-test-${Date.now()}-2`, createdAt: new Date().toISOString(),
+        }},
+      }),
+    });
+    assert(secondInbound.status === 200, 'second inbound accepted');
+
+    const after = await waitFor(async () => {
+      const r = await sbGet('messages', `?contact_id=eq.${contactId}&order=created_at.asc`);
+      const rows = JSON.parse(r.body);
+      if (rows.filter(m => m.direction === 'inbound').length >= 2 &&
+          rows.filter(m => m.direction === 'outbound').length >= 3) return rows;
+      return null;
+    }, { timeout: 30000, interval: 3000, label: 'second reply' }).catch(() => null);
+
+    if (!after) {
+      fail('Alex responds to second inbound', 'second reply never landed within 30s');
+    } else {
+      const afterOut = after.filter(m => m.direction === 'outbound');
+      assert(afterOut.length === 3, `exactly 3 outbound total (opener + 2 replies), got ${afterOut.length}`,
+        `double-opener or duplicate-reply bug. Thread:\n` +
+        after.map(m => `  [${m.created_at.slice(11, 19)}] ${m.direction}/${m.sender}: ${(m.body || '').slice(0, 70)}`).join('\n'));
+      const reply2 = afterOut[2].body || '';
+      console.log(`  Alex 2nd reply: "${reply2.slice(0, 100)}"`);
+      // Rule checks on second reply too
+      assert(!/—|–/.test(reply2), 'no dashes in 2nd reply');
+      assert(!/\$\d|dollar/i.test(reply2), 'no dollar amounts in 2nd reply');
     }
 
     // ── Summary ──────────────────────────────────────────────────────────────
