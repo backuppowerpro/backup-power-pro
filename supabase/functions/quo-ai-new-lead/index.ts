@@ -310,44 +310,86 @@ Deno.serve(async (req) => {
     }).catch(err => console.error('[notify-key] unhandled:', err))
   }
 
-  // ── FIRST MESSAGE ─────────────────────────────────────────────────────────
-  // Legal audit H1: first message must identify brand (CTIA 10DLC) and include
-  // STOP instruction. Alex's subsequent texts stay conversational; this is the
-  // one "clean first impression" that carriers + TCPA compliance scan for.
-  const firstMessage = `Hey ${firstName}, this is Alex with Backup Power Pro — got your generator-inlet request. To build your quote, can you send a quick photo of your electrical panel (door open)? Takes 30 seconds and lets Key give you an accurate price with no surprises. Reply STOP to opt out.`
-
+  // ── ALEX OPENER (INLINED) ─────────────────────────────────────────────────
+  // Full Alex flow: create alex_sessions row, pick an A/B variant, fire the
+  // variant-specific opener text(s), mirror them into the messages table so
+  // the CRM thread shows the conversation, seed sparky_memory with initial
+  // profile fields so alex-agent can continue the discovery conversation
+  // on first customer reply.
+  //
+  // Inlined (was a cross-function HTTP call to alex-initiate) — the edge
+  // runtime's auto-populated SUPABASE_* JWTs mis-validate at the gateway
+  // for this project, breaking edge-to-edge calls. Copying the logic here
+  // avoids the JWT hop entirely.
+  //
   // NO quiet-hours gate. Speed-to-lead trumps carrier cold-call compliance
-  // here — the lead expressly consented by submitting the form (consent_at
-  // + consent_ip + consent_ua + consent_page all recorded above). This is a
-  // direct response to their own expressed request, not unsolicited cold
-  // outreach. A customer filling out a form at 11 PM (storm rolling in) needs
-  // a reply within minutes, not the next morning. Key explicit decision
-  // 2026-04-19: "i want a response for every customer, when did i agree to
-  // this late night stop".
+  // — the lead expressly consented by submitting the form (consent_at,
+  // consent_ip, consent_ua, consent_page all recorded above).
 
-  // ── TYPING DELAY (feels human) ────────────────────────────────────────────
-  const typingMs = Math.min(8000, 1500 + Math.random() * 2000)
-  await new Promise(resolve => setTimeout(resolve, typingMs))
+  // Opener templates, mirroring alex-initiate's A/B test variants with an
+  // added 3-question-discovery first-turn from Key's 2026-04-19 spec.
+  // Variant D (new) leads with the current-state question instead of a
+  // photo ask. The photo/location collection happens in alex-agent once
+  // discovery is primed.
+  const openerFirstName = firstName || fullName.split(' ')[0] || ''
+  const hi = openerFirstName ? `Hey ${openerFirstName}` : 'Hey'
+  // Discovery-led opener. Single message so the customer doesn't feel
+  // swarmed. Establishes rapport, identifies Alex + company, asks the
+  // current-state question. alex-agent picks up from the reply.
+  const alexSessionId = crypto.randomUUID()
+  const variant = 'D'
+  const openerText = `${hi}, this is Alex with Backup Power Pro. Thanks for reaching out. Before I get Key involved, mind if I ask: what are you using for backup power right now, or is this your first setup? Reply STOP to opt out.`
 
-  // ── SEND FIRST TEXT TO LEAD ───────────────────────────────────────────────
+  // Insert alex_sessions row
+  await supabase.from('alex_sessions').insert({
+    phone: normalizedPhone,
+    session_id: alexSessionId,
+    status: 'active',
+    messages: [{ role: 'assistant', content: openerText }],
+    alex_active: true,
+    key_active: false,
+    followup_count: 0,
+    photo_received: false,
+    opted_out: false,
+    summary: `variant:${variant}`,
+    contact_name: fullName || null,
+    last_outbound_at: new Date().toISOString(),
+  })
+
+  // Seed sparky_memory with known profile fields from the form submit.
+  // Discovery answers will get written here by alex-agent's write_memory
+  // tool as the conversation progresses.
+  const seeds: Array<{ key: string; value: string; category: string; importance: number }> = []
+  if (fullName) seeds.push({ key: `contact:${normalizedPhone}:name`, value: fullName, category: 'contact', importance: 3 })
+  if (fullAddress) seeds.push({ key: `contact:${normalizedPhone}:address`, value: fullAddress, category: 'contact', importance: 3 })
+  if (addressCity) seeds.push({ key: `contact:${normalizedPhone}:city`, value: addressCity, category: 'contact', importance: 2 })
+  if (panelLocation) seeds.push({ key: `contact:${normalizedPhone}:panel_location`, value: panelLocation, category: 'panel', importance: 3 })
+  if (genVoltage) seeds.push({ key: `contact:${normalizedPhone}:generator_voltage`, value: genVoltage, category: 'generator', importance: 2 })
+  if (addressZip) seeds.push({ key: `contact:${normalizedPhone}:zip`, value: addressZip, category: 'contact', importance: 1 })
+  if (rawBody?.source) seeds.push({ key: `contact:${normalizedPhone}:lead_source`, value: String(rawBody.source), category: 'attribution', importance: 2 })
+  if (seeds.length > 0) {
+    await supabase.from('sparky_memory').upsert(seeds, { onConflict: 'key' }).then(() => {}, (e: any) => console.error('[new-lead] memory seed failed:', e?.message))
+  }
+
+  // Fire the opener via Quo
   let quoMsgId: string | null = null
   try {
     const quoRes = await fetch('https://api.openphone.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
-      body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: firstMessage }),
+      body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: openerText }),
     })
     const quoData = await quoRes.json()
     quoMsgId = quoData.data?.id || null
   } catch (err) {
-    console.error('[QUO] Send failed:', err)
+    console.error('[QUO] opener send failed:', err)
   }
 
-  // ── SAVE OUTBOUND MESSAGE ─────────────────────────────────────────────────
+  // Mirror opener into messages table so CRM thread sees it
   await supabase.from('messages').insert({
     contact_id: contact.id,
     direction: 'outbound',
-    body: firstMessage,
+    body: openerText,
     sender: 'ai',
     quo_message_id: quoMsgId,
   })
@@ -361,7 +403,11 @@ Deno.serve(async (req) => {
     })
   }
 
-  return new Response(JSON.stringify({ success: true, contactId: contact.id }), {
+  return new Response(JSON.stringify({
+    success: true,
+    contactId: contact.id,
+    alex: { sessionId: alexSessionId, variant },
+  }), {
     status: 200,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
