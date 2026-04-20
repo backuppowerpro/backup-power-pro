@@ -13,6 +13,14 @@ const KEY_PHONE          = '+19414417996'                                  // Ke
 const FB_ACCESS_TOKEN    = Deno.env.get('FB_ACCESS_TOKEN')!               // Meta CAPI system user token
 const FB_PIXEL_ID        = '1389648775800936'                             // Meta Pixel / Dataset ID
 
+// TEST_MODE parity with alex-agent — Alex is not on for real clients yet.
+// Only KEY_PHONE (and phones in ALEX_TEST_ALLOWLIST) get the automated
+// opener. Real-customer form submits still create the contact, fire Meta
+// CAPI, and notify Key via SMS — Key handles the first reply manually.
+// Set ALEX_TEST_MODE=false to enable for all leads once Alex is ready.
+const TEST_MODE = (Deno.env.get('ALEX_TEST_MODE') ?? 'true').toLowerCase() === 'true'
+const TEST_ALLOWLIST = (Deno.env.get('ALEX_TEST_ALLOWLIST') || '').split(',').map(s => s.trim()).filter(Boolean)
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -339,6 +347,53 @@ Deno.serve(async (req) => {
   const alexSessionId = crypto.randomUUID()
   const variant = 'D'
   const openerText = `${hi}, this is Alex with Backup Power Pro. Thanks for reaching out. I help Key, our licensed electrician, line up his installs. Before we put a quote together, what got you interested in finding a backup power solution? Reply STOP to opt out.`
+
+  // TEST_MODE gate — parity with alex-agent. Real clients don't get the
+  // full Alex conversation yet; only Key's own phone (or smoke-test
+  // allowlist) does. But real clients STILL get a short automated
+  // holding text so they know their form went through and Key will
+  // follow up — that's the baseline expectation of any web form.
+  // Notify SMS to Key still fires above regardless.
+  const alexOptIn = !TEST_MODE || normalizedPhone === KEY_PHONE || TEST_ALLOWLIST.includes(normalizedPhone)
+  if (!alexOptIn) {
+    console.log('[new-lead] TEST_MODE — static holding SMS for non-allowlisted phone ***', normalizedPhone.slice(-4))
+    // Static holding-message — identifies brand (CTIA 10DLC compliant),
+    // confirms receipt, sets expectation, includes STOP opt-out.
+    const holdingMsg = `Hi ${firstName || 'there'}, thanks for reaching out to Backup Power Pro. Key, our licensed electrician, got your message and will follow up as soon as possible. Reply STOP to opt out.`
+    const holdingPromise = (async () => {
+      // Small typing delay so it feels like a real response, not an instant auto-reply.
+      await new Promise(r => setTimeout(r, 6000 + Math.floor(Math.random() * 6000)))
+      let quoMsgId: string | null = null
+      try {
+        const quoRes = await fetch('https://api.openphone.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+          body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: holdingMsg }),
+        })
+        const quoData = await quoRes.json()
+        quoMsgId = quoData.data?.id || null
+      } catch (err) {
+        console.error('[bg] holding SMS send failed:', err)
+      }
+      await supabase.from('messages').insert({
+        contact_id: contact.id,
+        direction: 'outbound',
+        body: holdingMsg,
+        sender: 'ai',
+        quo_message_id: quoMsgId,
+      }).then(() => {}, () => {})
+    })()
+    // @ts-expect-error
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      // @ts-expect-error
+      EdgeRuntime.waitUntil(holdingPromise)
+    } else {
+      holdingPromise.catch(e => console.error('[bg] holding top-level failed:', e))
+    }
+    return new Response(JSON.stringify({
+      success: true, contactId: contact.id, alex: null, reason: 'test_mode_static_holding',
+    }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } })
+  }
 
   // Everything below moves to a single background promise so the HTTP
   // response returns in <1s (was 3s from sequential DB awaits).
