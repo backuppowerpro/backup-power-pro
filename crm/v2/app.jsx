@@ -5092,15 +5092,59 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
     let alive = true;
     const q = query.trim();
     (async () => {
-      const { data } = await db
+      // Parallel: contact fields + message bodies. Message-body search lets
+      // Key find "the guy who asked about 50A" by typing "50A" — contacts
+      // search alone only matches name/phone/address. Only queries when the
+      // term is ≥ 3 chars to avoid full-text scans on common short tokens.
+      const runContacts = db
         .from('contacts')
         .select('id, name, phone, stage, address')
         .or(`name.ilike.%${q}%,phone.ilike.%${q}%,address.ilike.%${q}%`)
         .limit(8);
+      const runMessages = q.length >= 3
+        ? db.from('messages')
+            .select('contact_id, body, created_at, direction')
+            .ilike('body', `%${q}%`)
+            .not('contact_id', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(8)
+        : Promise.resolve({ data: [] });
+      const [contactsRes, messagesRes] = await Promise.all([runContacts, runMessages]);
       if (!alive) return;
-      const contactHits = (data || []).map(c => ({
+      const contactHits = (contactsRes.data || []).map(c => ({
         type: 'contact', id: c.id, name: c.name, phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
       }));
+      // De-dupe message hits by contact_id so a chatty lead doesn't flood
+      // the results. Keep the most recent hit per contact. Then hydrate
+      // the contact name for each surviving hit.
+      const seen = new Set(contactHits.map(c => c.id));
+      const messageRowByContact = new Map();
+      for (const m of (messagesRes.data || [])) {
+        if (!m.contact_id || seen.has(m.contact_id) || messageRowByContact.has(m.contact_id)) continue;
+        messageRowByContact.set(m.contact_id, m);
+      }
+      let messageHits = [];
+      if (messageRowByContact.size > 0) {
+        const ids = Array.from(messageRowByContact.keys());
+        const { data: names } = await db.from('contacts')
+          .select('id, name, phone, stage').in('id', ids);
+        const byId = Object.fromEntries((names || []).map(c => [c.id, c]));
+        messageHits = ids.map(id => {
+          const c = byId[id];
+          const m = messageRowByContact.get(id);
+          if (!c) return null;
+          // Extract a ~80-char preview centered on the match
+          const body = m.body || '';
+          const idx = body.toLowerCase().indexOf(q.toLowerCase());
+          const start = Math.max(0, idx - 20);
+          const preview = (start > 0 ? '…' : '') + body.slice(start, start + 80) + (body.length > start + 80 ? '…' : '');
+          return {
+            type: 'message', id: c.id, name: c.name || '(unnamed)',
+            stage: STAGE_MAP[c.stage || 1] || 'NEW',
+            preview, direction: m.direction,
+          };
+        }).filter(Boolean);
+      }
       const navHits = [
         { type: 'nav', id: 'leads', label: 'Go to Leads' },
         { type: 'nav', id: 'calendar', label: 'Go to Calendar' },
@@ -5118,7 +5162,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
         { type: 'action', id: 'list_installer_tokens', label: 'List installer access tokens' },
       ].filter(a => a.label.toLowerCase().includes(q.toLowerCase()));
       const sparkyHit = [{ type: 'sparky', label: `Ask Sparky: "${q}"` }];
-      setResults([...contactHits, ...navHits, ...actionHits, ...sparkyHit]);
+      setResults([...contactHits, ...messageHits, ...navHits, ...actionHits, ...sparkyHit]);
       setCursor(0);
     })();
     return () => { alive = false; };
@@ -5181,7 +5225,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
             const boxShadow = active ? 'inset 3px 0 0 var(--gold), var(--pressed-2)' : 'none';
             return (
               <div key={i} onClick={() => {
-                if (r.type === 'contact') { onSelectContact(r.id); onClose(); }
+                if (r.type === 'contact' || r.type === 'message') { onSelectContact(r.id); onClose(); }
                 else if (r.type === 'nav') { onSwitchTab(r.id); onClose(); }
                 else if (r.type === 'action') { onAction && onAction(r.id); onClose(); }
                 else { onSwitchTab('sparky'); onClose(); }
@@ -5199,6 +5243,29 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{r.name}</div>
                       <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.phone} · {r.stage}</div>
+                    </div>
+                  </>
+                ) : r.type === 'message' ? (
+                  // Message-body hit — show the contact's initials + matched
+                  // preview so Key can spot the thread he's looking for by
+                  // quote content rather than just name.
+                  <>
+                    <span style={{
+                      width: 32, height: 32, background: 'var(--navy)',
+                      clipPath: 'var(--avatar-clip)',
+                      display: 'grid', placeItems: 'center', flex: '0 0 auto',
+                    }}><span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 11 }}>{initials(r.name)}</span></span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                        <span className="mono" style={{ fontSize: 9, letterSpacing: '.08em', color: 'var(--text-faint)', textTransform: 'uppercase' }}>
+                          {r.direction === 'inbound' ? '← msg' : '→ msg'}
+                        </span>
+                      </div>
+                      <div className="mono" style={{
+                        fontSize: 11, color: 'var(--text-muted)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{r.preview}</div>
                     </div>
                   </>
                 ) : (
