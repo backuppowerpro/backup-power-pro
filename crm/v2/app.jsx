@@ -600,6 +600,13 @@ function LivePipeline({ onCardClick, onSubView }) {
   useEffect(() => {
     const ch = db.channel('pipeline-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, fetchAll)
+      // Messages INSERT must also refetch so the "waiting on Key" gold dot
+      // updates the instant a customer reply lands. Previously the subscription
+      // only watched the contacts table, which meant a new inbound message
+      // wouldn't relight the dot until the contact row itself changed (stage
+      // edit, DNC flip, etc.) — stale signal on the exact view most likely to
+      // be open when that happens.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchAll)
       .subscribe();
     return () => { db.removeChannel(ch); };
   }, [fetchAll]);
