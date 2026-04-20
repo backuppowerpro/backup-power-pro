@@ -50,39 +50,49 @@ function loadAlexSystemPrompt() {
   return m[1];
 }
 
-// ── POST to Anthropic Messages API ───────────────────────────────────────────
-function callLlm({ system, messages, maxTokens = 800 }) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
-      model: MODEL,
-      system,
-      messages,
-      max_tokens: maxTokens,
-      temperature: 0.8,
-    });
-    const req = https.request('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-    }, res => {
-      let buf = '';
-      res.on('data', c => (buf += c));
-      res.on('end', () => {
-        try {
-          const data = JSON.parse(buf);
-          const text = data.content?.[0]?.text;
-          if (!text) return reject(new Error('no content: ' + buf.slice(0, 300)));
-          resolve(text);
-        } catch (e) { reject(e); }
+// ── POST to Anthropic Messages API with retry on overload ────────────────────
+async function callLlm(opts, attempt = 0) {
+  const MAX_ATTEMPTS = 4;
+  const { system, messages, maxTokens = 800 } = opts;
+  try {
+    return await new Promise((resolve, reject) => {
+      const body = JSON.stringify({ model: MODEL, system, messages, max_tokens: maxTokens, temperature: 0.8 });
+      const req = https.request('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+      }, res => {
+        let buf = '';
+        res.on('data', c => (buf += c));
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(buf);
+            // Transient overload/529 → retryable
+            if (data?.error?.type === 'overloaded_error' || res.statusCode === 529 || res.statusCode === 503) {
+              return reject(new Error('RETRYABLE: ' + (data?.error?.message || res.statusCode)));
+            }
+            const text = data.content?.[0]?.text;
+            if (!text) return reject(new Error('no content: ' + buf.slice(0, 300)));
+            resolve(text);
+          } catch (e) { reject(e); }
+        });
       });
+      req.on('error', reject);
+      req.write(body);
+      req.end();
     });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
+  } catch (err) {
+    if (String(err).startsWith('Error: RETRYABLE') && attempt < MAX_ATTEMPTS) {
+      const backoff = Math.pow(2, attempt) * 2000 + Math.random() * 1000;
+      console.log(`    (retry ${attempt + 1}/${MAX_ATTEMPTS} after ${Math.round(backoff)}ms — ${err.message.slice(0, 80)})`);
+      await new Promise(r => setTimeout(r, backoff));
+      return callLlm(opts, attempt + 1);
+    }
+    throw err;
+  }
 }
 
 // ── Customer-side prompt builder ─────────────────────────────────────────────
