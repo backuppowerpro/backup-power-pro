@@ -5925,7 +5925,13 @@ function LiveCalendar() {
         </div>
         <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
           <button onClick={() => {
-            setEventModalDefaults({ start_at: new Date().toISOString().slice(0, 16) });
+            // datetime-local expects LOCAL time in YYYY-MM-DDTHH:mm. Using
+            // toISOString().slice gives UTC which shows up offset from Key's
+            // wall clock. Build the string from local fields.
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const nowLocal = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            setEventModalDefaults({ start_at: nowLocal });
             setEventModalOpen(true);
           }} title="Add event to the calendar" style={{
             padding: '0 12px', height: 32, background: 'var(--card)', color: 'var(--text)',
