@@ -7403,10 +7403,16 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
       else if (hit.type === 'sparky') {
         // "Ask Sparky: <query>" — the sparky panel is the right-side default
         // when no contact is selected. Deselect so the panel shows Sparky,
-        // then dispatch a prefill event so its input gets the query.
+        // then dispatch a prefill event so its input gets the query. The
+        // setTimeout lets React mount LiveSparky (which mounts its event
+        // listener) BEFORE the dispatch — otherwise the listener isn't
+        // registered in time and the prefill is lost.
+        const text = query.trim();
         onSelectContact(null);
-        window.dispatchEvent(new CustomEvent('bpp:sparky-prefill', { detail: { text: query.trim() } }));
         onClose();
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('bpp:sparky-prefill', { detail: { text } }));
+        }, 60);
       }
     }
   }
@@ -7451,7 +7457,19 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
                 if (r.type === 'contact' || r.type === 'message') { onSelectContact(r.id); onClose(); }
                 else if (r.type === 'nav') { onSwitchTab(r.id); onClose(); }
                 else if (r.type === 'action') { onAction && onAction(r.id); onClose(); }
-                else { onSwitchTab('sparky'); onClose(); }
+                else {
+                  // "Ask Sparky: <query>" hit — Sparky is the right-panel
+                  // default when no contact is selected. Deselect + prefill
+                  // with a setTimeout so LiveSparky mounts before dispatch
+                  // (otherwise its event listener isn't registered yet and
+                  // the prefill is silently dropped).
+                  const text = query.trim();
+                  onSelectContact(null);
+                  onClose();
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('bpp:sparky-prefill', { detail: { text } }));
+                  }, 60);
+                }
               }} style={{
                 padding: '10px 16px', cursor: 'pointer', background: bg, boxShadow,
                 display: 'flex', alignItems: 'center', gap: 12,
