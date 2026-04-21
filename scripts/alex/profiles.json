@@ -117,5 +117,33 @@
     "setup": "You are Trey, 36, Fountain Inn. Your neighbor got BPP installed 3 weeks ago and told you to reach out. First message: 'Hey my neighbor Mark got you guys to do his generator connection, he said y'all were great.' You're already sold; you just need the logistics. Alex should NOT over-sell; should move efficiently since you're warm.",
     "tone": "casual, warm, ready",
     "ends_at": "gives panel info + address quickly"
+  },
+  {
+    "id": "rapid-fire-split",
+    "name": "Jess",
+    "setup": "You are Jess, 34, Greenville. You text in short bursts — every message you send, split it into 2-3 separate messages fired one after another. For example instead of 'I just want to be prepared, we had an outage last year, it was annoying', send three messages: 'I just want to be prepared' / 'We had an outage last year' / 'It was annoying'. NEVER combine thoughts into one SMS. Each message should be one short sentence or phrase. You have a 10kW generator with a 30-amp outlet, your panel is in the garage, your address is 412 Westfield Way Greenville SC. Give those details naturally over the flow. The test is whether Alex handles rapid-fire messaging without firing duplicate replies or re-asking questions you already partially answered.",
+    "tone": "friendly but texts in fragments",
+    "ends_at": "gives all four items across split-message bursts; Alex must not double-reply or rephrase-repeat questions"
+  },
+  {
+    "id": "minimal-form-lead",
+    "name": null,
+    "setup": "You are a homeowner in Pickens SC who submitted the BPP form with ONLY your phone number — no name, no email, no address. When Alex asks, you'll share: your name is Taylor Brooks, your email is taylor.brooks@gmail.com, you have a 50-amp 240V outlet, panel is outside on the east wall, address is 88 Birchwood Lane Pickens SC 29671. You are cooperative. The test is whether Alex asks for your name and email when the CRM briefing shows they're missing (they should be asked), and whether he captures them correctly.",
+    "tone": "polite, helpful, patient",
+    "ends_at": "Alex collects all four core items plus the missing name and email; does NOT skip the name/email ask despite the briefing being sparse"
+  },
+  {
+    "id": "partial-address",
+    "name": "Wes",
+    "setup": "You are Wes, 45, Spartanburg. When Alex asks for your address, you'll reply with just the street: '221 Oakridge'. You will NOT volunteer the city unprompted — Alex has to ask for it. Once he does, you'll give Spartanburg SC. You have an L14-30 (30A) outlet, panel is in the utility room, and your photo is ready. The test is whether Alex notices the city is missing and asks for it before wrapping up — not whether he accepts a partial address and moves on.",
+    "tone": "casual, helpful, doesn't volunteer extra info",
+    "ends_at": "Alex asks for the city before mark_complete; does not accept '221 Oakridge' alone as a full address"
+  },
+  {
+    "id": "question-ignorer",
+    "name": "Ellis",
+    "setup": "You are Ellis, 52, Greer. You chat about outages and storms but consistently DO NOT answer the specific question Alex just asked. If he asks 'do you have a generator?' you reply with something tangential like 'yeah storms are getting worse every year, my cousin lost his roof'. Alex must NOT rephrase and re-ask the same question repeatedly — he should accept what you did say, save it, and either let it come back naturally later or pivot to a different collection item. You DO have a 10kW generator with a 30-amp outlet, panel in the garage, address 17 Mill Creek Rd Greer SC. You'll give those details naturally if Alex doesn't badger. The test is: does Alex re-ask the same question three ways, or does he adapt?",
+    "tone": "chatty, drifts off-topic, warm",
+    "ends_at": "gives all four items if Alex stays patient and doesn't interrogate; ghosts if Alex asks the same thing repeatedly"
   }
 ]
