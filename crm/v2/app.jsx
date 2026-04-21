@@ -6377,6 +6377,150 @@ function BriefSection({ label, tint, items, onPick }) {
 }
 
 // ── Live Sparky AI Chat ─────────────────────────────────────────────────────
+// Agents inbox — unactioned rows from sparky_inbox surfaced as cards. Alex /
+// permit-morning-check / pipeline / brief all write to this table when they
+// need Key's eyes on something. Key dismisses (mark read) or actions (opens
+// the contact, sends the draft reply). v1 had this in the taskmaster panel;
+// v2 was missing the UI entirely, so everything Alex reported after we
+// silenced the SMS notifications was invisible until now.
+function AgentsInboxStrip() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const { data } = await db.from('sparky_inbox')
+        .select('*, contacts(id, name, phone)')
+        .eq('actioned', false)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      setItems(data || []);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Realtime — fire on any inbox INSERT (new notification) or UPDATE
+  // (dismiss/action from another tab). Cheap refetch keeps the strip in
+  // sync without per-row listeners.
+  useEffect(() => {
+    const ch = db.channel('agents-inbox-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sparky_inbox' }, load)
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [load]);
+
+  async function dismiss(id) {
+    setItems(prev => prev.filter(x => x.id !== id));
+    await db.from('sparky_inbox').update({ read: true, actioned: true }).eq('id', id);
+  }
+  async function openContact(item) {
+    const cid = item.contact_id;
+    if (!cid) return;
+    // Mark actioned so it doesn't resurface next time we open the panel.
+    dismiss(item.id);
+    window.location.hash = `#contact=${cid}`;
+  }
+  async function sendDraft(item) {
+    if (!item.draft_reply || !item.contact_id) return;
+    // Don't auto-send — prefill the compose bar via the existing event so
+    // Key reviews before hitting send. Same pattern the Review-ask strip uses.
+    window.dispatchEvent(new CustomEvent('bpp:compose-prefill', { detail: { text: item.draft_reply } }));
+    window.__bpp_toast && window.__bpp_toast('Draft loaded — review + send', 'info');
+    window.location.hash = `#contact=${item.contact_id}`;
+    dismiss(item.id);
+  }
+
+  if (loading) return null;
+  if (items.length === 0) return null;
+
+  const fmtAge = (iso) => {
+    if (!iso) return '';
+    const hrs = (Date.now() - new Date(iso).getTime()) / 3600000;
+    if (hrs < 1)   return `${Math.max(1, Math.round(hrs * 60))}m ago`;
+    if (hrs < 24)  return `${Math.round(hrs)}h ago`;
+    return `${Math.round(hrs / 24)}d ago`;
+  };
+
+  return (
+    <div style={{
+      padding: '12px 16px',
+      background: 'var(--card)',
+      boxShadow: 'var(--raised-2)',
+      display: 'flex', flexDirection: 'column', gap: 8,
+      borderBottom: '1px solid rgba(0,0,0,.06)',
+    }}>
+      <div className="chrome-label" style={{
+        fontSize: 11, letterSpacing: '.1em',
+        color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <span>⚡</span><span>Agents inbox · {items.length}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {items.map(item => {
+          const agentLabel = String(item.agent || 'agent').toUpperCase();
+          const isUrgent = item.priority === 'urgent';
+          const contactName = item.contacts?.name || '';
+          return (
+            <div key={item.id} style={{
+              padding: '10px 12px',
+              background: 'var(--bg)',
+              boxShadow: 'var(--pressed-2)',
+              borderLeft: `3px solid ${isUrgent ? 'var(--ms-3)' : 'var(--ms-1)'}`,
+              display: 'flex', flexDirection: 'column', gap: 4,
+            }}>
+              <div className="mono" style={{
+                fontSize: 10, letterSpacing: '.08em',
+                color: isUrgent ? 'var(--ms-3)' : 'var(--text-faint)',
+              }}>
+                {agentLabel}{contactName ? ` · ${contactName}` : ''} · {fmtAge(item.created_at)}
+              </div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)' }}>
+                {item.summary}
+              </div>
+              {item.draft_reply ? (
+                <div style={{
+                  padding: '6px 8px', marginTop: 2,
+                  background: 'var(--card)', boxShadow: 'var(--raised-2)',
+                  fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-muted)',
+                  fontStyle: 'italic',
+                }}>
+                  Draft: "{item.draft_reply}"
+                </div>
+              ) : null}
+              <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                {item.draft_reply && item.contact_id ? (
+                  <button onClick={() => sendDraft(item)} style={{
+                    padding: '4px 10px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
+                    background: 'var(--navy)', color: 'var(--gold)', boxShadow: 'var(--raised-2)',
+                    border: 'none', cursor: 'pointer', letterSpacing: '.04em',
+                  }}>Load draft</button>
+                ) : null}
+                {item.contact_id ? (
+                  <button onClick={() => openContact(item)} style={{
+                    padding: '4px 10px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
+                    background: 'var(--card)', color: 'var(--text)', boxShadow: 'var(--raised-2)',
+                    border: 'none', cursor: 'pointer', letterSpacing: '.04em',
+                  }}>Open contact</button>
+                ) : null}
+                <button onClick={() => dismiss(item.id)} style={{
+                  padding: '4px 10px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
+                  background: 'transparent', color: 'var(--text-muted)',
+                  border: 'none', cursor: 'pointer', letterSpacing: '.04em',
+                }}>Dismiss</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function LiveSparky({ currentContactId = null }) {
   const [messages, setMessages] = useState([
     { who: 'sparky', text: "Standing by. Ask anything about the pipeline, a lead, or tell me what to draft." },
@@ -6457,6 +6601,9 @@ function LiveSparky({ currentContactId = null }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Agents inbox — Alex / permit-check / pipeline / brief notifications
+          that need Key's eyes. Hidden when empty so it doesn't waste space. */}
+      <AgentsInboxStrip />
       {/* Mode selector */}
       <div style={{ padding: '14px 16px 10px', display: 'flex', gap: 18 }}>
         {modes.map(m => {
