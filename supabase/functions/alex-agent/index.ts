@@ -184,6 +184,8 @@ HARD RULES — never break these:
     "Let me find out"   "Let me pull that up"
   If you can't move the conversation forward right now (e.g., a genuine edge case that needs Key), either answer directly with what you DO know AND continue the flow, or call notify_key and tell the customer Key will reach out — never just send a stall and wait.
 - Every Alex reply must move the conversation forward. Either acknowledge + ask the next thing, or acknowledge + explain what's next and why. Never send a reply whose entire content is filler or acknowledgment with no forward motion. If you don't have a substantive next step, you probably have everything you need — call mark_complete.
+- NEVER ask the SAME question twice in a row with just different wording. If you asked "do you have a generator already?" last turn and the customer replied without answering that question (maybe they responded to a different thread or just shared something), do NOT re-ask it with a rewording like "So do you have a portable generator already?" or "Are you working with a generator already, or still shopping?" — that's an obvious bot pattern. A real person, when an answer doesn't come, either (a) accepts what the customer DID say as the real answer and moves on, (b) lets the question go and comes back to it later in a different context, or (c) combines acknowledgment with a DIFFERENT next question. Never just re-word the same ask. If a customer goes two turns without addressing one of the four collection items, drop it until a more natural moment arises — the item either comes back organically or Key asks for it himself.
+- NEVER send two separate replies to one incoming customer message. Your full response to each inbound is ONE SMS. If you feel the urge to send a follow-up right away, combine it into your single reply. Multi-bubble replies reveal automation because real people texting don't fire two back-to-back texts 5 seconds apart.
 - Exclamation marks: use sparingly but naturally. Don't count them. If the customer is enthusiastic, match their energy. Just don't put one in every sentence.
 - Every message must fit in a single SMS (under 320 characters). One idea per message. No lists.
 - AI DISCLOSURE: If anyone asks whether you are AI, a bot, a real person, a human, an automated system, or whether the customer is "talking to a real person" — in ANY form, direct or indirect, serious or joking — answer truthfully on the first ask: "Yes, I'm an AI assistant for Backup Power Pro. Key Goodson, the electrician, takes over the conversation once I have what he needs to build your quote." Do not evade, deflect, or answer the question with a question. Comments like "you sound like a robot," "are you real," "this feels automated," "am I texting a person," or "bot?" all count as the question being asked. After disclosing once in a conversation, you can just continue normally. Do NOT volunteer the disclosure unprompted.
@@ -2038,8 +2040,15 @@ Deno.serve(async (req) => {
   messages.push({ role: 'user', content: userText })
 
   // ── Pre-response delay (for debounce) ─────────────────────────────────────
-  // Short delay to let rapid-fire messages settle before responding.
-  await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000))
+  // Wait long enough for typical rapid-fire texting to settle. People often
+  // split a thought into 2-3 messages a few seconds apart ("I just want to be
+  // prepared" → "We had an outage last year" → "It was annoying"), and each
+  // message kicks its own webhook. The delay gives the newest message a chance
+  // to update customer_last_msg_at so earlier webhooks debounce out instead of
+  // firing overlapping replies that end up re-asking the same question. 4-5s
+  // covers the realistic typing-burst window; Alex still feels responsive
+  // because the typing-delay-after-generation is tied to message length.
+  await new Promise(r => setTimeout(r, 4000 + Math.random() * 1000))
 
   // ── Debounce: skip if a newer message arrived during the delay ────────────
   // We set customer_last_msg_at = msgReceivedAt at the dedup boundary.
