@@ -5793,10 +5793,13 @@ function startOfWeek(date) {
 function LiveCalendar() {
   const [scheduled, setScheduled] = useState([]);
   const [unscheduled, setUnscheduled] = useState([]);
+  const [events, setEvents] = useState([]); // non-install calendar_events rows
   const [installers, setInstallers] = useState([]);
   const [installerFilter, setInstallerFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [eventModalDefaults, setEventModalDefaults] = useState({});
   // Which week is on screen. Default = this week (Sun of current week).
   // Prev/Next buttons shift by 7 days; Today snaps back.
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
@@ -5804,6 +5807,7 @@ function LiveCalendar() {
   useEffect(() => {
     const ch = db.channel('calendar-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => setRefreshTick(n => n + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, () => setRefreshTick(n => n + 1))
       .subscribe();
     return () => { db.removeChannel(ch); };
   }, []);
@@ -5816,7 +5820,7 @@ function LiveCalendar() {
       // without refetching per week swap.
       const sixMonthsAgo = new Date(Date.now() - 180 * 86400000).toISOString();
       const sixMonthsAhead = new Date(Date.now() + 180 * 86400000).toISOString();
-      const [schedRes, unschedRes] = await Promise.all([
+      const [schedRes, unschedRes, eventsRes] = await Promise.all([
         db.from('contacts')
           .select('id, name, address, stage, install_date, assigned_installer, installer_pay, do_not_contact')
           .not('install_date', 'is', null)
@@ -5831,9 +5835,19 @@ function LiveCalendar() {
           .eq('do_not_contact', false)
           .order('created_at', { ascending: false })
           .limit(40),
+        // Non-install events: material pickups, meetings, inspection walks,
+        // anything Key wants on the calendar that isn't tied to a single
+        // contact.install_date row.
+        db.from('calendar_events')
+          .select('id, title, start_at, end_at, contact_id, notes, event_type, contacts(id, name)')
+          .gte('start_at', sixMonthsAgo)
+          .lte('start_at', sixMonthsAhead)
+          .order('start_at', { ascending: true })
+          .limit(200),
       ]);
       setScheduled(schedRes.data || []);
       setUnscheduled(unschedRes.data || []);
+      setEvents(eventsRes.data || []);
       const installerSet = new Set();
       for (const r of [...(schedRes.data || []), ...(unschedRes.data || [])]) {
         if (r.assigned_installer) installerSet.add(r.assigned_installer);
@@ -5863,16 +5877,23 @@ function LiveCalendar() {
   // Bucket installs into the 7 day keys for the current week. Anything outside
   // the current week is simply hidden until Key scrolls to that week.
   const weekInstalls = {};
-  days.forEach(d => { weekInstalls[dayKey(d)] = []; });
+  const weekEvents = {};
+  days.forEach(d => { weekInstalls[dayKey(d)] = []; weekEvents[dayKey(d)] = []; });
   for (const inst of filteredScheduled) {
     const d = new Date(inst.install_date);
     const key = dayKey(d);
     if (key in weekInstalls) weekInstalls[key].push(inst);
   }
-  // Sort each day's installs by time-of-day so the column reads top-to-bottom
-  // morning-to-evening.
+  for (const ev of events) {
+    const d = new Date(ev.start_at);
+    const key = dayKey(d);
+    if (key in weekEvents) weekEvents[key].push(ev);
+  }
+  // Sort each day's installs + events by time-of-day so the column reads
+  // top-to-bottom morning-to-evening.
   for (const k of Object.keys(weekInstalls)) {
     weekInstalls[k].sort((a, b) => new Date(a.install_date).getTime() - new Date(b.install_date).getTime());
+    weekEvents[k].sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
   }
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -5903,6 +5924,14 @@ function LiveCalendar() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
+          <button onClick={() => {
+            setEventModalDefaults({ start_at: new Date().toISOString().slice(0, 16) });
+            setEventModalOpen(true);
+          }} title="Add event to the calendar" style={{
+            padding: '0 12px', height: 32, background: 'var(--card)', color: 'var(--text)',
+            boxShadow: 'var(--raised-2)', fontFamily: 'var(--font-body)', fontSize: 11,
+            letterSpacing: '.06em', border: 'none', cursor: 'pointer', fontWeight: 600,
+          }}>+ EVENT</button>
           <button onClick={() => stepWeek(-1)} title="Previous week" style={{
             width: 32, height: 32, background: 'var(--card)', boxShadow: 'var(--raised-2)',
             border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)',
@@ -5945,6 +5974,7 @@ function LiveCalendar() {
         {days.map(d => {
           const key = dayKey(d);
           const items = weekInstalls[key] || [];
+          const dayEvents = weekEvents[key] || [];
           const highlight = isToday(d);
           return (
             <div key={key} style={{
@@ -5953,26 +5983,91 @@ function LiveCalendar() {
               boxShadow: 'var(--pressed-2)',
               display: 'flex', flexDirection: 'column',
               borderLeft: highlight ? '3px solid var(--gold)' : '3px solid transparent',
+              position: 'relative',
             }}>
               <div style={{
                 padding: '8px 10px',
                 borderBottom: '1px solid rgba(0,0,0,.08)',
                 background: highlight ? 'var(--navy)' : 'transparent',
                 color: highlight ? 'var(--gold)' : 'var(--text-muted)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
               }}>
-                <div className="chrome-label" style={{ fontSize: 10, letterSpacing: '.1em', fontWeight: 700 }}>
-                  {d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase()}
+                <div>
+                  <div className="chrome-label" style={{ fontSize: 10, letterSpacing: '.1em', fontWeight: 700 }}>
+                    {d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase()}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700, marginTop: 2 }}>
+                    {d.getDate()}
+                  </div>
                 </div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700, marginTop: 2 }}>
-                  {d.getDate()}
-                </div>
+                {/* Per-day + button — prefills start_at with 9 AM on that
+                    day so common "add inspection walk at 10am Tuesday" flow
+                    is one click + one field edit. */}
+                <button onClick={() => {
+                  const at = new Date(d);
+                  at.setHours(9, 0, 0, 0);
+                  // Local datetime-local string
+                  const pad = (n) => String(n).padStart(2, '0');
+                  const iso = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`;
+                  setEventModalDefaults({ start_at: iso });
+                  setEventModalOpen(true);
+                }} title="Add event on this day" style={{
+                  width: 20, height: 20,
+                  background: 'transparent', color: highlight ? 'var(--gold)' : 'var(--text-faint)',
+                  border: '1px solid currentColor', cursor: 'pointer',
+                  fontSize: 12, display: 'grid', placeItems: 'center',
+                }}>+</button>
               </div>
               <div style={{ padding: 6, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                {items.length === 0 ? (
+                {items.length === 0 && dayEvents.length === 0 ? (
                   <div className="mono" style={{ fontSize: 9, color: 'var(--text-faint)', padding: '6px 4px', textTransform: 'lowercase', letterSpacing: '.06em' }}>
                     —
                   </div>
-                ) : items.map(e => {
+                ) : null}
+                {/* Non-install events — rendered first so they're distinct
+                    from the install blocks. Different tint by event_type. */}
+                {dayEvents.map(ev => {
+                  const t = new Date(ev.start_at);
+                  const timeLabel = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                  const typeTint = ev.event_type === 'meeting' ? 'var(--ms-4)'
+                                 : ev.event_type === 'pickup'  ? 'var(--ms-5)'
+                                 : ev.event_type === 'inspect' ? 'var(--ms-2)'
+                                                               : 'var(--text-faint)';
+                  const cn = ev.contacts?.name || null;
+                  return (
+                    <button key={'ev-' + ev.id}
+                      onClick={() => {
+                        if (confirm(`Delete event "${ev.title}"?`)) {
+                          db.from('calendar_events').delete().eq('id', ev.id).then(
+                            () => window.__bpp_toast && window.__bpp_toast('Event deleted', 'info'),
+                            (e) => window.__bpp_toast && window.__bpp_toast('Delete failed: ' + (e.message || e), 'error')
+                          );
+                        }
+                      }}
+                      title={`${ev.title}${cn ? ' · ' + cn : ''}${ev.notes ? '\n' + ev.notes : ''}\n(click to delete)`}
+                      style={{
+                        textAlign: 'left', padding: '4px 6px', background: 'var(--bg)',
+                        boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+                        borderLeft: `3px solid ${typeTint}`,
+                        display: 'flex', flexDirection: 'column', gap: 1,
+                      }}>
+                      <span className="mono" style={{ fontSize: 8, color: 'var(--text-faint)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                        {timeLabel} · {(ev.event_type || 'event').toUpperCase()}
+                      </span>
+                      <span style={{
+                        fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{ev.title}</span>
+                      {cn ? (
+                        <span className="mono" style={{
+                          fontSize: 8, color: 'var(--text-muted)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{cn.slice(0, 22)}</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+                {items.map(e => {
                   const t = new Date(e.install_date);
                   const timeLabel = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                   const stageTint = (e.stage || 1) >= 8 ? 'var(--ms-2)' : (e.stage || 1) >= 4 ? 'var(--gold)' : 'var(--ms-1)';
@@ -6051,6 +6146,177 @@ function LiveCalendar() {
           </div>
         </div>
       ) : null}
+      {eventModalOpen ? (
+        <CalendarEventModal
+          defaults={eventModalDefaults}
+          onClose={() => setEventModalOpen(false)}
+          onSaved={() => { setEventModalOpen(false); setRefreshTick(n => n + 1); }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+// Modal to create a new calendar_events row. Contact is optional — Key can
+// log a material pickup or meeting without tying it to a customer. Event
+// type determines the left-stripe color when rendered in the week grid.
+function CalendarEventModal({ defaults, onClose, onSaved }) {
+  const rootRef = useRef(null);
+  useFocusTrap(rootRef, true);
+  const [title, setTitle] = useState('');
+  const [startAt, setStartAt] = useState(defaults?.start_at || '');
+  const [endAt, setEndAt] = useState(defaults?.end_at || '');
+  const [notes, setNotes] = useState('');
+  const [eventType, setEventType] = useState('other');
+  const [contactQuery, setContactQuery] = useState('');
+  const [contactMatches, setContactMatches] = useState([]);
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
+
+  // Debounced contact search — Key types a name to attach the event to a
+  // specific lead. Optional.
+  useEffect(() => {
+    const q = contactQuery.trim();
+    if (!q) { setContactMatches([]); return; }
+    if (selectedContact && selectedContact.name === contactQuery) return;
+    let alive = true;
+    const t = setTimeout(async () => {
+      const { data } = await db.from('contacts')
+        .select('id, name, phone')
+        .ilike('name', `%${q}%`)
+        .limit(5);
+      if (alive) setContactMatches(data || []);
+    }, 180);
+    return () => { alive = false; clearTimeout(t); };
+  }, [contactQuery, selectedContact]);
+
+  async function save(e) {
+    e.preventDefault();
+    setErr(null);
+    if (!title.trim()) { setErr('Title required'); return; }
+    if (!startAt) { setErr('Start time required'); return; }
+    setSaving(true);
+    try {
+      const startIso = new Date(startAt).toISOString();
+      const endIso = endAt ? new Date(endAt).toISOString() : null;
+      const { error } = await db.from('calendar_events').insert({
+        title: title.trim(),
+        start_at: startIso,
+        end_at: endIso,
+        notes: notes.trim() || null,
+        event_type: eventType,
+        contact_id: selectedContact?.id || null,
+      });
+      if (error) throw error;
+      window.__bpp_toast && window.__bpp_toast('Event added', 'success');
+      onSaved && onSaved();
+    } catch (e) {
+      setErr(e.message || String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 95,
+      background: 'rgba(0,0,0,.5)',
+      display: 'grid', placeItems: 'center', padding: 16,
+    }}>
+      <form ref={rootRef} onSubmit={save} onClick={e => e.stopPropagation()} style={{
+        width: 420, maxWidth: '100%',
+        padding: 24, display: 'flex', flexDirection: 'column', gap: 12,
+        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 700, letterSpacing: '-.01em' }}>
+          Add calendar event
+        </div>
+        <input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="Title (e.g. Inspection walkthrough)" style={{
+          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+        }} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.06em', textTransform: 'uppercase' }}>Start</span>
+            <input type="datetime-local" value={startAt} onChange={e => setStartAt(e.target.value)} required style={{
+              padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+              background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+            }} />
+          </label>
+          <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.06em', textTransform: 'uppercase' }}>End (optional)</span>
+            <input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} style={{
+              padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+              background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+            }} />
+          </label>
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[
+            { id: 'install', label: 'Install' },
+            { id: 'meeting', label: 'Meeting' },
+            { id: 'pickup',  label: 'Pickup' },
+            { id: 'inspect', label: 'Inspection' },
+            { id: 'other',   label: 'Other' },
+          ].map(t => (
+            <button type="button" key={t.id} onClick={() => setEventType(t.id)} style={{
+              padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
+              background: eventType === t.id ? 'var(--navy)' : 'var(--card)',
+              color: eventType === t.id ? 'var(--gold)' : 'var(--text-muted)',
+              boxShadow: eventType === t.id ? 'var(--pressed-2)' : 'var(--raised-2)',
+              cursor: 'pointer', border: 'none', letterSpacing: '.04em',
+            }}>{t.label}</button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, position: 'relative' }}>
+          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.06em', textTransform: 'uppercase' }}>Contact (optional)</span>
+          <input value={contactQuery} onChange={e => { setContactQuery(e.target.value); setSelectedContact(null); }}
+            placeholder="Search contact name…" style={{
+              padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+              background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+            }} />
+          {!selectedContact && contactMatches.length > 0 ? (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0,
+              background: 'var(--card)', boxShadow: 'var(--raised-2)',
+              zIndex: 5,
+            }}>
+              {contactMatches.map(c => (
+                <button key={c.id} type="button" onClick={() => { setSelectedContact(c); setContactQuery(c.name); setContactMatches([]); }} style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '8px 12px', fontFamily: 'var(--font-body)', fontSize: 13,
+                  background: 'transparent', color: 'var(--text)', cursor: 'pointer', border: 'none',
+                  borderBottom: '1px solid rgba(0,0,0,.06)',
+                }}>
+                  {c.name} <span className="mono" style={{ color: 'var(--text-faint)', fontSize: 11 }}>{c.phone || ''}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)" rows={3} style={{
+          padding: '10px 12px', fontFamily: 'var(--font-body)', fontSize: 14, resize: 'vertical',
+          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+        }} />
+        {err ? <div className="mono" style={{ fontSize: 11, color: 'var(--ms-3)' }}>{err}</div> : null}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <button type="button" onClick={onClose} style={{
+            flex: 1, height: 40, fontSize: 12, cursor: 'pointer',
+            fontFamily: 'var(--font-body)', letterSpacing: '.04em',
+            boxShadow: 'var(--raised-2)', background: 'var(--card)', color: 'var(--text-muted)',
+            border: 'none',
+          }}>Cancel</button>
+          <button type="submit" disabled={saving} style={{
+            flex: 1, height: 40, fontSize: 12, fontWeight: 600, letterSpacing: '.04em',
+            fontFamily: 'var(--font-body)',
+            background: 'var(--navy)', color: 'var(--gold)',
+            boxShadow: 'var(--raised-2)', border: 'none',
+            cursor: saving ? 'wait' : 'pointer',
+            opacity: saving ? 0.6 : 1,
+          }}>{saving ? 'Saving…' : 'Save event'}</button>
+        </div>
+      </form>
     </div>
   );
 }
