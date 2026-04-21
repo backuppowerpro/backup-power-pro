@@ -5377,17 +5377,31 @@ function Empty({ label }) {
   );
 }
 
-// ── Live Calendar (week view based on stage_history / install dates) ────────
+// ── Live Calendar — weekly grid view ────────────────────────────────────────
+// Proper Sun-Sat columns showing install_date blocks where they land in time.
+// Key scrolls through weeks via prev/next/today, filters by installer, and
+// sees unscheduled-but-booked contacts in a sidebar so he can drag-n-quote
+// the scheduling in his head. Click any block or the sidebar row to open
+// that contact.
+function startOfWeek(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0=Sun ... 6=Sat
+  d.setDate(d.getDate() - day); // walk back to Sunday
+  return d;
+}
+
 function LiveCalendar() {
   const [scheduled, setScheduled] = useState([]);
   const [unscheduled, setUnscheduled] = useState([]);
-  const [installers, setInstallers] = useState([]); // distinct assigned_installer values
+  const [installers, setInstallers] = useState([]);
   const [installerFilter, setInstallerFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
+  // Which week is on screen. Default = this week (Sun of current week).
+  // Prev/Next buttons shift by 7 days; Today snaps back.
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
 
-  // Realtime: any contacts UPDATE (install_date, stage, do_not_contact)
-  // can shift what belongs in scheduled vs awaiting-date. Cheap refetch.
   useEffect(() => {
     const ch = db.channel('calendar-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => setRefreshTick(n => n + 1))
@@ -5398,28 +5412,29 @@ function LiveCalendar() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      // Two buckets:
-      //   scheduled   — contacts with an install_date set (sorted ascending)
-      //   unscheduled — booked+ stages (3-8) still without a date (needs scheduling)
-      const nowIso = new Date().toISOString();
+      // Scheduled: anything with install_date within 6 months ±. Gives Key
+      // room to scroll forward for future bookings + back for recent history
+      // without refetching per week swap.
+      const sixMonthsAgo = new Date(Date.now() - 180 * 86400000).toISOString();
+      const sixMonthsAhead = new Date(Date.now() + 180 * 86400000).toISOString();
       const [schedRes, unschedRes] = await Promise.all([
         db.from('contacts')
-          .select('id, name, address, stage, install_date, assigned_installer, installer_pay')
+          .select('id, name, address, stage, install_date, assigned_installer, installer_pay, do_not_contact')
           .not('install_date', 'is', null)
-          .gte('install_date', new Date(Date.now() - 7 * 86400000).toISOString())
+          .gte('install_date', sixMonthsAgo)
+          .lte('install_date', sixMonthsAhead)
           .order('install_date', { ascending: true })
-          .limit(50),
+          .limit(200),
         db.from('contacts')
           .select('id, name, address, stage, assigned_installer')
           .is('install_date', null)
           .in('stage', [3, 4, 5, 6, 7, 8])
           .eq('do_not_contact', false)
           .order('created_at', { ascending: false })
-          .limit(30),
+          .limit(40),
       ]);
       setScheduled(schedRes.data || []);
       setUnscheduled(unschedRes.data || []);
-      // Collect distinct installer names across both buckets for the filter
       const installerSet = new Set();
       for (const r of [...(schedRes.data || []), ...(unschedRes.data || [])]) {
         if (r.assigned_installer) installerSet.add(r.assigned_installer);
@@ -5431,22 +5446,6 @@ function LiveCalendar() {
 
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING CALENDAR...</div>;
 
-  // Group scheduled events by day label ("Today" / "Tomorrow" / weekday+date)
-  const dayLabel = (iso) => {
-    const d = new Date(iso);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const tom = new Date(today.getTime() + 86400000);
-    const ystr = new Date(today.getTime() - 86400000);
-    const ds = new Date(d); ds.setHours(0,0,0,0);
-    if (ds.getTime() === today.getTime()) return 'Today';
-    if (ds.getTime() === tom.getTime()) return 'Tomorrow';
-    if (ds.getTime() === ystr.getTime()) return 'Yesterday';
-    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  };
-  // Apply installer filter — "all" shows everything, "unassigned" shows
-  // rows without an assigned_installer, and specific names filter to that
-  // installer. Sub-labor prep: Key uses this to plan his own day AND to
-  // review what each sub has on their plate.
   const filterFn = (e) => {
     if (installerFilter === 'all') return true;
     if (installerFilter === 'unassigned') return !e.assigned_installer;
@@ -5455,31 +5454,74 @@ function LiveCalendar() {
   const filteredScheduled = scheduled.filter(filterFn);
   const filteredUnscheduled = unscheduled.filter(filterFn);
 
-  const groups = (() => {
-    const by = new Map();
-    for (const e of filteredScheduled) {
-      const k = dayLabel(e.install_date);
-      if (!by.has(k)) by.set(k, []);
-      by.get(k).push(e);
-    }
-    return [...by.entries()];
+  // Build the 7 day columns for the current weekStart.
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+  const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // Bucket installs into the 7 day keys for the current week. Anything outside
+  // the current week is simply hidden until Key scrolls to that week.
+  const weekInstalls = {};
+  days.forEach(d => { weekInstalls[dayKey(d)] = []; });
+  for (const inst of filteredScheduled) {
+    const d = new Date(inst.install_date);
+    const key = dayKey(d);
+    if (key in weekInstalls) weekInstalls[key].push(inst);
+  }
+  // Sort each day's installs by time-of-day so the column reads top-to-bottom
+  // morning-to-evening.
+  for (const k of Object.keys(weekInstalls)) {
+    weekInstalls[k].sort((a, b) => new Date(a.install_date).getTime() - new Date(b.install_date).getTime());
+  }
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const isToday = (d) => d.getTime() === today.getTime();
+  const weekLabel = (() => {
+    const end = days[6];
+    const sameMonth = weekStart.getMonth() === end.getMonth();
+    const monthFmt = { month: 'short' };
+    return sameMonth
+      ? `${weekStart.toLocaleDateString(undefined, monthFmt)} ${weekStart.getDate()} – ${end.getDate()}, ${end.getFullYear()}`
+      : `${weekStart.toLocaleDateString(undefined, monthFmt)} ${weekStart.getDate()} – ${end.toLocaleDateString(undefined, monthFmt)} ${end.getDate()}, ${end.getFullYear()}`;
   })();
+
+  const stepWeek = (delta) => {
+    const next = new Date(weekStart);
+    next.setDate(next.getDate() + delta * 7);
+    setWeekStart(next);
+  };
 
   return (
     <div style={{ height: '100%', padding: 24, overflow: 'auto' }}>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700, letterSpacing: '-.01em' }}>
-          Installs
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 0 auto' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700, letterSpacing: '-.01em' }}>Installs</div>
+          <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
+            {weekLabel} · {filteredScheduled.length} scheduled · {filteredUnscheduled.length} awaiting date
+            {installerFilter !== 'all' ? ` · ${installerFilter}` : ''}
+          </div>
         </div>
-        <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
-          {filteredScheduled.length} scheduled · {filteredUnscheduled.length} awaiting date
-          {installerFilter !== 'all' ? ` · filtered: ${installerFilter}` : ''}
+        <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
+          <button onClick={() => stepWeek(-1)} title="Previous week" style={{
+            width: 32, height: 32, background: 'var(--card)', boxShadow: 'var(--raised-2)',
+            border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)',
+          }}>‹</button>
+          <button onClick={() => setWeekStart(startOfWeek(new Date()))} title="Jump to this week" style={{
+            padding: '0 14px', height: 32, background: 'var(--navy)', color: 'var(--gold)',
+            boxShadow: 'var(--raised-2)', fontFamily: 'var(--font-body)', fontSize: 11,
+            letterSpacing: '.08em', border: 'none', cursor: 'pointer', fontWeight: 600,
+          }}>TODAY</button>
+          <button onClick={() => stepWeek(1)} title="Next week" style={{
+            width: 32, height: 32, background: 'var(--card)', boxShadow: 'var(--raised-2)',
+            border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)',
+          }}>›</button>
         </div>
       </div>
 
-      {/* Installer filter chips. Hidden when no installers are assigned yet. */}
       {installers.length > 0 ? (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
           {['all', 'unassigned', ...installers].map(i => (
             <button key={i} onClick={() => setInstallerFilter(i)} style={{
               padding: '4px 12px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
@@ -5492,67 +5534,120 @@ function LiveCalendar() {
         </div>
       ) : null}
 
-      {groups.length > 0 ? groups.map(([label, items]) => (
-        <div key={label} style={{ marginBottom: 18 }}>
-          <div className="chrome-label" style={{
-            fontSize: 11, letterSpacing: '.1em', color: 'var(--text-muted)',
-            padding: '6px 0', marginBottom: 4, borderBottom: '1px solid rgba(0,0,0,.08)',
-          }}>{label}</div>
-          <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
-            {items.map((e, i) => (
-              <div key={e.id}
-                onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
-                style={{
-                  display: 'grid', gridTemplateColumns: '72px 1fr 90px',
-                  gap: 12, alignItems: 'center', padding: '12px 16px',
-                  borderBottom: i < items.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
-                  cursor: 'pointer',
-                }}>
-                <span className="mono" style={{ fontSize: 12, color: 'var(--text)' }}>
-                  {new Date(e.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                </span>
-                <span style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{e.name || '—'}</div>
-                  <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {e.address || '—'}
-                  </div>
-                </span>
-                <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'right' }}>stage {e.stage}</span>
+      {/* 7-day grid. Mobile collapses to stacked day cards; desktop keeps 7
+          columns. Each day column shows header + a stack of install blocks. */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, minmax(120px, 1fr))',
+        gap: 6,
+        overflowX: 'auto',
+        paddingBottom: 4,
+      }}>
+        {days.map(d => {
+          const key = dayKey(d);
+          const items = weekInstalls[key] || [];
+          const highlight = isToday(d);
+          return (
+            <div key={key} style={{
+              minHeight: 220,
+              background: highlight ? 'var(--card)' : 'var(--card)',
+              boxShadow: 'var(--pressed-2)',
+              display: 'flex', flexDirection: 'column',
+              borderLeft: highlight ? '3px solid var(--gold)' : '3px solid transparent',
+            }}>
+              <div style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid rgba(0,0,0,.08)',
+                background: highlight ? 'var(--navy)' : 'transparent',
+                color: highlight ? 'var(--gold)' : 'var(--text-muted)',
+              }}>
+                <div className="chrome-label" style={{ fontSize: 10, letterSpacing: '.1em', fontWeight: 700 }}>
+                  {d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase()}
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700, marginTop: 2 }}>
+                  {d.getDate()}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )) : (
-        <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)', padding: 24 }}>
-          <Empty label="No installs scheduled — set a date in the Edit tab on a contact" />
-        </div>
-      )}
+              <div style={{ padding: 6, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                {items.length === 0 ? (
+                  <div className="mono" style={{ fontSize: 9, color: 'var(--text-faint)', padding: '6px 4px', textTransform: 'lowercase', letterSpacing: '.06em' }}>
+                    —
+                  </div>
+                ) : items.map(e => {
+                  const t = new Date(e.install_date);
+                  const timeLabel = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                  const stageTint = (e.stage || 1) >= 8 ? 'var(--ms-2)' : (e.stage || 1) >= 4 ? 'var(--gold)' : 'var(--ms-1)';
+                  return (
+                    <button key={e.id}
+                      onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
+                      title={`${e.name}${e.address ? ' · ' + e.address : ''} · stage ${e.stage}`}
+                      style={{
+                        textAlign: 'left', padding: '6px 8px', background: 'var(--card)',
+                        boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+                        borderLeft: `3px solid ${stageTint}`,
+                        opacity: e.do_not_contact ? 0.5 : 1,
+                        display: 'flex', flexDirection: 'column', gap: 2,
+                      }}>
+                      <span className="mono" style={{ fontSize: 9, color: 'var(--text-faint)', letterSpacing: '.06em' }}>
+                        {timeLabel}
+                      </span>
+                      <span style={{
+                        fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--text)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{e.name || '—'}</span>
+                      {e.address ? (
+                        <span className="mono" style={{
+                          fontSize: 9, color: 'var(--text-faint)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{e.address.slice(0, 28)}</span>
+                      ) : null}
+                      {e.assigned_installer && installerFilter === 'all' ? (
+                        <span className="mono" style={{
+                          fontSize: 8, color: 'var(--ms-2)', letterSpacing: '.08em',
+                          textTransform: 'uppercase',
+                        }}>{e.assigned_installer}</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-      {/* Awaiting date — contacts past booking that haven't been scheduled yet */}
+      {/* Awaiting date — sidebar below the grid so it doesn't steal horizontal
+          space on the week view. Clicking any row opens that contact so Key
+          can set an install_date. */}
       {filteredUnscheduled.length > 0 ? (
-        <div style={{ marginTop: 28 }}>
+        <div style={{ marginTop: 24 }}>
           <div className="chrome-label" style={{
             fontSize: 11, letterSpacing: '.1em', color: 'var(--ms-3)',
             padding: '6px 0', marginBottom: 4, borderBottom: '1px solid rgba(0,0,0,.08)',
-          }}>Awaiting date ({filteredUnscheduled.length})</div>
-          <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
-            {filteredUnscheduled.map((e, i) => (
-              <div key={e.id}
+          }}>
+            Awaiting date ({filteredUnscheduled.length})
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gap: 6,
+          }}>
+            {filteredUnscheduled.map(e => (
+              <button key={e.id}
                 onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
                 style={{
-                  display: 'grid', gridTemplateColumns: '1fr 90px',
-                  gap: 12, alignItems: 'center', padding: '12px 16px',
-                  borderBottom: i < filteredUnscheduled.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
-                  cursor: 'pointer',
+                  textAlign: 'left', padding: '10px 12px', background: 'var(--card)',
+                  boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', gap: 2,
                 }}>
-                <span>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{e.name || '—'}</div>
-                  <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-                    {e.address || '—'}
-                  </div>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600 }}>{e.name || '—'}</span>
+                <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+                  {e.address || '—'}
                 </span>
-                <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'right' }}>stage {e.stage}</span>
-              </div>
+                <span className="mono" style={{ fontSize: 9, color: 'var(--ms-3)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                  Stage {e.stage} · needs date
+                </span>
+              </button>
             ))}
           </div>
         </div>
