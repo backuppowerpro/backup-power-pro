@@ -2141,15 +2141,22 @@ Deno.serve(async (req) => {
 
   if (response) {
     // ── Human-like typing delay ───────────────────────────────────────────
-    // Scale delay with message length so short replies feel instant and
-    // longer replies feel like someone actually typed them out.
-    // Average person types ~40 WPM on a phone = ~3.3 chars/sec.
-    // We go faster (a quick texter) but add jitter so it is never predictable.
+    // Total wait = a short "reading + thinking" pause (simulates the human
+    // glancing at the customer's message and deciding what to say) + a
+    // length-scaled "typing" pause. The prior rate (25ms/char, 800ms floor,
+    // 6s cap) was ~480 WPM — too fast for a phone, made Alex feel bot-quick.
+    //
+    // Real mobile texting sits around 40-60 WPM (~3-5 chars/sec = ~200-300ms
+    // /char) but Alex is meant to feel like a quick texter, so we target
+    // roughly 50-60ms/char with jitter. Floor is raised to 1.5s because even
+    // the shortest human reply ("ok") takes longer than 800ms once you count
+    // the pause to read the incoming message.
     const cleaned = cleanSms(response)
     const charCount = cleaned.length
-    const baseMs = Math.min(charCount * 25, 6000) // ~25ms/char, cap at 6s
-    const jitter = (Math.random() - 0.3) * 1500   // -450ms to +1050ms
-    const typingDelay = Math.max(800, baseMs + jitter) // floor of 800ms
+    const thinkMs = 1200 + Math.random() * 1500           // 1.2 - 2.7s read+think pause
+    const typeMs  = Math.min(charCount * 55, 9000)        // ~55ms/char, cap at 9s
+    const jitter  = (Math.random() - 0.3) * 1800          // -540ms to +1260ms
+    const typingDelay = Math.max(1500, thinkMs + typeMs + jitter) // floor of 1.5s
     await new Promise(r => setTimeout(r, typingDelay))
 
     const sent = await sendQuoMessage(fromPhone, cleaned)
