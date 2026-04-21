@@ -790,8 +790,33 @@ async function markOutbound(supabase: any, sessionId: string): Promise<void> {
 }
 
 async function clearSessions(supabase: any, phone: string): Promise<void> {
-  await supabase.from('alex_sessions').update({ status: 'reset' }).eq('phone', phone).eq('status', 'active')
-  console.log('[alex] Cleared sessions for', phone)
+  // Only reached via the RETEST command (TEST_MODE / KEY_PHONE gated). Do a
+  // FULL wipe so the next session truly starts cold — before this, only the
+  // alex_sessions row was marked status='reset', which left every
+  // `contact:{phone}:*` entry in sparky_memory (generator, pain_point,
+  // panel_location, photo URLs, etc.) intact. buildContactContext() on the
+  // fresh session then pulled all that memory back into the opening prompt,
+  // so Alex "remembered" previous test runs even after RETEST.
+  //
+  // We keep the contacts table row (name/phone/address/DNC) — that's
+  // long-lived identity data Key wants to survive a RETEST so he can run
+  // repeat test scenarios without re-entering his own name.
+  const normalized = normalizePhone(phone)
+  await Promise.all([
+    supabase.from('alex_sessions')
+      .update({ status: 'reset' })
+      .eq('phone', normalized)
+      .eq('status', 'active'),
+    supabase.from('sparky_memory')
+      .delete()
+      .like('key', `contact:${normalized}:%`),
+    // Any pending reminder for this phone — cancel so it doesn't fire into
+    // the fresh session with stale context.
+    supabase.from('sparky_memory')
+      .delete()
+      .eq('key', `reminder:${normalized}`),
+  ])
+  console.log('[alex] Cleared sessions + memory for', normalized)
 }
 
 // ── CONTEXT INJECTION ─────────────────────────────────────────────────────────
