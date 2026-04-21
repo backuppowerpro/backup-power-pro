@@ -3736,6 +3736,64 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
     }
   }
 
+  // ── Photo send (MMS) ────────────────────────────────────────────────────
+  // Ports v1's msgSendPhoto flow. File → Supabase Storage bucket
+  // (message-media, public) → send-sms with mediaUrl. The DB body gets
+  // stored as "[media:URL] optional caption" which the thread renderer
+  // already handles as an inline <img>. 5MB Twilio MMS hard cap.
+  async function sendPhoto(file) {
+    if (!file || !contactId || disabled) return
+    if (!/^image\//.test(file.type)) {
+      window.__bpp_toast && window.__bpp_toast('Only image files can be sent via MMS', 'error')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      window.__bpp_toast && window.__bpp_toast('File too large — Twilio MMS limit is 5MB', 'error')
+      return
+    }
+    setSending(true)
+    window.__bpp_toast && window.__bpp_toast('Uploading photo…', 'info')
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+      const fileName = `${contactId}/${Date.now()}.${ext}`
+      const { error: uploadErr } = await db.storage
+        .from('message-media')
+        .upload(fileName, file, { contentType: file.type, upsert: false })
+      if (uploadErr) throw new Error(uploadErr.message)
+      const { data: urlData } = db.storage.from('message-media').getPublicUrl(fileName)
+      const mediaUrl = urlData?.publicUrl
+      if (!mediaUrl) throw new Error('could not get public URL for uploaded photo')
+
+      // Send — text is optional caption; body is whatever's in the compose
+      // bar at the time. Caption + image both land in the same SMS.
+      const caption = text.trim()
+      const { data, error } = await db.functions.invoke('send-sms', {
+        body: { contactId, body: caption, mediaUrl },
+      })
+      if (error) throw error
+      if (data && data.success === false) throw new Error(data.error || 'send failed')
+      setText('')
+      window.__bpp_toast && window.__bpp_toast('Photo sent', 'success')
+    } catch (e) {
+      console.error('photo send failed', e)
+      const msg = e?.message || 'Photo send failed — check network + Twilio credits'
+      window.__bpp_toast && window.__bpp_toast(msg, 'error')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  function pickPhoto() {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = (ev) => {
+      const file = ev.target.files?.[0]
+      if (file) sendPhoto(file)
+    }
+    input.click()
+  }
+
   if (disabled) {
     return (
       <div style={{
@@ -3792,6 +3850,19 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
           border: 'none', cursor: suggesting ? 'wait' : 'pointer',
           fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
         }}>{suggesting ? '…' : 'AI'}</button>
+        <button onClick={pickPhoto} disabled={sending} title="Attach photo (MMS)" style={{
+          width: 36, height: 36,
+          background: 'var(--card)', color: 'var(--text-muted)',
+          boxShadow: sending ? 'var(--pressed-2)' : 'var(--raised-2)',
+          border: 'none', cursor: sending ? 'wait' : 'pointer',
+          display: 'grid', placeItems: 'center',
+        }}>
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="square" strokeLinejoin="miter">
+            <rect x="1.5" y="2.5" width="13" height="11"/>
+            <path d="M1.5 10 L5 7 L8 10 L11 6 L14.5 10.5"/>
+            <circle cx="5.5" cy="5.5" r="1"/>
+          </svg>
+        </button>
         <div style={{
           flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
           boxShadow: 'var(--pressed-2)', background: 'var(--card)',
