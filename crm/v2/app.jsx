@@ -4568,6 +4568,7 @@ async function exportContactsCsv() {
 function NewLeadModal({ open, onClose, onCreated }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -4612,12 +4613,20 @@ function NewLeadModal({ open, onClose, onCreated }) {
       setErr(`Phone already belongs to ${dupe.name || 'existing contact'} — click their name below to open.`);
       return;
     }
+    // Basic email validation — only if provided. Blank email is fine for
+    // walk-in leads Key captures without email yet; Alex will ask later.
+    const emailTrim = email.trim();
+    if (emailTrim && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+      setErr('Email format looks off. Leave blank to skip.');
+      return;
+    }
     setBusy(true);
     const { data, error } = await db
       .from('contacts')
       .insert({
         name: name.trim() || 'New Lead',
         phone: `+1${digits}`,
+        email: emailTrim || null,
         address: address.trim() || null,
         stage: 1,
         status: 'New Lead',
@@ -4629,7 +4638,7 @@ function NewLeadModal({ open, onClose, onCreated }) {
     if (error) { setErr(error.message); return; }
     onCreated && onCreated(data);
     window.__bpp_toast && window.__bpp_toast(`New lead: ${data.name}`, 'success');
-    setName(''); setPhone(''); setAddress(''); setDupe(null);
+    setName(''); setPhone(''); setEmail(''); setAddress(''); setDupe(null);
     onClose();
   }
 
@@ -4652,6 +4661,10 @@ function NewLeadModal({ open, onClose, onCreated }) {
           background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
         }} />
         <input value={phone} onChange={e => setPhone(formatPhoneInput(e.target.value))} placeholder="Phone" style={{
+          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
+          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+        }} />
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)" type="email" style={{
           padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
           background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
         }} />
