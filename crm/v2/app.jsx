@@ -5139,6 +5139,18 @@ function LiveMaterials() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  // Realtime: contacts UPDATE can change stage (card moves in/out of the
+  // stage-3-8 window) or install_notes (Alex writes memory, Key edits the
+  // Notes tab). Cheap refetch on any change. Ignore our own optimistic
+  // updates by debouncing through refreshTick.
+  useEffect(() => {
+    const ch = db.channel('materials-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => setRefreshTick(n => n + 1))
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -5154,7 +5166,7 @@ function LiveMaterials() {
       })));
       setLoading(false);
     })();
-  }, []);
+  }, [refreshTick]);
 
   // Apply a change to one row optimistically then persist
   const updateRow = useCallback(async (rowId, nextMat) => {
@@ -5218,7 +5230,15 @@ function LiveMaterials() {
             background: 'var(--card)',
             borderBottom: '1px solid rgba(0,0,0,.06)',
           }}>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+            <button
+              onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
+              title={r.address !== '—' ? r.address : r.name}
+              style={{
+                fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'var(--text)', textAlign: 'left', padding: 0,
+              }}>{r.name}</button>
             <div style={{ display: 'flex', height: 24, boxShadow: 'var(--raised-2)' }}>
               <button onClick={() => setAmp(r, '30')} style={{
                 flex: 1, fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
