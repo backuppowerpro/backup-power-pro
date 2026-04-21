@@ -4545,7 +4545,7 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'G C', label: 'Go to Calendar' },
     { keys: 'G F', label: 'Go to Finance' },
     { keys: 'G M', label: 'Go to Messages' },
-    { keys: 'G S', label: 'Go to Sparky' },
+    // G S removed — Sparky lives in the right panel, not a tab anymore.
     { keys: 'R', label: 'Reply (focus compose bar)' },
     { keys: 'D', label: 'Dial selected contact' },
     { keys: 'N', label: 'New lead' },
@@ -6953,6 +6953,22 @@ function LiveSparky({ currentContactId = null }) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  // Palette "Ask Sparky: <query>" dispatches this event so the right-panel
+  // Sparky can consume it. Fills the input + auto-sends so Key doesn't have
+  // to click twice after typing in the palette.
+  useEffect(() => {
+    const handler = (ev) => {
+      const q = ev?.detail?.text;
+      if (typeof q === 'string' && q.trim()) {
+        setInput(q);
+        setTimeout(() => send(q), 30);
+      }
+    };
+    window.addEventListener('bpp:sparky-prefill', handler);
+    return () => window.removeEventListener('bpp:sparky-prefill', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function send(overrideText) {
     const q = (overrideText ?? input).trim();
     if (!q || sending) return;
@@ -7340,7 +7356,10 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
         { type: 'nav', id: 'calendar', label: 'Go to Calendar' },
         { type: 'nav', id: 'finance', label: 'Go to Finance' },
         { type: 'nav', id: 'messages', label: 'Go to Messages' },
-        { type: 'nav', id: 'sparky', label: 'Go to Sparky' },
+        // "Go to Sparky" nav removed — Sparky is the right-panel default
+        // when no contact is selected; it's always one click away (just
+        // close the contact detail panel). Having it as a nav target was
+        // duplicative.
       ].filter(n => n.label.toLowerCase().includes(q.toLowerCase()));
       const actionHits = [
         { type: 'action', id: 'export_csv', label: 'Export contacts as CSV' },
@@ -7381,7 +7400,14 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
       if (hit.type === 'contact') { onSelectContact(hit.id); onClose(); }
       else if (hit.type === 'nav') { onSwitchTab(hit.id); onClose(); }
       else if (hit.type === 'action') { onAction && onAction(hit.id); onClose(); }
-      else if (hit.type === 'sparky') { onSwitchTab('sparky'); onClose(); }
+      else if (hit.type === 'sparky') {
+        // "Ask Sparky: <query>" — the sparky panel is the right-side default
+        // when no contact is selected. Deselect so the panel shows Sparky,
+        // then dispatch a prefill event so its input gets the query.
+        onSelectContact(null);
+        window.dispatchEvent(new CustomEvent('bpp:sparky-prefill', { detail: { text: query.trim() } }));
+        onClose();
+      }
     }
   }
 
@@ -7528,7 +7554,14 @@ function App() {
     return { tab: h.get('tab') || 'leads', contact: h.get('contact') || null };
   })();
   const [tab, setTab] = useState(initial.tab);
-  const [leadsSubView, setLeadsSubView] = useState(() => window.innerWidth < 768 ? 'list' : 'pipeline');
+  // Default leads sub-view is LIST on every viewport. The 9-column pipeline
+  // doesn't fit beside the 480px right panel on most laptop viewports — it
+  // was forcing horizontal scroll and "cutting into" the chat/contact-detail
+  // panel's space. Key's feedback: "the leads tab needs to be redone and
+  // its cutting into the right side made for chat." List view is purely
+  // vertical, sits cleanly in the left column. Pipeline still available
+  // via the LeadsSubToolbar toggle — kept for people who want kanban.
+  const [leadsSubView, setLeadsSubView] = useState('list');
   const [selectedContact, setSelectedContact] = useState(initial.contact);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -7932,9 +7965,10 @@ function App() {
       }
       if (editable) return;
 
-      // g-chord: g then l/c/f/m/s
+      // g-chord: g then l/c/f/m. (Removed 's' → Sparky mapping; Sparky
+      // now lives in the right-hand panel instead of a tab.)
       if (gPending) {
-        const map = { l: 'leads', c: 'calendar', f: 'finance', m: 'messages', s: 'sparky' };
+        const map = { l: 'leads', c: 'calendar', f: 'finance', m: 'messages' };
         const target = map[e.key.toLowerCase()];
         if (target) {
           e.preventDefault();
@@ -8205,7 +8239,12 @@ function App() {
     if (tab === 'calendar') return <LiveCalendar />;
     if (tab === 'finance') return <LiveFinance />;
     if (tab === 'messages') return <LiveMessages onSelect={id => setSelectedContact(id)} activeId={selectedContact} />;
-    if (tab === 'sparky') return <LiveSparky currentContactId={selectedContact} />;
+    // 'sparky' as a top-level tab was removed — Sparky already lives in the
+    // right-hand panel. For backwards-compat with any existing bookmark /
+    // command-palette nav that says "go to Sparky", route to leads + let the
+    // right panel show the Sparky chat by virtue of no contact being
+    // selected. A no-op also works if the tab id is stale.
+    if (tab === 'sparky') return null;
     return null;
   })();
 
@@ -8224,7 +8263,9 @@ function App() {
       {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} badges={(() => {
         const b = {};
         if (unreadCount > 0) b.messages = unreadCount;
-        if (sparkyInboxCount > 0) b.sparky = sparkyInboxCount;
+        // sparkyInboxCount no longer goes to a tab badge — Sparky isn't a
+        // tab anymore. The count appears as a marker inside the right-side
+        // panel where Sparky + AgentsInboxStrip live.
         return b;
       })()} /> : null}
       {/* Desktop: two-column layout. Left = current tab content. Right = a
@@ -8259,7 +8300,6 @@ function App() {
                     if (tab === 'finance') return 'QUOTE';
                     if (tab === 'calendar') return 'PERMITS';
                     if (tab === 'messages') return 'MESSAGES';
-                    if (tab === 'sparky') return 'MESSAGES';
                     if (tab === 'leads') {
                       if (leadsSubView === 'permits' || leadsSubView === 'mat') return 'PERMITS';
                       return 'MESSAGES';

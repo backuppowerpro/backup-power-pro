@@ -31,7 +31,10 @@ const TABS = [
   { id: 'calendar', label: 'CALENDAR', icon: Ico.calendar },
   { id: 'finance', label: 'FINANCE', icon: Ico.finance },
   { id: 'messages', label: 'MESSAGES', icon: Ico.messages },
-  { id: 'sparky', label: 'SPARKY', icon: Ico.sparky },
+  // SPARKY tab removed — Sparky already lives in the right-side panel by
+  // default when no contact is selected. Having it as a top-level tab was
+  // duplicative. Badge for sparky_inbox count now moves onto the right
+  // panel (see shell render).
 ];
 
 /* ────────── Top bar (desktop + mobile share layout) ────────── */
