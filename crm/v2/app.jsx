@@ -2035,6 +2035,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
           { id: 'MESSAGES', label: 'Messages' },
           { id: 'TIMELINE', label: 'Timeline' },
           { id: 'QUOTE',    label: 'Quote' },
+          { id: 'PHOTOS',   label: 'Photos' },
           { id: 'PERMITS',  label: 'Permits' },
           { id: 'NOTES',    label: 'Notes' },
           { id: 'EDIT',     label: 'Edit' },
@@ -2161,6 +2162,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
       {detailTab === 'TIMELINE' ? <DetailTimeline contactId={contactId} /> : null}
       {detailTab === 'QUOTE' ? <DetailQuote contactId={contactId} openTrigger={quickQuoteTrigger} /> : null}
       {detailTab === 'PERMITS' ? <DetailPermits contact={contact} /> : null}
+      {detailTab === 'PHOTOS' ? <DetailPhotos contactId={contactId} contactPhone={contact?.phone} /> : null}
       {detailTab === 'NOTES' ? <DetailNotes contact={contact} onUpdate={(notes) => setContact(c => ({ ...c, install_notes: notes }))} /> : null}
       {detailTab === 'EDIT' ? <DetailEditContact contact={contact} onUpdate={(patch) => setContact(c => ({ ...c, ...patch }))} /> : null}
 
@@ -3363,6 +3365,206 @@ function mergeInstallNotes(meta, free) {
   if (free && free.trim()) parts.push(free.trim());
   if (meta && meta.trim()) parts.push(meta.trim());
   return parts.join('\n\n');
+}
+
+// Photos tab — unified view of every image attached to a contact. Pulls two
+// sources: the messages thread (any inbound/outbound row with `[media:URL]`
+// in the body) and sparky_memory photo entries Alex saved synchronously when
+// media arrived. Dedupes by URL, sorts newest-first, renders as a grid with
+// a full-screen lightbox on click. Key uses this on install day to scan
+// every panel / outlet / reference pic in one view instead of scrolling the
+// whole thread.
+function DetailPhotos({ contactId, contactPhone }) {
+  const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lightbox, setLightbox] = useState(null); // { url, caption, at }
+
+  useEffect(() => {
+    if (!contactId) return;
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      // 1. From messages table — any body matching the [media:URL] prefix.
+      //    Captures both inbound (Twilio MMS from customer) and outbound
+      //    (Alex-sent or Key-sent via the compose bar attach button).
+      const msgRes = await db.from('messages')
+        .select('id, direction, sender, body, created_at')
+        .eq('contact_id', contactId)
+        .ilike('body', '[media:%')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      // 2. From sparky_memory — photo URLs Alex saved synchronously when
+      //    MMS arrived. These sometimes land before the messages row
+      //    persists, so pulling both ensures nothing gets missed.
+      let memRows = [];
+      if (contactPhone) {
+        const { data: mems } = await db.from('sparky_memory')
+          .select('key, value, updated_at')
+          .like('key', `contact:${contactPhone}:photo_%`)
+          .order('updated_at', { ascending: false })
+          .limit(50);
+        memRows = mems || [];
+      }
+
+      const byUrl = new Map();
+      // Parse messages first — they're richer (direction + caption).
+      for (const m of (msgRes.data || [])) {
+        const match = /^\[media:([^\]]+)\]\s*(.*)$/s.exec(String(m.body || ''));
+        if (!match) continue;
+        const url = match[1].trim();
+        const caption = match[2].trim();
+        if (!byUrl.has(url)) {
+          byUrl.set(url, {
+            url,
+            caption,
+            at: m.created_at,
+            direction: m.direction,
+            sender: m.sender,
+          });
+        }
+      }
+      // Layer in memory rows for any URL not yet captured.
+      for (const r of memRows) {
+        const url = String(r.value || '').trim();
+        if (!url || !url.startsWith('http')) continue;
+        if (!byUrl.has(url)) {
+          byUrl.set(url, {
+            url,
+            caption: '',
+            at: r.updated_at,
+            direction: 'inbound',
+            sender: 'lead',
+          });
+        }
+      }
+
+      const all = Array.from(byUrl.values())
+        .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+      if (alive) {
+        setPhotos(all);
+        setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [contactId, contactPhone]);
+
+  // Realtime — new MMS arriving mid-session (customer sends a follow-up pic,
+  // Key sends one from his phone). Scoped filter so we don't refetch on
+  // unrelated inserts.
+  useEffect(() => {
+    if (!contactId) return;
+    const ch = db.channel(`photos-${contactId}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'messages',
+        filter: `contact_id=eq.${contactId}`,
+      }, (payload) => {
+        const body = String(payload.new?.body || '');
+        const match = /^\[media:([^\]]+)\]\s*(.*)$/s.exec(body);
+        if (!match) return;
+        const url = match[1].trim();
+        setPhotos(prev => {
+          if (prev.some(p => p.url === url)) return prev;
+          return [{
+            url,
+            caption: match[2].trim(),
+            at: payload.new.created_at,
+            direction: payload.new.direction,
+            sender: payload.new.sender,
+          }, ...prev];
+        });
+      })
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, [contactId]);
+
+  if (loading) {
+    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>LOADING PHOTOS...</div>;
+  }
+  if (photos.length === 0) {
+    return (
+      <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 600 }}>No photos yet</div>
+          <div style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', marginTop: 6 }}>
+            Customer-sent MMS or photos you attach from compose will appear here.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const fmtAge = (iso) => {
+    const hrs = (Date.now() - new Date(iso).getTime()) / 3600000;
+    if (hrs < 1)   return `${Math.max(1, Math.round(hrs * 60))}m ago`;
+    if (hrs < 24)  return `${Math.round(hrs)}h ago`;
+    return `${Math.round(hrs / 24)}d ago`;
+  };
+
+  return (
+    <>
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: 16,
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+        gap: 10,
+      }}>
+        {photos.map((p) => (
+          <button key={p.url}
+            onClick={() => setLightbox(p)}
+            title={p.caption || `${p.direction === 'outbound' ? 'Sent' : 'Received'} ${fmtAge(p.at)}`}
+            style={{
+              position: 'relative', padding: 0, border: 'none', cursor: 'pointer',
+              background: 'var(--card)', boxShadow: 'var(--raised-2)',
+              aspectRatio: '1 / 1', overflow: 'hidden',
+            }}>
+            <img src={p.url} alt="" loading="lazy" decoding="async" style={{
+              width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+            }} />
+            <div style={{
+              position: 'absolute', left: 0, right: 0, bottom: 0,
+              padding: '4px 6px',
+              background: 'linear-gradient(0deg, rgba(0,0,0,.75), rgba(0,0,0,0))',
+              color: '#fff', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '.04em',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <span>{p.direction === 'outbound' ? (p.sender === 'ai' ? 'ALEX' : 'KEY') : 'CUSTOMER'}</span>
+              <span>{fmtAge(p.at)}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+      {lightbox ? (
+        <div onClick={() => setLightbox(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 120,
+          background: 'rgba(0,0,0,.92)',
+          display: 'grid', placeItems: 'center', padding: 24, cursor: 'zoom-out',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            maxWidth: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column', gap: 8,
+          }}>
+            <img src={lightbox.url} alt="" style={{
+              maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain',
+              boxShadow: '0 0 0 1px rgba(255,255,255,.1)',
+            }} />
+            {lightbox.caption ? (
+              <div style={{ color: '#fff', fontFamily: 'var(--font-body)', fontSize: 13, textAlign: 'center' }}>
+                {lightbox.caption}
+              </div>
+            ) : null}
+            <div className="mono" style={{ color: 'rgba(255,255,255,.6)', fontSize: 10, letterSpacing: '.06em', textAlign: 'center' }}>
+              {lightbox.direction === 'outbound' ? (lightbox.sender === 'ai' ? 'Sent by Alex' : 'Sent by Key') : 'Received from customer'} · {fmtAge(lightbox.at)} · <a href={lightbox.url} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ color: 'var(--gold)' }}>open original ↗</a>
+            </div>
+          </div>
+          <button onClick={() => setLightbox(null)} style={{
+            position: 'absolute', top: 16, right: 16,
+            width: 40, height: 40, background: 'rgba(255,255,255,.1)', color: '#fff',
+            border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer',
+            fontSize: 18, display: 'grid', placeItems: 'center',
+          }}>×</button>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 function DetailNotes({ contact, onUpdate }) {
