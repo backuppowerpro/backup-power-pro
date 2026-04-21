@@ -2243,9 +2243,13 @@ Deno.serve(async (req) => {
   // explicitly cancels via cancel_reminder when the topic is resolved in conversation.
   await saveMessages(supabase, session.id, messages)
 
-  // Handle completion
+  // Handle completion — Sparky inbox notification only. The SMS to Key's
+  // phone is fired from inside mark_complete itself (a single rich payload
+  // with name, address, outlet, pain point, etc.), so we do NOT fire a
+  // second notifyKeyQuo here. Previously this block emitted its own SMS
+  // with `summary` text, which stacked on top of mark_complete's SMS and
+  // gave Key two notifications per finished lead.
   if (complete && summary) {
-    const digits = fromPhone.replace(/\D/g, '').slice(-10)
     const { data: contacts } = await supabase
       .from('contacts')
       .select('id, name')
@@ -2258,7 +2262,6 @@ Deno.serve(async (req) => {
       `${contactName} is ready for a quote. Alex collected panel info and photos.`,
       'Open contact, review photos, send proposal.',
     ).catch((e) => console.error("[alex] notify failed:", e))
-    notifyKeyQuo(fromPhone, summary).catch((e) => console.error("[alex] notify failed:", e))
   }
 
   if (response) {
