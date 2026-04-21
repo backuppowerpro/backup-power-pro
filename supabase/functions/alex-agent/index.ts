@@ -375,10 +375,10 @@ You need four things before Key can build a quote, plus two CRM-identity items i
   3. The service address — FULL: street number + street + city (zip if they have it). A partial like "5 valley oak drive" is NOT enough; always aim for at least street + city so the CRM record is geocodable and Key knows the jurisdiction for permitting.
   4. Whether the generator's 240V outlet is 30-amp or 50-amp (a photo of the outlet is an equal-weight alternative)
 
-  IDENTITY — check the [INTERNAL BRIEFING] for each of these before asking. Only ask if the field is missing from the briefing AND missing from memory:
-    A. Full name (first + last). The form captures a name field but it's sometimes just a first name or blank. If you only have a first name (or no name at all), ask for the full name naturally: "Real quick, what's your full name for Key's records?"
-    B. Email address. The form usually captures this. If it's missing, ask once after the address is in: "What's the best email to send the quote to?"
-  If either is already in the CRM briefing, treat it as given. Never re-ask a field the briefing already has.
+  IDENTITY — check the [INTERNAL BRIEFING] for each of these before asking. Only ask if the field is missing OR incomplete (see below):
+    A. Full name (first + last). The form captures a name field but it's sometimes just a first name or a generic placeholder. A single word ("Key", "Frank", "Sarah") is NOT a full name — ask for the last name even if the briefing has a first name: "Real quick, what's your last name for Key's records?" If the briefing has no name at all: "Real quick, what's your full name for Key's records?" A full name requires at least two words (first + last).
+    B. Email address. The form usually captures this. If it's missing from the briefing, ask once after the address is in: "What's the best email to send the quote to?" A blank or obviously-bogus entry in the briefing (no @) also counts as missing — ask for it.
+  If a field is already in the CRM briefing AND complete, treat it as given — never re-ask. A first-name-only value is NOT complete.
 
 The customer can give these in any order. Track what you have and what you still need via write_memory. NEVER re-ask for something they already gave you — read the conversation and memory carefully before every message. Re-asking is the #1 way to make the conversation feel robotic.
 
@@ -1144,54 +1144,12 @@ async function executeTool(
       }
     }
 
-    // Enriched-lead-update SMS to Key — fires ONCE per contact, the first
-    // time Alex captures a profile field that's useful for triage (city,
-    // panel_location, generator, pain_point, motivation). The initial
-    // "LEAD: name · phone" SMS from quo-ai-new-lead fires at form-submit
-    // with only name+phone; this second, enriched alert lands a few
-    // minutes later once Alex has learned something real.
-    //
-    // Dedup: stores a flag key `contact:{phone}:__update_sent` after firing.
-    // Checks for its absence before sending. No double-alerts even if Alex
-    // keeps writing memory during the conversation.
-    const ENRICHING_FIELDS = new Set(['city', 'pain_point', 'motivation', 'panel_location', 'generator', 'current_state'])
-    if (ENRICHING_FIELDS.has(String(toolInput.key))) {
-      const flagKey = `contact:${phone}:__update_sent`
-      const { data: flagRow } = await supabase
-        .from('sparky_memory').select('key').eq('key', flagKey).maybeSingle()
-      if (!flagRow) {
-        // Gather everything useful we've learned so far.
-        const { data: memRows } = await supabase
-          .from('sparky_memory').select('key, value').like('key', `contact:${phone}:%`)
-        const kv: Record<string, string> = {}
-        for (const r of (memRows || [])) {
-          const field = r.key.split(':').slice(2).join(':')
-          if (!field.startsWith('__')) kv[field] = r.value
-        }
-        const parts: string[] = ['LEAD UPDATE']
-        const name = kv.name || ''
-        if (name) parts.push(name.split(' ')[0])
-        if (kv.city) parts.push(kv.city)
-        if (kv.panel_location) parts.push(`panel: ${kv.panel_location}`)
-        if (kv.current_state) parts.push(`setup: ${kv.current_state.slice(0, 40)}`)
-        else if (kv.generator) parts.push(`gen: ${kv.generator.slice(0, 40)}`)
-        if (kv.motivation) parts.push(`why: ${kv.motivation.slice(0, 50)}`)
-        else if (kv.pain_point) parts.push(`pain: ${kv.pain_point.slice(0, 50)}`)
-        const body = parts.join(' · ').slice(0, 320)
-        // Fire to Key's cell via Quo internal line (matches quo-ai-new-lead pattern)
-        try {
-          await fetch('https://api.openphone.com/v1/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
-            body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [KEY_PHONE], content: body }),
-          })
-          await supabase.from('sparky_memory').upsert({ key: flagKey, value: new Date().toISOString(), category: 'audit', importance: 1 }, { onConflict: 'key' })
-          console.log('[alex] Lead update SMS fired:', body)
-        } catch (e) {
-          console.error('[alex] lead-update SMS failed:', e)
-        }
-      }
-    }
+    // Lead-update SMS to Key: DISABLED. Key explicitly asked for a single
+    // consolidated notification at the end of the flow instead of per-field
+    // pings. The mark_complete path already builds a rich summary and fires
+    // one notify_key SMS with everything learned — that's the one Key sees.
+    // Mid-flow enriched updates are available in the CRM inbox / sparky_inbox
+    // for anyone checking live; we just don't push them to SMS anymore.
 
     return { result: `Saved: ${toolInput.key}`, complete: false }
   }
@@ -1264,13 +1222,23 @@ async function executeTool(
     // Always fire Sparky inbox notification (Key sees it in CRM regardless)
     reportToSparkyImmediate(supabase, contactId, phone, priority, summary, actions[reason]).catch((e) => console.error("[alex] notify failed:", e))
 
-    // SMS to Key only if under cap (photo_received always fires — it's the conversion signal)
-    if (!smsSuppressed || reason === 'photo_received') {
+    // SMS gating — Key asked for ONE notification per lead, at the end. So:
+    //   - photo_received, technical_question, other → Sparky inbox only. No SMS.
+    //     Key sees these in the CRM when he opens the thread; they don't need
+    //     to compete with the final mark_complete summary for his attention.
+    //   - opted_out, wants_to_talk → SMS. These are time-sensitive signals
+    //     that genuinely need Key's phone to buzz NOW (customer asked to stop;
+    //     customer wants a direct call).
+    const SMS_REASONS = new Set(['opted_out', 'wants_to_talk'])
+    const shouldSms = SMS_REASONS.has(reason) && !smsSuppressed
+    if (shouldSms) {
       const quoMsg = `ALEX → ${contactName}\n${reason.replace('_', ' ').toUpperCase()}: ${message}${photoLine}\nPhone: ***${phone.slice(-4)}`
       notifyKeyQuo(phone, quoMsg).catch((e) => console.error("[alex] notify failed:", e))
       await supabase.from('alex_sessions').update({ notify_key_count: currentCount + 1 }).eq('session_id', sessionId).then(() => {}, () => {})
-    } else {
+    } else if (SMS_REASONS.has(reason) && smsSuppressed) {
       console.log('[alex] notify_key SMS suppressed (cap reached) — still wrote to Sparky inbox')
+    } else {
+      console.log(`[alex] notify_key reason=${reason} → Sparky inbox only (no SMS by design)`)
     }
 
     console.log('[alex] notify_key fired:', reason)
@@ -1307,23 +1275,68 @@ async function executeTool(
   }
 
   if (toolName === 'mark_complete') {
-    // Validate: photo must actually be received before completing
+    // Validate all six collection items — the four core items plus name and
+    // email. Previously only `photo_received` was enforced, so Alex could
+    // call mark_complete as long as a photo arrived, missing things like
+    // name, email, full address, or outlet info. Key flagged this: "too bad
+    // he didnt collect all he needed to or end the convo at all."
     const { data: sess } = await supabase
       .from('alex_sessions')
       .select('summary, photo_received, messages')
       .eq('session_id', sessionId)
       .maybeSingle()
 
-    // Security audit #11: only trust `photo_received` flag (set by webhook handler
-    // from Quo media metadata) or a system-inserted marker. Do NOT match the
-    // string "[Customer sent a photo]" inside a 'user' message — customers can
-    // type that phrase themselves to bypass the gate ("my wife sent me
-    // [Customer sent a photo]"). System-inserted markers live in the assistant's
-    // context, not the user's raw text.
     const hasPhoto = !!sess?.photo_received
-
     if (!hasPhoto) {
       return { result: 'Cannot complete yet — no panel photo received. Collect the photo first.', complete: false }
+    }
+
+    // Pull everything Alex has learned + what's in the contacts row. The
+    // mark_complete validation is the FINAL gate before we declare the lead
+    // ready; anything missing here puts Alex back into collection mode.
+    const normalized = normalizePhone(phone)
+    const [memRes, contactRes] = await Promise.all([
+      supabase.from('sparky_memory').select('key, value').like('key', `contact:${normalized}:%`),
+      supabase.from('contacts').select('name, email, address').eq('phone', normalized).maybeSingle(),
+    ])
+    const mem: Record<string, string> = {}
+    for (const r of (memRes.data || [])) {
+      const field = String(r.key).split(':').slice(2).join(':')
+      if (!field.startsWith('__') && !field.startsWith('photo_')) mem[field] = String(r.value || '')
+    }
+    const contact = contactRes.data || {}
+
+    // Panel location
+    const hasPanelLocation = !!(mem.panel_location || '').trim()
+    // Service address — require street + city at minimum. Treat presence of
+    // a digit + alphabetic word count >= 3 as a heuristic for "full enough".
+    const addrValue = ((mem.address || mem.service_address || (contact as any).address || '') + '').trim()
+    const addrHasStreet = /\d/.test(addrValue)
+    const addrWordCount = addrValue.split(/\s+/).filter(Boolean).length
+    const hasFullAddress = addrHasStreet && addrWordCount >= 3 // e.g. "5 Valley Oak Drive Greenville"
+    // Generator outlet — any of the accepted memory keys counts.
+    const hasOutlet = !!(
+      (mem.generator_outlet || '').trim() ||
+      (mem.generator_outlet_photo || '').trim()
+    )
+    // Full name — require at least first + last (detected by a space).
+    const nameValue = ((mem.name || mem.full_name || mem.customer_name || (contact as any).name || '') + '').trim()
+    const hasFullName = nameValue.split(/\s+/).filter(Boolean).length >= 2
+    // Email — basic shape check, good enough to catch obvious typos.
+    const emailValue = ((mem.email || (contact as any).email || '') + '').trim()
+    const hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)
+
+    const missing: string[] = []
+    if (!hasPanelLocation) missing.push('panel_location')
+    if (!hasFullAddress)   missing.push('full service address (street + city)')
+    if (!hasOutlet)        missing.push('generator outlet info (30-amp / 50-amp / photo)')
+    if (!hasFullName)      missing.push('full name (first + last)')
+    if (!hasEmail)         missing.push('email address')
+
+    if (missing.length > 0) {
+      const msg = `Cannot complete yet — still missing: ${missing.join(', ')}. Keep collecting.`
+      console.log('[alex] mark_complete blocked:', msg)
+      return { result: msg, complete: false }
     }
 
     // Preserve A/B variant tag from alex-initiate
@@ -1335,6 +1348,38 @@ async function executeTool(
       .eq('session_id', sessionId)
     // Cancel any pending reminder — session is done
     await supabase.from('sparky_memory').delete().eq('key', `reminder:${phone}`)
+
+    // Fire the SINGLE consolidated SMS to Key with everything learned. This
+    // is the one notification per lead Key actually wants — all prior
+    // per-field "LEAD UPDATE" alerts and the mid-flow "PHOTO_RECEIVED" SMS
+    // are now silenced in favor of this summary.
+    try {
+      const displayName = nameValue || (contact as any).name || '(no name)'
+      const lines: string[] = []
+      lines.push('LEAD READY FOR QUOTE')
+      lines.push(`Name: ${displayName}`)
+      lines.push(`Phone: ${phone}`)
+      if (emailValue)  lines.push(`Email: ${emailValue}`)
+      if (addrValue)   lines.push(`Address: ${addrValue}`)
+      if (mem.panel_location)    lines.push(`Panel: ${mem.panel_location}`)
+      const outletValue = mem.generator_outlet || (mem.generator_outlet_photo ? 'photo sent' : '')
+      if (outletValue) lines.push(`Outlet: ${outletValue}`)
+      if (mem.pain_point)  lines.push(`Pain: ${mem.pain_point.slice(0, 80)}`)
+      if (mem.motivation)  lines.push(`Why: ${mem.motivation.slice(0, 80)}`)
+      lines.push('')
+      lines.push('Alex has everything — review the thread + create the quote.')
+      const body = lines.join('\n').slice(0, 1000)
+
+      await fetch('https://api.openphone.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+        body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [KEY_PHONE], content: body }),
+      })
+      console.log('[alex] mark_complete SMS fired to Key')
+    } catch (e) {
+      console.error('[alex] mark_complete SMS failed:', e)
+    }
+
     return { result: 'Marked complete', complete: true, summary: toolInput.summary }
   }
 
