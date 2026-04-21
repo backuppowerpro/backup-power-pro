@@ -535,6 +535,15 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [applying, setApplying] = useState(false);
+  // Stage filter — narrow the visible rows to a single pipeline stage (or
+  // "done" = stage 9+). 'all' shows everything. Persisted to localStorage so
+  // Key's filter sticks across reloads.
+  const [stageFilter, setStageFilter] = useState(() => {
+    try { return localStorage.getItem('bpp_v2_stage_filter') || 'all'; } catch { return 'all'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('bpp_v2_stage_filter', stageFilter); } catch {}
+  }, [stageFilter]);
 
   // Toggle a contact in the selection set. Called when a row is clicked
   // while select mode is active; otherwise the regular onSelect (open detail)
@@ -553,10 +562,39 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
     else onSelect && onSelect(row);
   }, [selectMode, toggleSelected, onSelect]);
 
+  // Apply stage filter + per-row selection state. Counts-per-stage are
+  // computed from the full row set so the chip labels stay accurate even
+  // when a filter is active.
+  const stageCounts = useMemo(() => {
+    const c = { all: rows.length, waiting: 0, new: 0, quoted: 0, booked: 0, done: 0 };
+    for (const r of rows) {
+      if (r.unread) c.waiting++;
+      const s = r.raw?.stage || 1;
+      if (s === 1) c.new++;
+      else if (s === 2) c.quoted++;
+      else if (s >= 3 && s <= 8) c.booked++;
+      else if (s >= 9) c.done++;
+    }
+    return c;
+  }, [rows]);
+
+  const filteredByStage = useMemo(() => {
+    if (stageFilter === 'all') return rows;
+    return rows.filter(r => {
+      if (stageFilter === 'waiting') return r.unread === true;
+      const s = r.raw?.stage || 1;
+      if (stageFilter === 'new')    return s === 1;
+      if (stageFilter === 'quoted') return s === 2;
+      if (stageFilter === 'booked') return s >= 3 && s <= 8;
+      if (stageFilter === 'done')   return s >= 9;
+      return true;
+    });
+  }, [rows, stageFilter]);
+
   const rowsWithSelectState = useMemo(() => {
-    if (!selectMode) return rows;
-    return rows.map(r => ({ ...r, _selected: selectedIds.has(r.id) }));
-  }, [rows, selectMode, selectedIds]);
+    if (!selectMode) return filteredByStage;
+    return filteredByStage.map(r => ({ ...r, _selected: selectedIds.has(r.id) }));
+  }, [filteredByStage, selectMode, selectedIds]);
 
   function exitSelectMode() {
     setSelectMode(false);
@@ -638,6 +676,17 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
     }
   }
 
+  // Filter chip definitions. Counts render inline so Key can see "21 waiting"
+  // at a glance without applying the filter first.
+  const chips = [
+    { id: 'all',     label: 'ALL',     count: stageCounts.all },
+    { id: 'waiting', label: 'WAITING', count: stageCounts.waiting, tint: 'var(--gold)' },
+    { id: 'new',     label: 'NEW',     count: stageCounts.new },
+    { id: 'quoted',  label: 'QUOTED',  count: stageCounts.quoted },
+    { id: 'booked',  label: 'BOOKED+', count: stageCounts.booked },
+    { id: 'done',    label: 'DONE',    count: stageCounts.done },
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
       <div style={{ padding: '8px 16px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -665,6 +714,27 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
           }}>
           {selectMode ? 'CANCEL' : 'SELECT'}
         </button>
+      </div>
+      {/* Stage filter chips — persisted via localStorage. WAITING highlighted
+          gold because it's the single most actionable filter. */}
+      <div style={{
+        padding: '8px 16px 4px',
+        display: 'flex', gap: 6, flexWrap: 'wrap',
+      }}>
+        {chips.map(c => {
+          const active = stageFilter === c.id;
+          return (
+            <button key={c.id} onClick={() => setStageFilter(c.id)} style={{
+              padding: '4px 10px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
+              background: active ? 'var(--navy)' : 'var(--card)',
+              color: active ? (c.tint || 'var(--gold)') : (c.tint || 'var(--text-muted)'),
+              boxShadow: active ? 'var(--pressed-2)' : 'var(--raised-2)',
+              cursor: 'pointer', border: 'none', letterSpacing: '.06em',
+            }}>
+              {c.label} <span style={{ marginLeft: 4, opacity: .6 }}>{c.count}</span>
+            </button>
+          );
+        })}
       </div>
       {query && rowsWithSelectState.length === 0 ? (
         <div className="mono" style={{ padding: '16px', fontSize: 11, color: 'var(--text-faint)' }}>
