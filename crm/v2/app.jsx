@@ -6500,8 +6500,15 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
     return () => { alive = false; };
   }, [query, open]);
 
+  // Auto-focus on open + reset state. Without the reset, reopening the
+  // palette still shows the previous query's results and cursor position
+  // (confusing when Key is looking for something new).
   useEffect(() => {
-    if (open && inputRef.current) inputRef.current.focus();
+    if (open) {
+      setQuery('');
+      setCursor(0);
+      if (inputRef.current) inputRef.current.focus();
+    }
   }, [open]);
 
   // Keyboard nav
