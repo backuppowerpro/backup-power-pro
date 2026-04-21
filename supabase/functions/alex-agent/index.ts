@@ -1090,6 +1090,60 @@ async function executeTool(
       .upsert({ key, value }, { onConflict: 'key' })
     console.log('[alex] Memory saved:', key)
 
+    // ── Sync identity/address fields back to the contacts table ────────────
+    // Alex collects name, email, and address into sparky_memory as part of
+    // discovery. Without this sync, the CRM inbox and quote builder only see
+    // whatever the form originally captured — Alex's enrichments live in a
+    // parallel key-value store that most of the UI doesn't read. Sync the
+    // three semantic fields so the CRM contact row reflects what Alex learned.
+    //
+    // Logic:
+    //   - Trigger on a small allowlist of semantic keys (not every write).
+    //   - Only overwrite contacts.{field} if the existing value is empty OR a
+    //     generic placeholder ("Lead", "New Lead", "Unknown"). Never clobber
+    //     a human-edited value.
+    //   - Address is the one exception: if the newer value is meaningfully
+    //     LONGER than the existing one, prefer the longer (Alex collected the
+    //     full street+city; the form had only the street). Guard with a
+    //     10-char minimum delta to avoid thrash on stylistic edits.
+    const SEMANTIC_TO_CONTACT_FIELD: Record<string, 'name' | 'email' | 'address'> = {
+      'name':             'name',
+      'full_name':        'name',
+      'customer_name':    'name',
+      'email':            'email',
+      'email_address':    'email',
+      'address':          'address',
+      'service_address':  'address',
+      'install_address':  'address',
+    }
+    const contactField = SEMANTIC_TO_CONTACT_FIELD[String(toolInput.key).toLowerCase()]
+    if (contactField && value) {
+      try {
+        const { data: existing } = await supabase
+          .from('contacts')
+          .select(`id, name, email, address`)
+          .eq('phone', phone)
+          .limit(1)
+          .maybeSingle()
+        if (existing) {
+          const current = String((existing as any)[contactField] || '').trim()
+          const isGeneric = /^(lead|new\s*lead|unknown|customer|test)$/i.test(current)
+          const isEmpty = !current
+          const addrGotLonger = contactField === 'address' && value.length > current.length + 10
+          if (isEmpty || isGeneric || addrGotLonger) {
+            await supabase
+              .from('contacts')
+              .update({ [contactField]: value })
+              .eq('id', existing.id)
+            console.log('[alex] Synced to contacts.' + contactField + ':', value.slice(0, 80))
+          }
+        }
+      } catch (err) {
+        // Sync is non-fatal; memory write succeeded, just log and carry on.
+        console.error('[alex] contact sync failed:', err)
+      }
+    }
+
     // Enriched-lead-update SMS to Key — fires ONCE per contact, the first
     // time Alex captures a profile field that's useful for triage (city,
     // panel_location, generator, pain_point, motivation). The initial
