@@ -3634,7 +3634,22 @@ function mergeInstallNotes(meta, free) {
 function DetailPhotos({ contactId, contactPhone }) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [lightbox, setLightbox] = useState(null); // { url, caption, at }
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const lightbox = lightboxIndex >= 0 ? photos[lightboxIndex] : null;
+
+  // Keyboard nav for the lightbox: left/right to step through photos,
+  // escape to close. Runs only while lightbox is open to avoid clashing
+  // with global shortcuts.
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setLightboxIndex(-1); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); setLightboxIndex(i => Math.min(i + 1, photos.length - 1)); return; }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); setLightboxIndex(i => Math.max(i - 1, 0)); return; }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox, photos.length]);
 
   useEffect(() => {
     if (!contactId) return;
@@ -3765,9 +3780,9 @@ function DetailPhotos({ contactId, contactPhone }) {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
         gap: 10,
       }}>
-        {photos.map((p) => (
+        {photos.map((p, idx) => (
           <button key={p.url}
-            onClick={() => setLightbox(p)}
+            onClick={() => setLightboxIndex(idx)}
             title={p.caption || `${p.direction === 'outbound' ? 'Sent' : 'Received'} ${fmtAge(p.at)}`}
             style={{
               position: 'relative', padding: 0, border: 'none', cursor: 'pointer',
@@ -3791,7 +3806,7 @@ function DetailPhotos({ contactId, contactPhone }) {
         ))}
       </div>
       {lightbox ? (
-        <div onClick={() => setLightbox(null)} style={{
+        <div onClick={() => setLightboxIndex(-1)} style={{
           position: 'fixed', inset: 0, zIndex: 120,
           background: 'rgba(0,0,0,.92)',
           display: 'grid', placeItems: 'center', padding: 24, cursor: 'zoom-out',
@@ -3809,10 +3824,29 @@ function DetailPhotos({ contactId, contactPhone }) {
               </div>
             ) : null}
             <div className="mono" style={{ color: 'rgba(255,255,255,.6)', fontSize: 10, letterSpacing: '.06em', textAlign: 'center' }}>
-              {lightbox.direction === 'outbound' ? (lightbox.sender === 'ai' ? 'Sent by Alex' : 'Sent by Key') : 'Received from customer'} · {fmtAge(lightbox.at)} · <a href={lightbox.url} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ color: 'var(--gold)' }}>open original ↗</a>
+              {lightboxIndex + 1} / {photos.length} · {lightbox.direction === 'outbound' ? (lightbox.sender === 'ai' ? 'Sent by Alex' : 'Sent by Key') : 'Received from customer'} · {fmtAge(lightbox.at)} · <a href={lightbox.url} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ color: 'var(--gold)' }}>open original ↗</a>
             </div>
           </div>
-          <button onClick={() => setLightbox(null)} style={{
+          {/* Prev / next buttons — visible only when there are neighbors to
+              navigate to. Key sees them on desktop; arrow keys work
+              regardless of hover/reach. */}
+          {lightboxIndex > 0 ? (
+            <button onClick={e => { e.stopPropagation(); setLightboxIndex(i => Math.max(i - 1, 0)); }} style={{
+              position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+              width: 48, height: 48, background: 'rgba(255,255,255,.1)', color: '#fff',
+              border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer',
+              fontSize: 20, display: 'grid', placeItems: 'center',
+            }}>‹</button>
+          ) : null}
+          {lightboxIndex < photos.length - 1 ? (
+            <button onClick={e => { e.stopPropagation(); setLightboxIndex(i => Math.min(i + 1, photos.length - 1)); }} style={{
+              position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+              width: 48, height: 48, background: 'rgba(255,255,255,.1)', color: '#fff',
+              border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer',
+              fontSize: 20, display: 'grid', placeItems: 'center',
+            }}>›</button>
+          ) : null}
+          <button onClick={() => setLightboxIndex(-1)} style={{
             position: 'absolute', top: 16, right: 16,
             width: 40, height: 40, background: 'rgba(255,255,255,.1)', color: '#fff',
             border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer',
