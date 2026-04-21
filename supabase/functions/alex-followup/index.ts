@@ -323,6 +323,102 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── Intraday nudge ────────────────────────────────────────────────────────
+  // The 24h / 72h / 7d / 14d follow-up cadence below is too patient for the
+  // "customer drifted mid-conversation" case. If Alex asks a question at 2pm
+  // and the customer gets pulled away by life, the thread context is stale by
+  // 2pm tomorrow. A soft bump ~3h later catches them while it's still fresh.
+  //
+  // Guardrails so it feels like a person, not a bot:
+  //   • Customer has ALREADY engaged (at least one inbound reply). Never nudges
+  //     a dead opener — if they didn't reply to Alex once, they don't want a
+  //     second text 3h later.
+  //   • Alex's last outbound ended with "?" — he's actively waiting on
+  //     something. Nudging after a statement would feel random.
+  //   • Only before the regular cadence starts (followup_count = 0).
+  //   • intraday_sent flag ensures at most ONE bump per session.
+  //   • DNC / opted_out / quiet-hour gates same as regular follow-ups.
+  //   • 3 message variants, rotated so it doesn't feel scripted.
+  {
+    const threeHoursAgo     = new Date(Date.now() - 3  * 3600000).toISOString()
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 3600000).toISOString()
+
+    const { data: intradayCandidates } = await db
+      .from('alex_sessions')
+      .select('session_id, phone, messages, last_outbound_at, customer_last_msg_at')
+      .eq('status', 'active')
+      .eq('alex_active', true)
+      .eq('key_active', false)
+      .eq('opted_out', false)
+      .eq('followup_count', 0)
+      .eq('intraday_sent', false)
+      .gte('last_outbound_at', twentyFourHoursAgo)
+      .lte('last_outbound_at', threeHoursAgo)
+
+    for (const lead of intradayCandidates || []) {
+      // Skip if customer replied AFTER Alex's last outbound (they're not silent)
+      if (lead.customer_last_msg_at && lead.last_outbound_at) {
+        const cTime = new Date(lead.customer_last_msg_at).getTime()
+        const aTime = new Date(lead.last_outbound_at).getTime()
+        if (cTime > aTime) continue
+      }
+
+      const msgs: any[] = Array.isArray(lead.messages) ? lead.messages : []
+
+      // Engagement filter — must have at least one inbound (role=user) reply.
+      // A session that never got a user reply is a dead-opener, not a drift.
+      const hasUserReply = msgs.some((m: any) => m?.role === 'user')
+      if (!hasUserReply) continue
+
+      // Last assistant message must end with a "?" — otherwise we're not
+      // actually waiting on anything specific from the customer.
+      const lastAssistant = [...msgs].reverse().find((m: any) => m?.role === 'assistant')
+      let lastText = ''
+      if (typeof lastAssistant?.content === 'string') {
+        lastText = lastAssistant.content
+      } else if (Array.isArray(lastAssistant?.content)) {
+        lastText = lastAssistant.content
+          .filter((b: any) => b?.type === 'text')
+          .map((b: any) => b?.text || '')
+          .join(' ')
+          .trim()
+      }
+      if (!/\?\s*$/.test(lastText)) continue
+
+      // Cross-channel DNC check (legal C3)
+      const { data: contacts } = await db
+        .from('contacts')
+        .select('do_not_contact')
+        .eq('phone', lead.phone)
+        .limit(1)
+      if (contacts?.[0]?.do_not_contact) continue
+
+      // Soft bump — rotate variants so the text doesn't feel scripted across
+      // multiple customers Alex is handling the same day.
+      const variants = [
+        "No rush, just making sure my last text didn't get buried.",
+        "Hey, bumping this up so it doesn't get lost.",
+        "Still here whenever you've got a second.",
+      ]
+      const bump = variants[Math.floor(Math.random() * variants.length)]
+
+      const ok = await sendSms(lead.phone, bump)
+      if (!ok) continue
+
+      // Append to message history so Alex has context when the customer
+      // eventually replies. Update last_outbound_at so the 24h regular touch
+      // clock restarts from the nudge (prevents a double-text within ~24h).
+      const updatedMsgs = [...msgs, { role: 'assistant', content: bump }]
+      await db.from('alex_sessions').update({
+        messages:         updatedMsgs,
+        last_outbound_at: new Date().toISOString(),
+        intraday_sent:    true,
+      }).eq('session_id', lead.session_id)
+
+      console.log('[followup] Intraday nudge sent to ***', String(lead.phone).slice(-4))
+    }
+  }
+
   // Expire sessions older than 30 days using created_at (handles NULL last_outbound_at)
   await db
     .from('alex_sessions')
