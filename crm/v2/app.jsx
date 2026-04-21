@@ -484,7 +484,7 @@ const STAGE_TO_PIPELINE_COL = Object.fromEntries(
   Object.entries(PIPELINE_COL_TO_STAGE).map(([k, v]) => [v, k])
 );
 
-function contactToCard(c, waiting = false) {
+function contactToCard(c, waiting = false, proposal = null) {
   const days = c.created_at
     ? Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)
     : 0;
@@ -505,6 +505,21 @@ function contactToCard(c, waiting = false) {
       installOffsetDays = Math.round((instMs - Date.now()) / 86400000);
     }
   }
+  // Proposal signal — show a chip on the card if the customer has viewed
+  // their quote. Most actionable variant: "VIEWED 3h" / "VIEWED 2d" when the
+  // view happened but they haven't signed yet — that's the peak-interest
+  // follow-up window. Once they sign (stage jumps to 4+) the chip hides.
+  let proposalSignal = null;
+  if (proposal && proposal.viewed && !proposal.signed && (c.stage || 1) <= 3) {
+    let age = null;
+    if (proposal.viewedAt) {
+      const hrs = (Date.now() - new Date(proposal.viewedAt).getTime()) / 3600000;
+      if (hrs < 1)   age = `${Math.max(1, Math.round(hrs * 60))}m`;
+      else if (hrs < 24) age = `${Math.round(hrs)}h`;
+      else age = `${Math.round(hrs / 24)}d`;
+    }
+    proposalSignal = { kind: 'viewed', age };
+  }
   return {
     id: c.id,
     name: c.name || '—',
@@ -518,6 +533,7 @@ function contactToCard(c, waiting = false) {
     jurisdiction: c._jurisdiction_name || null,
     pinned: isPinned(c.id),
     waiting,  // customer's last SMS is unreplied — renders gold corner mark
+    proposalSignal, // { kind: 'viewed', age: '3h' } when quote was opened but not signed; null otherwise
   };
 }
 
@@ -559,10 +575,11 @@ function LivePipelineToolbar({ active = 'pipeline', onSubView, stats }) {
 function LivePipeline({ onCardClick, onSubView }) {
   const [contacts, setContacts] = useState([]);
   const [waitingIds, setWaitingIds] = useState(() => new Set());
+  const [proposalState, setProposalState] = useState(() => new Map()); // contact_id → {viewed, signed, viewed_at}
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    const [{ data: contacts }, { data: jurisdictions }, { data: recentMsgs }] = await Promise.all([
+    const [{ data: contacts }, { data: jurisdictions }, { data: recentMsgs }, { data: props }] = await Promise.all([
       db.from('contacts')
         .select('id, name, phone, address, stage, status, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id, install_date')
         .neq('status', 'Archived')
@@ -576,6 +593,16 @@ function LivePipeline({ onCardClick, onSubView }) {
       db.from('messages')
         .select('contact_id, direction, sender, created_at')
         .order('created_at', { ascending: false }).limit(300),
+      // Proposals — surface the "customer viewed the quote but hasn't signed"
+      // state on QUOTED-column cards. This is the highest-value sales signal
+      // in the pipeline: the window between view and sign is peak interest,
+      // and a quick follow-up here converts way better than a generic 48h
+      // nudge on a never-viewed quote.
+      db.from('proposals')
+        .select('contact_id, status, viewed_at, signed_at, created_at')
+        .in('status', ['Created', 'Copied', 'Viewed', 'Approved'])
+        .order('created_at', { ascending: false })
+        .limit(500),
     ]);
     // Attach jurisdiction name inline so contactToCard can render it
     const jMap = Object.fromEntries((jurisdictions || []).map(j => [j.id, j.name]));
@@ -590,6 +617,19 @@ function LivePipeline({ onCardClick, onSubView }) {
       if (m.direction === 'inbound' && m.sender !== 'ai') waiting.add(m.contact_id);
     }
     setWaitingIds(waiting);
+    // Build proposal state: newest proposal per contact wins. Track whether
+    // it was viewed, signed, and when it was viewed (for the "viewed Nh ago"
+    // chip). Dedupe by contact_id since proposals are sorted newest-first.
+    const propState = new Map();
+    for (const p of (props || [])) {
+      if (!p.contact_id || propState.has(p.contact_id)) continue;
+      propState.set(p.contact_id, {
+        viewed:   !!p.viewed_at,
+        signed:   !!p.signed_at || p.status === 'Approved',
+        viewedAt: p.viewed_at || null,
+      });
+    }
+    setProposalState(propState);
   }, []);
 
   useEffect(() => {
@@ -607,6 +647,10 @@ function LivePipeline({ onCardClick, onSubView }) {
       // edit, DNC flip, etc.) — stale signal on the exact view most likely to
       // be open when that happens.
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchAll)
+      // Proposals UPDATE — when the customer opens the quote page, viewed_at
+      // flips from null to a timestamp. That's the moment the VIEWED chip
+      // should light up on this contact's card in the QUOTED column.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, fetchAll)
       .subscribe();
     return () => { db.removeChannel(ch); };
   }, [fetchAll]);
@@ -620,25 +664,32 @@ function LivePipeline({ onCardClick, onSubView }) {
   }, []);
 
   // Bucket by column id using stage number; pinned cards float to the top of
-  // each column, then waiting-on-Key cards next. Re-computes on contacts /
-  // waiting / pin changes.
+  // each column, then waiting-on-Key cards next. Cards with a viewed-quote
+  // signal also float within the QUOTED column so the peak-interest window
+  // is visually obvious. Re-computes on contacts / waiting / proposal / pin
+  // changes.
   const buckets = useMemo(() => {
     const b = {};
     Object.keys(PIPELINE_COL_TO_STAGE).forEach(k => { b[k] = []; });
     for (const c of contacts) {
       const colId = STAGE_TO_PIPELINE_COL[c.stage || 1] || 'new';
-      b[colId].push(contactToCard(c, waitingIds.has(c.id)));
+      b[colId].push(contactToCard(c, waitingIds.has(c.id), proposalState.get(c.id) || null));
     }
     for (const k of Object.keys(b)) {
       b[k].sort((a, x) => {
         if (a.pinned !== x.pinned) return a.pinned ? -1 : 1;
         if (a.waiting !== x.waiting) return a.waiting ? -1 : 1;
+        // Within QUOTED, viewed-but-not-signed cards float above the rest
+        // — they're the live warm leads Key should follow up on first.
+        const aViewed = a.proposalSignal?.kind === 'viewed' ? 1 : 0;
+        const xViewed = x.proposalSignal?.kind === 'viewed' ? 1 : 0;
+        if (aViewed !== xViewed) return aViewed ? -1 : 1;
         return 0;
       });
     }
     return b;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contacts, waitingIds, pipelinePinsTick]);
+  }, [contacts, waitingIds, proposalState, pipelinePinsTick]);
 
   const counts = useMemo(() => {
     const c = {};

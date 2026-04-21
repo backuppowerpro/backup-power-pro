@@ -140,6 +140,21 @@ function LeadCard({ c }) {
           ? <InstallChip n={c.installOffsetDays} />
           : <DaysChip n={c.days} />}
       </div>
+      {/* Proposal "viewed but not signed" signal — peak-interest window Key
+          should follow up on first. Only renders on QUOTED cards; hides once
+          the customer signs and the stage jumps forward. */}
+      {c.proposalSignal?.kind === 'viewed' ? (
+        <div className="mono" style={{
+          marginTop: 2, marginLeft: 32,
+          display: 'inline-flex', alignSelf: 'flex-start',
+          padding: '2px 6px',
+          background: 'var(--gold)', color: 'var(--navy)',
+          fontSize: 9, fontWeight: 700, letterSpacing: '.1em',
+          boxShadow: 'var(--raised-2)',
+        }}>
+          {c.proposalSignal.age ? `VIEWED ${c.proposalSignal.age} AGO` : 'QUOTE VIEWED'}
+        </div>
+      ) : null}
       {c.addr && (
         <div style={{
           fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-faint)',
