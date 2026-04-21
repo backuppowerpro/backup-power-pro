@@ -2905,7 +2905,8 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
             </div>
             {p.token ? (
               <div style={{ display: 'flex', gap: 4 }}>
-                <a href={`${PROPOSAL_BASE_URL}?token=${p.token}`} target="_blank" rel="noopener" style={{
+                <a href={`${PROPOSAL_BASE_URL}?token=${p.token}&preview=1`} target="_blank" rel="noopener"
+                   title="Preview without counting as a customer view" style={{
                   padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
                   boxShadow: 'var(--raised-2)', textDecoration: 'none',
                   color: 'var(--text-muted)',
