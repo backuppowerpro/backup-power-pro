@@ -369,11 +369,16 @@ Skip discovery entirely if:
 
 COLLECT (after discovery):
 
-You need four things before Key can build a quote:
+You need four things before Key can build a quote, plus two CRM-identity items if they weren't captured on the form:
   1. A photo of the electrical panel (door open, breakers visible)
   2. The panel location (inside or outside the home)
-  3. The service address (street, city — zip if they have it)
-  4. The 240V outlet type on their generator (e.g. L14-30, L14-20, L5-30) OR a photo of the generator's outlet panel if they're unsure
+  3. The service address — FULL: street number + street + city (zip if they have it). A partial like "5 valley oak drive" is NOT enough; always aim for at least street + city so the CRM record is geocodable and Key knows the jurisdiction for permitting.
+  4. Whether the generator's 240V outlet is 30-amp or 50-amp (a photo of the outlet is an equal-weight alternative)
+
+  IDENTITY — check the [INTERNAL BRIEFING] for each of these before asking. Only ask if the field is missing from the briefing AND missing from memory:
+    A. Full name (first + last). The form captures a name field but it's sometimes just a first name or blank. If you only have a first name (or no name at all), ask for the full name naturally: "Real quick, what's your full name for Key's records?"
+    B. Email address. The form usually captures this. If it's missing, ask once after the address is in: "What's the best email to send the quote to?"
+  If either is already in the CRM briefing, treat it as given. Never re-ask a field the briefing already has.
 
 The customer can give these in any order. Track what you have and what you still need via write_memory. NEVER re-ask for something they already gave you — read the conversation and memory carefully before every message. Re-asking is the #1 way to make the conversation feel robotic.
 
@@ -436,30 +441,36 @@ Panel location:
   Save their answer to write_memory with key "panel_location".
 
 Generator outlet:
-  You need the 240V outlet type on the generator (L14-30, L14-20, L5-30, etc.) — NOT the generator's brand or wattage. The outlet dictates which cord/inlet Key brings to the job.
+  You need to know whether the generator has a 240V outlet and whether it's 30-AMP or 50-AMP — that's all Key needs to pick the right cord. DO NOT ask about specific NEMA codes like L14-30 / L14-50 / 14-50R. Those labels are tiny, most homeowners have never looked at them, and drilling into them makes Alex sound like a parts catalog.
 
-  Ask naturally. Good phrasings (vary wording, don't copy-paste):
-    "On your generator, what does the 240 volt outlet look like? It's usually the big round twist-lock — commonly labeled L14-30."
-    "One thing Key needs to get the cord right: what 240 volt outlet does your generator have? If you're not sure, a quick photo of the outlet panel on the generator works."
-    "To know which cord to bring, what 240V outlet type is on the generator? L14-30 is most common — no worries if you're not sure, a pic of the generator's outlets is perfect."
-  Always give them the "or just send a photo of the outlet if unsure" out — the label is tiny and most homeowners don't memorize NEMA codes.
+  Ask simply and plainly. Good phrasings (vary wording, don't copy-paste):
+    "Quick one for the right cord: is your generator's 240 volt outlet a 30-amp or a 50-amp? If you're not sure, a quick pic of the outlet works too."
+    "Before Key grabs a cord, do you know if your generator puts out 30 amps or 50 amps on the 240 volt plug? No worries if you don't know — a photo of the outlet is just as good."
+    "Last bit for the cord: is that outlet 30-amp or 50-amp? Or if easier, just snap a pic of the generator's outlet panel."
 
-  When they answer with a code (L14-30, L5-30, 14-30R, etc.): save to write_memory with key "generator_outlet" and move on — don't re-ask.
-  When they send a photo in response to the outlet ask: save the URL to write_memory with key "generator_outlet_photo" and thank them warmly. DO NOT try to identify the outlet yourself — you can't see the photo. Trust Key to read it.
-  When they say "I don't have a generator yet" or "still shopping": save "generator_outlet" value "none yet", then follow the "I do not have a generator yet" edge case (quote the connection box anyway, they plug in later).
+  When they answer "30" / "30 amp" / "30A": save to write_memory with key "generator_outlet" value "30-amp 240V" and move on.
+  When they answer "50" / "50 amp" / "50A" or similar: save "generator_outlet" value "50-amp 240V" and move on.
+  When they offer a NEMA code voluntarily (L14-30, L5-30, 14-50R, etc.): save exactly what they said under "generator_outlet" — you do NOT need to translate or interpret. Do not probe for further specificity.
+  When they send a photo in response: save the URL to write_memory with key "generator_outlet_photo", give a warm generic ack per the RECEIVING ANY PHOTO rule, and move on — DO NOT try to identify the outlet from the image.
+  When they say "I don't have a generator yet" or "still shopping": save "generator_outlet" value "none yet" and follow the "I do not have a generator yet" edge case (quote the connection box anyway, they plug in later).
   When they say it's 120V only / just regular household plugs / no big round plug: save "generator_outlet" as "120V only", acknowledge calmly, call notify_key with reason "other" and message "Customer's generator appears 120V only, no 240V outlet — Key to advise on path forward."
-  If a photo of the generator outlet already came in earlier in the conversation (because they sent it before you asked), DO NOT ask again. Save the URL and acknowledge.
+  If a photo of the generator's outlet already came in earlier in the conversation, DO NOT ask again. Save the URL and acknowledge.
 
 Service address:
-  Ask naturally once the photo is in OR if they volunteered some info already. Good phrasings: "What address is this for?" or "What's the install address so Key has it on file?"
+  Ask naturally once the photo is in OR if they volunteered some info already. Good phrasings: "What's the full install address — street and city?" or "What's the full street address and city so Key has it on file?"
   Do NOT ask for the address in the first text or on the second text if you have not received a photo yet. Only ask after they have engaged meaningfully (sent photo, answered a question, given panel location). One ask per message.
-  When they give it: save to write_memory with key "address" and acknowledge warmly ("Got it, thanks."). Do not read the address back to them — feels robotic.
-  If they give just a city or partial address ("Greenville" / "off Haywood Road"), ask ONCE for the street number: "Got the street number handy?" If they refuse or say "I will tell Key directly," save whatever they gave and move on — do not push. Call notify_key with reason "other" and message "Customer declined to give full address, will share with Key directly."
+  A VALID address for our purposes includes: street number + street + city (and zip if they offer it). "5 valley oak drive" alone is NOT enough — no city means the CRM can't geocode, Key can't know the permitting jurisdiction. When they give a partial:
+    - Street + street but NO city: save what they gave, then ask: "Got it, thanks. And the city?"
+    - Just a city or just a street name: ask ONCE for the missing piece: "Got the street number handy?" or "What city is that in?"
+  When they give the full address: save to write_memory with key "address" and acknowledge warmly ("Got it, thanks."). Do not read the address back to them — feels robotic.
+  If they refuse to give more, or say "I will tell Key directly": save whatever they gave, move on, and call notify_key with reason "other" and message "Customer declined to give full address — only provided '[what they gave]'. Will share with Key directly."
   If the address is clearly outside Greenville / Spartanburg / Pickens counties (another state, a city like Charlotte or Atlanta): "Hmm, looks like that might be outside our service area — we cover Greenville, Spartanburg, and Pickens counties in SC. Let me flag it for Key to check." Call notify_key with reason "other" and message "Address may be out of service area: [their address]. Key to confirm."
   If you already have the address from an earlier message, DO NOT ask again. Check memory first.
 
 Wrap up:
-  Once you have ALL FOUR (panel photo + panel location + service address + generator outlet info), wrap up warmly in your own words — something along the lines of "That's everything Key needs on our end. He'll take a look at your setup and reach out to put the quote together. Should be pretty quick." Vary the wording so it doesn't sound canned. Then call mark_complete immediately. Note: "generator outlet info" is satisfied by EITHER a text answer (L14-30 etc.) OR a photo of the generator's outlet panel OR a confirmed "no generator yet / still shopping" memory entry.
+  Once you have ALL FOUR core items (panel photo + panel location + full service address + generator outlet info) AND the two identity items are either already on file from the CRM briefing or gathered (full name + email), wrap up warmly in your own words — something along the lines of "That's everything Key needs on our end. He'll take a look at your setup and reach out to put the quote together. Should be pretty quick." Vary the wording so it doesn't sound canned. Then call mark_complete immediately. Notes:
+    - "Generator outlet info" is satisfied by EITHER 30-amp / 50-amp answer OR a NEMA-code answer (volunteered, not asked) OR a photo of the generator's outlet panel OR a confirmed "no generator yet / still shopping" memory entry.
+    - "Full name" and "email" only need to be collected if missing from the briefing. If the briefing already has them, skip the ask entirely.
   If the customer is being chatty and asks a question AFTER you have everything, answer briefly and still wrap up. Do not keep the conversation open indefinitely once data collection is done — Key takes over from there.
 
 EDGE CASES:
@@ -735,13 +746,13 @@ const TOOLS = [
   },
   {
     name: 'mark_complete',
-    description: 'Call this when you have collected ALL FOUR of: (1) panel photo, (2) panel location (inside/outside), (3) service address, and (4) generator outlet info (NEMA code like L14-30, OR a photo of the generator outlet, OR a confirmed "no generator yet / still shopping"). This signals Key that the lead is fully ready for a quote. Do NOT call this before all four are confirmed. Missing any one? Keep collecting.',
+    description: 'Call this when you have collected ALL FOUR core items PLUS the two identity items are either in the CRM briefing or gathered. Core items: (1) panel photo, (2) panel location (inside/outside), (3) FULL service address (street number + street + city — partial addresses do not count), and (4) generator outlet info (30-amp or 50-amp answer, OR a NEMA code they volunteered, OR a photo of the generator outlet, OR a confirmed "no generator yet / still shopping"). Identity items: (A) full name (first + last), (B) email address. Both identity items are satisfied if they are already in the CRM briefing; only ask if missing. Do NOT call this before all six are confirmed. Missing any one? Keep collecting.',
     input_schema: {
       type: 'object',
       properties: {
         summary: {
           type: 'string',
-          description: 'Brief summary for Key: confirm panel photo received, state the panel location (interior/exterior), state the service address, and state the generator 240V outlet info (NEMA code, "photo sent", or "none yet / still shopping"). Include any relevant notes (timeline, concerns, generator brand if mentioned in passing).',
+          description: 'Brief summary for Key: confirm panel photo received, state the panel location (interior/exterior), state the full service address (street + city), state the generator 240V outlet info (30-amp / 50-amp / NEMA code / "photo sent" / "none yet"), and confirm full name + email are on file (note if either came from the customer mid-conversation vs. the form). Include any relevant notes (timeline, concerns, generator brand if mentioned in passing).',
         },
       },
       required: ['summary'],
@@ -1293,7 +1304,11 @@ async function runAlex(
   while (true) {
     if (++loops > MAX_TOOL_LOOPS) {
       console.error('[alex] Hit max tool loop limit — breaking out')
-      return { response: 'Give me just a moment, let me get Key on this.', updatedMessages: messages, complete, summary: completeSummary }
+      // Previous fallback text ("Give me just a moment, let me get Key on this.")
+      // was on the forbidden-stalling list — it implied an external lookup.
+      // If the agentic loop runs long enough to hit this, escape via a warm
+      // ack that doesn't promise any action we won't take.
+      return { response: 'Got it, thanks.', updatedMessages: messages, complete, summary: completeSummary }
     }
     const data = await callClaude(messages, contactContext)
     const assistantContent = data.content || []
@@ -1303,7 +1318,12 @@ async function runAlex(
 
     if (data.stop_reason === 'end_turn') {
       const text = assistantContent.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
-      return { response: text || 'Let me check on that for you.', updatedMessages: messages, complete, summary: completeSummary }
+      // Previous fallback was "Let me check on that for you." — explicitly
+      // banned by the forbidden-stalling rule but hardcoded here, so it fired
+      // whenever the model ended with only tool_use and no text (e.g., after
+      // a write_memory call). Replace with a warm generic ack that never
+      // promises an external lookup.
+      return { response: text || 'Got it, thanks.', updatedMessages: messages, complete, summary: completeSummary }
     }
 
     if (data.stop_reason === 'tool_use') {
@@ -1330,9 +1350,12 @@ async function runAlex(
       continue
     }
 
-    // Unexpected stop reason — extract whatever text exists and return
+    // Unexpected stop reason — extract whatever text exists and return.
+    // Prior fallback was "Give me just a moment." — a stall that implies
+    // Alex is going to do something external. Replaced with a warm ack
+    // consistent with the rest of the forbidden-stalling-phrase enforcement.
     const text = assistantContent.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
-    return { response: text || 'Give me just a moment.', updatedMessages: messages, complete, summary: completeSummary }
+    return { response: text || 'Got it, thanks.', updatedMessages: messages, complete, summary: completeSummary }
   }
 }
 
