@@ -4849,12 +4849,36 @@ function useVoiceDevice(user) {
 }
 
 function VoiceCallModal({ voice, onClose }) {
+  const [callerName, setCallerName] = useState(null);
+
+  // Look up the contact name for the other party (incoming From, or outgoing
+  // To). Runs whenever the number in the modal changes. Key sees a real name
+  // on incoming calls instead of just a phone number, so he knows who's
+  // calling before he picks up.
+  const otherNumber = voice.incoming
+    ? voice.incoming.parameters?.From
+    : (voice.activeCall?.parameters?.To || voice.activeCall?.customParameters?.get?.('To'));
+  useEffect(() => {
+    if (!otherNumber) { setCallerName(null); return; }
+    const digits = String(otherNumber).replace(/\D/g, '').slice(-10);
+    if (digits.length !== 10) { setCallerName(null); return; }
+    const normalized = `+1${digits}`;
+    let alive = true;
+    (async () => {
+      const { data } = await db.from('contacts')
+        .select('name').eq('phone', normalized).limit(1).maybeSingle();
+      if (alive && data?.name) setCallerName(data.name);
+    })();
+    return () => { alive = false; };
+  }, [otherNumber]);
+
   if (voice.status === 'idle' && !voice.incoming) return null;
 
   if (voice.incoming) {
     const from = voice.incoming.parameters?.From || 'UNKNOWN';
+    const display = callerName ? `${callerName}\n${formatPhone(from)}` : formatPhone(from);
     return (
-      <CallCard title="INCOMING CALL" color="var(--lcd-red)" name={formatPhone(from)}>
+      <CallCard title="INCOMING CALL" color="var(--lcd-red)" name={display}>
         <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
           <button onClick={voice.decline} style={{
             width: 72, height: 72, background: 'var(--red)', color: '#fff',
@@ -4880,11 +4904,13 @@ function VoiceCallModal({ voice, onClose }) {
   }
 
   // on-call or connecting
+  const toNum = voice.activeCall?.parameters?.To || voice.activeCall?.customParameters?.get?.('To') || 'OUTBOUND';
+  const onCallDisplay = callerName ? `${callerName}\n${formatPhone(toNum)}` : (toNum === 'OUTBOUND' ? 'OUTBOUND' : formatPhone(toNum));
   return (
     <CallCard
       title={voice.status === 'connecting' ? 'CONNECTING...' : 'ON CALL'}
       color={voice.status === 'connecting' ? 'var(--lcd-amber)' : 'var(--lcd-green)'}
-      name={voice.activeCall?.parameters?.To || voice.activeCall?.customParameters?.get?.('To') || 'OUTBOUND'}
+      name={onCallDisplay}
     >
       <button onClick={voice.hangup} style={{
         width: '80%', margin: '0 auto', height: 56, background: 'var(--red)', color: '#fff',
@@ -4917,7 +4943,10 @@ function CallCard({ title, color, name, children }) {
             {String(name || '?').slice(0, 2).toUpperCase()}
           </span>
         </div>
-        <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 20, textAlign: 'center' }}>{name}</div>
+        <div style={{
+          fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 20,
+          textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.25,
+        }}>{name}</div>
         <div style={{
           padding: '4px 12px', background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
           fontFamily: 'var(--font-pixel)', fontSize: 14,
