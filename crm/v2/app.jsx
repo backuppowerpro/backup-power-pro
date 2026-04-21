@@ -4910,7 +4910,18 @@ function stageToPermitCells(stage) {
 function LivePermits() {
   const [rows, setRows] = useState([]);
   const [jurisdictions, setJurisdictions] = useState([]);
+  const [jurisdictionFilter, setJurisdictionFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  // Realtime: any contacts UPDATE (stage change, jurisdiction assigned,
+  // DNC flip) can shift the permit dashboard rows. Cheap refetch on change.
+  useEffect(() => {
+    const ch = db.channel('permits-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => setRefreshTick(n => n + 1))
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -4928,19 +4939,59 @@ function LivePermits() {
         id: c.id, name: c.name || '—', address: c.address || '—',
         stage: c.stage,
         jurisdiction: c.jurisdiction_id ? jurById[c.jurisdiction_id]?.name : null,
+        jurisdictionId: c.jurisdiction_id,
         cells: stageToPermitCells(c.stage),
       })));
       setJurisdictions(jRes.data || []);
       setLoading(false);
     })();
-  }, []);
+  }, [refreshTick]);
 
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING PERMITS...</div>;
 
   const headers = ['SUBMIT', 'PAY', 'PAID', 'PRINT', 'PRINTED', 'INSPECT', 'PASS'];
+  const filteredRows = rows.filter(r => {
+    if (jurisdictionFilter === 'all') return true;
+    if (jurisdictionFilter === 'unset') return !r.jurisdiction;
+    return r.jurisdictionId === Number(jurisdictionFilter);
+  });
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: 16 }}>
+      {/* Jurisdiction filter chips — helpful when Key needs to batch-submit
+          all Greenville permits on the same portal run, for example. */}
+      {jurisdictions.length > 0 ? (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+          <button onClick={() => setJurisdictionFilter('all')} style={{
+            padding: '4px 12px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
+            background: jurisdictionFilter === 'all' ? 'var(--navy)' : 'var(--card)',
+            color: jurisdictionFilter === 'all' ? 'var(--gold)' : 'var(--text-muted)',
+            boxShadow: jurisdictionFilter === 'all' ? 'var(--pressed-2)' : 'var(--raised-2)',
+            cursor: 'pointer', border: 'none', letterSpacing: '.06em', textTransform: 'uppercase',
+          }}>All ({rows.length})</button>
+          <button onClick={() => setJurisdictionFilter('unset')} style={{
+            padding: '4px 12px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
+            background: jurisdictionFilter === 'unset' ? 'var(--navy)' : 'var(--card)',
+            color: jurisdictionFilter === 'unset' ? 'var(--lcd-amber)' : 'var(--text-muted)',
+            boxShadow: jurisdictionFilter === 'unset' ? 'var(--pressed-2)' : 'var(--raised-2)',
+            cursor: 'pointer', border: 'none', letterSpacing: '.06em', textTransform: 'uppercase',
+          }}>Unset ({rows.filter(r => !r.jurisdiction).length})</button>
+          {jurisdictions.map(j => {
+            const count = rows.filter(r => r.jurisdictionId === j.id).length;
+            if (count === 0) return null;
+            const active = jurisdictionFilter === String(j.id);
+            return (
+              <button key={j.id} onClick={() => setJurisdictionFilter(String(j.id))} style={{
+                padding: '4px 12px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
+                background: active ? 'var(--navy)' : 'var(--card)',
+                color: active ? 'var(--gold)' : 'var(--text-muted)',
+                boxShadow: active ? 'var(--pressed-2)' : 'var(--raised-2)',
+                cursor: 'pointer', border: 'none', letterSpacing: '.06em', textTransform: 'uppercase',
+              }}>{j.name} ({count})</button>
+            );
+          })}
+        </div>
+      ) : null}
       {/* Column headers */}
       <div style={{
         display: 'grid',
@@ -4957,15 +5008,18 @@ function LivePermits() {
         ))}
         <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>NEXT</span>
       </div>
-      {rows.map(r => (
-        <div key={r.id} style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
-          gap: 8, alignItems: 'center',
-          padding: '8px 14px',
-          background: 'var(--card)',
-          borderBottom: '1px solid rgba(0,0,0,.06)',
-        }}>
+      {filteredRows.map(r => (
+        <button key={r.id}
+          onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
+            gap: 8, alignItems: 'center',
+            padding: '8px 14px',
+            background: 'var(--card)',
+            borderBottom: '1px solid rgba(0,0,0,.06)',
+            border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+          }}>
           <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
           <span className="chrome-label" style={{
             fontSize: 10,
@@ -4975,9 +5029,9 @@ function LivePermits() {
           <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>
             {!r.jurisdiction ? 'SET JURISDICTION' : stageToLabel(r.stage)}
           </span>
-        </div>
+        </button>
       ))}
-      {rows.length === 0 ? <Empty label="NO ACTIVE PERMITS" /> : null}
+      {filteredRows.length === 0 ? <Empty label="NO ACTIVE PERMITS" /> : null}
     </div>
   );
 }
