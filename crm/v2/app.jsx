@@ -7957,22 +7957,6 @@ function App() {
   );
 }
 
-function Placeholder({ name }) {
-  return (
-    <div style={{
-      height: '100%', display: 'grid', placeItems: 'center',
-      color: 'var(--text-muted)',
-    }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 20, fontWeight: 600 }}>{name}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
-          Wiring in next session
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Boot
 const root = ReactDOM.createRoot(document.getElementById('app'));
 root.render(<App />);
