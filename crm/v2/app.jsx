@@ -6954,19 +6954,22 @@ function LiveSparky({ currentContactId = null }) {
   }, [messages]);
 
   // Palette "Ask Sparky: <query>" dispatches this event so the right-panel
-  // Sparky can consume it. Fills the input + auto-sends so Key doesn't have
-  // to click twice after typing in the palette.
+  // Sparky can consume it. Ref pattern so the handler always calls the
+  // freshest `send` (which internally reads mode + currentContactId); the
+  // straightforward closure would pin those to the first render's values.
+  const sendRef = useRef(null);
   useEffect(() => {
     const handler = (ev) => {
       const q = ev?.detail?.text;
       if (typeof q === 'string' && q.trim()) {
         setInput(q);
-        setTimeout(() => send(q), 30);
+        setTimeout(() => {
+          if (sendRef.current) sendRef.current(q);
+        }, 30);
       }
     };
     window.addEventListener('bpp:sparky-prefill', handler);
     return () => window.removeEventListener('bpp:sparky-prefill', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function send(overrideText) {
@@ -6996,6 +6999,12 @@ function LiveSparky({ currentContactId = null }) {
       setSending(false);
     }
   }
+
+  // Keep sendRef pointed at the freshest closure so the bpp:sparky-prefill
+  // handler (registered once with [] deps) calls the latest send, not the
+  // stale first-render one. Mode + currentContactId change but the handler's
+  // closure doesn't — the ref is the bridge.
+  sendRef.current = send;
 
   // Common daily questions Key asks — tap to send without typing.
   // When a contact is open, show that contact's first name in the first two
