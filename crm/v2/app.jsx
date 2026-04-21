@@ -139,6 +139,59 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// useFocusTrap — apply to modals so Tab / Shift+Tab cycle between focusable
+// elements inside the modal instead of escaping to the underlying page
+// (which was NIGHT_SUMMARY's deferred a11y item). Also auto-focuses the
+// first focusable element on open and restores focus to the previously
+// focused element on close.
+//
+// Usage: useFocusTrap(ref, open) — ref attached to the modal root div.
+function useFocusTrap(rootRef, active) {
+  useEffect(() => {
+    if (!active) return;
+    const root = rootRef.current;
+    if (!root) return;
+    // Remember who had focus before the modal opened so we can restore on close.
+    const prevFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const getFocusable = () => Array.from(root.querySelectorAll(
+      'a[href], area[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]),' +
+      ' select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(el => !el.hasAttribute('aria-hidden'));
+
+    // Auto-focus first focusable — only if focus isn't already inside the modal
+    // (e.g. an `autoFocus` input already grabbed focus).
+    if (!root.contains(document.activeElement)) {
+      const first = getFocusable()[0];
+      if (first) setTimeout(() => first.focus(), 0);
+    }
+
+    const onKey = (e) => {
+      if (e.key !== 'Tab') return;
+      const nodes = getFocusable();
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      // Restore focus to the element that was focused before modal opened —
+      // only if it's still in the DOM and focusable (page reflows etc.).
+      if (prevFocused && document.body.contains(prevFocused) && typeof prevFocused.focus === 'function') {
+        try { prevFocused.focus(); } catch {}
+      }
+    };
+  }, [rootRef, active]);
+}
+
 // ── Connection banner — two failure modes ─────────────────────────────────
 // 1. navigator.onLine → false: device lost network (wifi dropped, airplane
 //    mode, etc). Nothing will reach Supabase.
@@ -1573,6 +1626,8 @@ function ReviewAskStrip({ contactName }) {
 // link → jurisdiction site. Designed so Key never has to switch tabs during
 // an install day.
 function InstallBriefModal({ contact, onClose }) {
+  const rootRef = React.useRef(null);
+  useFocusTrap(rootRef, true);
   const [data, setData] = React.useState({ loading: true });
   React.useEffect(() => {
     if (!contact?.id) return;
@@ -1646,7 +1701,7 @@ function InstallBriefModal({ contact, onClose }) {
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
       padding: 16, overflowY: 'auto',
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
         width: 520, maxWidth: '100%', margin: '12px 0',
         background: 'var(--bg)', boxShadow: 'var(--raised-2)',
         display: 'flex', flexDirection: 'column',
@@ -2979,6 +3034,8 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
 // Minimal — just a total that updates as you toggle. No section labels, no
 // sub-prices on chips, no cross-amp preview. Complex quotes go to legacy.
 function QuickQuoteModal({ contact, onClose, onCreated }) {
+  const rootRef = useRef(null);
+  useFocusTrap(rootRef, true);
   const [state, setState] = useState({
     amp: '30',
     runFt: 5,
@@ -3017,7 +3074,7 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
       background: 'rgba(0,0,0,.45)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
         width: 380, maxWidth: '100%',
         padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 20,
         background: 'var(--card)', boxShadow: 'var(--raised-2)',
@@ -3972,6 +4029,8 @@ function DetailNotes({ contact, onUpdate }) {
 }
 
 function StagePickerModal({ currentStage, onPick, onClose }) {
+  const rootRef = useRef(null);
+  useFocusTrap(rootRef, true);
   const stages = [
     { num: 1, label: 'NEW LEAD',         color: 'var(--ms-1)' },
     { num: 2, label: 'QUOTED',           color: 'var(--ms-4)' },
@@ -3989,7 +4048,7 @@ function StagePickerModal({ currentStage, onPick, onClose }) {
       background: 'rgba(0,0,0,.5)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
         width: 320, background: 'var(--card)', boxShadow: 'var(--raised-2)',
         padding: 20,
       }}>
@@ -4477,6 +4536,8 @@ function ToastRoot() {
 
 // ── Keyboard Help Overlay (?) ───────────────────────────────────────────────
 function KeyboardHelp({ open, onClose }) {
+  const rootRef = useRef(null);
+  useFocusTrap(rootRef, open);
   if (!open) return null;
   const shortcuts = [
     { keys: '⌘K', label: 'Open command palette' },
@@ -4508,7 +4569,7 @@ function KeyboardHelp({ open, onClose }) {
       background: 'rgba(0,0,0,.45)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
         width: 380, padding: 24,
         background: 'var(--card)', boxShadow: 'var(--raised-2)',
       }}>
@@ -4601,6 +4662,8 @@ async function exportContactsCsv() {
 
 // ── New Lead Modal (action triggered by "+" button) ────────────────────────
 function NewLeadModal({ open, onClose, onCreated }) {
+  const rootRef = useRef(null);
+  useFocusTrap(rootRef, open);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -4683,7 +4746,7 @@ function NewLeadModal({ open, onClose, onCreated }) {
       background: 'rgba(0,0,0,.5)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
-      <form onSubmit={submit} onClick={e => e.stopPropagation()} style={{
+      <form ref={rootRef} onSubmit={submit} onClick={e => e.stopPropagation()} style={{
         width: 380, maxWidth: '100%',
         padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 16,
         background: 'var(--card)', boxShadow: 'var(--raised-2)',
