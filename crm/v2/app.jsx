@@ -6022,7 +6022,7 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
 
 // ── Morning Briefing modal — once per day ───────────────────────────────────
 function LiveMorningBriefing({ onClose, onPickContact }) {
-  const [sections, setSections] = useState({ installsToday: [], waiting: [], stuckQuotes: [], overdue: [], today: [], materials: [], goodNews: [] });
+  const [sections, setSections] = useState({ urgent: [], installsToday: [], waiting: [], stuckQuotes: [], overdue: [], today: [], materials: [], goodNews: [] });
   // Lead-flow health — catches the "ads are spending but leads stopped"
   // silent failure in real time. Daily lead-volume-alert SMS only fires
   // at 8:30 AM; this surfaces the same signal every time Key opens the
@@ -6165,7 +6165,47 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           };
         });
 
+      // Urgent customers: sparky_memory entries where Alex tagged an urgency
+      // signal (medical device dependency, active safety concern, storm-week
+      // dire scenario). Alex writes these via write_memory with a handful of
+      // conventional keys — pull them all, map back to contacts, filter to
+      // still-active (not stage ≥7 / DNC / snoozed) so the section shows
+      // genuinely-pressing cases.
+      let urgent = [];
+      try {
+        const { data: urgencyMems } = await db.from('sparky_memory')
+          .select('key, value, updated_at')
+          .or('key.ilike.contact:%:urgency_flag,key.ilike.contact:%:medical_need,key.ilike.contact:%:storm_urgency')
+          .order('updated_at', { ascending: false })
+          .limit(20);
+        const phoneByKey = (k) => String(k).split(':')[1];
+        const phoneSet = Array.from(new Set((urgencyMems || []).map(m => phoneByKey(m.key)).filter(Boolean)));
+        if (phoneSet.length > 0) {
+          const { data: urgContacts } = await db.from('contacts')
+            .select('id, name, phone, stage, do_not_contact')
+            .in('phone', phoneSet);
+          const byPhone = Object.fromEntries((urgContacts || []).map(c => [c.phone, c]));
+          const seen = new Set();
+          for (const m of (urgencyMems || [])) {
+            const phone = phoneByKey(m.key);
+            if (!phone || seen.has(phone)) continue;
+            const c = byPhone[phone];
+            if (!c || c.do_not_contact || (c.stage || 1) >= 7) continue;
+            if (isSnoozedFor(c.id)) continue;
+            seen.add(phone);
+            urgent.push({
+              text: `${c.name || 'Customer'} — ${String(m.value).slice(0, 60)}${String(m.value).length > 60 ? '…' : ''}`,
+              id: c.id,
+            });
+          }
+          urgent = urgent.slice(0, 5);
+        }
+      } catch (e) {
+        console.warn('[briefing] urgent fetch failed', e);
+      }
+
       setSections({
+        urgent,
         installsToday: (installsRes.data || []).map(c => ({
           text: `${new Date(c.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — ${c.name || 'Customer'}${c.address ? ' · ' + c.address.split(',')[0] : ''}`,
           id: c.id,
@@ -6254,9 +6294,15 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
                 <span>{leadHealth.label}</span>
               </div>
             ) : null}
-            {/* Installing today FIRST — if Key has an install today, that's
-                the single most important thing on the schedule. Renders only
-                when there's at least one install today (no empty-state noise). */}
+            {/* Urgent — customers Alex tagged with medical / storm / safety
+                flags and are still active. Top of the briefing because medical
+                power dependencies and active-risk cases beat even today's
+                installs for response priority. Hidden when empty. */}
+            {sections.urgent.length > 0 ? (
+              <BriefSection label="Urgent" tint="var(--ms-3)" items={sections.urgent} onPick={onPickContact} />
+            ) : null}
+            {/* Installing today — if Key has an install today, the single
+                most important thing on the schedule after any urgent case. */}
             {sections.installsToday.length > 0 ? (
               <BriefSection label="Installing today" tint="var(--ms-2)" items={sections.installsToday} onPick={onPickContact} />
             ) : null}
