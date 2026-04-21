@@ -7578,7 +7578,12 @@ function App() {
   // (handy for bookmarks / deep-links from Sparky or briefing)
   const initial = (() => {
     const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
-    return { tab: h.get('tab') || 'leads', contact: h.get('contact') || null };
+    let tab = h.get('tab') || 'leads';
+    // 'sparky' is no longer a tab (right-panel only). Stale bookmarks that
+    // land on #tab=sparky get redirected to LEADS so the app doesn't boot
+    // into a blank content area.
+    if (tab === 'sparky') tab = 'leads';
+    return { tab, contact: h.get('contact') || null };
   })();
   const [tab, setTab] = useState(initial.tab);
   // Default leads sub-view is LIST on every viewport. The 9-column pipeline
@@ -7621,7 +7626,11 @@ function App() {
   useEffect(() => {
     const onHash = () => {
       const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
-      const hashTab = h.get('tab');
+      let hashTab = h.get('tab');
+      // 'sparky' is no longer a tab; any stale URL or external link that
+      // pointed to #tab=sparky silently redirects to LEADS so the page
+      // doesn't render blank.
+      if (hashTab === 'sparky') hashTab = 'leads';
       const hashContact = h.get('contact');
       if (hashTab && hashTab !== tab) setTab(hashTab);
       if (hashContact && hashContact !== selectedContact) setSelectedContact(hashContact);
