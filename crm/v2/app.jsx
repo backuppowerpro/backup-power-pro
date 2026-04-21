@@ -7172,7 +7172,26 @@ function App() {
   // the user wasn't viewing their specific thread). Reset on visibility +
   // on detail panel open.
   const [unreadCount, setUnreadCount] = useState(0);
+  // Sparky inbox unactioned count — drives a badge on the SPARKY tab so Key
+  // sees that agent notifications are waiting without navigating there. Kept
+  // in sync via a shared realtime sub on sparky_inbox.
+  const [sparkyInboxCount, setSparkyInboxCount] = useState(0);
   const tabFocusedRef = useRef(!document.hidden);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const { count } = await db.from('sparky_inbox')
+        .select('id', { count: 'exact', head: true })
+        .eq('actioned', false);
+      if (alive) setSparkyInboxCount(count || 0);
+    };
+    load();
+    const ch = db.channel('sparky-inbox-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sparky_inbox' }, load)
+      .subscribe();
+    return () => { alive = false; db.removeChannel(ch); };
+  }, []);
 
   useEffect(() => {
     const onVis = () => {
@@ -7796,7 +7815,12 @@ function App() {
           />
         ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>
-      {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} badges={unreadCount > 0 ? { messages: unreadCount } : {}} /> : null}
+      {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} badges={(() => {
+        const b = {};
+        if (unreadCount > 0) b.messages = unreadCount;
+        if (sparkyInboxCount > 0) b.sparky = sparkyInboxCount;
+        return b;
+      })()} /> : null}
       {/* Desktop: two-column layout. Left = current tab content. Right = a
           persistent 480px panel — Sparky by default, contact detail when a
           contact is selected. Mobile keeps the old overlay behavior since
