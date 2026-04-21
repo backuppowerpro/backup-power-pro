@@ -99,6 +99,10 @@ function Avatar({ row, size = 48 }) {
 function LeadRow({ r, desktop = false }) {
   const stage = STAGE[r.stage];
   const [hover, setHover] = React.useState(false);
+  // When the parent list is in "select mode" each row can be marked
+  // `_selected: true`. Visual: navy 3px left stripe + faint navy tint so
+  // selected rows read clearly without needing a checkbox column.
+  const selected = r._selected === true;
   return (
     <div
       onMouseEnter={() => setHover(true)}
@@ -107,11 +111,24 @@ function LeadRow({ r, desktop = false }) {
         position: 'relative',
         minHeight: 72, padding: '12px 14px',
         display: 'flex', alignItems: 'center', gap: 12,
-        background: hover ? 'var(--bg)' : 'var(--card)',
+        background: selected ? 'var(--bg)' : (hover ? 'var(--bg)' : 'var(--card)'),
+        boxShadow: selected ? 'inset 3px 0 0 var(--navy)' : 'none',
         borderBottom: '1px solid rgba(0,0,0,.08)',
         transition: 'background var(--dur, 80ms) var(--step, linear)',
       }}>
-      {r.overdue && (
+      {selected && (
+        <div style={{
+          position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)',
+          width: 14, height: 14, background: 'var(--navy)',
+          display: 'grid', placeItems: 'center',
+          boxShadow: 'var(--raised-2)', zIndex: 1,
+        }}>
+          <svg viewBox="0 0 10 10" width="8" height="8" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="square">
+            <path d="M1 5 L4 8 L9 2"/>
+          </svg>
+        </div>
+      )}
+      {r.overdue && !selected && (
         <div style={{
           position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
           background: 'var(--ms-3)',

@@ -459,30 +459,214 @@ function LiveLeadsList({ desktop = false, onSelect }) {
   const LeadsListMobile  = window.LeadsListMobile;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ padding: '8px 16px 0' }}>
+    <LeadsListWithBulkActions
+      rows={sortedRows}
+      totalCount={rows.length}
+      query={query}
+      setQuery={setQuery}
+      desktop={desktop}
+      onSelect={onSelect}
+      LeadsListDesktop={LeadsListDesktop}
+      LeadsListMobile={LeadsListMobile}
+      onBulkApplied={() => { /* realtime subscription will refetch */ }}
+    />
+  );
+}
+
+// Wraps the leads list with a "select mode" that enables bulk actions across
+// many contacts at once. Three actions: bulk stage change, bulk archive, bulk
+// DNC. Used for pipeline cleanup (dead leads, mistaken entries, seasonal
+// hibernate) — saves Key opening each contact individually.
+function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, onSelect, LeadsListDesktop, LeadsListMobile, onBulkApplied }) {
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [stagePickerOpen, setStagePickerOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  // Toggle a contact in the selection set. Called when a row is clicked
+  // while select mode is active; otherwise the regular onSelect (open detail)
+  // takes over.
+  const toggleSelected = useCallback((row) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(row.id)) next.delete(row.id);
+      else next.add(row.id);
+      return next;
+    });
+  }, []);
+
+  const handleRowClick = useCallback((row) => {
+    if (selectMode) toggleSelected(row);
+    else onSelect && onSelect(row);
+  }, [selectMode, toggleSelected, onSelect]);
+
+  const rowsWithSelectState = useMemo(() => {
+    if (!selectMode) return rows;
+    return rows.map(r => ({ ...r, _selected: selectedIds.has(r.id) }));
+  }, [rows, selectMode, selectedIds]);
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
+
+  async function bulkStage(stage) {
+    if (selectedIds.size === 0) return;
+    setApplying(true);
+    const ids = Array.from(selectedIds);
+    try {
+      // Pull current stages so we can insert accurate stage_history rows.
+      const { data: currentRows } = await db
+        .from('contacts').select('id, stage').in('id', ids);
+      const currentStageById = Object.fromEntries((currentRows || []).map(r => [r.id, r.stage || 1]));
+
+      const { error: updErr } = await db.from('contacts').update({ stage }).in('id', ids);
+      if (updErr) throw updErr;
+
+      // Stage history — one row per contact. Failures here are non-fatal
+      // (stage still moved); just log and move on.
+      const histRows = ids.map(id => ({
+        contact_id: id,
+        from_stage: currentStageById[id] ?? null,
+        to_stage: stage,
+      }));
+      db.from('stage_history').insert(histRows).then(() => {}, (e) => console.warn('[bulk] history insert failed', e));
+
+      window.__bpp_toast && window.__bpp_toast(`${ids.length} lead${ids.length === 1 ? '' : 's'} → stage ${stage}`, 'success');
+      onBulkApplied && onBulkApplied();
+      exitSelectMode();
+    } catch (e) {
+      window.__bpp_toast && window.__bpp_toast(`Bulk stage failed: ${e.message || e}`, 'error');
+    } finally {
+      setApplying(false);
+      setStagePickerOpen(false);
+    }
+  }
+
+  async function bulkArchive() {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (!confirm(`Archive ${count} contact${count === 1 ? '' : 's'}? They're hidden from the list but not deleted.`)) return;
+    setApplying(true);
+    const ids = Array.from(selectedIds);
+    try {
+      const { error } = await db.from('contacts').update({ status: 'Archived' }).in('id', ids);
+      if (error) throw error;
+      window.__bpp_toast && window.__bpp_toast(`${count} lead${count === 1 ? '' : 's'} archived`, 'success');
+      onBulkApplied && onBulkApplied();
+      exitSelectMode();
+    } catch (e) {
+      window.__bpp_toast && window.__bpp_toast(`Bulk archive failed: ${e.message || e}`, 'error');
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  async function bulkDnc() {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (!confirm(`Mark ${count} contact${count === 1 ? '' : 's'} as Do Not Contact? All automated follow-ups and Alex replies stop for them.`)) return;
+    setApplying(true);
+    const ids = Array.from(selectedIds);
+    try {
+      const { error } = await db.from('contacts').update({
+        do_not_contact: true,
+        dnc_at: new Date().toISOString(),
+        dnc_source: 'crm-bulk',
+      }).in('id', ids);
+      if (error) throw error;
+      window.__bpp_toast && window.__bpp_toast(`${count} lead${count === 1 ? '' : 's'} marked DNC`, 'success');
+      onBulkApplied && onBulkApplied();
+      exitSelectMode();
+    } catch (e) {
+      window.__bpp_toast && window.__bpp_toast(`Bulk DNC failed: ${e.message || e}`, 'error');
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ padding: '8px 16px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder={`Search ${rows.length} contacts by name, phone, address…`}
+          placeholder={`Search ${totalCount} contacts by name, phone, address…`}
           style={{
-            width: '100%', height: 36, padding: '0 12px',
+            flex: 1, height: 36, padding: '0 12px',
             fontFamily: 'var(--font-body)', fontSize: 14,
             background: 'var(--card)', boxShadow: 'var(--pressed-2)',
             border: 'none',
           }}
         />
-        {query && sortedRows.length === 0 ? (
-          <div className="mono" style={{ padding: '16px 0', fontSize: 11, color: 'var(--text-faint)' }}>
-            No matches for "{query}"
-          </div>
-        ) : null}
+        <button
+          onClick={() => { if (selectMode) exitSelectMode(); else setSelectMode(true); }}
+          title={selectMode ? 'Cancel bulk select' : 'Select multiple for bulk actions'}
+          style={{
+            height: 36, padding: '0 12px',
+            fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, letterSpacing: '.06em',
+            background: selectMode ? 'var(--navy)' : 'var(--card)',
+            color: selectMode ? 'var(--gold)' : 'var(--text-muted)',
+            boxShadow: selectMode ? 'var(--pressed-2)' : 'var(--raised-2)',
+            border: 'none', cursor: 'pointer', textTransform: 'uppercase',
+          }}>
+          {selectMode ? 'CANCEL' : 'SELECT'}
+        </button>
       </div>
+      {query && rowsWithSelectState.length === 0 ? (
+        <div className="mono" style={{ padding: '16px', fontSize: 11, color: 'var(--text-faint)' }}>
+          No matches for "{query}"
+        </div>
+      ) : null}
       <div style={{ flex: 1, minHeight: 0 }}>
         {desktop
-          ? <LeadsListDesktop rows={sortedRows} onSelect={onSelect} />
-          : <LeadsListMobile  rows={sortedRows} onSelect={onSelect} />}
+          ? <LeadsListDesktop rows={rowsWithSelectState} onSelect={handleRowClick} />
+          : <LeadsListMobile  rows={rowsWithSelectState} onSelect={handleRowClick} />}
       </div>
+      {/* Bulk action bar — slides up from the bottom when at least one lead
+          is selected. Four buttons: move to stage, archive, DNC, cancel. */}
+      {selectMode && selectedIds.size > 0 ? (
+        <div style={{
+          position: 'sticky', bottom: 0,
+          padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
+          background: 'var(--navy)', color: 'var(--gold)',
+          boxShadow: '0 -2px 0 rgba(0,0,0,.3)',
+          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+        }}>
+          <span className="chrome-label" style={{ fontSize: 12, letterSpacing: '.08em', flex: '0 0 auto' }}>
+            {selectedIds.size} SELECTED
+          </span>
+          <div style={{ display: 'flex', gap: 6, flex: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button onClick={() => setStagePickerOpen(true)} disabled={applying} style={{
+              padding: '6px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+              background: 'var(--gold)', color: 'var(--navy)', border: 'none',
+              cursor: applying ? 'wait' : 'pointer', boxShadow: 'var(--raised-2)',
+            }}>Move to stage…</button>
+            <button onClick={bulkArchive} disabled={applying} style={{
+              padding: '6px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+              background: 'transparent', color: 'var(--gold)',
+              border: '1px solid rgba(255,186,0,.5)', cursor: applying ? 'wait' : 'pointer',
+            }}>Archive</button>
+            <button onClick={bulkDnc} disabled={applying} style={{
+              padding: '6px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+              background: 'transparent', color: 'var(--ms-3)',
+              border: '1px solid var(--ms-3)', cursor: applying ? 'wait' : 'pointer',
+            }}>DNC</button>
+            <button onClick={exitSelectMode} disabled={applying} style={{
+              padding: '6px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+              background: 'transparent', color: 'rgba(255,186,0,.6)',
+              border: 'none', cursor: applying ? 'wait' : 'pointer',
+            }}>Cancel</button>
+          </div>
+        </div>
+      ) : null}
+      {stagePickerOpen ? (
+        <StagePickerModal
+          currentStage={1}
+          onPick={(s) => bulkStage(s)}
+          onClose={() => setStagePickerOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
