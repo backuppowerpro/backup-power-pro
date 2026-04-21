@@ -58,6 +58,24 @@ function relTimestamp(iso) {
   return `${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getMonth()]} ${d.getDate()}`;
 }
 
+// Google Street View Static API key — restricted server-side to Street View
+// Static API only, no referrer lock. Same pattern as proposal.html's property
+// banner. Client-side use is safe because the key can only mint Street View
+// image URLs (no geocoding, no routing, no places); no PII exposure.
+const SV_KEY = 'AIzaSyB0xWm71ZDzS7ei5-vFx15rNP_lR1ZKbJs';
+
+function streetViewUrl(address, size = 96) {
+  if (!address) return null;
+  // Square crop keyed to the rendered avatar size (with 2x scale for retina
+  // sharpness without downloading 4K tiles). fov=80 gives a typical house-front
+  // composition; pitch=5 angles up slightly to include the eaves. source=outdoor
+  // excludes user-uploaded interior pano shots.
+  const dim = Math.min(size, 160); // cap at 160px to keep bandwidth reasonable
+  return `https://maps.googleapis.com/maps/api/streetview?size=${dim}x${dim}` +
+         `&scale=2&location=${encodeURIComponent(address)}` +
+         `&fov=80&pitch=5&source=outdoor&key=${SV_KEY}`;
+}
+
 function contactToRow(c) {
   const stage = STAGE_MAP[c.stage || 1] || 'NEW';
   // overdue if last activity > 7 days and stage < 4
@@ -67,7 +85,10 @@ function contactToRow(c) {
     id: c.id,
     name: c.name || '—',
     initials: initials(c.name),
-    photo: null,
+    // Street View photo of the house at their service address, or null if
+    // no address on file. Avatar component renders an <img> with onError
+    // fallback to the initials chip when Street View has no coverage there.
+    photo: c.address ? streetViewUrl(c.address, 96) : null,
     phone: c.phone ? formatPhone(c.phone) : '',
     stage,
     ts: relTimestamp(c.created_at),

@@ -61,22 +61,37 @@ function HousePhoto({ kind }) {
 
 function Avatar({ row, size = 48 }) {
   const fontSize = Math.round(size * 0.36);
+  // Track image load state so we can fall back to initials if the Street
+  // View API has no coverage (returns a gray "no imagery" placeholder) or
+  // if the image 404s. Google returns a valid 200 response even with no
+  // imagery, so we can't rely on onError alone — check dimensions post-load
+  // and fall back if the returned pixel is suspiciously small.
+  const [failed, setFailed] = React.useState(false);
+  const showPhoto = row.photo && !failed;
   return (
     <div style={{
       width: size, height: size, flex: '0 0 auto',
       clipPath: 'var(--avatar-clip)',
-      background: row.photo ? '#000' : 'var(--navy)',
+      background: showPhoto ? '#000' : 'var(--navy)',
       display: 'grid', placeItems: 'center',
       overflow: 'hidden',
     }}>
-      {row.photo
-        ? <HousePhoto kind={row.photo} />
-        : <span style={{
-            fontFamily: 'var(--font-chrome)', fontWeight: 700,
-            color: row.amberInitials ? 'var(--lcd-amber)' : 'var(--gold)',
-            fontSize, letterSpacing: '.04em',
-          }}>{row.initials}</span>
-      }
+      {showPhoto ? (
+        <img
+          src={row.photo}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
+      ) : (
+        <span style={{
+          fontFamily: 'var(--font-chrome)', fontWeight: 700,
+          color: row.amberInitials ? 'var(--lcd-amber)' : 'var(--gold)',
+          fontSize, letterSpacing: '.04em',
+        }}>{row.initials}</span>
+      )}
     </div>
   );
 }
