@@ -739,6 +739,7 @@ function contactToCard(c, waiting = false, proposal = null) {
     pinned: isPinned(c.id),
     waiting,  // customer's last SMS is unreplied — renders gold corner mark
     proposalSignal, // { kind: 'viewed', age: '3h' } when quote was opened but not signed; null otherwise
+    alexActive: c.ai_enabled === true && (c.stage || 1) <= 3, // Alex is actively handling the conversation
   };
 }
 
@@ -786,7 +787,7 @@ function LivePipeline({ onCardClick, onSubView }) {
   const fetchAll = useCallback(async () => {
     const [{ data: contacts }, { data: jurisdictions }, { data: recentMsgs }, { data: props }] = await Promise.all([
       db.from('contacts')
-        .select('id, name, phone, address, stage, status, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id, install_date')
+        .select('id, name, phone, address, stage, status, install_notes, created_at, do_not_contact, quote_amount, jurisdiction_id, install_date, ai_enabled')
         .neq('status', 'Archived')
         .order('created_at', { ascending: false })
         .limit(500),

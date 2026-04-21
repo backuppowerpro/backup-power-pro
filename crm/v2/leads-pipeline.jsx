@@ -135,6 +135,16 @@ function LeadCard({ c }) {
         }}>
           {c.pinned ? <span style={{ color: 'var(--gold)', fontSize: 11, flex: '0 0 auto' }}>★</span> : null}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+          {/* Alex indicator — tiny mono tag when Alex is actively handling
+              the conversation (ai_enabled + early stage). Helps Key scan and
+              know "don't need to reply there, Alex has it". */}
+          {c.alexActive ? (
+            <span className="mono" title="Alex is handling this conversation" style={{
+              padding: '1px 4px', fontSize: 8, letterSpacing: '.08em',
+              color: 'var(--text-faint)', background: 'var(--bg)',
+              border: '1px solid rgba(0,0,0,.15)', flex: '0 0 auto',
+            }}>ALEX</span>
+          ) : null}
         </div>
         {typeof c.installOffsetDays === 'number'
           ? <InstallChip n={c.installOffsetDays} />
