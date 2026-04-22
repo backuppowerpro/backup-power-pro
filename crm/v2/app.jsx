@@ -521,7 +521,7 @@ function LiveLeadsList({ desktop = false, onSelect }) {
   }, [rows, pinsTick, query, waitingSet]);
 
   if (loading) {
-    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING CONTACTS...</div>;
+    return <Loading label="Loading contacts" />;
   }
   if (err) {
     return <div className="lcd" style={{ margin: 16, padding: 12, fontSize: 13 }}>{err}</div>;
@@ -1088,7 +1088,7 @@ function LivePipeline({ onCardClick, onSubView }) {
   const LeadsPipelineComp = window.LeadsPipeline;
 
   if (loading) {
-    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING PIPELINE...</div>;
+    return <Loading label="Loading pipeline" />;
   }
 
   return (
@@ -3062,7 +3062,7 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
       .then(() => db.from('stage_history').insert({ contact_id: contactId, from_stage: 1, to_stage: 2 }).then(() => {}, () => {}));
   }
 
-  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12 }}>LOADING...</div>;
+  if (loading) return <Loading />;
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
@@ -4016,7 +4016,7 @@ function DetailPhotos({ contactId, contactPhone }) {
   }, [contactId]);
 
   if (loading) {
-    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>LOADING PHOTOS...</div>;
+    return <Loading label="Loading photos" />;
   }
   if (photos.length === 0) {
     return (
@@ -5540,7 +5540,7 @@ function LivePermits() {
 
   const gq = useGlobalSearch('permits');
 
-  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING PERMITS...</div>;
+  if (loading) return <Loading label="Loading permits" />;
 
   const headers = ['SUBMIT', 'PAY', 'PAID', 'PRINT', 'PRINTED', 'INSPECT', 'PASS'];
   const filteredRows = rows.filter(r => {
@@ -5828,7 +5828,7 @@ function LiveMaterials() {
 
   const gq = useGlobalSearch('materials');
 
-  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING MATERIALS...</div>;
+  if (loading) return <Loading label="Loading materials" />;
 
   const visibleRows = gq
     ? rows.filter(r => `${r.name} ${r.address || ''}`.toLowerCase().includes(gq))
@@ -6049,7 +6049,7 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
   ];
 
   if (data.loading) {
-    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING FINANCE...</div>;
+    return <Loading label="Loading finance" />;
   }
 
   // 7-day conversion funnel — top-of-funnel to bottom. Conversion percent
@@ -6370,6 +6370,22 @@ function PaymentsLiveFeed({ rows }) {
   );
 }
 
+// Single consistent loading placeholder used by every full-surface
+// fetch (contacts, pipeline, calendar, finance, permits, materials,
+// inbox, calls, photos). Standardized font + padding so the visual
+// doesn't shift between tabs.
+function Loading({ label = 'LOADING' }) {
+  return (
+    <div style={{
+      padding: 24,
+      fontFamily: 'var(--font-mono)',
+      fontSize: 13,
+      color: 'var(--text-muted)',
+      letterSpacing: '.04em',
+    }}>{label.toUpperCase()}…</div>
+  );
+}
+
 // Smart Empty state — pairs a pixel label with a plain-English hint the
 // smart layer thinks is the most useful next step. Hints are keyed off
 // the `label` so each surface gets something relevant without having to
@@ -6489,7 +6505,7 @@ function LiveCalendar() {
     })();
   }, [refreshTick]);
 
-  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING CALENDAR...</div>;
+  if (loading) return <Loading label="Loading calendar" />;
 
   const filterFn = (e) => {
     if (installerFilter === 'all') return true;
@@ -7089,7 +7105,7 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
   const gq = useGlobalSearch('messages');
 
   if (loading) {
-    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING INBOX...</div>;
+    return <Loading label="Loading inbox" />;
   }
 
   const filteredThreads = gq
@@ -7176,7 +7192,7 @@ function LiveCalls({ onSelect }) {
     return () => { db.removeChannel(ch); };
   }, []);
 
-  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING CALLS...</div>;
+  if (loading) return <Loading label="Loading calls" />;
   if (rows.length === 0) return (
     <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
       <div className="chrome-label" style={{ fontSize: 14, letterSpacing: '.12em', marginBottom: 8 }}>NO CALLS YET</div>
@@ -7419,7 +7435,7 @@ function LiveQuickList({ onSelect }) {
   }, [tick]);
 
   if (loading) {
-    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING...</div>;
+    return <Loading />;
   }
 
   // Apply the global search filter last so filtered empties still show
