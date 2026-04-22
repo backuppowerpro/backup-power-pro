@@ -116,6 +116,20 @@ function formatPhone(p) {
   return `(${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6)}`;
 }
 
+// Shared hook — subscribes a list component to the global search bar
+// above the tabs. The caller passes its own tab id so only matching
+// events reach it (so Proposals doesn't re-render when the query is
+// typed on Permits).
+function useGlobalSearch(tabId) {
+  const [q, setQ] = React.useState('');
+  React.useEffect(() => {
+    const on = (e) => { if (e.detail?.tab === tabId) setQ((e.detail?.q || '').toLowerCase()); };
+    window.addEventListener('bpp:global-search', on);
+    return () => window.removeEventListener('bpp:global-search', on);
+  }, [tabId]);
+  return q;
+}
+
 // When a contact lacks a real name — or someone upstream typed literal
 // "Unknown" into the form — "Unknown" is useless in a briefing / Quick
 // List row. Fall back to the last 4 digits of the phone so Key can still
@@ -914,6 +928,7 @@ function LivePipeline({ onCardClick, onSubView }) {
   const [waitingIds, setWaitingIds] = useState(() => new Set());
   const [proposalState, setProposalState] = useState(() => new Map()); // contact_id → {viewed, signed, viewed_at}
   const [loading, setLoading] = useState(true);
+  const gq = useGlobalSearch('pipeline');
 
   const fetchAll = useCallback(async () => {
     const [{ data: contacts }, { data: jurisdictions }, { data: recentMsgs }, { data: props }] = await Promise.all([
@@ -1008,7 +1023,12 @@ function LivePipeline({ onCardClick, onSubView }) {
   const buckets = useMemo(() => {
     const b = {};
     Object.keys(PIPELINE_COL_TO_STAGE).forEach(k => { b[k] = []; });
+    const q = (gq || '').toLowerCase();
     for (const c of contacts) {
+      if (q) {
+        const hay = `${c.name || ''} ${c.phone || ''} ${c.address || ''} ${c._jurisdiction_name || ''}`.toLowerCase();
+        if (!hay.includes(q)) continue;
+      }
       const colId = STAGE_TO_PIPELINE_COL[c.stage || 1] || 'new';
       b[colId].push(contactToCard(c, waitingIds.has(c.id), proposalState.get(c.id) || null));
     }
@@ -1026,7 +1046,7 @@ function LivePipeline({ onCardClick, onSubView }) {
     }
     return b;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contacts, waitingIds, proposalState, pipelinePinsTick]);
+  }, [contacts, waitingIds, proposalState, pipelinePinsTick, gq]);
 
   const counts = useMemo(() => {
     const c = {};
@@ -5518,13 +5538,20 @@ function LivePermits() {
     return null;
   };
 
+  const gq = useGlobalSearch('permits');
+
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING PERMITS...</div>;
 
   const headers = ['SUBMIT', 'PAY', 'PAID', 'PRINT', 'PRINTED', 'INSPECT', 'PASS'];
   const filteredRows = rows.filter(r => {
-    if (jurisdictionFilter === 'all') return true;
-    if (jurisdictionFilter === 'unset') return !r.jurisdiction;
-    return r.jurisdictionId === Number(jurisdictionFilter);
+    if (jurisdictionFilter === 'all') { /* no jurisdiction filter */ }
+    else if (jurisdictionFilter === 'unset') { if (r.jurisdiction) return false; }
+    else if (r.jurisdictionId !== Number(jurisdictionFilter)) return false;
+    if (gq) {
+      const hay = `${r.name} ${r.address || ''} ${r.jurisdiction || ''}`.toLowerCase();
+      if (!hay.includes(gq)) return false;
+    }
+    return true;
   });
 
   return (
@@ -5799,7 +5826,13 @@ function LiveMaterials() {
     updateRow(row.id, { ...row.mat, order });
   };
 
+  const gq = useGlobalSearch('materials');
+
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING MATERIALS...</div>;
+
+  const visibleRows = gq
+    ? rows.filter(r => `${r.name} ${r.address || ''}`.toLowerCase().includes(gq))
+    : rows;
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: 16 }}>
@@ -5818,7 +5851,7 @@ function LiveMaterials() {
         ))}
         <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>ORDER</span>
       </div>
-      {rows.map(r => {
+      {visibleRows.map(r => {
         const orderTint =
           r.mat.order === 'received' ? 'var(--ms-2)' :
           r.mat.order === 'pending'  ? 'var(--ms-4)' :
@@ -5878,7 +5911,7 @@ function LiveMaterials() {
           </div>
         );
       })}
-      {rows.length === 0 ? <Empty label="NO ACTIVE MATERIALS" /> : null}
+      {rows.length === 0 ? <Empty label="NO ACTIVE MATERIALS" /> : visibleRows.length === 0 ? <Empty label={`No matches for "${gq}"`} /> : null}
     </div>
   );
 }
@@ -6133,7 +6166,15 @@ function smartProposalFlag(p) {
 }
 
 function ProposalsLiveTable({ rows }) {
+  const gq = useGlobalSearch('proposals');
   if (rows.length === 0) return <Empty label="NO PROPOSALS" />;
+  const filteredRows = gq
+    ? rows.filter(p =>
+        (p.contact_name || '').toLowerCase().includes(gq) ||
+        String(p.total || '').includes(gq) ||
+        (p.status || '').toLowerCase().includes(gq)
+      )
+    : rows;
   const statusTint = {
     sent: 'var(--ms-1)', viewed: 'var(--ms-4)', approved: 'var(--ms-2)',
     expired: 'var(--ms-5)', declined: 'var(--ms-3)',
@@ -6149,11 +6190,12 @@ function ProposalsLiveTable({ rows }) {
     if (f.label === 'EXIT') return 3;
     return 4;
   };
-  const sorted = rows.slice().sort((a, b) => {
+  const sorted = filteredRows.slice().sort((a, b) => {
     const r = sortRank(a) - sortRank(b);
     if (r !== 0) return r;
     return new Date(b.created_at || 0) - new Date(a.created_at || 0);
   });
+  if (sorted.length === 0) return <Empty label={`No matches for "${gq}"`} />;
   return (
     <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
       {sorted.map((p, i) => {
@@ -6220,7 +6262,15 @@ function smartInvoiceFlag(inv) {
 }
 
 function InvoicesLiveTable({ rows }) {
+  const gq = useGlobalSearch('invoices');
   if (rows.length === 0) return <Empty label="NO INVOICES" />;
+  const filteredRows = gq
+    ? rows.filter(p =>
+        (p.contact_name || '').toLowerCase().includes(gq) ||
+        String(p.total || '').includes(gq) ||
+        (p.status || '').toLowerCase().includes(gq)
+      )
+    : rows;
   // invoices.notes is populated by proposal-deposit-checkout as either
   // 'deposit' (50%) or 'full_payment' (100%).
   const kindLabel = (n) => {
@@ -6241,11 +6291,12 @@ function InvoicesLiveTable({ rows }) {
     if (f.label === 'STALE') return 3;
     return 4;
   };
-  const sorted = rows.slice().sort((a, b) => {
+  const sorted = filteredRows.slice().sort((a, b) => {
     const r = sortRank(a) - sortRank(b);
     if (r !== 0) return r;
     return new Date(b.created_at || 0) - new Date(a.created_at || 0);
   });
+  if (sorted.length === 0) return <Empty label={`No matches for "${gq}"`} />;
   return (
     <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
       {sorted.map((inv, i) => {
@@ -7035,12 +7086,21 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
     return () => { db.removeChannel(ch); };
   }, [fetchThreads]);
 
+  const gq = useGlobalSearch('messages');
+
   if (loading) {
     return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING INBOX...</div>;
   }
 
+  const filteredThreads = gq
+    ? threads.filter(t =>
+        (t.name || '').toLowerCase().includes(gq) ||
+        (t.prev || '').toLowerCase().includes(gq)
+      )
+    : threads;
+
   const MessagesInbox = window.MessagesInbox;
-  return <MessagesInbox threads={threads} onSelect={t => onSelect(t.contactId)} activeId={activeId} compact={compact} />;
+  return <MessagesInbox threads={filteredThreads} onSelect={t => onSelect(t.contactId)} activeId={activeId} compact={compact} />;
 }
 
 // ── Smart Calls — callback priority on top of a flat call log ───────────────
@@ -7066,6 +7126,7 @@ function LiveCalls({ onSelect }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+  const gq = useGlobalSearch('calls');
 
   useEffect(() => {
     (async () => {
@@ -7123,9 +7184,16 @@ function LiveCalls({ onSelect }) {
     </div>
   );
 
+  const visibleRows = gq
+    ? rows.filter(r => (r.name || '').toLowerCase().includes(gq))
+    : rows;
+  if (visibleRows.length === 0 && gq) {
+    return <Empty label={`No matches for "${gq}"`} />;
+  }
+
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '8px 16px 24px' }}>
-      {rows.map(r => {
+      {visibleRows.map(r => {
         const mins = r.durationSec ? Math.floor(r.durationSec / 60) : 0;
         const secs = r.durationSec ? r.durationSec % 60 : 0;
         const dur = r.durationSec ? `${mins}:${secs.toString().padStart(2, '0')}` : '—';
@@ -7236,6 +7304,14 @@ function LiveQuickList({ onSelect }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+  // Listen to the global search bar above the tabs and filter rows
+  // client-side. Matches name, phone last-4, reason chip label, preview.
+  const [globalQ, setGlobalQ] = useState('');
+  useEffect(() => {
+    const on = (e) => { if (e.detail?.tab === 'quick') setGlobalQ((e.detail?.q || '').toLowerCase()); };
+    window.addEventListener('bpp:global-search', on);
+    return () => window.removeEventListener('bpp:global-search', on);
+  }, []);
 
   // Realtime refresh — any change to contacts / messages / proposals can
   // shift section contents (new reply arrives, stage moves forward, quote
@@ -7346,6 +7422,17 @@ function LiveQuickList({ onSelect }) {
     return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING...</div>;
   }
 
+  // Apply the global search filter last so filtered empties still show
+  // the clear-desk hero properly when no filter is active.
+  const visibleRows = globalQ
+    ? rows.filter(r =>
+        (r.name || '').toLowerCase().includes(globalQ) ||
+        (r.phone || '').toLowerCase().includes(globalQ) ||
+        (r.preview || '').toLowerCase().includes(globalQ) ||
+        (r.reason?.label || '').toLowerCase().includes(globalQ)
+      )
+    : rows;
+
   if (rows.length === 0) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -7354,10 +7441,13 @@ function LiveQuickList({ onSelect }) {
       </div>
     );
   }
+  if (visibleRows.length === 0) {
+    return <Empty label={`No matches for "${globalQ}"`} hint="Try fewer characters or ⌘K for a cross-section smart search." />;
+  }
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '8px 0 24px' }}>
-      {rows.map(r => <SmartListRow key={r.id} row={r} onSelect={onSelect} />)}
+      {visibleRows.map(r => <SmartListRow key={r.id} row={r} onSelect={onSelect} />)}
     </div>
   );
 }
@@ -7952,14 +8042,38 @@ function LiveSparky({ currentContactId = null }) {
   const [currentContactName, setCurrentContactName] = useState(null);
   const scrollRef = useRef(null);
 
-  // The right-side action bar drives mode from outside (Key 2026-04-21:
-  // surface-scoped toolbar). Keep the internal mode row in Sparky for mobile
-  // + back-compat, but also accept the external event.
+  // Long ↔ short id mapping so the right-side action bar (which uses
+  // short ids) can drive + observe Sparky's internal mode (which uses
+  // long ids matching the ai-taskmaster edge function modes).
+  const MODE_SHORT_TO_LONG = {
+    chat: 'chat',
+    briefing: 'briefing',
+    insight: 'contact_insight',
+    reply: 'suggest_reply',
+    draft: 'draft_followup',
+  };
+  const MODE_LONG_TO_SHORT = {
+    chat: 'chat',
+    briefing: 'briefing',
+    contact_insight: 'insight',
+    suggest_reply: 'reply',
+    draft_followup: 'draft',
+  };
+
   useEffect(() => {
-    const on = (e) => { if (e?.detail?.mode) setMode(e.detail.mode); };
+    const on = (e) => {
+      const short = e?.detail?.mode;
+      if (!short) return;
+      setMode(MODE_SHORT_TO_LONG[short] || short);
+    };
     window.addEventListener('bpp:sparky-mode', on);
     return () => window.removeEventListener('bpp:sparky-mode', on);
   }, []);
+  // Echo mode changes so the right-bar can highlight the active one.
+  useEffect(() => {
+    const short = MODE_LONG_TO_SHORT[mode] || mode;
+    window.dispatchEvent(new CustomEvent('bpp:sparky-mode-changed', { detail: { mode: short } }));
+  }, [mode]);
 
   // When entering Sparky with a contact already selected, fetch that
   // contact's name so the quick-asks can offer to do things about them.
@@ -8059,22 +8173,9 @@ function LiveSparky({ currentContactId = null }) {
       {/* Agents inbox — Alex / permit-check / pipeline / brief notifications
           that need Key's eyes. Hidden when empty so it doesn't waste space. */}
       <AgentsInboxStrip />
-      {/* Mode selector */}
-      <div style={{ padding: '14px 16px 10px', display: 'flex', gap: 18 }}>
-        {modes.map(m => {
-          const on = m.id === mode;
-          return (
-            <button key={m.id} onClick={() => setMode(m.id)} style={{
-              padding: '4px 0', fontSize: 12,
-              fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
-              color: on ? 'var(--text)' : 'var(--text-muted)',
-              borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent',
-              background: 'transparent', border: 'none',
-              borderBottomStyle: 'solid', cursor: 'pointer',
-            }}>{m.label}</button>
-          );
-        })}
-      </div>
+      {/* Mode selector lives in the right-side action bar above the panel
+          now (Key 2026-04-22: removed inline duplicates — each surface
+          gets one action row, not two). */}
 
       {/* Quick-ask suggestions — only while chat is empty-ish */}
       {messages.length <= 1 && !sending ? (
@@ -8755,6 +8856,15 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
   // the LiveContactDetail default-tab logic.
   React.useEffect(() => { setActiveDetail('MESSAGES'); }, [selectedContact]);
 
+  // Mirror of LiveSparky's current mode so the Sparky button set shows
+  // which mode is active. Defaults to 'chat' on mount.
+  const [activeSparkyMode, setActiveSparkyMode] = React.useState('chat');
+  React.useEffect(() => {
+    const on = (e) => { if (e?.detail?.mode) setActiveSparkyMode(e.detail.mode); };
+    window.addEventListener('bpp:sparky-mode-changed', on);
+    return () => window.removeEventListener('bpp:sparky-mode-changed', on);
+  }, []);
+
   const focusDetail = (tab) => window.dispatchEvent(new CustomEvent('bpp:focus-detail-tab', { detail: { tab } }));
 
   let buttons;
@@ -8822,18 +8932,23 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
     ];
     buttons = (
       <>
-        {modes.map(m => (
-          <button key={m.id}
-            onClick={() => window.dispatchEvent(new CustomEvent('bpp:sparky-mode', { detail: { mode: m.id } }))}
-            className="chrome-label"
-            style={{
-              height: '100%', padding: '0 4px', minWidth: 0,
-              background: 'transparent', border: 'none',
-              color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer',
-              flex: '1 1 0',
-              overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>{m.label}</button>
-        ))}
+        {modes.map(m => {
+          const on = m.id === activeSparkyMode;
+          return (
+            <button key={m.id}
+              onClick={() => window.dispatchEvent(new CustomEvent('bpp:sparky-mode', { detail: { mode: m.id } }))}
+              className="chrome-label"
+              style={{
+                height: '100%', padding: '0 4px', minWidth: 0,
+                background: 'transparent', border: 'none',
+                color: on ? 'var(--text)' : 'var(--text-muted)',
+                boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
+                fontSize: 12, cursor: 'pointer',
+                flex: '1 1 0',
+                overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>{m.label}</button>
+          );
+        })}
       </>
     );
   }
@@ -8849,6 +8964,78 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
         position: 'relative', zIndex: 2,
       }}>
       {buttons}
+    </div>
+  );
+}
+
+// ── Global search bar — above the tabs, tab-scoped ──────────────────────────
+// Key 2026-04-22: "add a search bar above the tabs that smart search the
+// left section based on the tab you are on". Single input sits at the top
+// of the left column; its query broadcasts via `bpp:global-search` so
+// whichever list is mounted can filter itself. Placeholder adapts to the
+// active tab so Key sees what he's searching.
+const GLOBAL_SEARCH_PLACEHOLDER = {
+  quick:     'Search the smart list — name, phone, address, reason…',
+  calendar:  'Search installs — name, address, day…',
+  pipeline:  'Filter pipeline cards — name, address, jurisdiction…',
+  messages:  'Search threads — name, message body…',
+  calls:     'Search calls — name, phone…',
+  proposals: 'Search proposals — name, amount, status…',
+  invoices:  'Search invoices — name, amount, status…',
+  permits:   'Search permits — name, jurisdiction…',
+  materials: 'Search materials — name, address…',
+  finance:   'Search money — name, amount…',
+};
+function GlobalSearchBar({ tab }) {
+  const [q, setQ] = React.useState('');
+  const lastTab = React.useRef(tab);
+  // Re-broadcast the current query whenever the active tab changes so the
+  // newly-mounted list gets the filter applied immediately.
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent('bpp:global-search', { detail: { q, tab } }));
+  }, [q, tab]);
+  React.useEffect(() => {
+    if (lastTab.current !== tab) {
+      lastTab.current = tab;
+      // Don't auto-clear on tab switch — Key may want the filter to persist
+      // ("who do I have with 'greenville' in the address across pipelines").
+      // The X button below clears explicitly.
+    }
+  }, [tab]);
+  const placeholder = GLOBAL_SEARCH_PLACEHOLDER[tab] || 'Search…';
+  return (
+    <div style={{
+      padding: '8px 12px',
+      background: 'var(--bg)',
+      display: 'flex', alignItems: 'center', gap: 8,
+      borderBottom: '1px solid rgba(0,0,0,.06)',
+    }}>
+      <div style={{
+        flex: 1, minWidth: 0,
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 12px',
+        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      }}>
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="var(--text-muted)" strokeWidth="2.5" strokeLinecap="square">
+          <circle cx="7" cy="7" r="4"/><path d="M10 10 L13 13"/>
+        </svg>
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          placeholder={placeholder}
+          style={{
+            flex: 1, background: 'transparent', border: 'none',
+            fontFamily: 'var(--font-body)', fontSize: 13,
+          }}
+        />
+        {q ? (
+          <button onClick={() => setQ('')} aria-label="Clear search" style={{
+            padding: 0, width: 16, height: 16, display: 'grid', placeItems: 'center',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: 'var(--text-muted)', fontSize: 14,
+          }}>×</button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -9589,11 +9776,15 @@ function App() {
           />
         ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>
-      {/* Two separate tab strips side-by-side above the two content columns
-          (Key 2026-04-21: "top bar above the left with all the tabs. then
-          have a tab bar above the right with tabs"). Left = main-tab nav.
-          Right = dynamic hotkey strip for open right-panel surfaces
-          (Sparky always pinned; contact tab appears when one is selected). */}
+      {/* Global search bar (Key 2026-04-22) — sits above the tab row and
+          smart-searches the left section based on whichever tab is active.
+          Placeholder updates per-tab, input value broadcasts via
+          bpp:global-search so each list component can filter. */}
+      <GlobalSearchBar tab={tab} />
+      {/* Two separate tab strips side-by-side above the two content columns.
+          Left = main-tab nav. Right = dynamic hotkey strip for the open
+          right-panel surface (Sparky pinned; contact toolbar when one is
+          selected). */}
       {!isMobile ? (
         <div style={{ display: 'flex' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
