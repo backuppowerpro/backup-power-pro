@@ -107,7 +107,7 @@ function ThreadRow({ t, compact = false, active = false }) {
       padding: '10px 14px', minHeight: 72,
       background: 'var(--card)',
       boxShadow: active ? 'var(--pressed-2)' : 'none',
-      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderBottom: '1px solid var(--divider-faint)',
       borderLeft: t.waiting ? '3px solid var(--gold)' : '3px solid transparent',
       paddingLeft: 11,
     }}>

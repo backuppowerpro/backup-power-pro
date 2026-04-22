@@ -1174,7 +1174,7 @@ function AlexSessionStrip({ session, contactId, contactPhone }) {
       style={{
         padding: '6px 14px',
         background: 'var(--card)',
-        borderBottom: '1px solid rgba(0,0,0,.06)',
+        borderBottom: '1px solid var(--divider-faint)',
         fontFamily: 'var(--font-body)', fontSize: 11,
         color: 'var(--text-muted)',
         cursor: hasSummary ? 'pointer' : 'default',
@@ -1343,7 +1343,7 @@ function LeadProfileStrip({ contactPhone }) {
       style={{
         padding: '6px 14px',
         background: 'var(--card)',
-        borderBottom: '1px solid rgba(0,0,0,.06)',
+        borderBottom: '1px solid var(--divider-faint)',
         borderLeft: '3px solid var(--ms-2)',
         fontFamily: 'var(--font-body)', fontSize: 11,
         color: 'var(--text-muted)', cursor: 'pointer',
@@ -1608,7 +1608,7 @@ function NextActionCard({ contact, messages, alexSession }) {
     <div style={{
       padding: '10px 14px',
       background: 'var(--card)',
-      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderBottom: '1px solid var(--divider-faint)',
       borderLeft: `3px solid ${action.tint}`,
       display: 'flex', alignItems: 'center', gap: 10,
       fontFamily: 'var(--font-body)',
@@ -1653,7 +1653,7 @@ function DuplicateStrip({ duplicates }) {
     <div style={{
       padding: '6px 14px',
       background: 'var(--card)',
-      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderBottom: '1px solid var(--divider-faint)',
       borderLeft: '3px solid var(--ms-4)',
       fontFamily: 'var(--font-body)', fontSize: 11,
       color: 'var(--text-muted)',
@@ -1700,7 +1700,7 @@ function ReviewAskStrip({ contactName }) {
     <div style={{
       padding: '8px 14px',
       background: 'var(--card)',
-      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderBottom: '1px solid var(--divider-faint)',
       borderLeft: '3px solid var(--gold)',
       display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
       fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)',
@@ -1962,7 +1962,7 @@ function InstallBriefModal({ contact, onClose }) {
                 <div key={i} style={{
                   padding: '4px 0', fontSize: 12,
                   color: 'var(--text)',
-                  borderTop: i > 0 ? '1px solid rgba(0,0,0,.06)' : 'none',
+                  borderTop: i > 0 ? '1px solid var(--divider-faint)' : 'none',
                 }}>
                   <span className="mono" style={{ fontSize: 9, letterSpacing: '.08em', color: 'var(--text-faint)', marginRight: 6, textTransform: 'uppercase' }}>
                     {m.direction === 'inbound' ? 'customer' : (m.sender === 'ai' ? 'alex' : 'key')}
@@ -2713,7 +2713,7 @@ function DetailTimeline({ contactId }) {
             fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.08em',
             color: 'var(--text-faint)', textTransform: 'uppercase',
             paddingBottom: 4, marginBottom: 4,
-            borderBottom: '1px solid rgba(0,0,0,.06)',
+            borderBottom: '1px solid var(--divider-faint)',
           }}>{g.day}</div>
           {g.items.map(e => (
             <div key={e.id} style={{
@@ -3093,7 +3093,7 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
         return (
         <div key={p.id} style={{
           padding: '14px 0',
-          borderTop: '1px solid rgba(0,0,0,.08)',
+          borderTop: '1px solid var(--divider)',
           display: 'flex', flexDirection: 'column', gap: 10,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -3570,7 +3570,7 @@ function DetailPermits({ contact }) {
             the issued permit PDF in a new tab. */}
         {(permitMeta.number || permitMeta.submittedAt || permitMeta.docUrl) ? (
           <div className="mono" style={{
-            marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(0,0,0,.06)',
+            marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--divider-faint)',
             fontSize: 11, color: 'var(--text-muted)',
             display: 'flex', flexDirection: 'column', gap: 4,
           }}>
@@ -3766,7 +3766,7 @@ function DetailEditContact({ contact, onUpdate }) {
           marginTop: 4, padding: '8px 14px',
           display: 'flex', justifyContent: 'space-between',
           color: 'var(--text-faint)', fontSize: 11,
-          borderBottom: '1px solid rgba(0,0,0,.06)',
+          borderBottom: '1px solid var(--divider-faint)',
         }}>
           <span>Created</span>
           <span>{new Date(contact.created_at).toLocaleDateString()} · {Math.round((Date.now() - new Date(contact.created_at).getTime()) / 86400000)}d ago</span>
@@ -4988,7 +4988,7 @@ function KeyboardHelp({ open, onClose }) {
             <div key={i} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               padding: '8px 0',
-              borderBottom: i < shortcuts.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+              borderBottom: i < shortcuts.length - 1 ? '1px solid var(--divider-faint)' : 'none',
             }}>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)' }}>{s.label}</span>
               <span className="mono" style={{
@@ -5617,7 +5617,7 @@ function LivePermits() {
               gap: 8, alignItems: 'center',
               padding: '8px 14px',
               background: 'var(--card)',
-              borderBottom: '1px solid rgba(0,0,0,.06)',
+              borderBottom: '1px solid var(--divider-faint)',
               border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
             }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
@@ -5867,7 +5867,7 @@ function LiveMaterials() {
             gap: 8, alignItems: 'center',
             padding: '10px 14px',
             background: 'var(--card)',
-            borderBottom: '1px solid rgba(0,0,0,.06)',
+            borderBottom: '1px solid var(--divider-faint)',
           }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
               <button
@@ -6086,7 +6086,7 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
         <KpiCard label="OVERDUE" value={String(kpis.overdue).padStart(2, '0')} tone={kpis.overdue > 0 ? 'red' : 'green'} onClick={() => setSubView('inv')} />
       </div>
       {/* Sub tabs */}
-      <div style={{ padding: '0 16px', display: 'flex', gap: 0, borderBottom: '1px solid rgba(0,0,0,.08)' }}>
+      <div style={{ padding: '0 16px', display: 'flex', gap: 0, borderBottom: '1px solid var(--divider)' }}>
         {subTabs.map(s => (
           <button key={s.id} onClick={() => setSubView(s.id)} style={{
             height: 40, padding: '0 16px', fontSize: 13,
@@ -6212,7 +6212,7 @@ function ProposalsLiveTable({ rows }) {
               gridTemplateColumns: '64px 1fr 80px 54px 70px 90px 100px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
-              borderBottom: i < sorted.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+              borderBottom: i < sorted.length - 1 ? '1px solid var(--divider-faint)' : 'none',
               cursor: p.contact_id ? 'pointer' : 'default',
             }}>
             <span>{smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}</span>
@@ -6311,7 +6311,7 @@ function InvoicesLiveTable({ rows }) {
               gridTemplateColumns: '120px 1fr 100px 70px 100px 100px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
-              borderBottom: i < sorted.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+              borderBottom: i < sorted.length - 1 ? '1px solid var(--divider-faint)' : 'none',
               cursor: inv.contact_id ? 'pointer' : 'default',
             }}>
             <span>{smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}</span>
@@ -6348,7 +6348,7 @@ function PaymentsLiveFeed({ rows }) {
           gridTemplateColumns: '90px 1fr 120px',
           gap: 12, alignItems: 'center',
           padding: '10px 14px',
-          borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+          borderBottom: i < rows.length - 1 ? '1px solid var(--divider)' : 'none',
         }}>
           <span className="pixel" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
             {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
@@ -6670,7 +6670,7 @@ function LiveCalendar() {
               ) : null}
               <div style={{
                 padding: '8px 10px',
-                borderBottom: '1px solid rgba(0,0,0,.08)',
+                borderBottom: '1px solid var(--divider)',
                 background: highlight ? 'var(--navy)' : 'transparent',
                 color: highlight ? 'var(--gold)' : 'var(--text-muted)',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
@@ -6800,7 +6800,7 @@ function LiveCalendar() {
         <div style={{ marginTop: 24 }}>
           <div className="chrome-label" style={{
             fontSize: 11, letterSpacing: '.1em', color: 'var(--ms-3)',
-            padding: '6px 0', marginBottom: 4, borderBottom: '1px solid rgba(0,0,0,.08)',
+            padding: '6px 0', marginBottom: 4, borderBottom: '1px solid var(--divider)',
           }}>
             Awaiting date ({filteredUnscheduled.length})
           </div>
@@ -6970,7 +6970,7 @@ function CalendarEventModal({ defaults, onClose, onSaved }) {
                   display: 'block', width: '100%', textAlign: 'left',
                   padding: '8px 12px', fontFamily: 'var(--font-body)', fontSize: 13,
                   background: 'transparent', color: 'var(--text)', cursor: 'pointer', border: 'none',
-                  borderBottom: '1px solid rgba(0,0,0,.06)',
+                  borderBottom: '1px solid var(--divider-faint)',
                 }}>
                   {c.name} <span className="mono" style={{ color: 'var(--text-faint)', fontSize: 11 }}>{c.phone || ''}</span>
                 </button>
@@ -7219,7 +7219,7 @@ function LiveCalls({ onSelect }) {
           <button key={r.id} onClick={() => r.contactId && onSelect && onSelect(r.contactId)}
             className="tactile-flat" style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-              padding: '10px 12px', borderBottom: '1px solid rgba(0,0,0,.06)',
+              padding: '10px 12px', borderBottom: '1px solid var(--divider-faint)',
               background: 'var(--card)', border: 'none', textAlign: 'left',
               cursor: r.contactId ? 'pointer' : 'default',
             }}>
@@ -7476,7 +7476,7 @@ function SmartListRow({ row, onSelect }) {
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 12,
         padding: '12px 16px',
-        borderBottom: '1px solid rgba(0,0,0,.06)',
+        borderBottom: '1px solid var(--divider-faint)',
         background: 'var(--card)', border: 'none', textAlign: 'left', cursor: 'pointer',
       }}
     >
@@ -7881,7 +7881,7 @@ function BriefSection({ label, tint, items, onPick }) {
         paddingBottom: 6, marginBottom: 4,
         fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.12em',
         color: tint, textTransform: 'uppercase',
-        borderBottom: '1px solid rgba(0,0,0,.08)',
+        borderBottom: '1px solid var(--divider)',
       }}>{label} <span style={{ color: 'var(--text-faint)', marginLeft: 4 }}>{items.length}</span></div>
       <div>
         {items.length === 0 ? (
@@ -7979,7 +7979,7 @@ function AgentsInboxStrip() {
       background: 'var(--card)',
       boxShadow: 'var(--raised-2)',
       display: 'flex', flexDirection: 'column', gap: 8,
-      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderBottom: '1px solid var(--divider-faint)',
     }}>
       <div className="chrome-label" style={{
         fontSize: 11, letterSpacing: '.1em',
@@ -8313,7 +8313,7 @@ function SnoozeRow({ contactId, contactName, stage }) {
   if (daysLeft > 0) {
     return (
       <div style={{
-        padding: '6px 14px', borderBottom: '1px solid rgba(0,0,0,.06)',
+        padding: '6px 14px', borderBottom: '1px solid var(--divider-faint)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)',
       }}>
@@ -8328,7 +8328,7 @@ function SnoozeRow({ contactId, contactName, stage }) {
   }
   return (
     <div style={{
-      padding: '4px 14px', borderBottom: '1px solid rgba(0,0,0,.06)',
+      padding: '4px 14px', borderBottom: '1px solid var(--divider-faint)',
       display: 'flex', alignItems: 'center', gap: 6,
       fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--text-faint)',
     }}>
@@ -8831,7 +8831,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
           padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 10,
           letterSpacing: '.04em', color: 'var(--text-faint)',
           display: 'flex', gap: 16,
-          borderTop: '1px solid rgba(0,0,0,.06)',
+          borderTop: '1px solid var(--divider-faint)',
         }}>
           <span>↑↓ navigate</span>
           <span>↵ select</span>
@@ -8975,7 +8975,7 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
         height: 44, display: 'flex', alignItems: 'stretch',
         padding: 0,
         background: 'var(--card)', boxShadow: 'var(--pressed-2)',
-        borderLeft: '1px solid rgba(0,0,0,.08)',
+        borderLeft: '1px solid var(--divider)',
         whiteSpace: 'nowrap',
         position: 'relative', zIndex: 2,
       }}>
@@ -9024,7 +9024,7 @@ function GlobalSearchBar({ tab }) {
       padding: '8px 12px',
       background: 'var(--bg)',
       display: 'flex', alignItems: 'center', gap: 8,
-      borderBottom: '1px solid rgba(0,0,0,.06)',
+      borderBottom: '1px solid var(--divider-faint)',
     }}>
       <div style={{
         flex: 1, minWidth: 0,
@@ -9841,7 +9841,7 @@ function App() {
           <div style={{
             flex: '0 0 480px',
             width: 480,
-            borderLeft: '1px solid rgba(0,0,0,.08)',
+            borderLeft: '1px solid var(--divider)',
             display: 'flex', flexDirection: 'column',
             background: 'var(--card)',
           }}>

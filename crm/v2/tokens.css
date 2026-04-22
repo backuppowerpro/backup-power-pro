@@ -92,6 +92,11 @@
 
   /* Horizontal "smart bar" atop sections / surfaces. */
   --smart-bar-height: 4px;
+
+  /* Row / section separators — theme-aware so dark mode doesn't lose
+     them to the black-alpha approximation used throughout the app. */
+  --divider: rgba(0,0,0,.08);
+  --divider-faint: rgba(0,0,0,.06);
 }
 
 [data-theme="dark"] {
@@ -102,6 +107,10 @@
   --text-faint: #7e8388;
   --bevel-hi: #7b8088;
   --bevel-lo: #0d0f12;
+  /* Theme-aware dividers — black-alpha is invisible against the dark
+     card bg, so swap to a white-alpha variant in dark mode. */
+  --divider: rgba(255,255,255,.12);
+  --divider-faint: rgba(255,255,255,.08);
 }
 
 /* ============================================================

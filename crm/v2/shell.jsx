@@ -227,7 +227,7 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
             height: 36, display: 'flex', alignItems: 'stretch',
             padding: '0 8px', overflowX: 'auto', whiteSpace: 'nowrap',
             background: 'var(--card)',
-            borderTop: '1px solid rgba(0,0,0,.08)',
+            borderTop: '1px solid var(--divider)',
           }}>
             {group.children.map(cid => {
               const t = TABS.find(x => x.id === cid);

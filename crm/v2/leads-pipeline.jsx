@@ -232,7 +232,7 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
       <div style={{
         padding: '10px 4px 8px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
-        borderBottom: '1px solid rgba(0,0,0,.08)',
+        borderBottom: '1px solid var(--divider)',
       }}>
         <span className="chrome-label" style={{
           fontSize: 10, color: 'var(--text-muted)', lineHeight: 1,
@@ -249,7 +249,7 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
         <div style={{
           padding: '2px 4px 6px',
           display: 'flex', alignItems: 'center', gap: 6,
-          borderBottom: '1px dashed rgba(0,0,0,.08)',
+          borderBottom: '1px dashed var(--divider)',
         }}>
           <span className="mono" title={`avg ${avgDays} days in column`} style={{
             fontSize: 9, color: 'var(--text-faint)', letterSpacing: '.04em',
