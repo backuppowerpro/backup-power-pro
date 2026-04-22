@@ -127,6 +127,49 @@ Deno.serve(async (req) => {
 
   console.log(`[twilio-webhook] saved inbound from ${contact.name || contact.id}`)
 
+  // ── SMART AUTO-EXTRACT CONTACT INFO ────────────────────────────────────────
+  // Regex-scan inbound body for email + address. If the contact's current
+  // value is empty (or a generic placeholder), auto-patch. This runs on
+  // every inbound — not just when Alex is active — so we catch cases where
+  // the customer texts their email late in the flow or after opt-out.
+  // Dupes + overwrites are guarded so we never clobber real data.
+  if (body) {
+    try {
+      const { data: full } = await supabase
+        .from('contacts')
+        .select('id, name, email, address')
+        .eq('id', contact.id)
+        .maybeSingle()
+      if (full) {
+        const patch: Record<string, string> = {}
+        const isGeneric = (v: string) => !v || /^(lead|new\s*lead|unknown|customer|test)$/i.test(v.trim())
+
+        // Email — single token match, must have a TLD and @ with at least 2 parts
+        const emailMatch = body.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/)
+        if (emailMatch && isGeneric(String(full.email || ''))) {
+          patch.email = emailMatch[0]
+        }
+
+        // US-ish street address — number + street token ending in a common
+        // suffix (Rd, St, Ave, Blvd, Dr, Ln, Ct, Way, etc.) with an optional
+        // city/state tail. Conservative to avoid false positives on things
+        // like "300 watts" or a random number.
+        const addressMatch = body.match(/\b\d{1,6}\s+[A-Za-z0-9.'\s]{2,40}\s+(?:Rd|Road|St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Ln|Lane|Ct|Court|Way|Pl|Place|Ter|Terrace|Hwy|Highway|Pkwy|Parkway|Cir|Circle)\b(?:[\s,]+[A-Za-z\s]{2,30})?/i)
+        if (addressMatch && (isGeneric(String(full.address || '')) || (String(full.address || '').length + 10 < addressMatch[0].length))) {
+          patch.address = addressMatch[0].trim()
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await supabase.from('contacts').update(patch).eq('id', contact.id)
+          console.log('[twilio-webhook] smart-extract patched:', JSON.stringify(patch))
+        }
+      }
+    } catch (err) {
+      // Non-fatal — message is already saved.
+      console.error('[twilio-webhook] smart-extract failed:', err)
+    }
+  }
+
   // Return empty TwiML — no auto-reply (Key handles replies from CRM)
   return twiml()
 })
