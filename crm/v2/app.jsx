@@ -1798,6 +1798,33 @@ function InstallBriefModal({ contact, onClose }) {
         </div>
 
         <div style={{ padding: 12 }}>
+          {/* Smart Install Brief — blocker strip. Surfaces missing pieces
+              Key would find out about the hard way (no address, no amp,
+              no permit number, no panel photo). Empty when everything's
+              ready so the brief stays clean on the morning of an install. */}
+          {!data.loading ? (() => {
+            const blockers = [];
+            if (!contact.address) blockers.push('No service address on file');
+            if (!data.proposal?.selected_amp && !memField('generator_voltage')) blockers.push('Amp size not confirmed (30A vs 50A)');
+            if (!memField('panel_location') && !memField('panel_photo_url')) blockers.push('Panel location / photo missing — ask for one');
+            if (contact.jurisdiction_id && !permitMeta.number) blockers.push('Permit number not recorded yet');
+            if (data.proposal?.include_permit === false) blockers.push('Permit line wasn\'t on the proposal — confirm Key submitted one');
+            if (!blockers.length) return null;
+            return (
+              <div className="smart-hint" style={{ marginBottom: 8, alignItems: 'flex-start', flexDirection: 'column', gap: 6 }}>
+                <span className="smart-hint__label">Blockers ({blockers.length})</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+                  {blockers.map((b, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="smart-chip smart-chip--red">!</span>
+                      <span style={{ fontSize: 12, color: '#fff' }}>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })() : null}
+
           {/* WHO + WHEN */}
           <Section label="Who" tint="var(--navy)">
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
@@ -2399,7 +2426,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         <ReviewAskStrip contactName={contact?.name} />
       ) : null}
 
-      <SnoozeRow contactId={contactId} contactName={contact?.name} />
+      <SnoozeRow contactId={contactId} contactName={contact?.name} stage={contact?.stage} />
 
 
       {briefOpen ? (
@@ -4111,8 +4138,44 @@ function DetailNotes({ contact, onUpdate }) {
     return new Date(savedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   })();
 
+  // Smart Notes — regex pass over the free-text body pulls out structured
+  // facts (amp size, panel brand, generator watts, square-footage, service
+  // size). Renders as a chip row above the textarea so Key can see what
+  // was auto-detected without scrolling to install brief. Pure client-
+  // side today; swappable to an LLM extractor later.
+  const smartFacts = React.useMemo(() => {
+    const out = [];
+    if (!text) return out;
+    const t = text.toLowerCase();
+    const amp = t.match(/\b(30|50)\s*a(?:mp)?\b/);
+    if (amp) out.push({ label: `${amp[1]}A`, tone: 'navy' });
+    const panel = t.match(/\b(square d|siemens|eaton|ge|cutler[- ]hammer|homeline|bryant|murray)\b/i);
+    if (panel) out.push({ label: panel[1].toUpperCase(), tone: 'purple' });
+    const watts = t.match(/\b(\d{1,2}(?:\.\d)?)\s*k\s*w\b/i);
+    if (watts) out.push({ label: `${watts[1]} kW`, tone: 'gold' });
+    const service = t.match(/\b(100|125|150|200|400)\s*(?:a|amp)\s*service\b/i);
+    if (service) out.push({ label: `${service[1]}A SERVICE`, tone: 'green' });
+    const sqft = t.match(/\b(\d{3,4})\s*(?:sq ?ft|sq\.? ft)\b/i);
+    if (sqft) out.push({ label: `${sqft[1]} sqft`, tone: 'muted' });
+    return out;
+  }, [text]);
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {smartFacts.length > 0 ? (
+        <div style={{
+          display: 'flex', gap: 6, flexWrap: 'wrap',
+          padding: '6px 10px',
+          background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        }}>
+          <span className="chrome-label" title="Facts Sparky auto-extracted from your notes" style={{
+            fontSize: 9, color: 'var(--text-faint)', letterSpacing: '.08em', alignSelf: 'center',
+          }}>SPARKY SPOTTED</span>
+          {smartFacts.map((f, i) => (
+            <span key={i} className={`smart-chip smart-chip--${f.tone}`}>{f.label}</span>
+          ))}
+        </div>
+      ) : null}
       <textarea
         value={text}
         onChange={e => setText(e.target.value)}
@@ -4163,7 +4226,7 @@ function DetailNotes({ contact, onUpdate }) {
   );
 }
 
-function StagePickerModal({ currentStage, onPick, onClose }) {
+function StagePickerModal({ currentStage, onPick, onClose, contact }) {
   const rootRef = useRef(null);
   useFocusTrap(rootRef, true);
   const stages = [
@@ -4177,6 +4240,15 @@ function StagePickerModal({ currentStage, onPick, onClose }) {
     { num: 8, label: 'PRINTED',          color: 'var(--ms-6)' },
     { num: 9, label: 'INSPECTION',       color: 'var(--ms-7)' },
   ];
+  // Smart Stage Picker — suggest the likely next stage given where the
+  // contact is today. Just "current + 1" most of the time; the exception
+  // is stage 5 (Ready to Pay) which often jumps straight to 6 (Paid) via
+  // the Stripe webhook.
+  const suggestedStage = (() => {
+    const s = currentStage || 1;
+    if (s >= 9) return null;
+    return s + 1;
+  })();
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 95,
@@ -4196,6 +4268,7 @@ function StagePickerModal({ currentStage, onPick, onClose }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {stages.map(s => {
             const active = s.num === currentStage;
+            const suggested = s.num === suggestedStage;
             return (
               <button
                 key={s.num}
@@ -4208,8 +4281,12 @@ function StagePickerModal({ currentStage, onPick, onClose }) {
                   fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: active ? 600 : 500,
                   letterSpacing: '.02em',
                   border: 'none', cursor: 'pointer', textAlign: 'left',
+                  boxShadow: suggested ? 'inset 0 0 0 2px var(--gold)' : 'none',
                 }}>
-                <span>{s.label.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{s.label.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
+                  {suggested ? <span className="smart-chip smart-chip--gold">NEXT</span> : null}
+                </span>
                 <span className="mono" style={{ fontSize: 11, opacity: 0.5 }}>{s.num}</span>
               </button>
             );
@@ -7973,7 +8050,7 @@ function togglePin(id) {
 }
 function isPinned(id) { return id && readPins().includes(id); }
 
-function SnoozeRow({ contactId, contactName }) {
+function SnoozeRow({ contactId, contactName, stage }) {
   const [daysLeft, setDaysLeft] = useState(() => isSnoozedFor(contactId));
   useEffect(() => {
     setDaysLeft(isSnoozedFor(contactId));
@@ -7983,6 +8060,11 @@ function SnoozeRow({ contactId, contactName }) {
   }, [contactId]);
   if (!contactId) return null;
   const presets = [1, 3, 7];
+  // Smart Snooze suggestion — stage-aware default. Brand-new leads want
+  // a tight 1d reminder, quoted leads resurface at 3d (the F/U 1 cadence),
+  // booked+ leads sleep for 7d. Rendered as a gold ring on the preset
+  // that matches the current contact's lifecycle stage.
+  const smartPreset = stage === 1 ? 1 : stage === 2 ? 3 : 7;
   if (daysLeft > 0) {
     return (
       <div style={{
@@ -8006,16 +8088,25 @@ function SnoozeRow({ contactId, contactName }) {
       fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--text-faint)',
     }}>
       <span>Snooze</span>
-      {presets.map(n => (
-        <button key={n} onClick={() => {
-          snoozeContact(contactId, n);
-          window.__bpp_toast && window.__bpp_toast(`${contactName || 'Contact'} snoozed ${n} day${n === 1 ? '' : 's'}`, 'info');
-        }} style={{
-          padding: '2px 8px', fontSize: 10, fontFamily: 'var(--font-body)',
-          background: 'transparent', color: 'var(--text-muted)',
-          boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
-        }}>{n}d</button>
-      ))}
+      {presets.map(n => {
+        const suggested = n === smartPreset;
+        return (
+          <button key={n} onClick={() => {
+            snoozeContact(contactId, n);
+            window.__bpp_toast && window.__bpp_toast(`${contactName || 'Contact'} snoozed ${n} day${n === 1 ? '' : 's'}`, 'info');
+          }}
+          title={suggested ? `Suggested for stage ${stage}` : `${n} day snooze`}
+          style={{
+            padding: '2px 8px', fontSize: 10, fontFamily: 'var(--font-body)',
+            background: 'transparent', color: suggested ? 'var(--navy)' : 'var(--text-muted)',
+            boxShadow: suggested
+              ? 'inset 0 0 0 1px var(--gold), var(--raised-2)'
+              : 'var(--raised-2)',
+            border: 'none', cursor: 'pointer',
+            fontWeight: suggested ? 700 : 400,
+          }}>{n}d</button>
+        );
+      })}
     </div>
   );
 }
