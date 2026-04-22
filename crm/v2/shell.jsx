@@ -33,7 +33,8 @@ const TABS = [
   { id: 'quick',     label: 'QUICK',     icon: Ico.leads },
   { id: 'calendar',  label: 'CALENDAR',  icon: Ico.calendar },
   { id: 'pipeline',  label: 'PIPELINE',  icon: Ico.leads },
-  { id: 'list',      label: 'LIST',      icon: Ico.leads },
+  // LIST removed 2026-04-21 — QUICK is now a Sparky-scored smart list that
+  // subsumes the old recency-sorted list view.
   { id: 'messages',  label: 'MESSAGES',  icon: Ico.messages },
   { id: 'calls',     label: 'CALLS',     icon: Ico.messages },
   { id: 'proposals', label: 'PROPOSALS', icon: Ico.finance },
@@ -118,7 +119,7 @@ function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
 //   CALENDAR   standalone — tomorrow's installs at a glance
 const MOBILE_GROUPS = [
   { id: 'quick',    label: 'QUICK',    icon: Ico.leads,    children: null },
-  { id: 'leads',    label: 'LEADS',    icon: Ico.leads,    children: ['list', 'messages', 'calls'] },
+  { id: 'leads',    label: 'LEADS',    icon: Ico.leads,    children: ['messages', 'calls'] },
   { id: 'money',    label: 'MONEY',    icon: Ico.finance,  children: ['proposals', 'invoices'] },
   { id: 'calendar', label: 'CAL',      icon: Ico.calendar, children: null },
 ];

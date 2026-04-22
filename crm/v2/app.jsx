@@ -6608,16 +6608,85 @@ function LiveCalls({ onSelect }) {
   );
 }
 
-// ── Quick List — Key's "everything I owe action on right now" view ──────────
-// One scroll surface, cross-stage. Sections (in priority order):
-//   1. REPLY NOW        — threads where customer replied and Key hasn't
-//   2. TODAY            — installs scheduled for today
-//   3. THIS WEEK        — installs scheduled in the next 7 days
-//   4. PERMITS IN FLIGHT — stage 4–8 (submit → inspection), unfinished
-//   5. STUCK QUOTES     — proposals Created/Copied >2d old
-// Each section hides when empty. All sections empty → "clear desk" state.
+// ── Smart List — Sparky-scored single feed ──────────────────────────────────
+// Replaces the old sectioned Quick List + the recency-sorted LIST. One flat
+// list of active contacts ranked by a priority score so what Key should act
+// on next stays at the top. Each row shows a "reason chip" explaining why
+// it's ranked there — "Replied 2h ago", "Install today 10am", "Stuck quote
+// 8d silent", etc. (Key 2026-04-21: "sparky should work behind the scenes
+// to optimize the list so important things stay at the top" + "smart
+// versions of our basic things, like apple's smart shuffle".)
+//
+// Score inputs (additive; higher = higher in the list):
+//   +100  waiting on Key's reply (customer replied, no response sent)
+//   +90   install scheduled today
+//   +70   install within 3 days
+//   +50   install within 7 days
+//   +40   permit printed / inspection scheduled (stage 7-8, needs follow-through)
+//   +30+age  stuck quote >2d old, scaled by how stale
+//   +25   permit in flight (stages 4-6)
+//   +20   booked but no install date (stage 3)
+//   +15   brand-new lead within last 24h (stage 1)
+//   +8    inbound message within the last hour
+//   -200  snoozed (drops out of the list)
+//   -50   do-not-contact
+//   -30   complete (stage 9+)
+function scoreContact({ contact, signals }) {
+  let score = 0;
+  const stage = contact.stage || 1;
+  if (signals.snoozed) return -1;               // sentinel — caller drops
+  if (contact.do_not_contact) score -= 50;
+  if (stage >= 9) score -= 30;
+  if (signals.waitingOnKey) score += 100;
+  if (signals.installToday) score += 90;
+  else if (signals.installWithin3d) score += 70;
+  else if (signals.installWithinWeek) score += 50;
+  if (stage === 7 || stage === 8) score += 40;
+  if (signals.stuckQuoteDays > 2) score += 30 + Math.min(signals.stuckQuoteDays, 10);
+  if (stage >= 4 && stage <= 6) score += 25;
+  if (stage === 3 && !contact.install_date) score += 20;
+  if (stage === 1 && signals.ageHours < 24) score += 15;
+  if (signals.lastInboundMinutes !== null && signals.lastInboundMinutes < 60) score += 8;
+  return score;
+}
+
+// Build the human-readable "reason chip" for why a row is ranked where it is.
+// Picks the single strongest signal so the chip is always scannable in one
+// glance — no stacked badges.
+function reasonChipFor({ contact, signals }) {
+  if (signals.waitingOnKey) {
+    const age = signals.lastInboundMinutes;
+    const ageText = age < 60 ? `${Math.max(1, Math.round(age))}m` : age < 60 * 24 ? `${Math.round(age / 60)}h` : `${Math.round(age / (60 * 24))}d`;
+    return { label: `REPLIED ${ageText} AGO`, tone: 'gold' };
+  }
+  if (signals.installToday) {
+    const t = new Date(contact.install_date);
+    return { label: `INSTALL TODAY ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, tone: 'green' };
+  }
+  if (signals.installWithin3d) {
+    const t = new Date(contact.install_date);
+    const day = t.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+    return { label: `INSTALL ${day}`, tone: 'green' };
+  }
+  if (signals.installWithinWeek) {
+    const t = new Date(contact.install_date);
+    const day = t.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+    return { label: `INSTALL ${day}`, tone: 'navy' };
+  }
+  if (contact.stage === 7 || contact.stage === 8) return { label: 'AWAITING INSPECTION', tone: 'purple' };
+  if (signals.stuckQuoteDays > 2) {
+    const f = signals.stuckQuoteDays >= 7 ? 'EXIT' : signals.stuckQuoteDays >= 4 ? 'F/U 2' : 'F/U 1';
+    return { label: `[${f}] QUOTE ${signals.stuckQuoteDays}D SILENT`, tone: 'red' };
+  }
+  if (contact.stage >= 4 && contact.stage <= 6) return { label: STAGE_MAP[contact.stage] || `STAGE ${contact.stage}`, tone: 'purple' };
+  if (contact.stage === 3 && !contact.install_date) return { label: 'BOOKED · NEEDS DATE', tone: 'gold' };
+  if (contact.stage === 1 && signals.ageHours < 24) return { label: 'NEW LEAD', tone: 'navy' };
+  if (contact.do_not_contact) return { label: 'DNC', tone: 'red' };
+  return { label: STAGE_MAP[contact.stage] || `STAGE ${contact.stage || 1}`, tone: 'muted' };
+}
+
 function LiveQuickList({ onSelect }) {
-  const [data, setData] = useState({ replyNow: [], today: [], thisWeek: [], inFlightPermits: [], stuckQuotes: [] });
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
 
@@ -6643,198 +6712,136 @@ function LiveQuickList({ onSelect }) {
       const now = new Date();
       const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
       const endOfToday = new Date(startOfToday.getTime() + 86400000);
-      const endOfWeek = new Date(startOfToday.getTime() + 7 * 86400000);
+      const in3Days   = new Date(startOfToday.getTime() + 3 * 86400000);
+      const in7Days   = new Date(startOfToday.getTime() + 7 * 86400000);
       const twoDaysAgo = new Date(now.getTime() - 2 * 86400000).toISOString();
 
-      const [installsThisWeekRes, inFlightRes, stuckRes, recentMsgs] = await Promise.all([
+      // One broad contacts pull + targeted side queries (messages for
+      // waiting-on-Key detection, proposals for stuck-quote age). Sparky
+      // scoring happens synchronously on the client — cheap, no API call.
+      const [contactsRes, recentMsgs, stuckRes] = await Promise.all([
         db.from('contacts')
-          .select('id, name, phone, address, stage, install_date')
-          .not('install_date', 'is', null)
-          .gte('install_date', startOfToday.toISOString())
-          .lt('install_date', endOfWeek.toISOString())
-          .order('install_date', { ascending: true })
-          .limit(30),
-        db.from('contacts')
-          .select('id, name, phone, address, stage, install_date')
-          .in('stage', [4, 5, 6, 7, 8])
-          .eq('do_not_contact', false)
-          .order('stage', { ascending: true })
-          .limit(30),
-        db.from('proposals')
-          .select('id, contact_id, contact_name, total, status, created_at')
-          .in('status', ['Created', 'Copied'])
-          .lt('created_at', twoDaysAgo)
-          .order('created_at', { ascending: true })
-          .limit(20),
+          .select('id, name, phone, address, stage, status, install_date, created_at, do_not_contact')
+          .neq('status', 'Archived')
+          .lt('stage', 9)
+          .limit(500),
         db.from('messages')
           .select('contact_id, direction, sender, body, created_at')
-          .order('created_at', { ascending: false }).limit(300),
+          .order('created_at', { ascending: false }).limit(400),
+        db.from('proposals')
+          .select('id, contact_id, total, status, created_at')
+          .in('status', ['Created', 'Copied'])
+          .lt('created_at', twoDaysAgo)
+          .limit(100),
       ]);
 
-      // REPLY NOW: group recent messages by contact, keep only threads where
-      // the newest message is inbound-from-customer. Same logic the briefing
-      // and the WAITING chip use — single source of truth.
-      const waitingSeen = new Set();
-      const waitingPreview = {};
-      const waitingTime = {};
-      const waitingIds = [];
+      // Waiting-on-Key: newest message per contact is inbound-from-customer.
+      const firstByContact = new Map();
       for (const m of (recentMsgs.data || [])) {
-        if (!m.contact_id || waitingSeen.has(m.contact_id)) continue;
-        waitingSeen.add(m.contact_id);
-        if (m.direction === 'inbound' && m.sender !== 'ai') {
-          waitingIds.push(m.contact_id);
-          waitingPreview[m.contact_id] = (m.body || '').slice(0, 60);
-          waitingTime[m.contact_id] = m.created_at;
-        }
+        if (!m.contact_id || firstByContact.has(m.contact_id)) continue;
+        firstByContact.set(m.contact_id, m);
       }
-      const waitingContactsRes = waitingIds.length
-        ? await db.from('contacts').select('id, name, phone, address, stage, do_not_contact').in('id', waitingIds)
-        : { data: [] };
-      const waitingById = Object.fromEntries((waitingContactsRes.data || []).map(c => [c.id, c]));
-      const replyNow = waitingIds
-        .map(id => {
-          const c = waitingById[id];
-          if (!c || c.do_not_contact) return null;
-          if (isSnoozedFor(id)) return null;
-          return {
-            id, stage: c.stage || 1, name: displayNameFor(c), phone: c.phone,
-            preview: waitingPreview[id], sinceIso: waitingTime[id],
-          };
-        })
-        .filter(Boolean)
-        .slice(0, 15);
+      // Stuck-quote age per contact (days since oldest open proposal).
+      const stuckDaysById = new Map();
+      for (const p of (stuckRes.data || [])) {
+        if (!p.contact_id) continue;
+        const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
+        const prev = stuckDaysById.get(p.contact_id);
+        if (!prev || days > prev) stuckDaysById.set(p.contact_id, days);
+      }
 
-      // TODAY / THIS WEEK split from the single installs query. Snoozed
-      // contacts drop out of both.
-      const installs = (installsThisWeekRes.data || [])
-        .filter(c => !isSnoozedFor(c.id))
-        .map(c => ({
-          id: c.id, stage: c.stage || 3, name: displayNameFor(c),
-          phone: c.phone, address: c.address, installDate: c.install_date,
-        }));
-      const today = installs.filter(i => {
-        const d = new Date(i.installDate).getTime();
-        return d >= startOfToday.getTime() && d < endOfToday.getTime();
-      });
-      const thisWeek = installs.filter(i => {
-        const d = new Date(i.installDate).getTime();
-        return d >= endOfToday.getTime() && d < endOfWeek.getTime();
-      });
-
-      // PERMITS IN FLIGHT: stage 4–8, excluding the ones already surfaced
-      // under TODAY / THIS WEEK (they'll show there with install date — no
-      // need to double-book them under permits) and anything Key snoozed.
-      const installedIds = new Set([...today, ...thisWeek].map(i => i.id));
-      const inFlightPermits = (inFlightRes.data || [])
-        .filter(c => !installedIds.has(c.id) && !isSnoozedFor(c.id))
-        .map(c => ({
-          id: c.id, stage: c.stage, name: displayNameFor(c),
-          phone: c.phone, address: c.address,
-        }));
-
-      // STUCK QUOTES: same F/U label logic the Finance/briefing use. Look
-      // up contact rows so proposals with a stored contact_name of "Unknown"
-      // can still fall back to the phone number display. Drop any that Key
-      // has snoozed.
-      const stuckContactIds = (stuckRes.data || []).map(p => p.contact_id).filter(Boolean);
-      const stuckContactsRes = stuckContactIds.length
-        ? await db.from('contacts').select('id, name, phone').in('id', stuckContactIds)
-        : { data: [] };
-      const stuckContactMap = Object.fromEntries((stuckContactsRes.data || []).map(c => [c.id, c]));
-      const stuckQuotes = (stuckRes.data || [])
-        .filter(p => !p.contact_id || !isSnoozedFor(p.contact_id))
-        .map(p => {
-          const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
-          const flag = days >= 7 ? 'EXIT' : days >= 4 ? 'F/U 2' : 'F/U 1';
-          const c = stuckContactMap[p.contact_id] || { name: p.contact_name };
-          return {
-            id: p.contact_id, name: displayNameFor(c),
-            total: Number(p.total) || 0, days: Math.round(days), flag,
-          };
+      const scored = [];
+      for (const c of (contactsRes.data || [])) {
+        const snoozed = isSnoozedFor(c.id);
+        if (snoozed) continue;
+        const latest = firstByContact.get(c.id);
+        const waitingOnKey = !!latest && latest.direction === 'inbound' && latest.sender !== 'ai';
+        const lastInboundMinutes = latest && latest.direction === 'inbound'
+          ? (Date.now() - new Date(latest.created_at).getTime()) / 60000
+          : null;
+        const installMs = c.install_date ? new Date(c.install_date).getTime() : null;
+        const ageHours = c.created_at ? (Date.now() - new Date(c.created_at).getTime()) / 3600000 : 9999;
+        const signals = {
+          snoozed: false,
+          waitingOnKey,
+          lastInboundMinutes,
+          installToday: installMs !== null && installMs >= startOfToday.getTime() && installMs < endOfToday.getTime(),
+          installWithin3d: installMs !== null && installMs >= endOfToday.getTime() && installMs < in3Days.getTime(),
+          installWithinWeek: installMs !== null && installMs >= in3Days.getTime() && installMs < in7Days.getTime(),
+          stuckQuoteDays: stuckDaysById.get(c.id) || 0,
+          ageHours,
+        };
+        const score = scoreContact({ contact: c, signals });
+        // Cull everything that scored zero or negative — those are leads
+        // with no open action. Keep new-lead boost-eligible stage-1 rows
+        // even if their score is thin so the list isn't empty on a slow day.
+        if (score <= 0 && !(c.stage === 1 && ageHours < 72)) continue;
+        const reason = reasonChipFor({ contact: c, signals });
+        const preview = waitingOnKey ? (latest?.body || '').slice(0, 60) : '';
+        scored.push({
+          id: c.id,
+          name: displayNameFor(c),
+          phone: c.phone,
+          address: c.address,
+          stage: c.stage || 1,
+          score,
+          reason,
+          preview,
         });
-
-      setData({ replyNow, today, thisWeek, inFlightPermits, stuckQuotes });
+      }
+      scored.sort((a, b) => b.score - a.score);
+      setRows(scored.slice(0, 60));
       setLoading(false);
     })();
   }, [tick]);
 
   if (loading) {
-    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING QUICK LIST...</div>;
+    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING...</div>;
   }
 
-  const sections = [
-    { id: 'reply',   label: 'REPLY NOW',         rows: data.replyNow,         color: 'var(--gold)' },
-    { id: 'today',   label: 'TODAY',             rows: data.today,            color: 'var(--ms-5)' },
-    { id: 'week',    label: 'THIS WEEK',         rows: data.thisWeek,         color: 'var(--navy)' },
-    { id: 'permits', label: 'PERMITS IN FLIGHT', rows: data.inFlightPermits,  color: 'var(--ms-4)' },
-    { id: 'stuck',   label: 'STUCK QUOTES',      rows: data.stuckQuotes,      color: 'var(--ms-3)' },
-  ];
-  const totalCount = sections.reduce((n, s) => n + s.rows.length, 0);
-
-  if (totalCount === 0) {
+  if (rows.length === 0) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
         <div className="chrome-label" style={{ fontSize: 14, letterSpacing: '.12em', marginBottom: 8 }}>CLEAR DESK</div>
-        <div style={{ fontSize: 13, fontFamily: 'var(--font-body)' }}>No replies waiting, no installs this week, no stuck quotes. Go advertise or chase a new lead.</div>
+        <div style={{ fontSize: 13, fontFamily: 'var(--font-body)' }}>No open replies, no installs this week, no stuck quotes. Go advertise or chase a new lead.</div>
       </div>
     );
   }
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: '8px 16px 24px' }}>
-      {sections.filter(s => s.rows.length > 0).map(s => (
-        <div key={s.id} style={{ marginBottom: 14 }}>
-          <div style={{
-            padding: '6px 10px', background: s.color, color: '#fff',
-            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 11,
-            letterSpacing: '.12em', textTransform: 'uppercase',
-            boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.25), inset -1px -1px 0 rgba(0,0,0,.35)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span>◆ {s.label}</span>
-            <span className="mono" style={{ fontSize: 11, opacity: .85 }}>{s.rows.length}</span>
-          </div>
-          <div style={{ background: 'var(--card)', boxShadow: 'var(--pressed-2)' }}>
-            {s.rows.map(r => <QuickListRow key={`${s.id}-${r.id}`} row={r} section={s.id} onSelect={onSelect} />)}
-          </div>
-        </div>
-      ))}
+    <div style={{ height: '100%', overflowY: 'auto', padding: '8px 0 24px' }}>
+      {rows.map(r => <SmartListRow key={r.id} row={r} onSelect={onSelect} />)}
     </div>
   );
 }
 
-function QuickListRow({ row, section, onSelect }) {
-  const stageLabel = STAGE_MAP[row.stage] || `S${row.stage || '?'}`;
-  let status = '';
-  if (section === 'reply' && row.preview) {
-    const age = relTimestamp(row.sinceIso);
-    status = `${age} · "${row.preview}${row.preview.length >= 60 ? '…' : ''}"`;
-  } else if ((section === 'today' || section === 'week') && row.installDate) {
-    const d = new Date(row.installDate);
-    const day = d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
-    const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    status = `${day} · ${time}${row.address ? ' · ' + row.address.split(',')[0] : ''}`;
-  } else if (section === 'permits') {
-    status = `${stageLabel}${row.address ? ' · ' + row.address.split(',')[0] : ''}`;
-  } else if (section === 'stuck') {
-    status = `[${row.flag}] $${row.total.toLocaleString()} · ${row.days}d silent`;
-  }
+function SmartListRow({ row, onSelect }) {
+  const toneMap = {
+    gold:   { bg: 'var(--gold)',   fg: 'var(--navy)' },
+    green:  { bg: 'var(--lcd-green, #2aa86a)', fg: '#fff' },
+    navy:   { bg: 'var(--navy)',   fg: 'var(--gold)' },
+    purple: { bg: 'var(--ms-4, #6b46c1)', fg: '#fff' },
+    red:    { bg: 'var(--ms-3, #dc2626)', fg: '#fff' },
+    muted:  { bg: 'var(--card)',   fg: 'var(--text-muted)' },
+  };
+  const t = toneMap[row.reason.tone] || toneMap.muted;
   return (
     <button
-      onClick={() => row.id && onSelect && onSelect(row.id, section)}
+      onClick={() => row.id && onSelect && onSelect(row.id)}
       className="tactile-flat"
       style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 12px', borderBottom: '1px solid rgba(0,0,0,.06)',
+        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 16px',
+        borderBottom: '1px solid rgba(0,0,0,.06)',
         background: 'var(--card)', border: 'none', textAlign: 'left', cursor: 'pointer',
       }}
     >
       <div style={{
-        width: 28, height: 28, flex: '0 0 auto',
+        width: 36, height: 36, flex: '0 0 auto',
         background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
         display: 'grid', placeItems: 'center',
       }}>
-        <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 10, letterSpacing: '.04em' }}>
+        <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 12, letterSpacing: '.04em' }}>
           {initials(row.name)}
         </span>
       </div>
@@ -6842,13 +6849,23 @@ function QuickListRow({ row, section, onSelect }) {
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {row.name}
         </div>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {status}
-        </div>
+        {row.preview ? (
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            "{row.preview}{row.preview.length >= 60 ? '…' : ''}"
+          </div>
+        ) : (
+          <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+            {row.phone ? row.phone.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3') : ''}
+          </div>
+        )}
       </div>
-      {section !== 'stuck' ? (
-        <span className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', flex: '0 0 auto' }}>{stageLabel}</span>
-      ) : null}
+      <span className="chrome-label" style={{
+        flex: '0 0 auto',
+        padding: '4px 8px', fontSize: 9, letterSpacing: '.08em',
+        background: t.bg, color: t.fg,
+        boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.2), inset -1px -1px 0 rgba(0,0,0,.25)',
+        whiteSpace: 'nowrap',
+      }}>{row.reason.label}</span>
     </button>
   );
 }
