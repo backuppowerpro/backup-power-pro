@@ -59,14 +59,51 @@ function HousePhoto({ kind }) {
   );
 }
 
+// Module-level cache of Street View coverage results. Google's Street View
+// Static API returns HTTP 200 with a gray "we have no imagery" tile when the
+// requested address has no coverage — onError never fires, so the ugly tile
+// silently ships. The metadata endpoint (same key, free) returns
+// { status: 'OK' | 'ZERO_RESULTS' | ... } so we can check coverage before
+// trusting the photo URL. Cache by normalized address for the session.
+const SV_COVERAGE_CACHE = new Map(); // address → 'ok' | 'none' | 'pending'
+function checkStreetViewCoverage(photoUrl) {
+  if (!photoUrl) return Promise.resolve(false);
+  try {
+    const u = new URL(photoUrl);
+    const loc = u.searchParams.get('location');
+    const key = u.searchParams.get('key');
+    if (!loc || !key) return Promise.resolve(true); // unknown — trust the URL
+    const cached = SV_COVERAGE_CACHE.get(loc);
+    if (cached === 'ok') return Promise.resolve(true);
+    if (cached === 'none') return Promise.resolve(false);
+    if (cached === 'pending') return Promise.resolve(true); // optimistic
+    SV_COVERAGE_CACHE.set(loc, 'pending');
+    const metaUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(loc)}&source=outdoor&key=${key}`;
+    return fetch(metaUrl)
+      .then(r => r.json())
+      .then(m => {
+        const ok = m && m.status === 'OK';
+        SV_COVERAGE_CACHE.set(loc, ok ? 'ok' : 'none');
+        return ok;
+      })
+      .catch(() => { SV_COVERAGE_CACHE.set(loc, 'ok'); return true; });
+  } catch {
+    return Promise.resolve(true);
+  }
+}
+
 function Avatar({ row, size = 48 }) {
   const fontSize = Math.round(size * 0.36);
-  // Track image load state so we can fall back to initials if the Street
-  // View API has no coverage (returns a gray "no imagery" placeholder) or
-  // if the image 404s. Google returns a valid 200 response even with no
-  // imagery, so we can't rely on onError alone — check dimensions post-load
-  // and fall back if the returned pixel is suspiciously small.
   const [failed, setFailed] = React.useState(false);
+  React.useEffect(() => {
+    let cancelled = false;
+    if (row.photo) {
+      checkStreetViewCoverage(row.photo).then(ok => {
+        if (!cancelled && !ok) setFailed(true);
+      });
+    }
+    return () => { cancelled = true; };
+  }, [row.photo]);
   const showPhoto = row.photo && !failed;
   return (
     <div style={{

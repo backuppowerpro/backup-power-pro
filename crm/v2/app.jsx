@@ -66,13 +66,21 @@ const SV_KEY = 'AIzaSyB0xWm71ZDzS7ei5-vFx15rNP_lR1ZKbJs';
 
 function streetViewUrl(address, size = 96) {
   if (!address) return null;
+  // Filter out addresses that won't return useful imagery: placeholder text
+  // (—, N/A, Unknown), short strings without a number (no street = no
+  // coverage), and zip-only entries. Without this filter the Street View API
+  // returns a gray "we have no imagery" tile on a 200 response, which slips
+  // past onError and looks broken in the avatar slot.
+  const a = String(address).trim();
+  if (a.length < 6 || !/\d/.test(a)) return null;
+  if (/^(—|-|n\/?a|none|unknown|no\s*address)$/i.test(a)) return null;
   // Square crop keyed to the rendered avatar size (with 2x scale for retina
   // sharpness without downloading 4K tiles). fov=80 gives a typical house-front
   // composition; pitch=5 angles up slightly to include the eaves. source=outdoor
   // excludes user-uploaded interior pano shots.
   const dim = Math.min(size, 160); // cap at 160px to keep bandwidth reasonable
   return `https://maps.googleapis.com/maps/api/streetview?size=${dim}x${dim}` +
-         `&scale=2&location=${encodeURIComponent(address)}` +
+         `&scale=2&location=${encodeURIComponent(a)}` +
          `&fov=80&pitch=5&source=outdoor&key=${SV_KEY}`;
 }
 
@@ -106,6 +114,18 @@ function formatPhone(p) {
   const last10 = d.length > 10 ? d.slice(-10) : d;
   if (last10.length !== 10) return p;
   return `(${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6)}`;
+}
+
+// When a contact lacks a real name — or someone upstream typed literal
+// "Unknown" into the form — "Unknown" is useless in a briefing / Quick
+// List row. Fall back to the last 4 digits of the phone so Key can still
+// recognise the thread at a glance. Anything else → 'Lead'.
+function displayNameFor(c) {
+  if (!c) return 'Lead';
+  const n = String(c.name || c.contact_name || '').trim();
+  if (n && !/^unknown$/i.test(n) && !/^customer$/i.test(n) && !/^lead$/i.test(n) && !/^-+$|^—$/.test(n)) return n;
+  const last4 = String(c.phone || '').replace(/\D/g, '').slice(-4);
+  return last4 ? `···${last4}` : 'Lead';
 }
 
 // ── Error Boundary ──────────────────────────────────────────────────────────
@@ -848,10 +868,11 @@ function contactToCard(c, waiting = false, proposal = null) {
     }
     proposalSignal = { kind: 'viewed', age };
   }
+  const cardName = displayNameFor(c);
   return {
     id: c.id,
-    name: c.name || '—',
-    initials: initials(c.name),
+    name: cardName,
+    initials: initials(cardName),
     addr: c.address || '—',
     days,
     installOffsetDays, // null when no install_date set; negative = past-due, 0 = today, + = future
@@ -871,6 +892,7 @@ function LivePipelineToolbar({ active = 'pipeline', onSubView, stats }) {
   // was not wired up and was visual noise. Re-add when the filters
   // are actually functional.
   const subs = [
+    { id: 'quick',    label: 'QUICK' },
     { id: 'pipeline', label: 'PIPELINE' },
     { id: 'list',     label: 'LIST' },
     { id: 'permits',  label: 'PERMITS' },
@@ -6503,6 +6525,240 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
   return <MessagesInbox threads={threads} onSelect={t => onSelect(t.contactId)} activeId={activeId} compact={compact} />;
 }
 
+// ── Quick List — Key's "everything I owe action on right now" view ──────────
+// One scroll surface, cross-stage. Sections (in priority order):
+//   1. REPLY NOW        — threads where customer replied and Key hasn't
+//   2. TODAY            — installs scheduled for today
+//   3. THIS WEEK        — installs scheduled in the next 7 days
+//   4. PERMITS IN FLIGHT — stage 4–8 (submit → inspection), unfinished
+//   5. STUCK QUOTES     — proposals Created/Copied >2d old
+// Each section hides when empty. All sections empty → "clear desk" state.
+function LiveQuickList({ onSelect }) {
+  const [data, setData] = useState({ replyNow: [], today: [], thisWeek: [], inFlightPermits: [], stuckQuotes: [] });
+  const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
+
+  // Realtime refresh — any change to contacts / messages / proposals can
+  // shift section contents (new reply arrives, stage moves forward, quote
+  // gets approved). Single channel, cheap full-refetch.
+  useEffect(() => {
+    const ch = db.channel('quicklist-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => setTick(n => n + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => setTick(n => n + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, () => setTick(n => n + 1))
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const now = new Date();
+      const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(startOfToday.getTime() + 86400000);
+      const endOfWeek = new Date(startOfToday.getTime() + 7 * 86400000);
+      const twoDaysAgo = new Date(now.getTime() - 2 * 86400000).toISOString();
+
+      const [installsThisWeekRes, inFlightRes, stuckRes, recentMsgs] = await Promise.all([
+        db.from('contacts')
+          .select('id, name, phone, address, stage, install_date')
+          .not('install_date', 'is', null)
+          .gte('install_date', startOfToday.toISOString())
+          .lt('install_date', endOfWeek.toISOString())
+          .order('install_date', { ascending: true })
+          .limit(30),
+        db.from('contacts')
+          .select('id, name, phone, address, stage, install_date')
+          .in('stage', [4, 5, 6, 7, 8])
+          .eq('do_not_contact', false)
+          .order('stage', { ascending: true })
+          .limit(30),
+        db.from('proposals')
+          .select('id, contact_id, contact_name, total, status, created_at')
+          .in('status', ['Created', 'Copied'])
+          .lt('created_at', twoDaysAgo)
+          .order('created_at', { ascending: true })
+          .limit(20),
+        db.from('messages')
+          .select('contact_id, direction, sender, body, created_at')
+          .order('created_at', { ascending: false }).limit(300),
+      ]);
+
+      // REPLY NOW: group recent messages by contact, keep only threads where
+      // the newest message is inbound-from-customer. Same logic the briefing
+      // and the WAITING chip use — single source of truth.
+      const waitingSeen = new Set();
+      const waitingPreview = {};
+      const waitingTime = {};
+      const waitingIds = [];
+      for (const m of (recentMsgs.data || [])) {
+        if (!m.contact_id || waitingSeen.has(m.contact_id)) continue;
+        waitingSeen.add(m.contact_id);
+        if (m.direction === 'inbound' && m.sender !== 'ai') {
+          waitingIds.push(m.contact_id);
+          waitingPreview[m.contact_id] = (m.body || '').slice(0, 60);
+          waitingTime[m.contact_id] = m.created_at;
+        }
+      }
+      const waitingContactsRes = waitingIds.length
+        ? await db.from('contacts').select('id, name, phone, address, stage, do_not_contact').in('id', waitingIds)
+        : { data: [] };
+      const waitingById = Object.fromEntries((waitingContactsRes.data || []).map(c => [c.id, c]));
+      const replyNow = waitingIds
+        .map(id => {
+          const c = waitingById[id];
+          if (!c || c.do_not_contact) return null;
+          return {
+            id, stage: c.stage || 1, name: displayNameFor(c), phone: c.phone,
+            preview: waitingPreview[id], sinceIso: waitingTime[id],
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 15);
+
+      // TODAY / THIS WEEK split from the single installs query
+      const installs = (installsThisWeekRes.data || []).map(c => ({
+        id: c.id, stage: c.stage || 3, name: displayNameFor(c),
+        phone: c.phone, address: c.address, installDate: c.install_date,
+      }));
+      const today = installs.filter(i => {
+        const d = new Date(i.installDate).getTime();
+        return d >= startOfToday.getTime() && d < endOfToday.getTime();
+      });
+      const thisWeek = installs.filter(i => {
+        const d = new Date(i.installDate).getTime();
+        return d >= endOfToday.getTime() && d < endOfWeek.getTime();
+      });
+
+      // PERMITS IN FLIGHT: stage 4–8, excluding the ones already surfaced
+      // under TODAY / THIS WEEK (they'll show there with install date — no
+      // need to double-book them under permits).
+      const installedIds = new Set([...today, ...thisWeek].map(i => i.id));
+      const inFlightPermits = (inFlightRes.data || [])
+        .filter(c => !installedIds.has(c.id))
+        .map(c => ({
+          id: c.id, stage: c.stage, name: displayNameFor(c),
+          phone: c.phone, address: c.address,
+        }));
+
+      // STUCK QUOTES: same F/U label logic the Finance/briefing use. Look
+      // up contact rows so proposals with a stored contact_name of "Unknown"
+      // can still fall back to the phone number display.
+      const stuckContactIds = (stuckRes.data || []).map(p => p.contact_id).filter(Boolean);
+      const stuckContactsRes = stuckContactIds.length
+        ? await db.from('contacts').select('id, name, phone').in('id', stuckContactIds)
+        : { data: [] };
+      const stuckContactMap = Object.fromEntries((stuckContactsRes.data || []).map(c => [c.id, c]));
+      const stuckQuotes = (stuckRes.data || []).map(p => {
+        const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
+        const flag = days >= 7 ? 'EXIT' : days >= 4 ? 'F/U 2' : 'F/U 1';
+        const c = stuckContactMap[p.contact_id] || { name: p.contact_name };
+        return {
+          id: p.contact_id, name: displayNameFor(c),
+          total: Number(p.total) || 0, days: Math.round(days), flag,
+        };
+      });
+
+      setData({ replyNow, today, thisWeek, inFlightPermits, stuckQuotes });
+      setLoading(false);
+    })();
+  }, [tick]);
+
+  if (loading) {
+    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING QUICK LIST...</div>;
+  }
+
+  const sections = [
+    { id: 'reply',   label: 'REPLY NOW',         rows: data.replyNow,         color: 'var(--gold)' },
+    { id: 'today',   label: 'TODAY',             rows: data.today,            color: 'var(--ms-5)' },
+    { id: 'week',    label: 'THIS WEEK',         rows: data.thisWeek,         color: 'var(--navy)' },
+    { id: 'permits', label: 'PERMITS IN FLIGHT', rows: data.inFlightPermits,  color: 'var(--ms-4)' },
+    { id: 'stuck',   label: 'STUCK QUOTES',      rows: data.stuckQuotes,      color: 'var(--ms-3)' },
+  ];
+  const totalCount = sections.reduce((n, s) => n + s.rows.length, 0);
+
+  if (totalCount === 0) {
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div className="chrome-label" style={{ fontSize: 14, letterSpacing: '.12em', marginBottom: 8 }}>CLEAR DESK</div>
+        <div style={{ fontSize: 13, fontFamily: 'var(--font-body)' }}>No replies waiting, no installs this week, no stuck quotes. Go advertise or chase a new lead.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', padding: '8px 16px 24px' }}>
+      {sections.filter(s => s.rows.length > 0).map(s => (
+        <div key={s.id} style={{ marginBottom: 14 }}>
+          <div style={{
+            padding: '6px 10px', background: s.color, color: '#fff',
+            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 11,
+            letterSpacing: '.12em', textTransform: 'uppercase',
+            boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.25), inset -1px -1px 0 rgba(0,0,0,.35)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span>◆ {s.label}</span>
+            <span className="mono" style={{ fontSize: 11, opacity: .85 }}>{s.rows.length}</span>
+          </div>
+          <div style={{ background: 'var(--card)', boxShadow: 'var(--pressed-2)' }}>
+            {s.rows.map(r => <QuickListRow key={`${s.id}-${r.id}`} row={r} section={s.id} onSelect={onSelect} />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function QuickListRow({ row, section, onSelect }) {
+  const stageLabel = STAGE_MAP[row.stage] || `S${row.stage || '?'}`;
+  let status = '';
+  if (section === 'reply' && row.preview) {
+    const age = relTimestamp(row.sinceIso);
+    status = `${age} · "${row.preview}${row.preview.length >= 60 ? '…' : ''}"`;
+  } else if ((section === 'today' || section === 'week') && row.installDate) {
+    const d = new Date(row.installDate);
+    const day = d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+    const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    status = `${day} · ${time}${row.address ? ' · ' + row.address.split(',')[0] : ''}`;
+  } else if (section === 'permits') {
+    status = `${stageLabel}${row.address ? ' · ' + row.address.split(',')[0] : ''}`;
+  } else if (section === 'stuck') {
+    status = `[${row.flag}] $${row.total.toLocaleString()} · ${row.days}d silent`;
+  }
+  return (
+    <button
+      onClick={() => row.id && onSelect && onSelect(row.id)}
+      className="tactile-flat"
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 12px', borderBottom: '1px solid rgba(0,0,0,.06)',
+        background: 'var(--card)', border: 'none', textAlign: 'left', cursor: 'pointer',
+      }}
+    >
+      <div style={{
+        width: 28, height: 28, flex: '0 0 auto',
+        background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
+        display: 'grid', placeItems: 'center',
+      }}>
+        <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 10, letterSpacing: '.04em' }}>
+          {initials(row.name)}
+        </span>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {row.name}
+        </div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {status}
+        </div>
+      </div>
+      {section !== 'stuck' ? (
+        <span className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', flex: '0 0 auto' }}>{stageLabel}</span>
+      ) : null}
+    </button>
+  );
+}
+
 // ── Morning Briefing modal — once per day ───────────────────────────────────
 function LiveMorningBriefing({ onClose, onPickContact }) {
   const [sections, setSections] = useState({ urgent: [], installsToday: [], waiting: [], stuckQuotes: [], overdue: [], today: [], materials: [], goodNews: [] });
@@ -6537,19 +6793,19 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       const eightDaysAgoIso = new Date(Date.now() - 8 * 86400000).toISOString();
       const [installsRes, overdueRes, recentRes, awaitingMatRes, paidRes, waitingMsgsRes, stuckPropsRes, lead24Res, leadPrior7Res] = await Promise.all([
         db.from('contacts')
-          .select('id, name, address, install_date')
+          .select('id, name, phone, address, install_date')
           .gte('install_date', todayIso)
           .lt('install_date', endOfToday)
           .order('install_date', { ascending: true })
           .limit(5),
         db.from('contacts')
-          .select('id, name, created_at, stage').lt('created_at', fiveDaysAgo)
+          .select('id, name, phone, created_at, stage').lt('created_at', fiveDaysAgo)
           .lt('stage', 4).eq('do_not_contact', false).limit(5),
         db.from('contacts')
-          .select('id, name, created_at, stage')
+          .select('id, name, phone, created_at, stage')
           .gte('created_at', todayIso).limit(5),
         db.from('contacts')
-          .select('id, name, stage, install_notes')
+          .select('id, name, phone, stage, install_notes')
           .in('stage', [3, 4]).limit(10),
         db.from('invoices')
           .select('id, contact_name, total, paid_at')
@@ -6600,7 +6856,7 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       const awaitingMaterials = (awaitingMatRes.data || [])
         .filter(c => !/__pm_/.test(c.install_notes || ''))
         .slice(0, 5)
-        .map(c => ({ text: `Pick materials for ${c.name || 'lead'}`, id: c.id }));
+        .map(c => ({ text: `Pick materials for ${displayNameFor(c)}`, id: c.id }));
 
       // Waiting on Key: for each contact, pick the newest message; keep only
       // if it's inbound-from-customer. Cap at 5 so the briefing stays scannable.
@@ -6616,19 +6872,22 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         }
       }
       const capped = waitingIds.slice(0, 5);
-      const waitingContactsRes = capped.length
-        ? await db.from('contacts').select('id, name, do_not_contact').in('id', capped)
+      const stuckPropContactIds = (stuckPropsRes.data || []).map(p => p.contact_id).filter(Boolean);
+      const contactLookupIds = Array.from(new Set([...capped, ...stuckPropContactIds]));
+      const lookupContactsRes = contactLookupIds.length
+        ? await db.from('contacts').select('id, name, phone, do_not_contact').in('id', contactLookupIds)
         : { data: [] };
-      const waitingContactMap = Object.fromEntries((waitingContactsRes.data || []).map(c => [c.id, c]));
+      const lookupContactMap = Object.fromEntries((lookupContactsRes.data || []).map(c => [c.id, c]));
       const waiting = capped
         .map(id => {
-          const c = waitingContactMap[id];
+          const c = lookupContactMap[id];
           if (!c || c.do_not_contact) return null;
           if (isSnoozedFor(id)) return null;
           const preview = waitingPreviewByContact[id];
+          const name = displayNameFor(c);
           const text = preview
-            ? `${c.name || 'Customer'} — "${preview}${preview.length >= 60 ? '…' : ''}"`
-            : (c.name || 'Customer');
+            ? `${name} — "${preview}${preview.length >= 60 ? '…' : ''}"`
+            : name;
           return { text, id };
         })
         .filter(Boolean);
@@ -6642,8 +6901,10 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
           const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
           const label = days >= 7 ? 'EXIT' : days >= 4 ? 'F/U 2' : 'F/U 1';
           const total = Number(p.total) || 0;
+          const fromContact = lookupContactMap[p.contact_id];
+          const name = displayNameFor(fromContact ? fromContact : { name: p.contact_name });
           return {
-            text: `[${label}] ${p.contact_name || 'Customer'} · $${total.toLocaleString()} · ${Math.round(days)}d silent`,
+            text: `[${label}] ${name} · $${total.toLocaleString()} · ${Math.round(days)}d silent`,
             id: p.contact_id,
           };
         });
@@ -6677,7 +6938,7 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
             if (isSnoozedFor(c.id)) continue;
             seen.add(phone);
             urgent.push({
-              text: `${c.name || 'Customer'} — ${String(m.value).slice(0, 60)}${String(m.value).length > 60 ? '…' : ''}`,
+              text: `${displayNameFor(c)} — ${String(m.value).slice(0, 60)}${String(m.value).length > 60 ? '…' : ''}`,
               id: c.id,
             });
           }
@@ -6690,7 +6951,7 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       setSections({
         urgent,
         installsToday: (installsRes.data || []).map(c => ({
-          text: `${new Date(c.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — ${c.name || 'Customer'}${c.address ? ' · ' + c.address.split(',')[0] : ''}`,
+          text: `${new Date(c.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — ${displayNameFor(c)}${c.address ? ' · ' + c.address.split(',')[0] : ''}`,
           id: c.id,
         })),
         waiting,
@@ -6698,11 +6959,11 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         overdue: (overdueRes.data || [])
           .filter(c => !isSnoozedFor(c.id))
           .map(c => ({
-            text: `${c.name || 'Lead'} — ${Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)} days silent`,
+            text: `${displayNameFor(c)} — ${Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)} days silent`,
             id: c.id,
           })),
         today: (recentRes.data || []).map(c => ({
-          text: `New today: ${c.name || 'Unknown'}`, id: c.id,
+          text: `New today: ${displayNameFor(c)}`, id: c.id,
         })),
         materials: awaitingMaterials.filter(m => !isSnoozedFor(m.id)),
         goodNews: (paidRes.data || []).map(inv => ({
@@ -6724,13 +6985,25 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
     return () => clearInterval(t);
   }, []);
 
+  // Escape closes the briefing. Every other modal in v2 honors Escape;
+  // LiveMorningBriefing was the one holdout — Key would hit Esc expecting
+  // the modal to close and nothing would happen.
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const rootRef = useRef(null);
+  useFocusTrap(rootRef, true);
+
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 90,
       background: 'rgba(0,0,0,.5)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
         width: 640, maxWidth: '100%', maxHeight: 'calc(100vh - 64px)', overflowY: 'auto',
         background: 'var(--card)', boxShadow: 'var(--raised)',
       }}>
@@ -7622,6 +7895,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
 // ── Leads sub-view toolbar (shared across list/permits/materials) ──────────
 function LeadsSubToolbar({ active, onChange }) {
   const subs = [
+    { id: 'quick',    label: 'QUICK' },
     { id: 'pipeline', label: 'PIPELINE' },
     { id: 'list',     label: 'LIST' },
     { id: 'permits',  label: 'PERMITS' },
@@ -7662,14 +7936,12 @@ function App() {
     return { tab, contact: h.get('contact') || null };
   })();
   const [tab, setTab] = useState(initial.tab);
-  // Default leads sub-view is LIST on every viewport. The 9-column pipeline
-  // doesn't fit beside the 480px right panel on most laptop viewports — it
-  // was forcing horizontal scroll and "cutting into" the chat/contact-detail
-  // panel's space. Key's feedback: "the leads tab needs to be redone and
-  // its cutting into the right side made for chat." List view is purely
-  // vertical, sits cleanly in the left column. Pipeline still available
-  // via the LeadsSubToolbar toggle — kept for people who want kanban.
-  const [leadsSubView, setLeadsSubView] = useState('list');
+  // Default leads sub-view is QUICK — everything Key has open action on
+  // right now, cross-stage. Key's feedback 2026-04-21: "a quick list…all the
+  // people I am currently dealing with, upcoming installs, inspections not
+  // done, jobs on the schedule". LIST stays one tap away for when he wants
+  // the full 69-row feed. PIPELINE still available for kanban-heads.
+  const [leadsSubView, setLeadsSubView] = useState('quick');
   const [selectedContact, setSelectedContact] = useState(initial.contact);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -8319,6 +8591,16 @@ function App() {
 
   const content = (() => {
     if (tab === 'leads') {
+      if (leadsSubView === 'quick') {
+        return (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <LeadsSubToolbar active="quick" onChange={setLeadsSubView} />
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <LiveQuickList onSelect={id => setSelectedContact(id)} />
+            </div>
+          </div>
+        );
+      }
       if (leadsSubView === 'pipeline') {
         return <LivePipeline onCardClick={handleCardClick} onSubView={setLeadsSubView} />;
       }
