@@ -757,9 +757,7 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
         })}
       </div>
       {query && rowsWithSelectState.length === 0 ? (
-        <div className="mono" style={{ padding: '16px', fontSize: 11, color: 'var(--text-faint)' }}>
-          No matches for "{query}"
-        </div>
+        <Empty label={`No matches for "${query}"`} hint="Try fewer characters or open ⌘K — smart search understands natural language." />
       ) : null}
       <div style={{ flex: 1, minHeight: 0 }}>
         {desktop
@@ -6287,14 +6285,41 @@ function PaymentsLiveFeed({ rows }) {
   );
 }
 
-function Empty({ label }) {
+// Smart Empty state — pairs a pixel label with a plain-English hint the
+// smart layer thinks is the most useful next step. Hints are keyed off
+// the `label` so each surface gets something relevant without having to
+// pass a hint prop from every caller. Falls back to just the label.
+const EMPTY_HINTS = {
+  'NO PROPOSALS':       "Open a contact and press Q — QuickQuote drafts one in 10 seconds.",
+  'NO INVOICES':        "Invoices auto-generate when a proposal is approved and a deposit link is sent.",
+  'NO PAYMENTS YET':    "Stripe payments land here once a customer clicks Pay on an invoice.",
+  'NO ACTIVE PERMITS':  "Permits show up once a contact moves to stage 3 (Booked). Want to skip ahead?",
+  'NO ACTIVE MATERIALS':"Parts tracker activates when someone books. Nobody in the pipeline yet.",
+  'NO CALLS YET':       "Inbound and outbound calls log here once Twilio Voice dials out.",
+  'NO MATCHES':         "No matches — try a looser term, or ⌘K for smart search ('who owes me money').",
+  'NO ACTIVITY YET':    "Activity shows up here as Alex messages, quotes, and stage changes roll in.",
+};
+function Empty({ label, hint }) {
+  const key = (label || '').toUpperCase().trim();
+  const body = hint || EMPTY_HINTS[key] || null;
   return (
     <div style={{
-      padding: 48, display: 'grid', placeItems: 'center',
-      fontFamily: 'var(--font-mono)', fontSize: 12,
-      color: 'var(--text-faint)', textAlign: 'center',
-      letterSpacing: '.04em',
-    }}>{(label || '').toLowerCase()}</div>
+      padding: 48, display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 10,
+      textAlign: 'center', letterSpacing: '.04em',
+    }}>
+      <div className="chrome-label" style={{
+        fontSize: 11, letterSpacing: '.14em',
+        color: 'var(--text-muted)',
+      }}>◆ {(label || '').toLowerCase()}</div>
+      {body ? (
+        <div style={{
+          fontSize: 12, lineHeight: 1.5,
+          maxWidth: 360, color: 'var(--text-faint)',
+          fontFamily: 'var(--font-body)', letterSpacing: 0,
+        }}>{body}</div>
+      ) : null}
+    </div>
   );
 }
 

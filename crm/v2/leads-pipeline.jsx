@@ -273,13 +273,38 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
             <MemoLeadCard c={c} />
           </div>
         ))}
-        {list.length === 0 && (
-          <div style={{
-            height: 56, display: 'grid', placeItems: 'center',
-            fontFamily: 'var(--font-mono)', fontSize: 11,
-            color: 'var(--text-faint)',
-          }}>empty</div>
-        )}
+        {list.length === 0 && (() => {
+          // Smart pipeline empty ghost — per-column hint instead of just
+          // "empty". Tells Key what the bottleneck is when a column is
+          // starved.
+          const GHOST = {
+            new:     "No new leads — spin up an ad or chase a referral.",
+            quoted:  "No quotes out — pick a NEW LEAD and press Q.",
+            booked:  "Nothing booked yet — nudge the hottest quote.",
+            permit:  "No permits submitted — process tomorrow's installs.",
+            pay:     "Nothing waiting on payment.",
+            paid:    "No paid permits today.",
+            rprint:  "No permits ready to print.",
+            printed: "No printed permits to pick up.",
+            inspect: "No inspections scheduled.",
+          };
+          return (
+            <div style={{
+              margin: '6px 4px', padding: '12px 8px',
+              display: 'flex', flexDirection: 'column', gap: 6,
+              alignItems: 'center',
+              border: '1px dashed rgba(0,0,0,.2)',
+              color: 'var(--text-faint)',
+              fontFamily: 'var(--font-body)', fontSize: 10, lineHeight: 1.35,
+              textAlign: 'center',
+            }}>
+              <span className="chrome-label" style={{ fontSize: 9, letterSpacing: '.1em' }}>
+                empty
+              </span>
+              <span>{GHOST[col.id] || 'Nothing here yet.'}</span>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
