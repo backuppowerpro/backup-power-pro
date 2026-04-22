@@ -5391,7 +5391,7 @@ function LivePermits() {
   useEffect(() => {
     (async () => {
       const [cRes, jRes] = await Promise.all([
-        db.from('contacts').select('id, name, address, stage, jurisdiction_id, created_at').in('stage', [3, 4, 5, 6, 7, 8, 9]).limit(100),
+        db.from('contacts').select('id, name, phone, address, stage, jurisdiction_id, created_at').in('stage', [3, 4, 5, 6, 7, 8, 9]).limit(100),
         db.from('permit_jurisdictions').select('id, name').order('name'),
       ]);
       const jurById = Object.fromEntries((jRes.data || []).map(j => [j.id, j]));
@@ -5412,7 +5412,7 @@ function LivePermits() {
       };
       const sorted = (cRes.data || []).slice().sort((a, b) => priority(a) - priority(b));
       setRows(sorted.map(c => ({
-        id: c.id, name: c.name || '—', address: c.address || '—',
+        id: c.id, name: displayNameFor(c), address: c.address || '—',
         stage: c.stage,
         createdAt: c.created_at,
         jurisdiction: c.jurisdiction_id ? jurById[c.jurisdiction_id]?.name : null,
@@ -5648,11 +5648,11 @@ function LiveMaterials() {
     (async () => {
       const { data } = await db
         .from('contacts')
-        .select('id, name, address, stage, install_notes, install_date')
+        .select('id, name, phone, address, stage, install_notes, install_date')
         .in('stage', [3, 4, 5, 6, 7, 8])
         .limit(50);
       const shaped = (data || []).map(c => ({
-        id: c.id, name: c.name || '—', address: c.address || '—',
+        id: c.id, name: displayNameFor(c), address: c.address || '—',
         stage: c.stage,
         installDate: c.install_date,
         mat: parseMaterials(c.install_notes),
@@ -5878,10 +5878,24 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
         db.from('invoices').select('id', { count: 'exact', head: true }).eq('status', 'paid').eq('notes', 'deposit').gte('paid_at', weekAgoIso),
       ]);
       const uniqueInstalls = new Set((historyRes.data || []).map(r => r.contact_id));
+      // Resolve contact rows for all referenced contact_ids so the
+      // Payments / Proposals / Invoices tables can fall back from a stored
+      // "Unknown" contact_name to the phone last-4 via displayNameFor.
+      const allIds = new Set();
+      for (const p of (payRes.data || []))  if (p.contact_id) allIds.add(p.contact_id);
+      for (const p of (propRes.data || [])) if (p.contact_id) allIds.add(p.contact_id);
+      for (const p of (invRes.data || []))  if (p.contact_id) allIds.add(p.contact_id);
+      const idsArr = Array.from(allIds);
+      const { data: refContacts } = idsArr.length
+        ? await db.from('contacts').select('id, name, phone').in('id', idsArr)
+        : { data: [] };
+      const nameById = Object.fromEntries((refContacts || []).map(c => [c.id, displayNameFor(c)]));
+      const patchName = (row) => nameById[row.contact_id] || displayNameFor({ name: row.contact_name }) || row.contact_name || null;
+
       setData({
-        proposals: propRes.data || [],
-        invoices: invRes.data || [],
-        payments: payRes.data || [],
+        proposals: (propRes.data || []).map(p => ({ ...p, contact_name: patchName(p) })),
+        invoices:  (invRes.data  || []).map(p => ({ ...p, contact_name: patchName(p) })),
+        payments:  (payRes.data  || []).map(p => ({ ...p, contact_name: patchName(p) })),
         installsThisWeek: uniqueInstalls.size,
         newLeads7d: newLeadsRes.count || 0,
         proposals7d: proposals7dRes.count || 0,
@@ -6203,8 +6217,10 @@ function PaymentsLiveFeed({ rows }) {
           <span className="pixel" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
             {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
           </span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>
-            {p.method || 'PAYMENT'} · {p.contact_id?.slice(0, 8) || '—'}
+          <span
+            onClick={() => p.contact_id && (window.location.hash = `#contact=${p.contact_id}`)}
+            style={{ fontFamily: 'var(--font-body)', fontSize: 13, cursor: p.contact_id ? 'pointer' : 'default' }}>
+            {p.contact_name || '—'} · <span style={{ color: 'var(--text-muted)' }}>{p.method || 'Payment'}</span>
           </span>
           <span className="mono" style={{
             fontSize: 14, fontWeight: 700, textAlign: 'right',
