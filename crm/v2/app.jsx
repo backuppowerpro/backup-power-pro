@@ -869,6 +869,14 @@ function contactToCard(c, waiting = false, proposal = null) {
     proposalSignal = { kind: 'viewed', age };
   }
   const cardName = displayNameFor(c);
+  const stage = c.stage || 1;
+  // Smart staleness flag — a card is stale when it's overdue to move on.
+  // Uses `days` (lead age) as a proxy since per-stage dwell time isn't
+  // easily readable here without a stage_history join. Thresholds match
+  // the F/U framework: pre-booked stages get a looser 7d, mid-funnel 14d,
+  // post-install 21d.
+  const staleThreshold = stage < 4 ? 7 : stage < 9 ? 14 : 21;
+  const stale = days > staleThreshold;
   return {
     id: c.id,
     name: cardName,
@@ -878,6 +886,7 @@ function contactToCard(c, waiting = false, proposal = null) {
     installOffsetDays, // null when no install_date set; negative = past-due, 0 = today, + = future
     dots: { photo: hasPhoto ? 1 : 0, quote: hasQuote ? 1 : 0, permit: hasPermit ? 1 : 0 },
     overdue: days > 7 && (c.stage || 1) < 4,
+    stale, // Smart Pipeline: cards in a column too long get a red ring
     dnc: !!c.do_not_contact,
     jurisdiction: c._jurisdiction_name || null,
     pinned: isPinned(c.id),
@@ -2433,6 +2442,21 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
           the pattern (Key 2026-04-21: mobile is the same serialized — left
           view by default, click into right view with a back button). */}
 
+      {/* Smart Contact Detail: next-best-action hint. One-line prompt at
+          the top of the panel that Sparky-style suggests the single most
+          useful action Key should take with this contact right now. Reads
+          the same signals the Smart List uses (waiting, stuck quote,
+          install imminent, etc.) + the Alex session state. */}
+      {!loading && contact ? (
+        <SmartNextActionHint
+          contact={contact}
+          messages={messages}
+          outstandingBalance={outstandingBalance}
+          onJumpTab={(t) => { setDetailTab(t); setManualTabContactId(contactId); window.dispatchEvent(new CustomEvent('bpp:detail-tab-changed', { detail: { tab: t } })); }}
+          onOpenQuickQuote={() => window.dispatchEvent(new CustomEvent('bpp:open-quick-quote'))}
+        />
+      ) : null}
+
       {/* Tab content */}
       {detailTab === 'MESSAGES' ? (
       <div ref={msgScrollRef} style={{
@@ -3096,6 +3120,35 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
 // ── Quick Quote Modal ──────────────────────────────────────────────────────
 // Minimal — just a total that updates as you toggle. No section labels, no
 // sub-prices on chips, no cross-amp preview. Complex quotes go to legacy.
+// Smart Quote hint — static percentile bucket today (quick heuristic over
+// BPP's known base-offer window), swappable to a real percentile pulled
+// from prior proposals of the same amp + cord-length later.
+function SmartQuoteHint({ total, state }) {
+  if (!total || total <= 0) return null;
+  const BASE_LOW = 1197;
+  const BASE_HIGH = 1497;
+  let tone = 'muted', label = '', body = '';
+  if (total < BASE_LOW - 50) {
+    tone = 'red'; label = 'BELOW MARGIN';
+    body = `Below the $${BASE_LOW.toLocaleString()} floor — confirm scope, margin may be too thin.`;
+  } else if (total >= BASE_LOW - 50 && total <= BASE_HIGH + 50) {
+    tone = 'green'; label = 'IN RANGE';
+    body = `Sits inside the $${BASE_LOW}–$${BASE_HIGH} base-offer window.`;
+  } else if (total <= BASE_HIGH + 400) {
+    tone = 'gold'; label = 'CUSTOM';
+    body = `Above base offer — price-anchor the $15K standby before sending.`;
+  } else {
+    tone = 'gold'; label = 'HIGH TICKET';
+    body = `High ticket. Consider splitting with a deposit + remainder invoice.`;
+  }
+  return (
+    <div className="smart-hint" style={{ padding: '8px 12px' }}>
+      <span className={`smart-chip smart-chip--${tone}`}>{label}</span>
+      <span className="smart-hint__body" style={{ fontSize: 11, color: '#fff' }}>{body}</span>
+    </div>
+  );
+}
+
 function QuickQuoteModal({ contact, onClose, onCreated }) {
   const rootRef = useRef(null);
   useFocusTrap(rootRef, true);
@@ -3194,6 +3247,12 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
             ${primary.total.toLocaleString()}
           </div>
         </div>
+
+        {/* Smart Quote price hint — compares this total against the base-
+            offer range ($1,197–$1,497) so Key can tell at a glance whether
+            the quote is in-range or a custom deal. Future: pull real
+            percentile from prior proposals for this amp/length combo. */}
+        <SmartQuoteHint total={primary.total} state={state} />
 
         {err ? <div className="mono" style={{ fontSize: 11, color: 'var(--ms-3)', textAlign: 'center' }}>{err}</div> : null}
 
@@ -4205,6 +4264,76 @@ function renderBold(text, key) {
   return <React.Fragment key={key}>{out}</React.Fragment>;
 }
 
+// ── Smart Contact Detail: next-best-action hint ─────────────────────────────
+// Tiny banner at the top of the contact panel that names the single most
+// useful action Key could take right now, plus a one-tap CTA that routes
+// him to the right sub-tab. Heuristic-driven today; can swap to a Sparky-
+// LLM pass later without changing the UI contract.
+function SmartNextActionHint({ contact, messages, outstandingBalance, onJumpTab, onOpenQuickQuote }) {
+  const hint = React.useMemo(() => {
+    if (!contact) return null;
+    const stage = contact.stage || 1;
+    const latest = Array.isArray(messages) && messages.length ? messages[messages.length - 1] : null;
+    const waiting = latest && latest.direction === 'inbound' && latest.sender !== 'ai';
+    const hasInstallDate = !!contact.install_date;
+    const installMs = hasInstallDate ? new Date(contact.install_date).getTime() : null;
+    const hoursToInstall = installMs !== null ? (installMs - Date.now()) / 3600000 : null;
+    const dnc = !!contact.do_not_contact;
+
+    if (dnc) {
+      return { body: 'Customer is marked Do Not Contact.', cta: null, tab: null };
+    }
+    if (waiting) {
+      const preview = (latest.body || '').slice(0, 56);
+      return { body: `Customer replied: "${preview}${preview.length >= 56 ? '…' : ''}"`, cta: 'REPLY NOW', tab: 'MESSAGES' };
+    }
+    if (hoursToInstall !== null && hoursToInstall >= 0 && hoursToInstall <= 24) {
+      return { body: 'Install is today. Open the install brief and drive out.', cta: 'BRIEF →', tab: 'BRIEF' };
+    }
+    if (hoursToInstall !== null && hoursToInstall > 24 && hoursToInstall <= 72) {
+      return { body: 'Install is in the next 72 hours. Confirm materials + permit are ready.', cta: 'PERMITS', tab: 'PERMITS' };
+    }
+    if (stage === 1) {
+      return { body: 'New lead. Draft a quote or let Alex collect panel photo + amp + address.', cta: 'NEW QUOTE', tab: 'QUOTE' };
+    }
+    if (stage === 2) {
+      return { body: 'Quote is out — follow up or pivot to a deposit link if the customer viewed it.', cta: 'SEE QUOTE', tab: 'QUOTE' };
+    }
+    if (stage === 3 && !hasInstallDate) {
+      return { body: 'Booked but no install date set. Send a scheduling text with your open slots.', cta: 'REPLY', tab: 'MESSAGES' };
+    }
+    if (stage >= 4 && stage <= 6) {
+      return { body: 'Permit in flight. Check status and bump the jurisdiction if it has been >3 days.', cta: 'PERMITS', tab: 'PERMITS' };
+    }
+    if (stage === 7 || stage === 8) {
+      return { body: 'Inspection window — schedule or confirm the inspector visit.', cta: 'PERMITS', tab: 'PERMITS' };
+    }
+    if (outstandingBalance > 0) {
+      return { body: `Outstanding balance: $${Number(outstandingBalance).toLocaleString()}. Nudge the invoice.`, cta: 'INVOICE', tab: 'QUOTE' };
+    }
+    return null;
+  }, [contact, messages, outstandingBalance]);
+
+  if (!hint) return null;
+
+  const onCta = () => {
+    if (!hint.tab) return;
+    if (hint.tab === 'BRIEF') { window.dispatchEvent(new CustomEvent('bpp:open-install-brief')); return; }
+    if (hint.cta === 'NEW QUOTE') { onJumpTab?.('QUOTE'); onOpenQuickQuote?.(); return; }
+    onJumpTab?.(hint.tab);
+  };
+
+  return (
+    <div className="smart-hint" style={{ marginBottom: 2 }}>
+      <span className="smart-hint__label">Next</span>
+      <span className="smart-hint__body">{hint.body}</span>
+      {hint.cta ? (
+        <button className="smart-hint__cta" onClick={onCta}>{hint.cta}</button>
+      ) : null}
+    </div>
+  );
+}
+
 function MessageBody({ body, isOut }) {
   if (!body) return null;
   // Media prefix (send-sms stores `[media:URL] optional text`)
@@ -4858,6 +4987,28 @@ function NewLeadModal({ open, onClose, onCreated }) {
           padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
           background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
         }} />
+        {/* Smart New Lead hint — derives likely source from the area code
+            once the phone is populated. 864/803/704/828 = SC/NC local
+            (Meta ad + organic); other = likely out-of-market or referral. */}
+        {(() => {
+          const digits = phone.replace(/\D/g, '');
+          if (digits.length !== 10) return null;
+          const area = digits.slice(0, 3);
+          const scNc = ['864', '803', '843', '704', '828', '919', '980', '252', '910'];
+          const local = scNc.includes(area);
+          return (
+            <div className="smart-hint" style={{ padding: '6px 10px' }}>
+              <span className={`smart-chip smart-chip--${local ? 'green' : 'gold'}`}>
+                {local ? 'LOCAL' : 'OUT-OF-MARKET'}
+              </span>
+              <span className="smart-hint__body" style={{ fontSize: 11 }}>
+                {local
+                  ? `Area code ${area} is in our service footprint — likely Meta ad or referral.`
+                  : `Area code ${area} is outside SC/NC — likely an online form from travel or referral.`}
+              </span>
+            </div>
+          );
+        })()}
         <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)" type="email" style={{
           padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
           background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
@@ -5163,26 +5314,47 @@ function LivePermits() {
   useEffect(() => {
     (async () => {
       const [cRes, jRes] = await Promise.all([
-        db.from('contacts').select('id, name, address, stage, jurisdiction_id').in('stage', [3, 4, 5, 6, 7, 8, 9]).limit(100),
+        db.from('contacts').select('id, name, address, stage, jurisdiction_id, created_at').in('stage', [3, 4, 5, 6, 7, 8, 9]).limit(100),
         db.from('permit_jurisdictions').select('id, name').order('name'),
       ]);
       const jurById = Object.fromEntries((jRes.data || []).map(j => [j.id, j]));
-      const sorted = (cRes.data || []).sort((a, b) => {
-        const ja = a.jurisdiction_id ? 0 : -1; // rows without jurisdiction float to top
-        const jb = b.jurisdiction_id ? 0 : -1;
-        return ja - jb;
-      });
+      // Smart Permits priority — rows Key should chase today come first.
+      //   0  jurisdiction unset (blocks EVERYTHING — set it before any move)
+      //   1  booked (stage 3) — needs permit submission started
+      //   2  stage > 3 & aged > 7 days (stalled mid-permit-flow)
+      //   3  in flight on schedule
+      //   4  inspected / done
+      const priority = (c) => {
+        if (!c.jurisdiction_id) return 0;
+        const stage = c.stage || 1;
+        const ageDays = c.created_at ? (Date.now() - new Date(c.created_at).getTime()) / 86400000 : 0;
+        if (stage === 3) return 1;
+        if (stage >= 4 && stage <= 8 && ageDays > 7) return 2;
+        if (stage >= 9) return 4;
+        return 3;
+      };
+      const sorted = (cRes.data || []).slice().sort((a, b) => priority(a) - priority(b));
       setRows(sorted.map(c => ({
         id: c.id, name: c.name || '—', address: c.address || '—',
         stage: c.stage,
+        createdAt: c.created_at,
         jurisdiction: c.jurisdiction_id ? jurById[c.jurisdiction_id]?.name : null,
         jurisdictionId: c.jurisdiction_id,
         cells: stageToPermitCells(c.stage),
+        priority: priority(c),
       })));
       setJurisdictions(jRes.data || []);
       setLoading(false);
     })();
   }, [refreshTick]);
+
+  // Smart chip per row — what the priority bucket means in words.
+  const smartPermitFlag = (r) => {
+    if (r.priority === 0) return { tone: 'red',  label: 'NO JURISDICTION' };
+    if (r.priority === 1) return { tone: 'gold', label: 'SUBMIT NEXT' };
+    if (r.priority === 2) return { tone: 'red',  label: 'STALLED' };
+    return null;
+  };
 
   if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>LOADING PERMITS...</div>;
 
@@ -5245,29 +5417,35 @@ function LivePermits() {
         ))}
         <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>NEXT</span>
       </div>
-      {filteredRows.map(r => (
-        <button key={r.id}
-          onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
-            gap: 8, alignItems: 'center',
-            padding: '8px 14px',
-            background: 'var(--card)',
-            borderBottom: '1px solid rgba(0,0,0,.06)',
-            border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
-          }}>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-          <span className="chrome-label" style={{
-            fontSize: 10,
-            color: r.jurisdiction ? 'var(--text)' : 'var(--lcd-amber)',
-          }}>{r.jurisdiction || 'NOT SET'}</span>
-          {r.cells.map((state, i) => <PermitStepCell key={i} state={state} />)}
-          <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>
-            {!r.jurisdiction ? 'SET JURISDICTION' : stageToLabel(r.stage)}
-          </span>
-        </button>
-      ))}
+      {filteredRows.map(r => {
+        const smart = smartPermitFlag(r);
+        return (
+          <button key={r.id}
+            onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
+              gap: 8, alignItems: 'center',
+              padding: '8px 14px',
+              background: 'var(--card)',
+              borderBottom: '1px solid rgba(0,0,0,.06)',
+              border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+            }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+              {smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}
+            </span>
+            <span className="chrome-label" style={{
+              fontSize: 10,
+              color: r.jurisdiction ? 'var(--text)' : 'var(--lcd-amber)',
+            }}>{r.jurisdiction || 'NOT SET'}</span>
+            {r.cells.map((state, i) => <PermitStepCell key={i} state={state} />)}
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>
+              {!r.jurisdiction ? 'SET JURISDICTION' : stageToLabel(r.stage)}
+            </span>
+          </button>
+        );
+      })}
       {filteredRows.length === 0 ? <Empty label="NO ACTIVE PERMITS" /> : null}
     </div>
   );
@@ -5393,17 +5571,46 @@ function LiveMaterials() {
     (async () => {
       const { data } = await db
         .from('contacts')
-        .select('id, name, address, stage, install_notes')
+        .select('id, name, address, stage, install_notes, install_date')
         .in('stage', [3, 4, 5, 6, 7, 8])
         .limit(50);
-      setRows((data || []).map(c => ({
+      const shaped = (data || []).map(c => ({
         id: c.id, name: c.name || '—', address: c.address || '—',
         stage: c.stage,
+        installDate: c.install_date,
         mat: parseMaterials(c.install_notes),
-      })));
+      }));
+      // Smart Materials sort: installs soonest + unordered parts first.
+      // A lead with install in 2 days and BOX unchecked is the most urgent
+      // row; a lead with install in 3 weeks and all parts "received" goes
+      // to the bottom. Rows without install_date fall through to recency.
+      const priority = (r) => {
+        const allReceived = r.mat.order === 'received';
+        const hasInstall = !!r.installDate;
+        if (!hasInstall) return 6;
+        const days = (new Date(r.installDate).getTime() - Date.now()) / 86400000;
+        if (days < 0) return allReceived ? 5 : 0; // past-due install still missing parts = top
+        if (days <= 3) return allReceived ? 3 : 1;
+        if (days <= 7) return allReceived ? 4 : 2;
+        return allReceived ? 5 : 3;
+      };
+      shaped.sort((a, b) => priority(a) - priority(b));
+      setRows(shaped);
       setLoading(false);
     })();
   }, [refreshTick]);
+
+  // Smart Materials chip — names the urgency of the row so Key scans the
+  // list and knows which to order today.
+  const smartMaterialsFlag = (r) => {
+    const allReceived = r.mat.order === 'received';
+    if (!r.installDate) return null;
+    const days = (new Date(r.installDate).getTime() - Date.now()) / 86400000;
+    if (days < 0 && !allReceived) return { tone: 'red',  label: 'INSTALL PAST · PARTS MISSING' };
+    if (days <= 3 && !allReceived) return { tone: 'red',  label: 'INSTALL IN ≤3D' };
+    if (days <= 7 && !allReceived) return { tone: 'gold', label: 'ORDER THIS WEEK' };
+    return null;
+  };
 
   // Apply a change to one row optimistically then persist
   const updateRow = useCallback(async (rowId, nextMat) => {
@@ -5467,15 +5674,18 @@ function LiveMaterials() {
             background: 'var(--card)',
             borderBottom: '1px solid rgba(0,0,0,.06)',
           }}>
-            <button
-              onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
-              title={r.address !== '—' ? r.address : r.name}
-              style={{
-                fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                color: 'var(--text)', textAlign: 'left', padding: 0,
-              }}>{r.name}</button>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+              <button
+                onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
+                title={r.address !== '—' ? r.address : r.name}
+                style={{
+                  fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: 'var(--text)', textAlign: 'left', padding: 0,
+                }}>{r.name}</button>
+              {(() => { const f = smartMaterialsFlag(r); return f ? <span className={`smart-chip smart-chip--${f.tone}`}>{f.label}</span> : null; })()}
+            </span>
             <div style={{ display: 'flex', height: 24, boxShadow: 'var(--raised-2)' }}>
               <button onClick={() => setAmp(r, '30')} style={{
                 flex: 1, fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
@@ -5727,33 +5937,67 @@ function followUpState(p) {
   return                { label: 'EXIT',   tint: 'var(--ms-3)' };
 }
 
+// Smart Proposals — compute the row's most actionable signal.
+// Priorities (one chip max, highest wins):
+//   HOT       viewed ≥3 times, not approved, <7d old (peak-interest window)
+//   UNOPENED  zero views, copied ≥2d ago (push the link)
+//   EXIT      aged past F/U 2 without approval (send goodbye)
+//   REPEAT    viewed ≥10 times but still not approved (stuck on price/deposit)
+// Returns { tone, label } or null.
+function smartProposalFlag(p) {
+  const status = (p.status || '').toLowerCase();
+  if (status === 'approved' || status === 'declined' || status === 'cancelled') return null;
+  const views = Number(p.view_count) || 0;
+  const ageDays = p.created_at ? (Date.now() - new Date(p.created_at).getTime()) / 86400000 : 0;
+  if (views >= 10) return { tone: 'red', label: 'STUCK' };
+  if (views >= 3 && ageDays < 7) return { tone: 'gold', label: 'HOT' };
+  if (views === 0 && ageDays >= 2) return { tone: 'red', label: 'UNOPENED' };
+  if (ageDays >= 7) return { tone: 'red', label: 'EXIT' };
+  return null;
+}
+
 function ProposalsLiveTable({ rows }) {
   if (rows.length === 0) return <Empty label="NO PROPOSALS" />;
   const statusTint = {
     sent: 'var(--ms-1)', viewed: 'var(--ms-4)', approved: 'var(--ms-2)',
     expired: 'var(--ms-5)', declined: 'var(--ms-3)',
   };
+  // Smart sort: HOT first (peak interest — close now), then UNOPENED
+  // (customer never saw the quote), then everything else by recency.
+  const sortRank = (p) => {
+    const f = smartProposalFlag(p);
+    if (!f) return 5;
+    if (f.label === 'HOT') return 0;
+    if (f.label === 'STUCK') return 1;
+    if (f.label === 'UNOPENED') return 2;
+    if (f.label === 'EXIT') return 3;
+    return 4;
+  };
+  const sorted = rows.slice().sort((a, b) => {
+    const r = sortRank(a) - sortRank(b);
+    if (r !== 0) return r;
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  });
   return (
     <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
-      {rows.map((p, i) => {
+      {sorted.map((p, i) => {
         const status = (p.status || 'sent').toLowerCase();
         const tint = statusTint[status] || 'var(--text-faint)';
         const fu = followUpState(p);
-        // View count — meaningful follow-up signal. A proposal at F/U 2 with
-        // 0 views = customer never opened the link (push the quote). 5+ views
-        // = customer is interested but stuck (different nudge strategy).
         const views = Number(p.view_count) || 0;
+        const smart = smartProposalFlag(p);
         return (
           <div key={p.id}
             onClick={() => p.contact_id && (window.location.hash = `#contact=${p.contact_id}`)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 80px 54px 70px 90px 100px',
+              gridTemplateColumns: '64px 1fr 80px 54px 70px 90px 100px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
-              borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+              borderBottom: i < sorted.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
               cursor: p.contact_id ? 'pointer' : 'default',
             }}>
+            <span>{smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}</span>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{p.contact_name || '—'}</span>
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
@@ -5781,33 +6025,69 @@ function ProposalsLiveTable({ rows }) {
   );
 }
 
+// Smart Invoices — surface the row's most actionable signal so Key can
+// scan a stack of open invoices and see who to chase first.
+//   VIEWED·UNPAID   customer opened it but didn't pay (peak push window)
+//   OVERDUE         >7d since send, still unpaid
+//   UNOPENED        >2d since send, customer never opened the link
+//   STALE           >14d old, give up or switch to cash
+function smartInvoiceFlag(inv) {
+  const status = (inv.status || '').toLowerCase();
+  if (status === 'paid' || status === 'cancelled') return null;
+  const ageDays = inv.created_at ? (Date.now() - new Date(inv.created_at).getTime()) / 86400000 : 0;
+  const viewed = !!inv.viewed_at;
+  if (ageDays >= 14) return { tone: 'red',  label: 'STALE' };
+  if (viewed && ageDays >= 1) return { tone: 'gold', label: 'VIEWED · UNPAID' };
+  if (ageDays >= 7) return { tone: 'red',  label: 'OVERDUE' };
+  if (!viewed && ageDays >= 2) return { tone: 'red',  label: 'UNOPENED' };
+  return null;
+}
+
 function InvoicesLiveTable({ rows }) {
   if (rows.length === 0) return <Empty label="NO INVOICES" />;
   // invoices.notes is populated by proposal-deposit-checkout as either
-  // 'deposit' (50%) or 'full_payment' (100%). Distinguish in the UI so Key
-  // can tell at a glance whether a "$1,197 paid" row is the half-deposit
-  // (more to collect) or the full project amount (done).
+  // 'deposit' (50%) or 'full_payment' (100%).
   const kindLabel = (n) => {
     if (n === 'deposit') return 'deposit';
     if (n === 'full_payment') return 'full';
     return '—';
   };
+  // Sort unpaid to the top, weighted by the smart flag priority.
+  const sortRank = (inv) => {
+    const status = (inv.status || '').toLowerCase();
+    if (status === 'paid') return 9;
+    if (status === 'cancelled') return 8;
+    const f = smartInvoiceFlag(inv);
+    if (!f) return 5;
+    if (f.label === 'VIEWED · UNPAID') return 0;
+    if (f.label === 'OVERDUE') return 1;
+    if (f.label === 'UNOPENED') return 2;
+    if (f.label === 'STALE') return 3;
+    return 4;
+  };
+  const sorted = rows.slice().sort((a, b) => {
+    const r = sortRank(a) - sortRank(b);
+    if (r !== 0) return r;
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  });
   return (
     <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
-      {rows.map((inv, i) => {
+      {sorted.map((inv, i) => {
         const paid = inv.status === 'paid';
         const tint = paid ? 'var(--ms-2)' : 'var(--ms-3)';
+        const smart = smartInvoiceFlag(inv);
         return (
           <div key={inv.id}
             onClick={() => inv.contact_id && (window.location.hash = `#contact=${inv.contact_id}`)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 100px 70px 100px 100px',
+              gridTemplateColumns: '120px 1fr 100px 70px 100px 100px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
-              borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
+              borderBottom: i < sorted.length - 1 ? '1px solid rgba(0,0,0,.06)' : 'none',
               cursor: inv.contact_id ? 'pointer' : 'default',
             }}>
+            <span>{smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}</span>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{inv.contact_name || '—'}</span>
             <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}
@@ -6078,15 +6358,44 @@ function LiveCalendar() {
           const items = weekInstalls[key] || [];
           const dayEvents = weekEvents[key] || [];
           const highlight = isToday(d);
+          // Smart Calendar day heat — subtle top stripe tinted by how busy
+          // the day is. Also detects time overlaps (two installs within
+          // 2 hours of each other) and surfaces a warning chip.
+          const totalItems = items.length + dayEvents.length;
+          const heatTone = totalItems === 0 ? null
+                         : totalItems === 1 ? 'green'
+                         : totalItems === 2 ? 'gold'
+                                            : 'red';
+          const times = items.map(i => new Date(i.install_date).getTime()).sort();
+          let hasOverlap = false;
+          for (let i = 1; i < times.length; i++) {
+            if (times[i] - times[i - 1] < 2 * 3600 * 1000) { hasOverlap = true; break; }
+          }
           return (
             <div key={key} style={{
               minHeight: 220,
               background: highlight ? 'var(--card)' : 'var(--card)',
-              boxShadow: 'var(--pressed-2)',
+              boxShadow: hasOverlap
+                ? 'inset 0 0 0 2px var(--red), var(--pressed-2)'
+                : 'var(--pressed-2)',
               display: 'flex', flexDirection: 'column',
               borderLeft: highlight ? '3px solid var(--gold)' : '3px solid transparent',
               position: 'relative',
             }}>
+              {/* Smart heat strip — 4px stripe on top of the day column.
+                  Red = ≥3 items (packed), gold = 2 (tight), green = 1 (one
+                  install). No strip on empty days. */}
+              {heatTone ? (
+                <div className={`smart-bar smart-bar--${heatTone}`} title={`${totalItems} item${totalItems === 1 ? '' : 's'} scheduled`} />
+              ) : null}
+              {hasOverlap ? (
+                <div title="Two installs booked within 2 hours of each other" style={{
+                  position: 'absolute', right: 6, top: 6,
+                  zIndex: 2,
+                }}>
+                  <span className="smart-chip smart-chip--red">OVERLAP</span>
+                </div>
+              ) : null}
               <div style={{
                 padding: '8px 10px',
                 borderBottom: '1px solid rgba(0,0,0,.08)',
@@ -6529,10 +6838,25 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
   return <MessagesInbox threads={threads} onSelect={t => onSelect(t.contactId)} activeId={activeId} compact={compact} />;
 }
 
-// ── Calls — flat list of every call, most recent first ──────────────────────
-// Calls are stored in the messages table with status='call'. Group by
-// contact so a call burst doesn't flood the list; show direction, duration,
-// recording indicator, and relative time. Row click opens the contact.
+// ── Smart Calls — callback priority on top of a flat call log ───────────────
+// Calls live in messages with status='call'. Smart layer ranks:
+//   VOICEMAIL    inbound call with a recording_url and zero-duration or null
+//                duration — the customer left a message waiting for Key
+//   MISSED       inbound with no recording and very short duration (<5s)
+//   RETURN       outbound that connected but is older than 24h w/o follow-up
+// Recency is the tiebreaker.
+function smartCallFlag(c) {
+  const inbound = c.direction === 'inbound';
+  const hasRec = !!c.recordingUrl;
+  const dur = c.durationSec || 0;
+  const ageHours = c.at ? (Date.now() - new Date(c.at).getTime()) / 3600000 : 0;
+  if (inbound && hasRec && dur < 5 && ageHours < 72) return { tone: 'red',  label: 'VOICEMAIL' };
+  if (inbound && !hasRec && dur <= 5 && ageHours < 72) return { tone: 'red',  label: 'MISSED' };
+  if (inbound && hasRec && ageHours < 24) return { tone: 'gold', label: 'VOICEMAIL' };
+  if (!inbound && dur > 30 && ageHours > 24 && ageHours < 168) return { tone: 'gold', label: 'RETURN' };
+  return null;
+}
+
 function LiveCalls({ onSelect }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -6551,7 +6875,7 @@ function LiveCalls({ onSelect }) {
         ? await db.from('contacts').select('id, name, phone').in('id', ids)
         : { data: [] };
       const cMap = Object.fromEntries((contacts || []).map(c => [c.id, c]));
-      setRows((calls || []).map(c => ({
+      const shaped = (calls || []).map(c => ({
         id: c.id,
         contactId: c.contact_id,
         direction: c.direction,
@@ -6559,7 +6883,22 @@ function LiveCalls({ onSelect }) {
         recordingUrl: c.recording_url,
         at: c.created_at,
         name: displayNameFor(cMap[c.contact_id] || { name: null, phone: (c.body || '').match(/\+?\d{10,}/)?.[0] || null }),
-      })));
+      }));
+      // Smart Calls sort: priority-tagged rows float up.
+      const priority = (r) => {
+        const f = smartCallFlag(r);
+        if (!f) return 5;
+        if (f.label === 'VOICEMAIL') return 0;
+        if (f.label === 'MISSED') return 1;
+        if (f.label === 'RETURN') return 2;
+        return 3;
+      };
+      shaped.sort((a, b) => {
+        const d = priority(a) - priority(b);
+        if (d !== 0) return d;
+        return new Date(b.at) - new Date(a.at);
+      });
+      setRows(shaped);
       setLoading(false);
     })();
   }, [tick]);
@@ -6586,6 +6925,7 @@ function LiveCalls({ onSelect }) {
         const secs = r.durationSec ? r.durationSec % 60 : 0;
         const dur = r.durationSec ? `${mins}:${secs.toString().padStart(2, '0')}` : '—';
         const dir = r.direction === 'inbound' ? '↙' : '↗';
+        const smart = smartCallFlag(r);
         return (
           <button key={r.id} onClick={() => r.contactId && onSelect && onSelect(r.contactId)}
             className="tactile-flat" style={{
@@ -6601,6 +6941,7 @@ function LiveCalls({ onSelect }) {
                 {dur}{r.recordingUrl ? ' · ⏺ recording' : ''} · {relTimestamp(r.at)}
               </div>
             </div>
+            {smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}
           </button>
         );
       })}
@@ -6675,8 +7016,9 @@ function reasonChipFor({ contact, signals }) {
   }
   if (contact.stage === 7 || contact.stage === 8) return { label: 'AWAITING INSPECTION', tone: 'purple' };
   if (signals.stuckQuoteDays > 2) {
-    const f = signals.stuckQuoteDays >= 7 ? 'EXIT' : signals.stuckQuoteDays >= 4 ? 'F/U 2' : 'F/U 1';
-    return { label: `[${f}] QUOTE ${signals.stuckQuoteDays}D SILENT`, tone: 'red' };
+    const d = Math.round(signals.stuckQuoteDays);
+    const f = d >= 7 ? 'EXIT' : d >= 4 ? 'F/U 2' : 'F/U 1';
+    return { label: `[${f}] ${d}D SILENT`, tone: 'red' };
   }
   if (contact.stage >= 4 && contact.stage <= 6) return { label: STAGE_MAP[contact.stage] || `STAGE ${contact.stage}`, tone: 'purple' };
   if (contact.stage === 3 && !contact.install_date) return { label: 'BOOKED · NEEDS DATE', tone: 'gold' };
@@ -6816,15 +7158,6 @@ function LiveQuickList({ onSelect }) {
 }
 
 function SmartListRow({ row, onSelect }) {
-  const toneMap = {
-    gold:   { bg: 'var(--gold)',   fg: 'var(--navy)' },
-    green:  { bg: 'var(--lcd-green, #2aa86a)', fg: '#fff' },
-    navy:   { bg: 'var(--navy)',   fg: 'var(--gold)' },
-    purple: { bg: 'var(--ms-4, #6b46c1)', fg: '#fff' },
-    red:    { bg: 'var(--ms-3, #dc2626)', fg: '#fff' },
-    muted:  { bg: 'var(--card)',   fg: 'var(--text-muted)' },
-  };
-  const t = toneMap[row.reason.tone] || toneMap.muted;
   return (
     <button
       onClick={() => row.id && onSelect && onSelect(row.id)}
@@ -6855,17 +7188,11 @@ function SmartListRow({ row, onSelect }) {
           </div>
         ) : (
           <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-            {row.phone ? row.phone.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3') : ''}
+            {row.phone ? formatPhone(row.phone) : ''}
           </div>
         )}
       </div>
-      <span className="chrome-label" style={{
-        flex: '0 0 auto',
-        padding: '4px 8px', fontSize: 9, letterSpacing: '.08em',
-        background: t.bg, color: t.fg,
-        boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.2), inset -1px -1px 0 rgba(0,0,0,.25)',
-        whiteSpace: 'nowrap',
-      }}>{row.reason.label}</span>
+      <span className={`smart-chip smart-chip--${row.reason.tone}`}>{row.reason.label}</span>
     </button>
   );
 }
@@ -7161,6 +7488,29 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
                 <span>{leadHealth.label}</span>
               </div>
             ) : null}
+            {/* Smart briefing: "Sparky noticed…" insight derived from the
+                same data the briefing already pulled. One-liner that points
+                at the single most-leverage observation of the day (peak-
+                interest lead, biggest outstanding invoice, etc.). No LLM
+                call here yet — scaffold the visual first, plug Sparky in
+                when the data pipeline is cheap enough. */}
+            {(() => {
+              const hot = (sections.stuckQuotes || []).find(r => /F\/U 1/.test(r.text));
+              const urgentCount = (sections.urgent || []).length;
+              const waiting = (sections.waiting || []);
+              let body = null;
+              if (urgentCount > 0) body = `${urgentCount} urgent lead${urgentCount === 1 ? '' : 's'} (medical / storm) — clear these first.`;
+              else if (waiting.length >= 3) body = `${waiting.length} customers are waiting on your reply — batch through them to keep momentum.`;
+              else if (hot) body = `Your freshest stuck quote just crossed F/U 1 — follow up while the lead is still warm.`;
+              else if ((sections.installsToday || []).length === 0 && (sections.today || []).length === 0) body = 'Wide-open day. Fire a batch of F/U 1s to quotes sitting between 2–4 days.';
+              if (!body) return null;
+              return (
+                <div className="smart-hint" style={{ marginBottom: 14 }}>
+                  <span className="smart-hint__label">Sparky noticed</span>
+                  <span className="smart-hint__body">{body}</span>
+                </div>
+              );
+            })()}
             {/* Urgent — customers Alex tagged with medical / storm / safety
                 flags and are still active. Top of the briefing because medical
                 power dependencies and active-risk cases beat even today's
@@ -8871,6 +9221,7 @@ function App() {
             isDark={isDark}
             onToggleDark={() => setIsDark(d => !d)}
             onNewLead={() => setNewLeadOpen(true)}
+            onOpenSearch={() => setPaletteOpen(true)}
           />
         ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>

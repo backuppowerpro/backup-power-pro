@@ -78,7 +78,27 @@ function Preview({ t }) {
   );
 }
 
+// Smart Messages urgency detector. Scans the latest inbound preview for
+// keywords that imply something Key should drop what he's doing for.
+// Returns the matched bucket or null so the thread row can paint a chip.
+const SMART_URGENT_PATTERNS = [
+  { tone: 'red',  label: 'URGENT',   re: /\b(urgent|emergency|asap|right now|today|this morning|tonight|now|immediately)\b/i },
+  { tone: 'red',  label: 'STORM',    re: /\b(storm|power out|outage|no power|hurricane|ice storm|snow)\b/i },
+  { tone: 'red',  label: 'MEDICAL',  re: /\b(medical|oxygen|cpap|dialysis|medication|doctor|prescription)\b/i },
+  { tone: 'gold', label: 'READY',    re: /\b(ready to pay|ready to book|let'?s do it|sign me up|book it|lock it in|when can you)\b/i },
+  { tone: 'gold', label: 'QUESTION', re: /\?\s*$/ },
+  { tone: 'navy', label: 'OFFER',    re: /\b(afterpay|financing|discount|deposit|cash)\b/i },
+];
+function smartMessageFlag(t) {
+  if (!t?.prev) return null;
+  for (const p of SMART_URGENT_PATTERNS) {
+    if (p.re.test(t.prev)) return { tone: p.tone, label: p.label };
+  }
+  return null;
+}
+
 function ThreadRow({ t, compact = false, active = false }) {
+  const flag = smartMessageFlag(t);
   return (
     <div style={{
       display: 'grid',
@@ -93,13 +113,14 @@ function ThreadRow({ t, compact = false, active = false }) {
     }}>
       <ThreadAvatar t={t} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span style={{
             fontFamily: 'var(--font-body)', fontSize: 15,
             fontWeight: t.unread ? 700 : 600, color: 'var(--text)',
           }}>{t.name}</span>
           {t.unread > 0 && <span style={{ width:6, height:6, background:'var(--gold)', display:'inline-block' }} />}
           {t.alex && <AlexBadge />}
+          {flag ? <span className={`smart-chip smart-chip--${flag.tone}`}>{flag.label}</span> : null}
         </div>
         <Preview t={t} />
       </div>

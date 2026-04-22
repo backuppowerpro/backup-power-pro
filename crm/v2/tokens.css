@@ -70,6 +70,28 @@
     62.5% 100%, 37.5% 100%, 25% 87.5%, 12.5% 87.5%,
     0 62.5%, 0 37.5%, 12.5% 12.5%, 25% 12.5%
   );
+
+  /* ---------- Smart layer (Apple Smart Shuffle pattern) ----------
+     The visual language for all "smart" features. Consistent chips,
+     rings, bars, and dots so Key learns the pattern once and it carries
+     across Smart List, Smart Pipeline, Smart Calendar, Smart Messages,
+     etc. Tones match the list's scoring signals. */
+  --smart-gold:   var(--gold);
+  --smart-red:    var(--red);
+  --smart-green:  var(--ms-2);
+  --smart-navy:   var(--navy);
+  --smart-purple: var(--ms-4);
+  --smart-muted:  var(--text-muted);
+
+  /* Ring outlines used to flag a card/row without changing its layout. */
+  --smart-ring-gold:   inset 0 0 0 2px var(--gold);
+  --smart-ring-red:    inset 0 0 0 2px var(--red);
+  --smart-ring-green:  inset 0 0 0 2px var(--ms-2);
+  --smart-ring-navy:   inset 0 0 0 2px var(--navy);
+  --smart-ring-purple: inset 0 0 0 2px var(--ms-4);
+
+  /* Horizontal "smart bar" atop sections / surfaces. */
+  --smart-bar-height: 4px;
 }
 
 [data-theme="dark"] {
@@ -180,6 +202,94 @@ button svg { stroke-width: 3; }
   text-transform: uppercase;
 }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+
+/* ============================================================
+   Smart layer — consistent visuals for any "smart X" feature
+   ============================================================ */
+
+/* Smart chip: compact labeled badge. Tone-colored bg + fg. */
+.smart-chip {
+  display: inline-flex; align-items: center;
+  padding: 3px 7px;
+  font-family: var(--font-chrome);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.2), inset -1px -1px 0 rgba(0,0,0,.25);
+}
+.smart-chip--gold   { background: var(--gold);    color: var(--navy); }
+.smart-chip--red    { background: var(--red);     color: #fff; }
+.smart-chip--green  { background: var(--ms-2);    color: #fff; }
+.smart-chip--navy   { background: var(--navy);    color: var(--gold); }
+.smart-chip--purple { background: var(--ms-4);    color: #fff; }
+.smart-chip--muted  { background: var(--card);    color: var(--text-muted); box-shadow: var(--pressed-2); }
+
+/* Smart ring: flag a card/row without pushing layout. */
+.smart-ring-gold   { box-shadow: var(--smart-ring-gold); }
+.smart-ring-red    { box-shadow: var(--smart-ring-red); }
+.smart-ring-green  { box-shadow: var(--smart-ring-green); }
+.smart-ring-navy   { box-shadow: var(--smart-ring-navy); }
+.smart-ring-purple { box-shadow: var(--smart-ring-purple); }
+
+/* Smart bar: 4px tone strip above a section. */
+.smart-bar {
+  height: var(--smart-bar-height);
+  width: 100%;
+}
+.smart-bar--gold   { background: var(--gold); }
+.smart-bar--red    { background: var(--red); }
+.smart-bar--green  { background: var(--ms-2); }
+.smart-bar--navy   { background: var(--navy); }
+.smart-bar--purple { background: var(--ms-4); }
+
+/* Smart hint card: dismissible "next best action" banner. */
+.smart-hint {
+  background: var(--navy);
+  color: var(--gold);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.2), inset -1px -1px 0 rgba(0,0,0,.35);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+.smart-hint__label {
+  font-family: var(--font-chrome);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: .85;
+}
+.smart-hint__body  { flex: 1; min-width: 0; color: #fff; }
+.smart-hint__cta {
+  padding: 4px 10px;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: var(--font-chrome);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  box-shadow: var(--raised-2);
+  cursor: pointer;
+}
+
+/* Smart dot: 6px colored dot used as a leading indicator on a row. */
+.smart-dot {
+  width: 8px; height: 8px;
+  flex: 0 0 auto;
+  display: inline-block;
+}
+.smart-dot--gold   { background: var(--gold); }
+.smart-dot--red    { background: var(--red); }
+.smart-dot--green  { background: var(--ms-2); }
+.smart-dot--navy   { background: var(--navy); }
+.smart-dot--purple { background: var(--ms-4); }
 .pixel { font-family: var(--font-pixel); text-transform: uppercase; letter-spacing: .06em; }
 
 /* ============================================================

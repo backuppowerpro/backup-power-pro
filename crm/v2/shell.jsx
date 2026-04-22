@@ -45,7 +45,7 @@ const TABS = [
 ];
 
 /* ────────── Top bar (desktop + mobile share layout) ────────── */
-function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
+function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark }) {
   const h = compact ? 48 : 56;
   return (
     <div style={{
@@ -77,6 +77,19 @@ function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
 
       {/* Right cluster */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={onOpenSearch}
+          aria-label="Open smart search (Cmd+K)"
+          title="Search (⌘K)"
+          className="tactile-raised" style={{
+          height: 28, padding: '0 10px', display: 'flex', alignItems: 'center', gap: 6,
+          color: 'var(--text-muted)', cursor: 'pointer',
+        }}>
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square">
+            <circle cx="7" cy="7" r="4"/>
+            <path d="M10 10 L13 13"/>
+          </svg>
+          <span className="mono" style={{ fontSize: 10, letterSpacing: '.04em' }}>⌘K</span>
+        </button>
         <button onClick={onToggleDark}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDark ? 'Light mode' : 'Dark mode'}

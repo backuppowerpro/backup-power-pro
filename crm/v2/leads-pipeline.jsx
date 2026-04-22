@@ -98,6 +98,15 @@ function InstallChip({ n }) {
 
 function LeadCard({ c }) {
   const [hover, setHover] = React.useState(false);
+  // Smart Pipeline layering: staleness flag applies a red ring, viewed-not-
+  // signed quote applies a gold ring. Hover escalates normal cards to the
+  // thicker raised shadow; stale/hot cards keep their smart ring so the
+  // signal reads even while hovering.
+  const smartRing = c.stale
+    ? 'inset 0 0 0 2px var(--red)'
+    : c.proposalSignal?.kind === 'viewed'
+      ? 'inset 0 0 0 2px var(--gold)'
+      : null;
   return (
     <div
       title={c.name + (c.addr ? '\n' + c.addr : '')}
@@ -108,7 +117,9 @@ function LeadCard({ c }) {
         minHeight: 72, padding: '10px 12px',
         display: 'flex', flexDirection: 'column', gap: 4,
         background: hover ? 'var(--bg)' : 'var(--card)',
-        boxShadow: hover ? 'var(--raised)' : 'var(--raised-2)',
+        boxShadow: smartRing
+          ? `${smartRing}, ${hover ? 'var(--raised)' : 'var(--raised-2)'}`
+          : (hover ? 'var(--raised)' : 'var(--raised-2)'),
         // Gold left-stripe when customer's last SMS is unreplied, matching
         // the same visual channel used on the messages inbox. Lets Key scan
         // any column and spot who's waiting on him without opening threads.
@@ -186,6 +197,13 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
   const list = items || cards[col.id] || [];
   const displayCount = count ?? (items ? list.length : col.count);
   const [dragOver, setDragOver] = React.useState(false);
+  // Smart Pipeline column-level signal: average days-in-column for the
+  // cards currently stacked here. Uses each card's `days` (lead age) as
+  // the proxy. Stale count = cards past this column's threshold.
+  const avgDays = list.length > 0
+    ? Math.round(list.reduce((s, c) => s + (c.days || 0), 0) / list.length)
+    : 0;
+  const staleCount = list.filter(c => c.stale).length;
   return (
     <div
       onDragOver={e => { if (onDropCard) { e.preventDefault(); setDragOver(true); } }}
@@ -225,6 +243,24 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
           fontSize: 11, color: 'var(--text-faint)', flex: '0 0 auto',
         }}>{displayCount}</span>
       </div>
+      {/* Smart Pipeline column stats — shows average days-in-column and a
+          stale badge when cards are piling up. Zero-count columns skip it. */}
+      {list.length > 0 ? (
+        <div style={{
+          padding: '2px 4px 6px',
+          display: 'flex', alignItems: 'center', gap: 6,
+          borderBottom: '1px dashed rgba(0,0,0,.08)',
+        }}>
+          <span className="mono" title={`avg ${avgDays} days in column`} style={{
+            fontSize: 9, color: 'var(--text-faint)', letterSpacing: '.04em',
+          }}>avg {avgDays}d</span>
+          {staleCount > 0 ? (
+            <span className="smart-chip smart-chip--red" title={`${staleCount} stale card${staleCount === 1 ? '' : 's'}`}>
+              {staleCount} STALE
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', paddingBottom: 8 }}>
         {list.map((c, i) => (
           <div
