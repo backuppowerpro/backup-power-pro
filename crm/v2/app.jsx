@@ -8248,10 +8248,130 @@ function recordRecentContact(id) {
   } catch {}
 }
 
+// Smart Search — natural-language intent parser for ⌘K. Before the
+// generic text search fires, match the query against common BPP-specific
+// intents ("who owes me money", "installs today", "stuck quotes", "near
+// Greenville") and run a more targeted query. Returns null when nothing
+// matches — caller falls through to the default behavior.
+async function smartSearchIntent(q) {
+  const t = q.toLowerCase().trim();
+  const nowIso = new Date().toISOString();
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(startOfToday.getTime() + 86400000);
+  const twoDaysAgoIso = new Date(Date.now() - 2 * 86400000).toISOString();
+
+  // Outstanding money / owe me
+  if (/\b(owe|owes|unpaid|outstanding|invoice|bill)\b/.test(t)) {
+    const { data } = await db.from('invoices')
+      .select('id, contact_id, contact_name, total, status')
+      .in('status', ['sent', 'unpaid'])
+      .order('created_at', { ascending: false }).limit(10);
+    const hits = (data || []).map(inv => ({
+      type: 'contact', id: inv.contact_id, name: inv.contact_name || '—',
+      phone: '', stage: `INV $${(Number(inv.total) || 0).toLocaleString()}`,
+      _intent: 'UNPAID',
+    })).filter(h => h.id);
+    return { intent: 'outstanding', hits };
+  }
+  // Installs today
+  if (/\binstall(s|ing)?\s+today|today.?s install|what.?s on deck\b/.test(t)) {
+    const { data } = await db.from('contacts')
+      .select('id, name, phone, stage, install_date')
+      .gte('install_date', startOfToday.toISOString())
+      .lt('install_date', endOfToday.toISOString())
+      .order('install_date', { ascending: true }).limit(10);
+    return {
+      intent: 'installs-today',
+      hits: (data || []).map(c => ({
+        type: 'contact', id: c.id, name: displayNameFor(c),
+        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        _intent: 'TODAY',
+      })),
+    };
+  }
+  // Stuck quotes
+  if (/\bstuck|aging quote|cold quote|quote.*silent|exit\b/.test(t)) {
+    const { data } = await db.from('proposals')
+      .select('contact_id, contact_name, total, status, created_at')
+      .in('status', ['Created', 'Copied'])
+      .lt('created_at', twoDaysAgoIso)
+      .order('created_at', { ascending: true }).limit(10);
+    return {
+      intent: 'stuck-quotes',
+      hits: (data || []).filter(p => p.contact_id).map(p => {
+        const days = Math.round((Date.now() - new Date(p.created_at).getTime()) / 86400000);
+        return {
+          type: 'contact', id: p.contact_id,
+          name: displayNameFor({ name: p.contact_name }), phone: '',
+          stage: `Q$${(Number(p.total) || 0).toLocaleString()} · ${days}d`,
+          _intent: 'STUCK',
+        };
+      }),
+    };
+  }
+  // Waiting-on-Key (unreplied inbounds)
+  if (/\b(waiting|need.*reply|needs.*reply|owe.*reply|unread|to reply)\b/.test(t)) {
+    const { data } = await db.from('messages')
+      .select('contact_id, direction, sender, created_at')
+      .order('created_at', { ascending: false }).limit(200);
+    const seen = new Set();
+    const ids = [];
+    for (const m of (data || [])) {
+      if (!m.contact_id || seen.has(m.contact_id)) continue;
+      seen.add(m.contact_id);
+      if (m.direction === 'inbound' && m.sender !== 'ai') ids.push(m.contact_id);
+      if (ids.length >= 10) break;
+    }
+    if (ids.length === 0) return { intent: 'waiting', hits: [] };
+    const { data: cs } = await db.from('contacts').select('id, name, phone, stage').in('id', ids);
+    const byId = Object.fromEntries((cs || []).map(c => [c.id, c]));
+    return {
+      intent: 'waiting',
+      hits: ids.map(id => byId[id]).filter(Boolean).map(c => ({
+        type: 'contact', id: c.id, name: displayNameFor(c),
+        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        _intent: 'REPLY',
+      })),
+    };
+  }
+  // New leads today
+  if (/\bnew lead|today.?s lead|new today\b/.test(t)) {
+    const { data } = await db.from('contacts')
+      .select('id, name, phone, stage, created_at')
+      .gte('created_at', startOfToday.toISOString()).limit(20);
+    return {
+      intent: 'new-today',
+      hits: (data || []).map(c => ({
+        type: 'contact', id: c.id, name: displayNameFor(c),
+        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        _intent: 'NEW',
+      })),
+    };
+  }
+  // Near <city> — Greenville, Greer, Simpsonville, Spartanburg, etc.
+  const nearMatch = t.match(/\b(?:near|in|around)\s+([a-z][a-z\s]{2,30})\b/i);
+  if (nearMatch) {
+    const city = nearMatch[1].trim();
+    const { data } = await db.from('contacts')
+      .select('id, name, phone, stage, address')
+      .ilike('address', `%${city}%`).limit(10);
+    return {
+      intent: 'near-' + city.toLowerCase(),
+      hits: (data || []).map(c => ({
+        type: 'contact', id: c.id, name: displayNameFor(c),
+        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        _intent: city.slice(0, 14).toUpperCase(),
+      })),
+    };
+  }
+  return null;
+}
+
 function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [cursor, setCursor] = useState(0);
+  const [intent, setIntent] = useState(null);
   const inputRef = useRef(null);
 
   // Show recent contacts when palette opens without a query
@@ -8286,6 +8406,19 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
     let alive = true;
     const q = query.trim();
     (async () => {
+      // Smart Search — try intent parser first. If the query reads like
+      // "who owes me money", "installs today", "near greenville", the
+      // palette jumps straight to a curated result set instead of running
+      // the generic text search. Falls through otherwise.
+      const intentRes = await smartSearchIntent(q);
+      if (!alive) return;
+      if (intentRes && intentRes.hits?.length) {
+        setResults(intentRes.hits);
+        setIntent(intentRes.intent);
+        setCursor(0);
+        return;
+      }
+      setIntent(null);
       // Parallel: contact fields + message bodies. Message-body search lets
       // Key find "the guy who asked about 50A" by typing "50A" — contacts
       // search alone only matches name/phone/address. Only queries when the
@@ -8419,7 +8552,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
       }}>
         <div style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKey}
-            placeholder="SEARCH OR RUN COMMAND..."
+            placeholder="SEARCH OR ASK — 'WHO OWES ME MONEY', 'INSTALLS TODAY', …"
             className="pressed-2"
             style={{ flex: 1, padding: '10px 14px', height: 48, fontFamily: 'var(--font-mono)', fontSize: 16 }}
           />
@@ -8431,6 +8564,17 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
               padding: '8px 14px 4px', fontSize: 10, letterSpacing: '.08em',
               color: 'var(--text-faint)', textTransform: 'uppercase',
             }}>Recent</div>
+          ) : null}
+          {/* Smart Search intent header — when the query triggered a
+              curated list (outstanding / installs today / stuck / near …)
+              show a small badge so Key knows Sparky interpreted the ask. */}
+          {intent && query.trim() ? (
+            <div style={{ padding: '8px 14px 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="smart-chip smart-chip--gold">SMART · {intent.toUpperCase()}</span>
+              <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.06em' }}>
+                {results.length} result{results.length === 1 ? '' : 's'}
+              </span>
+            </div>
           ) : null}
           {results.length === 0 ? (
             <div style={{ padding: 24, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
