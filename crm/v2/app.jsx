@@ -887,41 +887,17 @@ function contactToCard(c, waiting = false, proposal = null) {
   };
 }
 
-function LivePipelineToolbar({ active = 'pipeline', onSubView, stats }) {
-  // Pipeline is now a top-level tab — the old LeadsSubToolbar row is
-  // gone. This strip stays as a quick in-page nav for the pipeline view
-  // only (PIPELINE <-> LIST <-> MESSAGES etc.) and calls onSubView with
-  // the flat tab id so the main TabBar picks it up.
-  const subs = [
-    { id: 'quick',     label: 'QUICK' },
-    { id: 'pipeline',  label: 'PIPELINE' },
-    { id: 'list',      label: 'LIST' },
-    { id: 'messages',  label: 'MESSAGES' },
-    { id: 'calls',     label: 'CALLS' },
-    { id: 'permits',   label: 'PERMITS' },
-    { id: 'materials', label: 'MATERIALS' },
-  ];
+function LivePipelineToolbar({ stats }) {
+  // Navigation moved to the top TabBar. This strip now renders only the
+  // pipeline stats ("69 active · $20,723 pipeline") — the informational
+  // header Key scans before digging into the kanban.
+  if (!stats) return null;
   return (
-    <div style={{ padding: '16px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
-        {subs.map(s => (
-          <button key={s.id} className="chrome-label"
-            onClick={() => onSubView && onSubView(s.id)}
-            style={{
-              height: 36, padding: '0 16px', fontSize: 12,
-              background: s.id === active ? 'var(--navy)' : 'transparent',
-              color: s.id === active ? 'var(--gold)' : 'var(--text)',
-              boxShadow: s.id === active ? 'var(--pressed-2)' : 'none',
-              cursor: 'pointer', border: 'none',
-            }}>{s.label}</button>
-        ))}
+    <div style={{ padding: '12px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16 }}>
+      <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', display: 'flex', gap: 14 }}>
+        <span><span style={{ color: 'var(--text)', fontWeight: 600 }}>{stats.count}</span> active</span>
+        {stats.value > 0 ? <span><span style={{ color: 'var(--ms-2)', fontWeight: 600 }}>${stats.value.toLocaleString()}</span> pipeline</span> : null}
       </div>
-      {stats ? (
-        <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', display: 'flex', gap: 14 }}>
-          <span><span style={{ color: 'var(--text)', fontWeight: 600 }}>{stats.count}</span> active</span>
-          {stats.value > 0 ? <span><span style={{ color: 'var(--ms-2)', fontWeight: 600 }}>${stats.value.toLocaleString()}</span> pipeline</span> : null}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -1096,8 +1072,6 @@ function LivePipeline({ onCardClick, onSubView }) {
       onDropCard={handleDrop}
       toolbar={
         <LivePipelineToolbar
-          active="pipeline"
-          onSubView={onSubView}
           stats={(() => {
             const active = contacts.filter(c => (c.stage || 1) < 9 && !c.do_not_contact);
             const value = active.reduce((s, c) => s + (Number(c.quote_amount) || 0), 0);
@@ -8167,6 +8141,12 @@ function App() {
   })();
   const [tab, setTab] = useState(initial.tab);
   const [selectedContact, setSelectedContact] = useState(initial.contact);
+  // Redirect desktop-only tabs → QUICK on mobile so stale deep links or
+  // a user who resized down to phone width don't land on a mangled layout.
+  useEffect(() => {
+    const deskOnly = window.MOBILE_DESKTOP_ONLY_TABS;
+    if (window.innerWidth < 768 && deskOnly && deskOnly.has(tab)) setTab('quick');
+  }, [tab]);
   // Cheap fetch of the current contact's display name + phone so the
   // right-side action bar can label the contact and wire the CALL button.
   // Re-fires only when selectedContact changes.
@@ -8853,7 +8833,7 @@ function App() {
       );
     }
     if (tab === 'calendar')  return <LiveCalendar />;
-    if (tab === 'pipeline')  return <LivePipeline onCardClick={handleCardClick} onSubView={setTab} />;
+    if (tab === 'pipeline')  return <LivePipeline onCardClick={handleCardClick} />;
     if (tab === 'list')      return <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />;
     if (tab === 'messages')  return <LiveMessages onSelect={id => setSelectedContact(id)} activeId={selectedContact} />;
     if (tab === 'calls')     return <LiveCalls onSelect={id => setSelectedContact(id)} />;
@@ -8885,7 +8865,7 @@ function App() {
       {!isMobile ? (
         <div style={{ display: 'flex' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            {TabBar ? <TabBar active={tab} scrollable onChange={setTab} badges={(() => {
+            {TabBar ? <TabBar active={tab} scrollable={false} onChange={setTab} badges={(() => {
               const b = {};
               if (unreadCount > 0) b.messages = unreadCount;
               return b;
@@ -8902,7 +8882,7 @@ function App() {
           </div>
         </div>
       ) : (
-        TabBar ? <TabBar active={tab} scrollable onChange={setTab} badges={(() => {
+        TabBar ? <TabBar active={tab} scrollable={true} onChange={setTab} badges={(() => {
           const b = {};
           if (unreadCount > 0) b.messages = unreadCount;
           return b;

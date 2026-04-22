@@ -105,28 +105,161 @@ function TopBar({ compact = false, onToggleDark, onNewLead, isDark }) {
   );
 }
 
-/* ────────── Tab bar (top, same on both platforms) ────────── */
-function TabBar({ active = 'leads', scrollable = false, onChange, badges = {} }) {
-  // On mobile the tab bar overflows horizontally (5 tabs × 100px+ per tab
-  // exceeds a 375px viewport). Without this effect, switching to a tab
-  // that's off-screen (e.g. MESSAGES when viewport shows LEADS/CALENDAR/
-  // FINANCE) left no visible active indicator — Key couldn't tell which
-  // tab he was on. Scroll the active tab into view whenever it changes.
+/* ────────── Mobile tab grouping (Key 2026-04-21) ────────── */
+// 11 flat tabs don't fit on a 375px viewport, and several aren't even
+// useful on a phone (pipeline kanban needs width; permits / materials
+// tables; the finance dashboard). Mobile collapses to 4 parents with a
+// drop-down sub-row covering only what Key does in the field: triage,
+// text people, check money owed, confirm the calendar. Desktop stays
+// flat with all 11.
+//   QUICK      standalone — daily landing
+//   LEADS      LIST · MESSAGES · CALLS     (no pipeline — desktop only)
+//   MONEY      PROPOSALS · INVOICES        (no finance dashboard)
+//   CALENDAR   standalone — tomorrow's installs at a glance
+const MOBILE_GROUPS = [
+  { id: 'quick',    label: 'QUICK',    icon: Ico.leads,    children: null },
+  { id: 'leads',    label: 'LEADS',    icon: Ico.leads,    children: ['list', 'messages', 'calls'] },
+  { id: 'money',    label: 'MONEY',    icon: Ico.finance,  children: ['proposals', 'invoices'] },
+  { id: 'calendar', label: 'CAL',      icon: Ico.calendar, children: null },
+];
+
+// Tabs that don't belong on a phone — pipeline needs width, table views
+// (permits / materials) and the finance dashboard are desktop-only. When
+// a mobile user lands on one of these (stale URL, deep link, etc.) route
+// them to QUICK so the app doesn't render a mangled layout.
+const MOBILE_DESKTOP_ONLY_TABS = new Set(['pipeline', 'permits', 'materials', 'finance']);
+
+function mobileParentFor(tabId) {
+  for (const g of MOBILE_GROUPS) {
+    if (g.id === tabId) return g.id;
+    if (g.children?.includes(tabId)) return g.id;
+  }
+  return 'quick';
+}
+
+/* ────────── Tab bar — desktop flat, mobile 2-level grouped ────────── */
+function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} }) {
+  // Scroll the active tab into view on mobile when it changes (avoids the
+  // off-screen "where am I" confusion we had before).
   const barRef = React.useRef(null);
   React.useEffect(() => {
     if (!scrollable || !barRef.current) return;
-    const btn = barRef.current.querySelector(`button[data-tab-id="${active}"]`);
+    const btn = barRef.current.querySelector(`button[data-tab-id="${active}"], button[data-group-id="${mobileParentFor(active)}"]`);
     if (btn && typeof btn.scrollIntoView === 'function') {
       btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
   }, [active, scrollable]);
+
+  if (scrollable) {
+    // Mobile: parent row + optional sub-row for the currently-active parent
+    const activeParent = mobileParentFor(active);
+    const group = MOBILE_GROUPS.find(g => g.id === activeParent);
+    const showSubRow = group?.children && group.children.length > 0;
+    return (
+      <div ref={barRef} role="tablist" aria-label="Main navigation" style={{
+        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+        position: 'relative', zIndex: 2,
+      }}>
+        {/* Parent row */}
+        <div style={{
+          height: 44, display: 'flex', alignItems: 'stretch',
+          padding: '0 8px', overflowX: 'auto', whiteSpace: 'nowrap',
+        }}>
+          {MOBILE_GROUPS.map(g => {
+            const isActive = g.id === activeParent;
+            // Tapping a parent lands on its first child (or on itself if it's
+            // the standalone QUICK tab). Already-on-this-parent taps are a
+            // no-op so Key doesn't accidentally bounce between sub-tabs.
+            const onParentClick = () => {
+              if (isActive) return;
+              const target = g.children ? g.children[0] : g.id;
+              onChange && onChange(target);
+            };
+            // Parent shows a badge if any of its children has one.
+            const badgeSum = g.children
+              ? g.children.reduce((n, cid) => n + (badges[cid] || 0), 0)
+              : (badges[g.id] || 0);
+            return (
+              <button key={g.id} className="chrome-label"
+                role="tab"
+                data-group-id={g.id}
+                aria-selected={isActive}
+                aria-label={g.label}
+                onClick={onParentClick}
+                style={{
+                  height: '100%', padding: '0 16px',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  flex: '0 0 auto',
+                  color: isActive ? 'var(--text)' : 'var(--text-muted)',
+                  fontSize: 13,
+                  boxShadow: isActive ? 'inset 0 -3px 0 var(--gold)' : 'none',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                }}>
+                <span style={{ display: 'flex', opacity: isActive ? 1 : .75 }} aria-hidden="true">{g.icon}</span>
+                <span>{g.label}</span>
+                {badgeSum ? (
+                  <span className="mono" style={{
+                    fontSize: 10, padding: '1px 5px', letterSpacing: '.04em',
+                    color: '#fff', background: 'var(--ms-3)',
+                  }}>{badgeSum}</span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+        {/* Sub-row — only when the active parent has children */}
+        {showSubRow ? (
+          <div style={{
+            height: 36, display: 'flex', alignItems: 'stretch',
+            padding: '0 8px', overflowX: 'auto', whiteSpace: 'nowrap',
+            background: 'var(--card)',
+            borderTop: '1px solid rgba(0,0,0,.08)',
+          }}>
+            {group.children.map(cid => {
+              const t = TABS.find(x => x.id === cid);
+              if (!t) return null;
+              const isActive = t.id === active;
+              const badge = badges[t.id];
+              return (
+                <button key={t.id} className="chrome-label"
+                  role="tab"
+                  data-tab-id={t.id}
+                  aria-selected={isActive}
+                  aria-label={badge ? `${t.label} (${badge})` : t.label}
+                  onClick={() => onChange && onChange(t.id)}
+                  style={{
+                    height: '100%', padding: '0 14px',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    flex: '0 0 auto',
+                    color: isActive ? 'var(--text)' : 'var(--text-muted)',
+                    fontSize: 11, letterSpacing: '.06em',
+                    boxShadow: isActive ? 'inset 0 -2px 0 var(--gold)' : 'none',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                  }}>
+                  <span>{t.label}</span>
+                  {badge ? (
+                    <span className="mono" style={{
+                      fontSize: 10, padding: '1px 5px', letterSpacing: '.04em',
+                      color: '#fff', background: 'var(--ms-3)',
+                    }}>{badge}</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  // Desktop: original flat row
   return (
     <div ref={barRef} role="tablist" aria-label="Main navigation" style={{
       height: 44, display: 'flex', alignItems: 'stretch',
       padding: '0 8px',
       background: 'var(--card)',
       boxShadow: 'var(--pressed-2)',
-      overflowX: scrollable ? 'auto' : 'visible',
+      overflowX: 'visible',
       whiteSpace: 'nowrap',
       position: 'relative', zIndex: 2,
     }}>
@@ -375,4 +508,4 @@ function SparkyAccessory({ active }) {
   );
 }
 
-Object.assign(window, { TopBar, TabBar, BottomBar, Ico, TABS });
+Object.assign(window, { TopBar, TabBar, BottomBar, Ico, TABS, MOBILE_DESKTOP_ONLY_TABS });
