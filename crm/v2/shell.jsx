@@ -26,15 +26,21 @@ const Ico = {
   grip:     <svg viewBox="0 0 8 8" width="8" height="8"><rect x="0" y="0" width="2" height="2"/><rect x="6" y="0" width="2" height="2"/><rect x="0" y="6" width="2" height="2"/><rect x="6" y="6" width="2" height="2"/></svg>,
 };
 
+// Flat tab list — no tabs-within-tabs (Key 2026-04-21: "actually add all
+// of the different left hand items all as tabs, no tabs within tabs").
+// Mobile scrolls horizontally; active tab auto-scrolls into view.
 const TABS = [
-  { id: 'leads', label: 'LEADS', icon: Ico.leads },
-  { id: 'calendar', label: 'CALENDAR', icon: Ico.calendar },
-  { id: 'finance', label: 'FINANCE', icon: Ico.finance },
-  { id: 'messages', label: 'MESSAGES', icon: Ico.messages },
-  // SPARKY tab removed — Sparky already lives in the right-side panel by
-  // default when no contact is selected. Having it as a top-level tab was
-  // duplicative. Badge for sparky_inbox count now moves onto the right
-  // panel (see shell render).
+  { id: 'quick',     label: 'QUICK',     icon: Ico.leads },
+  { id: 'calendar',  label: 'CALENDAR',  icon: Ico.calendar },
+  { id: 'pipeline',  label: 'PIPELINE',  icon: Ico.leads },
+  { id: 'list',      label: 'LIST',      icon: Ico.leads },
+  { id: 'messages',  label: 'MESSAGES',  icon: Ico.messages },
+  { id: 'calls',     label: 'CALLS',     icon: Ico.messages },
+  { id: 'proposals', label: 'PROPOSALS', icon: Ico.finance },
+  { id: 'invoices',  label: 'INVOICES',  icon: Ico.finance },
+  { id: 'permits',   label: 'PERMITS',   icon: Ico.leads },
+  { id: 'materials', label: 'MATERIALS', icon: Ico.leads },
+  { id: 'finance',   label: 'FINANCE',   icon: Ico.finance },
 ];
 
 /* ────────── Top bar (desktop + mobile share layout) ────────── */

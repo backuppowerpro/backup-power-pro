@@ -888,15 +888,18 @@ function contactToCard(c, waiting = false, proposal = null) {
 }
 
 function LivePipelineToolbar({ active = 'pipeline', onSubView, stats }) {
-  // Sub-view switch only — the MINE/ALL/OVERDUE/HAS-PHOTO filter row
-  // was not wired up and was visual noise. Re-add when the filters
-  // are actually functional.
+  // Pipeline is now a top-level tab — the old LeadsSubToolbar row is
+  // gone. This strip stays as a quick in-page nav for the pipeline view
+  // only (PIPELINE <-> LIST <-> MESSAGES etc.) and calls onSubView with
+  // the flat tab id so the main TabBar picks it up.
   const subs = [
-    { id: 'quick',    label: 'QUICK' },
-    { id: 'pipeline', label: 'PIPELINE' },
-    { id: 'list',     label: 'LIST' },
-    { id: 'permits',  label: 'PERMITS' },
-    { id: 'mat',      label: 'MATERIALS' },
+    { id: 'quick',     label: 'QUICK' },
+    { id: 'pipeline',  label: 'PIPELINE' },
+    { id: 'list',      label: 'LIST' },
+    { id: 'messages',  label: 'MESSAGES' },
+    { id: 'calls',     label: 'CALLS' },
+    { id: 'permits',   label: 'PERMITS' },
+    { id: 'materials', label: 'MATERIALS' },
   ];
   return (
     <div style={{ padding: '16px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
@@ -5580,7 +5583,7 @@ function FunnelArrow({ rate }) {
 }
 
 // ── Live Finance (KPI strip + proposals/invoices/payments tables) ──────────
-function LiveFinance() {
+function LiveFinance({ initialSub = 'prop' } = {}) {
   const [data, setData] = useState({
     proposals: [], invoices: [], payments: [],
     installsThisWeek: 0,
@@ -5588,7 +5591,7 @@ function LiveFinance() {
     newLeads7d: 0, proposals7d: 0, depositsPaid7d: 0, installs7d: 0,
     loading: true,
   });
-  const [subView, setSubView] = useState('prop');
+  const [subView, setSubView] = useState(initialSub);
   const [refreshTick, setRefreshTick] = useState(0);
 
   // Realtime: re-run the fetch when anything Finance-relevant changes.
@@ -6556,6 +6559,85 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
 
   const MessagesInbox = window.MessagesInbox;
   return <MessagesInbox threads={threads} onSelect={t => onSelect(t.contactId)} activeId={activeId} compact={compact} />;
+}
+
+// ── Calls — flat list of every call, most recent first ──────────────────────
+// Calls are stored in the messages table with status='call'. Group by
+// contact so a call burst doesn't flood the list; show direction, duration,
+// recording indicator, and relative time. Row click opens the contact.
+function LiveCalls({ onSelect }) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data: calls } = await db.from('messages')
+        .select('id, contact_id, direction, body, sender, status, created_at, recording_url, duration_seconds')
+        .eq('status', 'call')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      const ids = Array.from(new Set((calls || []).map(c => c.contact_id).filter(Boolean)));
+      const { data: contacts } = ids.length
+        ? await db.from('contacts').select('id, name, phone').in('id', ids)
+        : { data: [] };
+      const cMap = Object.fromEntries((contacts || []).map(c => [c.id, c]));
+      setRows((calls || []).map(c => ({
+        id: c.id,
+        contactId: c.contact_id,
+        direction: c.direction,
+        durationSec: c.duration_seconds,
+        recordingUrl: c.recording_url,
+        at: c.created_at,
+        name: displayNameFor(cMap[c.contact_id] || { name: null, phone: (c.body || '').match(/\+?\d{10,}/)?.[0] || null }),
+      })));
+      setLoading(false);
+    })();
+  }, [tick]);
+
+  useEffect(() => {
+    const ch = db.channel('calls-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: 'status=eq.call' }, () => setTick(n => n + 1))
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, []);
+
+  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>LOADING CALLS...</div>;
+  if (rows.length === 0) return (
+    <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+      <div className="chrome-label" style={{ fontSize: 14, letterSpacing: '.12em', marginBottom: 8 }}>NO CALLS YET</div>
+      <div style={{ fontSize: 13, fontFamily: 'var(--font-body)' }}>Inbound and outbound calls log here once Twilio Voice is dialed.</div>
+    </div>
+  );
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', padding: '8px 16px 24px' }}>
+      {rows.map(r => {
+        const mins = r.durationSec ? Math.floor(r.durationSec / 60) : 0;
+        const secs = r.durationSec ? r.durationSec % 60 : 0;
+        const dur = r.durationSec ? `${mins}:${secs.toString().padStart(2, '0')}` : '—';
+        const dir = r.direction === 'inbound' ? '↙' : '↗';
+        return (
+          <button key={r.id} onClick={() => r.contactId && onSelect && onSelect(r.contactId)}
+            className="tactile-flat" style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 12px', borderBottom: '1px solid rgba(0,0,0,.06)',
+              background: 'var(--card)', border: 'none', textAlign: 'left',
+              cursor: r.contactId ? 'pointer' : 'default',
+            }}>
+            <span className="mono" style={{ fontSize: 14, color: 'var(--text-muted)', width: 14 }}>{dir}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{r.name}</div>
+              <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                {dur}{r.recordingUrl ? ' · ⏺ recording' : ''} · {relTimestamp(r.at)}
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 // ── Quick List — Key's "everything I owe action on right now" view ──────────
@@ -7936,28 +8018,70 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
   );
 }
 
-// ── Leads sub-view toolbar (shared across list/permits/materials) ──────────
-function LeadsSubToolbar({ active, onChange }) {
-  const subs = [
-    { id: 'quick',    label: 'QUICK' },
-    { id: 'pipeline', label: 'PIPELINE' },
-    { id: 'list',     label: 'LIST' },
-    { id: 'permits',  label: 'PERMITS' },
-    { id: 'mat',      label: 'MATERIALS' },
+// ── Right-side hotkey tab strip ─────────────────────────────────────────────
+// Dynamic companion to the main TabBar. Governs what's shown in the right
+// panel. Sparky is always pinned (the default landing). Additional tabs
+// appear as right-panel surfaces open — a selected contact, eventually a
+// proposal / invoice / live call UI. Click a tab → right panel swaps to
+// that surface; click its × → remove the tab (and close its surface).
+function RightTabBar({ selectedContact, contactLabel, onPickSparky, onCloseContact }) {
+  const tabs = [
+    { id: 'sparky', label: 'SPARKY', active: !selectedContact, onClick: onPickSparky, closable: false },
   ];
+  if (selectedContact) {
+    tabs.push({
+      id: 'contact',
+      label: contactLabel || 'CONTACT',
+      active: true, // once a contact is open it's the active right-panel surface
+      onClick: () => {}, // already active
+      onClose: onCloseContact,
+      closable: true,
+    });
+  }
   return (
-    <div style={{ padding: '16px 16px 8px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-      <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
-        {subs.map(s => (
-          <button key={s.id} onClick={() => onChange(s.id)} className="chrome-label" style={{
-            height: 36, padding: '0 16px', fontSize: 12,
-            background: s.id === active ? 'var(--navy)' : 'transparent',
-            color: s.id === active ? 'var(--gold)' : 'var(--text)',
-            boxShadow: s.id === active ? 'var(--pressed-2)' : 'none',
-            cursor: 'pointer',
-          }}>{s.label}</button>
-        ))}
-      </div>
+    <div role="tablist" aria-label="Right panel"
+      style={{
+        height: 44, display: 'flex', alignItems: 'stretch',
+        padding: '0 8px',
+        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+        borderLeft: '1px solid rgba(0,0,0,.08)',
+        overflowX: 'auto', whiteSpace: 'nowrap',
+        position: 'relative', zIndex: 2,
+      }}>
+      {tabs.map(t => (
+        <div key={t.id} style={{
+          height: '100%', display: 'flex', alignItems: 'center',
+          boxShadow: t.active ? 'inset 0 -3px 0 var(--gold)' : 'none',
+          transition: 'box-shadow var(--dur) var(--step)',
+        }}>
+          <button className="chrome-label"
+            onClick={t.onClick}
+            role="tab"
+            aria-selected={t.active}
+            style={{
+              height: '100%', padding: t.closable ? '0 6px 0 16px' : '0 16px',
+              display: 'flex', alignItems: 'center', gap: 6,
+              flex: '0 0 auto',
+              color: t.active ? 'var(--text)' : 'var(--text-muted)',
+              fontSize: 12,
+              background: 'transparent', border: 'none',
+              cursor: t.active ? 'default' : 'pointer',
+            }}>
+            <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.label}</span>
+          </button>
+          {t.closable ? (
+            <button
+              onClick={t.onClose}
+              aria-label={`Close ${t.label}`}
+              style={{
+                height: '100%', padding: '0 10px',
+                display: 'grid', placeItems: 'center',
+                background: 'transparent', border: 'none',
+                color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
+              }}>×</button>
+          ) : null}
+        </div>
+      ))}
     </div>
   );
 }
@@ -7972,21 +8096,26 @@ function App() {
   // (handy for bookmarks / deep-links from Sparky or briefing)
   const initial = (() => {
     const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
-    let tab = h.get('tab') || 'leads';
-    // 'sparky' is no longer a tab (right-panel only). Stale bookmarks that
-    // land on #tab=sparky get redirected to LEADS so the app doesn't boot
-    // into a blank content area.
-    if (tab === 'sparky') tab = 'leads';
+    let tab = h.get('tab') || 'quick';
+    // Legacy redirects (pre-flat-tabs bookmarks):
+    //   #tab=leads    → #tab=quick    (QUICK is the new default landing)
+    //   #tab=sparky   → #tab=quick    (Sparky moved to right panel months ago)
+    if (tab === 'leads' || tab === 'sparky') tab = 'quick';
     return { tab, contact: h.get('contact') || null };
   })();
   const [tab, setTab] = useState(initial.tab);
-  // Default leads sub-view is QUICK — everything Key has open action on
-  // right now, cross-stage. Key's feedback 2026-04-21: "a quick list…all the
-  // people I am currently dealing with, upcoming installs, inspections not
-  // done, jobs on the schedule". LIST stays one tap away for when he wants
-  // the full 69-row feed. PIPELINE still available for kanban-heads.
-  const [leadsSubView, setLeadsSubView] = useState('quick');
   const [selectedContact, setSelectedContact] = useState(initial.contact);
+  // Cheap fetch of the current contact's display name so the right-tab
+  // strip can label the contact tab (CONTACT · NAME × ). Re-fires only when
+  // selectedContact changes.
+  const [rightPanelContactLabel, setRightPanelContactLabel] = useState('');
+  useEffect(() => {
+    let alive = true;
+    if (!selectedContact) { setRightPanelContactLabel(''); return; }
+    db.from('contacts').select('name, phone').eq('id', selectedContact).maybeSingle()
+      .then(({ data }) => { if (alive) setRightPanelContactLabel(displayNameFor(data || {}).toUpperCase()); });
+    return () => { alive = false; };
+  }, [selectedContact]);
   // One-shot override for LiveContactDetail's default tab — lets callers
   // like the Quick List's STUCK QUOTES section land Key directly on the
   // Quote tab instead of the tab that'd come from the main-tab mapping.
@@ -8005,10 +8134,11 @@ function App() {
     localStorage.setItem('bpp_v2_theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  // Keep URL hash in sync so reload preserves tab + selected contact
+  // Keep URL hash in sync so reload preserves tab + selected contact.
+  // QUICK is the default landing, so no ?tab= param means QUICK.
   useEffect(() => {
     const h = new URLSearchParams();
-    if (tab && tab !== 'leads') h.set('tab', tab);
+    if (tab && tab !== 'quick') h.set('tab', tab);
     if (selectedContact) h.set('contact', selectedContact);
     const next = h.toString();
     const target = next ? `#${next}` : '';
@@ -8024,10 +8154,8 @@ function App() {
     const onHash = () => {
       const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
       let hashTab = h.get('tab');
-      // 'sparky' is no longer a tab; any stale URL or external link that
-      // pointed to #tab=sparky silently redirects to LEADS so the page
-      // doesn't render blank.
-      if (hashTab === 'sparky') hashTab = 'leads';
+      // Legacy redirects so stale bookmarks don't render blank.
+      if (hashTab === 'sparky' || hashTab === 'leads') hashTab = 'quick';
       const hashContact = h.get('contact');
       if (hashTab && hashTab !== tab) setTab(hashTab);
       if (hashContact && hashContact !== selectedContact) setSelectedContact(hashContact);
@@ -8149,7 +8277,7 @@ function App() {
           label: 'Open',
           onClick: () => {
             setSelectedContact(m.contact_id);
-            setTab('leads');
+            setTab('quick');
             window.location.hash = `#tab=leads&contact=${m.contact_id}`;
           },
         });
@@ -8193,7 +8321,7 @@ function App() {
             label: 'Open',
             onClick: () => {
               setSelectedContact(c.id);
-              setTab('leads');
+              setTab('quick');
               window.location.hash = `#tab=leads&contact=${c.id}`;
             },
           }
@@ -8238,7 +8366,7 @@ function App() {
               onClick: () => {
                 if (!p.contact_id) return;
                 setSelectedContact(p.contact_id);
-                setTab('leads');
+                setTab('quick');
                 window.location.hash = `#tab=leads&contact=${p.contact_id}`;
               },
             }
@@ -8281,7 +8409,7 @@ function App() {
               onClick: () => {
                 if (!i.contact_id) return;
                 setSelectedContact(i.contact_id);
-                setTab('leads');
+                setTab('quick');
                 window.location.hash = `#tab=leads&contact=${i.contact_id}`;
               },
             }
@@ -8330,7 +8458,7 @@ function App() {
             label: 'Open',
             onClick: () => {
               setSelectedContact(m.contact_id);
-              setTab('leads');
+              setTab('quick');
               window.location.hash = `#tab=leads&contact=${m.contact_id}`;
             },
           }
@@ -8398,10 +8526,16 @@ function App() {
       }
       if (editable) return;
 
-      // g-chord: g then l/c/f/m. (Removed 's' → Sparky mapping; Sparky
-      // now lives in the right-hand panel instead of a tab.)
+      // g-chord: g then a letter to jump to a tab. Flat tabs expanded the
+      // vocabulary; stick to first-letter wherever it isn't ambiguous.
+      //   q=quick · c=calendar · p=pipeline · l=list · m=messages · v=calls
+      //   r=proposals · i=invoices · t=permits · a=materials · f=finance
       if (gPending) {
-        const map = { l: 'leads', c: 'calendar', f: 'finance', m: 'messages' };
+        const map = {
+          q: 'quick', c: 'calendar', p: 'pipeline', l: 'list',
+          m: 'messages', v: 'calls', r: 'proposals', i: 'invoices',
+          t: 'permits', a: 'materials', f: 'finance',
+        };
         const target = map[e.key.toLowerCase()];
         if (target) {
           e.preventDefault();
@@ -8456,7 +8590,7 @@ function App() {
       // Shift+B → install brief for the selected contact
       if (e.key === 'B' && e.shiftKey && selectedContact) {
         e.preventDefault();
-        setTab('leads');
+        setTab('quick');
         window.dispatchEvent(new CustomEvent('bpp:open-install-brief'));
       }
       // t → toggle theme (dark/light)
@@ -8549,7 +8683,7 @@ function App() {
           const next = await findNextWaiting(selectedContact);
           if (next) {
             setSelectedContact(next);
-            setTab('leads');
+            setTab('quick');
             window.__bpp_toast && window.__bpp_toast('Next waiting thread', 'info');
           } else {
             window.__bpp_toast && window.__bpp_toast('No waiting threads', 'info');
@@ -8565,7 +8699,7 @@ function App() {
       // Switches to QUOTE tab if needed and opens the pricing chips.
       if (e.key === 'q' && selectedContact) {
         e.preventDefault();
-        setTab('leads');
+        setTab('quick');
         window.dispatchEvent(new CustomEvent('bpp:open-quick-quote'));
       }
       // 1–9 → change stage on the currently selected contact, then auto-advance
@@ -8638,64 +8772,30 @@ function App() {
 
   const handleCardClick = (id) => setSelectedContact(id);
 
+  // Flat-tab routing (Key 2026-04-21: "no tabs within tabs"). Each tab maps
+  // directly to a single full-height component. Legacy `#tab=leads` URLs
+  // redirect up at parse time (see hash effect) to the matching flat tab.
   const content = (() => {
-    if (tab === 'leads') {
-      if (leadsSubView === 'quick') {
-        return (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <LeadsSubToolbar active="quick" onChange={setLeadsSubView} />
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <LiveQuickList onSelect={(id, section) => {
-                // Pick the detail tab that matches Key's intent: stuck quotes
-                // → Quote (review + draft follow-up), permits in flight →
-                // Permits (track progress), everything else → Messages (thread).
-                if (section === 'stuck') setNextDetailTab('QUOTE');
-                else if (section === 'permits') setNextDetailTab('PERMITS');
-                else setNextDetailTab('MESSAGES');
-                setSelectedContact(id);
-              }} />
-            </div>
-          </div>
-        );
-      }
-      if (leadsSubView === 'pipeline') {
-        return <LivePipeline onCardClick={handleCardClick} onSubView={setLeadsSubView} />;
-      }
-      if (leadsSubView === 'permits') {
-        return (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <LeadsSubToolbar active="permits" onChange={setLeadsSubView} />
-            <div style={{ flex: 1, overflow: 'hidden' }}><LivePermits /></div>
-          </div>
-        );
-      }
-      if (leadsSubView === 'mat') {
-        return (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <LeadsSubToolbar active="mat" onChange={setLeadsSubView} />
-            <div style={{ flex: 1, overflow: 'hidden' }}><LiveMaterials /></div>
-          </div>
-        );
-      }
-      // list view
+    if (tab === 'quick') {
       return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <LeadsSubToolbar active="list" onChange={setLeadsSubView} />
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />
-          </div>
-        </div>
+        <LiveQuickList onSelect={(id, section) => {
+          if (section === 'stuck') setNextDetailTab('QUOTE');
+          else if (section === 'permits') setNextDetailTab('PERMITS');
+          else setNextDetailTab('MESSAGES');
+          setSelectedContact(id);
+        }} />
       );
     }
-    if (tab === 'calendar') return <LiveCalendar />;
-    if (tab === 'finance') return <LiveFinance />;
-    if (tab === 'messages') return <LiveMessages onSelect={id => setSelectedContact(id)} activeId={selectedContact} />;
-    // 'sparky' as a top-level tab was removed — Sparky already lives in the
-    // right-hand panel. For backwards-compat with any existing bookmark /
-    // command-palette nav that says "go to Sparky", route to leads + let the
-    // right panel show the Sparky chat by virtue of no contact being
-    // selected. A no-op also works if the tab id is stale.
-    if (tab === 'sparky') return null;
+    if (tab === 'calendar')  return <LiveCalendar />;
+    if (tab === 'pipeline')  return <LivePipeline onCardClick={handleCardClick} onSubView={setTab} />;
+    if (tab === 'list')      return <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />;
+    if (tab === 'messages')  return <LiveMessages onSelect={id => setSelectedContact(id)} activeId={selectedContact} />;
+    if (tab === 'calls')     return <LiveCalls onSelect={id => setSelectedContact(id)} />;
+    if (tab === 'proposals') return <LiveFinance initialSub="prop" />;
+    if (tab === 'invoices')  return <LiveFinance initialSub="inv" />;
+    if (tab === 'permits')   return <LivePermits />;
+    if (tab === 'materials') return <LiveMaterials />;
+    if (tab === 'finance')   return <LiveFinance />;
     return null;
   })();
 
@@ -8711,14 +8811,36 @@ function App() {
           />
         ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>
-      {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} badges={(() => {
-        const b = {};
-        if (unreadCount > 0) b.messages = unreadCount;
-        // sparkyInboxCount no longer goes to a tab badge — Sparky isn't a
-        // tab anymore. The count appears as a marker inside the right-side
-        // panel where Sparky + AgentsInboxStrip live.
-        return b;
-      })()} /> : null}
+      {/* Two separate tab strips side-by-side above the two content columns
+          (Key 2026-04-21: "top bar above the left with all the tabs. then
+          have a tab bar above the right with tabs"). Left = main-tab nav.
+          Right = dynamic hotkey strip for open right-panel surfaces
+          (Sparky always pinned; contact tab appears when one is selected). */}
+      {!isMobile ? (
+        <div style={{ display: 'flex' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {TabBar ? <TabBar active={tab} scrollable onChange={setTab} badges={(() => {
+              const b = {};
+              if (unreadCount > 0) b.messages = unreadCount;
+              return b;
+            })()} /> : null}
+          </div>
+          <div style={{ flex: '0 0 480px', width: 480 }}>
+            <RightTabBar
+              selectedContact={selectedContact}
+              contactLabel={rightPanelContactLabel}
+              onPickSparky={() => setSelectedContact(null)}
+              onCloseContact={() => setSelectedContact(null)}
+            />
+          </div>
+        </div>
+      ) : (
+        TabBar ? <TabBar active={tab} scrollable onChange={setTab} badges={(() => {
+          const b = {};
+          if (unreadCount > 0) b.messages = unreadCount;
+          return b;
+        })()} /> : null
+      )}
       {/* Desktop: two-column layout. Left = current tab content. Right = a
           persistent 480px panel — Sparky by default, contact detail when a
           contact is selected. Mobile keeps the old overlay behavior since
@@ -8753,19 +8875,12 @@ function App() {
                       queueMicrotask(() => setNextDetailTab(null));
                       return t;
                     }
-                    // Otherwise map the main tab Key is currently viewing
+                    // Otherwise map the flat tab Key is currently viewing
                     // to the detail tab that makes the most sense to open.
-                    // Clicking a contact from Finance → lands on Quote.
-                    // From Calendar or the Permits sub-view → lands on
-                    // Permits. Etc.
-                    if (tab === 'finance') return 'QUOTE';
-                    if (tab === 'calendar') return 'PERMITS';
-                    if (tab === 'messages') return 'MESSAGES';
-                    if (tab === 'leads') {
-                      if (leadsSubView === 'permits' || leadsSubView === 'mat') return 'PERMITS';
-                      return 'MESSAGES';
-                    }
-                    return undefined;
+                    if (tab === 'proposals' || tab === 'invoices' || tab === 'finance') return 'QUOTE';
+                    if (tab === 'calendar' || tab === 'permits' || tab === 'materials') return 'PERMITS';
+                    if (tab === 'messages' || tab === 'calls') return 'MESSAGES';
+                    return undefined; // QUICK / LIST / PIPELINE → stage-based smart default
                   })()}
                 />
               </ErrorBoundary>
@@ -8795,7 +8910,7 @@ function App() {
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
-        onSelectContact={id => { setSelectedContact(id); setTab('leads'); }}
+        onSelectContact={id => { setSelectedContact(id); setTab('quick'); }}
         onSwitchTab={id => setTab(id)}
         onAction={id => {
           if (id === 'export_csv') exportContactsCsv();
@@ -8833,14 +8948,14 @@ function App() {
       />
       {briefOpen ? <LiveMorningBriefing
         onClose={() => setBriefOpen(false)}
-        onPickContact={id => { setSelectedContact(id); setTab('leads'); setBriefOpen(false); }}
+        onPickContact={id => { setSelectedContact(id); setTab('quick'); setBriefOpen(false); }}
       /> : null}
       <NewLeadModal
         open={newLeadOpen}
         onClose={() => setNewLeadOpen(false)}
         onCreated={c => {
           setSelectedContact(c.id);
-          setTab('leads');
+          setTab('quick');
         }}
       />
       <KeyboardHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
