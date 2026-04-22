@@ -2097,6 +2097,29 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
     return () => window.removeEventListener('bpp:open-install-brief', handler);
   }, [contactId]);
 
+  // Right-side action bar drives this panel via window events. The bar sends
+  // `bpp:focus-detail-tab` to switch sub-tabs; this panel echoes back any
+  // sub-tab change via `bpp:detail-tab-changed` so the bar's active-state
+  // stays in sync no matter who initiated the switch.
+  useEffect(() => {
+    if (!contactId) return;
+    const handler = (e) => {
+      const target = e?.detail?.tab || 'MESSAGES';
+      setDetailTab(target);
+      setManualTabContactId(contactId);
+      window.dispatchEvent(new CustomEvent('bpp:detail-tab-changed', { detail: { tab: target } }));
+    };
+    window.addEventListener('bpp:focus-detail-tab', handler);
+    return () => window.removeEventListener('bpp:focus-detail-tab', handler);
+  }, [contactId]);
+
+  // Echo detailTab changes out so the right-action-bar (and any other
+  // listener — e.g. a future sparky "what am I looking at" readout) can
+  // track which sub-tab the user is on.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('bpp:detail-tab-changed', { detail: { tab: detailTab } }));
+  }, [detailTab]);
+
   // Realtime: messages (INSERT + UPDATE) and the contact row itself (UPDATE).
   //   - message INSERT: new bubble appended, dedup'd by id
   //   - message UPDATE: status sent → delivered / failed flips live
@@ -2431,39 +2454,10 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         />
       ) : null}
 
-      {/* Detail tabs */}
-      <div ref={detailTabsRef} style={{
-        height: 42, display: 'flex', alignItems: 'stretch',
-        padding: '0 16px', gap: 16,
-        borderBottom: '1px solid rgba(0,0,0,.08)',
-        overflowX: 'auto',
-      }}>
-        {[
-          { id: 'MESSAGES', label: 'Messages' },
-          { id: 'TIMELINE', label: 'Timeline' },
-          { id: 'QUOTE',    label: 'Quote' },
-          { id: 'PHOTOS',   label: 'Photos' },
-          { id: 'PERMITS',  label: 'Permits' },
-          { id: 'NOTES',    label: 'Notes' },
-          { id: 'EDIT',     label: 'Edit' },
-        ].map(t => {
-          const on = t.id === detailTab;
-          return (
-            <button key={t.id}
-              data-detail-tab-id={t.id}
-              onClick={() => { setDetailTab(t.id); setManualTabContactId(contactId); }}
-              style={{
-                height: '100%', padding: '0 4px', fontSize: 13,
-                fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
-                color: on ? 'var(--text)' : 'var(--text-muted)',
-                borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent',
-                borderBottomStyle: 'solid',
-                background: 'transparent', border: 'none',
-                cursor: 'pointer', flex: '0 0 auto',
-              }}>{t.label}</button>
-          );
-        })}
-      </div>
+      {/* Detail tabs live in the right-side action bar (RightTabBar) above
+          the panel now — no duplicate row inside. Mobile and desktop share
+          the pattern (Key 2026-04-21: mobile is the same serialized — left
+          view by default, click into right view with a back button). */}
 
       {/* Tab content */}
       {detailTab === 'MESSAGES' ? (
@@ -7412,6 +7406,15 @@ function LiveSparky({ currentContactId = null }) {
   const [currentContactName, setCurrentContactName] = useState(null);
   const scrollRef = useRef(null);
 
+  // The right-side action bar drives mode from outside (Key 2026-04-21:
+  // surface-scoped toolbar). Keep the internal mode row in Sparky for mobile
+  // + back-compat, but also accept the external event.
+  useEffect(() => {
+    const on = (e) => { if (e?.detail?.mode) setMode(e.detail.mode); };
+    window.addEventListener('bpp:sparky-mode', on);
+    return () => window.removeEventListener('bpp:sparky-mode', on);
+  }, []);
+
   // When entering Sparky with a contact already selected, fetch that
   // contact's name so the quick-asks can offer to do things about them.
   useEffect(() => {
@@ -8018,28 +8021,120 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
   );
 }
 
-// ── Right-side hotkey tab strip ─────────────────────────────────────────────
-// Dynamic companion to the main TabBar. Governs what's shown in the right
-// panel. Sparky is always pinned (the default landing). Additional tabs
-// appear as right-panel surfaces open — a selected contact, eventually a
-// proposal / invoice / live call UI. Click a tab → right panel swaps to
-// that surface; click its × → remove the tab (and close its surface).
-function RightTabBar({ selectedContact, contactLabel, onPickSparky, onCloseContact }) {
-  const tabs = [
-    { id: 'sparky', label: 'SPARKY', active: !selectedContact, onClick: onPickSparky, closable: false },
-  ];
+// ── Right-side action bar — surface-scoped toolbar ──────────────────────────
+// This is NOT a history of open surfaces and NOT preset shortcuts. It's a
+// custom action row tailored to whatever surface is currently in the right
+// panel (Key 2026-04-21: "the right bar has a custom row of buttons for
+// the screen present in the right section, if a new section is opened in
+// the right section a whole new bar gets shown with diffrent buttons
+// optimized for that screen").
+//
+// Surface → buttons:
+//   SPARKY   → CHAT · BRIEFING · INSIGHT · REPLY · DRAFT       (Sparky modes)
+//   CONTACT  → MESSAGES · TIMELINE · QUOTE · PHOTOS · PERMITS · NOTES · EDIT
+//              + CALL + BRIEF + CLOSE (utilities Key hits while texting/working the record)
+//   INVOICE  → VIEW · COPY LINK · RESEND · MARK PAID · REFUND   (future)
+//   PROPOSAL → VIEW · COPY SMS · RESEND · CONVERT TO INVOICE    (future)
+//   CALL     → PLAY · TRANSCRIBE · CALL BACK                    (future)
+function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseContact, onOpenBrief }) {
+  // Mirror of LiveContactDetail's internal detailTab so we can highlight
+  // the active button here. LiveContactDetail dispatches
+  // `bpp:detail-tab-changed` whenever its detailTab changes; we dispatch
+  // `bpp:focus-detail-tab` to drive it in the other direction.
+  const [activeDetail, setActiveDetail] = React.useState('MESSAGES');
+  React.useEffect(() => {
+    const on = (e) => { if (e?.detail?.tab) setActiveDetail(e.detail.tab); };
+    window.addEventListener('bpp:detail-tab-changed', on);
+    return () => window.removeEventListener('bpp:detail-tab-changed', on);
+  }, []);
+  // Reset to MESSAGES default whenever the selected contact changes, mirroring
+  // the LiveContactDetail default-tab logic.
+  React.useEffect(() => { setActiveDetail('MESSAGES'); }, [selectedContact]);
+
+  const focusDetail = (tab) => window.dispatchEvent(new CustomEvent('bpp:focus-detail-tab', { detail: { tab } }));
+
+  let buttons;
   if (selectedContact) {
-    tabs.push({
-      id: 'contact',
-      label: contactLabel || 'CONTACT',
-      active: true, // once a contact is open it's the active right-panel surface
-      onClick: () => {}, // already active
-      onClose: onCloseContact,
-      closable: true,
-    });
+    // Contact surface toolbar. Labels double up as shortcuts while Key is
+    // texting someone — "Open Contact" style affordances for common
+    // pivots without leaving the panel.
+    const sub = [
+      { id: 'MESSAGES', label: 'Messages' },
+      { id: 'TIMELINE', label: 'Timeline' },
+      { id: 'QUOTE',    label: 'Quote' },
+      { id: 'PHOTOS',   label: 'Photos' },
+      { id: 'PERMITS',  label: 'Permits' },
+      { id: 'NOTES',    label: 'Notes' },
+      { id: 'EDIT',     label: 'Edit' },
+    ];
+    buttons = (
+      <>
+        <span className="chrome-label" title={contactLabel} style={{ padding: '0 10px', display: 'flex', alignItems: 'center', color: 'var(--text)', fontSize: 11, letterSpacing: '.08em', fontWeight: 700, flex: '0 0 auto', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {contactLabel || 'CONTACT'}
+        </span>
+        {sub.map(t => {
+          const on = activeDetail === t.id;
+          return (
+            <button key={t.id} onClick={() => focusDetail(t.id)} className="chrome-label" style={{
+              height: '100%', padding: '0 10px',
+              background: 'transparent', border: 'none',
+              color: on ? 'var(--text)' : 'var(--text-muted)',
+              fontSize: 12,
+              boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
+              cursor: 'pointer',
+            }}>{t.label}</button>
+          );
+        })}
+        <div style={{ flex: 1 }} />
+        {contactPhone ? (
+          <button
+            onClick={() => window.__bpp_dial && window.__bpp_dial(contactPhone)}
+            className="chrome-label" title="Call"
+            style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', color: 'var(--green)', fontSize: 12, cursor: 'pointer' }}
+          >CALL</button>
+        ) : null}
+        <button
+          onClick={onOpenBrief}
+          className="chrome-label" title="Install brief"
+          style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}
+        >BRIEF</button>
+        <button
+          onClick={onCloseContact}
+          aria-label="Close contact"
+          style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer' }}
+        >×</button>
+      </>
+    );
+  } else {
+    // Sparky surface toolbar. Mirrors the five Sparky modes already rendered
+    // inside LiveSparky. Click dispatches `bpp:sparky-mode` so LiveSparky
+    // switches mode without coupling the two components by prop-drilling.
+    const modes = [
+      { id: 'chat',     label: 'Chat' },
+      { id: 'briefing', label: 'Briefing' },
+      { id: 'insight',  label: 'Insight' },
+      { id: 'reply',    label: 'Reply' },
+      { id: 'draft',    label: 'Draft' },
+    ];
+    buttons = (
+      <>
+        <span className="chrome-label" style={{ padding: '0 10px', display: 'flex', alignItems: 'center', color: 'var(--text)', fontSize: 11, letterSpacing: '.08em', fontWeight: 700 }}>SPARKY</span>
+        {modes.map(m => (
+          <button key={m.id}
+            onClick={() => window.dispatchEvent(new CustomEvent('bpp:sparky-mode', { detail: { mode: m.id } }))}
+            className="chrome-label"
+            style={{
+              height: '100%', padding: '0 10px',
+              background: 'transparent', border: 'none',
+              color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer',
+            }}>{m.label}</button>
+        ))}
+      </>
+    );
   }
+
   return (
-    <div role="tablist" aria-label="Right panel"
+    <div role="toolbar" aria-label={selectedContact ? 'Contact actions' : 'Sparky modes'}
       style={{
         height: 44, display: 'flex', alignItems: 'stretch',
         padding: '0 8px',
@@ -8048,40 +8143,7 @@ function RightTabBar({ selectedContact, contactLabel, onPickSparky, onCloseConta
         overflowX: 'auto', whiteSpace: 'nowrap',
         position: 'relative', zIndex: 2,
       }}>
-      {tabs.map(t => (
-        <div key={t.id} style={{
-          height: '100%', display: 'flex', alignItems: 'center',
-          boxShadow: t.active ? 'inset 0 -3px 0 var(--gold)' : 'none',
-          transition: 'box-shadow var(--dur) var(--step)',
-        }}>
-          <button className="chrome-label"
-            onClick={t.onClick}
-            role="tab"
-            aria-selected={t.active}
-            style={{
-              height: '100%', padding: t.closable ? '0 6px 0 16px' : '0 16px',
-              display: 'flex', alignItems: 'center', gap: 6,
-              flex: '0 0 auto',
-              color: t.active ? 'var(--text)' : 'var(--text-muted)',
-              fontSize: 12,
-              background: 'transparent', border: 'none',
-              cursor: t.active ? 'default' : 'pointer',
-            }}>
-            <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.label}</span>
-          </button>
-          {t.closable ? (
-            <button
-              onClick={t.onClose}
-              aria-label={`Close ${t.label}`}
-              style={{
-                height: '100%', padding: '0 10px',
-                display: 'grid', placeItems: 'center',
-                background: 'transparent', border: 'none',
-                color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
-              }}>×</button>
-          ) : null}
-        </div>
-      ))}
+      {buttons}
     </div>
   );
 }
@@ -8105,15 +8167,19 @@ function App() {
   })();
   const [tab, setTab] = useState(initial.tab);
   const [selectedContact, setSelectedContact] = useState(initial.contact);
-  // Cheap fetch of the current contact's display name so the right-tab
-  // strip can label the contact tab (CONTACT · NAME × ). Re-fires only when
-  // selectedContact changes.
+  // Cheap fetch of the current contact's display name + phone so the
+  // right-side action bar can label the contact and wire the CALL button.
+  // Re-fires only when selectedContact changes.
   const [rightPanelContactLabel, setRightPanelContactLabel] = useState('');
+  const [rightPanelContactPhone, setRightPanelContactPhone] = useState('');
   useEffect(() => {
     let alive = true;
-    if (!selectedContact) { setRightPanelContactLabel(''); return; }
+    if (!selectedContact) { setRightPanelContactLabel(''); setRightPanelContactPhone(''); return; }
     db.from('contacts').select('name, phone').eq('id', selectedContact).maybeSingle()
-      .then(({ data }) => { if (alive) setRightPanelContactLabel(displayNameFor(data || {}).toUpperCase()); });
+      .then(({ data }) => { if (!alive) return;
+        setRightPanelContactLabel(displayNameFor(data || {}).toUpperCase());
+        setRightPanelContactPhone(data?.phone || '');
+      });
     return () => { alive = false; };
   }, [selectedContact]);
   // One-shot override for LiveContactDetail's default tab — lets callers
@@ -8829,8 +8895,9 @@ function App() {
             <RightTabBar
               selectedContact={selectedContact}
               contactLabel={rightPanelContactLabel}
-              onPickSparky={() => setSelectedContact(null)}
+              contactPhone={rightPanelContactPhone}
               onCloseContact={() => setSelectedContact(null)}
+              onOpenBrief={() => window.dispatchEvent(new CustomEvent('bpp:open-install-brief'))}
             />
           </div>
         </div>
@@ -8896,14 +8963,30 @@ function App() {
             top: 0, right: 0, bottom: 0,
             width: '100%',
             zIndex: 20,
+            display: 'flex', flexDirection: 'column',
+            background: 'var(--card)',
           }}>
-            <ErrorBoundary label="CONTACT DETAIL">
-              <LiveContactDetail
-                contactId={selectedContact}
-                onBack={() => setSelectedContact(null)}
-                mobile={true}
-              />
-            </ErrorBoundary>
+            {/* Mobile uses the same per-surface action bar as desktop. Key
+                2026-04-21: "mobile will work similar" — left screen by
+                default, click into a right surface, back button returns.
+                The RightTabBar here sits above the contact detail full-
+                width and renders the same sub-tab / CALL / BRIEF / × row. */}
+            <RightTabBar
+              selectedContact={selectedContact}
+              contactLabel={rightPanelContactLabel}
+              contactPhone={rightPanelContactPhone}
+              onCloseContact={() => setSelectedContact(null)}
+              onOpenBrief={() => window.dispatchEvent(new CustomEvent('bpp:open-install-brief'))}
+            />
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <ErrorBoundary label="CONTACT DETAIL">
+                <LiveContactDetail
+                  contactId={selectedContact}
+                  onBack={() => setSelectedContact(null)}
+                  mobile={true}
+                />
+              </ErrorBoundary>
+            </div>
           </div>
         ) : null}
       </div>
