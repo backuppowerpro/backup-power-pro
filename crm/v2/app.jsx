@@ -3149,6 +3149,19 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
     const { data, error } = await db.from('proposals').insert([payload]).select().single();
     setBusy(false);
     if (error || !data) { setErr(error?.message || 'insert failed'); return; }
+    // Bump the contact's stage from NEW (1) to QUOTED (2) so the LIST chip
+    // counts, pipeline buckets, and QUOTED filter stay in sync with the
+    // proposals table. Only bump if they're still on stage 1 — we don't
+    // want to pull a BOOKED/PAID contact back down to QUOTED if Key opens
+    // a fresh quote mid-install. Non-blocking (fire-and-forget) since the
+    // proposal insert already succeeded and the caller expects a quick
+    // return. Record a stage_history entry for the audit trail.
+    if (contact?.id && (contact.stage || 1) === 1) {
+      Promise.all([
+        db.from('contacts').update({ stage: 2 }).eq('id', contact.id).eq('stage', 1),
+        db.from('stage_history').insert({ contact_id: contact.id, from_stage: 1, to_stage: 2 }),
+      ]).catch(e => console.warn('[quickquote] stage bump failed', e));
+    }
     onCreated(data);
   }
 
@@ -4202,6 +4215,25 @@ const SMS_SNIPPETS = [
 // - "[media:https://...] optional caption" → render as <img> + caption
 // - URLs inside the text → render as clickable links
 // - Otherwise plain text
+// Render a plain-text run, applying `**bold**` styling. Sparky responses
+// come back in markdown; SMS bodies rarely use double-asterisks so this is
+// safe to apply unconditionally.
+function renderBold(text, key) {
+  if (!text || text.indexOf('**') === -1) return <React.Fragment key={key}>{text}</React.Fragment>;
+  const out = [];
+  const re = /\*\*(.+?)\*\*/gs;
+  let last = 0;
+  let m;
+  let i = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(<React.Fragment key={`${key}-p${i++}`}>{text.slice(last, m.index)}</React.Fragment>);
+    out.push(<strong key={`${key}-b${i++}`}>{m[1]}</strong>);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(<React.Fragment key={`${key}-p${i++}`}>{text.slice(last)}</React.Fragment>);
+  return <React.Fragment key={key}>{out}</React.Fragment>;
+}
+
 function MessageBody({ body, isOut }) {
   if (!body) return null;
   // Media prefix (send-sms stores `[media:URL] optional text`)
@@ -4217,16 +4249,17 @@ function MessageBody({ body, isOut }) {
       </>
     );
   }
-  // URL linkification — split on URLs, render links as <a>
+  // URL linkification — split on URLs, render links as <a>, non-link runs
+  // pass through `renderBold` so `**bold**` in Sparky output renders as a
+  // real <strong>.
   const parts = body.split(/(https?:\/\/[^\s]+)/g);
-  if (parts.length === 1) return <span>{body}</span>;
   return (
     <span>
       {parts.map((p, i) => /^https?:\/\//.test(p) ? (
         <a key={i} href={p} target="_blank" rel="noopener"
           style={{ color: isOut ? 'var(--gold)' : 'var(--navy)', wordBreak: 'break-all' }}
         >{p}</a>
-      ) : <React.Fragment key={i}>{p}</React.Fragment>)}
+      ) : renderBold(p, `p${i}`))}
     </span>
   );
 }
@@ -6540,14 +6573,18 @@ function LiveQuickList({ onSelect }) {
 
   // Realtime refresh — any change to contacts / messages / proposals can
   // shift section contents (new reply arrives, stage moves forward, quote
-  // gets approved). Single channel, cheap full-refetch.
+  // gets approved). Snooze is a client-side localStorage state, so also
+  // listen for the custom 'bpp:snoozes-changed' event fired by the Snooze
+  // row on the contact detail. Single channel, cheap full-refetch.
   useEffect(() => {
+    const bump = () => setTick(n => n + 1);
     const ch = db.channel('quicklist-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => setTick(n => n + 1))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => setTick(n => n + 1))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, () => setTick(n => n + 1))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, bump)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, bump)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, bump)
       .subscribe();
-    return () => { db.removeChannel(ch); };
+    window.addEventListener('bpp:snoozes-changed', bump);
+    return () => { db.removeChannel(ch); window.removeEventListener('bpp:snoozes-changed', bump); };
   }, []);
 
   useEffect(() => {
@@ -6608,6 +6645,7 @@ function LiveQuickList({ onSelect }) {
         .map(id => {
           const c = waitingById[id];
           if (!c || c.do_not_contact) return null;
+          if (isSnoozedFor(id)) return null;
           return {
             id, stage: c.stage || 1, name: displayNameFor(c), phone: c.phone,
             preview: waitingPreview[id], sinceIso: waitingTime[id],
@@ -6616,11 +6654,14 @@ function LiveQuickList({ onSelect }) {
         .filter(Boolean)
         .slice(0, 15);
 
-      // TODAY / THIS WEEK split from the single installs query
-      const installs = (installsThisWeekRes.data || []).map(c => ({
-        id: c.id, stage: c.stage || 3, name: displayNameFor(c),
-        phone: c.phone, address: c.address, installDate: c.install_date,
-      }));
+      // TODAY / THIS WEEK split from the single installs query. Snoozed
+      // contacts drop out of both.
+      const installs = (installsThisWeekRes.data || [])
+        .filter(c => !isSnoozedFor(c.id))
+        .map(c => ({
+          id: c.id, stage: c.stage || 3, name: displayNameFor(c),
+          phone: c.phone, address: c.address, installDate: c.install_date,
+        }));
       const today = installs.filter(i => {
         const d = new Date(i.installDate).getTime();
         return d >= startOfToday.getTime() && d < endOfToday.getTime();
@@ -6632,10 +6673,10 @@ function LiveQuickList({ onSelect }) {
 
       // PERMITS IN FLIGHT: stage 4–8, excluding the ones already surfaced
       // under TODAY / THIS WEEK (they'll show there with install date — no
-      // need to double-book them under permits).
+      // need to double-book them under permits) and anything Key snoozed.
       const installedIds = new Set([...today, ...thisWeek].map(i => i.id));
       const inFlightPermits = (inFlightRes.data || [])
-        .filter(c => !installedIds.has(c.id))
+        .filter(c => !installedIds.has(c.id) && !isSnoozedFor(c.id))
         .map(c => ({
           id: c.id, stage: c.stage, name: displayNameFor(c),
           phone: c.phone, address: c.address,
@@ -6643,21 +6684,24 @@ function LiveQuickList({ onSelect }) {
 
       // STUCK QUOTES: same F/U label logic the Finance/briefing use. Look
       // up contact rows so proposals with a stored contact_name of "Unknown"
-      // can still fall back to the phone number display.
+      // can still fall back to the phone number display. Drop any that Key
+      // has snoozed.
       const stuckContactIds = (stuckRes.data || []).map(p => p.contact_id).filter(Boolean);
       const stuckContactsRes = stuckContactIds.length
         ? await db.from('contacts').select('id, name, phone').in('id', stuckContactIds)
         : { data: [] };
       const stuckContactMap = Object.fromEntries((stuckContactsRes.data || []).map(c => [c.id, c]));
-      const stuckQuotes = (stuckRes.data || []).map(p => {
-        const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
-        const flag = days >= 7 ? 'EXIT' : days >= 4 ? 'F/U 2' : 'F/U 1';
-        const c = stuckContactMap[p.contact_id] || { name: p.contact_name };
-        return {
-          id: p.contact_id, name: displayNameFor(c),
-          total: Number(p.total) || 0, days: Math.round(days), flag,
-        };
-      });
+      const stuckQuotes = (stuckRes.data || [])
+        .filter(p => !p.contact_id || !isSnoozedFor(p.contact_id))
+        .map(p => {
+          const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
+          const flag = days >= 7 ? 'EXIT' : days >= 4 ? 'F/U 2' : 'F/U 1';
+          const c = stuckContactMap[p.contact_id] || { name: p.contact_name };
+          return {
+            id: p.contact_id, name: displayNameFor(c),
+            total: Number(p.total) || 0, days: Math.round(days), flag,
+          };
+        });
 
       setData({ replyNow, today, thisWeek, inFlightPermits, stuckQuotes });
       setLoading(false);
@@ -6727,7 +6771,7 @@ function QuickListRow({ row, section, onSelect }) {
   }
   return (
     <button
-      onClick={() => row.id && onSelect && onSelect(row.id)}
+      onClick={() => row.id && onSelect && onSelect(row.id, section)}
       className="tactile-flat"
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 10,
@@ -7943,6 +7987,11 @@ function App() {
   // the full 69-row feed. PIPELINE still available for kanban-heads.
   const [leadsSubView, setLeadsSubView] = useState('quick');
   const [selectedContact, setSelectedContact] = useState(initial.contact);
+  // One-shot override for LiveContactDetail's default tab — lets callers
+  // like the Quick List's STUCK QUOTES section land Key directly on the
+  // Quote tab instead of the tab that'd come from the main-tab mapping.
+  // Cleared after the detail panel reads it.
+  const [nextDetailTab, setNextDetailTab] = useState(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
@@ -8596,7 +8645,15 @@ function App() {
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <LeadsSubToolbar active="quick" onChange={setLeadsSubView} />
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <LiveQuickList onSelect={id => setSelectedContact(id)} />
+              <LiveQuickList onSelect={(id, section) => {
+                // Pick the detail tab that matches Key's intent: stuck quotes
+                // → Quote (review + draft follow-up), permits in flight →
+                // Permits (track progress), everything else → Messages (thread).
+                if (section === 'stuck') setNextDetailTab('QUOTE');
+                else if (section === 'permits') setNextDetailTab('PERMITS');
+                else setNextDetailTab('MESSAGES');
+                setSelectedContact(id);
+              }} />
             </div>
           </div>
         );
@@ -8687,10 +8744,20 @@ function App() {
                   onBack={() => setSelectedContact(null)}
                   mobile={false}
                   defaultTab={(() => {
-                    // Map the main tab Key is currently viewing to the detail
-                    // tab that makes the most sense to open. Clicking a
-                    // contact from Finance → lands on Quote. From Calendar
-                    // or the Permits sub-view → lands on Permits. Etc.
+                    // One-shot override wins (e.g. Quick List STUCK QUOTES
+                    // land on QUOTE directly so Key can review + draft F/U).
+                    if (nextDetailTab) {
+                      const t = nextDetailTab;
+                      // Clear on next tick so a follow-up contact click
+                      // reverts to the main-tab mapping below.
+                      queueMicrotask(() => setNextDetailTab(null));
+                      return t;
+                    }
+                    // Otherwise map the main tab Key is currently viewing
+                    // to the detail tab that makes the most sense to open.
+                    // Clicking a contact from Finance → lands on Quote.
+                    // From Calendar or the Permits sub-view → lands on
+                    // Permits. Etc.
                     if (tab === 'finance') return 'QUOTE';
                     if (tab === 'calendar') return 'PERMITS';
                     if (tab === 'messages') return 'MESSAGES';
