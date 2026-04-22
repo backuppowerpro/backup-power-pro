@@ -266,14 +266,17 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
     );
   }
 
-  // Desktop: original flat row
+  // Desktop: original flat row, icons dropped so all 11 tabs fit in the
+  // left-panel width (Key 2026-04-22: "items cut off, remove icons to
+  // make room"). Each tab now flex:1 so labels share the available
+  // space evenly. Overflow-x clipping would hide tabs; flex sharing
+  // keeps every label at least partly visible.
   return (
     <div ref={barRef} role="tablist" aria-label="Main navigation" style={{
       height: 44, display: 'flex', alignItems: 'stretch',
-      padding: '0 8px',
+      padding: 0,
       background: 'var(--card)',
       boxShadow: 'var(--pressed-2)',
-      overflowX: 'visible',
       whiteSpace: 'nowrap',
       position: 'relative', zIndex: 2,
     }}>
@@ -288,22 +291,23 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
             aria-label={badge ? `${t.label} (${badge})` : t.label}
             onClick={() => onChange && onChange(t.id)}
             style={{
-              height: '100%', padding: '0 20px',
-              display: 'flex', alignItems: 'center', gap: 10,
-              flex: '0 0 auto',
+              height: '100%', padding: '0 8px', minWidth: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              flex: '1 1 0',
               color: isActive ? 'var(--text)' : 'var(--text-muted)',
-              fontSize: 13,
+              fontSize: 12,
               boxShadow: isActive ? 'inset 0 -3px 0 var(--gold)' : 'none',
               transition: 'box-shadow var(--dur) var(--step), color var(--dur) var(--step)',
               cursor: 'pointer',
+              background: 'transparent', border: 'none',
+              overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-            <span style={{ display: 'flex', opacity: isActive ? 1 : .75 }} aria-hidden="true">{t.icon}</span>
-            <span>{t.label}</span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.label}</span>
             {badge ? (
               <span className="mono" style={{
                 fontSize: 10, padding: '1px 5px', letterSpacing: '.04em',
                 color: '#fff', background: 'var(--ms-3)',
-                marginLeft: -4,
+                flex: '0 0 auto',
               }}>{badge}</span>
             ) : null}
           </button>

@@ -8754,7 +8754,9 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
   if (selectedContact) {
     // Contact surface toolbar. Labels double up as shortcuts while Key is
     // texting someone — "Open Contact" style affordances for common
-    // pivots without leaving the panel.
+    // pivots without leaving the panel. Buttons flex to fill the 480px
+    // right panel width (Key 2026-04-22: "right side tabs don't take up
+    // the full space").
     const sub = [
       { id: 'MESSAGES', label: 'Messages' },
       { id: 'TIMELINE', label: 'Timeline' },
@@ -8764,41 +8766,39 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
       { id: 'NOTES',    label: 'Notes' },
       { id: 'EDIT',     label: 'Edit' },
     ];
+    const hasCall = !!contactPhone;
     buttons = (
       <>
-        <span className="chrome-label" title={contactLabel} style={{ padding: '0 10px', display: 'flex', alignItems: 'center', color: 'var(--text)', fontSize: 11, letterSpacing: '.08em', fontWeight: 700, flex: '0 0 auto', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {contactLabel || 'CONTACT'}
-        </span>
         {sub.map(t => {
           const on = activeDetail === t.id;
           return (
             <button key={t.id} onClick={() => focusDetail(t.id)} className="chrome-label" style={{
-              height: '100%', padding: '0 10px',
+              height: '100%', padding: '0 4px', minWidth: 0,
               background: 'transparent', border: 'none',
               color: on ? 'var(--text)' : 'var(--text-muted)',
-              fontSize: 12,
+              fontSize: 11,
               boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
-              cursor: 'pointer',
+              cursor: 'pointer', flex: '1 1 0',
+              overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{t.label}</button>
           );
         })}
-        <div style={{ flex: 1 }} />
-        {contactPhone ? (
+        {hasCall ? (
           <button
             onClick={() => window.__bpp_dial && window.__bpp_dial(contactPhone)}
             className="chrome-label" title="Call"
-            style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', color: 'var(--green)', fontSize: 12, cursor: 'pointer' }}
+            style={{ height: '100%', padding: '0 4px', minWidth: 0, background: 'transparent', border: 'none', color: 'var(--ms-2)', fontSize: 11, cursor: 'pointer', flex: '1 1 0', fontWeight: 700 }}
           >CALL</button>
         ) : null}
         <button
           onClick={onOpenBrief}
           className="chrome-label" title="Install brief"
-          style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}
+          style={{ height: '100%', padding: '0 4px', minWidth: 0, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', flex: '1 1 0' }}
         >BRIEF</button>
         <button
           onClick={onCloseContact}
           aria-label="Close contact"
-          style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer' }}
+          style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer', flex: '0 0 auto' }}
         >×</button>
       </>
     );
@@ -8815,15 +8815,16 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
     ];
     buttons = (
       <>
-        <span className="chrome-label" style={{ padding: '0 10px', display: 'flex', alignItems: 'center', color: 'var(--text)', fontSize: 11, letterSpacing: '.08em', fontWeight: 700 }}>SPARKY</span>
         {modes.map(m => (
           <button key={m.id}
             onClick={() => window.dispatchEvent(new CustomEvent('bpp:sparky-mode', { detail: { mode: m.id } }))}
             className="chrome-label"
             style={{
-              height: '100%', padding: '0 10px',
+              height: '100%', padding: '0 4px', minWidth: 0,
               background: 'transparent', border: 'none',
               color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer',
+              flex: '1 1 0',
+              overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{m.label}</button>
         ))}
       </>
@@ -8834,10 +8835,10 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
     <div role="toolbar" aria-label={selectedContact ? 'Contact actions' : 'Sparky modes'}
       style={{
         height: 44, display: 'flex', alignItems: 'stretch',
-        padding: '0 8px',
+        padding: 0,
         background: 'var(--card)', boxShadow: 'var(--pressed-2)',
         borderLeft: '1px solid rgba(0,0,0,.08)',
-        overflowX: 'auto', whiteSpace: 'nowrap',
+        whiteSpace: 'nowrap',
         position: 'relative', zIndex: 2,
       }}>
       {buttons}
