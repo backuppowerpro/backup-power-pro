@@ -1953,6 +1953,33 @@ function InstallBriefModal({ contact, onClose }) {
             </Section>
           ) : null}
         </div>
+
+        {/* Smart GO CTA — big green tactile button at the bottom of the
+            brief. On install day Key hits this and the address opens in
+            Maps so he's driving before the brief scrolls off the screen.
+            Hides when no address or no install_date. */}
+        {contact.address && install ? (
+          <div style={{ padding: '12px 12px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid rgba(0,0,0,.15)', background: 'var(--card)' }}>
+            <a
+              href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
+              target="_blank" rel="noopener"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                padding: '14px 20px',
+                background: 'var(--ms-2)', color: '#fff',
+                boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.3), inset -2px -2px 0 rgba(0,0,0,.4)',
+                fontFamily: 'var(--font-chrome)', fontSize: 14, fontWeight: 700,
+                letterSpacing: '.1em', textTransform: 'uppercase',
+                textDecoration: 'none',
+              }}
+            >
+              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
+                <path d="M2 8 L14 8 M10 4 L14 8 L10 12"/>
+              </svg>
+              GO · OPEN IN MAPS
+            </a>
+          </div>
+        ) : null}
       </div>
     </div>
   );
