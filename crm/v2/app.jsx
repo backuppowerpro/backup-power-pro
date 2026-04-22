@@ -2594,7 +2594,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
 
       {/* Compose — only show on MESSAGES tab */}
       {detailTab === 'MESSAGES' ? (
-        <ComposeBar contactId={contactId} contactName={contact?.name} contactPhone={contact?.phone} installDate={contact?.install_date} disabled={!!contact?.do_not_contact} />
+        <ComposeBar contactId={contactId} contactName={contact?.name} contactPhone={contact?.phone} installDate={contact?.install_date} latestInbound={(() => { for (let i = messages.length - 1; i >= 0; i--) { const m = messages[i]; if (m.direction === 'inbound' && m.sender !== 'ai') return m.body || ''; } return ''; })()} disabled={!!contact?.do_not_contact} />
       ) : null}
     </div>
   );
@@ -4441,7 +4441,39 @@ function MessageBody({ body, isOut }) {
   );
 }
 
-function ComposeBar({ contactId, contactName, contactPhone, installDate = null, disabled = false }) {
+// Smart Quick Replies — one-tap pre-written responses driven off the
+// customer's most recent inbound message. Regex-match simple patterns
+// (email handoff, schedule questions, pricing pushback, photo asks) and
+// surface 2-3 chips that prefill the compose bar. No LLM call today; the
+// compose bar's existing AI button still handles full drafting.
+function smartQuickReplies(latestInbound, contactName) {
+  if (!latestInbound) return [];
+  const t = latestInbound.toLowerCase();
+  const first = (contactName || '').trim().split(/\s+/)[0] || '';
+  const salute = first ? `Hey ${first}, ` : 'Hey, ';
+  const replies = [];
+  if (/@|email|e.mail/.test(t)) {
+    replies.push({ label: 'Got it — thx', body: `${salute}got it — I'll send everything over there. Expect a text and an email shortly.` });
+  }
+  if (/\?\s*$|when|time|date|schedule|book/.test(t)) {
+    replies.push({ label: 'Send slots', body: `${salute}I can get you in this week. Would Thu or Fri work better for you?` });
+  }
+  if (/price|cost|how much|expensive|cheaper|discount|afford/.test(t)) {
+    replies.push({ label: 'Value anchor', body: `${salute}happy to break it down. For context, most homeowners compare us to a standby generator at $10–20K installed. Our all-in install runs $1,197. Want the full itemized quote?` });
+  }
+  if (/photo|picture|panel|meter/.test(t)) {
+    replies.push({ label: 'Ask for panel', body: `${salute}can you send a photo of the main electrical panel with the cover open? That'll tell me exactly what you need.` });
+  }
+  if (/yes|sure|sounds good|let.?s do it|ready|sign me up|book it|lock it in/.test(t)) {
+    replies.push({ label: 'Deposit link', body: `${salute}let's lock it in. I'll send a 50% deposit link next — takes 30 seconds, then we're booked.` });
+  }
+  if (replies.length === 0) {
+    replies.push({ label: 'On it', body: `${salute}on it — give me a second and I'll get right back to you.` });
+  }
+  return replies.slice(0, 3);
+}
+
+function ComposeBar({ contactId, contactName, contactPhone, installDate = null, latestInbound = '', disabled = false }) {
   // Auto-save drafts per contact in localStorage so Key doesn't lose a
   // half-typed SMS when he switches contacts or reloads the tab.
   const draftKey = contactId ? `bpp_v2_draft_${contactId}` : null;
@@ -4662,6 +4694,11 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
     );
   }
 
+  const smartReplies = React.useMemo(
+    () => smartQuickReplies(latestInbound, contactName),
+    [latestInbound, contactName]
+  );
+
   return (
     <div style={{
       padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
@@ -4670,6 +4707,22 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
       display: 'flex', flexDirection: 'column', gap: 6,
       position: 'relative',
     }}>
+      {/* Smart Quick Replies — only appear when the latest message is an
+          un-replied inbound. Click a chip → prefills the compose bar so Key
+          can edit + send. Tuned to the common BPP flows (photo ask, price
+          pushback, scheduling, deposit). Empty when no inbound match. */}
+      {smartReplies.length > 0 && !text ? (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
+          {smartReplies.map((r, i) => (
+            <button key={i} onClick={() => setText(r.body)}
+              title={r.body}
+              className="smart-chip smart-chip--gold"
+              style={{ cursor: 'pointer', border: 'none', fontSize: 10, padding: '4px 10px' }}>
+              {r.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {snippetsOpen ? (
         <div style={{
           position: 'absolute', left: 12, right: 12, bottom: '100%',
