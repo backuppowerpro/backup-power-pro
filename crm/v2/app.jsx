@@ -4585,15 +4585,22 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
     const text = String(raw).trim();
     // Split into paragraphs; the drafted SMS is usually the final
     // conversational paragraph. Drop markdown-headed ones (**, ##), anything
-    // that starts with agent-thinking patterns, and "Updated: …" annotations.
+    // that starts with agent-thinking patterns, stage-analysis intros
+    // ("this lead is at stage X", "based on the conversation"), and
+    // "Updated: …" annotations. Key reported 2026-04-22 that the AI button
+    // was returning the stage analysis instead of a draft — widened the
+    // prefix list to catch those bodies.
     const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
-    const agentPrefixes = /^(looking at|let me|i'll|i will|checking|info check|scanning|first|step \d|thinking|analysis|reasoning)/i;
+    const analysisPrefix = /^(looking at|let me|i'll|i will|checking|info check|scanning|first|step \d|thinking|analysis|reasoning|this (lead|contact|customer|thread)|based on|context|current stage|they.?re (at|in)|stage \d)/i;
     const candidates = paragraphs.filter(p =>
       !p.includes('**') &&
       !/^#{1,6}\s/.test(p) &&
       !/^updated[: ]/i.test(p) &&
       !/^-\s/.test(p) &&
-      !agentPrefixes.test(p)
+      !analysisPrefix.test(p) &&
+      // A valid SMS draft typically reads conversationally. Reject anything
+      // that looks like a structured breakdown (colon-heavy single lines).
+      !(p.length < 300 && /^[A-Z][a-z]+( [a-z]+)*:/.test(p))
     );
     // Prefer the last matching paragraph (the final output), or fall back to
     // last paragraph overall.

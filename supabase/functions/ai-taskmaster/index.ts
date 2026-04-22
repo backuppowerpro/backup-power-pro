@@ -211,7 +211,16 @@ Constraints:
 Output format:
 [the message body]
 
-If you called edit_contact, add ONE line after: "Updated: [what changed]"`
+RULES (CRITICAL — the CRM pastes your output directly into the SMS compose
+bar and Key hits send):
+- Output ONLY the drafted message body. No preamble, no analysis, no stage
+  labels, no "this lead is at…", no "based on the conversation", no
+  reasoning. Just the text Key would actually send.
+- If you literally cannot draft a useful reply (totally empty thread,
+  corrupted context), output one short ask: "Hey — mind sharing a bit more
+  about what you're looking for?"
+- If you called edit_contact, add ONE line after the message: "Updated:
+  [what changed]" — the CRM strips this line before paste.`
 
 const MODE_BRIEFING = `MODE: BRIEFING — Key's morning action brief.
 
