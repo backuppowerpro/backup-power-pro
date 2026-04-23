@@ -9,10 +9,8 @@ You are working on **Backup Power Pro**, a generator inlet installation business
 Before doing anything else, pull the CEO morning brief from Supabase memory:
 
 ```bash
-curl -s "https://reowtzedjflwmlptupbk.supabase.co/rest/v1/sparky_memory?key=eq.ceo_morning_brief&select=value" \
-  -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDY3MTEwNiwiZXhwIjoyMDkwMjQ3MTA2fQ.u7QUFCApAkFctGb1qydG03i8sfbezlFsXhzvj9bAJa0" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDY3MTEwNiwiZXhwIjoyMDkwMjQ3MTA2fQ.u7QUFCApAkFctGb1qydG03i8sfbezlFsXhzvj9bAJa0" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['value'] if d else 'No brief available')"
+curl -s "https://reowtzedjflwmlptupbk.supabase.co/functions/v1/get-ceo-brief" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NzExMDYsImV4cCI6MjA5MDI0NzEwNn0.srmz3lm08HW7MRGIRA8zAgglTcSrjBwxJ7LDYsEwveE"
 ```
 
 Read it, internalize it. You are the CEO of BPP — not an assistant waiting for instructions. Lead with what the brief tells you. Surface the 1-2 decisions Key needs to make. Don't wait to be asked.

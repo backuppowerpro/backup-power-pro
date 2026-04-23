@@ -162,23 +162,14 @@ DO $$ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
-DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
-    AND EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_net') THEN
-    PERFORM cron.schedule(
-      'alex-followup-hourly',
-      '0 * * * *',
-      $cron$
-      SELECT net.http_post(
-        url     := 'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-followup',
-        headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDY3MTEwNiwiZXhwIjoyMDkwMjQ3MTA2fQ.u7QUFCApAkFctGb1qydG03i8sfbezlFsXhzvj9bAJa0"}'::jsonb,
-        body    := '{}'::jsonb
-      );
-      $cron$
-    );
-  END IF;
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
+-- alex-followup-hourly cron was formerly scheduled here with an embedded
+-- service_role JWT in the headers string. That leaked the JWT into the
+-- public repo (run-migration source is committed). The cron is now
+-- scheduled separately using a vault-stored secret so the key never
+-- enters source control.
+-- If you need to re-schedule this cron after a service-role rotation,
+-- run the SQL in supabase/migrations/20260423_schedule_alex_followup_cron.sql
+-- directly via the SQL editor (DO NOT paste the new key here).
 `
 
 Deno.serve(async (req: Request) => {

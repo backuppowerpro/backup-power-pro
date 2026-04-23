@@ -2,12 +2,21 @@ import { db } from './db.js'
 
 const BASE = 'https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/aK159zA9fGrlOab4UPA5/pub/'
 
+// Jurisdiction portal credentials. HARD RULE: never commit plaintext
+// usernames / passwords to this file again — a previous revision exposed
+// four live portal logins including a Gmail password in the public repo.
+// All credentials now come from the environment. Copy .env.example → .env,
+// fill in the values locally (which is gitignored), and restart the server.
+// The permit app will still seed the table without them — the auth
+// fields are nullable — but portal-login automation will be unavailable.
+const env = (k) => (process.env[k] || null)
+
 const JURISDICTIONS = [
   {
     name: 'Greenville County',
     portal_url: 'https://grvlc-trk.aspgov.com/eTRAKiT/dashboard.aspx',
-    username: 'AEC001822',
-    password: 'Ruxwuv-3cungu-megkyq',
+    username: env('GVL_COUNTY_USER'),
+    password: env('GVL_COUNTY_PASS'),
     phone: '8644677060',
     notes: 'Non-City Permitting',
     logo_url: BASE + 'Jn97croHlO8SiC90l0Xd.JPG',
@@ -26,8 +35,8 @@ const JURISDICTIONS = [
   {
     name: 'City of Simpsonville',
     portal_url: 'https://evolve-public.infovisionsoftware.com/simpsonville/',
-    username: 'Keyelectricupstate@gmail.com',
-    password: 'Banana196',
+    username: env('SIMPSONVILLE_USER'),
+    password: env('SIMPSONVILLE_PASS'),
     phone: '8649679526',
     notes: 'South Greenville',
     logo_url: BASE + 'cSJbqfBWf1roFGxM5fgM.jpg',
@@ -36,8 +45,8 @@ const JURISDICTIONS = [
   {
     name: 'City of Mauldin',
     portal_url: 'https://www4.citizenserve.com/Portal/PortalController?Action=showPermit&ctzPagePrefix=Portal_&installationID=362&original_iid=362&original_contactID=38564612',
-    username: 'Keyelectricupstate@gmail.com',
-    password: 'nigfa4-hadhan-kycwIh',
+    username: env('MAULDIN_USER'),
+    password: env('MAULDIN_PASS'),
     phone: '8642898976',
     notes: 'South Greenville',
     logo_url: BASE + 'h3zBsZYuvMlyAiYJTAMe.jpg',
@@ -66,8 +75,8 @@ const JURISDICTIONS = [
   {
     name: 'City of Greer',
     portal_url: 'https://gree.csqrcloud.com/community-etrakit/',
-    username: 'AEC1935',
-    password: 'duxbi9-devqet-Bypxob',
+    username: env('GREER_USER'),
+    password: env('GREER_PASS'),
     phone: null,
     notes: null,
     logo_url: '/greer-logo.png',

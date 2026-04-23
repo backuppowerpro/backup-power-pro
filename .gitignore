@@ -41,3 +41,21 @@ scripts/brain/.stderr.log
 supabase/STRIPE-SETUP.md
 supabase/functions/.env
 supabase/.temp/
+
+# Secrets / credentials — NEVER commit these
+.env
+.env.*
+!.env.example
+credentials.md
+secrets.md
+secrets.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# SQLite runtime state — contains customer PII snapshots
+permit-app/server/*.db
+permit-app/server/*.db-wal
+permit-app/server/*.db-shm
+permit-app/server/*.db-journal
