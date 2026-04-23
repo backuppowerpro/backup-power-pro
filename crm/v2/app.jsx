@@ -4392,7 +4392,7 @@ function renderBold(text, key) {
 // him to the right sub-tab. Heuristic-driven today; can swap to a Sparky-
 // LLM pass later without changing the UI contract.
 function SmartNextActionHint({ contact, messages, outstandingBalance, onJumpTab, onOpenQuickQuote }) {
-  const hint = React.useMemo(() => {
+  const heuristic = React.useMemo(() => {
     if (!contact) return null;
     const stage = contact.stage || 1;
     const latest = Array.isArray(messages) && messages.length ? messages[messages.length - 1] : null;
@@ -4402,40 +4402,61 @@ function SmartNextActionHint({ contact, messages, outstandingBalance, onJumpTab,
     const hoursToInstall = installMs !== null ? (installMs - Date.now()) / 3600000 : null;
     const dnc = !!contact.do_not_contact;
 
-    if (dnc) {
-      return { body: 'Customer is marked Do Not Contact.', cta: null, tab: null };
-    }
+    if (dnc) return { body: 'Customer is marked Do Not Contact.', cta: null, tab: null };
     if (waiting) {
       const preview = (latest.body || '').slice(0, 56);
       return { body: `Customer replied: "${preview}${preview.length >= 56 ? '…' : ''}"`, cta: 'REPLY NOW', tab: 'MESSAGES' };
     }
-    if (hoursToInstall !== null && hoursToInstall >= 0 && hoursToInstall <= 24) {
-      return { body: 'Install is today. Open the install brief and drive out.', cta: 'BRIEF →', tab: 'BRIEF' };
-    }
-    if (hoursToInstall !== null && hoursToInstall > 24 && hoursToInstall <= 72) {
-      return { body: 'Install is in the next 72 hours. Confirm materials + permit are ready.', cta: 'PERMITS', tab: 'PERMITS' };
-    }
-    if (stage === 1) {
-      return { body: 'New lead. Draft a quote or let Alex collect panel photo + amp + address.', cta: 'NEW QUOTE', tab: 'QUOTE' };
-    }
-    if (stage === 2) {
-      return { body: 'Quote is out — follow up or pivot to a deposit link if the customer viewed it.', cta: 'SEE QUOTE', tab: 'QUOTE' };
-    }
-    if (stage === 3 && !hasInstallDate) {
-      return { body: 'Booked but no install date set. Send a scheduling text with your open slots.', cta: 'REPLY', tab: 'MESSAGES' };
-    }
-    if (stage >= 4 && stage <= 6) {
-      return { body: 'Permit in flight. Check status and bump the jurisdiction if it has been >3 days.', cta: 'PERMITS', tab: 'PERMITS' };
-    }
-    if (stage === 7 || stage === 8) {
-      return { body: 'Inspection window — schedule or confirm the inspector visit.', cta: 'PERMITS', tab: 'PERMITS' };
-    }
-    if (outstandingBalance > 0) {
-      return { body: `Outstanding balance: $${Number(outstandingBalance).toLocaleString()}. Nudge the invoice.`, cta: 'INVOICE', tab: 'QUOTE' };
-    }
+    if (hoursToInstall !== null && hoursToInstall >= 0 && hoursToInstall <= 24) return { body: 'Install is today. Open the install brief and drive out.', cta: 'BRIEF →', tab: 'BRIEF' };
+    if (hoursToInstall !== null && hoursToInstall > 24 && hoursToInstall <= 72) return { body: 'Install is in the next 72 hours. Confirm materials + permit are ready.', cta: 'PERMITS', tab: 'PERMITS' };
+    if (stage === 1) return { body: 'New lead. Draft a quote or let Alex collect panel photo + amp + address.', cta: 'NEW QUOTE', tab: 'QUOTE' };
+    if (stage === 2) return { body: 'Quote is out — follow up or pivot to a deposit link if the customer viewed it.', cta: 'SEE QUOTE', tab: 'QUOTE' };
+    if (stage === 3 && !hasInstallDate) return { body: 'Booked but no install date set. Send a scheduling text with your open slots.', cta: 'REPLY', tab: 'MESSAGES' };
+    if (stage >= 4 && stage <= 6) return { body: 'Permit in flight. Check status and bump the jurisdiction if it has been >3 days.', cta: 'PERMITS', tab: 'PERMITS' };
+    if (stage === 7 || stage === 8) return { body: 'Inspection window — schedule or confirm the inspector visit.', cta: 'PERMITS', tab: 'PERMITS' };
+    if (outstandingBalance > 0) return { body: `Outstanding balance: $${Number(outstandingBalance).toLocaleString()}. Nudge the invoice.`, cta: 'INVOICE', tab: 'QUOTE' };
     return null;
   }, [contact, messages, outstandingBalance]);
 
+  // Real LLM pass — contact_insight mode returns a single punchy line
+  // tuned to this contact. Cached per contact-id for 15 minutes in
+  // sessionStorage so rapidly opening the same contact doesn't re-bill
+  // on every click.
+  const [sparky, setSparky] = React.useState(null);
+  React.useEffect(() => {
+    if (!contact?.id) return;
+    const key = `bpp_v2_contact_insight:${contact.id}`;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.t && Date.now() - parsed.t < 15 * 60 * 1000 && parsed.body) {
+          setSparky(parsed.body);
+          return;
+        }
+      }
+    } catch {}
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await db.functions.invoke('ai-taskmaster', {
+          body: { mode: 'contact_insight', contact, thread: (messages || []).slice(-20) },
+        });
+        const raw = typeof data === 'string' ? data : (data?.reply || data?.text || data?.answer || '');
+        const line = String(raw).trim().split(/\n/).map(s => s.trim()).find(s => s.length > 8 && s.length < 200 && !/^#/.test(s) && !/^(mode|output|step|rules|format)/i.test(s));
+        if (alive && line) {
+          setSparky(line);
+          try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), body: line })); } catch {}
+        }
+      } catch { /* fallback to heuristic */ }
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contact?.id, contact?.stage]);
+
+  const hint = sparky
+    ? { body: sparky, cta: heuristic?.cta || null, tab: heuristic?.tab || null }
+    : heuristic;
   if (!hint) return null;
 
   const onCta = () => {
@@ -4447,7 +4468,7 @@ function SmartNextActionHint({ contact, messages, outstandingBalance, onJumpTab,
 
   return (
     <div className="smart-hint" style={{ marginBottom: 2 }}>
-      <span className="smart-hint__label">Next</span>
+      <span className="smart-hint__label">{sparky ? 'Sparky' : 'Next'}</span>
       <span className="smart-hint__body">{hint.body}</span>
       {hint.cta ? (
         <button className="smart-hint__cta" onClick={onCta}>{hint.cta}</button>
@@ -6625,11 +6646,22 @@ function LiveCalendar() {
         overflowX: 'auto',
         paddingBottom: 4,
       }}>
-        {days.map(d => {
+        {days.map((d, dayIdx) => {
           const key = dayKey(d);
           const items = weekInstalls[key] || [];
           const dayEvents = weekEvents[key] || [];
           const highlight = isToday(d);
+          // Smart Calendar gap-suggest — for each empty FUTURE day, surface
+          // one of the AWAITING DATE leads so Key can book with one click.
+          // Cycles through the unscheduled queue by day index so different
+          // days get different suggestions instead of all showing the same
+          // first name. Past days don't get a ghost (no point suggesting a
+          // booking yesterday).
+          const isPast = d.getTime() < today.getTime();
+          const isEmptyDay = items.length === 0 && dayEvents.length === 0;
+          const gapCandidate = (!isPast && isEmptyDay && filteredUnscheduled.length > 0)
+            ? filteredUnscheduled[dayIdx % filteredUnscheduled.length]
+            : null;
           // Smart Calendar day heat — subtle top stripe tinted by how busy
           // the day is. Also detects time overlaps (two installs within
           // 2 hours of each other) and surfaces a warning chip.
@@ -6702,10 +6734,37 @@ function LiveCalendar() {
                 }}>+</button>
               </div>
               <div style={{ padding: 6, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                {items.length === 0 && dayEvents.length === 0 ? (
+                {isEmptyDay && !gapCandidate ? (
                   <div className="mono" style={{ fontSize: 9, color: 'var(--text-faint)', padding: '6px 4px', textTransform: 'lowercase', letterSpacing: '.06em' }}>
                     —
                   </div>
+                ) : null}
+                {gapCandidate ? (
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Book ${displayNameFor(gapCandidate)} for install on ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}?`)) return;
+                      const slot = new Date(d); slot.setHours(10, 0, 0, 0);
+                      const { error } = await db.from('contacts').update({ install_date: slot.toISOString() }).eq('id', gapCandidate.id);
+                      if (error) window.__bpp_toast?.(`Book failed: ${error.message}`, 'error');
+                      else { window.__bpp_toast?.(`${displayNameFor(gapCandidate)} booked for ${d.toLocaleDateString('en-US', { weekday: 'short' })} 10am`, 'success'); setRefreshTick(n => n + 1); }
+                    }}
+                    title={`Suggest: book ${displayNameFor(gapCandidate)} for this slot. Tap to schedule at 10am.`}
+                    style={{
+                      textAlign: 'left', padding: '6px 6px',
+                      background: 'transparent',
+                      border: '1px dashed rgba(0,0,0,.25)',
+                      color: 'var(--text-muted)', cursor: 'pointer',
+                      fontFamily: 'var(--font-body)', fontSize: 10, lineHeight: 1.3,
+                      display: 'flex', flexDirection: 'column', gap: 2,
+                    }}>
+                    <span className="chrome-label" style={{ fontSize: 8, letterSpacing: '.1em', color: 'var(--gold)' }}>SUGGEST</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {displayNameFor(gapCandidate)}
+                    </span>
+                    <span style={{ color: 'var(--text-faint)', fontSize: 9 }}>
+                      awaiting · book here?
+                    </span>
+                  </button>
                 ) : null}
                 {/* Non-install events — rendered first so they're distinct
                     from the install blocks. Different tint by event_type. */}
@@ -7149,7 +7208,7 @@ function LiveCalls({ onSelect }) {
       setLoading(true);
       const { data: calls } = await db.from('messages')
         .select('id, contact_id, direction, body, sender, status, created_at, recording_url, duration_seconds')
-        .eq('status', 'call')
+        .in('status', ['call', 'voicemail', 'missed'])
         .order('created_at', { ascending: false })
         .limit(200);
       const ids = Array.from(new Set((calls || []).map(c => c.contact_id).filter(Boolean)));
@@ -7157,15 +7216,22 @@ function LiveCalls({ onSelect }) {
         ? await db.from('contacts').select('id, name, phone').in('id', ids)
         : { data: [] };
       const cMap = Object.fromEntries((contacts || []).map(c => [c.id, c]));
-      const shaped = (calls || []).map(c => ({
-        id: c.id,
-        contactId: c.contact_id,
-        direction: c.direction,
-        durationSec: c.duration_seconds,
-        recordingUrl: c.recording_url,
-        at: c.created_at,
-        name: displayNameFor(cMap[c.contact_id] || { name: null, phone: (c.body || '').match(/\+?\d{10,}/)?.[0] || null }),
-      }));
+      const shaped = (calls || []).map(c => {
+        // Voicemails store "Voicemail from NAME: <transcript>" in body
+        const vmMatch = (c.body || '').match(/^Voicemail from [^:]+:\s*(.+)$/s);
+        const transcript = vmMatch ? vmMatch[1].trim() : null;
+        return {
+          id: c.id,
+          contactId: c.contact_id,
+          direction: c.direction,
+          durationSec: c.duration_seconds,
+          recordingUrl: c.recording_url,
+          at: c.created_at,
+          status: c.status,
+          transcript,
+          name: displayNameFor(cMap[c.contact_id] || { name: null, phone: (c.body || '').match(/\+?\d{10,}/)?.[0] || null }),
+        };
+      });
       // Smart Calls sort: priority-tagged rows float up.
       const priority = (r) => {
         const f = smartCallFlag(r);
@@ -7215,23 +7281,58 @@ function LiveCalls({ onSelect }) {
         const dur = r.durationSec ? `${mins}:${secs.toString().padStart(2, '0')}` : '—';
         const dir = r.direction === 'inbound' ? '↙' : '↗';
         const smart = smartCallFlag(r);
+        const isVm = r.status === 'voicemail' || (!!r.recordingUrl && r.direction === 'inbound');
         return (
-          <button key={r.id} onClick={() => r.contactId && onSelect && onSelect(r.contactId)}
-            className="tactile-flat" style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-              padding: '10px 12px', borderBottom: '1px solid var(--divider-faint)',
-              background: 'var(--card)', border: 'none', textAlign: 'left',
-              cursor: r.contactId ? 'pointer' : 'default',
-            }}>
-            <span className="mono" style={{ fontSize: 14, color: 'var(--text-muted)', width: 14 }}>{dir}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{r.name}</div>
-              <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {dur}{r.recordingUrl ? ' · ⏺ recording' : ''} · {relTimestamp(r.at)}
+          <div key={r.id} style={{
+            display: 'flex', flexDirection: 'column',
+            borderBottom: '1px solid var(--divider-faint)',
+            background: 'var(--card)',
+          }}>
+            <button onClick={() => r.contactId && onSelect && onSelect(r.contactId)}
+              className="tactile-flat" style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 12px',
+                background: 'transparent', border: 'none', textAlign: 'left',
+                cursor: r.contactId ? 'pointer' : 'default',
+              }}>
+              <span className="mono" style={{ fontSize: 14, color: 'var(--text-muted)', width: 14 }}>{dir}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{r.name}</div>
+                <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  {dur}{r.recordingUrl ? ' · ⏺ recording' : ''} · {relTimestamp(r.at)}
+                </div>
               </div>
-            </div>
-            {smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}
-          </button>
+              {smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}
+            </button>
+            {/* Smart Voice-call transcription inline — when the row has a
+                recording we surface the Twilio audio inline + the transcript
+                body so Key can read/listen without opening the contact. */}
+            {(r.recordingUrl || r.transcript) ? (
+              <div style={{
+                padding: '0 12px 10px 36px',
+                display: 'flex', flexDirection: 'column', gap: 6,
+              }}>
+                {r.transcript ? (
+                  <div style={{
+                    padding: '8px 10px',
+                    background: 'var(--bg)',
+                    boxShadow: 'var(--pressed-2)',
+                    fontFamily: 'var(--font-body)', fontSize: 12,
+                    color: 'var(--text)', lineHeight: 1.4,
+                    borderLeft: '3px solid var(--gold)',
+                  }}>
+                    <span className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', marginRight: 8, letterSpacing: '.08em' }}>
+                      {isVm ? 'VOICEMAIL' : 'TRANSCRIPT'}
+                    </span>
+                    {r.transcript}
+                  </div>
+                ) : null}
+                {r.recordingUrl ? (
+                  <audio controls preload="none" src={r.recordingUrl} style={{ width: '100%', height: 32 }} />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         );
       })}
     </div>
@@ -7314,6 +7415,90 @@ function reasonChipFor({ contact, signals }) {
   if (contact.stage === 1 && signals.ageHours < 24) return { label: 'NEW LEAD', tone: 'navy' };
   if (contact.do_not_contact) return { label: 'DNC', tone: 'red' };
   return { label: STAGE_MAP[contact.stage] || `STAGE ${contact.stage || 1}`, tone: 'muted' };
+}
+
+// Smart Today widget — 3-5 bullets summarizing what meaningfully changed
+// today. Renders above the Smart List on QUICK. Pulls from four cheap
+// queries (new leads today, proposal status transitions today, invoices
+// paid today, installs marked complete today) and assembles a headline.
+// Dismissible until next cold open (sessionStorage) so it doesn't nag
+// Key once he's scanned it.
+function SmartTodayWidget() {
+  const [items, setItems] = React.useState(null);
+  const [dismissed, setDismissed] = React.useState(() => {
+    try { return sessionStorage.getItem('bpp_v2_today_dismissed') === '1'; } catch { return false; }
+  });
+
+  React.useEffect(() => {
+    if (dismissed) return;
+    let alive = true;
+    (async () => {
+      const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+      const startIso = startOfToday.toISOString();
+      const endIso = new Date(startOfToday.getTime() + 86400000).toISOString();
+      const [newLeadsRes, proposalsTodayRes, invoicesPaidRes, installsTodayRes, stageChangesRes] = await Promise.all([
+        db.from('contacts').select('id, name, phone, created_at').gte('created_at', startIso).order('created_at', { ascending: true }).limit(10),
+        db.from('proposals').select('id, contact_name, total, status, signed_at').eq('status', 'Approved').gte('signed_at', startIso).limit(5),
+        db.from('invoices').select('id, contact_name, total, paid_at').eq('status', 'paid').gte('paid_at', startIso).limit(5),
+        db.from('contacts').select('id, name, install_date').gte('install_date', startIso).lt('install_date', endIso).limit(5),
+        db.from('stage_history').select('contact_id, to_stage, changed_at').gte('changed_at', startIso).limit(10),
+      ]);
+      if (!alive) return;
+      const bullets = [];
+      const newLeads = newLeadsRes.data || [];
+      if (newLeads.length === 1) bullets.push({ tone: 'gold', text: `New lead: ${displayNameFor(newLeads[0])}` });
+      else if (newLeads.length > 1) bullets.push({ tone: 'gold', text: `${newLeads.length} new leads today` });
+      for (const p of (proposalsTodayRes.data || [])) {
+        bullets.push({ tone: 'green', text: `${p.contact_name || 'Customer'} signed $${Number(p.total || 0).toLocaleString()}` });
+      }
+      for (const inv of (invoicesPaidRes.data || [])) {
+        bullets.push({ tone: 'green', text: `${inv.contact_name || 'Customer'} paid $${Number(inv.total || 0).toLocaleString()}` });
+      }
+      for (const i of (installsTodayRes.data || [])) {
+        const t = new Date(i.install_date);
+        bullets.push({ tone: 'navy', text: `Install today ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — ${displayNameFor(i)}` });
+      }
+      const installsDone = (stageChangesRes.data || []).filter(r => r.to_stage >= 9).length;
+      if (installsDone > 0) {
+        bullets.push({ tone: 'green', text: `${installsDone} install${installsDone === 1 ? '' : 's'} completed today` });
+      }
+      setItems(bullets.slice(0, 5));
+    })();
+    return () => { alive = false; };
+  }, [dismissed]);
+
+  if (dismissed || !items || items.length === 0) return null;
+
+  return (
+    <div style={{
+      margin: '8px 16px 4px',
+      padding: '10px 12px',
+      background: 'var(--card)',
+      boxShadow: 'var(--raised-2)',
+      display: 'flex', flexDirection: 'column', gap: 6,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '.12em' }}>
+          ◆ TODAY
+        </span>
+        <button onClick={() => {
+          try { sessionStorage.setItem('bpp_v2_today_dismissed', '1'); } catch {}
+          setDismissed(true);
+        }} style={{
+          padding: '2px 6px', fontSize: 10, background: 'transparent', border: 'none',
+          color: 'var(--text-faint)', cursor: 'pointer', letterSpacing: '.08em',
+        }}>DISMISS</button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {items.map((b, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className={`smart-dot smart-dot--${b.tone}`} />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text)' }}>{b.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function LiveQuickList({ onSelect }) {
@@ -7463,6 +7648,7 @@ function LiveQuickList({ onSelect }) {
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '8px 0 24px' }}>
+      <SmartTodayWidget />
       {visibleRows.map(r => <SmartListRow key={r.id} row={r} onSelect={onSelect} />)}
     </div>
   );
@@ -7505,6 +7691,94 @@ function SmartListRow({ row, onSelect }) {
       </div>
       <span className={`smart-chip smart-chip--${row.reason.tone}`}>{row.reason.label}</span>
     </button>
+  );
+}
+
+// Real LLM-powered briefing insight. Calls ai-taskmaster once per day
+// (session-cached) with the briefing's summary state and renders the
+// first line of Sparky's response as the "noticed…" insight. Falls
+// through to a local heuristic if the call fails or Sparky returns an
+// empty body — the brief always shows something actionable.
+function BriefingSparkyInsight({ sections }) {
+  const [body, setBody] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  // Local heuristic, used as fallback. Same shape as the prior inline
+  // block — picks the single most-leverage obvious fact.
+  const heuristic = React.useMemo(() => {
+    const hot = (sections.stuckQuotes || []).find(r => /F\/U 1/.test(r.text));
+    const urgentCount = (sections.urgent || []).length;
+    const waiting = (sections.waiting || []);
+    if (urgentCount > 0) return `${urgentCount} urgent lead${urgentCount === 1 ? '' : 's'} (medical / storm) — clear these first.`;
+    if (waiting.length >= 3) return `${waiting.length} customers are waiting on your reply — batch through them to keep momentum.`;
+    if (hot) return `Your freshest stuck quote just crossed F/U 1 — follow up while it's warm.`;
+    if ((sections.installsToday || []).length === 0 && (sections.today || []).length === 0) {
+      return 'Wide-open day. Fire a batch of F/U 1s to quotes sitting between 2–4 days.';
+    }
+    return null;
+  }, [sections]);
+
+  React.useEffect(() => {
+    // Don't fire the LLM call if the briefing hasn't loaded any signals
+    // yet. Cache key includes the local date so "today's insight" is
+    // genuinely per-day.
+    const dateKey = new Date().toISOString().slice(0, 10);
+    const cacheKey = `bpp_v2_briefing_insight:${dateKey}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) { setBody(cached); return; }
+    } catch {}
+    const counts = {
+      urgent: sections.urgent?.length || 0,
+      waiting: sections.waiting?.length || 0,
+      stuck:   sections.stuckQuotes?.length || 0,
+      overdue: sections.overdue?.length || 0,
+      installToday: sections.installsToday?.length || 0,
+      newToday: sections.today?.length || 0,
+      materials: sections.materials?.length || 0,
+    };
+    if (Object.values(counts).every(v => v === 0)) return;
+    let alive = true;
+    setLoading(true);
+    (async () => {
+      try {
+        const { data, error } = await db.functions.invoke('ai-taskmaster', {
+          body: {
+            mode: 'briefing',
+            // Feed Sparky a compact snapshot — it doesn't need the full rows.
+            snapshot: {
+              counts,
+              waitingSample: (sections.waiting || []).slice(0, 3).map(r => r.text),
+              stuckSample: (sections.stuckQuotes || []).slice(0, 3).map(r => r.text),
+              urgentSample: (sections.urgent || []).slice(0, 3).map(r => r.text),
+            },
+          },
+        });
+        if (error) throw error;
+        const raw = typeof data === 'string' ? data : (data?.reply || data?.text || data?.answer || '');
+        const firstLine = String(raw).trim().split(/\n/).map(s => s.trim()).find(s => s.length > 10 && !/^#/.test(s) && !/^(mode|output|step|rules|format)/i.test(s));
+        const final = firstLine?.slice(0, 220) || null;
+        if (alive && final) {
+          setBody(final);
+          try { sessionStorage.setItem(cacheKey, final); } catch {}
+        }
+      } catch {
+        // swallow — heuristic fallback covers the empty case
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections.urgent, sections.waiting, sections.stuckQuotes, sections.today, sections.installsToday]);
+
+  const shown = body || heuristic;
+  if (!shown) return null;
+  return (
+    <div className="smart-hint" style={{ marginBottom: 14 }}>
+      <span className="smart-hint__label">{loading && !body ? 'Sparky thinking' : 'Sparky noticed'}</span>
+      <span className="smart-hint__body">{shown}</span>
+    </div>
   );
 }
 
@@ -7799,29 +8073,12 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
                 <span>{leadHealth.label}</span>
               </div>
             ) : null}
-            {/* Smart briefing: "Sparky noticed…" insight derived from the
-                same data the briefing already pulled. One-liner that points
-                at the single most-leverage observation of the day (peak-
-                interest lead, biggest outstanding invoice, etc.). No LLM
-                call here yet — scaffold the visual first, plug Sparky in
-                when the data pipeline is cheap enough. */}
-            {(() => {
-              const hot = (sections.stuckQuotes || []).find(r => /F\/U 1/.test(r.text));
-              const urgentCount = (sections.urgent || []).length;
-              const waiting = (sections.waiting || []);
-              let body = null;
-              if (urgentCount > 0) body = `${urgentCount} urgent lead${urgentCount === 1 ? '' : 's'} (medical / storm) — clear these first.`;
-              else if (waiting.length >= 3) body = `${waiting.length} customers are waiting on your reply — batch through them to keep momentum.`;
-              else if (hot) body = `Your freshest stuck quote just crossed F/U 1 — follow up while the lead is still warm.`;
-              else if ((sections.installsToday || []).length === 0 && (sections.today || []).length === 0) body = 'Wide-open day. Fire a batch of F/U 1s to quotes sitting between 2–4 days.';
-              if (!body) return null;
-              return (
-                <div className="smart-hint" style={{ marginBottom: 14 }}>
-                  <span className="smart-hint__label">Sparky noticed</span>
-                  <span className="smart-hint__body">{body}</span>
-                </div>
-              );
-            })()}
+            {/* Smart briefing: real Sparky-powered "noticed…" one-liner.
+                Falls back to a heuristic body if the ai-taskmaster call
+                hasn't returned yet (or fails). Cached for the day in
+                sessionStorage so it doesn't re-fire on every brief open. */}
+            <BriefingSparkyInsight sections={sections} />
+
             {/* Urgent — customers Alex tagged with medical / storm / safety
                 flags and are still active. Top of the briefing because medical
                 power dependencies and active-risk cases beat even today's
