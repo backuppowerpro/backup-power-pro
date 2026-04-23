@@ -7279,7 +7279,7 @@ function LiveCalls({ onSelect }) {
   }
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: '8px 16px 24px' }}>
+    <div style={{ height: '100%', overflowY: 'auto', padding: '12px 16px 24px' }}>
       {visibleRows.map(r => {
         const mins = r.durationSec ? Math.floor(r.durationSec / 60) : 0;
         const secs = r.durationSec ? r.durationSec % 60 : 0;
@@ -7652,7 +7652,7 @@ function LiveQuickList({ onSelect }) {
   }
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: '8px 0 24px' }}>
+    <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 24px' }}>
       <SmartTodayWidget />
       {visibleRows.map(r => <SmartListRow key={r.id} row={r} onSelect={onSelect} />)}
     </div>
@@ -8455,9 +8455,11 @@ function LiveSparky({ currentContactId = null }) {
           now (Key 2026-04-22: removed inline duplicates — each surface
           gets one action row, not two). */}
 
-      {/* Quick-ask suggestions — only while chat is empty-ish */}
+      {/* Quick-ask suggestions — only while chat is empty-ish.
+          Top padding added so the first chip row doesn't touch the
+          action-bar underline sitting above this panel. */}
       {messages.length <= 1 && !sending ? (
-        <div style={{ padding: '0 16px 4px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ padding: '14px 16px 4px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {quickAsks.map(q => (
             <button key={q} onClick={() => send(q)} style={{
               padding: '6px 12px', fontSize: 12,
@@ -8471,7 +8473,7 @@ function LiveSparky({ currentContactId = null }) {
 
       {/* Chat scroll */}
       <div ref={scrollRef} style={{
-        flex: 1, overflowY: 'auto', padding: '8px 16px 16px',
+        flex: 1, overflowY: 'auto', padding: '12px 16px 16px',
         display: 'flex', flexDirection: 'column',
       }}>
         {messages.map((m, i) => m.who === 'key' ? (
