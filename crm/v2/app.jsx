@@ -8016,7 +8016,7 @@ function LiveQuickList({ onSelect }) {
       // scoring happens synchronously on the client — cheap, no API call.
       const [contactsRes, recentMsgs, stuckRes] = await Promise.all([
         db.from('contacts')
-          .select('id, name, phone, address, stage, status, install_date, created_at, do_not_contact')
+          .select('id, name, phone, address, stage, status, install_date, created_at, do_not_contact, pricing_tier')
           .neq('status', 'Archived')
           .lt('stage', 9)
           .limit(500),
@@ -8079,6 +8079,7 @@ function LiveQuickList({ onSelect }) {
           phone: c.phone,
           address: c.address,
           stage: c.stage || 1,
+          tier: c.pricing_tier || 'standard',
           score,
           reason,
           preview,
@@ -8217,8 +8218,24 @@ function SmartListRow({ row, onSelect }) {
         </span>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {row.name}
+        <div style={{
+          fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
+          color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          {/* Smart Pricing tier dot — gold = premium+, navy = premium,
+              nothing rendered for standard so the baseline stays quiet. */}
+          {row.tier === 'premium_plus' ? (
+            <span title="Premium+ tier" style={{
+              width: 6, height: 6, background: 'var(--gold)', flex: '0 0 auto',
+            }} />
+          ) : row.tier === 'premium' ? (
+            <span title="Premium tier" style={{
+              width: 6, height: 6, background: 'var(--navy)', flex: '0 0 auto',
+            }} />
+          ) : null}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.name}</span>
         </div>
         {row.preview ? (
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
