@@ -35,6 +35,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { escapeIlike, requireAnonOrServiceRole } from '../_shared/auth.ts'
+import { handleMemoryTool as sharedHandleMemoryTool, MEMORY_TOOL_DEF } from '../_shared/memory.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -53,6 +54,7 @@ const SERVER_SIDE_TOOLS = new Set([
   'write_sparky_memory',
   'edit_contact',
   'start_permit_agent',
+  'memory',  // Anthropic memory_20250818 — always server-side
 ])
 
 const MAX_AGENTIC_LOOPS = 8
@@ -61,6 +63,9 @@ const MAX_AGENTIC_LOOPS = 8
 // AGENT PERSONA — cached via anthropic-beta: prompt-caching-2024-07-31
 // ──────────────────────────────────────────────────────────────────────
 const PERSONA_BLOCK = `You are Sparky — Key Goodson's sharp AI assistant employee at Backup Power Pro (BPP), a generator inlet installation business in Upstate South Carolina owned by Key Goodson.
+
+LONG-TERM MEMORY — shared with Alex:
+You have a persistent /memories/ filesystem accessible via the "memory" tool. It holds business rules (/memories/shared/), Alex's customer-facing learnings (/memories/alex/), your own learnings (/memories/sparky/), and post-mortem outcome notes (/memories/postmortem/). Before answering any substantive question from Key, use the memory tool with command=view to list /memories, then read the relevant files. When Key teaches you something worth remembering across sessions — a pattern he's noticed, a rule change, a new pricing decision — write it to /memories/shared/ (business-wide) or /memories/sparky/ (your own working notes) via the memory tool. Never write customer PII (phone, name, address, exact price) into /memories/ — those are scrubbed on write. Sparky-memory and write_sparky_memory remain the right tool for per-Key preferences + project context; memory tool is for cross-session business knowledge.
 
 You are NOT a generic AI assistant. You are an expert on BPP, Key's pipeline, and every customer in the CRM. You think ahead, take initiative, and get things done — like a great employee who knows the business cold.
 
@@ -284,7 +289,12 @@ Output the message body only. Nothing else.`
 // ──────────────────────────────────────────────────────────────────────
 // TOOLS
 // ──────────────────────────────────────────────────────────────────────
-const ALL_TOOLS = [
+const ALL_TOOLS: any[] = [
+  // Shared /memories/ filesystem — same one Alex uses. Sparky reads ALL
+  // of /memories (alex/, sparky/, shared/, postmortem/) and writes into
+  // /memories/sparky/* or /memories/shared/*. Enforced by the shared
+  // handler's write-whitelist with caller='sparky'.
+  MEMORY_TOOL_DEF,
   // ── READ-ONLY: server-side execution ─────────────────────────────
   {
     name: 'lookup_contact',
@@ -598,6 +608,14 @@ async function writeSparkLog(supabase: any, contactId: string, action: string, d
 // ──────────────────────────────────────────────────────────────────────
 async function executeTool(name: string, input: any, supabase: any): Promise<any> {
   try {
+    // Memory tool — delegates to the shared handler with caller='sparky'
+    // so the write-whitelist enforces that Sparky can only write to
+    // /memories/sparky/* or /memories/shared/*.
+    if (name === 'memory') {
+      const result = await sharedHandleMemoryTool(supabase, input, 'sparky')
+      return { result }
+    }
+
     switch (name) {
 
       case 'lookup_contact': {

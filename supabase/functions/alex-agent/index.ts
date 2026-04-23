@@ -22,6 +22,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { escapeIlike } from '../_shared/auth.ts'
+import { handleMemoryTool as sharedHandleMemoryTool } from '../_shared/memory.ts'
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 
@@ -1141,77 +1142,11 @@ function scrubPiiForMemory(text: string): string {
   return out
 }
 
+// Alex delegates to the shared memory handler. caller='alex' means the
+// write-whitelist only lets Alex write to /memories/alex/* or
+// /memories/shared/*, never /memories/sparky/* etc.
 async function handleMemoryTool(supabase: any, input: any): Promise<string> {
-  const cmd = (input?.command || '').toString()
-  const path = (input?.path || '').toString()
-  // Hard-scope every operation inside /memories/* so Alex can't traverse
-  // outside (e.g. /memories/../etc/passwd — nonsense on our Postgres
-  // backend, but defense-in-depth).
-  if (!path.startsWith('/memories')) {
-    return `Error: path must start with /memories (got ${path})`
-  }
-  if (path.includes('..')) return 'Error: path traversal not allowed'
-
-  try {
-    if (cmd === 'view') {
-      // Directory view (the prefix is a directory) → list children.
-      if (path === '/memories' || path === '/memories/') {
-        const { data } = await supabase
-          .from('alex_memory_files').select('path, size_bytes, updated_at')
-          .order('path', { ascending: true })
-        const lines = (data || []).map((r: any) => `${r.path} (${r.size_bytes} bytes, updated ${r.updated_at})`).join('\n')
-        return lines ? `Contents of /memories:\n${lines}` : '/memories is empty'
-      }
-      // Single file read.
-      const { data } = await supabase.from('alex_memory_files').select('content').eq('path', path).maybeSingle()
-      if (!data) return `Path ${path} does not exist`
-      return `Here's the content of ${path}:\n${data.content}`
-    }
-    if (cmd === 'create') {
-      const content = scrubPiiForMemory(input?.file_text || '')
-      await supabase.from('alex_memory_files').upsert({ path, content, updated_at: new Date().toISOString() })
-      return `File created successfully at: ${path}`
-    }
-    if (cmd === 'str_replace') {
-      const { data } = await supabase.from('alex_memory_files').select('content').eq('path', path).maybeSingle()
-      if (!data) return `Error: The path ${path} does not exist`
-      const oldStr = (input?.old_str || '').toString()
-      const newStr = scrubPiiForMemory((input?.new_str || '').toString())
-      if (!data.content.includes(oldStr)) return `No replacement found for old_str`
-      const updated = data.content.replace(oldStr, newStr)
-      await supabase.from('alex_memory_files').update({ content: updated, updated_at: new Date().toISOString() }).eq('path', path)
-      return 'The memory file has been edited.'
-    }
-    if (cmd === 'insert') {
-      const { data } = await supabase.from('alex_memory_files').select('content').eq('path', path).maybeSingle()
-      if (!data) return `Error: The path ${path} does not exist`
-      const insertLine = Math.max(0, Number(input?.insert_line) || 0)
-      const insertText = scrubPiiForMemory((input?.insert_text || '').toString())
-      const lines = data.content.split('\n')
-      lines.splice(insertLine, 0, insertText)
-      const updated = lines.join('\n')
-      await supabase.from('alex_memory_files').update({ content: updated, updated_at: new Date().toISOString() }).eq('path', path)
-      return 'Inserted.'
-    }
-    if (cmd === 'delete') {
-      const { error } = await supabase.from('alex_memory_files').delete().eq('path', path)
-      if (error) return `Error: ${error.message}`
-      return `Deleted ${path}`
-    }
-    if (cmd === 'rename') {
-      const newPath = (input?.new_path || '').toString()
-      if (!newPath.startsWith('/memories')) return 'Error: new_path must start with /memories'
-      const { data } = await supabase.from('alex_memory_files').select('content').eq('path', path).maybeSingle()
-      if (!data) return `Error: source ${path} does not exist`
-      await supabase.from('alex_memory_files').insert({ path: newPath, content: data.content })
-      await supabase.from('alex_memory_files').delete().eq('path', path)
-      return `Renamed ${path} to ${newPath}`
-    }
-    return `Error: unknown command ${cmd}`
-  } catch (e) {
-    console.error('[alex] memory tool error:', e)
-    return `Error: ${String(e).slice(0, 200)}`
-  }
+  return sharedHandleMemoryTool(supabase, input, 'alex')
 }
 
 // ── TOOL EXECUTION ────────────────────────────────────────────────────────────
@@ -1563,6 +1498,20 @@ async function executeTool(
       console.log('[alex] mark_complete SMS fired to Key')
     } catch (e) {
       console.error('[alex] mark_complete SMS failed:', e)
+    }
+
+    // Fire the post-mortem reflection as a side-effect. Non-blocking so
+    // mark_complete returns fast; any failure is logged but doesn't break
+    // the conversation wrap-up.
+    try {
+      const sr = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      fetch('https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-postmortem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sr}` },
+        body: JSON.stringify({ sessionId, outcome: 'booked', note: toolInput.summary || '' }),
+      }).catch((e) => console.error('[alex] postmortem fire-and-forget error:', e))
+    } catch (e) {
+      console.error('[alex] postmortem trigger error:', e)
     }
 
     return { result: 'Marked complete', complete: true, summary: toolInput.summary }
