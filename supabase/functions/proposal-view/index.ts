@@ -1,0 +1,38 @@
+/**
+ * proposal-view — returns the full proposal row for a given token.
+ * Replaces the old customer-facing `db.from('proposals').select('*').eq('token', token)`
+ * path so anon no longer needs direct table access. The token IS the
+ * gatekeeper — unguessable UUID v4, single-row lookup.
+ *
+ * GET /proposal-view?token=<uuid>
+ * → 200 { proposal: {...} }
+ * → 404 { error: 'not found' }
+ */
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  if (req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'GET only' }), { status: 405, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+  const url = new URL(req.url)
+  const token = url.searchParams.get('token') || ''
+  if (!token || token.length < 8) {
+    return new Response(JSON.stringify({ error: 'missing token' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+  const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const { data, error } = await sb.from('proposals').select('*').eq('token', token).maybeSingle()
+  if (error || !data) {
+    return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+  return new Response(JSON.stringify({ proposal: data }), {
+    status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
+  })
+})

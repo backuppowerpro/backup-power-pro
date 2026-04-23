@@ -298,27 +298,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   const token = new URLSearchParams(window.location.search).get('token');
   if (!token) { showError('No invoice found.', 'This link is missing an invoice token.'); return; }
 
-  const { data, error } = await db.from('invoices').select('*').eq('token', token).single();
-  if (error || !data) { showError('Invoice not found.', 'This link may be invalid or has been removed.'); return; }
+  // Reads go through the invoice-view edge function (service role
+  // internally) so anon no longer needs direct SELECT on invoices /
+  // proposals. View-tracking is also handled server-side in the same
+  // call. Token is validated before any data returns.
+  let data = null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/invoice-view?token=${encodeURIComponent(token)}`, {
+      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    });
+    if (res.ok) {
+      const j = await res.json();
+      data = j?.invoice || null;
+      if (j?.proposal) LINKED_PROPOSAL = j.proposal;
+    }
+  } catch(e) {}
+  if (!data) { showError('Invoice not found.', 'This link may be invalid or has been removed.'); return; }
 
   INV = data;
 
-  // Load linked proposal if available
-  if (INV.proposal_id) {
-    try {
-      const { data: propData } = await db.from('proposals').select('*').eq('id', INV.proposal_id).single();
-      if (propData) LINKED_PROPOSAL = propData;
-    } catch(e) {}
-  }
-
-  // Track view (skip if preview mode)
+  // View-tracking is now handled inside invoice-view (fire-and-forget
+  // on the server). No client-side update needed here.
   const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
-  if (!isPreview && INV.status !== 'cancelled' && INV.status !== 'paid') {
-    db.from('invoices').update({
-      viewed_at: new Date().toISOString(),
-      view_count: (INV.view_count || 0) + 1,
-    }).eq('token', token).then(() => {});
-  }
 
   if (INV.status === 'cancelled') {
     document.getElementById('app').innerHTML = '<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">🚫</div><div style="font-family:Outfit,sans-serif;font-size:22px;font-weight:800;color:#0b1f3b;margin-bottom:8px">Invoice Cancelled</div><div style="font-size:14px;color:#8a9ab5;max-width:360px;margin:0 auto">This invoice has been cancelled and is no longer available for payment. Please contact Backup Power Pro at <a href="tel:8644005302" style="color:#3b82f6;font-weight:600">(864) 400-5302</a> if you have questions.</div></div>';

@@ -478,13 +478,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   // proposal renders fine if the fetch fails. Context is ONLY used for
   // subtle rendering variants (generator-size subtitle, etc.); no free-text
   // customer quotes surface here — the edge fn strips those before return.
+  // Customer-facing reads go through the proposal-view edge function
+  // (service-role internally) so the customer-facing anon role never
+  // needs direct SELECT on the proposals table. Closing anon direct
+  // access was blocked on this migration — see the 2026-04-23 RLS
+  // hardening migration for the full story.
   const [proposalRes, ctxRes] = await Promise.all([
-    db.from('proposals').select('*').eq('token', token).single(),
-    fetch(`https://reowtzedjflwmlptupbk.supabase.co/functions/v1/proposal-context?token=${encodeURIComponent(token)}`)
-      .then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`${SUPABASE_URL}/functions/v1/proposal-view?token=${encodeURIComponent(token)}`, {
+      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    }).then(r => r.ok ? r.json() : ({ proposal: null })).catch(() => ({ proposal: null })),
+    fetch(`${SUPABASE_URL}/functions/v1/proposal-context?token=${encodeURIComponent(token)}`, {
+      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    }).then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
-  const { data, error } = proposalRes;
-  if (error || !data) { showError('Proposal not found.', 'This link may be invalid or has been removed.'); return; }
+  const data = proposalRes?.proposal || null;
+  if (!data) { showError('Proposal not found.', 'This link may be invalid or has been removed.'); return; }
   P = data;
   window.__bpp_ctx = ctxRes || {}; // exposed for downstream reads
   isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
@@ -507,11 +515,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ── VIEW TRACKING ────────────────────────────────────────────
 async function trackView(token) {
   try {
-    await db.from('proposals').update({
-      viewed_at: new Date().toISOString(),
-      view_count: (P.view_count || 0) + 1,
-      status: P.status === 'Draft' ? 'Viewed' : P.status,
-    }).eq('token', token);
+    await fetch(`${SUPABASE_URL}/functions/v1/proposal-mutate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ token, action: 'track_view' }),
+    });
   } catch(e) {}
 }
 
@@ -1375,10 +1383,16 @@ function saveSelections() {
   clearTimeout(_saveSelectionsTimer);
   _saveSelectionsTimer = setTimeout(async () => {
     try {
-      await db.from('proposals').update({
-        selected_amp: chosenAmp,
-        selected_pom: pomOn,
-      }).eq('token', P.token);
+      await fetch(`${SUPABASE_URL}/functions/v1/proposal-mutate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({
+          token: P.token,
+          action: 'save_selections',
+          selected_amp: String(chosenAmp),
+          selected_pom: !!pomOn,
+        }),
+      });
     } catch(e) { /* non-critical — selections saved on final approve anyway */ }
   }, 600);
 }
@@ -1455,12 +1469,35 @@ async function approveProposal() {
   approving = true;
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner-large" style="width:20px;height:20px;border-width:2.5px;margin:0"></div> Submitting...';
-  const ip = await getIP();
   const total = calcTotal(chosenAmp);
-  const termsSnapshot = JSON.stringify({ proposal_id: P.id, proposal_token: P.token, contact_name: P.contact_name, contact_address: P.contact_address, selected_amp: chosenAmp, selected_surge: surgeOn, surge_price: surgeOn ? (P.surge_price || 375) : 0, pricing: getPrice(chosenAmp), total, scope_acknowledged: true, safety_acknowledged: true, signer_name: name, signed_at: new Date().toISOString(), ip_address: ip, user_agent: navigator.userAgent });
-  const { error } = await db.from('proposals').update({ signed_at: new Date().toISOString(), signer_name: name, safety_ack: true, selected_amp: chosenAmp, selected_surge: surgeOn, selected_pom: pomOn, total, approved_ip: ip, approved_user_agent: navigator.userAgent, approved_terms_snapshot: termsSnapshot }).eq('token', P.token);
-  if (error) { err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.'; btn.disabled = false; approving = false; updateApproveBtn(); return; }
-  P.status = 'Approved'; P.signer_name = name; P.signed_at = new Date().toISOString(); P.selected_amp = chosenAmp; P.selected_surge = surgeOn; P.selected_pom = pomOn; P.total = total; P.approved_ip = ip;
+  // IP is stamped server-side from X-Forwarded-For by the proposal-mutate
+  // edge function — the old client-side ipify fetch was trivially
+  // spoofable and corrupted the legal signing record. The terms snapshot
+  // omits ip_address here; the authoritative IP is on the row.
+  const termsSnapshot = JSON.stringify({ proposal_id: P.id, proposal_token: P.token, contact_name: P.contact_name, contact_address: P.contact_address, selected_amp: chosenAmp, selected_surge: surgeOn, surge_price: surgeOn ? (P.surge_price || 375) : 0, pricing: getPrice(chosenAmp), total, scope_acknowledged: true, safety_acknowledged: true, signer_name: name, signed_at: new Date().toISOString(), user_agent: navigator.userAgent });
+  let signErrMsg = null;
+  try {
+    const signRes = await fetch(`${SUPABASE_URL}/functions/v1/proposal-mutate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({
+        token: P.token,
+        action: 'sign',
+        signer_name: name,
+        safety_ack: true,
+        selected_amp: String(chosenAmp),
+        selected_surge: !!surgeOn,
+        selected_pom: !!pomOn,
+        approved_terms_snapshot: termsSnapshot,
+      }),
+    });
+    if (!signRes.ok) {
+      const j = await signRes.json().catch(() => ({}));
+      signErrMsg = j?.error || `HTTP ${signRes.status}`;
+    }
+  } catch (e) { signErrMsg = 'Network error'; }
+  if (signErrMsg) { err.textContent = 'Something went wrong. Please try again or call (864) 400-5302.'; btn.disabled = false; approving = false; updateApproveBtn(); return; }
+  P.status = 'Approved'; P.signer_name = name; P.signed_at = new Date().toISOString(); P.selected_amp = chosenAmp; P.selected_surge = surgeOn; P.selected_pom = pomOn; P.total = total;
 
   const requireDeposit = P.require_deposit !== false;
   if (requireDeposit) {
