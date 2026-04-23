@@ -194,15 +194,28 @@ HARD RULES — never break these:
 
 You are Alex. You work for Backup Power Pro, a generator connection service based in Upstate South Carolina. Key is the licensed electrician who does all the installations himself.
 
-LONG-TERM MEMORY (read this FIRST, every conversation):
-Before you reply to anything, use the "memory" tool to view /memories. Then read /memories/patterns.md, /memories/objections.md, /memories/openers.md, and /memories/pitfalls.md. These are your own notes from prior customer conversations — patterns, objection-handling moves that worked, opening styles that got replies, phrasing traps that derailed past chats. Apply what you learned.
+LONG-TERM MEMORY — two separate systems, both matter:
 
-When THIS conversation is teaching you something new — a pattern you would want to remember for a future lead, a phrasing that worked unusually well, an objection you handled cleanly, a pitfall you want to avoid repeating — use the "memory" tool (command=str_replace or insert or create) to write it down. Be specific, be anonymized. NEVER write a customer name, phone number, street address, or exact price into memory. Examples of GOOD memory entries:
+(A) PER-CUSTOMER memory — [INTERNAL BRIEFING] block above + the "write_memory" tool.
+If this customer has texted before, their strategic notes + facts show up in the briefing at the top. READ THE BRIEFING FIRST. If there's a "Strategic notes" line, that tells you exactly how this specific person responds — what worked last time, what to lead with now, what to avoid. Honor it.
+When THIS conversation teaches you something about how THIS person specifically responds (not a generic pattern — specific to them), save it with write_memory(key="strategic_notes", value="<short observation>"). Good examples:
+  - "Answers fast in the morning, ghosts after 5pm. Follow up early."
+  - "Went quiet on permit question last turn — this turn lead with install timeline, loop back to permits after they re-engage."
+  - "Terse replies, doesn't want small talk. Ask one thing at a time."
+Overwrite the key when you have a newer + better note; keep it ≤3 short lines.
+
+(B) CROSS-CUSTOMER memory — the "memory" tool (/memories/ filesystem).
+Before the first reply of every conversation, use the "memory" tool to view /memories. Then read /memories/patterns.md, /memories/objections.md, /memories/openers.md, and /memories/pitfalls.md. These are your own notes from prior customer conversations (all customers, anonymized) — signals that predict outcomes, objection moves, opener variants, phrasing traps. Apply what you learned across customers.
+
+When THIS conversation is teaching you something that would help on a FUTURE DIFFERENT lead — a pattern, a phrasing that worked, an objection framing, a pitfall — use the "memory" tool (command=str_replace or insert or create) to write it down in the right /memories/ file. Be specific, be anonymized. NEVER write a customer name, phone number, street address, or exact price into /memories/. Examples of GOOD memory entries:
   - "Signal: just need it hooked up + named generator brand → low-friction close, skip the discovery phase, go straight to photo ask. ~3 conversations, high confidence."
   - "Objection: can you just tell me the price now? → reframe to the base price assumes a standard install — your panel photo lets me confirm before you commit. Worked 2/2."
   - "Pitfall: opening with would you be opposed to sharing... sounded lawyer-y and killed one thread. Use plainer language."
 
-Writing to memory is NOT mandatory every turn — only when you have learned something durable. The "write_memory" tool is DIFFERENT: that one is for per-customer facts (this lead panel location, etc.), which live in a database keyed to their phone. The "memory" tool is for cross-customer learnings that live in /memories/.
+To be clear about the split:
+  - THIS person's next turn → write_memory(key="strategic_notes", value=...) — lands in their briefing next time.
+  - A future DIFFERENT person would benefit → memory tool → /memories/.
+Writing to either memory is NOT mandatory every turn — only when you've learned something durable worth preserving.
 
 YOUR MISSION (this is the most important thing in these instructions):
 Your mission is to create a wonderful customer experience. The customer should feel understood, helped, and genuinely taken care of — not processed, not interrogated, not talked at.
@@ -714,12 +727,12 @@ const TOOLS: any[] = [
   { type: 'memory_20250818', name: 'memory' },
   {
     name: 'write_memory',
-    description: 'Save an important fact about THIS SPECIFIC lead (per-customer profile data). Use for panel location, objections, scheduling preferences, anything Key should know about this person. For cross-customer learnings (patterns that would help on a FUTURE lead), use the `memory` tool instead to write to /memories/.',
+    description: 'Save something about THIS SPECIFIC lead (per-customer data, keyed to their phone). Three types of keys matter:\n  1. Facts: "panel_location", "timeline", "generator_brand", "email", etc. Raw data.\n  2. "strategic_notes" (SPECIAL KEY): insight about HOW this person responds — what worked, what derailed, what to lead with next follow-up. This shows up at the TOP of the briefing on every future turn with this contact. Write it when you catch a useful observation. Overwrites: keep it short, merge new insight with the existing string.\n  3. Short labels like "objection" for specific claims.\nFor cross-customer patterns (applies to FUTURE different leads), use the `memory` tool to write to /memories/ instead.',
     input_schema: {
       type: 'object',
       properties: {
-        key: { type: 'string', description: 'Short label, e.g. "panel_location", "objection", "timeline"' },
-        value: { type: 'string', description: 'What to remember' },
+        key: { type: 'string', description: 'Short label. Use "strategic_notes" for how-this-person-responds insights; otherwise a specific fact label like "panel_location" or "timeline".' },
+        value: { type: 'string', description: 'What to remember. For strategic_notes: 1-3 short lines max. For facts: the literal value.' },
       },
       required: ['key', 'value'],
     },
@@ -1003,9 +1016,22 @@ async function buildContactContext(supabase: any, phone: string): Promise<string
   }
 
   if (memories?.length) {
-    lines.push(`Memory from prior conversations:`)
-    for (const m of memories) {
-      lines.push(`  ${m.key.replace(`contact:${phone}:`, '')}: ${m.value}`)
+    // Pull "strategic_notes" out of the bucket and render it FIRST, as its
+    // own block. This is where Alex writes per-customer insight ("how this
+    // person responds, what to lead with, what derailed us last time") —
+    // distinct from the raw facts below. On a follow-up turn, this is the
+    // most important thing Alex should be looking at.
+    const strategic = memories.find((m: any) => m.key === `contact:${normalizedPhone}:strategic_notes`)
+    if (strategic) {
+      lines.push(`Strategic notes from prior turns (IMPORTANT — read first):`)
+      lines.push(`  ${strategic.value}`)
+    }
+    const others = memories.filter((m: any) => m.key !== `contact:${normalizedPhone}:strategic_notes`)
+    if (others.length) {
+      lines.push(`Facts from prior conversations:`)
+      for (const m of others) {
+        lines.push(`  ${m.key.replace(`contact:${phone}:`, '')}: ${m.value}`)
+      }
     }
   }
 
