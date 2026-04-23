@@ -4848,9 +4848,6 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
           flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 8,
           boxShadow: 'var(--pressed-2)', background: 'var(--card)',
         }}>
-          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', paddingTop: 4, flex: '0 0 auto' }}>
-            to {contactName || '—'}
-          </span>
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
@@ -8517,7 +8514,6 @@ function LiveSparky({ currentContactId = null }) {
         display: 'flex', alignItems: 'flex-end', gap: 8,
       }}>
         <div style={{ flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 8, boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
-          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', paddingTop: 4, flex: '0 0 auto' }}>sparky</span>
           <textarea value={input} onChange={e => setInput(e.target.value)}
             autoFocus
             rows={1}
@@ -9159,11 +9155,11 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
     // right panel width (Key 2026-04-22: "right side tabs don't take up
     // the full space").
     const sub = [
-      { id: 'MESSAGES', label: 'Messages' },
-      { id: 'TIMELINE', label: 'Timeline' },
+      { id: 'MESSAGES', label: 'SMS' },
+      { id: 'TIMELINE', label: 'Log' },
       { id: 'QUOTE',    label: 'Quote' },
       { id: 'PHOTOS',   label: 'Photos' },
-      { id: 'PERMITS',  label: 'Permits' },
+      { id: 'PERMITS',  label: 'Permit' },
       { id: 'NOTES',    label: 'Notes' },
       { id: 'EDIT',     label: 'Edit' },
     ];
