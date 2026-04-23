@@ -7516,6 +7516,19 @@ function LiveQuickList({ onSelect }) {
     return () => window.removeEventListener('bpp:global-search', on);
   }, []);
 
+  // Stage filter chips — replaces the scrapped pipeline view. Lets Key
+  // isolate a single pipeline bucket (NEW / QUOTED / BOOKED / INSTALL)
+  // without leaving the Smart List. Persisted to localStorage so the
+  // filter sticks across reloads. Key 2026-04-22: "i really dislike the
+  // pipeline view, lets just scrap that" → "just add a filter for the
+  // different pipeline stages in the list view".
+  const [stageFilter, setStageFilter] = useState(() => {
+    try { return localStorage.getItem('bpp_v2_quick_stage_filter') || 'all'; } catch { return 'all'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('bpp_v2_quick_stage_filter', stageFilter); } catch {}
+  }, [stageFilter]);
+
   // Realtime refresh — any change to contacts / messages / proposals can
   // shift section contents (new reply arrives, stage moves forward, quote
   // gets approved). Snooze is a client-side localStorage state, so also
@@ -7625,9 +7638,36 @@ function LiveQuickList({ onSelect }) {
     return <Loading />;
   }
 
+  // Stage counts from the scored rows (not from visibleRows) so the chip
+  // labels stay accurate even while a filter is active — click "NEW" and
+  // the other chips still show you how many are in those buckets.
+  const stageCounts = {
+    all:     rows.length,
+    new:     rows.filter(r => r.stage === 1).length,
+    quoted:  rows.filter(r => r.stage === 2).length,
+    booked:  rows.filter(r => r.stage >= 3 && r.stage <= 6).length,
+    install: rows.filter(r => r.stage === 7 || r.stage === 8).length,
+  };
+  const stageChips = [
+    { id: 'all',     label: 'ALL',     count: stageCounts.all },
+    { id: 'new',     label: 'NEW',     count: stageCounts.new },
+    { id: 'quoted',  label: 'QUOTED',  count: stageCounts.quoted },
+    { id: 'booked',  label: 'BOOKED',  count: stageCounts.booked },
+    { id: 'install', label: 'INSTALL', count: stageCounts.install },
+  ];
+  function matchesStage(r) {
+    if (stageFilter === 'all') return true;
+    const s = r.stage || 1;
+    if (stageFilter === 'new')     return s === 1;
+    if (stageFilter === 'quoted')  return s === 2;
+    if (stageFilter === 'booked')  return s >= 3 && s <= 6;
+    if (stageFilter === 'install') return s === 7 || s === 8;
+    return true;
+  }
+
   // Apply the global search filter last so filtered empties still show
   // the clear-desk hero properly when no filter is active.
-  const visibleRows = globalQ
+  const searchedRows = globalQ
     ? rows.filter(r =>
         (r.name || '').toLowerCase().includes(globalQ) ||
         (r.phone || '').toLowerCase().includes(globalQ) ||
@@ -7635,6 +7675,7 @@ function LiveQuickList({ onSelect }) {
         (r.reason?.label || '').toLowerCase().includes(globalQ)
       )
     : rows;
+  const visibleRows = searchedRows.filter(matchesStage);
 
   if (rows.length === 0) {
     return (
@@ -7644,13 +7685,55 @@ function LiveQuickList({ onSelect }) {
       </div>
     );
   }
+  // Chip row — always rendered so Key can switch filters even when the
+  // current filter's bucket is empty. Extracted so the "no matches" empty
+  // state below can still render it above the message.
+  const chipRow = (
+    <div style={{
+      padding: '8px 16px 4px',
+      display: 'flex', gap: 6, flexWrap: 'wrap',
+    }}>
+      {stageChips.map(c => {
+        const active = stageFilter === c.id;
+        return (
+          <button key={c.id}
+            onClick={() => setStageFilter(c.id)}
+            className="chrome-label"
+            style={{
+              padding: '5px 10px', fontSize: 10, letterSpacing: '.08em',
+              background: active ? 'var(--navy)' : 'var(--card)',
+              color: active ? 'var(--gold)' : 'var(--text-muted)',
+              boxShadow: active ? 'var(--pressed-2)' : 'var(--raised-2)',
+              border: 'none', cursor: 'pointer', textTransform: 'uppercase',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}>
+            <span>{c.label}</span>
+            <span style={{
+              fontSize: 9, opacity: .75, fontVariantNumeric: 'tabular-nums',
+            }}>{c.count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   if (visibleRows.length === 0) {
-    return <Empty label={`No matches for "${globalQ}"`} hint="Try fewer characters or ⌘K for a cross-section smart search." />;
+    return (
+      <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 24px' }}>
+        <SmartTodayWidget />
+        {chipRow}
+        <Empty
+          label={globalQ ? `No matches for "${globalQ}"` : `No leads in ${stageFilter.toUpperCase()}`}
+          hint={globalQ ? "Try fewer characters or ⌘K for a cross-section smart search." : "Tap ALL above to see everyone."}
+        />
+      </div>
+    );
   }
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 24px' }}>
       <SmartTodayWidget />
+      {chipRow}
       {visibleRows.map(r => <SmartListRow key={r.id} row={r} onSelect={onSelect} />)}
     </div>
   );
@@ -8313,42 +8396,8 @@ function LiveSparky({ currentContactId = null }) {
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [mode, setMode] = useState('chat');
   const [currentContactName, setCurrentContactName] = useState(null);
   const scrollRef = useRef(null);
-
-  // Long ↔ short id mapping so the right-side action bar (which uses
-  // short ids) can drive + observe Sparky's internal mode (which uses
-  // long ids matching the ai-taskmaster edge function modes).
-  const MODE_SHORT_TO_LONG = {
-    chat: 'chat',
-    briefing: 'briefing',
-    insight: 'contact_insight',
-    reply: 'suggest_reply',
-    draft: 'draft_followup',
-  };
-  const MODE_LONG_TO_SHORT = {
-    chat: 'chat',
-    briefing: 'briefing',
-    contact_insight: 'insight',
-    suggest_reply: 'reply',
-    draft_followup: 'draft',
-  };
-
-  useEffect(() => {
-    const on = (e) => {
-      const short = e?.detail?.mode;
-      if (!short) return;
-      setMode(MODE_SHORT_TO_LONG[short] || short);
-    };
-    window.addEventListener('bpp:sparky-mode', on);
-    return () => window.removeEventListener('bpp:sparky-mode', on);
-  }, []);
-  // Echo mode changes so the right-bar can highlight the active one.
-  useEffect(() => {
-    const short = MODE_LONG_TO_SHORT[mode] || mode;
-    window.dispatchEvent(new CustomEvent('bpp:sparky-mode-changed', { detail: { mode: short } }));
-  }, [mode]);
 
   // When entering Sparky with a contact already selected, fetch that
   // contact's name so the quick-asks can offer to do things about them.
@@ -8366,10 +8415,11 @@ function LiveSparky({ currentContactId = null }) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Palette "Ask Sparky: <query>" dispatches this event so the right-panel
-  // Sparky can consume it. Ref pattern so the handler always calls the
-  // freshest `send` (which internally reads mode + currentContactId); the
-  // straightforward closure would pin those to the first render's values.
+  // Palette "Ask Sparky: <query>" (and the right-bar action chips) dispatch
+  // this event so the right-panel Sparky can consume it. Ref pattern so the
+  // handler always calls the freshest `send` (which reads currentContactId
+  // + detects mode from text); the straightforward closure would pin those
+  // to the first render's values.
   const sendRef = useRef(null);
   useEffect(() => {
     const handler = (ev) => {
@@ -8385,9 +8435,22 @@ function LiveSparky({ currentContactId = null }) {
     return () => window.removeEventListener('bpp:sparky-prefill', handler);
   }, []);
 
+  // Intent detection — Sparky picks the right ai-taskmaster mode from the
+  // question text instead of making Key click a mode toggle first.
+  // Key 2026-04-22: "sparky doesnt need these, he should be able to tell
+  // from my message which action he should take".
+  function detectMode(text, hasContact) {
+    const t = (text || '').toLowerCase();
+    if (/\b(brief(ing)?|today'?s plan|plan for (today|the day)|on my plate|overview|summary for today|daily)\b/.test(t)) return 'briefing';
+    if (/\b(draft|write|compose|send).*(follow.?up|reply|message|sms|text)|\bfollow.?up (sms|text|message)|\bnudge\b|\bcheck in\b/.test(t)) return 'draft_followup';
+    if (hasContact && /\b(tell me|what (do i|should i) know|insight|background|context|catch me up|summary)\b/.test(t)) return 'contact_insight';
+    return 'chat';
+  }
+
   async function send(overrideText) {
     const q = (overrideText ?? input).trim();
     if (!q || sending) return;
+    const mode = detectMode(q, !!currentContactId);
     setSending(true);
     const newMsgs = [...messages, { who: 'key', text: q }];
     setMessages(newMsgs);
@@ -8435,22 +8498,17 @@ function LiveSparky({ currentContactId = null }) {
     'Which bookings need materials ordered?',
   ];
 
-  const modes = [
-    { id: 'chat', label: 'Chat' },
-    { id: 'briefing', label: 'Briefing' },
-    { id: 'contact_insight', label: 'Insight' },
-    { id: 'suggest_reply', label: 'Reply' },
-    { id: 'draft_followup', label: 'Draft' },
-  ];
-
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Agents inbox — Alex / permit-check / pipeline / brief notifications
           that need Key's eyes. Hidden when empty so it doesn't waste space. */}
       <AgentsInboxStrip />
-      {/* Mode selector lives in the right-side action bar above the panel
-          now (Key 2026-04-22: removed inline duplicates — each surface
-          gets one action row, not two). */}
+      {/* No mode selector. Sparky infers the right ai-taskmaster mode from
+          the question text (see detectMode above). The right-side action
+          bar now hosts one-click pre-baked asks instead of mode toggles —
+          Key 2026-04-23: "make them useful asked things so i can click
+          them and get things done or insight from a click instead of
+          typing it out every time". */}
 
       {/* Quick-ask suggestions — only while chat is empty-ish.
           Top padding added so the first chip row doesn't touch the
@@ -9136,15 +9194,6 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
   // the LiveContactDetail default-tab logic.
   React.useEffect(() => { setActiveDetail('MESSAGES'); }, [selectedContact]);
 
-  // Mirror of LiveSparky's current mode so the Sparky button set shows
-  // which mode is active. Defaults to 'chat' on mount.
-  const [activeSparkyMode, setActiveSparkyMode] = React.useState('chat');
-  React.useEffect(() => {
-    const on = (e) => { if (e?.detail?.mode) setActiveSparkyMode(e.detail.mode); };
-    window.addEventListener('bpp:sparky-mode-changed', on);
-    return () => window.removeEventListener('bpp:sparky-mode-changed', on);
-  }, []);
-
   const focusDetail = (tab) => window.dispatchEvent(new CustomEvent('bpp:focus-detail-tab', { detail: { tab } }));
 
   let buttons;
@@ -9201,41 +9250,41 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
       </>
     );
   } else {
-    // Sparky surface toolbar. Mirrors the five Sparky modes already rendered
-    // inside LiveSparky. Click dispatches `bpp:sparky-mode` so LiveSparky
-    // switches mode without coupling the two components by prop-drilling.
-    const modes = [
-      { id: 'chat',     label: 'Chat' },
-      { id: 'briefing', label: 'Briefing' },
-      { id: 'insight',  label: 'Insight' },
-      { id: 'reply',    label: 'Reply' },
-      { id: 'draft',    label: 'Draft' },
+    // Sparky surface toolbar. One-click pre-baked questions — tap a chip,
+    // Sparky fires the full question without Key typing. Key 2026-04-23:
+    // "make them useful asked things so i can click them and get things
+    // done or insight from a click instead of typing it out every time".
+    // Sparky auto-detects the right ai-taskmaster mode from the question
+    // text inside LiveSparky (detectMode), so no mode state leaks here.
+    const asks = [
+      { label: 'BRIEF',    q: "Give me today's briefing — what needs my attention, who's hot, what's overdue." },
+      { label: 'HOT',      q: "Which leads are showing buying signals right now? Rank them most to least urgent." },
+      { label: 'WAITING',  q: "Who hasn't gotten a reply from me in 3+ days? Show name + last message." },
+      { label: 'DRAFT',    q: "Draft follow-up SMS for every lead waiting on me — one message per person." },
+      { label: 'TODAY',    q: "What installs, quotes, and follow-ups do I have on my plate today?" },
     ];
     buttons = (
       <>
-        {modes.map(m => {
-          const on = m.id === activeSparkyMode;
-          return (
-            <button key={m.id}
-              onClick={() => window.dispatchEvent(new CustomEvent('bpp:sparky-mode', { detail: { mode: m.id } }))}
-              className="chrome-label"
-              style={{
-                height: '100%', padding: compact ? '0 12px' : '0 4px', minWidth: 0,
-                background: 'transparent', border: 'none',
-                color: on ? 'var(--text)' : 'var(--text-muted)',
-                boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
-                fontSize: 12, cursor: 'pointer',
-                flex: compact ? '0 0 auto' : '1 1 0',
-                whiteSpace: 'nowrap',
-              }}>{m.label}</button>
-          );
-        })}
+        {asks.map(a => (
+          <button key={a.label}
+            onClick={() => window.dispatchEvent(new CustomEvent('bpp:sparky-prefill', { detail: { text: a.q } }))}
+            className="chrome-label"
+            title={a.q}
+            style={{
+              height: '100%', padding: compact ? '0 12px' : '0 4px', minWidth: 0,
+              background: 'transparent', border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: 11, cursor: 'pointer',
+              flex: compact ? '0 0 auto' : '1 1 0',
+              whiteSpace: 'nowrap',
+            }}>{a.label}</button>
+        ))}
       </>
     );
   }
 
   return (
-    <div role="toolbar" aria-label={selectedContact ? 'Contact actions' : 'Sparky modes'}
+    <div role="toolbar" aria-label={selectedContact ? 'Contact actions' : 'Sparky quick asks'}
       style={{
         height: 44, display: 'flex', alignItems: 'stretch',
         padding: 0,
@@ -9336,7 +9385,7 @@ function App() {
     // Legacy redirects (pre-flat-tabs bookmarks):
     //   #tab=leads    → #tab=quick    (QUICK is the new default landing)
     //   #tab=sparky   → #tab=quick    (Sparky moved to right panel months ago)
-    if (tab === 'leads' || tab === 'sparky') tab = 'quick';
+    if (tab === 'leads' || tab === 'sparky' || tab === 'pipeline') tab = 'quick';
     return { tab, contact: h.get('contact') || null };
   })();
   const [tab, setTab] = useState(initial.tab);
@@ -9401,7 +9450,7 @@ function App() {
       const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
       let hashTab = h.get('tab');
       // Legacy redirects so stale bookmarks don't render blank.
-      if (hashTab === 'sparky' || hashTab === 'leads') hashTab = 'quick';
+      if (hashTab === 'sparky' || hashTab === 'leads' || hashTab === 'pipeline') hashTab = 'quick';
       const hashContact = h.get('contact');
       if (hashTab && hashTab !== tab) setTab(hashTab);
       if (hashContact && hashContact !== selectedContact) setSelectedContact(hashContact);
@@ -9772,14 +9821,14 @@ function App() {
       }
       if (editable) return;
 
-      // g-chord: g then a letter to jump to a tab. Flat tabs expanded the
-      // vocabulary; stick to first-letter wherever it isn't ambiguous.
-      //   q=quick · c=calendar · p=pipeline · l=list · m=messages · v=calls
-      //   r=proposals · i=invoices · t=permits · a=materials · f=finance
+      // g-chord: g then a letter to jump to a tab. First-letter where
+      // unambiguous; pipeline scrapped so p is now proposals.
+      //   q=quick · c=calendar · l=list · m=messages · v=calls
+      //   p=proposals · i=invoices · t=permits · a=materials · f=finance
       if (gPending) {
         const map = {
-          q: 'quick', c: 'calendar', p: 'pipeline', l: 'list',
-          m: 'messages', v: 'calls', r: 'proposals', i: 'invoices',
+          q: 'quick', c: 'calendar', l: 'list',
+          m: 'messages', v: 'calls', p: 'proposals', i: 'invoices',
           t: 'permits', a: 'materials', f: 'finance',
         };
         const target = map[e.key.toLowerCase()];
@@ -10033,7 +10082,9 @@ function App() {
       );
     }
     if (tab === 'calendar')  return <LiveCalendar />;
-    if (tab === 'pipeline')  return <LivePipeline onCardClick={handleCardClick} />;
+    // Pipeline view removed 2026-04-22 (Key: "i really dislike the pipeline
+    // view"). Stage filter chips on the Smart List above replace it.
+    // Stale `#tab=pipeline` URLs redirect to QUICK via the hash parser.
     if (tab === 'list')      return <LiveLeadsList desktop={!isMobile} onSelect={r => setSelectedContact(r.id)} />;
     if (tab === 'messages')  return <LiveMessages onSelect={id => setSelectedContact(id)} activeId={selectedContact} />;
     if (tab === 'calls')     return <LiveCalls onSelect={id => setSelectedContact(id)} />;
