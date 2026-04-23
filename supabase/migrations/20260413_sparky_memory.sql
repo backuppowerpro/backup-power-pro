@@ -41,9 +41,12 @@ ON CONFLICT (key) DO NOTHING;
 -- Enable RLS (Sparky edge function uses service role key, so bypass is fine)
 ALTER TABLE sparky_memory ENABLE ROW LEVEL SECURITY;
 
--- Service role can do everything (edge function uses service role key)
+-- Service role can do everything (edge function uses service role key).
+-- Explicit TO service_role — previously the policy lacked a TO clause,
+-- which Postgres defaults to TO PUBLIC, granting anon CRUD. Hardened
+-- in 20260423_rls_hardening.sql.
 DO $$ BEGIN
   CREATE POLICY "service_role_all" ON sparky_memory
-    FOR ALL USING (true) WITH CHECK (true);
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
