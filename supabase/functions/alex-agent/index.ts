@@ -786,6 +786,32 @@ async function claimMessage(supabase: any, msgId: string): Promise<boolean> {
   return error?.code !== '23505'
 }
 
+// Quick deterministic string hash — not cryptographic; just enough to
+// bucket identical-body-from-same-phone webhooks onto the same dedup
+// key. FNV-1a 32-bit.
+function shortHash(s: string): string {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return (h >>> 0).toString(16).padStart(8, '0')
+}
+
+// Content-based dedup fallback. Catches the pathological case where the
+// SMS provider retries a webhook and either (a) omits the message id
+// entirely, or (b) sends a different id for the same customer message.
+// Two identical bodies from the same phone within the same 30-second
+// window collapse onto one key. A real customer genuinely double-texting
+// the same words within 30s is vanishingly rare — the common case is a
+// duplicate webhook fire that used to cause Alex to reply twice.
+// Key 2026-04-23: live customer sent one message, Alex replied twice.
+function computeContentDedupKey(fromPhone: string, messageText: string, hasMedia: boolean): string {
+  const bucket = Math.floor(Date.now() / 30000) // 30-second windows
+  const bodyHash = shortHash((messageText || '') + (hasMedia ? ':media' : ''))
+  return `fp:${fromPhone}:${bodyHash}:${bucket}`
+}
+
 // Normalize phone to E.164 for consistent storage and lookup
 function normalizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
@@ -1782,10 +1808,19 @@ Deno.serve(async (req) => {
 
   const supabase = db()
 
-  // Idempotency
+  // Idempotency — primary claim by provider message id.
   if (!await claimMessage(supabase, quoMsgId)) {
-    console.log('[alex] Duplicate, skipping:', quoMsgId)
+    console.log('[alex] Duplicate (id), skipping:', quoMsgId)
     return new Response(JSON.stringify({ skipped: true, reason: 'duplicate' }), { status: 200, headers: CORS })
+  }
+  // Secondary content-based claim — catches webhook retries where the
+  // provider either omits the message id or reuses a new id for the
+  // same payload. Two identical bodies from the same phone within a
+  // 30-second bucket collapse to one.
+  const contentKey = computeContentDedupKey(fromPhone, messageText, hasMedia)
+  if (!await claimMessage(supabase, contentKey)) {
+    console.log('[alex] Duplicate (content), skipping:', contentKey)
+    return new Response(JSON.stringify({ skipped: true, reason: 'duplicate_content' }), { status: 200, headers: CORS })
   }
 
   // Persist the inbound message to the `messages` table so the CRM thread
