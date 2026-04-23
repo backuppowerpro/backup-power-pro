@@ -1138,6 +1138,129 @@ function LivePipeline({ onCardClick, onSubView }) {
 // contacts.ai_enabled together so Key can take over a conversation manually
 // (Alex stops auto-responding) or hand it back. Without this toggle Key had
 // to update the DB directly to pause Alex.
+// Smart Pricing tier strip — shows the contact's current pricing tier as a
+// chip + a heuristic-scored recommendation hint, and lets Key override the
+// tier with a click. Sits directly under the stage strip in the contact
+// detail header. Dispatches a realtime update when the tier changes.
+function TierStrip({ contact, messages }) {
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [localTier, setLocalTier] = React.useState(contact?.pricing_tier || 'standard');
+  React.useEffect(() => { setLocalTier(contact?.pricing_tier || 'standard'); }, [contact?.pricing_tier]);
+
+  const { score, recommended, reasons } = React.useMemo(
+    () => scorePricingTier(contact, messages),
+    [contact, messages]
+  );
+  const meta = TIER_META[localTier] || TIER_META.standard;
+  const showSuggest = recommended !== localTier;
+  const suggestMeta = TIER_META[recommended];
+
+  async function setTier(next) {
+    if (!contact?.id || saving || next === localTier) { setPickerOpen(false); return; }
+    setSaving(true);
+    const prev = localTier;
+    setLocalTier(next);
+    const { error } = await db.from('contacts').update({ pricing_tier: next }).eq('id', contact.id);
+    setSaving(false);
+    setPickerOpen(false);
+    if (error) {
+      setLocalTier(prev);
+      window.__bpp_toast && window.__bpp_toast(`Tier update failed: ${error.message}`, 'error');
+      return;
+    }
+    window.__bpp_toast && window.__bpp_toast(`Tier → ${TIER_META[next].label}`, 'success');
+  }
+
+  return (
+    <div style={{
+      padding: '8px 14px',
+      background: 'var(--card)',
+      boxShadow: 'var(--raised-2)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+        <button
+          onClick={() => setPickerOpen(p => !p)}
+          title="Change pricing tier"
+          style={{
+            padding: '4px 10px', fontSize: 10, letterSpacing: '.1em', fontWeight: 700,
+            background: 'var(--card)', boxShadow: 'var(--raised-2)',
+            border: 'none', cursor: 'pointer',
+            color: meta.tone === 'gold' ? 'var(--gold)'
+                 : meta.tone === 'navy' ? 'var(--navy)'
+                 : 'var(--text-muted)',
+            fontFamily: 'var(--font-chrome)',
+          }}>{meta.label} · {score}</button>
+        {showSuggest ? (
+          <button
+            onClick={() => setTier(recommended)}
+            title={`Signals: ${reasons.join(', ') || 'baseline'}`}
+            style={{
+              padding: '4px 10px', fontSize: 10, letterSpacing: '.06em',
+              background: 'transparent', boxShadow: 'inset 0 0 0 1px var(--gold)',
+              border: 'none', cursor: 'pointer',
+              color: 'var(--gold)', fontFamily: 'var(--font-chrome)',
+            }}>→ {suggestMeta.label}</button>
+        ) : (
+          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+            {reasons[0] ? `· ${reasons[0]}` : ''}
+          </span>
+        )}
+      </div>
+      {pickerOpen ? (
+        <div onClick={() => setPickerOpen(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(0,0,0,.35)',
+          display: 'grid', placeItems: 'center', padding: 20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: 340, maxWidth: '100%',
+            background: 'var(--card)', boxShadow: 'var(--raised-2)',
+            padding: 18, display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <div className="chrome-label" style={{ fontSize: 11, letterSpacing: '.1em', color: 'var(--text-muted)' }}>
+              PRICING TIER · SCORE {score}
+            </div>
+            {TIER_IDS.map(id => {
+              const m = TIER_META[id];
+              const on = id === localTier;
+              return (
+                <button key={id} onClick={() => setTier(id)} disabled={saving}
+                  style={{
+                    padding: '10px 12px', textAlign: 'left', display: 'flex',
+                    alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                    background: on ? 'var(--navy)' : 'var(--card)',
+                    color: on ? 'var(--gold)' : 'var(--text)',
+                    boxShadow: on ? 'var(--pressed-2)' : 'var(--raised-2)',
+                    border: 'none', cursor: saving ? 'wait' : 'pointer',
+                  }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 11, letterSpacing: '.1em' }}>
+                      {m.label} {id === recommended && !on ? '· SUGGESTED' : ''}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: on ? 'var(--gold)' : 'var(--text-muted)' }}>
+                      {m.blurb}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+            {reasons.length ? (
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                Signals: {reasons.join(' · ')}
+              </div>
+            ) : null}
+            <button onClick={() => setPickerOpen(false)} style={{
+              padding: '8px', background: 'transparent', border: 'none',
+              color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, letterSpacing: '.06em',
+            }}>CANCEL</button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function AlexSessionStrip({ session, contactId, contactPhone }) {
   const [expanded, setExpanded] = React.useState(false);
   const [transcriptOpen, setTranscriptOpen] = React.useState(false);
@@ -2445,6 +2568,8 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         ) : null}
       </div>
 
+      {contact ? <TierStrip contact={contact} messages={messages} /> : null}
+
       {outstandingBalance > 0 ? (
         <button
           onClick={() => { window.location.hash = '#tab=finance'; }}
@@ -2756,6 +2881,81 @@ function DetailTimeline({ contactId }) {
 const PROPOSAL_BASE_URL = 'https://backuppowerpro.com/proposal.html';
 const INVOICE_BASE_URL  = 'https://backuppowerpro.com/invoice.html';
 
+// ── Smart Pricing tiers ─────────────────────────────────────────────────────
+// Bundle-at-different-price (not address-based discrimination). Same core
+// install; upper tiers carry optional bundle uplift Key can tune later. The
+// exact bundle contents are TBD — v1 just locks in the storage + UX scaffold.
+// Key 2026-04-23: build the scaffold, decide extras later.
+const TIER_META = {
+  standard: {
+    label: 'STANDARD',
+    tone: 'muted',
+    uplift: 0,
+    blurb: 'Core install, standard bundle.',
+  },
+  premium: {
+    label: 'PREMIUM',
+    tone: 'navy',
+    uplift: 300,
+    blurb: '+$300 — premium bundle (TBD: expedite, extended warranty, upgraded whip).',
+  },
+  premium_plus: {
+    label: 'PREMIUM+',
+    tone: 'gold',
+    uplift: 600,
+    blurb: '+$600 — premium+ bundle (TBD: panel write-up, spare parts kit, annual recheck).',
+  },
+};
+const TIER_IDS = ['standard', 'premium', 'premium_plus'];
+
+// Heuristic tier score (0–100). Drives the recommended tier and surfaces
+// the why. Purely client-side — no ATTOM / external API yet. Signals:
+//   - addressed (we know where they live) +15
+//   - generator size ≥ 50A (bigger house / bigger genset)          +15
+//   - urgency keywords in any recent message (storm, medical, emergency, need asap) +20
+//   - replies fast (first inbound within 30m of first outbound)    +15
+//   - mentioned a brand or model (engaged / informed)              +10
+//   - quote history or high existing price_base                    +10
+//   - OOA phone area code (out of our core market → may be remote/premium work) +5
+//   - low-intent signals (asked for discount, price-shopping)      -15
+function scorePricingTier(contact, messages = []) {
+  let score = 30; // baseline
+  const reasons = [];
+  if (contact?.address && contact.address.length > 6) { score += 15; reasons.push('address on file'); }
+  const genAmp = Number(contact?.generator_amp || 0);
+  if (genAmp >= 50) { score += 15; reasons.push('50A generator'); }
+  const bodyText = (messages || [])
+    .filter(m => (m?.body || '').length > 0)
+    .map(m => (m.body || '').toLowerCase())
+    .join(' ');
+  if (/\b(storm|hurricane|tornado|outage|power out|medical|oxygen|dialysis|c-?pap|asap|urgent|emergency|need.*(now|today|this week)|before.*(storm|season))\b/.test(bodyText)) {
+    score += 20; reasons.push('urgency in messages');
+  }
+  if (/\b(generac|kohler|westinghouse|champion|honda|dewalt|predator|briggs)\b/.test(bodyText)) {
+    score += 10; reasons.push('brand-aware');
+  }
+  // Fast first response = engaged
+  if (messages.length >= 2) {
+    const firstOut = messages.find(m => m.direction === 'outbound');
+    const firstIn  = messages.find(m => m.direction === 'inbound');
+    if (firstOut && firstIn) {
+      const dt = new Date(firstIn.created_at).getTime() - new Date(firstOut.created_at).getTime();
+      if (dt > 0 && dt < 30 * 60 * 1000) { score += 15; reasons.push('fast reply'); }
+    }
+  }
+  const price = Number(contact?.price_base || 0);
+  if (price > 1500) { score += 10; reasons.push('high existing quote'); }
+  const phone = (contact?.phone || '').replace(/\D/g, '');
+  const localAreas = new Set(['864', '803', '828']); // Upstate SC + NC adjacency
+  if (phone.length === 10 && !localAreas.has(phone.slice(0, 3))) { score += 5; reasons.push('out-of-market phone'); }
+  if (/\b(too expensive|cheaper|discount|promo|coupon|deal|knock.*off|meet.*me|lower.*price|price.*too high)\b/.test(bodyText)) {
+    score -= 15; reasons.push('price pushback');
+  }
+  score = Math.max(0, Math.min(100, score));
+  const recommended = score >= 75 ? 'premium_plus' : score >= 55 ? 'premium' : 'standard';
+  return { score, recommended, reasons };
+}
+
 // ── Quick Quote pricing engine ──────────────────────────────────────────────
 // Mirrors the legacy QB_S/QB_C constants in crm/crm.html. Kept in sync by
 // convention: whenever those constants change, update these too.
@@ -2811,10 +3011,22 @@ function quickQuoteCompute({ amp, runFt, cordIncluded, includeSurge, includePom,
 // Build a proposals row payload matching the legacy schema so proposal.html
 // renders correctly. pricing_30 + pricing_50 are both computed so the
 // customer's amp toggle on the proposal page still works.
-function quickQuoteBuildPayload({ contact, state }) {
+//
+// Smart Pricing: tier + variant are applied on top. Uplift modifies the
+// primary total (proposal.html reads price_base). pricing_tier + pricing_variant
+// are stored on the proposal row for A/B rollup in the FINANCE dashboard.
+function quickQuoteBuildPayload({ contact, state, tier = 'standard', variant = null }) {
   const pricing30 = quickQuoteCompute({ ...state, amp: '30' });
   const pricing50 = quickQuoteCompute({ ...state, amp: '50' });
   const primary = state.amp === '50' ? pricing50 : pricing30;
+  // Variant A = tier baseline; Variant B = one-tier-up uplift (for A/B learning)
+  const tierMeta = TIER_META[tier] || TIER_META.standard;
+  const tierIdx  = TIER_IDS.indexOf(tier);
+  const upliftBIdx = Math.min(tierIdx + 1, TIER_IDS.length - 1);
+  const upliftA = tierMeta.uplift || 0;
+  const upliftB = (TIER_META[TIER_IDS[upliftBIdx]]?.uplift || 0);
+  const uplift  = variant === 'B' ? upliftB : upliftA;
+  const total   = primary.total + uplift;
   return {
     contact_id: contact.id,
     contact_name: contact.name || '',
@@ -2838,8 +3050,10 @@ function quickQuoteBuildPayload({ contact, state }) {
     include_twin_quad: false,
     pricing_30: pricing30,
     pricing_50: pricing50,
-    total: primary.total,
-    price_base: primary.total,
+    total,
+    price_base: total,
+    pricing_tier: tier,
+    pricing_variant: variant,
     notes: (state.notes || '').trim(),
     custom_items: [],
     status: 'Created',
@@ -2862,7 +3076,7 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
     (async () => {
       const [{ data: props }, { data: c }] = await Promise.all([
         db.from('proposals').select('*').eq('contact_id', contactId).order('created_at', { ascending: false }),
-        db.from('contacts').select('id, name, email, phone, address').eq('id', contactId).maybeSingle(),
+        db.from('contacts').select('id, name, email, phone, address, pricing_tier').eq('id', contactId).maybeSingle(),
       ]);
       setProposals(props || []);
       setContact(c);
@@ -3251,18 +3465,34 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
     includePermit: true,
     notes: '',
   });
+  // Smart Pricing — tier defaults to the contact's current tier; variant is
+  // auto-assigned 50/50 A/B on mount so the A/B test runs without Key having
+  // to remember to flip it. Key can override the tier inline.
+  const [tier, setTier] = useState(contact?.pricing_tier || 'standard');
+  const [variant] = useState(() => Math.random() < 0.5 ? 'A' : 'B');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
-  const primary = useMemo(() => quickQuoteCompute(state), [state]);
+  const primaryBase = useMemo(() => quickQuoteCompute(state), [state]);
+  // Uplift for display: variant A = this tier's uplift, variant B = next tier's uplift.
+  const tierIdx = TIER_IDS.indexOf(tier);
+  const upliftA = TIER_META[tier]?.uplift || 0;
+  const upliftB = TIER_META[TIER_IDS[Math.min(tierIdx + 1, TIER_IDS.length - 1)]]?.uplift || 0;
+  const uplift = variant === 'B' ? upliftB : upliftA;
+  const displayTotal = primaryBase.total + uplift;
 
   async function submit() {
     if (busy) return;
     setBusy(true); setErr(null);
-    const payload = quickQuoteBuildPayload({ contact, state });
+    const payload = quickQuoteBuildPayload({ contact, state, tier, variant });
     const { data, error } = await db.from('proposals').insert([payload]).select().single();
     setBusy(false);
     if (error || !data) { setErr(error?.message || 'insert failed'); return; }
+    // Persist tier choice back to the contact if Key promoted/demoted in the
+    // modal — keeps the contact tier and the proposal tier in sync.
+    if (contact?.id && tier !== (contact.pricing_tier || 'standard')) {
+      db.from('contacts').update({ pricing_tier: tier }).eq('id', contact.id).then(() => {}, () => {});
+    }
     // Bump the contact's stage from NEW (1) to QUOTED (2) so the LIST chip
     // counts, pipeline buckets, and QUOTED filter stay in sync with the
     // proposals table. Only bump if they're still on stage 1 — we don't
@@ -3331,18 +3561,46 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
           ))}
         </div>
 
+        {/* Smart Pricing — tier selector + A/B variant label. Uplift is
+            added on top of the base price computed above. */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {TIER_IDS.map(id => {
+            const m = TIER_META[id];
+            const on = tier === id;
+            return (
+              <button key={id} onClick={() => setTier(id)} title={m.blurb} style={{
+                flex: 1, padding: '8px 6px', fontSize: 10, letterSpacing: '.06em', fontWeight: 700,
+                fontFamily: 'var(--font-chrome)',
+                background: on ? 'var(--navy)' : 'var(--card)',
+                color: on ? 'var(--gold)' : 'var(--text-muted)',
+                boxShadow: on ? 'var(--pressed-2)' : 'var(--raised-2)',
+                border: 'none', cursor: 'pointer',
+              }}>{m.label}</button>
+            );
+          })}
+        </div>
+
         {/* Total — big, no LCD chrome, just the number */}
         <div style={{ textAlign: 'center', padding: '6px 0' }}>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 42, fontWeight: 700, letterSpacing: '-.02em' }}>
-            ${primary.total.toLocaleString()}
+            ${displayTotal.toLocaleString()}
           </div>
+          {uplift > 0 ? (
+            <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.04em', marginTop: 2 }}>
+              base ${primaryBase.total.toLocaleString()} + ${uplift} bundle uplift · variant {variant}
+            </div>
+          ) : (
+            <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.04em', marginTop: 2 }}>
+              standard · variant {variant}
+            </div>
+          )}
         </div>
 
         {/* Smart Quote price hint — compares this total against the base-
             offer range ($1,197–$1,497) so Key can tell at a glance whether
             the quote is in-range or a custom deal. Future: pull real
             percentile from prior proposals for this amp/length combo. */}
-        <SmartQuoteHint total={primary.total} state={state} />
+        <SmartQuoteHint total={displayTotal} state={state} />
 
         {err ? <div className="mono" style={{ fontSize: 11, color: 'var(--ms-3)', textAlign: 'center' }}>{err}</div> : null}
 
@@ -4495,6 +4753,62 @@ function SmartNextActionHint({ contact, messages, outstandingBalance, onJumpTab,
   );
 }
 
+// Reference token parser — Sparky replies can include tokens like
+//   [[contact:UUID|Display Name]]
+//   [[proposal:UUID|Label]]
+//   [[invoice:UUID|Label]]
+//   [[call:UUID|Label]]
+// These render as clickable chip buttons; click routes to the right surface.
+// Back button returns to Sparky because we push the hash + preserve previous.
+const REF_TOKEN_RE = /\[\[(contact|proposal|invoice|call):([0-9a-f-]{6,})\|([^\]]+)\]\]/g;
+
+function openReference(kind, id) {
+  if (!id) return;
+  // Setting window.location.hash pushes a new entry to history automatically,
+  // so the browser back button rewinds to the prior state. The hashchange
+  // listener in CRMApp then reconciles the UI (clears selectedContact when
+  // the hash drops #contact, etc).
+  if (kind === 'contact') {
+    window.location.hash = `#tab=quick&contact=${id}`;
+  } else if (kind === 'proposal') {
+    // Proposal lives inside a contact's QUOTE tab — but a proposal ID alone
+    // doesn't map cleanly without the contact_id. Fall back to opening the
+    // proposal on the public page; Sparky links back to v2 via the QUOTE tab.
+    // For now we just jump to the proposals tab — refined when contact resolver lands.
+    window.location.hash = '#tab=proposals';
+    setTimeout(() => window.dispatchEvent(new CustomEvent('bpp:focus-proposal', { detail: { id } })), 50);
+  } else if (kind === 'invoice') {
+    window.location.hash = '#tab=invoices';
+    setTimeout(() => window.dispatchEvent(new CustomEvent('bpp:focus-invoice', { detail: { id } })), 50);
+  } else if (kind === 'call') {
+    window.location.hash = '#tab=calls';
+    setTimeout(() => window.dispatchEvent(new CustomEvent('bpp:focus-call', { detail: { id } })), 50);
+  }
+}
+
+function ReferenceChip({ kind, id, label, isOut }) {
+  const tint = kind === 'contact' ? 'var(--navy)'
+             : kind === 'proposal' ? 'var(--gold)'
+             : kind === 'invoice' ? 'var(--ms-2)'
+             : 'var(--text-muted)';
+  return (
+    <button
+      onClick={(e) => { e.preventDefault(); openReference(kind, id); }}
+      title={`Open ${kind}`}
+      className="chrome-label"
+      style={{
+        display: 'inline-block',
+        padding: '1px 8px', fontSize: 10, letterSpacing: '.08em', fontWeight: 700,
+        background: isOut ? 'rgba(255,255,255,.15)' : 'var(--card)',
+        color: isOut ? '#fff' : tint,
+        boxShadow: isOut ? 'inset 0 0 0 1px rgba(255,255,255,.3)' : 'var(--raised-2)',
+        border: 'none', cursor: 'pointer',
+        verticalAlign: 'baseline', margin: '0 1px',
+      }}
+    >{label}</button>
+  );
+}
+
 function MessageBody({ body, isOut }) {
   if (!body) return null;
   // Media prefix (send-sms stores `[media:URL] optional text`)
@@ -4510,19 +4824,39 @@ function MessageBody({ body, isOut }) {
       </>
     );
   }
-  // URL linkification — split on URLs, render links as <a>, non-link runs
-  // pass through `renderBold` so `**bold**` in Sparky output renders as a
-  // real <strong>.
-  const parts = body.split(/(https?:\/\/[^\s]+)/g);
-  return (
-    <span>
-      {parts.map((p, i) => /^https?:\/\//.test(p) ? (
-        <a key={i} href={p} target="_blank" rel="noopener"
-          style={{ color: isOut ? 'var(--gold)' : 'var(--navy)', wordBreak: 'break-all' }}
-        >{p}</a>
-      ) : renderBold(p, `p${i}`))}
-    </span>
-  );
+  // First pass: split on reference tokens [[type:id|label]] so they render
+  // as clickable chips. Then each plain run goes through URL linkification
+  // and bold rendering.
+  const refSplit = body.split(REF_TOKEN_RE);
+  const nodes = [];
+  let i = 0;
+  while (i < refSplit.length) {
+    const plain = refSplit[i];
+    if (plain) {
+      const parts = plain.split(/(https?:\/\/[^\s]+)/g);
+      parts.forEach((p, j) => {
+        if (/^https?:\/\//.test(p)) {
+          nodes.push(
+            <a key={`u${i}_${j}`} href={p} target="_blank" rel="noopener"
+              style={{ color: isOut ? 'var(--gold)' : 'var(--navy)', wordBreak: 'break-all' }}>{p}</a>
+          );
+        } else if (p) {
+          nodes.push(<span key={`p${i}_${j}`}>{renderBold(p, `pb${i}_${j}`)}</span>);
+        }
+      });
+    }
+    // If there's a ref token following (three capture groups), consume it.
+    const kind = refSplit[i + 1];
+    const id = refSplit[i + 2];
+    const label = refSplit[i + 3];
+    if (kind && id && label) {
+      nodes.push(<ReferenceChip key={`ref${i}`} kind={kind} id={id} label={label} isOut={isOut} />);
+      i += 4;
+    } else {
+      i += 1;
+    }
+  }
+  return <span>{nodes}</span>;
 }
 
 // Smart Quick Replies — one-tap pre-written responses driven off the
@@ -5997,6 +6331,107 @@ function FunnelArrow({ rate }) {
 }
 
 // ── Live Finance (KPI strip + proposals/invoices/payments tables) ──────────
+// Smart Pricing rollup — A/B learning readout. Pulls all proposals, groups
+// by tier + variant, and shows close rate × avg price so Key can see which
+// tier/variant is winning over time. Silent ghost card if fewer than 5
+// proposals have tier data (insufficient signal for a readout).
+function SmartPricingRollup() {
+  const [rows, setRows] = React.useState(null);
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await db.from('proposals')
+        .select('id, total, status, pricing_tier, pricing_variant')
+        .not('pricing_tier', 'is', null)
+        .limit(500);
+      if (alive) setRows(data || []);
+    })();
+    return () => { alive = false; };
+  }, []);
+  if (!rows) return null;
+  if (rows.length < 5) {
+    return (
+      <div style={{
+        margin: '0 16px 12px', padding: '10px 14px',
+        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        fontFamily: 'var(--font-body)', fontSize: 12,
+      }}>
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.1em' }}>
+          ◆ SMART PRICING
+        </span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+          {rows.length} of 5 proposals logged — gathering baseline.
+        </span>
+      </div>
+    );
+  }
+  // Group by tier × variant
+  const grid = {};
+  for (const id of TIER_IDS) {
+    grid[id] = { A: [], B: [] };
+  }
+  for (const r of rows) {
+    const t = r.pricing_tier;
+    const v = r.pricing_variant === 'B' ? 'B' : 'A';
+    if (grid[t]) grid[t][v].push(r);
+  }
+  const avg = (arr) => arr.length ? Math.round(arr.reduce((s, r) => s + Number(r.total || 0), 0) / arr.length) : 0;
+  const closeRate = (arr) => arr.length
+    ? Math.round(100 * arr.filter(r => (r.status || '').toLowerCase() === 'approved').length / arr.length)
+    : 0;
+
+  return (
+    <div style={{
+      margin: '0 16px 12px', padding: '12px 14px',
+      background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      display: 'flex', flexDirection: 'column', gap: 8,
+      fontFamily: 'var(--font-body)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.1em' }}>
+          ◆ SMART PRICING · {rows.length} DEALS LOGGED
+        </span>
+        <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+          close-rate × avg total (variant A / B)
+        </span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        {TIER_IDS.map(id => {
+          const m = TIER_META[id];
+          const a = grid[id].A, b = grid[id].B;
+          return (
+            <div key={id} style={{
+              padding: '8px 10px',
+              background: 'var(--bg)', boxShadow: 'var(--pressed-2)',
+              display: 'flex', flexDirection: 'column', gap: 4,
+            }}>
+              <span style={{
+                fontSize: 10, letterSpacing: '.08em', fontWeight: 700,
+                color: m.tone === 'gold' ? 'var(--gold)' : m.tone === 'navy' ? 'var(--navy)' : 'var(--text-muted)',
+                fontFamily: 'var(--font-chrome)',
+              }}>{m.label}</span>
+              <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'var(--text-muted)' }}>
+                <div>
+                  <span className="mono" style={{ color: 'var(--text)' }}>A</span>{' '}
+                  <span className="mono">{a.length ? `${closeRate(a)}% · $${avg(a)}` : '—'}</span>
+                </div>
+                <div>
+                  <span className="mono" style={{ color: 'var(--text)' }}>B</span>{' '}
+                  <span className="mono">{b.length ? `${closeRate(b)}% · $${avg(b)}` : '—'}</span>
+                </div>
+              </div>
+              <span className="mono" style={{ fontSize: 9, color: 'var(--text-faint)' }}>
+                {a.length + b.length} deal{a.length + b.length === 1 ? '' : 's'}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function LiveFinance({ initialSub = 'prop' } = {}) {
   const [data, setData] = useState({
     proposals: [], invoices: [], payments: [],
@@ -6118,6 +6553,9 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
         <FunnelArrow rate={pct(data.installs7d, data.depositsPaid7d)} />
         <FunnelStep label="INSTALLED" count={data.installs7d} />
       </div>
+      {/* Smart Pricing rollup — tier × variant close-rates so Key can see
+          which bundle-uplift is converting once enough deals log tier data. */}
+      <div style={{ marginTop: 12 }}><SmartPricingRollup /></div>
       {/* KPI strip */}
       <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <KpiCard label="INSTALLS THIS WEEK" value={String(data.installsThisWeek).padStart(2, '0')} tone="green" />
@@ -9462,7 +9900,10 @@ function App() {
   }, [tab, selectedContact]);
 
   // Listen for hashchange — lets other components (Finance tables, Sparky links)
-  // navigate by setting window.location.hash = #contact=uuid
+  // navigate by setting window.location.hash = #contact=uuid. Also handles
+  // the browser back button: when the hash drops the #contact= segment we
+  // clear selectedContact so Sparky comes back (matching user expectation —
+  // click chip → contact opens; back button → return to Sparky).
   useEffect(() => {
     const onHash = () => {
       const h = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
@@ -9472,6 +9913,7 @@ function App() {
       const hashContact = h.get('contact');
       if (hashTab && hashTab !== tab) setTab(hashTab);
       if (hashContact && hashContact !== selectedContact) setSelectedContact(hashContact);
+      else if (!hashContact && selectedContact) setSelectedContact(null);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
