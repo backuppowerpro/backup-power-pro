@@ -12,6 +12,24 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.__bpp_db = db;
 
+// Edge-function invoke wrapper. When Key is signed in the Supabase SDK
+// sends his ES256 user-session JWT as Authorization, which edge functions
+// (configured for the legacy HS256 anon key) reject with 401. This helper
+// forces every invoke to use the anon key so functions actually run.
+// Verified 2026-04-23 against ai-taskmaster (was 401-ing every Sparky
+// call). Monkey-patching `db.functions.invoke` doesn't work because
+// `db.functions` is a getter that returns a fresh FunctionsClient on
+// every access — patches land on throwaway instances.
+function invokeFn(name, opts = {}) {
+  return db.functions.invoke(name, {
+    ...opts,
+    headers: {
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      ...(opts.headers || {}),
+    },
+  });
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 // Normalize DB contact row → list-view row shape expected by LeadRow
@@ -2495,7 +2513,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
               // messages-table g.page ILIKE scan so this is safe to call
               // multiple times.
               if (newStage === 9 && oldStage !== 9 && !contact.do_not_contact) {
-                db.functions.invoke('quo-ai-review', { body: { contactId } })
+                invokeFn('quo-ai-review', { body: { contactId } })
                   .then(({ error }) => {
                     if (error) console.warn('[review] auto-fire failed', error);
                     else window.__bpp_toast && window.__bpp_toast('Review ask sent to customer', 'success');
@@ -3025,7 +3043,7 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
     if (!proposal.token) return;
     window.__bpp_toast && window.__bpp_toast('Creating deposit checkout…', 'info');
     try {
-      const { data, error } = await db.functions.invoke('proposal-deposit-checkout', {
+      const { data, error } = await invokeFn('proposal-deposit-checkout', {
         body: { proposal_token: proposal.token, pay_full: false },
       });
       if (error) throw error;
@@ -4439,7 +4457,7 @@ function SmartNextActionHint({ contact, messages, outstandingBalance, onJumpTab,
     let alive = true;
     (async () => {
       try {
-        const { data } = await db.functions.invoke('ai-taskmaster', {
+        const { data } = await invokeFn('ai-taskmaster', {
           body: { mode: 'contact_insight', contact, thread: (messages || []).slice(-20) },
         });
         const raw = typeof data === 'string' ? data : (data?.reply || data?.text || data?.answer || '');
@@ -4657,7 +4675,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
         db.from('contacts').select('*').eq('id', contactId).maybeSingle(),
         db.from('messages').select('direction, body, sender, created_at').eq('contact_id', contactId).order('created_at', { ascending: true }).limit(60),
       ]);
-      const { data, error } = await db.functions.invoke('ai-taskmaster', {
+      const { data, error } = await invokeFn('ai-taskmaster', {
         body: { mode: 'suggest_reply', contact: c, thread: msgs || [] },
       });
       if (error) throw error;
@@ -4681,7 +4699,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
     if (!text.trim() || !contactId || disabled) return;
     setSending(true);
     try {
-      const { data, error } = await db.functions.invoke('send-sms', {
+      const { data, error } = await invokeFn('send-sms', {
         body: { contactId, body: text.trim() },
       });
       if (error) throw error;
@@ -4727,7 +4745,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
       // Send — text is optional caption; body is whatever's in the compose
       // bar at the time. Caption + image both land in the same SMS.
       const caption = text.trim()
-      const { data, error } = await db.functions.invoke('send-sms', {
+      const { data, error } = await invokeFn('send-sms', {
         body: { contactId, body: caption, mediaUrl },
       })
       if (error) throw error
@@ -5309,7 +5327,7 @@ function useVoiceDevice(user) {
       try {
         await loadSdk();
         if (cancelled) return;
-        const { data: tokenRes, error } = await db.functions.invoke('twilio-token');
+        const { data: tokenRes, error } = await invokeFn('twilio-token');
         if (error || !tokenRes?.token) throw new Error(error?.message || 'no token');
         const dev = new window.Twilio.Device(tokenRes.token, {
           logLevel: 1,
@@ -5327,7 +5345,7 @@ function useVoiceDevice(user) {
           call.on('reject', () => { setStatus('idle'); setIncoming(null); });
         });
         dev.on('tokenWillExpire', async () => {
-          const { data } = await db.functions.invoke('twilio-token');
+          const { data } = await invokeFn('twilio-token');
           if (data?.token) dev.updateToken(data.token);
         });
         await dev.register();
@@ -7827,7 +7845,7 @@ function BriefingSparkyInsight({ sections }) {
     setLoading(true);
     (async () => {
       try {
-        const { data, error } = await db.functions.invoke('ai-taskmaster', {
+        const { data, error } = await invokeFn('ai-taskmaster', {
           body: {
             mode: 'briefing',
             // Feed Sparky a compact snapshot — it doesn't need the full rows.
@@ -8465,7 +8483,7 @@ function LiveSparky({ currentContactId = null }) {
       // If a contact is currently open in the detail panel, pass its id so
       // Sparky can skip the lookup and jump straight to answering about them.
       if (currentContactId) body.contact = { id: currentContactId };
-      const { data, error } = await db.functions.invoke('ai-taskmaster', { body });
+      const { data, error } = await invokeFn('ai-taskmaster', { body });
       if (error) throw error;
       const reply = (data?.answer || data?.response || data?.message || data?.text || JSON.stringify(data)).toString();
       setMessages(prev => [...prev, { who: 'sparky', text: reply }]);
