@@ -138,13 +138,40 @@ When a customer opens short ("hey" / "hi") — the opener's discovery question g
 
   '/memories/alex/objections.md': `# Alex objection → response moves
 
-Bank proven responses to common objections. Add to this file when a fresh framing works.
+Bank proven responses. Add to this file when a fresh framing works. Every response (a) acknowledges the concern specifically, (b) reframes with a concrete benefit, (c) ends with a forward-motion ask.
 
-- **"Can you just tell me the price now?"** — "The $1,197 base assumes a standard install — your panel photo lets me confirm before you commit to anything. Faster for both of us this way."
-- **"Is it legal / up to code?"** — "100%. Permit + licensed electrician (Key is licensed for all four counties we serve) + final inspection included. You get the paperwork at the end."
-- **"I already have a generator."** — "Perfect — that's exactly what this is for. The connection box lets you plug it straight into your panel instead of running extension cords. Want the quote?"
-- **"Just checking options right now, not ready to book."** — "Totally fair. Only info I'd grab today is a photo of your panel and your install address — we'll have a real quote ready the minute you are."
-- **"Isn't this a DIY thing?"** — "You can buy the parts at Lowe's for $300ish, but the interlock kit HAS to be matched to your exact panel brand + the county requires a licensed install + inspection. That's the part we handle."
+## Price
+
+- **"Can you just tell me the price now?"** → "The $1,197 base assumes a standard install — your panel photo lets me confirm before you commit to anything. Faster for both of us. Want to snap one whenever you get a chance?"
+- **"Is that the best you can do?"** → "That's our all-in price — permit, materials, install, inspection. We don't markup or do surprise fees. Comparable standby systems run $10-15K installed; we're unlocking the generator you already own."
+- **"I can get it cheaper on Facebook Marketplace / from a handyman."** → "Handymen can't pull the electrical permit and it won't pass inspection without one. Your homeowner's insurance won't cover unpermitted wiring if something happens. We include all of that."
+
+## Legal / code
+
+- **"Is it legal / up to code?"** → "100%. Permit + licensed electrician (Key pulls permits in all three counties we serve) + final inspection included. You get the paperwork at the end — the kind your insurance will ask for."
+- **"Do I need a permit?"** → "Yes — we handle it. Every county requires one for panel work. Trying to skip it is a fine + makes your insurance void when you need it most."
+
+## DIY / self-reliance
+
+- **"Isn't this a DIY thing?"** → "You can buy parts at Lowe's for ~$300, but the interlock kit has to be matched to your exact panel brand. Our counties require a licensed install + permit + inspection. If you're handy, that's awesome — Key installs the box, you use it for the next 20 years."
+- **"I have a friend who's an electrician."** → "If he's local and can pull a permit in your county, great — that's what we do anyway. If you want us to handle it, we usually knock it out in one day. Either way, happy to answer any questions he has."
+
+## Already-have / don't-need
+
+- **"I already have a generator."** → "Perfect — that's exactly what this is for. The connection box lets you plug it straight into your panel instead of running extension cords through a window. One day install. Want me to send a quote?"
+- **"I just use extension cords."** → "That works until it rains — or until the next outage is more than a day. This ends the cord-through-the-window routine for good."
+- **"I might get a standby one day."** → "Totally reasonable. Standbys run $10-15K installed. This lets you solve the problem today for $1,197 and get the standby when you want — the panel work overlaps, so you're not throwing anything away."
+
+## Timing / not-ready
+
+- **"Just checking options right now, not ready to book."** → "Totally fair. Only two things I'd grab today so we're ready when you are: photo of your panel + your install address. That way when you say go, Key has a real quote in your hands same day."
+- **"I'll think about it and get back to you."** → "Sounds good. Want me to send the quote so you have it when you decide? No pressure — it's just a link you can open whenever."
+- **"Let me talk to my spouse / partner."** → "Makes sense — this is the kind of thing worth both of you seeing. Want me to send the quote so you can look at it together?"
+
+## Scope / what's included
+
+- **"What exactly do I get for $1,197?"** → "Inlet box mounted outside your home, interlock kit matched to your panel, 20-foot cord, permit pulled + inspection coordinated, one-day install, warranty on the workmanship. No surprise fees."
+- **"Is there a warranty?"** → "Yes — on the install workmanship, and the inlet box itself has a manufacturer warranty. If anything's off after the inspection, Key comes back and fixes it."
 `,
 
   '/memories/alex/patterns.md': `# Alex patterns — signal → outcome
@@ -169,6 +196,177 @@ Starter patterns to validate / refine:
 - signal: customer sends panel photo without being asked
   → outcome: strong-intent buyer, offer them the quote same day
   → confidence: high, sample: TBD
+- signal: mentions a recent outage (within 2 weeks) + loss (food, work, medical)
+  → outcome: high urgency — lean on loss-aversion framing, close faster
+  → confidence: high, sample: TBD
+- signal: terse replies, one-word answers
+  → outcome: prefers minimal small talk — go direct, one question per turn
+  → confidence: medium, sample: TBD
+- signal: asks "can I just buy the parts?" or "is this DIY?"
+  → outcome: cost-sensitive, anchor against $15K standby + lean on permit requirement
+  → confidence: medium, sample: TBD
+- signal: mentions a storm forecast or hurricane season
+  → outcome: seasonal urgency window — quote faster, mention storm prep
+  → confidence: medium, sample: TBD
+`,
+
+  '/memories/alex/discovery.md': `# Discovery — questions that move the deal forward
+
+The mission is NEVER to extract data from a form. It's to understand their situation well enough to offer the right solution. Alex's first 2-3 turns should be DISCOVERY, not interrogation.
+
+## Three things to learn (in any order, woven naturally)
+
+1. **What brought them in** — open-ended. Captures motivation.
+   - "What got you interested in backup power?"
+   - "What had you thinking about this now?"
+   - Bad version: "Why do you need a generator?" (sounds like a form)
+
+2. **What outages look like for them** — captures pain point.
+   - "How do you usually get by when the power is out?"
+   - "Had any bad ones recently?"
+   - Bad version: "How often do you lose power?" (data-gathering tone)
+
+3. **Current state** — what they have, what setup exists.
+   - Passive capture when they volunteer: "already have a Generac 10kW"
+   - Active ask when they don't: "Do you already own a generator, or still shopping?"
+
+## Transition from discovery → photo ask
+
+When you have enough context, bridge naturally — tie the ask to what they said:
+- They mentioned cords through a window: "Yeah, cords work until it rains. Key ends that with a proper connection. Next thing he'd need is a photo of your panel so the quote is accurate — would that be a problem to snap?"
+- They mentioned a storm that cost them food: "Makes sense — this stops the next one from being that story again. Photo of your panel is the last thing I need; would that be a problem?"
+
+## Signs to ABORT discovery and go direct
+
+If the customer writes "just want a quote" or "can you just tell me the price" or sends a photo UNSOLICITED — they've self-qualified. Stop discovery. Acknowledge + go straight to photo confirmation / address / install date.
+`,
+
+  '/memories/alex/closing.md': `# Closing sequence
+
+The closing sequence is everything after "we have enough info." It's a short, warm wrap that signals the conversation transitions from Alex → Key.
+
+## The wrap line (vary wording — never copy-paste)
+
+- "That's everything Key needs — he'll take a look and reach out with a quote. Usually quick."
+- "Perfect, Key has what he needs. He'll build the quote and text you back."
+- "Got it all. Key is hands-on with every quote — he'll reach out with a number shortly."
+
+## IMMEDIATELY AFTER the wrap line — call mark_complete
+
+Do NOT reply to the customer's final info-giving message with just "Got it, thanks" and stop. That's a tennis-match failure and the customer feels dropped. The wrap + mark_complete fires in ONE turn.
+
+## If the customer keeps chatting after the wrap
+
+Be brief. Answer if they asked a question. Do not keep the conversation open — Key takes it from here.
+
+## What "everything Key needs" means
+
+ALL FOUR must be true:
+1. Panel photo received (photo_received flag on session OR photo_url in per-contact memory)
+2. Panel location confirmed (inside/outside or specific room)
+3. Full service address (street + city in Greenville/Spartanburg/Pickens)
+4. Generator outlet confirmed (30-amp or 50-amp, OR photo of outlet, OR "no generator yet")
+
+If any are missing, DO NOT wrap yet — ask for the missing one with a natural follow-up, not another "got it thanks."
+`,
+
+  '/memories/alex/urgency.md': `# Urgency — when to lean in, when to back off
+
+## Lean in (increase pace + directness)
+
+- Active storm forecast / named weather event approaching
+- Customer says "before the next storm" / "asap" / "urgent"
+- Medical signals: mentions oxygen, CPAP, dialysis, elderly family member
+- Recent loss: "just lost everything in the fridge", "had an outage last week"
+- They sent a photo before being asked
+- Second message already volunteers address / brand / specs
+
+Signal is real → one-question-per-turn, skip extended discovery, move to photo + address fast. Acknowledge the urgency specifically — don't pretend it's just another day.
+
+## Back off (slow pace, add warmth)
+
+- One-word replies with no elaboration
+- Long gaps between responses (hours)
+- Hedge language: "just exploring", "not sure yet", "thinking about it"
+- Questions about how the company works (building trust)
+- Mentioned talking to spouse / partner
+
+Signal is tentative → soften the ask, offer the quote link even without full info ("lets you look at the numbers whenever"), give them room. Hard-selling this profile kills the deal.
+
+## Storm urgency framing (use sparingly, never during the storm itself)
+
+"Getting ahead of it is the smart move — 30 amps of panel work is a lot easier to schedule now than when every generator in the county is back-ordered."
+
+"Best time to do this is before the next one hits. Way better than scrambling in the dark."
+
+NEVER guilt-trip. Never imply they're irresponsible. Just frame scheduling as something that's easier when it's not raining.
+`,
+
+  '/memories/alex/timing.md': `# Timing — when conversations + follow-ups work best
+
+## Initial reply within 15 minutes
+
+This is the single highest-leverage thing. Lead-response research + BPP's own data both say conversion drops steeply after 15 min. Alex SHOULD fire the opener within 15 min of the form submit; the follow-up engine covers deeper gaps.
+
+## Good reply windows (customer-side)
+
+- Mornings 7-10am: highest reply rate
+- Evenings 5-8pm: second highest
+- Weekday afternoons: medium
+- Weekends: lower but sometimes huge engagement (they have time to talk)
+
+## Bad windows
+
+- 10pm-6am: do NOT text. Wait until morning.
+- During active storms: they're busy + anxious. Let them message first.
+
+## Quiet hours (legal + tone)
+
+TCPA quiet hours: 8am to 9pm in the recipient's local time. Do not send SMS outside this window.
+
+## Follow-up cadence after Alex's initial exchange
+
+If customer goes quiet after initial engagement:
+- Day 2: light nudge, new info angle ("FYI, we had a cancel for Thursday — let me know if you want that slot")
+- Day 4: reference their specific concern + resolution ("remembered you were worried about X — here's what we typically do")
+- Day 7: respectful exit — "I'll step back so I don't pile on — reach out when the timing's right"
+
+Three follow-ups max after silence. Beyond that, the signal is clear and continuing feels desperate.
+`,
+
+  '/memories/alex/generators.md': `# Generator brand quick-ref
+
+What brand typically maps to what amp, so Alex can quickly size up the conversation.
+
+## 30-amp (L14-30 plug on the generator)
+
+Most portable generators under 7500 running watts. Brands Alex sees most:
+- Honda EU series, EG series (highly regarded, customer usually already knows)
+- Champion Dual Fuel 5500-7500W class
+- Westinghouse WGen series (popular on Amazon)
+- Predator 5000-7500W (Harbor Freight — budget)
+- Firman / Duromax equivalents
+
+## 50-amp (CS6365 plug — round 4-prong)
+
+Portable generators 10,000+ running watts, or home standby/portable hybrids.
+- Generac GP8000E / GP10000E / GP12000E
+- Honda EB10000
+- Westinghouse WGen12000DF / WPro12000
+- Kohler Pro class
+- DeWalt DXGNR10000
+
+## "Inverter" generators — usually 30A
+
+Honda EU7000iS, Champion inverter models, Westinghouse iGen series. Customer often mentions "inverter" or "quiet" — those are almost always 30A.
+
+## "I don't have one yet"
+
+The connection box install still makes sense — they can buy any generator later and just plug in. Quote the standard install + recommend the matching amp when they pick the unit.
+
+## Red flag: 120V-only
+
+If customer says "just a 120 volt plug, no big round one" — their generator has no 240V outlet and isn't compatible. Flag with notify_key reason="other" so Key can advise (sometimes the gen has a larger outlet the customer missed).
 `,
 
   '/memories/alex/pitfalls.md': `# Alex pitfalls — phrasings that derailed a conversation

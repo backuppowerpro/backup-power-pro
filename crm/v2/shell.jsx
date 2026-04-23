@@ -32,9 +32,9 @@ const Ico = {
 const TABS = [
   { id: 'quick',     label: 'QUICK',     icon: Ico.leads },
   { id: 'calendar',  label: 'CALENDAR',  icon: Ico.calendar },
-  { id: 'pipeline',  label: 'PIPELINE',  icon: Ico.leads },
-  // LIST removed 2026-04-21 — QUICK is now a Sparky-scored smart list that
-  // subsumes the old recency-sorted list view.
+  // LIST removed 2026-04-21 — QUICK is now a Sparky-scored smart list.
+  // PIPELINE removed 2026-04-22 (Key: "i really dislike the pipeline view,
+  // lets just scrap that") — Smart List + priority tables replace it.
   { id: 'messages',  label: 'MESSAGES',  icon: Ico.messages },
   { id: 'calls',     label: 'CALLS',     icon: Ico.messages },
   { id: 'proposals', label: 'PROPOSALS', icon: Ico.finance },
@@ -42,6 +42,10 @@ const TABS = [
   { id: 'permits',   label: 'PERMITS',   icon: Ico.leads },
   { id: 'materials', label: 'MATERIALS', icon: Ico.leads },
   { id: 'finance',   label: 'FINANCE',   icon: Ico.finance },
+  // 2026-04-24: Playbook tab backs the /memories/ filesystem that
+  // Alex + Sparky + post-mortem Alex read and write. Key reviews,
+  // prunes bad patterns, and adds his own field insights.
+  { id: 'playbook',  label: 'PLAYBOOK',  icon: Ico.finance },
 ];
 
 /* ────────── Top bar (desktop + mobile share layout) ────────── */
@@ -141,7 +145,7 @@ const MOBILE_GROUPS = [
 // (permits / materials) and the finance dashboard are desktop-only. When
 // a mobile user lands on one of these (stale URL, deep link, etc.) route
 // them to QUICK so the app doesn't render a mangled layout.
-const MOBILE_DESKTOP_ONLY_TABS = new Set(['pipeline', 'permits', 'materials', 'finance']);
+const MOBILE_DESKTOP_ONLY_TABS = new Set(['permits', 'materials', 'finance']);
 
 function mobileParentFor(tabId) {
   for (const g of MOBILE_GROUPS) {

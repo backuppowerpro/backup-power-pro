@@ -6135,6 +6135,208 @@ async function saveMaterialsForContact(contactId, mat) {
   return true;
 }
 
+// ── Playbook tab ────────────────────────────────────────────────────────────
+// View + edit the /memories/* filesystem that Alex, Sparky, and post-mortem
+// Alex all read + write. Key's oversight surface — prune bad patterns that
+// compounded into the memory, add his own field insights. Writes route
+// through the memory-admin edge function which runs the same PII scrubber
+// as the AI writes.
+function LivePlaybook() {
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPath, setSelectedPath] = useState(null);
+  const [content, setContent] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
+  const [tick, setTick] = useState(0);
+
+  // memory-admin requires a valid Supabase user session (not just the
+  // publishable key that invokeFn sends). We pass the access token in
+  // `x-user-token` alongside the standard publishable-key Authorization.
+  // This survives invokeFn's Authorization override cleanly.
+  const callMemoryAdmin = async (opts) => {
+    const { data: { session } } = await db.auth.getSession();
+    const userToken = session?.access_token || '';
+    const url = `${SUPABASE_URL}/functions/v1/memory-admin${opts.path ? '?path=' + encodeURIComponent(opts.path) : ''}`;
+    const res = await fetch(url, {
+      method: opts.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'x-user-token': userToken,
+      },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
+    return j;
+  };
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const data = await callMemoryAdmin({ method: 'GET' });
+        if (!alive) return;
+        setFiles(data?.files || []);
+      } catch (e) { if (alive) setErr(e.message); }
+      if (alive) setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [tick]);
+
+  const loadFile = async (path) => {
+    setSelectedPath(path);
+    setEditing(false);
+    setErr(null);
+    try {
+      const data = await callMemoryAdmin({ method: 'GET', path });
+      setContent(data?.content || '');
+    } catch (e) { setErr(e.message); }
+  };
+
+  const save = async () => {
+    if (!selectedPath) return;
+    setSaving(true); setErr(null);
+    try {
+      await callMemoryAdmin({ method: 'PUT', body: { path: selectedPath, content } });
+      setEditing(false);
+      setTick(n => n + 1);
+    } catch (e) { setErr(e.message); }
+    setSaving(false);
+  };
+
+  const del = async () => {
+    if (!selectedPath) return;
+    if (!confirm(`Delete ${selectedPath}? This cannot be undone.`)) return;
+    try {
+      await callMemoryAdmin({ method: 'DELETE', path: selectedPath });
+      setSelectedPath(null); setContent('');
+      setTick(n => n + 1);
+    } catch (e) { setErr(e.message); }
+  };
+
+  if (loading) return <Loading />;
+
+  // Group files by first-level directory (alex, shared, sparky, postmortem)
+  const grouped = files.reduce((m, f) => {
+    const parts = f.path.split('/');
+    const dir = parts[2] || '_root';
+    (m[dir] ||= []).push(f);
+    return m;
+  }, {});
+  const groupOrder = ['shared', 'alex', 'sparky', 'postmortem', '_root'];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', background: 'var(--bg)', overflow: 'hidden' }}>
+      {/* Left pane — file tree */}
+      <div style={{ width: 280, flexShrink: 0, borderRight: '1px solid var(--divider-faint)', overflowY: 'auto', background: 'var(--card)' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-faint)' }}>
+          <div className="chrome-label" style={{ fontSize: 10, letterSpacing: '.12em', color: 'var(--text-muted)' }}>AI PLAYBOOK</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4, lineHeight: 1.4 }}>
+            What Alex + Sparky have learned. Edit to correct patterns or add your own insight.
+          </div>
+        </div>
+        {groupOrder.filter(g => grouped[g]).map(dir => (
+          <div key={dir} style={{ padding: '8px 0' }}>
+            <div className="chrome-label" style={{ padding: '6px 16px', fontSize: 10, letterSpacing: '.1em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              /{dir === '_root' ? '' : dir + '/'}
+            </div>
+            {grouped[dir].map(f => {
+              const name = f.path.split('/').pop();
+              const on = selectedPath === f.path;
+              return (
+                <button key={f.path} onClick={() => loadFile(f.path)} className="tactile-flat" style={{
+                  width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '8px 16px 8px 28px', gap: 8,
+                  background: on ? 'var(--navy)' : 'transparent',
+                  color: on ? 'var(--gold)' : 'var(--text)',
+                  border: 'none', cursor: 'pointer', textAlign: 'left',
+                  fontFamily: 'var(--font-body)', fontSize: 12,
+                }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                  <span className="mono" style={{ fontSize: 10, color: on ? 'var(--gold)' : 'var(--text-faint)' }}>{f.size_bytes}b</span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      {/* Right pane — file viewer / editor */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {!selectedPath ? (
+          <div style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontSize: 13 }}>
+            Select a playbook file to view or edit.
+          </div>
+        ) : (
+          <>
+            <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderBottom: '1px solid var(--divider-faint)', background: 'var(--card)' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="mono" style={{ fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPath}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {!editing ? (
+                  <>
+                    <button onClick={() => setEditing(true)} className="chrome-label" style={{
+                      padding: '6px 12px', fontSize: 11, letterSpacing: '.08em',
+                      background: 'var(--card)', boxShadow: 'var(--raised-2)', color: 'var(--text)',
+                      border: 'none', cursor: 'pointer',
+                    }}>EDIT</button>
+                    <button onClick={del} className="chrome-label" style={{
+                      padding: '6px 12px', fontSize: 11, letterSpacing: '.08em',
+                      background: 'var(--card)', boxShadow: 'var(--raised-2)', color: 'var(--ms-3)',
+                      border: 'none', cursor: 'pointer',
+                    }}>DELETE</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={save} disabled={saving} className="chrome-label" style={{
+                      padding: '6px 12px', fontSize: 11, letterSpacing: '.08em',
+                      background: 'var(--navy)', boxShadow: 'var(--raised-2)', color: 'var(--gold)',
+                      border: 'none', cursor: saving ? 'wait' : 'pointer',
+                    }}>{saving ? 'SAVING…' : 'SAVE'}</button>
+                    <button onClick={() => { setEditing(false); loadFile(selectedPath); }} className="chrome-label" style={{
+                      padding: '6px 12px', fontSize: 11, letterSpacing: '.08em',
+                      background: 'var(--card)', boxShadow: 'var(--raised-2)', color: 'var(--text-muted)',
+                      border: 'none', cursor: 'pointer',
+                    }}>CANCEL</button>
+                  </>
+                )}
+              </div>
+            </div>
+            {err ? (
+              <div style={{ padding: '8px 16px', background: 'var(--ms-3)', color: '#fff', fontSize: 11, fontFamily: 'var(--font-body)' }}>{err}</div>
+            ) : null}
+            <div style={{ flex: 1, overflow: 'auto', padding: 16, background: 'var(--bg)' }}>
+              {editing ? (
+                <textarea
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                  style={{
+                    width: '100%', height: '100%', minHeight: 400,
+                    fontFamily: 'var(--font-mono, monospace)', fontSize: 12,
+                    padding: 12, background: 'var(--card)', color: 'var(--text)',
+                    border: 'none', boxShadow: 'var(--pressed-2)', resize: 'none',
+                    whiteSpace: 'pre-wrap',
+                  }}
+                />
+              ) : (
+                <pre style={{
+                  fontFamily: 'var(--font-mono, monospace)', fontSize: 12, lineHeight: 1.5,
+                  color: 'var(--text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0,
+                }}>{content || '(empty)'}</pre>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LiveMaterials() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10591,6 +10793,7 @@ function App() {
     if (tab === 'permits')   return <LivePermits />;
     if (tab === 'materials') return <LiveMaterials />;
     if (tab === 'finance')   return <LiveFinance />;
+    if (tab === 'playbook')  return <LivePlaybook />;
     return null;
   })();
 
