@@ -28,6 +28,7 @@
  * Deploy with --no-verify-jwt so Twilio can POST without Authorization.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verifyTwilioSignature } from '../_shared/auth.ts'
 
 const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER') || '+18648637800'
 const TWILIO_ACCOUNT_SID  = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
@@ -96,11 +97,24 @@ Deno.serve(async (req) => {
   const url = new URL(req.url)
   const event = url.searchParams.get('event') || ''
 
+  let rawBody = ''
   let params: URLSearchParams
   try {
-    params = new URLSearchParams(await req.text())
+    rawBody = await req.text()
+    params = new URLSearchParams(rawBody)
   } catch {
     return twiml('<Say>Invalid request.</Say><Hangup/>')
+  }
+
+  // ── TWILIO SIGNATURE VERIFICATION ──────────────────────────
+  // Without this, unauthenticated callers can POST forged `From`/`To`
+  // values and the function returns <Dial><Number>...</Number></Dial>
+  // TwiML that bills outbound calls on Key's Twilio account.
+  const twAuth = Deno.env.get('TWILIO_AUTH_TOKEN')
+  const sigOk = await verifyTwilioSignature(req, rawBody, twAuth)
+  if (!sigOk) {
+    console.warn('[twilio-voice] signature verification FAILED — rejecting')
+    return new Response('forbidden', { status: 403 })
   }
 
   const supabase = createClient(

@@ -6,6 +6,7 @@
  */
 
 import postgres from 'https://deno.land/x/postgresjs@v3.4.4/mod.js'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +16,7 @@ const CORS = {
 
 const MIGRATION_SQL = `
 DROP POLICY IF EXISTS "service_role_all" ON public.sparky_memory;
+DROP POLICY IF EXISTS sparky_memory_service_role_all ON public.sparky_memory;
 CREATE POLICY sparky_memory_service_role_all ON public.sparky_memory
   AS PERMISSIVE FOR ALL TO service_role USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS sparky_memory_authenticated_read ON public.sparky_memory;
@@ -68,6 +70,15 @@ CREATE POLICY sms_consent_log_auth_read ON public.sms_consent_log
 CREATE POLICY sms_consent_log_auth_insert ON public.sms_consent_log
   AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (true);
 
+-- Table-level immutability: even a misbehaving edge function using the
+-- service role can no longer modify or delete existing consent records.
+-- PostgreSQL RULEs run before policy checks and drop the operation
+-- entirely. This is TCPA-level defense-in-depth.
+REVOKE UPDATE, DELETE ON public.sms_consent_log FROM PUBLIC;
+REVOKE UPDATE, DELETE ON public.sms_consent_log FROM anon, authenticated;
+CREATE OR REPLACE RULE sms_consent_log_no_update AS ON UPDATE TO public.sms_consent_log DO INSTEAD NOTHING;
+CREATE OR REPLACE RULE sms_consent_log_no_delete AS ON DELETE TO public.sms_consent_log DO INSTEAD NOTHING;
+
 DROP POLICY IF EXISTS auth_all ON public.contacts;
 DROP POLICY IF EXISTS auth_all ON public.permit_jurisdictions;
 DROP POLICY IF EXISTS auth_all ON public.permit_people;
@@ -85,6 +96,7 @@ DROP POLICY IF EXISTS auth_all ON public.follow_up_queue;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  const gate = requireServiceRole(req); if (gate) return gate
 
   const dbUrl = Deno.env.get('SUPABASE_DB_URL')
   if (!dbUrl) {

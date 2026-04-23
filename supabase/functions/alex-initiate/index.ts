@@ -179,17 +179,14 @@ async function generateReport(db: any): Promise<string> {
 
 // ── Auth helper ──────────────────────────────────────────────────────────────
 
-function isAuthorized(req: Request): boolean {
-  // Gate-level verify-jwt (deploy default, without --no-verify-jwt) already
-  // rejects anyone without a valid Supabase-issued JWT. If the request
-  // reached this function at all, it came from:
-  //   - quo-ai-new-lead (edge-to-edge, service_role JWT)
-  //   - a trusted caller with anon JWT (landing page form flow)
-  // So the presence of ANY Authorization: Bearer header is enough.
-  // Additional abuse protection: opted_out + active_session gates below
-  // prevent repeated texting of the same number.
-  const auth = req.headers.get('Authorization')?.replace('Bearer ', '') || ''
-  return auth.length > 20  // must be a real JWT-ish string, not empty
+// Compare the incoming Authorization header against the known publishable
+// key or the service role key in constant time. Previously this accepted
+// any 20+ char bearer string, which left the Alex opener blast-able by
+// any attacker with an HTTP client.
+import { requireAnonOrServiceRole } from '../_shared/auth.ts'
+
+function authFail(req: Request): Response | null {
+  return requireAnonOrServiceRole(req)
 }
 
 // ── Main handler ─────────────────────────────────────────────────────────────
@@ -201,9 +198,7 @@ Deno.serve(async (req) => {
   if (req.method === 'GET') {
     const url = new URL(req.url)
     if (url.searchParams.get('report') === 'true') {
-      if (!isAuthorized(req)) {
-        return new Response('Unauthorized', { status: 401, headers: CORS })
-      }
+      { const gate = authFail(req); if (gate) return gate; }
       const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
       const report = await generateReport(db)
       return new Response(report, { status: 200, headers: { ...CORS, 'Content-Type': 'text/plain' } })
@@ -216,9 +211,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS })
 
   // Auth required — prevents anyone from spamming arbitrary phone numbers
-  if (!isAuthorized(req)) {
-    return new Response('Unauthorized', { status: 401, headers: CORS })
-  }
+  { const gate = authFail(req); if (gate) return gate; }
 
   let body: any
   try { body = await req.json() } catch {

@@ -21,6 +21,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 // ── Staleness thresholds (hours without outbound message before drafting follow-up)
 const STALE_HOURS: Record<number, number> = {
@@ -56,6 +57,7 @@ const json = (status: number, body: unknown) =>
 // ── HANDLER ───────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  const gate = requireServiceRole(req); if (gate) return gate
   if (req.method !== 'POST') return json(405, { error: 'method not allowed' })
 
   let body: { mode?: string; maxItems?: number } = {}

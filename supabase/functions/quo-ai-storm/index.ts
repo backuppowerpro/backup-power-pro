@@ -8,11 +8,11 @@
  * Optional: &dry_run=true to preview without sending
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireServiceRole, timingSafeEqual } from '../_shared/auth.ts'
 
 const QUO_API_KEY        = Deno.env.get('QUO_API_KEY')!
 const QUO_PHONE_ID       = Deno.env.get('QUO_PHONE_NUMBER_ID')!
 const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY')!
-const STORM_TOKEN        = 'bpp-storm-2026'
 
 function stripEmDashes(text: string): string {
   return text
@@ -22,13 +22,21 @@ function stripEmDashes(text: string): string {
 }
 
 Deno.serve(async (req) => {
+  // Auth: accept either Bearer <SUPABASE_SERVICE_ROLE_KEY> (preferred,
+  // lets the CRM hit this when Key is signed in) or a rotated token
+  // stored in the STORM_TOKEN secret. The previous hardcoded
+  // `'bpp-storm-2026'` literal has been removed; if you need the
+  // query-param path, set STORM_TOKEN in Supabase secrets and pass
+  // `?token=...`.
   const url     = new URL(req.url)
-  const token   = url.searchParams.get('token')
+  const token   = url.searchParams.get('token') || ''
   const dryRun  = url.searchParams.get('dry_run') === 'true'
   const preview = url.searchParams.get('preview') === 'true'
 
-  if (token !== STORM_TOKEN) {
-    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 })
+  const stormTokenSecret = Deno.env.get('STORM_TOKEN') || ''
+  const tokenOk = stormTokenSecret.length > 0 && timingSafeEqual(token, stormTokenSecret)
+  if (!tokenOk) {
+    const gate = requireServiceRole(req); if (gate) return gate
   }
 
   const supabase = createClient(

@@ -86,6 +86,19 @@ function relTimestamp(iso) {
 // image URLs (no geocoding, no routing, no places); no PII exposure.
 const SV_KEY = 'AIzaSyB0xWm71ZDzS7ei5-vFx15rNP_lR1ZKbJs';
 
+// safeHref — reject `javascript:`, `data:`, `vbscript:` schemes before
+// rendering DB-sourced URLs into `<a href>`. A compromised CRM user or
+// attacker who writes into jurisdictions.link_url could otherwise pop
+// arbitrary JS in the authenticated CRM origin.
+function safeHref(url) {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const u = new URL(url, window.location.origin);
+    if (u.protocol === 'https:' || u.protocol === 'http:' || u.protocol === 'mailto:' || u.protocol === 'tel:') return u.href;
+    return null;
+  } catch { return null; }
+}
+
 function streetViewUrl(address, size = 96) {
   if (!address) return null;
   // Filter out addresses that won't return useful imagery: placeholder text
@@ -2054,7 +2067,7 @@ function InstallBriefModal({ contact, onClose }) {
                 }}>Portal ↗</a>
               ) : null}
               {permitMeta.docUrl ? (
-                <a href={permitMeta.docUrl} target="_blank" rel="noopener" style={{
+                <a href={safeHref(permitMeta.docUrl)} target="_blank" rel="noopener" style={{
                   marginLeft: 6, display: 'inline-block', marginTop: 6, padding: '4px 10px',
                   background: 'var(--card)', color: 'var(--navy)', textDecoration: 'none',
                   fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
@@ -3874,7 +3887,7 @@ function DetailPermits({ contact }) {
             {permitMeta.docUrl ? (
               <div>
                 doc: <a
-                  href={permitMeta.docUrl} target="_blank" rel="noopener"
+                  href={safeHref(permitMeta.docUrl)} target="_blank" rel="noopener"
                   style={{
                     color: 'var(--navy)', textDecoration: 'none',
                     borderBottom: '1px dashed rgba(0,0,0,.2)',
@@ -3899,7 +3912,7 @@ function DetailPermits({ contact }) {
           {jurLinks.length > 0 ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: jur.username || jur.phone ? 10 : 0 }}>
               {jurLinks.map((l, i) => (
-                <a key={i} href={l.url} target="_blank" rel="noopener" style={{
+                <a key={i} href={safeHref(l.url)} target="_blank" rel="noopener" style={{
                   padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
                   background: 'var(--navy)', color: 'var(--gold)',
                   boxShadow: 'var(--raised-2)', textDecoration: 'none', letterSpacing: '.04em',
@@ -4369,7 +4382,7 @@ function DetailPhotos({ contactId, contactPhone }) {
               </div>
             ) : null}
             <div className="mono" style={{ color: 'rgba(255,255,255,.6)', fontSize: 10, letterSpacing: '.06em', textAlign: 'center' }}>
-              {lightboxIndex + 1} / {photos.length} · {lightbox.direction === 'outbound' ? (lightbox.sender === 'ai' ? 'Sent by Alex' : 'Sent by Key') : 'Received from customer'} · {fmtAge(lightbox.at)} · <a href={lightbox.url} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ color: 'var(--gold)' }}>open original ↗</a>
+              {lightboxIndex + 1} / {photos.length} · {lightbox.direction === 'outbound' ? (lightbox.sender === 'ai' ? 'Sent by Alex' : 'Sent by Key') : 'Received from customer'} · {fmtAge(lightbox.at)} · <a href={safeHref(lightbox.url)} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ color: 'var(--gold)' }}>open original ↗</a>
             </div>
           </div>
           {/* Prev / next buttons — visible only when there are neighbors to
@@ -4896,24 +4909,28 @@ function smartQuickReplies(latestInbound, contactName) {
 }
 
 function ComposeBar({ contactId, contactName, contactPhone, installDate = null, latestInbound = '', disabled = false }) {
-  // Auto-save drafts per contact in localStorage so Key doesn't lose a
-  // half-typed SMS when he switches contacts or reloads the tab.
+  // Auto-save drafts per contact in sessionStorage so Key doesn't lose a
+  // half-typed SMS when he switches contacts inside the session. Migrated
+  // from localStorage 2026-04-23 — drafts could contain sensitive customer
+  // context (phone numbers, addresses, pricing) and live-persisted across
+  // sessions was a PII-exposure risk readable by any XSS payload or shared
+  // browser profile.
   const draftKey = contactId ? `bpp_v2_draft_${contactId}` : null;
-  const [text, setText] = useState(() => (draftKey && localStorage.getItem(draftKey)) || '');
+  const [text, setText] = useState(() => (draftKey && sessionStorage.getItem(draftKey)) || '');
   const [sending, setSending] = useState(false);
   const [snippetsOpen, setSnippetsOpen] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
 
-  // Persist draft on every keystroke (cheap; localStorage is synchronous)
+  // Persist draft on every keystroke to sessionStorage
   useEffect(() => {
     if (!draftKey) return;
-    if (text) localStorage.setItem(draftKey, text);
-    else localStorage.removeItem(draftKey);
+    if (text) sessionStorage.setItem(draftKey, text);
+    else sessionStorage.removeItem(draftKey);
   }, [text, draftKey]);
 
   // When the contact changes, re-load its draft
   useEffect(() => {
-    if (draftKey) setText(localStorage.getItem(draftKey) || '');
+    if (draftKey) setText(sessionStorage.getItem(draftKey) || '');
   }, [draftKey]);
 
   // Listen for broadcasted prefill from sibling components (e.g. Quote tab "Remind").

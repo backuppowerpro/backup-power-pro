@@ -17,6 +17,7 @@
  * Method: HTTP POST
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verifyTwilioSignature } from '../_shared/auth.ts'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -40,13 +41,26 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
 
   // ── PARSE FORM-ENCODED BODY ────────────────────────────────────────────────
+  let rawBody = ''
   let params: URLSearchParams
   try {
-    const text = await req.text()
-    params = new URLSearchParams(text)
+    rawBody = await req.text()
+    params = new URLSearchParams(rawBody)
   } catch {
     console.error('[twilio-webhook] failed to parse body')
     return twiml()
+  }
+
+  // ── TWILIO SIGNATURE VERIFICATION ──────────────────────────────────────────
+  // Reject any POST whose X-Twilio-Signature doesn't HMAC-SHA1 match
+  // (AUTH_TOKEN + absolute URL + sorted form pairs). Without this, anyone
+  // can POST a fake inbound SMS and pollute the CRM / fire Alex replies
+  // to attacker-controlled numbers.
+  const twAuth = Deno.env.get('TWILIO_AUTH_TOKEN')
+  const sigOk = await verifyTwilioSignature(req, rawBody, twAuth)
+  if (!sigOk) {
+    console.warn('[twilio-webhook] signature verification FAILED — rejecting')
+    return new Response('forbidden', { status: 403 })
   }
 
   const from       = params.get('From') || ''

@@ -21,6 +21,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 const TWILIO_SID   = Deno.env.get('TWILIO_ACCOUNT_SID')!
 const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!
@@ -67,6 +68,7 @@ async function pingKeyViaSms(summary: string, priority: string, smsBodyOverride?
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  const gate = requireServiceRole(req); if (gate) return gate
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS })
 
   let body: any

@@ -5,6 +5,7 @@
  * sends AI-crafted first text to lead, notifies Key, queues follow-up.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { allowRate } from '../_shared/auth.ts'
 
 const QUO_API_KEY        = Deno.env.get('QUO_API_KEY')!
 const QUO_PHONE_ID       = Deno.env.get('QUO_PHONE_NUMBER_ID')!          // (864) 400-5302 — customer-facing
@@ -165,6 +166,17 @@ async function notifyKey(opts: {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS_HEADERS })
+
+  // Per-IP rate limit — 10 leads/min/IP is already more than any legit
+  // landing-page flow hits. Attacker spam now gets 429'd instead of
+  // poisoning the CRM, burning Alex Opus tokens, or firing fake Meta
+  // Lead events.
+  const clientIp = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+    || req.headers.get('x-real-ip')
+    || 'unknown'
+  if (!allowRate(`new-lead:${clientIp}`, 10)) {
+    return new Response(JSON.stringify({ error: 'rate_limited' }), { status: 429, headers: CORS_HEADERS })
+  }
 
   let body: any
   try { body = await req.json() } catch {

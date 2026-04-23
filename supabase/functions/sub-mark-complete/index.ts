@@ -17,6 +17,11 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS })
@@ -30,12 +35,22 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-  // Verify token + get installer name
-  const { data: tokenRow } = await supabase
+  // Verify token via SHA-256 hash match (legacy plaintext fallback during
+  // migration). Hashed path lets us drop plaintext `token` column later.
+  const hash = await sha256Hex(token)
+  let { data: tokenRow } = await supabase
     .from('installer_tokens')
     .select('installer_name, revoked_at')
-    .eq('token', token)
+    .eq('token_hash', hash)
     .maybeSingle()
+  if (!tokenRow) {
+    const legacy = await supabase
+      .from('installer_tokens')
+      .select('installer_name, revoked_at')
+      .eq('token', token)
+      .maybeSingle()
+    tokenRow = legacy.data
+  }
 
   if (!tokenRow || tokenRow.revoked_at) {
     return new Response(JSON.stringify({ error: 'invalid token' }), { status: 401, headers: CORS })

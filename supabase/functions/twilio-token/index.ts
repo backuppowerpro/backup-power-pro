@@ -109,8 +109,13 @@ async function generateAccessToken(identity: string): Promise<{ token: string; e
   return { token: `${signingInput}.${sigB64}`, expires: exp }
 }
 
+import { requireAnonOrServiceRole } from '../_shared/auth.ts'
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
+  // Without this, any internet caller can mint a 1-hour Voice JWT and
+  // place/receive PSTN calls on Key's Twilio account.
+  const gate = requireAnonOrServiceRole(req); if (gate) return gate
 
   if (!TWILIO_ACCOUNT_SID || !TWILIO_API_KEY_SID || !TWILIO_API_KEY_SECRET || !TWILIO_TWIML_APP_SID) {
     console.error('[twilio-token] missing env vars')

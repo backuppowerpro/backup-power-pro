@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://js.stripe.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.google.com; frame-src https://js.stripe.com https://www.google.com;">
 <title>Backup Power Pro — Proposal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
@@ -1519,7 +1522,21 @@ async function approveProposal() {
         err.textContent = 'Payment setup failed: ' + (result.error || 'Unknown error');
         resetBtn(); return;
       }
-      window.location.href = result.url;
+      // Validate the redirect URL server response — only Stripe's own
+      // domains are acceptable. Prevents a compromised edge function
+      // from redirecting to javascript:... or a Stripe look-alike.
+      let target = null;
+      try {
+        const u = new URL(result.url);
+        if (u.protocol === 'https:' && (u.hostname === 'checkout.stripe.com' || u.hostname.endsWith('.stripe.com'))) {
+          target = u.href;
+        }
+      } catch {}
+      if (!target) {
+        err.textContent = 'Payment setup returned a bad redirect. Please try again or call (864) 400-5302.';
+        resetBtn(); return;
+      }
+      window.location.href = target;
     } catch (fetchErr) {
       err.textContent = 'Network error — please try again or call (864) 400-5302.';
       resetBtn();
@@ -1814,7 +1831,17 @@ function initReviewCarousel() {
 
 // ── ERROR ─────────────────────────────────────────────────────
 function showError(title, msg) {
-  document.getElementById('main').innerHTML = `<div class="state-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h2>${title}</h2><p>${msg}</p></div>`;
+  // Build via DOM APIs (not template literal innerHTML) so arbitrary
+  // caller-provided HTML in title/msg is never evaluated. Future
+  // contributors can pass DB-sourced error messages safely.
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.className = 'state-wrap';
+  wrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+  const h2 = document.createElement('h2'); h2.textContent = String(title || '');
+  const p  = document.createElement('p');  p.textContent  = String(msg || '');
+  wrap.appendChild(h2); wrap.appendChild(p);
+  main.appendChild(wrap);
 }
 
 function esc(s) {

@@ -77,6 +77,24 @@ Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.co
 
 ---
 
+## Security — mandatory on every new feature
+
+Security is a first-class step on every build, not an afterthought. Before marking any feature done, confirm each of the following applies (skip only the ones that are genuinely not in scope for the change):
+
+- **Auth gate** — every new edge function starts with `requireServiceRole(req)` or `requireAnonOrServiceRole(req)` from `supabase/functions/_shared/auth.ts`. Pure public endpoints (customer-facing view-only) must at minimum rate-limit via `allowRate(key, perMin)`.
+- **Webhook signature verification** — Twilio → `verifyTwilioSignature`, OpenPhone → `verifyOpenPhoneSignature`. Never trust a webhook's body.
+- **No secrets in committed files** — grep the diff for `eyJhbGci`, `sk_live`, `sk_test`, `AIza`, `sbp_`, hardcoded passwords. Secrets go in Supabase secrets (`supabase secrets set NAME=value`) and get read via `Deno.env.get('NAME')`.
+- **RLS on every new table** — every `CREATE TABLE` migration ends with `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;` followed by policies that use `TO service_role` and `TO authenticated` (never default-to-PUBLIC). Anon access only when explicitly needed, and even then scoped — not `USING (true)`.
+- **Column whitelists on mutation endpoints** — customer-facing edge functions that write never accept `...body`; always enumerate allowed columns explicitly.
+- **Escape ilike / search input** — use `escapeIlike()` from `_shared/auth.ts` before `.ilike()` / `.or()` filters.
+- **Frontend safety** — no `innerHTML` on user-supplied strings, use `textContent`; validate scheme before `href=` / `window.location.href = ...`; put customer drafts + PII in `sessionStorage`, not `localStorage`.
+- **Customer-facing pages** ship with CSP + SRI on external CDNs.
+- **TCPA** — any outbound SMS/call checks `contacts.do_not_contact` before dispatch.
+
+After the build lands, run the security-review critic as part of the Critic Pass. If something surprising comes out, fix it before the session ends.
+
+---
+
 ## Critic Pass (Auto — runs during active build sessions)
 
 After any substantial build, pick the right critic(s) from the table below, run them as background agents, fix what's real, and report briefly. Key trusts your judgment — fix without asking.

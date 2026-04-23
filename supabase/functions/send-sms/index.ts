@@ -27,6 +27,7 @@
  * status='failed' so the CRM thread always reflects what was attempted.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireAnonOrServiceRole } from '../_shared/auth.ts'
 
 // ── TWILIO CONFIG ──────────────────────────────────────────────────────────────
 const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
@@ -49,6 +50,10 @@ const json = (status: number, body: unknown) =>
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
   if (req.method !== 'POST') return json(405, { success: false, error: 'method not allowed' })
+
+  // Auth gate — accept the publishable key (CRM) or service role (server).
+  // Without this, any internet caller can fire SMS on Key's Twilio bill.
+  const gate = requireAnonOrServiceRole(req); if (gate) return gate
 
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
     console.error('[send-sms] missing Twilio env vars')

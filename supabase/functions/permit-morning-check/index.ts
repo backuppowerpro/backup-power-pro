@@ -6,6 +6,7 @@
 // 4. Texts Key a summary at (941) 441-7996
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -166,7 +167,11 @@ function addressMatch(contactAddr: string, portalAddr: string): boolean {
 
 // ── Main handler ──
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // Gate: service-role only — this function burns Firecrawl credits and
+  // authenticates into county portals with stored credentials. Without
+  // the gate, repeated unauth calls trigger lockout upstream.
+  const gate = requireServiceRole(req); if (gate) return gate
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
   // 1. Find contacts with permit submitted but not yet ready to pay

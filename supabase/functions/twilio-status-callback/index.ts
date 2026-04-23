@@ -19,6 +19,7 @@
  *   https://reowtzedjflwmlptupbk.supabase.co/functions/v1/twilio-status-callback
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verifyTwilioSignature } from '../_shared/auth.ts'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -30,12 +31,22 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
 
+  let rawBody = ''
   let params: URLSearchParams
   try {
-    const text = await req.text()
-    params = new URLSearchParams(text)
+    rawBody = await req.text()
+    params = new URLSearchParams(rawBody)
   } catch {
     return new Response('Bad request', { status: 400 })
+  }
+
+  // Signature verification — block forged status updates (attacker could
+  // otherwise mark every outbound SMS as `failed` by guessing MessageSids).
+  const twAuth = Deno.env.get('TWILIO_AUTH_TOKEN')
+  const sigOk = await verifyTwilioSignature(req, rawBody, twAuth)
+  if (!sigOk) {
+    console.warn('[twilio-status-callback] signature verification FAILED — rejecting')
+    return new Response('forbidden', { status: 403 })
   }
 
   const messageSid    = params.get('MessageSid') || ''

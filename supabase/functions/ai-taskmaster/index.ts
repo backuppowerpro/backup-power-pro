@@ -34,6 +34,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { escapeIlike, requireAnonOrServiceRole } from '../_shared/auth.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -600,7 +601,7 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
     switch (name) {
 
       case 'lookup_contact': {
-        const q = (input.query || '').toString().trim()
+        const q = escapeIlike((input.query || '').toString().trim())
         // contacts table: id, name, phone, email, address, stage, status, notes, install_notes, jurisdiction_id, quote_amount, created_at
         const { data, error } = await supabase
           .from('contacts')
@@ -634,7 +635,7 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
           .limit(limit)
         if (input.stage) q = q.eq('stage', Number(input.stage))
         if (input.status) q = q.eq('status', input.status)
-        if (input.query) q = q.or(`name.ilike.%${input.query}%,address.ilike.%${input.query}%,phone.ilike.%${input.query}%`)
+        if (input.query) { const sq = escapeIlike(input.query.toString()); q = q.or(`name.ilike.%${sq}%,address.ilike.%${sq}%,phone.ilike.%${sq}%`) }
         // min_days_quiet: filter by created_at as proxy (messages table not joined here)
         if (input.min_days_quiet) {
           const cutoff = new Date()
@@ -654,7 +655,7 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         const { data: msgs, error } = await supabase
           .from('messages')
           .select('id, contact_id, direction, body, created_at')
-          .ilike('body', `%${query}%`)
+          .ilike('body', `%${escapeIlike(query)}%`)
           .order('created_at', { ascending: false })
           .limit(limit)
         if (error) return { error: error.message }
@@ -1241,6 +1242,9 @@ function jsonResp(body: any, status = 200): Response {
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
   if (req.method !== 'POST') return jsonResp({ error: 'method not allowed' }, 405)
+  // Require a known BPP key — prevents drive-by Opus billing exhaustion
+  // + cross-contact data exfiltration via tool calls from randos.
+  const gate = requireAnonOrServiceRole(req); if (gate) return gate
 
   let body: any = {}
   try { body = await req.json() } catch {

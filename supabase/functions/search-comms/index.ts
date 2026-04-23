@@ -8,8 +8,7 @@
  * Auth: uses service role key — caller must be authenticated (CRM anon key validated via header)
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
+import { requireAnonOrServiceRole, escapeIlike } from '../_shared/auth.ts'
 
 function stripHtml(s: string): string {
   return (s || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -58,14 +57,10 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Validate — require the anon key in Authorization header (so random crawlers can't dump all messages)
-  const authHeader = req.headers.get('authorization') || req.headers.get('apikey') || ''
-  if (!authHeader.includes(ANON_KEY.slice(-20))) {
-    return new Response(JSON.stringify({ error: 'unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    })
-  }
+  // Validate — constant-time match of the publishable or service role key.
+  // The previous `.includes(ANON_KEY.slice(-20))` check accepted any
+  // string containing those last-20 chars, which wasn't really auth.
+  { const gate = requireAnonOrServiceRole(req); if (gate) return gate; }
 
   const url   = new URL(req.url)
   const query = (url.searchParams.get('q') || '').trim()
@@ -98,7 +93,7 @@ Deno.serve(async (req) => {
 
     // Filter: body must contain at least one search word (case-insensitive)
     // Supabase supports .or() with ilike filters
-    const orFilters = words.map(w => `body.ilike.%${w}%`).join(',')
+    const orFilters = words.map(w => `body.ilike.%${escapeIlike(w)}%`).join(',')
     messagesQuery = messagesQuery.or(orFilters)
 
     const { data: msgs, error: msgsErr } = await messagesQuery
@@ -127,7 +122,7 @@ Deno.serve(async (req) => {
 
   // ── Search contact notes ─────────────────────────────────────────────────
   if (mode === 'notes' || mode === 'all') {
-    const orFilters = words.map(w => `notes.ilike.%${w}%`).join(',')
+    const orFilters = words.map(w => `notes.ilike.%${escapeIlike(w)}%`).join(',')
     const { data: notesContacts, error: notesErr } = await supabase
       .from('contacts')
       .select('id, name, phone, status, stage, notes')

@@ -19,6 +19,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const LOB_API_KEY  = Deno.env.get('LOB_API_KEY') || ''
@@ -131,6 +132,7 @@ const BACK    = Deno.env.get('POSTCARD_BACK')    || '<!-- neighbor-back.html con
 // ── HANDLER ────────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  const gate = requireServiceRole(req); if (gate) return gate
   if (req.method !== 'POST')   return json(405, { error: 'method not allowed' })
 
   let body: { contactId?: string } = {}

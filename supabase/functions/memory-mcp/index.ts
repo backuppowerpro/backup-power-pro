@@ -23,6 +23,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireServiceRole, escapeIlike } from '../_shared/auth.ts'
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SVC_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -126,6 +127,11 @@ Deno.serve(async (req) => {
     return new Response('Method not allowed', { status: 405, headers: CORS })
   }
 
+  // MCP clients must present the service role key. Previously no auth
+  // was enforced despite the file's docs claiming it — any client could
+  // call tools/call and dump sparky_memory + contacts.
+  const gate = requireServiceRole(req); if (gate) return gate
+
   let body: any
   try {
     body = await req.json()
@@ -206,11 +212,18 @@ async function callTool(name: string, args: Record<string, any>): Promise<any> {
 
   switch (name) {
     case 'get_contact': {
-      const digits = String(args.phone ?? '').replace(/\D/g, '').slice(-10)
+      // Normalize to E.164 and use exact eq match — the previous `%digits`
+      // ilike matched anyone sharing the same last-N digit suffix, which
+      // collides across numbers. digits is numeric-only so escapeIlike
+      // is belt-and-suspenders against future regressions.
+      const rawDigits = String(args.phone ?? '').replace(/\D/g, '')
+      const digits = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits
+      const normalized = digits.length === 10 ? `+1${digits}` : (digits.length === 11 ? `+${digits}` : null)
+      if (!normalized) return text(`Invalid phone: ${args.phone}`)
       const { data, error } = await db
         .from('contacts')
         .select('id, name, phone, address, stage, install_notes, created_at, updated_at')
-        .ilike('phone', `%${digits}`)
+        .eq('phone', normalized)
         .limit(1)
         .maybeSingle()
 

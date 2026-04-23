@@ -21,6 +21,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { escapeIlike } from '../_shared/auth.ts'
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 
@@ -922,7 +923,7 @@ async function clearSessions(supabase: any, phone: string): Promise<void> {
       .eq('status', 'active'),
     supabase.from('sparky_memory')
       .delete()
-      .like('key', `contact:${normalized}:%`),
+      .like('key', `contact:${escapeIlike(normalized)}:%`),
     // Any pending reminder for this phone — cancel so it doesn't fire into
     // the fresh session with stale context.
     supabase.from('sparky_memory')
@@ -964,7 +965,7 @@ async function buildContactContext(supabase: any, phone: string): Promise<string
     supabase
       .from('sparky_memory')
       .select('key, value')
-      .like('key', `contact:${normalizedPhone}:%`)
+      .like('key', `contact:${escapeIlike(normalizedPhone)}:%`)
       .order('key'),
   ])
 
@@ -1228,7 +1229,7 @@ async function executeTool(
       const { data: photoMems } = await supabase
         .from('sparky_memory')
         .select('key, value')
-        .like('key', `contact:${phone}:photo_%`)
+        .like('key', `contact:${escapeIlike(phone)}:photo_%`)
         .order('key', { ascending: false })
         .limit(1)
       if (photoMems?.[0]?.value) {
@@ -1334,7 +1335,7 @@ async function executeTool(
     // ready; anything missing here puts Alex back into collection mode.
     const normalized = normalizePhone(phone)
     const [memRes, contactRes] = await Promise.all([
-      supabase.from('sparky_memory').select('key, value').like('key', `contact:${normalized}:%`),
+      supabase.from('sparky_memory').select('key, value').like('key', `contact:${escapeIlike(normalized)}:%`),
       supabase.from('contacts').select('name, email, address').eq('phone', normalized).maybeSingle(),
     ])
     const mem: Record<string, string> = {}
@@ -2330,7 +2331,7 @@ Deno.serve(async (req) => {
       const mem = await supabase
         .from('sparky_memory')
         .select('key, value')
-        .like('key', `contact:${fromPhone}:%`)
+        .like('key', `contact:${escapeIlike(fromPhone)}:%`)
       const rows = (mem?.data || []) as { key: string; value: string }[]
       const has = (suffix: string) => rows.some(r => r.key === `contact:${fromPhone}:${suffix}`)
       const hasLocation = has('panel_location')
@@ -2392,7 +2393,7 @@ Deno.serve(async (req) => {
         const { data: photoMems } = await supabase
           .from('sparky_memory')
           .select('value')
-          .like('key', `contact:${fromPhone}:photo_%`)
+          .like('key', `contact:${escapeIlike(fromPhone)}:photo_%`)
           .order('key', { ascending: false })
           .limit(1)
         const photoLine = photoMems?.[0]?.value ? `\nPhoto: ${photoMems[0].value}` : ''

@@ -5,10 +5,12 @@
  * Immediately ACKs with a 200 so Quo doesn't retry.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verifyOpenPhoneSignature } from '../_shared/auth.ts'
 
 const KEY_PERSONAL_NUMBER = '+19414417996'
 const QUO_API_KEY = Deno.env.get('QUO_API_KEY')!
 const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua' // (864) 863-7155
+const QUO_SIGNING_KEY = Deno.env.get('QUO_SIGNING_KEY') || ''
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -20,8 +22,21 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
   if (req.method !== 'POST') return new Response('ok', { status: 200, headers: CORS_HEADERS })
 
+  // Read body text once so we can verify signature before parsing.
+  const rawBody = await req.text()
+
+  // OpenPhone signature verification — rejects forged `from: +19414417996`
+  // payloads that would otherwise insert attacker-controlled rows into
+  // bpp_commands. If QUO_SIGNING_KEY is not configured, fail CLOSED to
+  // avoid silently accepting anything.
+  const sigOk = await verifyOpenPhoneSignature(req, rawBody, QUO_SIGNING_KEY)
+  if (!sigOk) {
+    console.warn('[quo-ai-webhook] signature verification FAILED — rejecting')
+    return new Response('forbidden', { status: 403, headers: CORS_HEADERS })
+  }
+
   let body: any
-  try { body = await req.json() } catch { return new Response('ok', { status: 200, headers: CORS_HEADERS }) }
+  try { body = JSON.parse(rawBody) } catch { return new Response('ok', { status: 200, headers: CORS_HEADERS }) }
 
   // Quo webhook sends event objects — handle both direct and wrapped formats
   const event = body?.data || body

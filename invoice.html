@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://js.stripe.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.stripe.com; frame-src https://js.stripe.com;">
 <title>Backup Power Pro — Invoice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -335,12 +338,14 @@ function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.
 function fmt(n) { return '$' + Number(n || 0).toLocaleString('en-US'); }
 
 function showError(title, msg) {
-  document.getElementById('main').innerHTML = `
-    <div class="state-wrap">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8a9ab5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <h2>${title}</h2>
-      <p>${msg}</p>
-    </div>`;
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.className = 'state-wrap';
+  wrap.innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8a9ab5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+  const h2 = document.createElement('h2'); h2.textContent = String(title || '');
+  const p  = document.createElement('p');  p.textContent  = String(msg || '');
+  wrap.appendChild(h2); wrap.appendChild(p);
+  main.appendChild(wrap);
 }
 
 // ── BUILD AGREEMENT HTML (from linked proposal) ────────────

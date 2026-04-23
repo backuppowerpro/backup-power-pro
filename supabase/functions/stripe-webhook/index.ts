@@ -216,7 +216,7 @@ serve(async (req) => {
         // call from the landing page form-submit bridges anonymous →
         // contact, and proposal.html re-registers with proposal_token, so
         // passing contactId here lines up with both person profiles.
-        const phKey = Deno.env.get('POSTHOG_API_KEY') || 'phc_qoA51lePZqXYtPJYkrIpdA4U8iMDJ79L1kje7r4pD4O'
+        const phKey = Deno.env.get('POSTHOG_API_KEY') || ''
         if (phKey) {
           fetch('https://us.i.posthog.com/capture/', {
             method: 'POST',

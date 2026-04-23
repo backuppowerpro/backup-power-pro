@@ -7,6 +7,7 @@
  * Body: { contactId: string }
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 const QUO_API_KEY        = Deno.env.get('QUO_API_KEY')!
 const QUO_PHONE_ID       = Deno.env.get('QUO_PHONE_NUMBER_ID')!
@@ -29,6 +30,7 @@ function stripEmDashes(text: string): string {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  const gate = requireServiceRole(req); if (gate) return gate
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405, headers: CORS })
 
   let body: any

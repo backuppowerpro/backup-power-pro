@@ -21,6 +21,7 @@
 // traffic for $0. Closes the growth loop that starts with ad spend.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -39,6 +40,7 @@ function reviewMessage(firstName: string) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  const gate = requireServiceRole(req); if (gate) return gate
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 

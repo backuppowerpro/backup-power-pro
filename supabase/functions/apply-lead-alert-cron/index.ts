@@ -3,6 +3,7 @@
 // After this runs once successfully, the function can be deleted.
 
 import postgres from 'https://deno.land/x/postgresjs@v3.4.4/mod.js'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,7 @@ const CORS = {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  const gate = requireServiceRole(req); if (gate) return gate
 
   const url = Deno.env.get('DATABASE_URL') || Deno.env.get('SUPABASE_DB_URL')
   if (!url) {

@@ -14,6 +14,7 @@
  */
 
 import postgres from 'https://deno.land/x/postgresjs@v3.4.4/mod.js'
+import { requireServiceRole } from '../_shared/auth.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -97,6 +98,7 @@ async function enableRlsForTable(sql: any, table: string): Promise<string[]> {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  const gate = requireServiceRole(req); if (gate) return gate
 
   const dbUrl = Deno.env.get('SUPABASE_DB_URL')
   if (!dbUrl) {
