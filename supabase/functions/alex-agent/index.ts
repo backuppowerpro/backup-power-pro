@@ -404,15 +404,27 @@ RECEIVING ANY PHOTO — this is the most important rule about photos:
 
   You cannot actually see what's in the image, and you never will. The customer assumes you did. Under NO circumstances do anything that reveals you can't see — that includes asking what's in the photo, asking whether it's the panel or the outlet, asking them to describe it, or committing to what it shows. Treat every incoming photo the same way: warm, brief, topic-agnostic acknowledgment + Key will take it from here.
 
-  What to do on ANY photo:
+  What to do on ANY photo (ALL FOUR STEPS EVERY TIME — no exceptions):
     1. Save the photo URL with write_memory immediately. The code also saves it automatically; calling write_memory is an extra safety net and tags the most recent semantic context (key: "photo_url" is fine).
-    2. Reply with a warm, GENERIC acknowledgment that works whether it's a panel, an outlet, a selfie, or a blurry thumb. Vary wording so it never sounds canned. Good examples:
+    2. Write a warm, GENERIC acknowledgment that works whether it's a panel, an outlet, a selfie, or a blurry thumb. Vary wording so it never sounds canned. Good examples:
        "Got it, thanks for sending that."
        "Perfect, Key will take a look."
        "Appreciate you grabbing that — he'll look it over."
        "Nice, thanks — that goes straight to Key."
-    3. Call notify_key with reason "photo_received" so Key opens the thread and classifies it himself.
-    4. Then ask for whichever of the remaining items (panel location, address, generator outlet) is still missing — pick ONE, not two. If nothing is missing, call mark_complete instead.
+    3. Call notify_key with reason "photo_received" so Key opens the thread and classifies it himself. THIS IS NON-NEGOTIABLE — every single photo gets a notify_key call. No reasoning around it, no "this is a follow-up photo so Key already knows" — every photo.
+    4. In the SAME message as the acknowledgment, ask for whichever of the remaining items (panel location, address, generator outlet) is still missing — pick ONE, not two. If nothing is missing, call mark_complete instead.
+
+  A PHOTO REPLY THAT IS ONLY "Got it, thanks." IS A FAILURE.
+  A PHOTO REPLY WITHOUT A QUESTION MARK IS A FAILURE (unless you just called mark_complete).
+  A PHOTO REPLY WITHOUT notify_key IS A FAILURE.
+  These three failures are exactly what happened with a real customer on 2026-04-23 — you replied "Got it, thanks." to a media attachment, asked nothing, and never pinged Key. Do not repeat that mistake.
+
+  Concrete example of a GOOD photo reply (photo + location already on file, still need address):
+    Alex: "Got it, thanks — that goes straight to Key. What's the full install address, street and city?"
+    (tool call: notify_key reason=photo_received)
+
+  Concrete example of a BAD photo reply:
+    Alex: "Got it, thanks."   ← dead-end, no tool call, Key has no idea it came in
 
   NEVER say any of these after a photo comes in:
     - "Is that the panel or the outlet?" — reveals you can't tell
@@ -2262,6 +2274,65 @@ Deno.serve(async (req) => {
       `${contactName} is ready for a quote. Alex collected panel info and photos.`,
       'Open contact, review photos, send proposal.',
     ).catch((e) => console.error("[alex] notify failed:", e))
+  }
+
+  // ── Safety net: never dead-end after a photo ───────────────────────────
+  // Real-world failure (2026-04-23): customer sent a media attachment,
+  // Alex replied "Got it, thanks." and stopped — no follow-up question, no
+  // Sparky inbox notification. Per the prompt, Alex should ALWAYS serve
+  // the ball back and fire notify_key('photo_received') on any photo.
+  // Belt-and-suspenders: enforce both here in code so a model lapse can't
+  // leave Key hanging.
+  if (hasMedia && !complete && response) {
+    const endsWithQuestion = /\?\s*$/.test(response.trim())
+    const looksBareAck = response.trim().length < 30 || !endsWithQuestion
+    if (looksBareAck) {
+      // Figure out what's still missing so we can ask for the right thing.
+      const mem = await supabase
+        .from('sparky_memory')
+        .select('key, value')
+        .like('key', `contact:${fromPhone}:%`)
+      const rows = (mem?.data || []) as { key: string; value: string }[]
+      const has = (suffix: string) => rows.some(r => r.key === `contact:${fromPhone}:${suffix}`)
+      const hasLocation = has('panel_location')
+      const hasAddress  = has('address')
+      const hasOutlet   = has('generator_outlet')
+      let nextAsk: string | null = null
+      if (!hasLocation) {
+        nextAsk = ' Which part of the house is that in — garage, basement, utility room, outside?'
+      } else if (!hasAddress) {
+        nextAsk = ' And the full install address — street and city?'
+      } else if (!hasOutlet) {
+        nextAsk = ' One more — is your generator\'s 240V outlet 30-amp or 50-amp? A quick pic of the outlet works too if you\'re not sure.'
+      }
+      if (nextAsk) {
+        // Strip trailing period so the append reads naturally.
+        response = response.trim().replace(/\.\s*$/, '.') + nextAsk
+        console.log('[alex] safety-net appended follow-up question:', nextAsk)
+      }
+    }
+
+    // Always fire photo_received notify to Sparky inbox, even if the model
+    // forgot to call notify_key. This is how Key sees the thread in the CRM.
+    try {
+      const { data: c } = await supabase.from('contacts').select('id, name').eq('phone', normalizePhone(fromPhone)).limit(1)
+      const contactId = c?.[0]?.id || null
+      const contactName = c?.[0]?.name || fromPhone
+      const { data: photoMems } = await supabase
+        .from('sparky_memory')
+        .select('value')
+        .like('key', `contact:${fromPhone}:photo_%`)
+        .order('key', { ascending: false })
+        .limit(1)
+      const photoLine = photoMems?.[0]?.value ? `\nPhoto: ${photoMems[0].value}` : ''
+      await reportToSparkyImmediate(
+        supabase, contactId, fromPhone, 'urgent',
+        `Alex → Key [photo_received_safety_net]: ${contactName} sent a photo — Alex may not have flagged it on its own.${photoLine}`,
+        'Panel photo received. Review it and send a quote.',
+      )
+    } catch (e) {
+      console.error('[alex] safety-net notify failed:', e)
+    }
   }
 
   if (response) {
