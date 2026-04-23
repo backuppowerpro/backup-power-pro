@@ -194,6 +194,16 @@ HARD RULES — never break these:
 
 You are Alex. You work for Backup Power Pro, a generator connection service based in Upstate South Carolina. Key is the licensed electrician who does all the installations himself.
 
+LONG-TERM MEMORY (read this FIRST, every conversation):
+Before you reply to anything, use the "memory" tool to view /memories. Then read /memories/patterns.md, /memories/objections.md, /memories/openers.md, and /memories/pitfalls.md. These are your own notes from prior customer conversations — patterns, objection-handling moves that worked, opening styles that got replies, phrasing traps that derailed past chats. Apply what you learned.
+
+When THIS conversation is teaching you something new — a pattern you would want to remember for a future lead, a phrasing that worked unusually well, an objection you handled cleanly, a pitfall you want to avoid repeating — use the "memory" tool (command=str_replace or insert or create) to write it down. Be specific, be anonymized. NEVER write a customer name, phone number, street address, or exact price into memory. Examples of GOOD memory entries:
+  - "Signal: just need it hooked up + named generator brand → low-friction close, skip the discovery phase, go straight to photo ask. ~3 conversations, high confidence."
+  - "Objection: can you just tell me the price now? → reframe to the base price assumes a standard install — your panel photo lets me confirm before you commit. Worked 2/2."
+  - "Pitfall: opening with would you be opposed to sharing... sounded lawyer-y and killed one thread. Use plainer language."
+
+Writing to memory is NOT mandatory every turn — only when you have learned something durable. The "write_memory" tool is DIFFERENT: that one is for per-customer facts (this lead panel location, etc.), which live in a database keyed to their phone. The "memory" tool is for cross-customer learnings that live in /memories/.
+
 YOUR MISSION (this is the most important thing in these instructions):
 Your mission is to create a wonderful customer experience. The customer should feel understood, helped, and genuinely taken care of — not processed, not interrogated, not talked at.
 
@@ -693,10 +703,18 @@ When you have the photo AND panel location, say your wrap-up line and call mark_
 
 // ── TOOLS ────────────────────────────────────────────────────────────────────
 
-const TOOLS = [
+const TOOLS: any[] = [
+  // Anthropic's client-side memory tool — persistent /memories/ filesystem
+  // backed by the alex_memory_files table. Scoped to cross-customer
+  // learnings (patterns, objections, openers, pitfalls). Per-customer
+  // state still lives in sparky_memory via write_memory below.
+  // CRITICAL: PII scrubber in handleMemoryTool() strips phones / names /
+  // addresses / pricing before any write lands in the DB. Everything
+  // stored here must be anonymized patterns only.
+  { type: 'memory_20250818', name: 'memory' },
   {
     name: 'write_memory',
-    description: 'Save an important fact about this lead for future reference. Use for panel location, objections, scheduling preferences, or anything Key should know.',
+    description: 'Save an important fact about THIS SPECIFIC lead (per-customer profile data). Use for panel location, objections, scheduling preferences, anything Key should know about this person. For cross-customer learnings (patterns that would help on a FUTURE lead), use the `memory` tool instead to write to /memories/.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1073,6 +1091,103 @@ async function callClaude(messages: any[], contactContext?: string): Promise<any
   throw new Error('Claude API failed after retry')
 }
 
+// ── MEMORY TOOL (memory_20250818) ─────────────────────────────────────────────
+// Alex's persistent /memories/ filesystem. Shared across ALL customer
+// conversations — cross-contact learnings only. PII scrubbed on writes.
+
+// Scrubber for memory file contents. Writes to /memories/ should NEVER
+// carry identifying customer information. The regex stack removes:
+//   - phone numbers in any common format
+//   - email addresses
+//   - dollar amounts over $100 (kills exact pricing leakage)
+//   - addresses with street + number ("42 Oakmont Trail")
+//   - obvious ALL CAPS proper names that follow "my name is" / "signed by"
+// It's intentionally aggressive — false positives corrupt one pattern
+// line, which is fine; false negatives leak PII forever.
+function scrubPiiForMemory(text: string): string {
+  let out = String(text || '')
+  out = out.replace(/\+?\d{1,2}[\s().-]{0,2}\d{3}[\s().-]{0,2}\d{3}[\s().-]{0,2}\d{4}/g, '[phone]')
+  out = out.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[email]')
+  out = out.replace(/\$\s?\d{3,}(?:,\d{3})*(?:\.\d{2})?/g, '[price]')
+  out = out.replace(/\b\d{1,6}\s+(?:[A-Z][a-z]+\s?){1,5}(?:St|Street|Rd|Road|Ave|Avenue|Blvd|Dr|Drive|Ln|Lane|Trl|Trail|Way|Ct|Court|Pl|Place|Pkwy|Parkway|Cir|Circle|Hwy|Highway)\b\.?/g, '[address]')
+  // Strip long ALL-CAPS name patterns (less aggressive — only all-caps pairs)
+  out = out.replace(/\b[A-Z]{2,}\s+[A-Z]{2,}\b/g, '[name]')
+  return out
+}
+
+async function handleMemoryTool(supabase: any, input: any): Promise<string> {
+  const cmd = (input?.command || '').toString()
+  const path = (input?.path || '').toString()
+  // Hard-scope every operation inside /memories/* so Alex can't traverse
+  // outside (e.g. /memories/../etc/passwd — nonsense on our Postgres
+  // backend, but defense-in-depth).
+  if (!path.startsWith('/memories')) {
+    return `Error: path must start with /memories (got ${path})`
+  }
+  if (path.includes('..')) return 'Error: path traversal not allowed'
+
+  try {
+    if (cmd === 'view') {
+      // Directory view (the prefix is a directory) → list children.
+      if (path === '/memories' || path === '/memories/') {
+        const { data } = await supabase
+          .from('alex_memory_files').select('path, size_bytes, updated_at')
+          .order('path', { ascending: true })
+        const lines = (data || []).map((r: any) => `${r.path} (${r.size_bytes} bytes, updated ${r.updated_at})`).join('\n')
+        return lines ? `Contents of /memories:\n${lines}` : '/memories is empty'
+      }
+      // Single file read.
+      const { data } = await supabase.from('alex_memory_files').select('content').eq('path', path).maybeSingle()
+      if (!data) return `Path ${path} does not exist`
+      return `Here's the content of ${path}:\n${data.content}`
+    }
+    if (cmd === 'create') {
+      const content = scrubPiiForMemory(input?.file_text || '')
+      await supabase.from('alex_memory_files').upsert({ path, content, updated_at: new Date().toISOString() })
+      return `File created successfully at: ${path}`
+    }
+    if (cmd === 'str_replace') {
+      const { data } = await supabase.from('alex_memory_files').select('content').eq('path', path).maybeSingle()
+      if (!data) return `Error: The path ${path} does not exist`
+      const oldStr = (input?.old_str || '').toString()
+      const newStr = scrubPiiForMemory((input?.new_str || '').toString())
+      if (!data.content.includes(oldStr)) return `No replacement found for old_str`
+      const updated = data.content.replace(oldStr, newStr)
+      await supabase.from('alex_memory_files').update({ content: updated, updated_at: new Date().toISOString() }).eq('path', path)
+      return 'The memory file has been edited.'
+    }
+    if (cmd === 'insert') {
+      const { data } = await supabase.from('alex_memory_files').select('content').eq('path', path).maybeSingle()
+      if (!data) return `Error: The path ${path} does not exist`
+      const insertLine = Math.max(0, Number(input?.insert_line) || 0)
+      const insertText = scrubPiiForMemory((input?.insert_text || '').toString())
+      const lines = data.content.split('\n')
+      lines.splice(insertLine, 0, insertText)
+      const updated = lines.join('\n')
+      await supabase.from('alex_memory_files').update({ content: updated, updated_at: new Date().toISOString() }).eq('path', path)
+      return 'Inserted.'
+    }
+    if (cmd === 'delete') {
+      const { error } = await supabase.from('alex_memory_files').delete().eq('path', path)
+      if (error) return `Error: ${error.message}`
+      return `Deleted ${path}`
+    }
+    if (cmd === 'rename') {
+      const newPath = (input?.new_path || '').toString()
+      if (!newPath.startsWith('/memories')) return 'Error: new_path must start with /memories'
+      const { data } = await supabase.from('alex_memory_files').select('content').eq('path', path).maybeSingle()
+      if (!data) return `Error: source ${path} does not exist`
+      await supabase.from('alex_memory_files').insert({ path: newPath, content: data.content })
+      await supabase.from('alex_memory_files').delete().eq('path', path)
+      return `Renamed ${path} to ${newPath}`
+    }
+    return `Error: unknown command ${cmd}`
+  } catch (e) {
+    console.error('[alex] memory tool error:', e)
+    return `Error: ${String(e).slice(0, 200)}`
+  }
+}
+
 // ── TOOL EXECUTION ────────────────────────────────────────────────────────────
 
 async function executeTool(
@@ -1082,6 +1197,11 @@ async function executeTool(
   toolName: string,
   toolInput: any,
 ): Promise<{ result: string; complete: boolean; summary?: string }> {
+  // Anthropic's memory tool — view/create/str_replace/insert/delete/rename on /memories/*.
+  if (toolName === 'memory') {
+    const result = await handleMemoryTool(supabase, toolInput)
+    return { result, complete: false }
+  }
   if (toolName === 'write_memory') {
     const key = `contact:${phone}:${toolInput.key}`
     const rawValue = String(toolInput.value || '')
