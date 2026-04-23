@@ -4568,7 +4568,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
         setText(t);
         // After state updates, focus the input for immediate edit/send
         setTimeout(() => {
-          const input = document.querySelector('input[placeholder="Type a message…"]');
+          const input = document.querySelector('textarea[placeholder="Type a message…"], input[placeholder="Type a message…"]');
           if (input) input.focus();
         }, 50);
       }
@@ -4667,7 +4667,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
       setText(reply);
       // Focus the input so Enter sends immediately
       setTimeout(() => {
-        const input = document.querySelector('input[placeholder="Type a message…"]');
+        const input = document.querySelector('textarea[placeholder="Type a message…"], input[placeholder="Type a message…"]');
         if (input) input.focus();
       }, 30);
     } catch (e) {
@@ -4845,24 +4845,29 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
           </svg>
         </button>
         <div style={{
-          flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
+          flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 8,
           boxShadow: 'var(--pressed-2)', background: 'var(--card)',
         }}>
-          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', paddingTop: 4, flex: '0 0 auto' }}>
             to {contactName || '—'}
           </span>
-          <input
+          <textarea
             value={text}
             onChange={e => setText(e.target.value)}
+            onInput={e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(180, e.target.scrollHeight) + 'px'; }}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Type a message…"
+            rows={1}
             style={{
-              flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none',
+              flex: 1, fontFamily: 'var(--font-body)', fontSize: 14,
+              background: 'transparent', border: 'none', resize: 'none',
+              minHeight: 20, maxHeight: 180, lineHeight: 1.4,
+              overflowY: 'auto',
             }}
           />
           {len > 0 ? (
             <span className="mono" title={`${len} chars · ${segments} SMS segment${segments === 1 ? '' : 's'}${isUnicode ? ' · unicode' : ''}`} style={{
-              fontSize: 10, color: segments > 1 ? 'var(--ms-4)' : 'var(--text-faint)',
+              fontSize: 10, color: segments > 1 ? 'var(--ms-4)' : 'var(--text-faint)', paddingTop: 4, flex: '0 0 auto',
             }}>{len}{segments > 1 ? `/${segments}` : ''}</span>
           ) : null}
         </div>
@@ -8502,25 +8507,29 @@ function LiveSparky({ currentContactId = null }) {
         ) : null}
       </div>
 
-      {/* Sparky compose bar — bottom */}
+      {/* Sparky compose bar — bottom. Textarea so long prompts wrap +
+          the box grows. Enter sends; Shift+Enter inserts a newline. */}
       <div style={{
         padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
         background: 'var(--card)', boxShadow: 'var(--raised)',
-        display: 'flex', alignItems: 'center', gap: 8,
+        display: 'flex', alignItems: 'flex-end', gap: 8,
       }}>
-        <div style={{ flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
-          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>sparky</span>
-          <input value={input} onChange={e => setInput(e.target.value)}
+        <div style={{ flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 8, boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', paddingTop: 4, flex: '0 0 auto' }}>sparky</span>
+          <textarea value={input} onChange={e => setInput(e.target.value)}
             autoFocus
+            rows={1}
+            onInput={e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(200, e.target.scrollHeight) + 'px'; }}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Ask anything…"
-            style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none' }}
+            style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none', resize: 'none', minHeight: 20, maxHeight: 200, lineHeight: 1.4, overflowY: 'auto' }}
           />
         </div>
         <button onClick={() => send()} disabled={sending || !input.trim()} style={{
           width: 40, height: 40, background: 'var(--navy)', color: '#fff',
           boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
           opacity: sending || !input.trim() ? 0.5 : 1, display: 'grid', placeItems: 'center',
+          flex: '0 0 auto',
         }}>
           <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
             <path d="M1 2 L15 8 L1 14 L3 8 L1 2 Z M3 8 L9 8"/>
@@ -9794,7 +9803,7 @@ function App() {
       }
       // r → focus SMS compose bar when contact detail is open
       if (e.key === 'r' && selectedContact) {
-        const composeInput = document.querySelector('input[placeholder="Type a message…"]');
+        const composeInput = document.querySelector('textarea[placeholder="Type a message…"], input[placeholder="Type a message…"]');
         if (composeInput) {
           e.preventDefault();
           composeInput.focus();
@@ -9979,7 +9988,7 @@ function App() {
       }
       // / → focus a visible search input on whatever tab is active
       if (e.key === '/') {
-        const search = document.querySelector('input[placeholder="Search threads…"], input[placeholder="Ask anything…"]');
+        const search = document.querySelector('input[placeholder="Search threads…"], textarea[placeholder="Ask anything…"], input[placeholder="Ask anything…"]');
         if (search) { e.preventDefault(); search.focus(); }
       }
     };
