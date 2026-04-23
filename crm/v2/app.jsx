@@ -7,7 +7,11 @@ const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
 // ── Supabase client ─────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://reowtzedjflwmlptupbk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NzExMDYsImV4cCI6MjA5MDI0NzEwNn0.srmz3lm08HW7MRGIRA8zAgglTcSrjBwxJ7LDYsEwveE';
+// Migrated 2026-04-23 from the legacy anon JWT to Supabase's new
+// publishable-key format. Same privileges (RLS-scoped public access),
+// but the old JWT was leaked to a public repo and is being rotated out.
+// This key is intentionally public — safe to ship in frontend code.
+const SUPABASE_ANON_KEY = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.__bpp_db = db;

@@ -9753,7 +9753,7 @@ const SEND_SMS_URL = `${SUPABASE_URL}/functions/v1/send-sms`;
 // `sb_publishable_*` key for PostgREST, but edge functions reject that format
 // — they require a JWT-shaped anon key. This key has no DB privileges; the edge
 // function uses the service role internally.
-const SEND_SMS_ANON_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlb3d0emVkamZsd21scHR1cGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NzExMDYsImV4cCI6MjA5MDI0NzEwNn0.srmz3lm08HW7MRGIRA8zAgglTcSrjBwxJ7LDYsEwveE';
+const SEND_SMS_ANON_JWT = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
 
 let currentMsgContactId = null;
 let allMessages = []; // all messages for the current thread
