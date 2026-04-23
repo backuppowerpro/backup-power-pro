@@ -9121,7 +9121,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
 //   INVOICE  → VIEW · COPY LINK · RESEND · MARK PAID · REFUND   (future)
 //   PROPOSAL → VIEW · COPY SMS · RESEND · CONVERT TO INVOICE    (future)
 //   CALL     → PLAY · TRANSCRIBE · CALL BACK                    (future)
-function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseContact, onOpenBrief }) {
+function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseContact, onOpenBrief, compact = false }) {
   // Mirror of LiveContactDetail's internal detailTab so we can highlight
   // the active button here. LiveContactDetail dispatches
   // `bpp:detail-tab-changed` whenever its detailTab changes; we dispatch
@@ -9170,13 +9170,14 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
           const on = activeDetail === t.id;
           return (
             <button key={t.id} onClick={() => focusDetail(t.id)} className="chrome-label" style={{
-              height: '100%', padding: '0 4px', minWidth: 0,
+              height: '100%', padding: compact ? '0 10px' : '0 4px', minWidth: 0,
               background: 'transparent', border: 'none',
               color: on ? 'var(--text)' : 'var(--text-muted)',
               fontSize: 11,
               boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
-              cursor: 'pointer', flex: '1 1 0',
-              overflow: 'hidden', textOverflow: 'ellipsis',
+              cursor: 'pointer',
+              flex: compact ? '0 0 auto' : '1 1 0',
+              whiteSpace: 'nowrap',
             }}>{t.label}</button>
           );
         })}
@@ -9184,13 +9185,13 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
           <button
             onClick={() => window.__bpp_dial && window.__bpp_dial(contactPhone)}
             className="chrome-label" title="Call"
-            style={{ height: '100%', padding: '0 4px', minWidth: 0, background: 'transparent', border: 'none', color: 'var(--ms-2)', fontSize: 11, cursor: 'pointer', flex: '1 1 0', fontWeight: 700 }}
+            style={{ height: '100%', padding: compact ? '0 10px' : '0 4px', minWidth: 0, background: 'transparent', border: 'none', color: 'var(--ms-2)', fontSize: 11, cursor: 'pointer', flex: compact ? '0 0 auto' : '1 1 0', fontWeight: 700, whiteSpace: 'nowrap' }}
           >CALL</button>
         ) : null}
         <button
           onClick={onOpenBrief}
           className="chrome-label" title="Install brief"
-          style={{ height: '100%', padding: '0 4px', minWidth: 0, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', flex: '1 1 0' }}
+          style={{ height: '100%', padding: compact ? '0 10px' : '0 4px', minWidth: 0, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', flex: compact ? '0 0 auto' : '1 1 0', whiteSpace: 'nowrap' }}
         >BRIEF</button>
         <button
           onClick={onCloseContact}
@@ -9219,13 +9220,13 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
               onClick={() => window.dispatchEvent(new CustomEvent('bpp:sparky-mode', { detail: { mode: m.id } }))}
               className="chrome-label"
               style={{
-                height: '100%', padding: '0 4px', minWidth: 0,
+                height: '100%', padding: compact ? '0 12px' : '0 4px', minWidth: 0,
                 background: 'transparent', border: 'none',
                 color: on ? 'var(--text)' : 'var(--text-muted)',
                 boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
                 fontSize: 12, cursor: 'pointer',
-                flex: '1 1 0',
-                overflow: 'hidden', textOverflow: 'ellipsis',
+                flex: compact ? '0 0 auto' : '1 1 0',
+                whiteSpace: 'nowrap',
               }}>{m.label}</button>
           );
         })}
@@ -9241,6 +9242,7 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
         background: 'var(--card)', boxShadow: 'var(--pressed-2)',
         borderLeft: '1px solid var(--divider)',
         whiteSpace: 'nowrap',
+        overflowX: compact ? 'auto' : 'visible',
         position: 'relative', zIndex: 2,
       }}>
       {buttons}
@@ -10081,6 +10083,7 @@ function App() {
               contactPhone={rightPanelContactPhone}
               onCloseContact={() => setSelectedContact(null)}
               onOpenBrief={() => window.dispatchEvent(new CustomEvent('bpp:open-install-brief'))}
+              compact={false}
             />
           </div>
         </div>
@@ -10160,6 +10163,7 @@ function App() {
               contactPhone={rightPanelContactPhone}
               onCloseContact={() => setSelectedContact(null)}
               onOpenBrief={() => window.dispatchEvent(new CustomEvent('bpp:open-install-brief'))}
+              compact={true}
             />
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <ErrorBoundary label="CONTACT DETAIL">
