@@ -480,7 +480,7 @@ Service address:
   If you already have the address from an earlier message, DO NOT ask again. Check memory first.
 
 Wrap up:
-  Once you have ALL FOUR core items (panel photo + panel location + full service address + generator outlet info) AND the two identity items are either already on file from the CRM briefing or gathered (full name + email), wrap up warmly in your own words — something along the lines of "That's everything Key needs on our end. He'll take a look at your setup and reach out to put the quote together. Should be pretty quick." Vary the wording so it doesn't sound canned. Then call mark_complete immediately. Notes:
+  Once you have ALL FOUR core items (panel photo + panel location + full service address + generator outlet info) AND the two identity items are either already on file from the CRM briefing or gathered (full name + email), wrap up warmly in your own words — something along the lines of "That's everything Key needs on our end. He'll take a look at your setup and reach out to put the quote together. Should be pretty quick." Vary the wording so it doesn't sound canned. Then call mark_complete immediately. **Never reply to the final bit of info with "Got it, thanks." and stop** — that leaves the customer hanging. If they just handed you the last missing piece, that is the moment to wrap up with a proper close + mark_complete in the same turn. Real 2026-04-23 failure: customer shared the final detail, Alex replied "got it thanks" and went silent. Do not repeat that. Notes:
     - "Generator outlet info" is satisfied by EITHER 30-amp / 50-amp answer OR a NEMA-code answer (volunteered, not asked) OR a photo of the generator's outlet panel OR a confirmed "no generator yet / still shopping" memory entry.
     - "Full name" and "email" only need to be collected if missing from the briefing. If the briefing already has them, skip the ask entirely.
   If the customer is being chatty and asks a question AFTER you have everything, answer briefly and still wrap up. Do not keep the conversation open indefinitely once data collection is done — Key takes over from there.
@@ -2311,14 +2311,18 @@ Deno.serve(async (req) => {
     ).catch((e) => console.error("[alex] notify failed:", e))
   }
 
-  // ── Safety net: never dead-end after a photo ───────────────────────────
-  // Real-world failure (2026-04-23): customer sent a media attachment,
-  // Alex replied "Got it, thanks." and stopped — no follow-up question, no
-  // Sparky inbox notification. Per the prompt, Alex should ALWAYS serve
-  // the ball back and fire notify_key('photo_received') on any photo.
-  // Belt-and-suspenders: enforce both here in code so a model lapse can't
-  // leave Key hanging.
-  if (hasMedia && !complete && response) {
+  // ── Safety net: never dead-end ─────────────────────────────────────────
+  // Real-world failures:
+  //   2026-04-23a — customer sent a media attachment, Alex replied "Got it,
+  //     thanks." and stopped. No follow-up, no notify_key.
+  //   2026-04-23b — customer sent the final bit of info (text), Alex
+  //     replied "got it thanks" and stopped. No proper wrap-up, no
+  //     mark_complete — customer left hanging.
+  // Fix covers both: whether or not there was media, if Alex's reply is
+  // a bare dead-end ack AND the session isn't complete AND we can identify
+  // what's missing, append the right follow-up. If NOTHING is missing,
+  // append a warm proper close and call mark_complete on the model's behalf.
+  if (!complete && response) {
     const endsWithQuestion = /\?\s*$/.test(response.trim())
     const looksBareAck = response.trim().length < 30 || !endsWithQuestion
     if (looksBareAck) {
@@ -2332,41 +2336,74 @@ Deno.serve(async (req) => {
       const hasLocation = has('panel_location')
       const hasAddress  = has('address')
       const hasOutlet   = has('generator_outlet')
+      // Photo: either a photo_url memory row OR the session flag (photo_received)
+      const hasPhotoMem = rows.some(r => r.key.startsWith(`contact:${fromPhone}:photo_`) || r.key === `contact:${fromPhone}:photo_url`)
+      let hasPhotoSession = hasMedia
+      if (!hasPhotoSession) {
+        const { data: sess } = await supabase
+          .from('alex_sessions')
+          .select('photo_received')
+          .eq('session_id', session.id)
+          .maybeSingle()
+        hasPhotoSession = !!sess?.photo_received
+      }
+      const hasPhoto = hasPhotoMem || hasPhotoSession
+
       let nextAsk: string | null = null
-      if (!hasLocation) {
+      if (!hasPhoto) {
+        nextAsk = ' Whenever you get a chance, a photo of your electrical panel with the door open is the next thing Key needs.'
+      } else if (!hasLocation) {
         nextAsk = ' Which part of the house is that in — garage, basement, utility room, outside?'
       } else if (!hasAddress) {
         nextAsk = ' And the full install address — street and city?'
       } else if (!hasOutlet) {
         nextAsk = ' One more — is your generator\'s 240V outlet 30-amp or 50-amp? A quick pic of the outlet works too if you\'re not sure.'
+      } else {
+        // Everything we need is already captured. The model should have
+        // called mark_complete; it didn't. Replace the bare ack with a
+        // proper close, fire mark_complete ourselves, and flip the
+        // complete flag so the outer notify path runs.
+        response = "That's everything Key needs on our end — he'll take a look at your setup and reach out to put the quote together. Should be pretty quick."
+        console.log('[alex] safety-net forced proper close + mark_complete')
+        try {
+          await executeTool(
+            supabase, fromPhone, session.id, 'mark_complete',
+            { summary: 'Auto-closed by safety net — all four items collected but Alex did not call mark_complete itself.' },
+          )
+          complete = true
+        } catch (e) {
+          console.error('[alex] safety-net mark_complete failed:', e)
+        }
       }
       if (nextAsk) {
-        // Strip trailing period so the append reads naturally.
         response = response.trim().replace(/\.\s*$/, '.') + nextAsk
         console.log('[alex] safety-net appended follow-up question:', nextAsk)
       }
     }
 
-    // Always fire photo_received notify to Sparky inbox, even if the model
-    // forgot to call notify_key. This is how Key sees the thread in the CRM.
-    try {
-      const { data: c } = await supabase.from('contacts').select('id, name').eq('phone', normalizePhone(fromPhone)).limit(1)
-      const contactId = c?.[0]?.id || null
-      const contactName = c?.[0]?.name || fromPhone
-      const { data: photoMems } = await supabase
-        .from('sparky_memory')
-        .select('value')
-        .like('key', `contact:${fromPhone}:photo_%`)
-        .order('key', { ascending: false })
-        .limit(1)
-      const photoLine = photoMems?.[0]?.value ? `\nPhoto: ${photoMems[0].value}` : ''
-      await reportToSparkyImmediate(
-        supabase, contactId, fromPhone, 'urgent',
-        `Alex → Key [photo_received_safety_net]: ${contactName} sent a photo — Alex may not have flagged it on its own.${photoLine}`,
-        'Panel photo received. Review it and send a quote.',
-      )
-    } catch (e) {
-      console.error('[alex] safety-net notify failed:', e)
+    // Photo-received notify path: only run when a photo actually arrived
+    // in THIS message. Otherwise a text-only dead-end would re-fire the
+    // "photo received" inbox entry on every turn.
+    if (hasMedia) {
+      try {
+        const { data: c } = await supabase.from('contacts').select('id, name').eq('phone', normalizePhone(fromPhone)).limit(1)
+        const contactId = c?.[0]?.id || null
+        const contactName = c?.[0]?.name || fromPhone
+        const { data: photoMems } = await supabase
+          .from('sparky_memory')
+          .select('value')
+          .like('key', `contact:${fromPhone}:photo_%`)
+          .order('key', { ascending: false })
+          .limit(1)
+        const photoLine = photoMems?.[0]?.value ? `\nPhoto: ${photoMems[0].value}` : ''
+        await reportToSparkyImmediate(
+          supabase, contactId, fromPhone, 'urgent',
+          `Alex → Key [photo_received_safety_net]: ${contactName} sent a photo — Alex may not have flagged it on its own.${photoLine}`,
+          'Panel photo received. Review it and send a quote.',
+        )
+      } catch (e) {
+        console.error('[alex] safety-net notify failed:', e)
+      }
     }
   }
 
