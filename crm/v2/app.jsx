@@ -7946,28 +7946,45 @@ function InvoicesLiveTable({ rows }) {
 }
 
 function PaymentsLiveFeed({ rows }) {
-  if (rows.length === 0) return <Empty label="NO PAYMENTS YET" />;
+  if (rows.length === 0) return <Empty label="No payments yet" />;
   return (
-    <div style={{ boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+    <div style={{
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      overflow: 'hidden',
+    }}>
       {rows.map((p, i) => (
         <div key={p.id} style={{
           display: 'grid',
-          gridTemplateColumns: '90px 1fr 120px',
+          gridTemplateColumns: '110px 1fr 120px',
           gap: 12, alignItems: 'center',
-          padding: '10px 14px',
-          borderBottom: i < rows.length - 1 ? '1px solid var(--divider)' : 'none',
-        }}>
-          <span className="pixel" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          padding: '12px 16px',
+          borderTop: i === 0 ? 'none' : '1px solid var(--divider-faint)',
+          transition: 'background var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        >
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text-faint)',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
             {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
           </span>
           <span
             onClick={() => p.contact_id && (window.location.hash = `#contact=${p.contact_id}`)}
-            style={{ fontFamily: 'var(--font-body)', fontSize: 13, cursor: p.contact_id ? 'pointer' : 'default' }}>
-            {p.contact_name || '—'} · <span style={{ color: 'var(--text-muted)' }}>{p.method || 'Payment'}</span>
+            style={{ fontFamily: 'var(--font-body)', fontSize: 13.5, cursor: p.contact_id ? 'pointer' : 'default', color: 'var(--text)' }}>
+            <span style={{ fontWeight: 600 }}>{p.contact_name || '—'}</span>
+            <span style={{ color: 'var(--text-faint)', margin: '0 6px' }}>·</span>
+            <span style={{ color: 'var(--text-muted)' }}>{p.method || 'Payment'}</span>
           </span>
-          <span className="mono" style={{
-            fontSize: 14, fontWeight: 700, textAlign: 'right',
-            color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
+          <span style={{
+            fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800,
+            textAlign: 'right',
+            color: 'var(--green)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.015em',
           }}>
             ${(Number(p.amount) || 0).toLocaleString()}
           </span>
@@ -7979,17 +7996,34 @@ function PaymentsLiveFeed({ rows }) {
 
 // Single consistent loading placeholder used by every full-surface
 // fetch (contacts, pipeline, calendar, finance, permits, materials,
-// inbox, calls, photos). Standardized font + padding so the visual
-// doesn't shift between tabs.
-function Loading({ label = 'LOADING' }) {
+// inbox, calls, photos). Standardized styling so the visual doesn't
+// shift between tabs. Brand-aligned 2026-04-24: pulsing gold dot +
+// Inter sentence-case label instead of mono uppercase.
+function Loading({ label = 'Loading' }) {
+  // Accept legacy uppercase labels ('LOADING CONTACTS') and convert.
+  const pretty = (() => {
+    const s = String(label || 'Loading');
+    if (s === s.toUpperCase()) {
+      return s.charAt(0) + s.slice(1).toLowerCase();
+    }
+    return s;
+  })();
   return (
     <div style={{
-      padding: 24,
-      fontFamily: 'var(--font-mono)',
-      fontSize: 13,
+      padding: 32,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
       color: 'var(--text-muted)',
-      letterSpacing: '.04em',
-    }}>{label.toUpperCase()}…</div>
+    }}>
+      <span style={{
+        width: 8, height: 8, borderRadius: '50%',
+        background: 'var(--gold)',
+        animation: 'pulse 1.2s infinite',
+        flex: '0 0 auto',
+      }}/>
+      {pretty}…
+    </div>
   );
 }
 
