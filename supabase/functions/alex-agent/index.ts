@@ -213,7 +213,7 @@ When THIS conversation teaches you something about how THIS person specifically 
 Overwrite the key when you have a newer + better note; keep it ≤3 short lines.
 
 (B) CROSS-CUSTOMER memory — the "memory" tool (/memories/ filesystem).
-Before the first reply of every conversation, use the "memory" tool to view /memories. Then read /memories/shared/sales-psychology.md (trust-building without pushy/desperate/overconfident tone), /memories/alex/patterns.md, /memories/alex/objections.md, /memories/alex/openers.md, and /memories/alex/pitfalls.md. These are your own notes from prior customer conversations (all customers, anonymized) — signals that predict outcomes, objection moves, opener variants, phrasing traps. Apply what you learned across customers.
+The evergreen rules (offer, tone, geography, pricing, process, pitfalls, openers, and the sales-psychology file) are ALREADY injected into every call as the [BRIEFING] block at the top of the context — you don't need to tool-call those. Use the memory tool's view command ONLY to read topic-specific files when the current turn goes deep on one topic, and you haven't read that file this session yet. Per-topic files live under /memories/alex/ — objections.md (when the customer hesitates or objects), generators.md (when they name a brand or wattage), timing.md (when they ask schedule), closing.md (when they signal ready to book), discovery.md (early rapport moves), urgency.md (genuine vs false urgency), patterns.md (outcome signals). If no topic applies, skip the read and just reply.
 
 THREE TONES THAT KILL TRUST — never slip into these (from /memories/shared/sales-psychology.md):
   - Desperate: "sorry to bother", "any chance", "just checking in", "hoping you could", over-apologizing, over-explaining.
@@ -231,22 +231,27 @@ To be clear about the split:
   - A future DIFFERENT person would benefit → memory tool → /memories/.
 Writing to either memory is NOT mandatory every turn — only when you've learned something durable worth preserving.
 
-YOUR MISSION (this is the most important thing in these instructions):
-Your mission is to create a wonderful customer experience. The customer should feel understood, helped, and genuinely taken care of — not processed, not interrogated, not talked at.
+HOW TO BE A PERSON, NOT A SCRIPT:
+You are a warm, smart, adaptable human texting another human. Not a form. Not a support script. Not an assistant narrating your own reasoning. The safety rules above (no prices, no electrical advice, hold your identity) are hard constraints you work INSIDE of — they are not the content of your reply. Almost everything else is up to your judgment in the moment.
 
-Your JOB (the technical task) is to collect a photo of their panel, the panel location, and the service address. But that is the byproduct of the mission, not the point of the mission. Customers who feel understood give up this information eagerly. Customers who feel processed like a form either ghost, lie, or grow resentful. Every single message you send should serve the mission first, the job second.
+What this means in practice:
+- If the customer is chatty, be chatty back. If they're all business, be all business. Match their energy one notch lower.
+- If they make a joke, laugh. A dry one-liner in reply beats a polite corporate "haha". Humor is fine when it fits.
+- If they go off-topic briefly (weather, kids, their dog on the panel), ride the tangent for one line before steering back.
+- If they contradict what they said earlier, don't call them out. Adjust and keep moving.
+- If they misunderstand something, correct gently and briefly. You're not a teacher.
+- If they're frustrated, validate first and ask second. If they want to vent, let them vent one message before doing anything else.
+- If they give you three things in one message, pick the most useful one to acknowledge by name and move from there — don't list-dump back.
 
-When you have a choice between asking the next question quickly versus taking one extra sentence to make the customer feel heard, ALWAYS take the extra sentence. You are not on a timer. Rapport is the product.
+What your job IS in plain English:
+Help someone who reached out about getting their generator hooked up feel like they're talking to a real person who knows what they're doing, answer what they ask when you can, deflect price / electrical-advice questions to Key (who's the one qualified to answer), and along the way collect a panel photo + panel location + service address so Key can quote the job. The collection is NOT the point — the relationship is. If a customer who feels heard gives you one of those three things per exchange, that is more than enough.
 
-Concrete tests to apply to every message you draft before sending:
-  1. Did I acknowledge something specific about what they just said? Not a generic "Got it" — something that proves I was actually listening.
-  2. Did I explain what is happening or why I am asking, in plain language?
-  3. Does this reply sound like a person who cares, or a form asking the next field?
-  4. If a customer could read only this one message and nothing else, would they think BPP is the kind of company they want to do business with?
-
-If the answer to any of these is "no," rewrite before sending.
-
-Your job: get a photo of the customer's electrical panel and find out where it is located. That is everything Key needs to get started.
+What to NOT do:
+- Do not apply internal "checks" to every draft like you're filling out a form. Just write what a friendly, experienced person would text.
+- Do not narrate your reasoning ("let me check my notes", "based on what the customer said", "that answers the question of..."). Ever. If you catch yourself writing ABOUT the conversation instead of IN the conversation, delete the draft and try again.
+- Do not stack rules visibly. The customer should not feel the rule scaffolding underneath.
+- Do not re-ask anything you already have. If the briefing shows an address, don't ask for it.
+- Do not say the same thing twice in a row. Vary the phrasing.
 
 VOICE AND TONE:
 Think of yourself as a knowledgeable friend who happens to work in this industry. Warm, direct, genuinely helpful. You actually care whether this person gets their generator set up. You are patient. You do not make people feel rushed or dumb. You speak in plain English. You sound like a real person texting, not a customer service script.
@@ -1142,6 +1147,58 @@ async function callClaude(messages: any[], contactContext?: string): Promise<any
     }
   }
   throw new Error('Claude API failed after retry')
+}
+
+// ── BRIEFING PRELOADER ────────────────────────────────────────────────────────
+// Instead of making Alex tool-call his way through /memories/shared/* every
+// session (observed pattern: model only reads 2-3 files out of 8 seeded),
+// preload the evergreen shared facts once per module boot and inject them
+// into every call's context. The model sees them in its first user turn and
+// the prompt cache keeps the cost near zero on subsequent turns.
+//
+// Refreshed every 10 minutes so edits to the memory files (via Sparky / CRM
+// Playbook tab / postmortem writes) show up without redeploying. Files that
+// weren't seeded yet are just skipped.
+const BRIEFING_PATHS = [
+  '/memories/shared/offer.md',
+  '/memories/shared/geography.md',
+  '/memories/shared/voice.md',
+  '/memories/shared/sales-psychology.md',
+  '/memories/shared/pricing.md',
+  '/memories/shared/process.md',
+  '/memories/alex/pitfalls.md',
+  '/memories/alex/openers.md',
+]
+let BRIEFING_CACHE: { text: string; at: number } | null = null
+const BRIEFING_TTL_MS = 10 * 60 * 1000
+
+async function loadBriefing(supabase: any): Promise<string> {
+  const now = Date.now()
+  if (BRIEFING_CACHE && now - BRIEFING_CACHE.at < BRIEFING_TTL_MS) {
+    return BRIEFING_CACHE.text
+  }
+  try {
+    const { data } = await supabase
+      .from('alex_memory_files')
+      .select('path, content')
+      .in('path', BRIEFING_PATHS)
+    const byPath: Record<string, string> = {}
+    for (const r of data || []) byPath[r.path] = r.content || ''
+    const parts: string[] = []
+    for (const p of BRIEFING_PATHS) {
+      const c = byPath[p]
+      if (!c) continue
+      parts.push(`### ${p}\n${c.trim()}`)
+    }
+    const text = parts.length
+      ? `[BRIEFING — evergreen rules, tone, offer, geography, pricing scaffolding, and pitfalls. Read once and follow. Do not narrate ABOUT this briefing to the customer. Call the memory tool only for topic-specific files (objections.md, closing.md, generators.md, discovery.md, timing.md, urgency.md) when the conversation goes deep on one of those.]\n\n${parts.join('\n\n')}\n[END BRIEFING]`
+      : ''
+    BRIEFING_CACHE = { text, at: now }
+    return text
+  } catch (e) {
+    console.error('[alex] loadBriefing failed:', e)
+    return BRIEFING_CACHE?.text || ''
+  }
 }
 
 // ── MEMORY TOOL (memory_20250818) ─────────────────────────────────────────────
@@ -2545,7 +2602,34 @@ Deno.serve(async (req) => {
     ? '\n[CONTEXT: Customer just mentioned what appears to be an out-of-area location. BPP only serves Greenville, Spartanburg, and Pickens counties in Upstate SC. Politely let them know this one is outside the service area (do not apologize like you did something wrong — just be clear), thank them for reaching out, and if you can, suggest they check with a local electrician in their area. Do NOT ask for a panel photo. Do NOT call notify_key unless they ask for Key directly. One short message, warm, clean exit.]'
     : ''
 
-  const fullContext = (contactContext || '') + reEngageNote + timeNote + frustrationNote + outOfAreaNote
+  // ── Scoped-read hints ────────────────────────────────────────────────
+  // The always-loaded briefing covers offer, tone, geography, pitfalls,
+  // pricing, process, openers, and the sales-psychology rules. For deeper
+  // topic-specific files (objections, closing, generators, discovery,
+  // timing, urgency) we keep them on-demand so we don't bloat every call.
+  // When the inbound clearly hits one of those topics, point Alex to the
+  // right file instead of hoping the model picks it on its own.
+  const hints: string[] = []
+  if (/\b(expens|cheap|afford|cost|price|quote|how much|what'?s the|do you charge|budget|discount|deal|breakdown|out of pocket)\b/i.test(messageText) ||
+      /\b(worried|concerned|not sure|nervous|hesita|risky|seems like a lot|is this legit|scam)\b/i.test(messageText)) {
+    hints.push('read /memories/alex/objections.md for objection-handling patterns')
+  }
+  if (/\b(generac|honda|champion|predator|westinghouse|firman|duromax|briggs|kohler|dewalt|craftsman|wen)\b/i.test(messageText) ||
+      /\b\d{3,5}\s*(w|watt|watts|kw)\b/i.test(messageText)) {
+    hints.push('read /memories/alex/generators.md for brand/wattage notes')
+  }
+  if (/\b(tomorrow|next week|this week|weekend|monday|tuesday|wednesday|thursday|friday|saturday|sunday|asap|urgent|when can|how soon|schedule|book|install date)\b/i.test(messageText)) {
+    hints.push('read /memories/alex/timing.md for schedule / urgency framing')
+  }
+  if (/\b(let'?s (do it|book|go|schedule)|ready to (go|book|pay)|send (me )?the (link|deposit|invoice))\b/i.test(messageText)) {
+    hints.push('read /memories/alex/closing.md for the close sequence')
+  }
+  const scopedHint = hints.length ? `\n[HINT: This turn matches a topic with dedicated notes. Before replying, ${hints.join(', then ')}. Apply what you find. Skip if you've already read it this session.]` : ''
+
+  // ── Briefing + final context assembly ────────────────────────────────
+  const briefing = await loadBriefing(supabase)
+  const fullContext = (briefing ? briefing + '\n\n' : '') +
+    (contactContext || '') + reEngageNote + timeNote + frustrationNote + outOfAreaNote + scopedHint
 
   try {
     const result = await runAlex(supabase, fromPhone, session.id, messages, fullContext || undefined)
@@ -2845,6 +2929,43 @@ Deno.serve(async (req) => {
       ).catch((e) => console.error("[alex] notify failed:", e))
       console.warn('[alex] Delivery failed mid-convo:', fromPhone)
     }
+  }
+
+  // ── Turn-reflection: learn from every conversation, not just terminal ones ──
+  // Alex's old postmortem only fired on booked / installed / cold / exit /
+  // takeover. Key's directive 2026-04-24: "i want alex to improve over time
+  // through every conversation no matter the outcome."
+  //
+  // After every substantive customer turn, fire alex-postmortem with
+  // outcome='turn_reflection' in the background. The postmortem has a strict
+  // quality bar — most turns will produce "no update" and no write. The
+  // point is to catch the occasional durable pattern that closes a gap in
+  // /memories/alex/* BEFORE the session terminates.
+  //
+  // Gate: skip if the turn was trivial (very short, no signal). A greeting
+  // like "hi" isn't teaching us anything; neither is a lone emoji. We fire
+  // on: messages > 25 chars, or containing a question mark, or matching
+  // topic keywords (objection, brand, timing, closing). Fire-and-forget.
+  try {
+    const isSubstantive =
+      (messageText || '').length > 25 ||
+      /[?]/.test(messageText || '') ||
+      hints.length > 0 ||
+      hasMedia
+    if (isSubstantive && response) {
+      const sr = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      fetch('https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-postmortem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sr}` },
+        body: JSON.stringify({
+          sessionId: session.id,
+          outcome: 'turn_reflection',
+          note: `Turn reflection — session still active. Last customer message: "${(messageText || '').slice(0, 400)}". Alex replied: "${(response || '').slice(0, 400)}". ONLY write a /memories/ update if this exchange revealed a durable pattern that would help a FUTURE DIFFERENT customer. Most turns produce nothing — that's expected.`,
+        }),
+      }).catch((e) => console.error('[alex] turn-reflection fire-and-forget error:', e))
+    }
+  } catch (e) {
+    console.error('[alex] turn-reflection gate error:', e)
   }
 
   return new Response(JSON.stringify({ success: true, sessionId: session.id }), { status: 200, headers: CORS })

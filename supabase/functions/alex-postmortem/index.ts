@@ -50,12 +50,13 @@ HARD RULES:
 - Keep writes short. 1-3 lines per learning, max.
 
 Outcome semantics:
-- booked     = customer signed the proposal + deposit paid
-- installed  = install completed (stage 9)
-- cold       = 30-day silent, lead gave up on us
-- exit       = customer explicitly declined / opted out / went with a competitor
-- takeover   = Key manually stepped in and sent a message to the customer that Alex should learn from
-               — for takeovers, Key's actual message IS the correct response. Compare what Alex last said (or would have said) to what Key actually said, then write a learning: "Alex said X, Key corrected to Y. Pattern: when <situation>, prefer <Key's framing>."
+- booked          = customer signed the proposal + deposit paid
+- installed       = install completed (stage 9)
+- cold            = 30-day silent, lead gave up on us
+- exit            = customer explicitly declined / opted out / went with a competitor
+- takeover        = Key manually stepped in and sent a message to the customer that Alex should learn from
+                    — for takeovers, Key's actual message IS the correct response. Compare what Alex last said (or would have said) to what Key actually said, then write a learning: "Alex said X, Key corrected to Y. Pattern: when <situation>, prefer <Key's framing>."
+- turn_reflection = session is STILL ACTIVE. This fires after every substantive customer turn. Expected default: "no update" — most turns are not teaching moments. Only write when THIS one exchange revealed a genuinely new durable pattern that is NOT already captured in /memories/alex/patterns.md / objections.md / pitfalls.md. Quality bar is higher here than at terminal outcomes because we fire much more often; a noisy write pollutes the file. Before writing, read the target file first and verify the learning is not already there.
 
 Example good learning:
   "Signal: first inbound mentions a specific generator wattage → outcome booked at ~2x baseline rate. Skip the 'do you own a generator' qualifier."
@@ -159,8 +160,8 @@ Deno.serve(async (req: Request) => {
   const sessionId = (body?.sessionId || '').toString()
   const outcome   = (body?.outcome || '').toString()
   const note      = (body?.note || '').toString()
-  if (!sessionId || !['booked', 'installed', 'cold', 'exit', 'takeover'].includes(outcome)) {
-    return new Response(JSON.stringify({ error: 'sessionId + outcome in {booked,installed,cold,exit,takeover} required' }), { status: 400, headers: CORS })
+  if (!sessionId || !['booked', 'installed', 'cold', 'exit', 'takeover', 'turn_reflection'].includes(outcome)) {
+    return new Response(JSON.stringify({ error: 'sessionId + outcome in {booked,installed,cold,exit,takeover,turn_reflection} required' }), { status: 400, headers: CORS })
   }
 
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
