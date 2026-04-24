@@ -2296,18 +2296,34 @@ function InstallBriefModal({ contact, onClose }) {
           {/* LAST WORDS — most recent 3 messages so Key lands knowing where things left off */}
           {data.recentMsgs?.length > 0 ? (
             <Section label="Last words" tint="var(--text-muted)">
-              {data.recentMsgs.slice(0, 3).reverse().map((m, i) => (
-                <div key={i} style={{
-                  padding: '4px 0', fontSize: 12,
-                  color: 'var(--text)',
-                  borderTop: i > 0 ? '1px solid var(--divider-faint)' : 'none',
-                }}>
-                  <span className="mono" style={{ fontSize: 9, letterSpacing: '.08em', color: 'var(--text-faint)', marginRight: 6, textTransform: 'uppercase' }}>
-                    {m.direction === 'inbound' ? 'customer' : (m.sender === 'ai' ? 'alex' : 'key')}
-                  </span>
-                  {(m.body || '').slice(0, 160)}
-                </div>
-              ))}
+              {data.recentMsgs.slice(0, 3).reverse().map((m, i) => {
+                const who = m.direction === 'inbound' ? 'Customer' : (m.sender === 'ai' ? 'Alex' : 'Key');
+                const whoColor = who === 'Customer' ? 'var(--navy)'
+                              : who === 'Alex' ? 'var(--blue)'
+                                               : 'var(--gold-ink)';
+                return (
+                  <div key={i} style={{
+                    padding: '8px 0', fontSize: 13,
+                    color: 'var(--text)',
+                    borderTop: i > 0 ? '1px solid var(--divider-faint)' : 'none',
+                    lineHeight: 1.5,
+                  }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '1px 8px', marginRight: 8,
+                      fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+                      letterSpacing: '0.08em', textTransform: 'uppercase',
+                      color: whoColor,
+                      background: `color-mix(in srgb, ${whoColor} 12%, transparent)`,
+                      borderRadius: 'var(--radius-pill)',
+                      verticalAlign: 'baseline',
+                    }}>
+                      {who}
+                    </span>
+                    {(m.body || '').slice(0, 160)}
+                  </div>
+                );
+              })}
             </Section>
           ) : null}
         </div>
