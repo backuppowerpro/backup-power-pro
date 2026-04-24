@@ -5938,27 +5938,42 @@ function KeyboardHelp({ open, onClose }) {
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 85,
-      background: 'rgba(0,0,0,.45)',
+      background: 'rgba(11,31,59,0.45)',
+      backdropFilter: 'blur(3px)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
-        width: 380, padding: 24,
-        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        width: 440, maxWidth: '100%', maxHeight: 'calc(100vh - 64px)', overflowY: 'auto',
+        padding: 24,
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
       }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700, marginBottom: 14, letterSpacing: '-.01em' }}>
-          Keyboard shortcuts
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 18 }}>
+          <span className="eyebrow">Shortcuts</span>
+          <h2 style={{
+            margin: 0,
+            fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800,
+            letterSpacing: '-0.015em', color: 'var(--text)',
+          }}>Keyboard shortcuts</h2>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {shortcuts.map((s, i) => (
             <div key={i} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '8px 0',
+              padding: '10px 0',
               borderBottom: i < shortcuts.length - 1 ? '1px solid var(--divider-faint)' : 'none',
             }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)' }}>{s.label}</span>
-              <span className="mono" style={{
-                fontSize: 11, color: 'var(--text-muted)',
-                padding: '2px 8px', boxShadow: 'var(--raised-2)', background: 'var(--card)',
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text)' }}>{s.label}</span>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 11.5, fontWeight: 600,
+                color: 'var(--text-muted)',
+                padding: '3px 10px',
+                background: 'var(--sunken)',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: 'var(--ring)',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: 0,
               }}>{s.keys}</span>
             </div>
           ))}
