@@ -6432,37 +6432,73 @@ function VoiceCallModal({ voice, onClose }) {
 }
 
 function CallCard({ title, color, name, children }) {
+  // title arrives as one of the legacy uppercase strings
+  // ('INCOMING CALL' / 'CONNECTING...' / 'ON CALL'). Normalize for display.
+  const niceTitle = (() => {
+    const t = (title || '').toString();
+    if (/INCOMING/i.test(t))   return 'Incoming call';
+    if (/CONNECTING/i.test(t)) return 'Connecting…';
+    if (/ON CALL/i.test(t))    return 'On call';
+    return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+  })();
+  // legacy `color` is a --lcd-* token. Map to a brand tone for the pill.
+  const tone = color === 'var(--lcd-red)'   ? 'red'
+             : color === 'var(--lcd-green)' ? 'green'
+             : color === 'var(--lcd-amber)' ? 'gold'
+             : 'navy';
+  const toneColor = tone === 'red' ? 'var(--red)'
+                  : tone === 'green' ? 'var(--green)'
+                  : tone === 'gold' ? 'var(--gold-ink)'
+                                    : 'var(--navy)';
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 80,
       background: 'rgba(11,31,59,0.65)',
-      backdropFilter: 'blur(3px)',
+      backdropFilter: 'blur(4px)',
       display: 'grid', placeItems: 'center',
     }}>
       <div style={{
-        width: 320, padding: 24,
-        background: 'var(--card)', boxShadow: 'var(--raised)',
+        width: 340, padding: 32,
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
       }}>
         <div style={{
-          width: 140, height: 140, background: 'var(--navy)',
-          clipPath: 'var(--avatar-clip)',
+          width: 120, height: 120,
+          background: 'var(--navy)',
+          borderRadius: '50%',
           display: 'grid', placeItems: 'center',
+          boxShadow: '0 12px 32px rgba(11,31,59,0.25)',
         }}>
-          <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 36 }}>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 36,
+            color: '#fff', letterSpacing: '-0.02em',
+          }}>
             {String(name || '?').slice(0, 2).toUpperCase()}
           </span>
         </div>
         <div style={{
-          fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 20,
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22,
           textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.25,
+          color: 'var(--text)', letterSpacing: '-0.015em',
         }}>{name}</div>
-        <div style={{
-          padding: '4px 12px', background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-          fontFamily: 'var(--font-pixel)', fontSize: 14,
-          color, textShadow: color === 'var(--lcd-red)' ? 'var(--lcd-glow-red)' : color === 'var(--lcd-green)' ? 'var(--lcd-glow-green)' : 'var(--lcd-glow-amber)',
-          letterSpacing: '.08em',
-        }}>{title}</div>
+        <span style={{
+          padding: '6px 14px',
+          background: `color-mix(in srgb, ${toneColor} 14%, var(--card))`,
+          color: toneColor,
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          borderRadius: 'var(--radius-pill)',
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: 'currentColor',
+            animation: /ON CALL|CONNECTING/i.test(title) ? 'pulse 1.2s infinite' : 'none',
+          }}/>
+          {niceTitle}
+        </span>
         {children}
       </div>
     </div>
@@ -6688,36 +6724,60 @@ function LivePermits() {
 
 function PermitStepCell({ state }) {
   // state: 'flat' | 'progress' | 'done' | 'blocked'
+  const base = {
+    width: 40, height: 40,
+    borderRadius: 'var(--radius-sm)',
+    display: 'grid', placeItems: 'center',
+    transition: 'background var(--dur) var(--ease)',
+  };
   if (state === 'done') {
-    return <div style={{
-      width: 40, height: 40, boxShadow: 'var(--pressed-2)', background: 'var(--card)',
-      display: 'grid', placeItems: 'center', color: 'var(--green)',
-    }}>
-      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
-        <path d="M3 8 L7 12 L13 4"/>
-      </svg>
-    </div>;
+    return (
+      <div style={{
+        ...base,
+        background: 'color-mix(in srgb, var(--green) 18%, var(--card))',
+        color: 'var(--green)',
+        boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent)',
+      }}>
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 8 L7 12 L13 4"/>
+        </svg>
+      </div>
+    );
   }
   if (state === 'progress') {
-    return <div className="tactile-raised" style={{
-      width: 40, height: 40, boxShadow: 'var(--raised-2)', background: 'var(--card)',
-      display: 'grid', placeItems: 'center', color: 'var(--lcd-amber)',
-    }}>
-      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
-        <circle cx="8" cy="8" r="5"/>
-        <path d="M8 4 L8 8 L11 10"/>
-      </svg>
-    </div>;
+    return (
+      <div style={{
+        ...base,
+        background: 'color-mix(in srgb, var(--gold) 18%, var(--card))',
+        color: 'var(--gold-ink)',
+        boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--gold) 50%, transparent)',
+      }}>
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="8" cy="8" r="5"/>
+          <path d="M8 4 L8 8 L11 10"/>
+        </svg>
+      </div>
+    );
   }
   if (state === 'blocked') {
-    return <div className="lcd" style={{
-      width: 40, height: 40,
-      display: 'grid', placeItems: 'center',
-    }}>×</div>;
+    return (
+      <div style={{
+        ...base,
+        background: 'color-mix(in srgb, var(--red) 14%, var(--card))',
+        color: 'var(--red)',
+        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+        boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--red) 40%, transparent)',
+      }}>×</div>
+    );
   }
-  return <div style={{
-    width: 40, height: 40, boxShadow: 'var(--pressed-2)', background: 'var(--card)',
-  }}/>;
+  // flat / empty state
+  return (
+    <div style={{
+      ...base,
+      background: 'var(--sunken)',
+      boxShadow: 'inset 0 0 0 1px var(--divider-faint)',
+    }}/>
+  );
 }
 
 function stageToLabel(stage) {
