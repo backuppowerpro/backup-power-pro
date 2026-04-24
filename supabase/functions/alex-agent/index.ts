@@ -1421,7 +1421,29 @@ async function executeTool(
       .eq('session_id', sessionId)
       .maybeSingle()
 
-    const hasPhoto = !!sess?.photo_received
+    // Photo validation — check BOTH the session flag AND sparky_memory. For
+    // returning leads the session flag starts false on every new session,
+    // but the photo from a prior session still lives in sparky_memory as a
+    // contact:{phone}:photo_url row. Without this dual-check, returning-
+    // customer sessions loop forever: Alex tries mark_complete, it fails,
+    // Alex writes confused monologue + re-asks for a photo already sent.
+    // Production bug caught 2026-04-24 on session 05d67f4d where photo was
+    // in memory but session.photo_received was false.
+    const normalized = normalizePhone(phone)
+    let hasPhoto = !!sess?.photo_received
+    if (!hasPhoto) {
+      const { data: photoMem } = await supabase
+        .from('sparky_memory')
+        .select('key')
+        .like('key', `contact:${escapeIlike(normalized)}:photo_%`)
+        .limit(1)
+      if (photoMem && photoMem.length > 0) {
+        hasPhoto = true
+        // Side-effect: sync the session flag so subsequent checks don't
+        // have to re-query sparky_memory.
+        await supabase.from('alex_sessions').update({ photo_received: true }).eq('session_id', sessionId)
+      }
+    }
     if (!hasPhoto) {
       return { result: 'Cannot complete yet — no panel photo received. Collect the photo first.', complete: false }
     }
@@ -1429,7 +1451,7 @@ async function executeTool(
     // Pull everything Alex has learned + what's in the contacts row. The
     // mark_complete validation is the FINAL gate before we declare the lead
     // ready; anything missing here puts Alex back into collection mode.
-    const normalized = normalizePhone(phone)
+    // (normalized already computed above for the photo check)
     const [memRes, contactRes] = await Promise.all([
       supabase.from('sparky_memory').select('key, value').like('key', `contact:${escapeIlike(normalized)}:%`),
       supabase.from('contacts').select('name, email, address').eq('phone', normalized).maybeSingle(),
@@ -2440,10 +2462,34 @@ Deno.serve(async (req) => {
   if (!complete && response) {
     const endsWithQuestion = /\?\s*$/.test(response.trim())
     const looksBareAck = response.trim().length < 30 || !endsWithQuestion
-    // Also flag "internal-monologue" replies — long, no question mark,
-    // contains tell-tale reasoning words. If caught, REPLACE the response
-    // rather than append (appending leaves the mess in place).
-    const looksLikeMonologue = response.length > 200 && !endsWithQuestion && /\b(I have everything|the briefing|let me check|actually no|I should|per instructions|should I ask|let me see)\b/i.test(response)
+    // Flag "internal-monologue" replies — anywhere Alex narrates its own
+    // reasoning instead of writing the customer-facing message. Production
+    // bug 2026-04-24: "Hmm, the system says no panel photo received yet
+    // even though the memory shows one was sent. Let me adjust my approach..."
+    // Detector has three cumulative signals, ANY triggers:
+    //   (a) starts with a reasoning tell ("Hmm,", "Actually,", "Wait,", "Let me", "OK so", "Looking at")
+    //   (b) contains an explicit self-reference to system state ("the system says", "the briefing", "memory shows", "according to")
+    //   (c) long + no question + contains classic reasoning vocab
+    const mRx = /(^|[\s\n]*)(hmm|actually|wait|let me|ok so|okay so|looking at|reading the)\b/i
+    const selfRef = /\b(the system says?|the briefing|memory shows|memory references|the prior memory|according to (my|the)|i have (everything|all four)|let me (check|adjust|re-?engage|see|re-?approach)|per instructions|should i ask|actually no|the system doesn)\b/i
+    const classicMono = response.length > 200 && !endsWithQuestion && /\b(should i|per instructions|the briefing|let me)\b/i.test(response)
+    const looksLikeMonologue =
+      (response.length > 40 && selfRef.test(response)) ||
+      (mRx.test(response.slice(0, 80)) && response.length > 80) ||
+      classicMono
+    // SMART STRIP — if monologue sits at the START of an otherwise-clean
+    // message (a greeting follows), slice the monologue prefix away rather
+    // than replacing the whole reply. Saves good content when Alex just
+    // prepended a reasoning paragraph.
+    if (looksLikeMonologue) {
+      const greetingStart = response.search(/\n+(hey|hi|hello|sorry|thanks|got it|perfect|nice|alright|alrighty|awesome|cool|understood|that works|no problem|totally|sure)\b/i)
+      if (greetingStart > 0 && greetingStart < response.length - 30) {
+        // There's a real reply after a monologue prefix. Keep the reply.
+        const cleaned = response.slice(greetingStart).replace(/^\s+/, '')
+        console.log('[alex] safety-net smart-stripped monologue prefix (', greetingStart, 'chars )')
+        response = cleaned
+      }
+    }
     if (looksBareAck || looksLikeMonologue) {
       // Figure out what's still missing so we can ask for the right thing.
       const mem = await supabase
