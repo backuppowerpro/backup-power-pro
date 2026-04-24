@@ -11426,8 +11426,9 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
       style={{
         height: 44, display: 'flex', alignItems: 'stretch',
         padding: 0,
-        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
-        borderLeft: '1px solid var(--divider)',
+        background: 'var(--card)',
+        borderBottom: '1px solid var(--divider-faint)',
+        borderLeft: '1px solid var(--divider-faint)',
         whiteSpace: 'nowrap',
         overflowX: compact ? 'auto' : 'visible',
         position: 'relative', zIndex: 2,
