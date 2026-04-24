@@ -420,10 +420,11 @@ function BottomBar({ mode = 'search', scope = 'leads', mobile = false, thread, s
     <>
       {accessoryRows}
       <div style={{
-        height: 56, display: 'flex', alignItems: 'center', gap: 8,
-        padding: '0 10px',
+        height: 58, display: 'flex', alignItems: 'center', gap: 10,
+        padding: '0 12px',
         background: 'var(--card)',
-        boxShadow: 'var(--raised)',
+        boxShadow: 'var(--shadow-md), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
       }}>
         {innerInput}
         {extras}
@@ -441,44 +442,53 @@ function BottomBar({ mode = 'search', scope = 'leads', mobile = false, thread, s
 }
 
 const iconBtnStyle = {
-  width: 28, height: 28, display: 'grid', placeItems: 'center',
-  color: 'var(--text)',
+  width: 30, height: 30, display: 'grid', placeItems: 'center',
+  color: 'var(--text-muted)',
+  borderRadius: 'var(--radius-pill)',
+  boxShadow: 'var(--ring)',
+  background: 'var(--card)',
+  cursor: 'pointer',
 };
 const cmdKStyle = {
-  height: 24, padding: '0 8px', display: 'inline-flex', alignItems: 'center',
-  background: 'var(--card)', boxShadow: 'var(--raised-2)',
-  fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
+  height: 24, padding: '0 10px',
+  display: 'inline-flex', alignItems: 'center', gap: 4,
+  background: 'var(--sunken)', boxShadow: 'var(--ring)',
+  borderRadius: 'var(--radius-sm)',
+  fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 11,
   color: 'var(--text-muted)',
 };
 const haikuBadgeStyle = {
-  height: 24, padding: '0 8px', display: 'inline-flex', alignItems: 'center',
-  background: 'var(--lcd-bg)', color: 'var(--lcd-green)',
-  textShadow: 'var(--lcd-glow-green)',
-  boxShadow: 'var(--pressed-2)',
-  fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
+  height: 24, padding: '0 10px', display: 'inline-flex', alignItems: 'center',
+  background: 'color-mix(in srgb, var(--green) 12%, var(--card))',
+  color: 'var(--green)',
+  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+  letterSpacing: '0.06em', textTransform: 'uppercase',
+  borderRadius: 'var(--radius-pill)',
 };
 
 function BarInput({ chip, chipIcon, placeholder }) {
   return (
     <label style={{
-      flex: 1, height: 40, display: 'flex', alignItems: 'center', gap: 10,
-      padding: '0 12px',
-      background: 'var(--lcd-bg)',
-      boxShadow: 'var(--pressed-2)',
+      flex: 1, height: 42, display: 'flex', alignItems: 'center', gap: 10,
+      padding: '0 14px',
+      background: 'var(--sunken)',
+      boxShadow: 'var(--ring)',
+      borderRadius: 'var(--radius-pill)',
     }}>
       {chip && (
         <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          fontFamily: 'var(--font-pixel)', fontSize: 14,
-          color: 'var(--gold)', letterSpacing: '.12em',
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+          color: 'var(--navy)', letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          textShadow: '0 0 6px rgba(212,145,26,.4)',
           whiteSpace: 'nowrap',
         }}>
           {chipIcon && <span style={{
-            width: 16, height: 16, background: 'var(--gold)', color: '#000',
+            width: 20, height: 20, background: 'var(--gold)', color: 'var(--navy)',
             display: 'grid', placeItems: 'center',
-            fontFamily: 'var(--font-pixel)', fontSize: 14, lineHeight: 1,
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11,
+            lineHeight: 1,
+            borderRadius: 'var(--radius-sm)',
           }}>{chipIcon}</span>}
           {chip}
         </span>
@@ -487,9 +497,9 @@ function BarInput({ chip, chipIcon, placeholder }) {
         placeholder={placeholder}
         style={{
           flex: 1, minWidth: 0, background: 'transparent',
-          fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400,
-          color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-          letterSpacing: '.04em', textTransform: 'uppercase',
+          fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 400,
+          color: 'var(--text)',
+          letterSpacing: 0,
         }}
       />
     </label>
@@ -497,42 +507,55 @@ function BarInput({ chip, chipIcon, placeholder }) {
 }
 
 function SmsAccessory({ mobile }) {
-  const chips = ['SEND QUOTE', 'ASK FOR PHOTO', 'SCHEDULE INSTALL', 'MORNING CHECK', 'PASS TO KEY'];
+  const chips = ['Send quote', 'Ask for photo', 'Schedule install', 'Morning check', 'Pass to Key'];
   const actions = [
-    { k: 'quote', i: Ico.quote, label: 'QUOTE' },
-    { k: 'sched', i: Ico.sched, label: 'SCHEDULE' },
-    { k: 'mat',   i: Ico.materials, label: 'MATERIALS' },
-    { k: 'stat',  i: Ico.status, label: 'STATUS' },
-    { k: 'note',  i: Ico.note, label: 'NOTE' },
+    { k: 'quote', i: Ico.quote, label: 'Quote' },
+    { k: 'sched', i: Ico.sched, label: 'Schedule' },
+    { k: 'mat',   i: Ico.materials, label: 'Materials' },
+    { k: 'stat',  i: Ico.status, label: 'Status' },
+    { k: 'note',  i: Ico.note, label: 'Note' },
   ];
+  const pillBtn = {
+    flex: '0 0 auto', height: 30, padding: '0 12px',
+    background: 'var(--card)', color: 'var(--text-muted)',
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+    letterSpacing: '0.01em',
+    borderRadius: 'var(--radius-pill)',
+    boxShadow: 'var(--ring)',
+    border: 'none', cursor: 'pointer',
+    transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+  };
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column', gap: 6,
-      padding: 8, marginBottom: 0,
-      background: 'var(--card)', boxShadow: 'var(--raised)',
-      borderBottom: '3px solid rgba(0,0,0,.12)',
+      display: 'flex', flexDirection: 'column', gap: 8,
+      padding: 10, marginBottom: 0,
+      background: 'var(--card)',
+      boxShadow: '0 -1px 0 var(--divider)',
     }}>
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 2 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 2 }}>
         {chips.map(c => (
-          <button key={c} className="tactile-raised chrome-label" style={{
-            flex: '0 0 auto', height: 28, padding: '0 10px',
-            fontSize: 11,
-          }}>{c}</button>
+          <button key={c} style={pillBtn}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--navy)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >{c}</button>
         ))}
       </div>
       {mobile ? (
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="tactile-raised" style={{
-            width: 28, height: 28, display: 'grid', placeItems: 'center',
+          <button style={{
+            width: 30, height: 30, display: 'grid', placeItems: 'center',
+            background: 'var(--card)', color: 'var(--text-muted)',
+            borderRadius: 'var(--radius-pill)',
+            boxShadow: 'var(--ring)',
+            border: 'none', cursor: 'pointer',
           }}>{Ico.dots}</button>
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           {actions.map(a => (
-            <button key={a.k} className="tactile-raised chrome-label" style={{
-              height: 28, padding: '0 10px',
+            <button key={a.k} style={{
+              ...pillBtn,
               display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: 10,
             }}>{a.i}<span>{a.label}</span></button>
           ))}
         </div>
@@ -542,20 +565,27 @@ function SmsAccessory({ mobile }) {
 }
 
 function SparkyAccessory({ active }) {
-  const modes = ['CHAT', 'BRIEFING', 'INSIGHT', 'REPLY', 'DRAFT'];
+  const modes = ['Chat', 'Briefing', 'Insight', 'Reply', 'Draft'];
   return (
     <div style={{
-      display: 'flex', gap: 6, padding: 8,
-      background: 'var(--card)', boxShadow: 'var(--raised)',
+      display: 'flex', gap: 8, padding: 10,
+      background: 'var(--card)',
+      boxShadow: '0 -1px 0 var(--divider)',
     }}>
       {modes.map(m => {
-        const isOn = m === active;
+        const isOn = m.toLowerCase() === (active || '').toLowerCase();
         return (
-          <button key={m} className="chrome-label" style={{
-            height: 28, padding: '0 12px', fontSize: 11,
+          <button key={m} style={{
+            height: 30, padding: '0 14px',
             background: isOn ? 'var(--navy)' : 'var(--card)',
-            color: isOn ? '#fff' : 'var(--text)',
-            boxShadow: isOn ? 'var(--pressed-2)' : 'var(--raised-2)',
+            color: isOn ? '#fff' : 'var(--text-muted)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: isOn ? 700 : 500, fontSize: 12,
+            letterSpacing: '0.01em',
+            borderRadius: 'var(--radius-pill)',
+            boxShadow: isOn ? 'var(--shadow-sm)' : 'var(--ring)',
+            border: 'none', cursor: 'pointer',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}>{m}</button>
         );
       })}
