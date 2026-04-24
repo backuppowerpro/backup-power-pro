@@ -7208,9 +7208,9 @@ function LiveMaterials() {
     const allReceived = r.mat.order === 'received';
     if (!r.installDate) return null;
     const days = (new Date(r.installDate).getTime() - Date.now()) / 86400000;
-    if (days < 0 && !allReceived) return { tone: 'red',  label: 'INSTALL PAST · PARTS MISSING' };
-    if (days <= 3 && !allReceived) return { tone: 'red',  label: 'INSTALL IN ≤3D' };
-    if (days <= 7 && !allReceived) return { tone: 'gold', label: 'ORDER THIS WEEK' };
+    if (days < 0 && !allReceived) return { tone: 'red',  label: 'Install past · parts missing' };
+    if (days <= 3 && !allReceived) return { tone: 'red',  label: 'Install in ≤3d' };
+    if (days <= 7 && !allReceived) return { tone: 'gold', label: 'Order this week' };
     return null;
   };
 
