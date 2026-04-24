@@ -9432,53 +9432,92 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 90,
-      background: 'rgba(0,0,0,.5)',
+      background: 'rgba(11,31,59,0.5)',
+      backdropFilter: 'blur(4px)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
-        width: 640, maxWidth: '100%', maxHeight: 'calc(100vh - 64px)', overflowY: 'auto',
-        background: 'var(--card)', boxShadow: 'var(--raised)',
+        width: 680, maxWidth: '100%', maxHeight: 'calc(100vh - 64px)', overflowY: 'auto',
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
       }}>
-        <div style={{ padding: '24px 24px 16px', display: 'flex', alignItems: 'start', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{
-              fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700, letterSpacing: '-.01em',
+        <div style={{
+          padding: '26px 26px 18px', display: 'flex',
+          alignItems: 'start', justifyContent: 'space-between',
+          borderBottom: '1px solid var(--divider-faint)',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span className="eyebrow">
+              {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+            </span>
+            <h2 style={{
+              margin: 0,
+              fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800,
+              letterSpacing: '-0.02em', color: 'var(--text)',
             }}>{(() => {
               const h = new Date().getHours();
               if (h < 12) return 'Good morning, Key';
               if (h < 17) return 'Good afternoon, Key';
               return 'Good evening, Key';
-            })()}</div>
-            <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
-              {new Date().toDateString().toLowerCase()}
-            </div>
+            })()}</h2>
           </div>
-          <button onClick={onClose} style={{
-            width: 28, height: 28, fontSize: 16, display: 'grid', placeItems: 'center',
-            background: 'var(--card)', boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
-          }}>×</button>
+          <button
+            onClick={onClose}
+            aria-label="Close briefing"
+            style={{
+              width: 32, height: 32, fontSize: 18,
+              display: 'grid', placeItems: 'center',
+              background: 'var(--sunken)',
+              color: 'var(--text-muted)',
+              border: 'none', cursor: 'pointer',
+              borderRadius: 'var(--radius-pill)',
+              fontFamily: 'var(--font-display)', lineHeight: 1,
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--red) 14%, var(--sunken))'; e.currentTarget.style.color = 'var(--red)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >×</button>
         </div>
 
         {loading ? (
-          <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>Loading brief…</div>
+          <div style={{
+            padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-muted)',
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: 'var(--gold)',
+              animation: 'pulse 1.2s infinite',
+            }}/>
+            Loading briefing…
+          </div>
         ) : (
-          <div style={{ padding: '0 24px' }}>
+          <div style={{ padding: '18px 26px 24px' }}>
             {/* Lead-flow health — first thing Key sees. Red bar = drought
                 (zero leads in 24h despite a real baseline). Would've caught
                 the Apr 15-19 silent-leak bug immediately. */}
             {leadHealth ? (
               <div style={{
-                padding: '10px 14px', marginBottom: 14,
-                background: leadHealth.tone === 'red' ? 'var(--ms-3)'
-                           : leadHealth.tone === 'amber' ? 'var(--ms-4)'
-                           : 'var(--card)',
-                color: leadHealth.tone === 'ok' ? 'var(--text-muted)' : '#fff',
-                boxShadow: leadHealth.tone === 'ok' ? 'var(--raised-2)' : 'none',
-                display: 'flex', alignItems: 'center', gap: 8,
-                fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: leadHealth.tone === 'ok' ? 500 : 700,
-                letterSpacing: '.02em',
+                padding: '12px 16px', marginBottom: 18,
+                background: leadHealth.tone === 'red'
+                  ? 'color-mix(in srgb, var(--red) 14%, var(--card))'
+                  : leadHealth.tone === 'amber'
+                  ? 'color-mix(in srgb, var(--gold) 16%, var(--card))'
+                  : 'color-mix(in srgb, var(--green) 10%, var(--card))',
+                color: leadHealth.tone === 'red' ? 'var(--red)'
+                     : leadHealth.tone === 'amber' ? 'var(--gold-ink)'
+                     : 'var(--green)',
+                borderRadius: 'var(--radius-md)',
+                borderLeft: `3px solid ${leadHealth.tone === 'red' ? 'var(--red)' : leadHealth.tone === 'amber' ? 'var(--gold)' : 'var(--green)'}`,
+                display: 'flex', alignItems: 'center', gap: 10,
+                fontFamily: 'var(--font-body)', fontSize: 13.5,
+                fontWeight: leadHealth.tone === 'ok' ? 500 : 600,
               }}>
-                <span style={{ fontSize: 14 }}>{leadHealth.tone === 'red' ? '■' : leadHealth.tone === 'amber' ? '▲' : '●'}</span>
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%', flex: '0 0 auto',
+                  background: 'currentColor',
+                }}/>
                 <span>{leadHealth.label}</span>
               </div>
             ) : null}
@@ -9493,12 +9532,12 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
                 power dependencies and active-risk cases beat even today's
                 installs for response priority. Hidden when empty. */}
             {sections.urgent.length > 0 ? (
-              <BriefSection label="Urgent" tint="var(--ms-3)" items={sections.urgent} onPick={onPickContact} />
+              <BriefSection label="Urgent" tint="var(--red)" items={sections.urgent} onPick={onPickContact} />
             ) : null}
             {/* Installing today — if Key has an install today, the single
                 most important thing on the schedule after any urgent case. */}
             {sections.installsToday.length > 0 ? (
-              <BriefSection label="Installing today" tint="var(--ms-2)" items={sections.installsToday} onPick={onPickContact} />
+              <BriefSection label="Installing today" tint="var(--green)" items={sections.installsToday} onPick={onPickContact} />
             ) : null}
             {/* Waiting on Key — most actionable list. */}
             <BriefSection label="Waiting" tint="var(--gold)" items={sections.waiting} onPick={onPickContact} />
@@ -9506,33 +9545,37 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
                 the Finance tab uses, but surfaced here so Key sees them
                 without navigating. Hidden when empty. */}
             {sections.stuckQuotes.length > 0 ? (
-              <BriefSection label="Stuck quotes" tint="var(--ms-4)" items={sections.stuckQuotes} onPick={onPickContact} />
+              <BriefSection label="Stuck quotes" tint="var(--purple)" items={sections.stuckQuotes} onPick={onPickContact} />
             ) : null}
-            <BriefSection label="Overdue" tint="var(--ms-3)" items={sections.overdue} onPick={onPickContact} />
-            <BriefSection label="Today" tint="var(--ms-4)" items={sections.today} onPick={onPickContact} />
+            <BriefSection label="Overdue" tint="var(--red)" items={sections.overdue} onPick={onPickContact} />
+            <BriefSection label="Today" tint="var(--navy)" items={sections.today} onPick={onPickContact} />
             <BriefSection label="Materials" tint="var(--text-muted)" items={sections.materials} onPick={onPickContact} />
-            <BriefSection label="Good news" tint="var(--ms-2)" items={sections.goodNews} />
+            <BriefSection label="Good news" tint="var(--green)" items={sections.goodNews} />
           </div>
         )}
 
-        <div style={{ padding: '20px 24px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <button onClick={() => setRefreshTick(t => t + 1)} style={{
-            fontSize: 12, padding: '10px 16px', cursor: 'pointer',
-            background: 'var(--card)', boxShadow: 'var(--raised-2)', border: 'none',
-            fontFamily: 'var(--font-body)', color: 'var(--text-muted)',
-          }}>Refresh</button>
+        <div style={{
+          padding: '18px 26px 22px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
+          borderTop: '1px solid var(--divider-faint)',
+        }}>
+          <button onClick={() => setRefreshTick(t => t + 1)} className="btn-ghost" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a9 9 0 1 1-3-6.7L21 8"/>
+              <polyline points="21 3 21 8 16 8"/>
+            </svg>
+            Refresh
+          </button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onClose} style={{
-              fontSize: 12, padding: '10px 16px', cursor: 'pointer',
-              background: 'var(--card)', boxShadow: 'var(--raised-2)', border: 'none',
-              fontFamily: 'var(--font-body)', color: 'var(--text-muted)',
-            }}>Dismiss</button>
-            <button onClick={onClose} style={{
-              padding: '10px 20px', background: 'var(--navy)', color: '#fff',
-              fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
-              boxShadow: 'var(--shadow-sm)',
-              cursor: 'pointer', border: 'none',
-            }}>Open CRM</button>
+            <button onClick={onClose} className="btn-ghost">Dismiss</button>
+            <button onClick={onClose} className="btn-gold" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}>
+              Open CRM
+              <span aria-hidden>→</span>
+            </button>
           </div>
         </div>
       </div>
@@ -9542,26 +9585,51 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
 
 function BriefSection({ label, tint, items, onPick }) {
   return (
-    <div style={{ marginBottom: 18 }}>
+    <div style={{ marginBottom: 22 }}>
       <div style={{
-        paddingBottom: 6, marginBottom: 4,
-        fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.12em',
-        color: tint, textTransform: 'uppercase',
-        borderBottom: '1px solid var(--divider)',
-      }}>{label} <span style={{ color: 'var(--text-faint)', marginLeft: 4 }}>{items.length}</span></div>
+        paddingBottom: 8, marginBottom: 6,
+        display: 'flex', alignItems: 'center', gap: 8,
+        borderBottom: '1px solid var(--divider-faint)',
+      }}>
+        <span style={{
+          width: 8, height: 8, borderRadius: '50%',
+          background: tint,
+          flex: '0 0 auto',
+        }}/>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+        }}>{label}</span>
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 10.5, fontWeight: 600,
+          padding: '1px 8px',
+          background: 'var(--sunken)',
+          borderRadius: 'var(--radius-pill)',
+          color: 'var(--text-muted)',
+          fontVariantNumeric: 'tabular-nums',
+        }}>{items.length}</span>
+      </div>
       <div>
         {items.length === 0 ? (
-          <div style={{ padding: '8px 0', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>—</div>
+          <div style={{
+            padding: '10px 0',
+            fontFamily: 'var(--font-body)', fontSize: 12.5,
+            color: 'var(--text-faint)',
+            fontStyle: 'italic',
+          }}>Nothing here — clean.</div>
         ) : items.map((it, i) => (
           <button key={i} onClick={() => onPick && it.id && onPick(it.id)} style={{
             display: 'block', width: '100%', textAlign: 'left',
-            padding: '8px 0', fontSize: 13,
+            padding: '10px 12px', fontSize: 13.5,
             fontFamily: 'var(--font-body)', color: 'var(--text)',
             background: 'transparent', border: 'none',
             cursor: onPick && it.id ? 'pointer' : 'default',
+            borderRadius: 'var(--radius-sm)',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}
-          onMouseEnter={e => { if (onPick && it.id) e.currentTarget.style.color = 'var(--navy)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text)'; }}
+          onMouseEnter={e => { if (onPick && it.id) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; } }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text)'; }}
           >{it.text}</button>
         ))}
       </div>
