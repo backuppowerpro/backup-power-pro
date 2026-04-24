@@ -643,7 +643,16 @@ function LiveLeadsList({ desktop = false, onSelect }) {
     return <Loading label="Loading contacts" />;
   }
   if (err) {
-    return <div className="lcd" style={{ margin: 16, padding: 12, fontSize: 13 }}>{err}</div>;
+    return (
+      <div style={{
+        margin: 16, padding: '12px 14px',
+        fontFamily: 'var(--font-body)', fontSize: 13,
+        background: 'color-mix(in srgb, var(--red) 10%, var(--card))',
+        color: 'var(--red)', fontWeight: 600,
+        borderRadius: 'var(--radius-sm)',
+        borderLeft: '3px solid var(--red)',
+      }}>{err}</div>
+    );
   }
   if (rows.length === 0) {
     return (
