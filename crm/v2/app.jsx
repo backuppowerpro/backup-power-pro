@@ -3017,7 +3017,18 @@ function DetailTimeline({ contactId }) {
     })();
   }, [contactId]);
 
-  if (loading) return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>;
+  if (loading) return (
+    <div style={{
+      padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+      fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-muted)',
+    }}>
+      <span style={{
+        width: 8, height: 8, borderRadius: '50%',
+        background: 'var(--gold)', animation: 'pulse 1.2s infinite',
+      }}/>
+      Loading timeline…
+    </div>
+  );
   if (events.length === 0) return <Empty label="No activity yet" />;
 
   // Group by day for readability
@@ -3029,34 +3040,71 @@ function DetailTimeline({ contactId }) {
     groups[groups.length - 1].items.push(e);
   }
   const kindTint = {
-    stage: 'var(--ms-1)', proposal: 'var(--ms-4)', invoice: 'var(--ms-3)',
-    msg: 'var(--text-muted)', payment: 'var(--ms-2)',
+    stage: 'var(--navy)', proposal: 'var(--purple)', invoice: 'var(--red)',
+    msg: 'var(--text-muted)', payment: 'var(--green)',
+  };
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const prettyDay = (d) => {
+    if (d === today) return 'Today';
+    if (d === yesterday) return 'Yesterday';
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? d : dt.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
   };
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 20px' }}>
       {groups.map((g, gi) => (
-        <div key={gi} style={{ marginBottom: 18 }}>
+        <div key={gi} style={{ marginBottom: 22 }}>
           <div style={{
-            fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.08em',
-            color: 'var(--text-faint)', textTransform: 'uppercase',
-            paddingBottom: 4, marginBottom: 4,
+            display: 'flex', alignItems: 'center', gap: 8,
+            fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            paddingBottom: 8, marginBottom: 8,
             borderBottom: '1px solid var(--divider-faint)',
-          }}>{g.day}</div>
-          {g.items.map(e => (
-            <div key={e.id} style={{
-              display: 'grid', gridTemplateColumns: '70px 1fr',
-              gap: 12, padding: '6px 0',
-            }}>
-              <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-                {e.at ? new Date(e.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—'}
-              </span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)', display: 'flex', alignItems: 'start', gap: 6 }}>
-                <span style={{ width: 6, height: 6, marginTop: 6, background: kindTint[e.kind] || 'var(--text-faint)', flex: '0 0 auto' }} />
-                {e.label}
-              </span>
-            </div>
-          ))}
+          }}>
+            {g.day === today ? (
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }}/>
+            ) : null}
+            {prettyDay(g.day)}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {g.items.map(e => {
+              const tint = kindTint[e.kind] || 'var(--text-faint)';
+              return (
+                <div key={e.id} style={{
+                  display: 'grid', gridTemplateColumns: '68px 1fr',
+                  gap: 10, padding: '8px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  transition: 'background var(--dur) var(--ease)',
+                }}
+                onMouseEnter={ev => { ev.currentTarget.style.background = 'var(--sunken)' }}
+                onMouseLeave={ev => { ev.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11,
+                    color: 'var(--text-faint)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {e.at ? new Date(e.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—'}
+                  </span>
+                  <span style={{
+                    fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text)',
+                    display: 'flex', alignItems: 'start', gap: 10,
+                    lineHeight: 1.5,
+                  }}>
+                    <span style={{
+                      width: 6, height: 6, marginTop: 8,
+                      background: tint, flex: '0 0 auto',
+                      borderRadius: '50%',
+                    }} />
+                    <span style={{ flex: 1, minWidth: 0 }}>{e.label}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>
@@ -3482,14 +3530,16 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
   if (loading) return <Loading />;
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-      <button onClick={() => setQuickOpen(true)} style={{
-        width: '100%', height: 40, marginBottom: 16,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--navy)', color: 'var(--gold)',
-        boxShadow: 'var(--raised-2)', cursor: 'pointer',
-        border: 'none', fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
+    <div style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <button onClick={() => setQuickOpen(true)} className="btn-navy" style={{
+        width: '100%', height: 44,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        fontSize: 14,
       }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
         New quote
       </button>
       {quickOpen && contact && (
@@ -3497,8 +3547,12 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
       )}
 
       {proposals.length === 0 ? (
-        <div style={{ padding: '32px 0', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
-          No proposals yet
+        <div style={{
+          padding: '40px 20px', textAlign: 'center',
+          fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-faint)',
+          background: 'var(--sunken)', borderRadius: 'var(--radius-md)',
+        }}>
+          No proposals yet — tap <strong style={{ color: 'var(--text)' }}>New quote</strong> above to build one.
         </div>
       ) : proposals.map(p => {
         // Status taxonomy in the proposals table:
@@ -3507,51 +3561,62 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
         //   Cancelled         → proposal is dead, no deposit CTA
         const isPaid     = p.status === 'Approved';
         const isCancelled = p.status === 'Cancelled';
+        const statusWord = isPaid ? 'Paid'
+                         : isCancelled ? 'Cancelled'
+                         : (p.status || 'Sent').replace(/^./, c => c.toUpperCase());
+        const statusTone = isPaid ? 'green'
+                         : isCancelled ? 'muted'
+                         : p.status === 'Copied' ? 'gold'
+                         : 'navy';
         return (
         <div key={p.id} style={{
-          padding: '14px 0',
-          borderTop: '1px solid var(--divider)',
-          display: 'flex', flexDirection: 'column', gap: 10,
+          padding: 16,
+          background: 'var(--card)',
+          boxShadow: 'var(--shadow-sm), var(--ring)',
+          borderRadius: 'var(--radius-md)',
+          borderLeft: isPaid ? '3px solid var(--green)' : isCancelled ? '3px solid var(--text-faint)' : 'none',
+          display: 'flex', flexDirection: 'column', gap: 12,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{
+                  fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
+                  color: 'var(--text)', letterSpacing: '-0.02em',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
                   ${(Number(p.total) || 0).toLocaleString()}
                 </span>
-                {isPaid ? (
-                  <span className="mono" style={{
-                    fontSize: 10, color: 'var(--ms-2)', letterSpacing: '.08em',
-                    padding: '2px 6px', boxShadow: 'var(--raised-2)', textTransform: 'uppercase',
-                  }}>✓ Paid</span>
-                ) : (
-                  <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'lowercase' }}>
-                    {p.status || 'sent'}
-                  </span>
-                )}
+                <span className={`smart-chip smart-chip--${statusTone}`}>
+                  {isPaid ? '✓ ' : ''}{statusWord}
+                </span>
               </div>
-              <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
-                {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
-                {p.view_count ? ` · ${p.view_count} view${p.view_count === 1 ? '' : 's'}` : ''}
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text-faint)',
+                marginTop: 4,
+                fontVariantNumeric: 'tabular-nums',
+                display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+              }}>
+                <span>{p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}</span>
+                {p.view_count ? (
+                  <>
+                    <span style={{ color: 'var(--text-faint)' }}>·</span>
+                    <span>👁 {p.view_count}</span>
+                  </>
+                ) : null}
               </div>
             </div>
             {p.token ? (
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <a href={`${PROPOSAL_BASE_URL}?token=${p.token}&preview=1`} target="_blank" rel="noopener"
-                   title="Preview without counting as a customer view" style={{
-                  padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
-                  boxShadow: 'var(--raised-2)', textDecoration: 'none',
-                  color: 'var(--text-muted)',
+                   title="Preview without counting as a customer view" className="btn-ghost" style={{
+                  textDecoration: 'none', height: 28, padding: '0 12px', fontSize: 12,
                 }}>View</a>
-                <button onClick={() => copyLink(p.token)} style={{
-                  padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
-                  boxShadow: 'var(--raised-2)', cursor: 'pointer',
-                  border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+                <button onClick={() => copyLink(p.token)} className="btn-ghost" style={{
+                  height: 28, padding: '0 12px', fontSize: 12,
                 }}>Copy</button>
-                <button onClick={() => sendReminder(p)} style={{
-                  padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)',
-                  boxShadow: 'var(--raised-2)', cursor: 'pointer',
-                  border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+                <button onClick={() => sendReminder(p)} className="btn-ghost" style={{
+                  height: 28, padding: '0 12px', fontSize: 12,
                 }}>Remind</button>
               </div>
             ) : null}
@@ -3562,12 +3627,19 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
               (already paid) and Cancelled (dead) proposals. */}
           {p.token && !isPaid && !isCancelled ? (
             <button onClick={() => depositLink(p)} style={{
-              width: '100%', height: 36,
+              width: '100%', height: 40,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              background: 'var(--ms-2)', color: '#fff',
-              boxShadow: 'var(--raised-2)', cursor: 'pointer',
-              border: 'none', fontSize: 12, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
-            }}>
+              background: 'var(--green)', color: '#fff',
+              cursor: 'pointer', border: 'none',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+              letterSpacing: '-0.005em',
+              borderRadius: 'var(--radius-pill)',
+              boxShadow: '0 2px 8px color-mix(in srgb, var(--green) 28%, transparent)',
+              transition: 'transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px color-mix(in srgb, var(--green) 40%, transparent)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px color-mix(in srgb, var(--green) 28%, transparent)' }}
+            >
               Send deposit link — ${Math.round((Number(p.total) || 0) * 0.5).toLocaleString()}
             </button>
           ) : null}
@@ -3576,16 +3648,12 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
               hands Key a check at install. Hidden once the proposal is
               Approved (Stripe already handled it) or Cancelled. */}
           {p.token && !isPaid && !isCancelled ? (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={() => copyInvoiceLink(p)} style={{
-                flex: 1, height: 30, fontSize: 11, fontFamily: 'var(--font-body)',
-                boxShadow: 'var(--raised-2)', cursor: 'pointer',
-                border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => copyInvoiceLink(p)} className="btn-ghost" style={{
+                flex: 1, height: 32, fontSize: 12,
               }} title="Generate /invoice.html link for this contact">Copy invoice</button>
-              <button onClick={() => markPaidOffline(p)} style={{
-                flex: 1, height: 30, fontSize: 11, fontFamily: 'var(--font-body)',
-                boxShadow: 'var(--raised-2)', cursor: 'pointer',
-                border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+              <button onClick={() => markPaidOffline(p)} className="btn-ghost" style={{
+                flex: 1, height: 32, fontSize: 12,
               }} title="Record cash/check payment + approve this proposal">Mark paid (offline)</button>
             </div>
           ) : null}
@@ -3593,10 +3661,8 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
               re-send the paid-invoice link when a customer asks for their
               payment confirmation. */}
           {p.token && isPaid ? (
-            <button onClick={() => copyReceiptLink(p)} style={{
-              height: 30, fontSize: 11, fontFamily: 'var(--font-body)',
-              boxShadow: 'var(--raised-2)', cursor: 'pointer',
-              border: 'none', background: 'var(--card)', color: 'var(--text-muted)',
+            <button onClick={() => copyReceiptLink(p)} className="btn-ghost" style={{
+              height: 32, fontSize: 12, alignSelf: 'flex-start',
             }} title="Copy /invoice.html link in receipt mode">Copy receipt</button>
           ) : null}
         </div>
@@ -4252,23 +4318,37 @@ function DetailEditContact({ contact, onUpdate }) {
   }
 
   return (
-    <form onSubmit={save} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <EditField label="NAME" value={form.name} onChange={v => setForm({ ...form, name: v })} />
-      <EditField label="PHONE" value={form.phone} onChange={v => setForm({ ...form, phone: v })} placeholder="+18645550100" />
-      <EditField label="EMAIL" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
-      <EditField label="ADDRESS" value={form.address} onChange={v => setForm({ ...form, address: v })} />
-      <EditField label="INSTALL DATE" value={form.install_date} onChange={v => setForm({ ...form, install_date: v })} type="datetime-local" placeholder="" />
+    <form onSubmit={save} style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <EditField label="Name" value={form.name} onChange={v => setForm({ ...form, name: v })} />
+      <EditField label="Phone" value={form.phone} onChange={v => setForm({ ...form, phone: v })} placeholder="+18645550100" />
+      <EditField label="Email" value={form.email} onChange={v => setForm({ ...form, email: v })} type="email" />
+      <EditField label="Address" value={form.address} onChange={v => setForm({ ...form, address: v })} />
+      <EditField label="Install date" value={form.install_date} onChange={v => setForm({ ...form, install_date: v })} type="datetime-local" placeholder="" />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <label style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>Jurisdiction</label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <label style={{
+          fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+          color: 'var(--text-muted)',
+        }}>Jurisdiction</label>
         <select
           value={form.jurisdiction_id || ''}
           onChange={e => setForm({ ...form, jurisdiction_id: e.target.value ? Number(e.target.value) : '' })}
           style={{
-            padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-            background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+            padding: '10px 12px', height: 40,
+            fontFamily: 'var(--font-body)', fontSize: 14,
+            color: 'var(--text)',
+            background: 'var(--sunken)',
+            border: 'none', outline: 'none',
+            borderRadius: 'var(--radius-sm)',
+            boxSizing: 'border-box',
+            appearance: 'none',
+            backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27><polyline points=%276 9 12 15 18 9%27/></svg>")',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 12px center',
+            backgroundSize: '14px',
+            paddingRight: 36,
           }}>
-          <option value="">— select —</option>
+          <option value="">— Select jurisdiction —</option>
           {jurisdictions.map(j => (
             <option key={j.id} value={j.id}>{j.name}</option>
           ))}
@@ -4276,49 +4356,80 @@ function DetailEditContact({ contact, onUpdate }) {
       </div>
 
       {/* Sub-labor prep (phase 1). Free-text installer name so Key can start
-          assigning installs without building a full installers table. When
-          sub onboarding matures, migrate to a proper installers table with
-          login + portal access. installer_pay is per-job for margin tracking. */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 8 }}>
-        <EditField label="ASSIGNED INSTALLER" value={form.assigned_installer} onChange={v => setForm({ ...form, assigned_installer: v })} placeholder="Key" />
-        <EditField label="PAY $" value={form.installer_pay} onChange={v => setForm({ ...form, installer_pay: v.replace(/[^\d.]/g, '') })} placeholder="0" type="text" />
+          assigning installs without building a full installers table. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 10 }}>
+        <EditField label="Assigned installer" value={form.assigned_installer} onChange={v => setForm({ ...form, assigned_installer: v })} placeholder="Key" />
+        <EditField label="Pay $" value={form.installer_pay} onChange={v => setForm({ ...form, installer_pay: v.replace(/[^\d.]/g, '') })} placeholder="0" type="text" />
       </div>
 
       {contact?.created_at ? (
-        <div className="mono" style={{
-          marginTop: 4, padding: '8px 14px',
-          display: 'flex', justifyContent: 'space-between',
-          color: 'var(--text-faint)', fontSize: 11,
-          borderBottom: '1px solid var(--divider-faint)',
+        <div style={{
+          padding: '10px 14px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          color: 'var(--text-faint)', fontSize: 12,
+          fontFamily: 'var(--font-body)',
+          background: 'var(--sunken)',
+          borderRadius: 'var(--radius-sm)',
         }}>
-          <span>Created</span>
-          <span>{new Date(contact.created_at).toLocaleDateString()} · {Math.round((Date.now() - new Date(contact.created_at).getTime()) / 86400000)}d ago</span>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 11,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+          }}>Created</span>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
+            color: 'var(--text)',
+          }}>
+            {new Date(contact.created_at).toLocaleDateString()}
+            <span style={{ margin: '0 6px', color: 'var(--text-faint)' }}>·</span>
+            {Math.round((Date.now() - new Date(contact.created_at).getTime()) / 86400000)}d ago
+          </span>
         </div>
       ) : null}
 
       <label style={{
-        marginTop: 8, padding: '12px 14px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        marginTop: 8, padding: '14px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+        background: form.do_not_contact ? 'color-mix(in srgb, var(--red) 10%, var(--card))' : 'var(--card)',
+        boxShadow: 'var(--shadow-sm), var(--ring)',
+        borderRadius: 'var(--radius-md)',
+        borderLeft: `3px solid ${form.do_not_contact ? 'var(--red)' : 'transparent'}`,
         cursor: 'pointer',
+        transition: 'background var(--dur) var(--ease), border-color var(--dur) var(--ease)',
       }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: form.do_not_contact ? 'var(--ms-3)' : 'var(--text)' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+            color: form.do_not_contact ? 'var(--red)' : 'var(--text)',
+            letterSpacing: '-0.005em',
+          }}>
             Do not contact
           </div>
-          <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
+          <div style={{
+            fontFamily: 'var(--font-body)', fontSize: 12.5,
+            color: 'var(--text-muted)', marginTop: 2,
+            lineHeight: 1.4,
+          }}>
             Stop all SMS + calls. Compliance sensitive.
           </div>
         </div>
         <input type="checkbox" checked={form.do_not_contact}
           onChange={e => setForm({ ...form, do_not_contact: e.target.checked })}
-          style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--ms-3)' }}
+          style={{ width: 22, height: 22, cursor: 'pointer', accentColor: 'var(--red)', flex: '0 0 auto' }}
         />
       </label>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
         {saved ? (
-          <span className="mono" style={{ fontSize: 11, color: 'var(--ms-2)' }}>Saved</span>
+          <span style={{
+            fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--green)',
+            display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Saved
+          </span>
         ) : <span />}
         <PrimaryButton type="submit" disabled={saving}>
           {saving ? 'Saving…' : 'Save'}
@@ -4327,17 +4438,27 @@ function DetailEditContact({ contact, onUpdate }) {
 
       {/* Archive — light cleanup path for dead leads. Unlike DNC, this
           doesn't set compliance flags or block messaging; it just hides
-          the contact from the active pipeline/LIST views. Reversible by
-          changing status back in the database. Separate from Save so Key
-          doesn't accidentally archive on every edit. */}
-      <div style={{ marginTop: 12, padding: 12, background: 'var(--card)', boxShadow: 'var(--pressed-2)' }}>
-        <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 6, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+          the contact from the active pipeline/LIST views. */}
+      <div style={{
+        marginTop: 18, padding: 16,
+        background: 'var(--sunken)',
+        borderRadius: 'var(--radius-md)',
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-faint)', marginBottom: 8,
+        }}>
           Archive
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.4 }}>
-          Hide this contact from the pipeline and LIST. Does not affect messaging rules — use DNC for compliance.
+        <div style={{
+          fontFamily: 'var(--font-body)', fontSize: 13,
+          color: 'var(--text-muted)',
+          marginBottom: 12, lineHeight: 1.5,
+        }}>
+          Hide this contact from the pipeline and list. Does not affect messaging rules — use DNC for compliance.
         </div>
-        <button type="button" disabled={saving || contact?.status === 'Archived'}
+        <button type="button" disabled={saving}
           onClick={async () => {
             if (!contact) return;
             const isArchived = contact.status === 'Archived';
@@ -4353,12 +4474,8 @@ function DetailEditContact({ contact, onUpdate }) {
               },
             });
           }}
-          style={{
-            padding: '8px 14px', fontSize: 12, fontFamily: 'var(--font-body)', fontWeight: 600,
-            background: contact?.status === 'Archived' ? 'var(--ms-2)' : 'var(--card)',
-            color: contact?.status === 'Archived' ? '#fff' : 'var(--text-muted)',
-            boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
-          }}>
+          className={contact?.status === 'Archived' ? 'btn-navy' : 'btn-ghost'}
+        >
           {contact?.status === 'Archived' ? 'Unarchive' : 'Archive contact'}
         </button>
       </div>
@@ -4367,19 +4484,28 @@ function DetailEditContact({ contact, onUpdate }) {
 }
 
 function EditField({ label, value, onChange, placeholder, type = 'text' }) {
-  const niceLabel = label ? label.charAt(0) + label.slice(1).toLowerCase() : label;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{niceLabel}</label>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <label style={{
+        fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+        color: 'var(--text-muted)',
+      }}>{label}</label>
       <input
         type={type}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         style={{
-          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
+          padding: '10px 12px', height: 40,
+          fontFamily: 'var(--font-body)', fontSize: 14,
+          color: 'var(--text)',
+          background: 'var(--sunken)',
+          border: 'none', outline: 'none',
+          borderRadius: 'var(--radius-sm)',
+          boxSizing: 'border-box',
         }}
+        onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
+        onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
       />
     </div>
   );
