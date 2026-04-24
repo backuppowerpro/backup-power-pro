@@ -21,30 +21,34 @@ const MAT_ROWS = [
     amp:50, mats:[true,true,true,true,true],  surgeAddon:false, ordered:'pending' },
 ];
 
-const MAT_LABELS = ['INLET BOX','INTERLOCK','CORD','BREAKER','SURGE'];
+const MAT_LABELS = ['Inlet box','Interlock','Cord','Breaker','Surge'];
 
 function MiniAvatar({ initials, size = 32 }) {
   return (
     <div style={{
       width: size, height: size, flex: '0 0 auto',
-      background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
+      background: 'var(--navy)',
+      borderRadius: '50%',
       display: 'grid', placeItems: 'center',
     }}>
       <span style={{
-        fontFamily: 'var(--font-chrome)', fontWeight: 700,
-        color: 'var(--gold)', fontSize: size <= 28 ? 10 : 11, letterSpacing: '.04em',
+        fontFamily: 'var(--font-body)', fontWeight: 600,
+        color: '#fff', fontSize: size <= 28 ? 10 : 11,
       }}>{initials}</span>
     </div>
   );
 }
 
 function AmpSwitch({ amp, mobile = false }) {
-  const w = mobile ? '100%' : 88;
+  const w = mobile ? '100%' : 96;
   const h = mobile ? 40 : 36;
   return (
     <div style={{
       display: 'flex', width: w, height: h,
-      boxShadow: 'var(--raised-2)',
+      background: 'var(--card)',
+      boxShadow: 'var(--ring)',
+      borderRadius: 'var(--radius-pill)',
+      padding: 3,
     }}>
       {[30, 50].map(v => {
         const on = v === amp;
@@ -52,10 +56,13 @@ function AmpSwitch({ amp, mobile = false }) {
           <button key={v} style={{
             flex: 1, height: '100%',
             background: on ? 'var(--navy)' : 'transparent',
-            color: on ? '#fff' : 'var(--text)',
-            boxShadow: on ? 'var(--pressed-2)' : 'none',
-            fontFamily: 'var(--font-pixel)', fontSize: 16,
-            letterSpacing: '.06em',
+            color: on ? '#fff' : 'var(--text-muted)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: on ? 700 : 500,
+            fontSize: 13,
+            borderRadius: 'var(--radius-pill)',
+            border: 'none', cursor: 'pointer',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}>{v}A</button>
         );
       })}
@@ -68,9 +75,10 @@ function MatCell({ on, size = 32 }) {
     <div style={{
       width: size, height: size,
       display: 'grid', placeItems: 'center',
-      background: 'var(--card)',
-      boxShadow: on ? 'var(--pressed-2)' : 'var(--raised-2)',
-      color: on ? 'var(--ms-2)' : 'transparent',
+      background: on ? 'color-mix(in srgb, var(--green) 14%, var(--card))' : 'var(--sunken)',
+      color: on ? 'var(--green)' : 'transparent',
+      borderRadius: 'var(--radius-sm)',
+      boxShadow: 'var(--ring)',
     }}>
       {MAT_ICONS.check}
     </div>
@@ -79,59 +87,65 @@ function MatCell({ on, size = 32 }) {
 
 function OrderedPill({ status }) {
   const MAP = {
-    notyet:   { label:'NOT ORDERED', color:'var(--lcd-red)',   glow:'var(--lcd-glow-red)',   sub:null },
-    pending:  { label:'PENDING · 2D',color:'var(--lcd-amber)', glow:'var(--lcd-glow-amber)', sub:null },
-    received: { label:'RECEIVED',    color:'var(--lcd-green)', glow:'var(--lcd-glow-green)', sub:null },
+    notyet:   { label:'Not ordered', tone: 'red' },
+    pending:  { label:'Pending · 2d', tone: 'gold' },
+    received: { label:'Received', tone: 'green' },
   };
   const m = MAP[status];
-  return (
-    <span style={{
-      height: 24, padding: '0 8px',
-      display: 'inline-flex', alignItems: 'center', gap: 6,
-      background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-      color: m.color, textShadow: m.glow,
-      fontFamily: 'var(--font-chrome)', fontWeight: 700,
-      fontSize: 10, letterSpacing: '.1em', textTransform: 'uppercase',
-    }}>
-      <span style={{ width: 6, height: 6, background: m.color, boxShadow: `0 0 4px ${m.color}` }} />
-      {m.label}
-    </span>
-  );
+  return <span className={`smart-chip smart-chip--${m.tone}`}>{m.label}</span>;
 }
 
 function OrderButton({ status }) {
+  const common = {
+    height: 30, padding: '0 14px',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+    letterSpacing: '0.01em',
+    borderRadius: 'var(--radius-pill)',
+    border: 'none', cursor: 'pointer',
+    transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+  };
   if (status === 'notyet') {
     return (
-      <button className="tactile-raised" style={{
-        height: 28, padding: '0 10px',
-        background: 'var(--navy)', color: 'var(--gold)',
-        fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-      }}>ORDER NOW</button>
+      <button style={{
+        ...common,
+        background: 'var(--gold)', color: 'var(--navy)',
+        boxShadow: 'var(--shadow-gold)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)' }}
+      >Order now</button>
     );
   }
   if (status === 'received') {
     return (
-      <button className="tactile-raised" style={{
-        height: 28, padding: '0 10px',
-        background: 'var(--green)', color: '#06201a',
-        fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-      }}>MARK USED</button>
+      <button style={{
+        ...common,
+        background: 'var(--green)', color: '#fff',
+        boxShadow: 'var(--shadow-sm)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = '#059669' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--green)' }}
+      >Mark used</button>
     );
   }
   return (
-    <button className="tactile-raised" style={{
-      height: 28, padding: '0 10px',
-      background: 'var(--card)', color: 'var(--text)',
-      fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-    }}>VIEW ORDER</button>
+    <button style={{
+      ...common,
+      background: 'var(--card)', color: 'var(--text-muted)',
+      boxShadow: 'var(--ring)',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+    >View order</button>
   );
 }
 
 function MatHeaderCol({ label }) {
   return (
-    <span className="chrome-label" style={{
-      fontSize: 8, color: 'var(--text-muted)', textAlign: 'center',
-      letterSpacing: '.06em',
+    <span style={{
+      fontFamily: 'var(--font-display)', fontWeight: 600,
+      fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase',
+      color: 'var(--text-muted)', textAlign: 'center',
     }}>{label}</span>
   );
 }
@@ -139,8 +153,8 @@ function MatHeaderCol({ label }) {
 function SurgeAddon() {
   return (
     <span style={{
-      fontFamily: 'var(--font-pixel)', fontSize: 12,
-      color: 'var(--gold)', letterSpacing: '.04em', marginTop: 4,
+      fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 11,
+      color: 'var(--gold)', marginTop: 4,
     }}>+$375</span>
   );
 }
@@ -148,57 +162,55 @@ function SurgeAddon() {
 /* ────── Desktop toolbar ────── */
 function MatToolbar() {
   const subs = [
-    { id: 'pipeline', label: 'PIPELINE' },
-    { id: 'list',     label: 'LIST' },
-    { id: 'permits',  label: 'PERMITS' },
-    { id: 'mat',      label: 'MATERIALS', active: true },
+    { id: 'pipeline', label: 'Pipeline' },
+    { id: 'list',     label: 'List' },
+    { id: 'permits',  label: 'Permits' },
+    { id: 'mat',      label: 'Materials', active: true },
   ];
   const amps = [
     { id: 'a30', label: '30A' },
     { id: 'a50', label: '50A' },
-    { id: 'all', label: 'ALL', active: true },
+    { id: 'all', label: 'All', active: true },
   ];
   const sts = [
-    { id: 'need', label: 'NEEDED',   active: true },
-    { id: 'ord',  label: 'ORDERED' },
-    { id: 'rec',  label: 'RECEIVED' },
+    { id: 'need', label: 'Needed',   active: true },
+    { id: 'ord',  label: 'Ordered' },
+    { id: 'rec',  label: 'Received' },
   ];
+  const pillStyle = (active) => ({
+    height: 30, padding: '0 14px',
+    background: active ? 'var(--navy)' : 'var(--card)',
+    color: active ? '#fff' : 'var(--text-muted)',
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+    letterSpacing: '0.01em',
+    borderRadius: 'var(--radius-pill)',
+    boxShadow: active ? 'var(--shadow-sm)' : 'var(--ring)',
+    border: 'none', cursor: 'pointer',
+    transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+  });
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
-      padding: '16px 16px 8px',
+      padding: '16px 16px 10px',
     }}>
-      <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
+      <div style={{
+        display: 'flex', height: 36,
+        background: 'var(--card)', boxShadow: 'var(--ring)',
+        borderRadius: 'var(--radius-pill)', padding: 3,
+      }}>
         {subs.map(s => (
-          <button key={s.id} className="chrome-label" style={{
-            height: 36, padding: '0 16px', fontSize: 12,
+          <button key={s.id} style={{
+            ...pillStyle(s.active),
+            height: 30, boxShadow: s.active ? 'var(--shadow-sm)' : 'none',
             background: s.active ? 'var(--navy)' : 'transparent',
-            color: s.active ? 'var(--gold)' : 'var(--text)',
-            boxShadow: s.active ? 'var(--pressed-2)' : 'none',
           }}>{s.label}</button>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {amps.map(a => (
-          <button key={a.id} className="chrome-label" style={{
-            height: 28, padding: '0 14px', fontSize: 11,
-            background: a.active ? 'var(--navy)' : 'var(--card)',
-            color: a.active ? '#fff' : 'var(--text)',
-            boxShadow: a.active ? 'var(--pressed-2)' : 'var(--raised-2)',
-            fontFamily: a.id === 'all' ? 'var(--font-chrome)' : 'var(--font-pixel)',
-            fontSize: a.id === 'all' ? 11 : 14,
-          }}>{a.label}</button>
-        ))}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {amps.map(a => (<button key={a.id} style={pillStyle(a.active)}>{a.label}</button>))}
       </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {sts.map(s => (
-          <button key={s.id} className="chrome-label" style={{
-            height: 28, padding: '0 12px', fontSize: 11,
-            background: s.active ? 'var(--navy)' : 'var(--card)',
-            color: s.active ? '#fff' : 'var(--text)',
-            boxShadow: s.active ? 'var(--pressed-2)' : 'var(--raised-2)',
-          }}>{s.label}</button>
-        ))}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {sts.map(s => (<button key={s.id} style={pillStyle(s.active)}>{s.label}</button>))}
       </div>
     </div>
   );
@@ -207,22 +219,12 @@ function MatToolbar() {
 function MatBadges() {
   return (
     <div style={{
-      display: 'flex', gap: 8, padding: '0 16px 8px',
-      justifyContent: 'flex-end',
+      display: 'flex', gap: 10, padding: '0 16px 8px',
+      justifyContent: 'flex-end', flexWrap: 'wrap',
     }}>
-      {[
-        { label:'3 TO ORDER', color:'var(--lcd-red)',   glow:'var(--lcd-glow-red)' },
-        { label:'2 PENDING',  color:'var(--lcd-amber)', glow:'var(--lcd-glow-amber)' },
-        { label:'2 RECEIVED', color:'var(--lcd-green)', glow:'var(--lcd-glow-green)' },
-      ].map((b, i) => (
-        <span key={i} style={{
-          height: 26, padding: '0 10px',
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-          color: b.color, textShadow: b.glow,
-          fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-        }}>◆ {b.label}</span>
-      ))}
+      <span className="smart-chip smart-chip--red"   style={{ height: 28, fontSize: 11 }}>3 to order</span>
+      <span className="smart-chip smart-chip--gold"  style={{ height: 28, fontSize: 11 }}>2 pending</span>
+      <span className="smart-chip smart-chip--green" style={{ height: 28, fontSize: 11 }}>2 received</span>
     </div>
   );
 }
@@ -231,22 +233,36 @@ function MatBadges() {
 function Drawer({ drawer }) {
   return (
     <div style={{
-      margin: '0 14px 0 56px',
-      padding: '14px 16px',
-      background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      margin: '6px 14px 14px 60px',
+      padding: '16px 18px',
+      background: 'var(--sunken)',
+      boxShadow: 'var(--ring)',
+      borderRadius: 'var(--radius-md)',
       display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 20,
     }}>
       <div>
-        <div className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', marginBottom: 4 }}>PANEL BRAND</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{drawer.panel}</div>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontWeight: 600,
+          fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
+          color: 'var(--text-muted)', marginBottom: 6,
+        }}>Panel brand</div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{drawer.panel}</div>
       </div>
       <div>
-        <div className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', marginBottom: 4 }}>GENERATOR</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{drawer.gen}</div>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontWeight: 600,
+          fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
+          color: 'var(--text-muted)', marginBottom: 6,
+        }}>Generator</div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{drawer.gen}</div>
       </div>
       <div>
-        <div className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', marginBottom: 4 }}>NOTES</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)' }}>{drawer.notes}</div>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontWeight: 600,
+          fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
+          color: 'var(--text-muted)', marginBottom: 6,
+        }}>Notes</div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{drawer.notes}</div>
       </div>
     </div>
   );
@@ -258,34 +274,51 @@ function MaterialsDesktop() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <MatToolbar />
       <MatBadges />
-      <div style={{ padding: '0 16px 88px', flex: 1, overflow: 'hidden' }}>
+      <div style={{ padding: '0 16px 88px', flex: 1, overflow: 'auto' }}>
         <div style={{
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+          background: 'var(--card)',
+          boxShadow: 'var(--shadow-sm), var(--ring)',
+          borderRadius: 'var(--radius-md)',
+          overflow: 'hidden',
         }}>
           {/* header */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '280px 120px repeat(5, 64px) 140px 140px',
-            height: 36, alignItems: 'center',
-            padding: '0 14px', gap: 10,
-            borderBottom: '1px solid rgba(0,0,0,.15)',
+            height: 42, alignItems: 'center',
+            padding: '0 18px', gap: 12,
+            borderBottom: '1px solid var(--divider-faint)',
+            background: 'var(--sunken)',
           }}>
-            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>CUSTOMER</span>
-            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>AMP</span>
+            {['Customer','Amp'].map((h, i) => (
+              <span key={i} style={{
+                fontFamily: 'var(--font-display)', fontWeight: 600,
+                fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+                textAlign: i === 1 ? 'center' : 'left',
+              }}>{h}</span>
+            ))}
             {MAT_LABELS.map((l, i) => <MatHeaderCol key={i} label={l} />)}
-            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>ORDERED</span>
-            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>ACTION</span>
+            {['Ordered','Action'].map((h, i) => (
+              <span key={i} style={{
+                fontFamily: 'var(--font-display)', fontWeight: 600,
+                fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+                textAlign: i === 1 ? 'right' : 'left',
+              }}>{h}</span>
+            ))}
           </div>
 
           {MAT_ROWS.map((r, i) => (
             <React.Fragment key={i}>
-              <div className="tactile-flat" style={{
+              <div style={{
                 display: 'grid',
                 gridTemplateColumns: '280px 120px repeat(5, 64px) 140px 140px',
-                minHeight: 72, alignItems: 'center',
-                padding: '0 14px', gap: 10,
-                borderBottom: !r.expanded ? '1px solid rgba(0,0,0,.08)' : 'none',
-                background: r.expanded ? 'rgba(11,31,59,.04)' : 'var(--card)',
+                minHeight: 76, alignItems: 'center',
+                padding: '12px 18px', gap: 12,
+                borderBottom: !r.expanded ? '1px solid var(--divider-faint)' : 'none',
+                background: r.expanded ? 'var(--sunken)' : 'var(--card)',
+                transition: 'background var(--dur) var(--ease)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <MiniAvatar initials={r.initials} />
@@ -310,9 +343,9 @@ function MaterialsDesktop() {
               </div>
               {r.expanded && (
                 <div style={{
-                  background: 'rgba(11,31,59,.04)',
-                  padding: '0 0 14px',
-                  borderBottom: i < MAT_ROWS.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+                  background: 'var(--sunken)',
+                  padding: '0 0 6px',
+                  borderBottom: i < MAT_ROWS.length - 1 ? '1px solid var(--divider-faint)' : 'none',
                 }}>
                   <Drawer drawer={r.drawer} />
                 </div>
@@ -328,66 +361,66 @@ function MaterialsDesktop() {
 /* ────── Mobile card list ────── */
 function MaterialsMobile() {
   const subs = [
-    { id: 'pipeline', label: 'PIPELINE' },
-    { id: 'list',     label: 'LIST' },
-    { id: 'permits',  label: 'PERMITS' },
-    { id: 'mat',      label: 'MATERIALS', active: true },
+    { id: 'pipeline', label: 'Pipeline' },
+    { id: 'list',     label: 'List' },
+    { id: 'permits',  label: 'Permits' },
+    { id: 'mat',      label: 'Materials', active: true },
   ];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ padding: '12px 8px 4px' }}>
-        <div style={{ display: 'inline-flex', height: 32, boxShadow: 'var(--raised-2)' }}>
+      <div style={{ padding: '14px 12px 6px' }}>
+        <div style={{
+          display: 'inline-flex', height: 34,
+          background: 'var(--card)', boxShadow: 'var(--ring)',
+          borderRadius: 'var(--radius-pill)', padding: 3,
+        }}>
           {subs.map(s => (
-            <button key={s.id} className="chrome-label" style={{
-              height: 32, padding: '0 10px', fontSize: 10,
+            <button key={s.id} style={{
+              height: 28, padding: '0 12px',
               background: s.active ? 'var(--navy)' : 'transparent',
-              color: s.active ? 'var(--gold)' : 'var(--text)',
-              boxShadow: s.active ? 'var(--pressed-2)' : 'none',
+              color: s.active ? '#fff' : 'var(--text-muted)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: s.active ? 700 : 500, fontSize: 11,
+              borderRadius: 'var(--radius-pill)',
+              border: 'none', cursor: 'pointer',
             }}>{s.label}</button>
           ))}
         </div>
       </div>
-      <div style={{ padding: '4px 8px', display: 'flex', gap: 6 }}>
-        {[
-          { label:'3 ORDER', color:'var(--lcd-red)',   glow:'var(--lcd-glow-red)' },
-          { label:'2 PEND',  color:'var(--lcd-amber)', glow:'var(--lcd-glow-amber)' },
-          { label:'2 RCVD',  color:'var(--lcd-green)', glow:'var(--lcd-glow-green)' },
-        ].map((b, i) => (
-          <span key={i} style={{
-            flex: 1,
-            height: 22, padding: '0 8px',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-            color: b.color, textShadow: b.glow,
-            fontFamily: 'var(--font-pixel)', fontSize: 12, letterSpacing: '.08em',
-          }}>{b.label}</span>
-        ))}
+      <div style={{ padding: '6px 12px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <span className="smart-chip smart-chip--red">3 to order</span>
+        <span className="smart-chip smart-chip--gold">2 pending</span>
+        <span className="smart-chip smart-chip--green">2 received</span>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px 12px' }}>
         {MAT_ROWS.map((r, i) => (
           <div key={i} style={{
-            background: 'var(--card)', boxShadow: 'var(--raised-2)',
-            padding: 12, marginBottom: 10,
-            display: 'flex', flexDirection: 'column', gap: 10,
+            background: 'var(--card)',
+            boxShadow: 'var(--shadow-sm), var(--ring)',
+            borderRadius: 'var(--radius-md)',
+            padding: 14, marginBottom: 12,
+            display: 'flex', flexDirection: 'column', gap: 12,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <MiniAvatar initials={r.initials} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <MiniAvatar initials={r.initials} size={36} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{r.name}</span>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)',
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{r.name}</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-muted)',
                   overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.addr}</span>
               </div>
             </div>
             <AmpSwitch amp={r.amp} mobile />
-            <div style={{ display: 'flex', gap: 4, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between' }}>
               {r.mats.map((m, j) => (
-                <div key={j} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
+                <div key={j} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
                   <MatCell on={m} size={44} />
-                  <span className="chrome-label" style={{ fontSize: 8, color: 'var(--text-muted)' }}>
-                    {MAT_LABELS[j].split(' ')[0]}
-                  </span>
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 600,
+                    fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
+                    color: 'var(--text-muted)',
+                  }}>{MAT_LABELS[j]}</span>
                   {j === 4 && !m && r.surgeAddon && (
-                    <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 10, color: 'var(--gold)' }}>+$375</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 10, color: 'var(--gold)' }}>+$375</span>
                   )}
                 </div>
               ))}
@@ -398,19 +431,29 @@ function MaterialsMobile() {
             </div>
             {r.expanded && (
               <div style={{
-                marginTop: 2, padding: 10,
-                background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+                marginTop: 4, padding: 12,
+                background: 'var(--sunken)',
+                boxShadow: 'var(--ring)',
+                borderRadius: 'var(--radius-sm)',
                 display: 'flex', flexDirection: 'column', gap: 8,
               }}>
                 <div>
-                  <div className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)' }}>PANEL / GEN</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                  <div style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 10,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    color: 'var(--text-muted)',
+                  }}>Panel / gen</div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                     {r.drawer.panel} · {r.drawer.gen}
                   </div>
                 </div>
                 <div>
-                  <div className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)' }}>NOTES</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{r.drawer.notes}</div>
+                  <div style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 10,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    color: 'var(--text-muted)',
+                  }}>Notes</div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{r.drawer.notes}</div>
                 </div>
               </div>
             )}
