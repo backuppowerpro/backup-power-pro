@@ -6205,6 +6205,10 @@ function LivePlaybook() {
       await callMemoryAdmin({ method: 'PUT', body: { path: selectedPath, content } });
       setEditing(false);
       setTick(n => n + 1);
+      // Re-fetch so the viewer shows the post-scrub version of the content
+      // (any PII in the edit got replaced with placeholders server-side).
+      const data = await callMemoryAdmin({ method: 'GET', path: selectedPath });
+      setContent(data?.content || '');
     } catch (e) { setErr(e.message); }
     setSaving(false);
   };
