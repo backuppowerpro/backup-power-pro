@@ -14,11 +14,13 @@ const CmdIcons = {
 function Kbd({ k }) {
   return (
     <span style={{
-      minWidth: 20, height: 20, padding: '0 5px',
+      minWidth: 22, height: 22, padding: '0 6px',
       display: 'inline-grid', placeItems: 'center',
-      background: 'var(--card)', boxShadow: 'var(--raised-2)',
-      fontFamily: 'var(--font-pixel)', fontSize: 12, color: 'var(--text)',
-      letterSpacing: '.04em',
+      background: 'var(--sunken)',
+      boxShadow: 'var(--ring)',
+      borderRadius: 'var(--radius-xs)',
+      fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 11,
+      color: 'var(--text-muted)',
     }}>{k}</span>
   );
 }
@@ -26,17 +28,14 @@ function Kbd({ k }) {
 function CmdGroupHead({ color, label }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      padding: '8px 14px',
-      position: 'relative',
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '12px 16px 6px',
     }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
       <span style={{
-        position: 'absolute', left: 0, top: 6, bottom: 6, width: 4,
-        background: color,
-        boxShadow: 'var(--shadow-xs), var(--ring)',
-      }} />
-      <span className="chrome-label" style={{
-        fontSize: 11, color: color, letterSpacing: '.12em',
+        fontFamily: 'var(--font-display)', fontWeight: 700,
+        fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase',
+        color: 'var(--text-muted)',
       }}>{label}</span>
     </div>
   );
@@ -46,35 +45,35 @@ function CmdMiniAvatar({ i, size = 40 }) {
   return (
     <div style={{
       width: size, height: size, flex:'0 0 auto',
-      background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
+      background: 'var(--navy)',
+      borderRadius: '50%',
       display: 'grid', placeItems: 'center',
     }}>
       <span style={{
-        fontFamily: 'var(--font-chrome)', fontWeight: 700,
-        color: 'var(--gold)', fontSize: 12,
+        fontFamily: 'var(--font-body)', fontWeight: 600,
+        color: '#fff', fontSize: size >= 40 ? 13 : 11,
       }}>{i}</span>
     </div>
   );
 }
 
 function CmdRow({ icon, title, sub, hint, highlight = false, mobile = false }) {
-  const h = mobile ? 56 : 44;
+  const h = mobile ? 56 : 48;
   return (
-    <div className="tactile-flat" style={{
+    <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
-      padding: '0 14px', height: h,
-      position: 'relative',
-      background: 'var(--card)',
-      boxShadow: highlight ? 'var(--pressed-2)' : 'none',
-      borderBottom: '1px solid rgba(0,0,0,.04)',
-    }}>
-      {highlight && (
-        <span style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
-          background: 'var(--gold)',
-        }} />
-      )}
-      <span style={{ display:'grid', placeItems:'center', color: 'var(--text-muted)' }}>
+      padding: '0 16px', height: h,
+      background: highlight ? 'var(--sunken)' : 'transparent',
+      boxShadow: highlight ? 'inset 0 0 0 1.5px var(--gold)' : 'none',
+      borderRadius: highlight ? 'var(--radius-sm)' : 0,
+      margin: highlight ? '0 8px' : 0,
+      cursor: 'pointer',
+      transition: 'background var(--dur-fast) var(--ease)',
+    }}
+    onMouseEnter={e => { if (!highlight) e.currentTarget.style.background = 'var(--sunken)' }}
+    onMouseLeave={e => { if (!highlight) e.currentTarget.style.background = 'transparent' }}
+    >
+      <span style={{ display:'grid', placeItems:'center', color: highlight ? 'var(--navy)' : 'var(--text-muted)' }}>
         {icon}
       </span>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -106,41 +105,45 @@ function QueryHighlight({ q = 'sar' }) {
 function CommandPalette({ mobile = false }) {
   return (
     <div style={{
-      width: mobile ? '100%' : 560,
+      width: mobile ? '100%' : 580,
       height: mobile ? '100%' : 'auto',
-      maxHeight: mobile ? '100%' : 440,
+      maxHeight: mobile ? '100%' : 480,
       background: 'var(--card)',
-      boxShadow: mobile ? 'none' : 'var(--raised-2)',
+      boxShadow: mobile ? 'none' : 'var(--shadow-xl), var(--ring)',
+      borderRadius: mobile ? 0 : 'var(--radius-lg)',
       display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
     }}>
       {/* Search input */}
-      <div style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ padding: 14, display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid var(--divider-faint)' }}>
         <div style={{
-          flex: 1, height: 48, display: 'flex', alignItems: 'center', gap: 10,
-          padding: '0 14px',
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+          flex: 1, height: 48, display: 'flex', alignItems: 'center', gap: 12,
+          padding: '0 16px',
+          background: 'var(--sunken)',
+          boxShadow: 'var(--ring)',
+          borderRadius: 'var(--radius-pill)',
         }}>
           <span style={{ color: 'var(--text-faint)' }}>{CmdIcons.search}</span>
           <span style={{
             flex: 1,
-            fontFamily: 'var(--font-mono)', fontSize: 17, color: 'var(--text)',
+            fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--text)',
           }}>
             sar
             <span style={{
-              display:'inline-block', width: 2, height: 18, verticalAlign: -3,
-              background: 'var(--text)', marginLeft: 2,
-              animation: 'caret .8s steps(2) infinite',
+              display:'inline-block', width: 2, height: 17, verticalAlign: -3,
+              background: 'var(--navy)', marginLeft: 2,
+              animation: 'caret 1s ease-in-out infinite',
             }}/>
           </span>
-          <Kbd k="ESC" />
+          <Kbd k="Esc" />
         </div>
       </div>
 
-      <style>{`@keyframes caret { 50% { opacity: 0 } }`}</style>
+      <style>{`@keyframes caret { 0%,50% { opacity: 1 } 50.01%,100% { opacity: 0 } }`}</style>
 
       {/* Results */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 0 4px' }}>
-        <CmdGroupHead color="var(--ms-1)" label="LEADS" />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0 6px' }}>
+        <CmdGroupHead color="var(--blue)" label="Leads" />
         <CmdRow
           icon={<CmdMiniAvatar i="SM" />}
           title={<>Sa<QueryHighlight />h M</>}
@@ -157,22 +160,23 @@ function CommandPalette({ mobile = false }) {
           mobile={mobile}
         />
 
-        <CmdGroupHead color="var(--ms-2)" label="NAVIGATION" />
+        <CmdGroupHead color="var(--green)" label="Navigation" />
         <CmdRow icon={CmdIcons.pipe}  title="Go to Pipeline" hint="G P" mobile={mobile} />
         <CmdRow icon={CmdIcons.cal}   title="Go to Calendar" hint="G C" mobile={mobile} />
         <CmdRow icon={CmdIcons.money} title="Go to Finance"  hint="G F" mobile={mobile} />
 
-        <CmdGroupHead color="var(--ms-3)" label="ACTIONS" />
+        <CmdGroupHead color="var(--red)" label="Actions" />
         <CmdRow icon={CmdIcons.plus} title="New lead"  hint="N L" mobile={mobile} />
         <CmdRow icon={CmdIcons.sms}  title="Send SMS"  hint="S S" mobile={mobile} />
 
-        <CmdGroupHead color="var(--ms-4)" label="SPARKY" />
+        <CmdGroupHead color="var(--purple)" label="Sparky" />
         <CmdRow
           icon={<span style={{
-            width: 20, height: 20, background: 'var(--gold)', color: '#1a1a1a',
+            width: 26, height: 26, background: 'var(--gold)', color: 'var(--navy)',
             display:'inline-grid', placeItems:'center',
-            fontFamily:'var(--font-pixel)', fontSize: 14,
-            boxShadow:'var(--shadow-xs), var(--ring)',
+            fontFamily:'var(--font-display)', fontWeight: 800, fontSize: 13,
+            borderRadius: 'var(--radius-sm)',
+            boxShadow:'var(--shadow-xs)',
           }}>S</span>}
           title={<>Ask Sparky: "sa<QueryHighlight q="r" />"</>}
           hint="⏎"
@@ -182,15 +186,16 @@ function CommandPalette({ mobile = false }) {
 
       {/* Footer */}
       <div style={{
-        height: 40, padding: '0 14px',
+        height: 44, padding: '0 18px',
         display: 'flex', alignItems: 'center', gap: 20,
-        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
-        fontFamily: 'var(--font-pixel)', fontSize: 13,
-        color: 'var(--text-muted)', letterSpacing: '.12em',
+        background: 'var(--sunken)',
+        borderTop: '1px solid var(--divider)',
+        fontFamily: 'var(--font-body)', fontSize: 12,
+        color: 'var(--text-muted)',
       }}>
-        <span>↑↓ NAVIGATE</span>
-        <span>↵ SELECT</span>
-        <span>ESC CLOSE</span>
+        <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><Kbd k="↑↓" /> Navigate</span>
+        <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><Kbd k="↵" /> Select</span>
+        <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><Kbd k="Esc" /> Close</span>
       </div>
     </div>
   );
