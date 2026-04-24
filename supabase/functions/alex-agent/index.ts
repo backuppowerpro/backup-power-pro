@@ -2530,10 +2530,22 @@ Deno.serve(async (req) => {
   const frustrationRx = /\b(stop (asking|messaging|texting|bugging)|you already (asked|told|said)|annoying|leave me alone|not interested|unsubscribe|remove me|too much|quit it|chill|relax|easy there|back off|enough)\b/i
   const isFrustrated = frustrationRx.test(messageText)
   const frustrationNote = isFrustrated
-    ? '\n[CONTEXT: Customer is showing frustration signals in their message. Back off — acknowledge briefly ("totally fair — I\'ll step back"), offer to pass them to Key directly, and DO NOT ask another question this turn. Respect their stated preference. If they ask to unsubscribe/stop/remove, treat that as an opt-out and call notify_key with reason="opted_out".]'
+    ? '\n[CONTEXT: Customer is showing frustration signals in their message. Back off — acknowledge briefly ("totally fair, I\'ll step back"), offer to pass them to Key directly, and DO NOT ask another question this turn. Respect their stated preference. If they ask to unsubscribe/stop/remove, treat that as an opt-out and call notify_key with reason="opted_out".]'
     : ''
 
-  const fullContext = (contactContext || '') + reEngageNote + timeNote + frustrationNote
+  // ── Out-of-area pre-check ─────────────────────────────────────────────
+  // We serve Greenville, Spartanburg, Pickens counties. If the customer
+  // explicitly mentions a different county / out-of-area city, pre-inject
+  // the geography fact so Alex declines politely and offers a referral
+  // instead of blindly asking for a panel photo. We only FLAG out-of-area;
+  // for matches inside our service area we stay silent so Alex proceeds.
+  const msgLower = (messageText || '').toLowerCase()
+  const outOfAreaRx = /\b(anderson\s+county|anderson,?\s*sc|oconee\s+county|laurens\s+county|abbeville\s+county|union\s+county|cherokee\s+county|chester\s+county|york\s+county|asheville|charlotte|atlanta|columbia,?\s*sc|clemson(?!,?\s*(panel|wire))|seneca,?\s*sc|anderson,?\s*south\s+carolina)\b/i
+  const outOfAreaNote = outOfAreaRx.test(msgLower)
+    ? '\n[CONTEXT: Customer just mentioned what appears to be an out-of-area location. BPP only serves Greenville, Spartanburg, and Pickens counties in Upstate SC. Politely let them know this one is outside the service area (do not apologize like you did something wrong — just be clear), thank them for reaching out, and if you can, suggest they check with a local electrician in their area. Do NOT ask for a panel photo. Do NOT call notify_key unless they ask for Key directly. One short message, warm, clean exit.]'
+    : ''
+
+  const fullContext = (contactContext || '') + reEngageNote + timeNote + frustrationNote + outOfAreaNote
 
   try {
     const result = await runAlex(supabase, fromPhone, session.id, messages, fullContext || undefined)
@@ -2605,7 +2617,26 @@ Deno.serve(async (req) => {
   // a bare dead-end ack AND the session isn't complete AND we can identify
   // what's missing, append the right follow-up. If NOTHING is missing,
   // append a warm proper close and call mark_complete on the model's behalf.
-  if (!complete && response) {
+  // Re-read the freshest opted_out state — Alex may have called notify_key
+  // with reason='opted_out' in this very turn, which flips the session flag.
+  // If so, NEVER append a follow-up ask. Similarly, if the customer was
+  // showing frustration signals on this turn, respect the stand-down.
+  // Same for out-of-area: if we told Alex to decline, don't then override
+  // his polite exit by tacking on "send me your panel photo".
+  let sessionOptedOutNow = (session as any)?.optedOut === true
+  if (!sessionOptedOutNow) {
+    try {
+      const { data: freshSess } = await supabase
+        .from('alex_sessions')
+        .select('opted_out')
+        .eq('session_id', session.id)
+        .maybeSingle()
+      sessionOptedOutNow = !!freshSess?.opted_out
+    } catch {}
+  }
+  const skipSafetyNet = sessionOptedOutNow || isFrustrated || outOfAreaRx.test(msgLower)
+
+  if (!complete && response && !skipSafetyNet) {
     const endsWithQuestion = /\?\s*$/.test(response.trim())
     const looksBareAck = response.trim().length < 30 || !endsWithQuestion
     // Flag "internal-monologue" replies — anywhere Alex narrates its own
@@ -2619,10 +2650,19 @@ Deno.serve(async (req) => {
     const mRx = /(^|[\s\n]*)(hmm|actually|wait|let me|ok so|okay so|looking at|reading the)\b/i
     const selfRef = /\b(the system says?|the briefing|memory shows|memory references|the prior memory|according to (my|the)|i have (everything|all four)|let me (check|adjust|re-?engage|see|re-?approach)|per instructions|should i ask|actually no|the system doesn)\b/i
     const classicMono = response.length > 200 && !endsWithQuestion && /\b(should i|per instructions|the briefing|let me)\b/i.test(response)
+    // Third-person monologue — Alex narrating ABOUT the customer instead of
+    // TO them. Caught 2026-04-24 in real test: "The customer gave me useful
+    // info in one message: they have a Champion 30-amp 240V outlet..."
+    // If the message opens with a third-person reference or uses "they said"
+    // / "that answers" / reasoning framing, it's reasoning not a reply.
+    const thirdPerson = /(^\s*)(the customer|this customer|the lead|the user|the person|based on (the|what|this)|looking at (the|this|what)|it seems (that|the)|appears (that|the)|they said|they mentioned|they gave me|they told me|they're asking|since i )/i
+    const reasoningFramer = /\b(that answers (the|my)|worth noting (that|—|-)|also worth noting|let me pivot|let me ask|this is the|this answers|the question (is|was|becomes)|so my (next|move|plan)|my (next|move|plan) (is|will))\b/i
     const looksLikeMonologue =
       (response.length > 40 && selfRef.test(response)) ||
       (mRx.test(response.slice(0, 80)) && response.length > 80) ||
-      classicMono
+      classicMono ||
+      thirdPerson.test(response.slice(0, 120)) ||
+      (response.length > 120 && reasoningFramer.test(response))
     // SMART STRIP — if monologue sits at the START of an otherwise-clean
     // message (a greeting follows), slice the monologue prefix away rather
     // than replacing the whole reply. Saves good content when Alex just
@@ -2704,8 +2744,11 @@ Deno.serve(async (req) => {
       if (nextAsk) {
         if (looksLikeMonologue) {
           // Don't preserve internal-monologue text — replace with a clean
-          // short ack + the next ask.
-          response = 'Got it, thanks.' + nextAsk
+          // short ack + the next ask. Avoid the exact "Got it, thanks." —
+          // pitfalls.md flags it as a dead-end robotic tell, and the
+          // *nextAsk* already ends with a wrap-up, so a plainer lead-in
+          // reads more natural.
+          response = 'Gotcha.' + nextAsk
           console.log('[alex] safety-net replaced monologue with clean ack + follow-up')
         } else {
           response = response.trim().replace(/\.\s*$/, '.') + nextAsk
