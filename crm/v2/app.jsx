@@ -2641,27 +2641,39 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
       }}>
         <button
           onClick={onBack}
-          className="tactile-raised"
+          aria-label={mobile ? 'Back to list' : 'Close contact'}
           style={{
             position: 'absolute', left: 12, top: mobile ? 'calc(12px + env(safe-area-inset-top))' : 12,
-            width: 32, height: 32, display: 'grid', placeItems: 'center',
-            fontSize: 18, lineHeight: 1, color: 'var(--text)',
-            cursor: 'pointer',
+            width: 34, height: 34, display: 'grid', placeItems: 'center',
+            fontSize: 18, lineHeight: 1,
+            color: 'var(--text-muted)',
+            background: 'var(--sunken)',
+            border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-pill)',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--red) 14%, var(--sunken))'; e.currentTarget.style.color = 'var(--red)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
         >{mobile ? '‹' : '×'}</button>
         {contact?.phone && !contact?.do_not_contact ? (
           <button
             onClick={() => window.__bpp_dial && window.__bpp_dial(contact.phone)}
-            className="tactile-raised"
-            title="Call"
+            title="Call (D)"
+            aria-label={`Call ${contact.name || 'contact'}`}
             style={{
               position: 'absolute', right: 12, top: mobile ? 'calc(12px + env(safe-area-inset-top))' : 12,
-              width: 36, height: 36, display: 'grid', placeItems: 'center',
+              width: 38, height: 38, display: 'grid', placeItems: 'center',
               background: 'var(--green)', color: '#fff', cursor: 'pointer',
+              border: 'none',
+              borderRadius: 'var(--radius-pill)',
+              boxShadow: '0 3px 10px color-mix(in srgb, var(--green) 32%, transparent)',
+              transition: 'transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
             }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px color-mix(in srgb, var(--green) 45%, transparent)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 10px color-mix(in srgb, var(--green) 32%, transparent)' }}
           >
-            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
-              <path d="M3 3 L5 3 L6 6 L5 7 A5 5 0 0 0 9 11 L10 10 L13 11 L13 13 A1 1 0 0 1 12 14 A11 11 0 0 1 2 4 A1 1 0 0 1 3 3 Z"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
             </svg>
           </button>
         ) : null}
