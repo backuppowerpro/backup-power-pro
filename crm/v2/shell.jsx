@@ -225,7 +225,7 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
               ? g.children.reduce((n, cid) => n + (badges[cid] || 0), 0)
               : (badges[g.id] || 0);
             return (
-              <button key={g.id} className="chrome-label"
+              <button key={g.id}
                 role="tab"
                 data-group-id={g.id}
                 aria-selected={isActive}
@@ -236,16 +236,24 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
                   display: 'flex', alignItems: 'center', gap: 8,
                   flex: '0 0 auto',
                   color: isActive ? 'var(--text)' : 'var(--text-muted)',
-                  fontSize: 13,
-                  boxShadow: isActive ? 'inset 0 -3px 0 var(--gold)' : 'none',
+                  fontFamily: 'var(--font-display)', fontWeight: isActive ? 700 : 600,
+                  fontSize: 13.5, letterSpacing: '-0.005em',
+                  boxShadow: isActive ? 'inset 0 -2px 0 var(--gold)' : 'none',
                   background: 'transparent', border: 'none', cursor: 'pointer',
-                }}>
+                  transition: 'color var(--dur) var(--ease)',
+                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = 'var(--text)' }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-muted)' }}
+              >
                 <span style={{ display: 'flex', opacity: isActive ? 1 : .75 }} aria-hidden="true">{g.icon}</span>
                 <span>{g.label}</span>
                 {badgeSum ? (
-                  <span className="mono" style={{
-                    fontSize: 10, padding: '1px 5px', letterSpacing: '.04em',
-                    color: '#fff', background: 'var(--ms-3)',
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+                    padding: '1px 6px',
+                    color: '#fff', background: 'var(--red)',
+                    borderRadius: 'var(--radius-pill)',
+                    fontVariantNumeric: 'tabular-nums',
                   }}>{badgeSum}</span>
                 ) : null}
               </button>
@@ -266,7 +274,7 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
               const isActive = t.id === active;
               const badge = badges[t.id];
               return (
-                <button key={t.id} className="chrome-label"
+                <button key={t.id}
                   role="tab"
                   data-tab-id={t.id}
                   aria-selected={isActive}
@@ -277,15 +285,23 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
                     display: 'flex', alignItems: 'center', gap: 6,
                     flex: '0 0 auto',
                     color: isActive ? 'var(--text)' : 'var(--text-muted)',
-                    fontSize: 11, letterSpacing: '.06em',
+                    fontFamily: 'var(--font-display)', fontWeight: isActive ? 700 : 600,
+                    fontSize: 12, letterSpacing: '-0.005em',
                     boxShadow: isActive ? 'inset 0 -2px 0 var(--gold)' : 'none',
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                  }}>
+                    transition: 'color var(--dur) var(--ease)',
+                  }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = 'var(--text)' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
                   <span>{t.label}</span>
                   {badge ? (
-                    <span className="mono" style={{
-                      fontSize: 10, padding: '1px 5px', letterSpacing: '.04em',
-                      color: '#fff', background: 'var(--ms-3)',
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+                      padding: '1px 6px',
+                      color: '#fff', background: 'var(--red)',
+                      borderRadius: 'var(--radius-pill)',
+                      fontVariantNumeric: 'tabular-nums',
                     }}>{badge}</span>
                   ) : null}
                 </button>

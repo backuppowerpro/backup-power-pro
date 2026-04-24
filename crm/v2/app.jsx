@@ -191,16 +191,34 @@ class ErrorBoundary extends React.Component {
     if (this.state.err) {
       const msg = this.state.err?.message || String(this.state.err);
       return (
-        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
-          <div className="chrome-label" style={{ fontSize: 12, color: 'var(--ms-3)' }}>
-            {this.props.label || 'SECTION'} CRASHED
-          </div>
-          <div className="lcd" style={{ padding: 10, fontSize: 12, maxHeight: 160, overflow: 'auto' }}>{msg}</div>
+        <div style={{
+          padding: 28, display: 'flex', flexDirection: 'column', gap: 14,
+          height: '100%', alignItems: 'flex-start',
+        }}>
+          <span className="eyebrow" style={{ color: 'var(--red)' }}>
+            Something broke
+          </span>
+          <h2 style={{
+            margin: 0,
+            fontFamily: 'var(--font-display)', fontWeight: 800,
+            fontSize: 22, letterSpacing: '-0.01em', color: 'var(--text)',
+          }}>
+            {this.props.label || 'This section'} couldn't render
+          </h2>
+          <div style={{
+            padding: '12px 14px',
+            background: 'var(--sunken)',
+            borderRadius: 'var(--radius-md)',
+            fontFamily: 'var(--font-mono)', fontSize: 12,
+            color: 'var(--text-muted)',
+            maxHeight: 160, overflow: 'auto',
+            whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            alignSelf: 'stretch',
+          }}>{msg}</div>
           <button
-            className="chrome-label"
-            style={{ padding: '8px 14px', height: 36, width: 140, boxShadow: 'var(--raised-2)', cursor: 'pointer' }}
+            className="btn-navy"
             onClick={() => this.setState({ err: null })}
-          >RETRY</button>
+          >Try again</button>
         </div>
       );
     }
@@ -870,34 +888,56 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
       {selectMode && selectedIds.size > 0 ? (
         <div style={{
           position: 'sticky', bottom: 0,
-          padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
-          background: 'var(--navy)', color: 'var(--gold)',
-          boxShadow: '0 -2px 0 rgba(0,0,0,.3)',
-          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+          padding: '12px 14px calc(12px + env(safe-area-inset-bottom))',
+          background: 'var(--navy)', color: '#fff',
+          boxShadow: '0 -8px 24px rgba(11,31,59,0.18)',
+          display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
         }}>
-          <span className="chrome-label" style={{ fontSize: 12, letterSpacing: '.08em', flex: '0 0 auto' }}>
-            {selectedIds.size} SELECTED
+          <span style={{
+            flex: '0 0 auto',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '4px 12px',
+            background: 'rgba(255,255,255,0.12)',
+            borderRadius: 'var(--radius-pill)',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+            color: '#fff', letterSpacing: '0.01em',
+          }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: 'var(--gold)',
+            }}/>
+            {selectedIds.size} selected
           </span>
-          <div style={{ display: 'flex', gap: 6, flex: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 8, flex: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button onClick={() => setStagePickerOpen(true)} disabled={applying} style={{
-              padding: '6px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
+              padding: '8px 16px', height: 32,
               background: 'var(--gold)', color: 'var(--navy)', border: 'none',
-              cursor: applying ? 'wait' : 'pointer', boxShadow: 'var(--raised-2)',
-            }}>Move to stage…</button>
+              borderRadius: 'var(--radius-pill)',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12.5,
+              cursor: applying ? 'wait' : 'pointer',
+              boxShadow: '0 2px 8px rgba(255,186,0,0.3)',
+            }}>Move to stage</button>
             <button onClick={bulkArchive} disabled={applying} style={{
-              padding: '6px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
-              background: 'transparent', color: 'var(--gold)',
-              border: '1px solid rgba(255,186,0,.5)', cursor: applying ? 'wait' : 'pointer',
+              padding: '8px 14px', height: 32,
+              background: 'rgba(255,255,255,0.08)', color: '#fff', border: 'none',
+              borderRadius: 'var(--radius-pill)',
+              fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12.5,
+              cursor: applying ? 'wait' : 'pointer',
             }}>Archive</button>
             <button onClick={bulkDnc} disabled={applying} style={{
-              padding: '6px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
-              background: 'transparent', color: 'var(--ms-3)',
-              border: '1px solid var(--ms-3)', cursor: applying ? 'wait' : 'pointer',
-            }}>DNC</button>
+              padding: '8px 14px', height: 32,
+              background: 'transparent', color: '#ff8a8a',
+              border: '1px solid rgba(255,138,138,0.4)',
+              borderRadius: 'var(--radius-pill)',
+              fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12.5,
+              cursor: applying ? 'wait' : 'pointer',
+            }}>Do not contact</button>
             <button onClick={exitSelectMode} disabled={applying} style={{
-              padding: '6px 12px', fontSize: 11, fontWeight: 600, letterSpacing: '.04em',
-              background: 'transparent', color: 'rgba(255,186,0,.6)',
-              border: 'none', cursor: applying ? 'wait' : 'pointer',
+              padding: '8px 14px', height: 32,
+              background: 'transparent', color: 'rgba(255,255,255,0.6)',
+              border: 'none',
+              fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 12.5,
+              cursor: applying ? 'wait' : 'pointer',
             }}>Cancel</button>
           </div>
         </div>
@@ -1243,71 +1283,106 @@ function TierStrip({ contact, messages }) {
 
   return (
     <div style={{
-      padding: '8px 14px',
+      padding: '10px 14px',
       background: 'var(--card)',
-      boxShadow: 'var(--raised-2)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
         <button
           onClick={() => setPickerOpen(p => !p)}
           title="Change pricing tier"
+          className={`smart-chip smart-chip--${meta.tone || 'muted'}`}
           style={{
-            padding: '4px 10px', fontSize: 10, letterSpacing: '.1em', fontWeight: 700,
-            background: 'var(--card)', boxShadow: 'var(--raised-2)',
             border: 'none', cursor: 'pointer',
-            color: meta.tone === 'gold' ? 'var(--gold)'
-                 : meta.tone === 'navy' ? 'var(--navy)'
-                 : 'var(--text-muted)',
-            fontFamily: 'var(--font-chrome)',
+            padding: '4px 12px', fontSize: 11,
           }}>{meta.label} · {score}</button>
         {showSuggest ? (
           <button
             onClick={() => setTier(recommended)}
             title={`Signals: ${reasons.join(', ') || 'baseline'}`}
             style={{
-              padding: '4px 10px', fontSize: 10, letterSpacing: '.06em',
-              background: 'transparent', boxShadow: 'inset 0 0 0 1px var(--gold)',
-              border: 'none', cursor: 'pointer',
-              color: 'var(--gold)', fontFamily: 'var(--font-chrome)',
+              padding: '4px 12px', height: 24,
+              background: 'color-mix(in srgb, var(--gold) 14%, transparent)',
+              color: 'var(--gold-ink)',
+              border: '1px solid color-mix(in srgb, var(--gold) 40%, transparent)',
+              borderRadius: 'var(--radius-pill)',
+              fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 11,
+              cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
             }}>→ {suggestMeta.label}</button>
         ) : (
-          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+          <span style={{
+            fontFamily: 'var(--font-body)', fontSize: 11,
+            color: 'var(--text-faint)',
+          }}>
             {reasons[0] ? `· ${reasons[0]}` : ''}
           </span>
         )}
       </div>
       {pickerOpen ? (
         <div onClick={() => setPickerOpen(false)} style={{
-          position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(0,0,0,.35)',
+          position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(11,31,59,0.32)',
+          backdropFilter: 'blur(2px)',
           display: 'grid', placeItems: 'center', padding: 20,
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            width: 340, maxWidth: '100%',
-            background: 'var(--card)', boxShadow: 'var(--raised-2)',
-            padding: 18, display: 'flex', flexDirection: 'column', gap: 10,
+            width: 360, maxWidth: '100%',
+            background: 'var(--card)',
+            boxShadow: 'var(--shadow-xl), var(--ring)',
+            borderRadius: 'var(--radius-lg)',
+            padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
           }}>
-            <div className="chrome-label" style={{ fontSize: 11, letterSpacing: '.1em', color: 'var(--text-muted)' }}>
-              PRICING TIER · SCORE {score}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span className="eyebrow">Pricing tier</span>
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 12,
+                color: 'var(--text-muted)',
+              }}>
+                Score <strong style={{ color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{score}</strong>
+              </span>
             </div>
             {TIER_IDS.map(id => {
               const m = TIER_META[id];
               const on = id === localTier;
+              const isSuggested = id === recommended && !on;
               return (
                 <button key={id} onClick={() => setTier(id)} disabled={saving}
                   style={{
-                    padding: '10px 12px', textAlign: 'left', display: 'flex',
+                    padding: '12px 14px', textAlign: 'left', display: 'flex',
                     alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                    background: on ? 'var(--navy)' : 'var(--card)',
-                    color: on ? 'var(--gold)' : 'var(--text)',
-                    boxShadow: on ? 'var(--pressed-2)' : 'var(--raised-2)',
+                    background: on ? 'var(--navy)' : 'var(--sunken)',
+                    color: on ? '#fff' : 'var(--text)',
+                    borderRadius: 'var(--radius-md)',
                     border: 'none', cursor: saving ? 'wait' : 'pointer',
-                  }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 11, letterSpacing: '.1em' }}>
-                      {m.label} {id === recommended && !on ? '· SUGGESTED' : ''}
+                    transition: 'background var(--dur) var(--ease)',
+                  }}
+                  onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'color-mix(in srgb, var(--navy) 6%, var(--sunken))' }}
+                  onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'var(--sunken)' }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <span style={{
+                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+                      letterSpacing: '-0.005em',
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                    }}>
+                      {m.label}
+                      {isSuggested ? (
+                        <span style={{
+                          fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                          letterSpacing: '0.12em', textTransform: 'uppercase',
+                          padding: '2px 6px',
+                          background: 'color-mix(in srgb, var(--gold) 18%, transparent)',
+                          color: 'var(--gold-ink)',
+                          borderRadius: 'var(--radius-pill)',
+                        }}>Suggested</span>
+                      ) : null}
                     </span>
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: on ? 'var(--gold)' : 'var(--text-muted)' }}>
+                    <span style={{
+                      fontFamily: 'var(--font-body)', fontSize: 12,
+                      color: on ? 'rgba(255,255,255,0.72)' : 'var(--text-muted)',
+                    }}>
                       {m.blurb}
                     </span>
                   </div>
@@ -1315,14 +1390,17 @@ function TierStrip({ contact, messages }) {
               );
             })}
             {reasons.length ? (
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              <div style={{
+                fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-muted)',
+                lineHeight: 1.5, padding: '8px 10px',
+                background: 'var(--sunken)', borderRadius: 'var(--radius-sm)',
+              }}>
                 Signals: {reasons.join(' · ')}
               </div>
             ) : null}
-            <button onClick={() => setPickerOpen(false)} style={{
-              padding: '8px', background: 'transparent', border: 'none',
-              color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, letterSpacing: '.06em',
-            }}>CANCEL</button>
+            <button onClick={() => setPickerOpen(false)} className="btn-ghost" style={{
+              alignSelf: 'flex-end',
+            }}>Cancel</button>
           </div>
         </div>
       ) : null}
@@ -1985,11 +2063,17 @@ function InstallBriefModal({ contact, onClose }) {
 
   const Section = ({ label, children, tint }) => (
     <div style={{
-      padding: '12px 14px', marginBottom: 8,
-      background: 'var(--card)', boxShadow: 'var(--raised-2)',
-      borderLeft: `3px solid ${tint || 'transparent'}`,
+      padding: '14px 16px', marginBottom: 10,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      borderLeft: tint ? `3px solid ${tint}` : undefined,
     }}>
-      <div className="chrome-label" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.08em', marginBottom: 6, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{
+        fontFamily: 'var(--font-display)', fontWeight: 600,
+        fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+        color: 'var(--text-muted)', marginBottom: 8,
+      }}>{label}</div>
       {children}
     </div>
   );
@@ -3814,38 +3898,68 @@ function InspectionChecklist({ contactId }) {
 
   if (loading) return <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', padding: 14 }}>Loading inspection…</div>;
 
+  // Status tone mapping for smart-chip
+  const statusTone = status === 'passed' ? 'green'
+    : status === 'failed' ? 'red'
+    : status === 'in_progress' ? 'gold'
+    : 'muted';
+  const statusLabel = status === 'passed' ? 'Passed'
+    : status === 'failed' ? 'Failed'
+    : status === 'in_progress' ? 'In progress'
+    : 'Not started';
+
   return (
-    <div style={{ padding: 14, background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
+    <div style={{
+      padding: 16,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+    }}>
       <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-        marginBottom: 12,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: 14,
       }}>
-        <span className="chrome-label" style={{ fontSize: 11, letterSpacing: '.08em', color: 'var(--text-faint)' }}>
-          Inspection
-        </span>
-        <span className="mono" style={{ fontSize: 10, color: statusColor, letterSpacing: '.06em' }}>
-          {answered}/{total} · {status.replace('_', ' ')}
-          {saving ? ' · saving' : ''}
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span className="eyebrow">Inspection</span>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {answered}/{total}{saving ? ' · saving' : ''}
+          </span>
+        </div>
+        <span className={`smart-chip smart-chip--${statusTone}`}>{statusLabel}</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {INSPECTION_ITEMS.map((item, i) => {
           const v = checklist[item];
-          const bg = v === 'yes' ? 'var(--ms-2)' : v === 'no' ? 'var(--ms-3)' : 'transparent';
-          const fg = v ? '#fff' : 'var(--text)';
+          const isYes = v === 'yes';
+          const isNo = v === 'no';
+          const bg = isYes ? 'color-mix(in srgb, var(--green) 14%, var(--card))'
+                   : isNo  ? 'color-mix(in srgb, var(--red)   14%, var(--card))'
+                           : 'var(--sunken)';
+          const accent = isYes ? 'var(--green)' : isNo ? 'var(--red)' : 'transparent';
           return (
             <button key={i} onClick={() => toggle(item)} style={{
+              position: 'relative',
               display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
-              padding: '8px 10px', fontSize: 12, fontFamily: 'var(--font-body)',
-              background: bg, color: fg, border: 'none', cursor: 'pointer',
-              boxShadow: v ? 'var(--pressed-2)' : 'var(--raised-2)',
+              padding: '10px 12px', fontSize: 13, fontFamily: 'var(--font-body)',
+              background: bg, color: 'var(--text)',
+              border: 'none', cursor: 'pointer',
+              borderRadius: 'var(--radius-sm)',
+              borderLeft: `3px solid ${accent}`,
+              transition: 'background var(--dur) var(--ease)',
             }}>
               <span style={{
-                width: 18, height: 18, display: 'inline-grid', placeItems: 'center',
-                fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)',
-                background: v ? 'rgba(255,255,255,.25)' : 'var(--card)',
-                boxShadow: v ? 'none' : 'var(--pressed-2)',
+                width: 20, height: 20, display: 'inline-grid', placeItems: 'center',
+                fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                background: isYes ? 'var(--green)'
+                          : isNo  ? 'var(--red)'
+                                  : 'var(--card)',
+                color: v ? '#fff' : 'var(--text-faint)',
+                borderRadius: '50%',
                 flex: '0 0 auto',
+                boxShadow: v ? 'none' : 'inset 0 0 0 1px var(--divider)',
               }}>{v === 'yes' ? '✓' : v === 'no' ? '✗' : ''}</span>
               <span style={{ flex: 1 }}>{item}</span>
             </button>
@@ -3857,11 +3971,15 @@ function InspectionChecklist({ contactId }) {
         onChange={e => onNotesChange(e.target.value)}
         placeholder="Inspection notes (auto-saves)…"
         style={{
-          width: '100%', minHeight: 60, marginTop: 12, padding: 10,
-          fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.4,
-          background: 'var(--card)', resize: 'vertical',
-          boxShadow: 'var(--pressed-2)', border: 'none',
+          width: '100%', minHeight: 72, marginTop: 14, padding: '10px 12px',
+          fontFamily: 'var(--font-body)', fontSize: 13, lineHeight: 1.5,
+          background: 'var(--sunken)', color: 'var(--text)',
+          resize: 'vertical', border: 'none', outline: 'none',
+          borderRadius: 'var(--radius-sm)',
+          boxSizing: 'border-box',
         }}
+        onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
+        onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
       />
     </div>
   );
@@ -3909,16 +4027,24 @@ function DetailPermits({ contact }) {
   ].filter(Boolean) : [];
   const permitMeta = parsePermitNotes(contact.install_notes);
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-      <div style={{ padding: '14px 16px', marginBottom: 12, background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.08em', color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 12 }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{
+        padding: 16,
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-sm), var(--ring)',
+        borderRadius: 'var(--radius-md)',
+      }}>
+        <span className="eyebrow" style={{ display: 'inline-block', marginBottom: 14 }}>
           Permit pipeline
-        </div>
+        </span>
         <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between' }}>
           {cells.map((state, i) => (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1 }}>
               <PermitStepCell state={state} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--text-faint)' }}>{headers[i]}</span>
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 10.5, fontWeight: 500,
+                color: 'var(--text-faint)', letterSpacing: '0.01em',
+              }}>{headers[i]}</span>
             </div>
           ))}
         </div>
@@ -3927,37 +4053,47 @@ function DetailPermits({ contact }) {
             submission contacts. Permit # is click-to-copy; doc URL opens
             the issued permit PDF in a new tab. */}
         {(permitMeta.number || permitMeta.submittedAt || permitMeta.docUrl) ? (
-          <div className="mono" style={{
-            marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--divider-faint)',
-            fontSize: 11, color: 'var(--text-muted)',
-            display: 'flex', flexDirection: 'column', gap: 4,
+          <div style={{
+            marginTop: 14, padding: '10px 12px',
+            background: 'var(--sunken)', borderRadius: 'var(--radius-sm)',
+            fontFamily: 'var(--font-body)', fontSize: 12,
+            color: 'var(--text-muted)',
+            display: 'flex', flexDirection: 'column', gap: 6,
           }}>
             {permitMeta.number ? (
-              <div>
-                permit #: <button
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)' }}>Permit #</span>
+                <button
                   onClick={() => navigator.clipboard.writeText(permitMeta.number)
                     .then(() => window.__bpp_toast && window.__bpp_toast(`Permit # copied — ${permitMeta.number}`, 'success'))}
                   title="Click to copy"
                   style={{
-                    padding: 0, background: 'transparent', border: 'none',
-                    color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit',
-                    borderBottom: '1px dashed rgba(0,0,0,.2)',
+                    padding: '2px 8px', background: 'var(--card)', border: 'none',
+                    color: 'var(--text)', cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)', fontSize: 12,
+                    borderRadius: 'var(--radius-pill)',
+                    boxShadow: 'var(--ring)',
                   }}
                 >{permitMeta.number}</button>
               </div>
             ) : null}
             {permitMeta.submittedAt ? (
-              <div>submitted: <span style={{ color: 'var(--text)' }}>{permitMeta.submittedAt}</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)' }}>Submitted</span>
+                <span style={{ color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{permitMeta.submittedAt}</span>
+              </div>
             ) : null}
             {permitMeta.docUrl ? (
-              <div>
-                doc: <a
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)' }}>Doc</span>
+                <a
                   href={safeHref(permitMeta.docUrl)} target="_blank" rel="noopener"
                   style={{
                     color: 'var(--navy)', textDecoration: 'none',
-                    borderBottom: '1px dashed rgba(0,0,0,.2)',
+                    fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
                   }}
-                >open PDF ↗</a>
+                >Open PDF <span aria-hidden>↗</span></a>
               </div>
             ) : null}
           </div>
@@ -3967,32 +4103,42 @@ function DetailPermits({ contact }) {
           contact's jurisdiction is set. One-click portal access from the
           contact instead of hunting through saved bookmarks. */}
       {jur ? (
-        <div style={{ padding: '14px 16px', marginBottom: 12, background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-            <span className="chrome-label" style={{ fontSize: 11, letterSpacing: '.08em', color: 'var(--text-faint)' }}>
-              Jurisdiction
-            </span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600 }}>{jur.name}</span>
+        <div style={{
+          padding: 16,
+          background: 'var(--card)',
+          boxShadow: 'var(--shadow-sm), var(--ring)',
+          borderRadius: 'var(--radius-md)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span className="eyebrow">Jurisdiction</span>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+              color: 'var(--text)', letterSpacing: '-0.005em',
+            }}>{jur.name}</span>
           </div>
           {jurLinks.length > 0 ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: jur.username || jur.phone ? 10 : 0 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: jur.username || jur.phone ? 12 : 0 }}>
               {jurLinks.map((l, i) => (
-                <a key={i} href={safeHref(l.url)} target="_blank" rel="noopener" style={{
-                  padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
-                  background: 'var(--navy)', color: 'var(--gold)',
-                  boxShadow: 'var(--raised-2)', textDecoration: 'none', letterSpacing: '.04em',
-                }}>{l.title} ↗</a>
+                <a key={i} href={safeHref(l.url)} target="_blank" rel="noopener" className="btn-navy" style={{
+                  textDecoration: 'none',
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}>{l.title} <span aria-hidden style={{ opacity: 0.7 }}>↗</span></a>
               ))}
             </div>
           ) : null}
           {(jur.username || jur.password || jur.phone) ? (
-            <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {jur.username ? <span>user: <span style={{ color: 'var(--text-muted)' }}>{jur.username}</span></span> : null}
+            <div style={{
+              padding: '10px 12px', background: 'var(--sunken)', borderRadius: 'var(--radius-sm)',
+              fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)',
+              display: 'flex', flexDirection: 'column', gap: 4,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {jur.username ? <span>user: <span style={{ color: 'var(--text)' }}>{jur.username}</span></span> : null}
               {jur.password ? <span>pw:   <button
                 onClick={() => navigator.clipboard.writeText(jur.password).then(() => window.__bpp_toast && window.__bpp_toast('Portal password copied', 'success'))}
-                style={{ padding: 0, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}
-                title="Click to copy">•••••••• (copy)</button></span> : null}
-              {jur.phone ? <span>ph:   <span style={{ color: 'var(--text-muted)' }}>{jur.phone}</span></span> : null}
+                style={{ padding: 0, background: 'transparent', border: 'none', color: 'var(--navy)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 600 }}
+                title="Click to copy">•••••••• copy</button></span> : null}
+              {jur.phone ? <span>ph:   <span style={{ color: 'var(--text)' }}>{jur.phone}</span></span> : null}
             </div>
           ) : null}
         </div>
@@ -4567,13 +4713,24 @@ function DetailNotes({ contact, onUpdate }) {
     <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
       {smartFacts.length > 0 ? (
         <div style={{
-          display: 'flex', gap: 6, flexWrap: 'wrap',
-          padding: '6px 10px',
-          background: 'var(--card)', boxShadow: 'var(--raised-2)',
+          display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
+          padding: '8px 12px',
+          background: 'var(--card)',
+          boxShadow: 'var(--shadow-sm), var(--ring)',
+          borderRadius: 'var(--radius-md)',
         }}>
-          <span className="chrome-label" title="Facts Sparky auto-extracted from your notes" style={{
-            fontSize: 9, color: 'var(--text-faint)', letterSpacing: '.08em', alignSelf: 'center',
-          }}>SPARKY SPOTTED</span>
+          <span title="Facts Sparky auto-extracted from your notes" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: 'var(--gold-ink)', marginRight: 4,
+          }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: 'var(--gold)',
+            }}/>
+            Sparky spotted
+          </span>
           {smartFacts.map((f, i) => (
             <span key={i} className={`smart-chip smart-chip--${f.tone}`}>{f.label}</span>
           ))}
@@ -4587,42 +4744,64 @@ function DetailNotes({ contact, onUpdate }) {
         style={{
           flex: 1, minHeight: 240, padding: 14,
           fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.5,
-          background: 'var(--card)', resize: 'vertical',
-          boxShadow: 'var(--pressed-2)', border: 'none',
+          background: 'var(--sunken)', color: 'var(--text)',
+          resize: 'vertical', border: 'none', outline: 'none',
+          borderRadius: 'var(--radius-md)',
+          boxSizing: 'border-box',
         }}
+        onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
+        onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
       />
       {/* Structured permit metadata — hidden from the editable textarea but
           still visible here so Key knows auto-generated data exists on this
           contact. Not editable (use DetailPermits to update permit # etc.). */}
       {meta ? (
-        <details className="mono" style={{
-          padding: '6px 10px', background: 'var(--card)', boxShadow: 'var(--raised-2)',
-          fontSize: 10, color: 'var(--text-faint)',
+        <details style={{
+          padding: '8px 12px', background: 'var(--sunken)',
+          borderRadius: 'var(--radius-sm)',
+          fontSize: 11, color: 'var(--text-muted)',
         }}>
-          <summary style={{ cursor: 'pointer', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            structured · {meta.split('\n').length} line{meta.split('\n').length === 1 ? '' : 's'}
+          <summary style={{
+            cursor: 'pointer',
+            fontFamily: 'var(--font-display)', fontWeight: 600,
+            color: 'var(--text-muted)',
+          }}>
+            Structured · {meta.split('\n').length} line{meta.split('\n').length === 1 ? '' : 's'}
           </summary>
           <pre style={{
-            margin: '6px 0 0', padding: 0, whiteSpace: 'pre-wrap',
-            fontFamily: 'inherit', fontSize: 10, color: 'var(--text-muted)',
+            margin: '8px 0 0', padding: 0, whiteSpace: 'pre-wrap',
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)',
           }}>{meta}</pre>
         </details>
       ) : null}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-          {saving ? 'Saving…' : savedLabel ? `Saved · ${savedLabel}` : 'Autosaves 1.5s after you stop typing'}
+        <span style={{
+          fontFamily: 'var(--font-body)', fontSize: 11.5,
+          color: 'var(--text-faint)',
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+        }}>
+          {saving ? (
+            <>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: 'var(--gold)', animation: 'pulse 1.2s infinite',
+              }}/>
+              Saving…
+            </>
+          ) : savedLabel ? (
+            <>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)' }}/>
+              Saved · {savedLabel}
+            </>
+          ) : 'Autosaves after 1.5s idle'}
         </span>
         <button
           onClick={save}
           disabled={saving || text === lastSavedRef.current}
+          className="btn-navy"
           style={{
-            height: 36, padding: '0 20px',
-            background: 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
-            letterSpacing: '.04em',
-            boxShadow: 'var(--shadow-sm)',
             cursor: (saving || text === lastSavedRef.current) ? 'default' : 'pointer',
-            opacity: (saving || text === lastSavedRef.current) ? 0.45 : 1, border: 'none',
+            opacity: (saving || text === lastSavedRef.current) ? 0.45 : 1,
           }}>{saving ? 'Saving…' : 'Save'}</button>
       </div>
     </div>
@@ -4633,15 +4812,15 @@ function StagePickerModal({ currentStage, onPick, onClose, contact }) {
   const rootRef = useRef(null);
   useFocusTrap(rootRef, true);
   const stages = [
-    { num: 1, label: 'NEW LEAD',         color: 'var(--ms-1)' },
-    { num: 2, label: 'QUOTED',           color: 'var(--ms-4)' },
-    { num: 3, label: 'BOOKED',           color: 'var(--ms-2)' },
-    { num: 4, label: 'PERMIT SUBMITTED', color: 'var(--ms-5)' },
-    { num: 5, label: 'READY TO PAY',     color: 'var(--ms-3)' },
-    { num: 6, label: 'PAID',             color: 'var(--ms-2)' },
-    { num: 7, label: 'READY TO PRINT',   color: 'var(--ms-5)' },
-    { num: 8, label: 'PRINTED',          color: 'var(--ms-6)' },
-    { num: 9, label: 'INSPECTION',       color: 'var(--ms-7)' },
+    { num: 1, label: 'New lead',         tone: 'navy'   },
+    { num: 2, label: 'Quoted',           tone: 'purple' },
+    { num: 3, label: 'Booked',           tone: 'green'  },
+    { num: 4, label: 'Permit submitted', tone: 'gold'   },
+    { num: 5, label: 'Ready to pay',     tone: 'red'    },
+    { num: 6, label: 'Paid',             tone: 'green'  },
+    { num: 7, label: 'Ready to print',   tone: 'gold'   },
+    { num: 8, label: 'Printed',          tone: 'navy'   },
+    { num: 9, label: 'Inspection',       tone: 'purple' },
   ];
   // Smart Stage Picker — suggest the likely next stage given where the
   // contact is today. Just "current + 1" most of the time; the exception
@@ -4655,20 +4834,28 @@ function StagePickerModal({ currentStage, onPick, onClose, contact }) {
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 95,
-      background: 'rgba(0,0,0,.5)',
+      background: 'rgba(11,31,59,0.5)',
+      backdropFilter: 'blur(3px)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
-        width: 320, background: 'var(--card)', boxShadow: 'var(--raised-2)',
-        padding: 20,
+        width: 360, maxWidth: '100%',
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
+        padding: 22,
       }}>
-        <div style={{
-          fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700,
-          marginBottom: 14, letterSpacing: '-.01em',
-        }}>
-          Change stage
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 14 }}>
+          <span className="eyebrow">Change stage</span>
+          <h3 style={{
+            margin: 0,
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+            letterSpacing: '-0.01em', color: 'var(--text)',
+          }}>
+            Move to stage
+          </h3>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {stages.map(s => {
             const active = s.num === currentStage;
             const suggested = s.num === suggestedStage;
@@ -4680,17 +4867,40 @@ function StagePickerModal({ currentStage, onPick, onClose, contact }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 14px',
                   background: active ? 'var(--navy)' : 'transparent',
-                  color: active ? 'var(--gold)' : 'var(--text)',
-                  fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: active ? 600 : 500,
-                  letterSpacing: '.02em',
+                  color: active ? '#fff' : 'var(--text)',
+                  fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: active ? 700 : 600,
+                  letterSpacing: '-0.005em',
                   border: 'none', cursor: 'pointer', textAlign: 'left',
-                  boxShadow: suggested ? 'inset 0 0 0 2px var(--gold)' : 'none',
-                }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>{s.label.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</span>
-                  {suggested ? <span className="smart-chip smart-chip--gold">NEXT</span> : null}
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: suggested && !active ? 'inset 0 0 0 1.5px var(--gold)' : 'none',
+                  transition: 'background var(--dur) var(--ease)',
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--sunken)' }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: active ? 'var(--gold)' : `var(--smart-${s.tone})`,
+                    flex: '0 0 auto',
+                  }}/>
+                  <span>{s.label}</span>
+                  {suggested ? (
+                    <span style={{
+                      fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                      letterSpacing: '0.12em', textTransform: 'uppercase',
+                      padding: '2px 6px',
+                      background: 'color-mix(in srgb, var(--gold) 18%, transparent)',
+                      color: 'var(--gold-ink)',
+                      borderRadius: 'var(--radius-pill)',
+                    }}>Next</span>
+                  ) : null}
                 </span>
-                <span className="mono" style={{ fontSize: 11, opacity: 0.5 }}>{s.num}</span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 11,
+                  color: active ? 'rgba(255,255,255,0.45)' : 'var(--text-faint)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>{s.num}</span>
               </button>
             );
           })}
@@ -4870,23 +5080,27 @@ function openReference(kind, id) {
 
 function ReferenceChip({ kind, id, label, isOut }) {
   const tint = kind === 'contact' ? 'var(--navy)'
-             : kind === 'proposal' ? 'var(--gold)'
-             : kind === 'invoice' ? 'var(--ms-2)'
+             : kind === 'proposal' ? 'var(--gold-ink)'
+             : kind === 'invoice' ? 'var(--green)'
              : 'var(--text-muted)';
   return (
     <button
       onClick={(e) => { e.preventDefault(); openReference(kind, id); }}
       title={`Open ${kind}`}
-      className="chrome-label"
       style={{
         display: 'inline-block',
-        padding: '1px 8px', fontSize: 10, letterSpacing: '.08em', fontWeight: 700,
-        background: isOut ? 'rgba(255,255,255,.15)' : 'var(--card)',
+        padding: '2px 10px', height: 20,
+        fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600,
+        letterSpacing: '-0.005em',
+        background: isOut ? 'rgba(255,255,255,.18)' : 'var(--sunken)',
         color: isOut ? '#fff' : tint,
-        boxShadow: isOut ? 'inset 0 0 0 1px rgba(255,255,255,.3)' : 'var(--raised-2)',
+        borderRadius: 'var(--radius-pill)',
         border: 'none', cursor: 'pointer',
-        verticalAlign: 'baseline', margin: '0 1px',
+        verticalAlign: 'baseline', margin: '0 2px',
+        transition: 'background var(--dur) var(--ease)',
       }}
+      onMouseEnter={e => { e.currentTarget.style.background = isOut ? 'rgba(255,255,255,0.28)' : 'var(--card)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = isOut ? 'rgba(255,255,255,0.18)' : 'var(--sunken)' }}
     >{label}</button>
   );
 }
@@ -5995,9 +6209,9 @@ function LivePermits() {
 
   // Smart chip per row — what the priority bucket means in words.
   const smartPermitFlag = (r) => {
-    if (r.priority === 0) return { tone: 'red',  label: 'NO JURISDICTION' };
-    if (r.priority === 1) return { tone: 'gold', label: 'SUBMIT NEXT' };
-    if (r.priority === 2) return { tone: 'red',  label: 'STALLED' };
+    if (r.priority === 0) return { tone: 'red',  label: 'No jurisdiction' };
+    if (r.priority === 1) return { tone: 'gold', label: 'Submit next' };
+    if (r.priority === 2) return { tone: 'red',  label: 'Stalled' };
     return null;
   };
 
@@ -6005,7 +6219,7 @@ function LivePermits() {
 
   if (loading) return <Loading label="Loading permits" />;
 
-  const headers = ['SUBMIT', 'PAY', 'PAID', 'PRINT', 'PRINTED', 'INSPECT', 'PASS'];
+  const headers = ['Submit', 'Pay', 'Paid', 'Print', 'Printed', 'Inspect', 'Pass'];
   const filteredRows = rows.filter(r => {
     if (jurisdictionFilter === 'all') { /* no jurisdiction filter */ }
     else if (jurisdictionFilter === 'unset') { if (r.jurisdiction) return false; }
@@ -6017,38 +6231,35 @@ function LivePermits() {
     return true;
   });
 
+  const pillBtn = (active) => ({
+    padding: '5px 12px', height: 26,
+    background: active ? 'var(--navy)' : 'var(--card)',
+    color: active ? '#fff' : 'var(--text-muted)',
+    boxShadow: active ? 'none' : 'var(--ring)',
+    cursor: 'pointer', border: 'none',
+    borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-display)', fontWeight: active ? 700 : 500, fontSize: 11.5,
+    letterSpacing: '-0.005em',
+    transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+  });
+
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: 16 }}>
       {/* Jurisdiction filter chips — helpful when Key needs to batch-submit
           all Greenville permits on the same portal run, for example. */}
       {jurisdictions.length > 0 ? (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-          <button onClick={() => setJurisdictionFilter('all')} style={{
-            padding: '4px 12px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
-            background: jurisdictionFilter === 'all' ? 'var(--navy)' : 'var(--card)',
-            color: jurisdictionFilter === 'all' ? 'var(--gold)' : 'var(--text-muted)',
-            boxShadow: jurisdictionFilter === 'all' ? 'var(--pressed-2)' : 'var(--raised-2)',
-            cursor: 'pointer', border: 'none', letterSpacing: '.06em', textTransform: 'uppercase',
-          }}>All ({rows.length})</button>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+          <button onClick={() => setJurisdictionFilter('all')} style={pillBtn(jurisdictionFilter === 'all')}>All ({rows.length})</button>
           <button onClick={() => setJurisdictionFilter('unset')} style={{
-            padding: '4px 12px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
-            background: jurisdictionFilter === 'unset' ? 'var(--navy)' : 'var(--card)',
-            color: jurisdictionFilter === 'unset' ? 'var(--lcd-amber)' : 'var(--text-muted)',
-            boxShadow: jurisdictionFilter === 'unset' ? 'var(--pressed-2)' : 'var(--raised-2)',
-            cursor: 'pointer', border: 'none', letterSpacing: '.06em', textTransform: 'uppercase',
+            ...pillBtn(jurisdictionFilter === 'unset'),
+            color: jurisdictionFilter === 'unset' ? 'var(--gold)' : 'var(--text-muted)',
           }}>Unset ({rows.filter(r => !r.jurisdiction).length})</button>
           {jurisdictions.map(j => {
             const count = rows.filter(r => r.jurisdictionId === j.id).length;
             if (count === 0) return null;
             const active = jurisdictionFilter === String(j.id);
             return (
-              <button key={j.id} onClick={() => setJurisdictionFilter(String(j.id))} style={{
-                padding: '4px 12px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
-                background: active ? 'var(--navy)' : 'var(--card)',
-                color: active ? 'var(--gold)' : 'var(--text-muted)',
-                boxShadow: active ? 'var(--pressed-2)' : 'var(--raised-2)',
-                cursor: 'pointer', border: 'none', letterSpacing: '.06em', textTransform: 'uppercase',
-              }}>{j.name} ({count})</button>
+              <button key={j.id} onClick={() => setJurisdictionFilter(String(j.id))} style={pillBtn(active)}>{j.name} ({count})</button>
             );
           })}
         </div>
@@ -6058,47 +6269,78 @@ function LivePermits() {
         display: 'grid',
         gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
         gap: 8, alignItems: 'center',
-        padding: '8px 14px',
-        boxShadow: 'var(--pressed-2)', background: 'var(--card)',
-        marginBottom: 8,
+        padding: '10px 14px',
+        background: 'var(--sunken)',
+        borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
       }}>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>CUSTOMER</span>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>JURISDICTION</span>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+        }}>Customer</span>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+        }}>Jurisdiction</span>
         {headers.map(h => (
-          <span key={h} className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', textAlign: 'center' }}>{h}</span>
+          <span key={h} style={{
+            fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: 'var(--text-muted)', textAlign: 'center',
+          }}>{h}</span>
         ))}
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>NEXT</span>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-muted)', textAlign: 'right',
+        }}>Next</span>
       </div>
-      {filteredRows.map(r => {
-        const smart = smartPermitFlag(r);
-        return (
-          <button key={r.id}
-            onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
-              gap: 8, alignItems: 'center',
-              padding: '8px 14px',
-              background: 'var(--card)',
-              borderBottom: '1px solid var(--divider-faint)',
-              border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
-            }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-              {smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}
-            </span>
-            <span className="chrome-label" style={{
-              fontSize: 10,
-              color: r.jurisdiction ? 'var(--text)' : 'var(--lcd-amber)',
-            }}>{r.jurisdiction || 'NOT SET'}</span>
-            {r.cells.map((state, i) => <PermitStepCell key={i} state={state} />)}
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'right' }}>
-              {!r.jurisdiction ? 'SET JURISDICTION' : stageToLabel(r.stage)}
-            </span>
-          </button>
-        );
-      })}
-      {filteredRows.length === 0 ? <Empty label="NO ACTIVE PERMITS" /> : null}
+      <div style={{
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-sm), var(--ring)',
+        borderRadius: '0 0 var(--radius-md) var(--radius-md)',
+        overflow: 'hidden',
+      }}>
+        {filteredRows.map((r, idx) => {
+          const smart = smartPermitFlag(r);
+          return (
+            <button key={r.id}
+              onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 140px repeat(7, 44px) 1fr',
+                gap: 8, alignItems: 'center',
+                padding: '11px 14px',
+                background: 'var(--card)',
+                borderTop: idx === 0 ? 'none' : '1px solid var(--divider-faint)',
+                border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                transition: 'background var(--dur) var(--ease)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                {smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}
+              </span>
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+                color: r.jurisdiction ? 'var(--text)' : 'var(--gold-ink)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{r.jurisdiction || 'Not set'}</span>
+              {r.cells.map((state, i) => <PermitStepCell key={i} state={state} />)}
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 11.5, fontWeight: 500,
+                color: 'var(--text-muted)', textAlign: 'right',
+              }}>
+                {!r.jurisdiction ? 'Set jurisdiction' : stageToLabel(r.stage)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {filteredRows.length === 0 ? <Empty label="No active permits" /> : null}
     </div>
   );
 }
@@ -6312,24 +6554,37 @@ function LivePlaybook() {
           </div>
         </div>
         {groupOrder.filter(g => grouped[g]).map(dir => (
-          <div key={dir} style={{ padding: '8px 0' }}>
-            <div className="chrome-label" style={{ padding: '6px 16px', fontSize: 10, letterSpacing: '.1em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          <div key={dir} style={{ padding: '10px 0' }}>
+            <div style={{
+              padding: '8px 16px',
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: 'var(--text-faint)',
+            }}>
               /{dir === '_root' ? '' : dir + '/'}
             </div>
             {grouped[dir].map(f => {
               const name = f.path.split('/').pop();
               const on = selectedPath === f.path;
               return (
-                <button key={f.path} onClick={() => loadFile(f.path)} className="tactile-flat" style={{
+                <button key={f.path} onClick={() => loadFile(f.path)} style={{
                   width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '8px 16px 8px 28px', gap: 8,
+                  padding: '9px 16px 9px 28px', gap: 8,
                   background: on ? 'var(--navy)' : 'transparent',
-                  color: on ? 'var(--gold)' : 'var(--text)',
+                  color: on ? '#fff' : 'var(--text)',
                   border: 'none', cursor: 'pointer', textAlign: 'left',
-                  fontFamily: 'var(--font-body)', fontSize: 12,
-                }}>
+                  fontFamily: 'var(--font-body)', fontSize: 13,
+                  transition: 'background var(--dur) var(--ease)',
+                }}
+                onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'var(--sunken)' }}
+                onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent' }}
+                >
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                  <span className="mono" style={{ fontSize: 10, color: on ? 'var(--gold)' : 'var(--text-faint)' }}>{f.size_bytes}b</span>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 10,
+                    color: on ? 'rgba(255,255,255,0.55)' : 'var(--text-faint)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>{f.size_bytes}b</span>
                 </button>
               );
             })}
@@ -6339,65 +6594,72 @@ function LivePlaybook() {
       {/* Right pane — file viewer / editor */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {!selectedPath ? (
-          <div style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontSize: 13 }}>
+          <div style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600 }}>
             Select a playbook file to view or edit.
           </div>
         ) : (
           <>
-            <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderBottom: '1px solid var(--divider-faint)', background: 'var(--card)' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div className="mono" style={{ fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPath}</div>
+            <div style={{
+              padding: '14px 18px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              borderBottom: '1px solid var(--divider-faint)', background: 'var(--card)',
+            }}>
+              <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span className="eyebrow">Playbook file</span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{selectedPath}</span>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
                 {!editing ? (
                   <>
-                    <button onClick={() => setEditing(true)} className="chrome-label" style={{
-                      padding: '6px 12px', fontSize: 11, letterSpacing: '.08em',
-                      background: 'var(--card)', boxShadow: 'var(--raised-2)', color: 'var(--text)',
-                      border: 'none', cursor: 'pointer',
-                    }}>EDIT</button>
-                    <button onClick={del} className="chrome-label" style={{
-                      padding: '6px 12px', fontSize: 11, letterSpacing: '.08em',
-                      background: 'var(--card)', boxShadow: 'var(--raised-2)', color: 'var(--ms-3)',
-                      border: 'none', cursor: 'pointer',
-                    }}>DELETE</button>
+                    <button onClick={() => setEditing(true)} className="btn-navy">Edit</button>
+                    <button onClick={del} className="btn-ghost" style={{ color: 'var(--red)' }}>Delete</button>
                   </>
                 ) : (
                   <>
-                    <button onClick={save} disabled={saving} className="chrome-label" style={{
-                      padding: '6px 12px', fontSize: 11, letterSpacing: '.08em',
-                      background: 'var(--navy)', boxShadow: 'var(--raised-2)', color: 'var(--gold)',
-                      border: 'none', cursor: saving ? 'wait' : 'pointer',
-                    }}>{saving ? 'SAVING…' : 'SAVE'}</button>
-                    <button onClick={() => { setEditing(false); loadFile(selectedPath); }} className="chrome-label" style={{
-                      padding: '6px 12px', fontSize: 11, letterSpacing: '.08em',
-                      background: 'var(--card)', boxShadow: 'var(--raised-2)', color: 'var(--text-muted)',
-                      border: 'none', cursor: 'pointer',
-                    }}>CANCEL</button>
+                    <button onClick={save} disabled={saving} className="btn-gold" style={{
+                      cursor: saving ? 'wait' : 'pointer',
+                      opacity: saving ? 0.65 : 1,
+                    }}>{saving ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => { setEditing(false); loadFile(selectedPath); }} className="btn-ghost">Cancel</button>
                   </>
                 )}
               </div>
             </div>
             {err ? (
-              <div style={{ padding: '8px 16px', background: 'var(--ms-3)', color: '#fff', fontSize: 11, fontFamily: 'var(--font-body)' }}>{err}</div>
+              <div style={{
+                padding: '10px 18px',
+                background: 'color-mix(in srgb, var(--red) 12%, var(--card))',
+                color: 'var(--red)',
+                fontSize: 12, fontFamily: 'var(--font-body)', fontWeight: 600,
+                borderBottom: '1px solid color-mix(in srgb, var(--red) 30%, transparent)',
+              }}>{err}</div>
             ) : null}
-            <div style={{ flex: 1, overflow: 'auto', padding: 16, background: 'var(--bg)' }}>
+            <div style={{ flex: 1, overflow: 'auto', padding: 18, background: 'var(--bg)' }}>
               {editing ? (
                 <textarea
                   value={content}
                   onChange={e => setContent(e.target.value)}
                   style={{
                     width: '100%', height: '100%', minHeight: 400,
-                    fontFamily: 'var(--font-mono, monospace)', fontSize: 12,
-                    padding: 12, background: 'var(--card)', color: 'var(--text)',
-                    border: 'none', boxShadow: 'var(--pressed-2)', resize: 'none',
-                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.55,
+                    padding: 14, background: 'var(--card)', color: 'var(--text)',
+                    border: 'none', outline: 'none',
+                    boxShadow: 'var(--shadow-sm), var(--ring)',
+                    borderRadius: 'var(--radius-md)',
+                    resize: 'none',
+                    whiteSpace: 'pre-wrap', boxSizing: 'border-box',
                   }}
                 />
               ) : (
                 <pre style={{
-                  fontFamily: 'var(--font-mono, monospace)', fontSize: 12, lineHeight: 1.5,
+                  fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.55,
                   color: 'var(--text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0,
+                  padding: 14, background: 'var(--card)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-sm), var(--ring)',
                 }}>{content || '(empty)'}</pre>
               )}
             </div>
@@ -6503,105 +6765,144 @@ function LiveMaterials() {
     ? rows.filter(r => `${r.name} ${r.address || ''}`.toLowerCase().includes(gq))
     : rows;
 
+  const orderTone = {
+    received: 'green',
+    pending:  'gold',
+    'not-ordered': 'red',
+  };
+  const orderWord = {
+    received: 'Received',
+    pending:  'Pending',
+    'not-ordered': 'Not ordered',
+  };
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: 16 }}>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 80px repeat(5, 44px) 100px',
-        gap: 8, alignItems: 'center',
-        padding: '8px 14px',
-        boxShadow: 'var(--pressed-2)', background: 'var(--card)',
-        marginBottom: 8,
+        gridTemplateColumns: '1fr 88px repeat(5, 44px) 120px',
+        gap: 10, alignItems: 'center',
+        padding: '10px 16px',
+        background: 'var(--sunken)',
+        borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
       }}>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>CUSTOMER</span>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>AMP</span>
-        {['BOX', 'LOCK', 'CORD', 'BRKR', 'SRGE'].map(l => (
-          <span key={l} className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', textAlign: 'center' }}>{l}</span>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700,
+          fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+        }}>Customer</span>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700,
+          fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-muted)', textAlign: 'center',
+        }}>Amp</span>
+        {['Inlet', 'Lock', 'Cord', 'Brkr', 'Surge'].map(l => (
+          <span key={l} style={{
+            fontFamily: 'var(--font-display)', fontWeight: 700,
+            fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: 'var(--text-muted)', textAlign: 'center',
+          }}>{l}</span>
         ))}
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>ORDER</span>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700,
+          fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--text-muted)', textAlign: 'right',
+        }}>Order</span>
       </div>
-      {visibleRows.map(r => {
-        const orderTint =
-          r.mat.order === 'received' ? 'var(--ms-2)' :
-          r.mat.order === 'pending'  ? 'var(--ms-4)' :
-                                        'var(--ms-3)';
-        const orderText =
-          r.mat.order === 'received' ? 'received' :
-          r.mat.order === 'pending'  ? 'pending'  :
-                                        'not ordered';
-        return (
-          <div key={r.id} style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 80px repeat(5, 44px) 100px',
-            gap: 8, alignItems: 'center',
-            padding: '10px 14px',
-            background: 'var(--card)',
-            borderBottom: '1px solid var(--divider-faint)',
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-              <button
-                onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
-                title={r.address !== '—' ? r.address : r.name}
-                style={{
-                  fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  color: 'var(--text)', textAlign: 'left', padding: 0,
-                }}>{r.name}</button>
-              {(() => { const f = smartMaterialsFlag(r); return f ? <span className={`smart-chip smart-chip--${f.tone}`}>{f.label}</span> : null; })()}
-            </span>
-            <div style={{ display: 'flex', height: 24, boxShadow: 'var(--raised-2)' }}>
-              <button onClick={() => setAmp(r, '30')} style={{
-                flex: 1, fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
-                display: 'grid', placeItems: 'center',
-                background: r.mat.amp === '30' ? 'var(--navy)' : 'transparent',
-                color: r.mat.amp === '30' ? 'var(--gold)' : 'var(--text-faint)',
+      <div style={{ background: 'var(--card)', boxShadow: 'var(--shadow-sm), var(--ring)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', overflow: 'hidden' }}>
+        {visibleRows.map((r, idx) => {
+          const tone = orderTone[r.mat.order] || 'muted';
+          const word = orderWord[r.mat.order] || r.mat.order;
+          return (
+            <div key={r.id} style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 88px repeat(5, 44px) 120px',
+              gap: 10, alignItems: 'center',
+              padding: '12px 16px',
+              background: 'var(--card)',
+              borderTop: idx === 0 ? 'none' : '1px solid var(--divider-faint)',
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                <button
+                  onClick={() => r.id && (window.location.hash = `#contact=${r.id}`)}
+                  title={r.address !== '—' ? r.address : r.name}
+                  style={{
+                    fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: 'var(--text)', textAlign: 'left', padding: 0,
+                  }}>{r.name}</button>
+                {(() => { const f = smartMaterialsFlag(r); return f ? <span className={`smart-chip smart-chip--${f.tone}`}>{f.label}</span> : null; })()}
+              </span>
+              <div style={{
+                display: 'flex', height: 26, padding: 2,
+                background: 'var(--sunken)',
+                borderRadius: 'var(--radius-pill)',
+              }}>
+                {['30', '50'].map(a => {
+                  const on = r.mat.amp === a;
+                  return (
+                    <button key={a} onClick={() => setAmp(r, a)} style={{
+                      flex: 1, fontSize: 10.5,
+                      fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.02em',
+                      display: 'grid', placeItems: 'center',
+                      background: on ? 'var(--navy)' : 'transparent',
+                      color: on ? '#fff' : 'var(--text-muted)',
+                      border: 'none', cursor: 'pointer',
+                      borderRadius: 'var(--radius-pill)',
+                      transition: 'background var(--dur) var(--ease)',
+                    }}>{a}A</button>
+                  );
+                })}
+              </div>
+              <MatCheck on={r.mat.box} onClick={() => toggleField(r, 'box')} />
+              <MatCheck on={r.mat.interlock} onClick={() => toggleField(r, 'interlock')} />
+              <MatCheck on={r.mat.cord} onClick={() => toggleField(r, 'cord')} />
+              <MatCheck on={r.mat.breaker} onClick={() => toggleField(r, 'breaker')} />
+              <MatCheck on={r.mat.surge} onClick={() => toggleField(r, 'surge')} />
+              <button onClick={() => cycleOrder(r)} className={`smart-chip smart-chip--${tone}`} style={{
                 border: 'none', cursor: 'pointer',
-              }}>30A</button>
-              <button onClick={() => setAmp(r, '50')} style={{
-                flex: 1, fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.04em',
-                display: 'grid', placeItems: 'center',
-                background: r.mat.amp === '50' ? 'var(--navy)' : 'transparent',
-                color: r.mat.amp === '50' ? 'var(--gold)' : 'var(--text-faint)',
-                border: 'none', cursor: 'pointer',
-              }}>50A</button>
+                padding: '4px 10px',
+                opacity: savingId === r.id ? 0.5 : 1,
+                fontSize: 11,
+              }}>{word}</button>
             </div>
-            <MatCheck on={r.mat.box} onClick={() => toggleField(r, 'box')} />
-            <MatCheck on={r.mat.interlock} onClick={() => toggleField(r, 'interlock')} />
-            <MatCheck on={r.mat.cord} onClick={() => toggleField(r, 'cord')} />
-            <MatCheck on={r.mat.breaker} onClick={() => toggleField(r, 'breaker')} />
-            <MatCheck on={r.mat.surge} onClick={() => toggleField(r, 'surge')} />
-            <button onClick={() => cycleOrder(r)} style={{
-              padding: '4px 8px', textAlign: 'center',
-              color: orderTint, fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '.04em',
-              border: 'none', cursor: 'pointer', background: 'transparent',
-              opacity: savingId === r.id ? 0.5 : 1,
-            }}>{orderText}</button>
-          </div>
-        );
-      })}
-      {rows.length === 0 ? <Empty label="NO ACTIVE MATERIALS" /> : visibleRows.length === 0 ? <Empty label={`No matches for "${gq}"`} /> : null}
+          );
+        })}
+      </div>
+      {rows.length === 0 ? <Empty label="No active materials" /> : visibleRows.length === 0 ? <Empty label={`No matches for "${gq}"`} /> : null}
     </div>
   );
 }
 
 function MatCheck({ on, onClick }) {
   const base = {
-    width: 32, height: 32, background: 'var(--card)',
+    width: 32, height: 32,
     cursor: onClick ? 'pointer' : 'default',
     border: 'none', padding: 0,
+    borderRadius: 'var(--radius-sm)',
+    transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
   };
   if (on) {
     return <button onClick={onClick} style={{
-      ...base, boxShadow: 'var(--pressed-2)',
+      ...base,
+      background: 'color-mix(in srgb, var(--green) 18%, var(--card))',
       display: 'grid', placeItems: 'center', color: 'var(--green)',
+      boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent)',
     }}>
-      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 8 L7 12 L13 4"/>
       </svg>
     </button>;
   }
-  return <button onClick={onClick} style={{ ...base, boxShadow: 'var(--raised-2)' }} aria-label="Check off" />;
+  return <button onClick={onClick} style={{
+    ...base,
+    background: 'var(--sunken)',
+    boxShadow: 'inset 0 0 0 1px var(--divider-faint)',
+  }} aria-label="Check off" />;
 }
 
 // ── Funnel widget primitives ───────────────────────────────────────────────
@@ -6646,15 +6947,23 @@ function SmartPricingRollup() {
   if (rows.length < 5) {
     return (
       <div style={{
-        margin: '0 16px 12px', padding: '10px 14px',
-        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        margin: '0 16px 12px', padding: '12px 14px',
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-sm), var(--ring)',
+        borderRadius: 'var(--radius-md)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-        fontFamily: 'var(--font-body)', fontSize: 12,
+        fontFamily: 'var(--font-body)', fontSize: 13,
       }}>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.1em' }}>
-          ◆ SMART PRICING
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.12em', textTransform: 'uppercase',
+          color: 'var(--gold-ink)',
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }}/>
+          Smart pricing
         </span>
-        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>
           {rows.length} of 5 proposals logged — gathering baseline.
         </span>
       </div>
@@ -6677,16 +6986,26 @@ function SmartPricingRollup() {
 
   return (
     <div style={{
-      margin: '0 16px 12px', padding: '12px 14px',
-      background: 'var(--card)', boxShadow: 'var(--raised-2)',
-      display: 'flex', flexDirection: 'column', gap: 8,
+      margin: '0 16px 12px', padding: '14px 16px',
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      display: 'flex', flexDirection: 'column', gap: 10,
       fontFamily: 'var(--font-body)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.1em' }}>
-          ◆ SMART PRICING · {rows.length} DEALS LOGGED
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.12em', textTransform: 'uppercase',
+          color: 'var(--gold-ink)',
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }}/>
+          Smart pricing · {rows.length} deals
         </span>
-        <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+        <span style={{
+          fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--text-faint)',
+        }}>
           close-rate × avg total (variant A / B)
         </span>
       </div>
@@ -6884,20 +7203,39 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
 function KpiCard({ label, value, tone = 'red', onClick }) {
   // Minimal: a big number over a tiny label. Color tone tints only the
   // label. Clickable cards get a subtle hover state.
-  const toneColor = tone === 'green' ? 'var(--ms-2)' : tone === 'amber' ? 'var(--ms-4)' : 'var(--ms-3)';
+  const toneColor = tone === 'green' ? 'var(--green)'
+                  : tone === 'amber' ? 'var(--gold-ink)'
+                                     : 'var(--red)';
   const Wrap = onClick ? 'button' : 'div';
   return (
     <Wrap onClick={onClick} style={{
-      padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 4,
-      background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 6,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
       border: 'none', textAlign: 'left',
       cursor: onClick ? 'pointer' : 'default',
-    }}>
+      transition: 'box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease)',
+    }}
+    onMouseEnter={onClick ? e => {
+      e.currentTarget.style.boxShadow = 'var(--shadow-md), var(--ring)';
+      e.currentTarget.style.transform = 'translateY(-1px)';
+    } : undefined}
+    onMouseLeave={onClick ? e => {
+      e.currentTarget.style.boxShadow = 'var(--shadow-sm), var(--ring)';
+      e.currentTarget.style.transform = 'translateY(0)';
+    } : undefined}
+    >
       <div style={{
-        fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700,
-        color: 'var(--text)', letterSpacing: '-.01em',
+        fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800,
+        color: 'var(--text)', letterSpacing: '-0.02em',
+        fontVariantNumeric: 'tabular-nums',
       }}>{value}</div>
-      <div className="chrome-label" style={{ fontSize: 10, color: toneColor, letterSpacing: '.08em' }}>{label}</div>
+      <div style={{
+        fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+        letterSpacing: '0.1em', textTransform: 'uppercase',
+        color: toneColor,
+      }}>{label}</div>
     </Wrap>
   );
 }
@@ -6948,9 +7286,13 @@ function ProposalsLiveTable({ rows }) {
         (p.status || '').toLowerCase().includes(gq)
       )
     : rows;
-  const statusTint = {
-    sent: 'var(--ms-1)', viewed: 'var(--ms-4)', approved: 'var(--ms-2)',
-    expired: 'var(--ms-5)', declined: 'var(--ms-3)',
+  const statusTone = {
+    sent: 'navy', viewed: 'gold', approved: 'green',
+    expired: 'muted', declined: 'red',
+  };
+  const statusWord = {
+    sent: 'Sent', viewed: 'Viewed', approved: 'Approved',
+    expired: 'Expired', declined: 'Declined',
   };
   // Smart sort: HOT first (peak interest — close now), then UNOPENED
   // (customer never saw the quote), then everything else by recency.
@@ -6970,11 +7312,19 @@ function ProposalsLiveTable({ rows }) {
   });
   if (sorted.length === 0) return <Empty label={`No matches for "${gq}"`} />;
   return (
-    <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
+    <div style={{
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      overflow: 'hidden',
+    }}>
       {sorted.map((p, i) => {
         const status = (p.status || 'sent').toLowerCase();
-        const tint = statusTint[status] || 'var(--text-faint)';
+        const tone = statusTone[status] || 'muted';
+        const word = statusWord[status] || status;
+        const fuToneMap = { 'F/U 1': 'gold', 'F/U 2': 'red', 'EXIT': 'red' };
         const fu = followUpState(p);
+        const fuTone = fu ? (fuToneMap[fu.label] || 'muted') : null;
         const views = Number(p.view_count) || 0;
         const smart = smartProposalFlag(p);
         return (
@@ -6982,31 +7332,35 @@ function ProposalsLiveTable({ rows }) {
             onClick={() => p.contact_id && (window.location.hash = `#contact=${p.contact_id}`)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '64px 1fr 80px 54px 70px 90px 100px',
+              gridTemplateColumns: '82px 1fr 88px 56px 68px 100px 110px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
-              borderBottom: i < sorted.length - 1 ? '1px solid var(--divider-faint)' : 'none',
+              borderTop: i === 0 ? 'none' : '1px solid var(--divider-faint)',
               cursor: p.contact_id ? 'pointer' : 'default',
-            }}>
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { if (p.contact_id) e.currentTarget.style.background = 'var(--sunken)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >
             <span>{smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{p.contact_name || '—'}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{p.contact_name || '—'}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>
               {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
             </span>
-            <span className="mono" title={views === 0 ? 'Customer has not opened the quote' : `Customer opened the quote ${views} time${views === 1 ? '' : 's'}`} style={{
-              fontSize: 11, textAlign: 'center',
-              color: views === 0 ? 'var(--ms-3)' : views >= 3 ? 'var(--ms-2)' : 'var(--text-muted)',
+            <span title={views === 0 ? 'Customer has not opened the quote' : `Customer opened the quote ${views} time${views === 1 ? '' : 's'}`} style={{
+              fontFamily: 'var(--font-mono)', fontSize: 12, textAlign: 'center',
+              fontVariantNumeric: 'tabular-nums',
+              color: views === 0 ? 'var(--red)' : views >= 3 ? 'var(--green)' : 'var(--text-muted)',
             }}>{views === 0 ? '👁 0' : `👁 ${views}`}</span>
             {fu ? (
-              <span className="chrome-label" style={{
-                fontSize: 10, color: fu.tint, textAlign: 'center', letterSpacing: '.08em',
-                border: `1px solid ${fu.tint}`, padding: '2px 4px',
-              }}>{fu.label}</span>
+              <span className={`smart-chip smart-chip--${fuTone}`} style={{ justifySelf: 'center' }}>{fu.label}</span>
             ) : <span />}
-            <span className="chrome-label" style={{
-              fontSize: 10, color: tint, textAlign: 'center', letterSpacing: '.08em',
-            }}>{status.toLowerCase()}</span>
-            <span className="mono" style={{ fontSize: 13, fontWeight: 700, textAlign: 'right' }}>
+            <span className={`smart-chip smart-chip--${tone}`} style={{ justifySelf: 'center' }}>{word}</span>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+              textAlign: 'right', color: 'var(--text)',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
               ${(Number(p.total) || 0).toLocaleString()}
             </span>
           </div>
@@ -7070,37 +7424,58 @@ function InvoicesLiveTable({ rows }) {
     return new Date(b.created_at || 0) - new Date(a.created_at || 0);
   });
   if (sorted.length === 0) return <Empty label={`No matches for "${gq}"`} />;
+  const invStatusTone = {
+    paid: 'green', sent: 'navy', cancelled: 'muted', refunded: 'muted',
+  };
+  const invStatusWord = {
+    paid: 'Paid', sent: 'Sent', cancelled: 'Cancelled', refunded: 'Refunded',
+  };
   return (
-    <div style={{ background: 'var(--card)', boxShadow: 'var(--raised-2)' }}>
+    <div style={{
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      overflow: 'hidden',
+    }}>
       {sorted.map((inv, i) => {
         const paid = inv.status === 'paid';
-        const tint = paid ? 'var(--ms-2)' : 'var(--ms-3)';
+        const status = (inv.status || 'sent').toLowerCase();
+        const tone = invStatusTone[status] || 'muted';
+        const word = invStatusWord[status] || status;
         const smart = smartInvoiceFlag(inv);
         return (
           <div key={inv.id}
             onClick={() => inv.contact_id && (window.location.hash = `#contact=${inv.contact_id}`)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '120px 1fr 100px 70px 100px 100px',
+              gridTemplateColumns: '120px 1fr 100px 80px 100px 110px',
               gap: 12, alignItems: 'center',
               padding: '12px 16px',
-              borderBottom: i < sorted.length - 1 ? '1px solid var(--divider-faint)' : 'none',
+              borderTop: i === 0 ? 'none' : '1px solid var(--divider-faint)',
               cursor: inv.contact_id ? 'pointer' : 'default',
-            }}>
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { if (inv.contact_id) e.currentTarget.style.background = 'var(--sunken)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >
             <span>{smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{inv.contact_name || '—'}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{inv.contact_name || '—'}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>
               {inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}
             </span>
-            <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', letterSpacing: '.04em' }}>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: 11.5,
+              color: 'var(--text-muted)', textAlign: 'center',
+              textTransform: 'capitalize',
+            }}>
               {kindLabel(inv.notes)}
             </span>
-            <span className="chrome-label" style={{
-              fontSize: 10, color: tint, textAlign: 'center', letterSpacing: '.08em',
-            }}>{(inv.status || 'sent').toLowerCase()}</span>
-            <span className="mono" style={{
-              fontSize: 13, fontWeight: 700, textAlign: 'right',
-              color: paid ? 'var(--ms-2)' : 'var(--text)',
+            <span className={`smart-chip smart-chip--${tone}`} style={{ justifySelf: 'center' }}>{word}</span>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+              textAlign: 'right',
+              color: paid ? 'var(--green)' : 'var(--text)',
+              fontVariantNumeric: 'tabular-nums',
             }}>
               ${(Number(inv.total) || 0).toLocaleString()}
             </span>
@@ -7179,18 +7554,19 @@ function Empty({ label, hint }) {
   return (
     <div style={{
       padding: 48, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 10,
-      textAlign: 'center', letterSpacing: '.04em',
+      alignItems: 'center', justifyContent: 'center', gap: 12,
+      textAlign: 'center',
     }}>
-      <div className="chrome-label" style={{
-        fontSize: 11, letterSpacing: '.14em',
+      <div style={{
+        fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700,
         color: 'var(--text-muted)',
-      }}>◆ {(label || '').toLowerCase()}</div>
+        letterSpacing: '-0.005em',
+      }}>{(label || '').replace(/^./, c => c.toUpperCase())}</div>
       {body ? (
         <div style={{
-          fontSize: 12, lineHeight: 1.5,
-          maxWidth: 360, color: 'var(--text-faint)',
-          fontFamily: 'var(--font-body)', letterSpacing: 0,
+          fontSize: 13, lineHeight: 1.55,
+          maxWidth: 400, color: 'var(--text-faint)',
+          fontFamily: 'var(--font-body)',
         }}>{body}</div>
       ) : null}
     </div>
@@ -7336,15 +7712,24 @@ function LiveCalendar() {
 
   return (
     <div style={{ height: '100%', padding: 24, overflow: 'auto' }}>
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+      <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 0 auto' }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 700, letterSpacing: '-.01em' }}>Installs</div>
-          <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
+          <span className="eyebrow">Schedule</span>
+          <h2 style={{
+            margin: '2px 0 0',
+            fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800,
+            letterSpacing: '-0.015em', color: 'var(--text)',
+          }}>Installs</h2>
+          <div style={{
+            fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)',
+            marginTop: 4,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
             {weekLabel} · {filteredScheduled.length} scheduled · {filteredUnscheduled.length} awaiting date
             {installerFilter !== 'all' ? ` · ${installerFilter}` : ''}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
+        <div style={{ display: 'flex', gap: 8, flex: '0 0 auto', alignItems: 'center' }}>
           <button onClick={() => {
             // datetime-local expects LOCAL time in YYYY-MM-DDTHH:mm. Using
             // toISOString().slice gives UTC which shows up offset from Key's
@@ -7354,38 +7739,55 @@ function LiveCalendar() {
             const nowLocal = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
             setEventModalDefaults({ start_at: nowLocal });
             setEventModalOpen(true);
-          }} title="Add event to the calendar" style={{
-            padding: '0 12px', height: 32, background: 'var(--card)', color: 'var(--text)',
-            boxShadow: 'var(--raised-2)', fontFamily: 'var(--font-body)', fontSize: 11,
-            letterSpacing: '.06em', border: 'none', cursor: 'pointer', fontWeight: 600,
-          }}>+ EVENT</button>
-          <button onClick={() => stepWeek(-1)} title="Previous week" style={{
-            width: 32, height: 32, background: 'var(--card)', boxShadow: 'var(--raised-2)',
-            border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)',
-          }}>‹</button>
-          <button onClick={() => setWeekStart(startOfWeek(new Date()))} title="Jump to this week" style={{
-            padding: '0 14px', height: 32, background: 'var(--navy)', color: 'var(--gold)',
-            boxShadow: 'var(--raised-2)', fontFamily: 'var(--font-body)', fontSize: 11,
-            letterSpacing: '.08em', border: 'none', cursor: 'pointer', fontWeight: 600,
-          }}>TODAY</button>
-          <button onClick={() => stepWeek(1)} title="Next week" style={{
-            width: 32, height: 32, background: 'var(--card)', boxShadow: 'var(--raised-2)',
-            border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)',
-          }}>›</button>
+          }} title="Add event to the calendar" className="btn-ghost">+ Event</button>
+          <div style={{
+            display: 'flex', gap: 2, padding: 2,
+            background: 'var(--sunken)', borderRadius: 'var(--radius-pill)',
+          }}>
+            <button onClick={() => stepWeek(-1)} title="Previous week" style={{
+              width: 30, height: 30,
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              fontSize: 14, color: 'var(--text-muted)',
+              borderRadius: 'var(--radius-pill)',
+            }}>‹</button>
+            <button onClick={() => setWeekStart(startOfWeek(new Date()))} title="Jump to this week" style={{
+              padding: '0 14px', height: 30,
+              background: 'var(--gold)', color: 'var(--navy)',
+              border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12.5,
+              letterSpacing: '-0.005em',
+              borderRadius: 'var(--radius-pill)',
+              boxShadow: '0 2px 8px rgba(255,186,0,0.22)',
+            }}>Today</button>
+            <button onClick={() => stepWeek(1)} title="Next week" style={{
+              width: 30, height: 30,
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              fontSize: 14, color: 'var(--text-muted)',
+              borderRadius: 'var(--radius-pill)',
+            }}>›</button>
+          </div>
         </div>
       </div>
 
       {installers.length > 0 ? (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-          {['all', 'unassigned', ...installers].map(i => (
-            <button key={i} onClick={() => setInstallerFilter(i)} style={{
-              padding: '4px 12px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
-              background: installerFilter === i ? 'var(--navy)' : 'var(--card)',
-              color: installerFilter === i ? 'var(--gold)' : 'var(--text-muted)',
-              boxShadow: installerFilter === i ? 'var(--pressed-2)' : 'var(--raised-2)',
-              cursor: 'pointer', border: 'none', letterSpacing: '.06em', textTransform: 'uppercase',
-            }}>{i}</button>
-          ))}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
+          {['all', 'unassigned', ...installers].map(i => {
+            const on = installerFilter === i;
+            return (
+              <button key={i} onClick={() => setInstallerFilter(i)} style={{
+                padding: '6px 14px', height: 28,
+                background: on ? 'var(--navy)' : 'var(--card)',
+                color: on ? '#fff' : 'var(--text-muted)',
+                boxShadow: on ? 'none' : 'var(--ring)',
+                cursor: 'pointer', border: 'none',
+                borderRadius: 'var(--radius-pill)',
+                fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 500, fontSize: 12,
+                letterSpacing: '-0.005em',
+                textTransform: i === 'all' || i === 'unassigned' ? 'capitalize' : 'none',
+                transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+              }}>{i}</button>
+            );
+          })}
         </div>
       ) : null}
 
@@ -7453,17 +7855,26 @@ function LiveCalendar() {
                 </div>
               ) : null}
               <div style={{
-                padding: '8px 10px',
-                borderBottom: '1px solid var(--divider)',
+                padding: '10px 12px',
+                borderBottom: '1px solid var(--divider-faint)',
                 background: highlight ? 'var(--navy)' : 'transparent',
-                color: highlight ? 'var(--gold)' : 'var(--text-muted)',
+                color: highlight ? '#fff' : 'var(--text-muted)',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
               }}>
                 <div>
-                  <div className="chrome-label" style={{ fontSize: 10, letterSpacing: '.1em', fontWeight: 700 }}>
-                    {d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase()}
+                  <div style={{
+                    fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+                    letterSpacing: '0.06em', textTransform: 'uppercase',
+                    color: highlight ? 'var(--gold)' : 'var(--text-faint)',
+                  }}>
+                    {d.toLocaleDateString(undefined, { weekday: 'short' })}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 700, marginTop: 2 }}>
+                  <div style={{
+                    fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800,
+                    marginTop: 2, letterSpacing: '-0.02em',
+                    fontVariantNumeric: 'tabular-nums',
+                    color: highlight ? '#fff' : 'var(--text)',
+                  }}>
                     {d.getDate()}
                   </div>
                 </div>
@@ -7479,10 +7890,13 @@ function LiveCalendar() {
                   setEventModalDefaults({ start_at: iso });
                   setEventModalOpen(true);
                 }} title="Add event on this day" style={{
-                  width: 20, height: 20,
-                  background: 'transparent', color: highlight ? 'var(--gold)' : 'var(--text-faint)',
-                  border: '1px solid currentColor', cursor: 'pointer',
-                  fontSize: 12, display: 'grid', placeItems: 'center',
+                  width: 22, height: 22,
+                  background: highlight ? 'rgba(255,255,255,0.14)' : 'var(--sunken)',
+                  color: highlight ? 'var(--gold)' : 'var(--text-faint)',
+                  border: 'none', cursor: 'pointer',
+                  fontSize: 13, display: 'grid', placeItems: 'center',
+                  borderRadius: 'var(--radius-sm)',
+                  transition: 'background var(--dur) var(--ease)',
                 }}>+</button>
               </div>
               <div style={{ padding: 6, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
@@ -7509,11 +7923,19 @@ function LiveCalendar() {
                       fontFamily: 'var(--font-body)', fontSize: 10, lineHeight: 1.3,
                       display: 'flex', flexDirection: 'column', gap: 2,
                     }}>
-                    <span className="chrome-label" style={{ fontSize: 8, letterSpacing: '.1em', color: 'var(--gold)' }}>SUGGEST</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                      letterSpacing: '0.12em', textTransform: 'uppercase',
+                      color: 'var(--gold-ink)',
+                    }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--gold)' }}/>
+                      Suggest
+                    </span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11 }}>
                       {displayNameFor(gapCandidate)}
                     </span>
-                    <span style={{ color: 'var(--text-faint)', fontSize: 9 }}>
+                    <span style={{ color: 'var(--text-faint)', fontSize: 10 }}>
                       awaiting · book here?
                     </span>
                   </button>
@@ -7608,11 +8030,16 @@ function LiveCalendar() {
           space on the week view. Clicking any row opens that contact so Key
           can set an install_date. */}
       {filteredUnscheduled.length > 0 ? (
-        <div style={{ marginTop: 24 }}>
-          <div className="chrome-label" style={{
-            fontSize: 11, letterSpacing: '.1em', color: 'var(--ms-3)',
-            padding: '6px 0', marginBottom: 4, borderBottom: '1px solid var(--divider)',
+        <div style={{ marginTop: 28 }}>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: 'var(--red)',
+            padding: '10px 0 8px', marginBottom: 6,
+            borderBottom: '1px solid color-mix(in srgb, var(--red) 20%, transparent)',
+            display: 'flex', alignItems: 'center', gap: 6,
           }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red)' }}/>
             Awaiting date ({filteredUnscheduled.length})
           </div>
           <div style={{
@@ -8069,15 +8496,20 @@ function LiveCalls({ onSelect }) {
               }}>
                 {r.transcript ? (
                   <div style={{
-                    padding: '8px 10px',
-                    background: 'var(--bg)',
-                    boxShadow: 'var(--pressed-2)',
-                    fontFamily: 'var(--font-body)', fontSize: 12,
-                    color: 'var(--text)', lineHeight: 1.4,
+                    padding: '10px 12px',
+                    background: 'var(--sunken)',
+                    fontFamily: 'var(--font-body)', fontSize: 12.5,
+                    color: 'var(--text)', lineHeight: 1.5,
                     borderLeft: '3px solid var(--gold)',
+                    borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
                   }}>
-                    <span className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', marginRight: 8, letterSpacing: '.08em' }}>
-                      {isVm ? 'VOICEMAIL' : 'TRANSCRIPT'}
+                    <span style={{
+                      display: 'inline-block', marginRight: 8,
+                      fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+                      letterSpacing: '0.1em', textTransform: 'uppercase',
+                      color: isVm ? 'var(--red)' : 'var(--gold-ink)',
+                    }}>
+                      {isVm ? 'Voicemail' : 'Transcript'}
                     </span>
                     {r.transcript}
                   </div>
@@ -8229,29 +8661,43 @@ function SmartTodayWidget() {
 
   return (
     <div style={{
-      margin: '8px 16px 4px',
-      padding: '10px 12px',
+      margin: '10px 16px 6px',
+      padding: '12px 14px',
       background: 'var(--card)',
-      boxShadow: 'var(--raised-2)',
-      display: 'flex', flexDirection: 'column', gap: 6,
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      display: 'flex', flexDirection: 'column', gap: 8,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '.12em' }}>
-          ◆ TODAY
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: 'var(--gold-ink)',
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }}/>
+          Today
         </span>
         <button onClick={() => {
           try { sessionStorage.setItem('bpp_v2_today_dismissed', '1'); } catch {}
           setDismissed(true);
         }} style={{
-          padding: '2px 6px', fontSize: 10, background: 'transparent', border: 'none',
-          color: 'var(--text-faint)', cursor: 'pointer', letterSpacing: '.08em',
-        }}>DISMISS</button>
+          padding: '3px 10px',
+          background: 'transparent', border: 'none',
+          color: 'var(--text-faint)', cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontSize: 11.5, fontWeight: 500,
+          borderRadius: 'var(--radius-pill)',
+          transition: 'color var(--dur) var(--ease), background var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)'; }}
+        >Dismiss</button>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {items.map((b, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className={`smart-dot smart-dot--${b.tone}`} />
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text)' }}>{b.text}</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)' }}>{b.text}</span>
           </div>
         ))}
       </div>
@@ -8450,7 +8896,7 @@ function LiveQuickList({ onSelect }) {
   // state below can still render it above the message.
   const chipRow = (
     <div style={{
-      padding: '8px 16px 4px',
+      padding: '10px 16px 6px',
       display: 'flex', gap: 6, flexWrap: 'wrap',
     }}>
       {stageChips.map(c => {
@@ -8458,18 +8904,26 @@ function LiveQuickList({ onSelect }) {
         return (
           <button key={c.id}
             onClick={() => setStageFilter(c.id)}
-            className="chrome-label"
             style={{
-              padding: '5px 10px', fontSize: 10, letterSpacing: '.08em',
+              padding: '5px 12px', height: 26,
               background: active ? 'var(--navy)' : 'var(--card)',
-              color: active ? 'var(--gold)' : 'var(--text-muted)',
-              boxShadow: active ? 'var(--pressed-2)' : 'var(--raised-2)',
-              border: 'none', cursor: 'pointer', textTransform: 'uppercase',
+              color: active ? '#fff' : 'var(--text-muted)',
+              boxShadow: active ? 'none' : 'var(--ring)',
+              border: 'none', cursor: 'pointer',
+              borderRadius: 'var(--radius-pill)',
+              fontFamily: 'var(--font-display)', fontWeight: active ? 700 : 600,
+              fontSize: 11.5, letterSpacing: '-0.005em',
               display: 'inline-flex', alignItems: 'center', gap: 6,
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
             }}>
             <span>{c.label}</span>
             <span style={{
-              fontSize: 9, opacity: .75, fontVariantNumeric: 'tabular-nums',
+              fontFamily: 'var(--font-mono)', fontSize: 10,
+              padding: '1px 6px',
+              background: active ? 'rgba(255,255,255,0.16)' : 'var(--sunken)',
+              borderRadius: 'var(--radius-pill)',
+              fontVariantNumeric: 'tabular-nums',
+              color: active ? 'rgba(255,255,255,0.85)' : 'var(--text-muted)',
             }}>{c.count}</span>
           </button>
         );
@@ -9093,17 +9547,29 @@ function AgentsInboxStrip() {
 
   return (
     <div style={{
-      padding: '12px 16px',
+      padding: '14px 16px',
       background: 'var(--card)',
-      boxShadow: 'var(--raised-2)',
-      display: 'flex', flexDirection: 'column', gap: 8,
-      borderBottom: '1px solid var(--divider-faint)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      display: 'flex', flexDirection: 'column', gap: 10,
     }}>
-      <div className="chrome-label" style={{
-        fontSize: 11, letterSpacing: '.1em',
-        color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: 8,
+      <div style={{
+        fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+        letterSpacing: '0.14em', textTransform: 'uppercase',
+        color: 'var(--gold-ink)',
+        display: 'flex', alignItems: 'center', gap: 6,
       }}>
-        <span>⚡</span><span>Agents inbox · {items.length}</span>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }}/>
+        Agents inbox
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+          padding: '1px 6px',
+          background: 'var(--sunken)',
+          borderRadius: 'var(--radius-pill)',
+          color: 'var(--text-muted)',
+          fontVariantNumeric: 'tabular-nums',
+          letterSpacing: 0,
+        }}>{items.length}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {items.map(item => {
@@ -9648,6 +10114,18 @@ async function smartSearchIntent(q) {
   return null;
 }
 
+// Shared style for inline keyboard-hint chips in the CommandPalette footer.
+const kbdStyle = {
+  display: 'inline-block',
+  padding: '1px 6px',
+  marginRight: 4,
+  background: 'var(--card)',
+  fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+  color: 'var(--text-muted)',
+  borderRadius: 'var(--radius-sm)',
+  boxShadow: 'var(--ring)',
+};
+
 function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -9824,47 +10302,85 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 100,
-      background: 'rgba(0,0,0,.5)',
+      background: 'rgba(11,31,59,0.4)',
+      backdropFilter: 'blur(3px)',
       display: 'grid', placeItems: 'start center', paddingTop: 120,
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        width: 560, maxWidth: 'calc(100vw - 32px)',
-        background: 'var(--card)', boxShadow: 'var(--raised)',
+        width: 620, maxWidth: 'calc(100vw - 32px)',
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
+        overflow: 'hidden',
       }}>
-        <div style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            display: 'inline-grid', placeItems: 'center',
+            width: 28, height: 28,
+            background: 'var(--navy)', color: 'var(--gold)',
+            borderRadius: 'var(--radius-sm)',
+            flex: '0 0 auto',
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKey}
-            placeholder="SEARCH OR ASK — 'WHO OWES ME MONEY', 'INSTALLS TODAY', …"
-            className="pressed-2"
-            style={{ flex: 1, padding: '10px 14px', height: 48, fontFamily: 'var(--font-mono)', fontSize: 16 }}
+            placeholder="Search or ask — 'who owes me money', 'installs today'…"
+            style={{
+              flex: 1, padding: '10px 12px', height: 40,
+              background: 'var(--sunken)', color: 'var(--text)',
+              border: 'none', outline: 'none',
+              borderRadius: 'var(--radius-pill)',
+              fontFamily: 'var(--font-body)', fontSize: 15,
+            }}
           />
-          <span className="pixel" style={{ fontSize: 10, padding: '4px 8px', boxShadow: 'var(--raised-2)', color: 'var(--text-muted)' }}>ESC</span>
+          <span style={{
+            padding: '4px 10px', height: 24,
+            background: 'var(--sunken)',
+            borderRadius: 'var(--radius-pill)',
+            fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600,
+            color: 'var(--text-muted)',
+            display: 'inline-flex', alignItems: 'center',
+          }}>esc</span>
         </div>
-        <div style={{ maxHeight: 400, overflowY: 'auto', borderTop: '1px solid rgba(0,0,0,.1)' }}>
+        <div style={{
+          maxHeight: 440, overflowY: 'auto',
+          borderTop: '1px solid var(--divider-faint)',
+        }}>
           {!query.trim() && results.length > 0 && results[0]._recent ? (
-            <div className="mono" style={{
-              padding: '8px 14px 4px', fontSize: 10, letterSpacing: '.08em',
-              color: 'var(--text-faint)', textTransform: 'uppercase',
+            <div style={{
+              padding: '12px 16px 6px',
+              fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: 'var(--text-faint)',
             }}>Recent</div>
           ) : null}
           {/* Smart Search intent header — when the query triggered a
               curated list (outstanding / installs today / stuck / near …)
               show a small badge so Key knows Sparky interpreted the ask. */}
           {intent && query.trim() ? (
-            <div style={{ padding: '8px 14px 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="smart-chip smart-chip--gold">SMART · {intent.toUpperCase()}</span>
-              <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.06em' }}>
+            <div style={{ padding: '10px 16px 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="smart-chip smart-chip--gold">{intent}</span>
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--text-faint)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
                 {results.length} result{results.length === 1 ? '' : 's'}
               </span>
             </div>
           ) : null}
           {results.length === 0 ? (
-            <div style={{ padding: 24, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
+            <div style={{
+              padding: 28, textAlign: 'center',
+              fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-faint)',
+            }}>
               {query.trim() ? 'No results' : 'Type to search contacts, navigation, or ask Sparky'}
             </div>
           ) : results.map((r, i) => {
             const active = i === cursor;
-            const bg = active ? 'var(--card)' : 'transparent';
-            const boxShadow = active ? 'inset 3px 0 0 var(--gold), var(--pressed-2)' : 'none';
             return (
               <div key={i} onClick={() => {
                 if (r.type === 'contact' || r.type === 'message') { onSelectContact(r.id); onClose(); }
@@ -9884,19 +10400,22 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
                   }, 60);
                 }
               }} style={{
-                padding: '10px 16px', cursor: 'pointer', background: bg, boxShadow,
+                padding: '11px 16px', cursor: 'pointer',
+                background: active ? 'var(--sunken)' : 'transparent',
+                boxShadow: active ? 'inset 2px 0 0 var(--gold)' : 'none',
                 display: 'flex', alignItems: 'center', gap: 12,
+                transition: 'background var(--dur) var(--ease)',
               }}>
                 {r.type === 'contact' ? (
                   <>
                     <span style={{
                       width: 32, height: 32, background: 'var(--navy)',
-                      clipPath: 'var(--avatar-clip)',
+                      borderRadius: '50%',
                       display: 'grid', placeItems: 'center', flex: '0 0 auto',
-                    }}><span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 11 }}>{initials(r.name)}</span></span>
+                    }}><span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, color: '#fff', fontSize: 11 }}>{initials(r.name)}</span></span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600 }}>{r.name}</div>
-                      <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.phone} · {r.stage}</div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{r.name}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{r.phone} · {r.stage}</div>
                     </div>
                   </>
                 ) : r.type === 'message' ? (
@@ -9906,41 +10425,60 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
                   <>
                     <span style={{
                       width: 32, height: 32, background: 'var(--navy)',
-                      clipPath: 'var(--avatar-clip)',
+                      borderRadius: '50%',
                       display: 'grid', placeItems: 'center', flex: '0 0 auto',
-                    }}><span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 11 }}>{initials(r.name)}</span></span>
+                    }}><span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, color: '#fff', fontSize: 11 }}>{initials(r.name)}</span></span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-                        <span className="mono" style={{ fontSize: 9, letterSpacing: '.08em', color: 'var(--text-faint)', textTransform: 'uppercase' }}>
+                        <span style={{
+                          fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                          letterSpacing: '0.1em', textTransform: 'uppercase',
+                          color: 'var(--text-faint)',
+                          padding: '1px 6px',
+                          background: 'var(--sunken)',
+                          borderRadius: 'var(--radius-pill)',
+                        }}>
                           {r.direction === 'inbound' ? '← msg' : '→ msg'}
                         </span>
                       </div>
-                      <div className="mono" style={{
-                        fontSize: 11, color: 'var(--text-muted)',
+                      <div style={{
+                        fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-muted)',
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>{r.preview}</div>
                     </div>
                   </>
                 ) : (
-                  <span className="chrome-label" style={{ fontSize: 12, color: r.type === 'sparky' ? 'var(--gold)' : 'var(--text)' }}>
-                    {r.type === 'sparky' ? '→ ' : '• '}{r.label}
+                  <span style={{
+                    fontFamily: 'var(--font-body)', fontSize: 13.5, fontWeight: 600,
+                    color: r.type === 'sparky' ? 'var(--gold-ink)' : 'var(--text)',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}>
+                    <span style={{
+                      color: r.type === 'sparky' ? 'var(--gold)' : 'var(--text-faint)',
+                    }}>{r.type === 'sparky' ? '→' : '·'}</span>
+                    {r.label}
                   </span>
                 )}
-                <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>↵</span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 11,
+                  color: active ? 'var(--text-muted)' : 'var(--text-faint)',
+                }}>↵</span>
               </div>
             );
           })}
         </div>
         <div style={{
-          padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 10,
-          letterSpacing: '.04em', color: 'var(--text-faint)',
-          display: 'flex', gap: 16,
+          padding: '12px 18px',
+          fontFamily: 'var(--font-body)', fontSize: 11.5,
+          color: 'var(--text-faint)',
+          display: 'flex', gap: 18,
           borderTop: '1px solid var(--divider-faint)',
+          background: 'var(--sunken)',
         }}>
-          <span>↑↓ navigate</span>
-          <span>↵ select</span>
-          <span>esc close</span>
+          <span><kbd style={kbdStyle}>↑</kbd><kbd style={kbdStyle}>↓</kbd> navigate</span>
+          <span><kbd style={kbdStyle}>↵</kbd> select</span>
+          <span><kbd style={kbdStyle}>esc</kbd> close</span>
         </div>
       </div>
     </div>
@@ -10001,34 +10539,71 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
         {sub.map(t => {
           const on = activeDetail === t.id;
           return (
-            <button key={t.id} onClick={() => focusDetail(t.id)} className="chrome-label" style={{
-              height: '100%', padding: compact ? '0 10px' : '0 4px', minWidth: 0,
+            <button key={t.id} onClick={() => focusDetail(t.id)} style={{
+              height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
               background: 'transparent', border: 'none',
               color: on ? 'var(--text)' : 'var(--text-muted)',
-              fontSize: 11,
-              boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
+              fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 600,
+              fontSize: 12.5, letterSpacing: '-0.005em',
+              boxShadow: on ? 'inset 0 -2px 0 var(--gold)' : 'none',
               cursor: 'pointer',
               flex: compact ? '0 0 auto' : '1 1 0',
               whiteSpace: 'nowrap',
-            }}>{t.label}</button>
+              transition: 'color var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { if (!on) e.currentTarget.style.color = 'var(--text)' }}
+            onMouseLeave={e => { if (!on) e.currentTarget.style.color = 'var(--text-muted)' }}
+            >{t.label}</button>
           );
         })}
         {hasCall ? (
           <button
             onClick={() => window.__bpp_dial && window.__bpp_dial(contactPhone)}
-            className="chrome-label" title="Call"
-            style={{ height: '100%', padding: compact ? '0 10px' : '0 4px', minWidth: 0, background: 'transparent', border: 'none', color: 'var(--ms-2)', fontSize: 11, cursor: 'pointer', flex: compact ? '0 0 auto' : '1 1 0', fontWeight: 700, whiteSpace: 'nowrap' }}
-          >CALL</button>
+            title="Call"
+            style={{
+              height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
+              background: 'transparent', border: 'none',
+              color: 'var(--green)',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12.5,
+              cursor: 'pointer', flex: compact ? '0 0 auto' : '1 1 0',
+              whiteSpace: 'nowrap', letterSpacing: '-0.005em',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            Call
+          </button>
         ) : null}
         <button
           onClick={onOpenBrief}
-          className="chrome-label" title="Install brief"
-          style={{ height: '100%', padding: compact ? '0 10px' : '0 4px', minWidth: 0, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', flex: compact ? '0 0 auto' : '1 1 0', whiteSpace: 'nowrap' }}
-        >BRIEF</button>
+          title="Install brief"
+          style={{
+            height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
+            background: 'transparent', border: 'none',
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12.5,
+            cursor: 'pointer', flex: compact ? '0 0 auto' : '1 1 0',
+            whiteSpace: 'nowrap', letterSpacing: '-0.005em',
+            transition: 'color var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--gold-ink)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
+        >Brief</button>
         <button
           onClick={onCloseContact}
           aria-label="Close contact"
-          style={{ height: '100%', padding: '0 10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer', flex: '0 0 auto' }}
+          style={{
+            height: '100%', padding: '0 12px', background: 'transparent', border: 'none',
+            color: 'var(--text-muted)',
+            fontSize: 18, cursor: 'pointer', flex: '0 0 auto',
+            fontFamily: 'var(--font-display)', fontWeight: 400,
+            lineHeight: 1,
+            transition: 'color var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
         >×</button>
       </>
     );

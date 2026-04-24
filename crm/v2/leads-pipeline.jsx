@@ -320,39 +320,51 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
 
 function LeadsToolbar() {
   const subs = [
-    { id: 'pipeline', label: 'PIPELINE', active: true },
-    { id: 'list',     label: 'LIST' },
-    { id: 'permits',  label: 'PERMITS' },
-    { id: 'mat',      label: 'MATERIALS' },
+    { id: 'pipeline', label: 'Pipeline', active: true },
+    { id: 'list',     label: 'List' },
+    { id: 'permits',  label: 'Permits' },
+    { id: 'mat',      label: 'Materials' },
   ];
   const filters = [
-    { id: 'mine',    label: 'MINE',      active: true },
-    { id: 'all',     label: 'ALL' },
-    { id: 'overdue', label: 'OVERDUE' },
-    { id: 'photo',   label: 'HAS PHOTO' },
+    { id: 'mine',    label: 'Mine',      active: true },
+    { id: 'all',     label: 'All' },
+    { id: 'overdue', label: 'Overdue' },
+    { id: 'photo',   label: 'Has photo' },
   ];
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '16px 16px 8px', gap: 16,
+      padding: '16px 16px 10px', gap: 16, flexWrap: 'wrap',
     }}>
-      <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
+      <div style={{
+        display: 'flex', height: 34, padding: 3,
+        background: 'var(--card)',
+        boxShadow: 'var(--ring)',
+        borderRadius: 'var(--radius-pill)',
+      }}>
         {subs.map(s => (
-          <button key={s.id} className="chrome-label" style={{
-            height: 36, padding: '0 16px', fontSize: 12,
+          <button key={s.id} style={{
+            height: 28, padding: '0 14px',
             background: s.active ? 'var(--navy)' : 'transparent',
-            color: s.active ? 'var(--gold)' : 'var(--text)',
-            boxShadow: s.active ? 'var(--pressed-2)' : 'none',
+            color: s.active ? '#fff' : 'var(--text-muted)',
+            borderRadius: 'var(--radius-pill)',
+            border: 'none', cursor: 'pointer',
+            fontFamily: 'var(--font-display)', fontWeight: s.active ? 700 : 500, fontSize: 12,
+            letterSpacing: '-0.005em',
           }}>{s.label}</button>
         ))}
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         {filters.map(f => (
-          <button key={f.id} className="chrome-label" style={{
-            height: 28, padding: '0 12px', fontSize: 11,
+          <button key={f.id} style={{
+            height: 28, padding: '0 14px',
             background: f.active ? 'var(--navy)' : 'var(--card)',
-            color: f.active ? '#fff' : 'var(--text)',
-            boxShadow: f.active ? 'var(--pressed-2)' : 'var(--raised-2)',
+            color: f.active ? '#fff' : 'var(--text-muted)',
+            borderRadius: 'var(--radius-pill)',
+            border: 'none', cursor: 'pointer',
+            boxShadow: f.active ? 'none' : 'var(--ring)',
+            fontFamily: 'var(--font-display)', fontWeight: f.active ? 700 : 500, fontSize: 12,
+            letterSpacing: '-0.005em',
           }}>{f.label}</button>
         ))}
       </div>

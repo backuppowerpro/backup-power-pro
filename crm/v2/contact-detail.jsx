@@ -124,22 +124,32 @@ function StageStrip() {
   );
 }
 
-const DETAIL_TABS = ['MESSAGES', 'TIMELINE', 'QUOTE', 'PERMITS', 'NOTES'];
+const DETAIL_TABS = [
+  { id: 'MESSAGES', label: 'Messages' },
+  { id: 'TIMELINE', label: 'Timeline' },
+  { id: 'QUOTE',    label: 'Quote' },
+  { id: 'PERMITS',  label: 'Permits' },
+  { id: 'NOTES',    label: 'Notes' },
+];
 function DetailTabs({ active = 'MESSAGES' }) {
   return (
     <div style={{
       display: 'flex', height: 44,
-      background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      background: 'var(--card)',
+      borderBottom: '1px solid var(--divider-faint)',
     }}>
       {DETAIL_TABS.map(t => {
-        const on = t === active;
+        const on = t.id === active;
         return (
-          <button key={t} className="chrome-label" style={{
-            flex: 1, minWidth: 0,
-            fontSize: 11, padding: '0 6px',
+          <button key={t.id} style={{
+            flex: 1, minWidth: 0, padding: '0 6px',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 600,
+            fontSize: 12.5, letterSpacing: '-0.005em',
             color: on ? 'var(--text)' : 'var(--text-muted)',
-            boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
-          }}>{t}</button>
+            boxShadow: on ? 'inset 0 -2px 0 var(--gold)' : 'none',
+            transition: 'color var(--dur) var(--ease)',
+          }}>{t.label}</button>
         );
       })}
     </div>
