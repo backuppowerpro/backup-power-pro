@@ -33,6 +33,13 @@
   --gold-ink:   #8a5a00;  /* legible gold for text on light tints */
   --light-blue: #e8f1f8;   /* website alt section tint */
 
+  /* ---------- Semantic link color ----------
+     --link adapts to theme so "tap to copy" / href links stay legible in
+     both light and dark mode. In light mode it's the navy brand; in dark
+     mode it's a softer sky-blue that reads on the dark card. */
+  --link:        var(--navy);
+  --link-hover:  var(--navy-mid);
+
   /* ---------- Surfaces ----------
      bg is a soft white; card is pure white. CRM needs dense list
      scannability, so we lean lighter than the full-bleed navy the
@@ -168,6 +175,9 @@
   --text:       #f1f4f9;
   --text-muted: #a5b0c2;
   --text-faint: #6b7a95;
+  /* Links flip to a bright sky-blue so they read on the dark card. */
+  --link:        #5eadff;
+  --link-hover:  #8bc4ff;
 
   --ring:          inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   --ring-strong:   inset 0 0 0 1px rgba(255, 255, 255, 0.14);

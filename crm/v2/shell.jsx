@@ -76,7 +76,7 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark
         <div style={{
           fontFamily: 'var(--font-display)', fontWeight: 800,
           fontSize: compact ? 16 : 18, letterSpacing: '-0.02em',
-          color: 'var(--navy)',
+          color: 'var(--text)',
           whiteSpace: 'nowrap',
         }}>Backup Power <span style={{ color: 'var(--gold)' }}>Pro</span></div>
       </div>
@@ -495,7 +495,7 @@ function BarInput({ chip, chipIcon, placeholder }) {
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-          color: 'var(--navy)', letterSpacing: '0.08em',
+          color: 'var(--text)', letterSpacing: '0.08em',
           textTransform: 'uppercase',
           whiteSpace: 'nowrap',
         }}>

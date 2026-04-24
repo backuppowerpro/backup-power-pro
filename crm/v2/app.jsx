@@ -418,7 +418,7 @@ function AuthGate({ onAuth }) {
           <div style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 800, fontSize: 24, letterSpacing: '-0.02em',
-            color: 'var(--navy)',
+            color: 'var(--text)',
           }}>Backup Power <span style={{ color: 'var(--gold)' }}>Pro</span></div>
         </div>
         <div style={{
@@ -2160,11 +2160,14 @@ function InstallBriefModal({ contact, onClose }) {
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4, fontSize: 13 }}>
               <a href={`tel:${contact.phone || ''}`} style={{
-                color: 'var(--navy)', textDecoration: 'none',
-                borderBottom: '1px dashed rgba(0,0,0,.25)',
+                color: 'var(--link)', textDecoration: 'none',
+                borderBottom: '1px dashed color-mix(in srgb, var(--link) 45%, transparent)',
               }}>{displayPhone}</a>
               {contact.email ? (
-                <a href={`mailto:${contact.email}`} style={{ color: 'var(--navy)', textDecoration: 'none', borderBottom: '1px dashed rgba(0,0,0,.25)' }}>{contact.email}</a>
+                <a href={`mailto:${contact.email}`} style={{
+                  color: 'var(--link)', textDecoration: 'none',
+                  borderBottom: '1px dashed color-mix(in srgb, var(--link) 45%, transparent)',
+                }}>{contact.email}</a>
               ) : null}
             </div>
             {contact.do_not_contact ? (
@@ -2188,8 +2191,8 @@ function InstallBriefModal({ contact, onClose }) {
             {contact.address ? (
               <a href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
                 target="_blank" rel="noopener" style={{
-                  color: 'var(--navy)', textDecoration: 'none', fontSize: 14,
-                  borderBottom: '1px dashed rgba(0,0,0,.25)',
+                  color: 'var(--link)', textDecoration: 'none', fontSize: 14,
+                  borderBottom: '1px dashed color-mix(in srgb, var(--link) 45%, transparent)',
                 }}>{contact.address}</a>
             ) : <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>no address on file</span>}
           </Section>
