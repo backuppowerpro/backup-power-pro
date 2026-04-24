@@ -7,41 +7,44 @@ const FinIcons = {
 
 function KPI({ tone, big, label, mono = false }) {
   const TONES = {
-    red:   { color: 'var(--lcd-red)',   glow: 'var(--lcd-glow-red)'   },
-    green: { color: 'var(--lcd-green)', glow: 'var(--lcd-glow-green)' },
-    amber: { color: 'var(--lcd-amber)', glow: 'var(--lcd-glow-amber)' },
+    red:   { color: 'var(--red)'   },
+    green: { color: 'var(--green)' },
+    amber: { color: 'var(--gold)'  },
   };
-  const t = TONES[tone];
+  const t = TONES[tone] || { color: 'var(--text)' };
   return (
-    <div className="tactile-raised" style={{
-      width: 240, height: 88, background: 'var(--card)',
-      padding: 10, display: 'flex', flexDirection: 'column', gap: 6,
+    <div style={{
+      width: 240, background: 'var(--card)',
+      padding: '16px 18px',
+      borderRadius: 'var(--radius-md)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      display: 'flex', flexDirection: 'column', gap: 6,
     }}>
+      <span style={{
+        fontFamily: 'var(--font-display)', fontWeight: 700,
+        fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
+        color: 'var(--text-muted)',
+      }}>{label}</span>
       <div style={{
-        flex: 1, background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: t.color, textShadow: t.glow,
-        fontFamily: 'var(--font-pixel)', fontSize: 34, letterSpacing: '.04em',
+        fontFamily: 'var(--font-display)', fontWeight: 800,
+        fontSize: 34, letterSpacing: '-0.02em',
+        color: t.color, lineHeight: 1.05,
+        fontVariantNumeric: 'tabular-nums',
       }}>{big}</div>
-      <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>{label}</span>
     </div>
   );
 }
 
 function FinBadges() {
   return (
-    <div style={{ display: 'flex', gap: 8, padding: '0 16px 8px', justifyContent: 'flex-end' }}>
+    <div style={{ display: 'flex', gap: 10, padding: '0 16px 8px', justifyContent: 'flex-end' }}>
       {[
-        { label:'9 ACTIVE PROPOSALS', color:'var(--lcd-green)', glow:'var(--lcd-glow-green)' },
-        { label:'$21,982 MTD',        color:'var(--lcd-green)', glow:'var(--lcd-glow-green)' },
+        { label:'9 active proposals', tone: 'green' },
+        { label:'$21,982 MTD',        tone: 'green' },
       ].map((b, i) => (
-        <span key={i} style={{
-          height: 26, padding: '0 10px',
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-          color: b.color, textShadow: b.glow,
-          fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-        }}>◆ {b.label}</span>
+        <span key={i} className={`smart-chip smart-chip--${b.tone}`} style={{ height: 28, fontSize: 11 }}>
+          {b.label}
+        </span>
       ))}
     </div>
   );
@@ -49,21 +52,26 @@ function FinBadges() {
 
 function SubTabs({ active = 'prop' }) {
   const subs = [
-    { id: 'prop', label: 'PROPOSALS' },
-    { id: 'inv',  label: 'INVOICES' },
-    { id: 'pay',  label: 'PAYMENTS' },
+    { id: 'prop', label: 'Proposals' },
+    { id: 'inv',  label: 'Invoices' },
+    { id: 'pay',  label: 'Payments' },
   ];
   return (
     <div style={{ display: 'flex', padding: '0 16px', gap: 0,
-      borderBottom: '1px solid rgba(0,0,0,.08)' }}>
+      borderBottom: '1px solid var(--divider)' }}>
       {subs.map(s => {
         const on = s.id === active;
         return (
-          <button key={s.id} className="chrome-label" style={{
-            height: 40, padding: '0 18px', fontSize: 12,
-            color: on ? 'var(--text)' : 'var(--text-muted)',
-            boxShadow: on ? 'inset 0 -3px 0 var(--gold)' : 'none',
-            background: 'transparent',
+          <button key={s.id} style={{
+            height: 44, padding: '0 18px',
+            color: on ? 'var(--navy)' : 'var(--text-muted)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: on ? 700 : 500,
+            fontSize: 13,
+            letterSpacing: '0.01em',
+            boxShadow: on ? 'inset 0 -2px 0 var(--gold)' : 'none',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            transition: 'color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
           }}>{s.label}</button>
         );
       })}
@@ -75,10 +83,15 @@ function MiniAv({ initials, size = 28 }) {
   return (
     <div style={{
       width: size, height: size, flex: '0 0 auto',
-      background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
+      background: 'var(--navy)',
+      borderRadius: '50%',
       display: 'grid', placeItems: 'center',
     }}>
-      <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 10 }}>
+      <span style={{
+        fontFamily: 'var(--font-body)', fontWeight: 600,
+        color: '#fff', fontSize: size >= 32 ? 12 : 10,
+        letterSpacing: '0.01em',
+      }}>
         {initials}
       </span>
     </div>
@@ -86,46 +99,43 @@ function MiniAv({ initials, size = 28 }) {
 }
 
 function StatusPill({ s }) {
+  // Map uppercase shorthand to the brand-aligned tone + sentence case label.
   const MAP = {
-    SENT:     { bg: 'var(--ms-1)' },
-    VIEWED:   { bg: 'var(--ms-4)' },
-    APPROVED: { bg: 'var(--ms-2)' },
-    EXPIRED:  { bg: 'var(--ms-5)' },
-    DECLINED: { bg: 'var(--ms-3)' },
-    PAID:     { bg: 'var(--ms-2)' },
-    OVERDUE:  { bg: 'var(--ms-3)' },
+    SENT:     { tone: 'navy',   label: 'Sent' },
+    VIEWED:   { tone: 'purple', label: 'Viewed' },
+    APPROVED: { tone: 'green',  label: 'Approved' },
+    EXPIRED:  { tone: 'gold',   label: 'Expired' },
+    DECLINED: { tone: 'red',    label: 'Declined' },
+    PAID:     { tone: 'green',  label: 'Paid' },
+    OVERDUE:  { tone: 'red',    label: 'Overdue' },
   };
-  const m = MAP[s];
-  return (
-    <span style={{
-      height: 22, padding: '0 8px',
-      display: 'inline-flex', alignItems: 'center',
-      background: m.bg, color: '#fff',
-      fontFamily: 'var(--font-chrome)', fontWeight: 700,
-      fontSize: 10, letterSpacing: '.1em',
-      boxShadow: 'var(--shadow-xs), var(--ring)',
-    }}>{s}</span>
-  );
+  const m = MAP[s] || { tone: 'muted', label: (s || '').charAt(0) + (s || '').slice(1).toLowerCase() };
+  return <span className={`smart-chip smart-chip--${m.tone}`}>{m.label}</span>;
 }
 
 function Bell({ n }) {
   return (
-    <div className="tactile-raised" style={{
-      width: 32, height: 32,
-      display: 'grid', placeItems: 'center', background: 'var(--card)',
-      color: n > 0 ? 'var(--text)' : 'var(--text-faint)',
+    <div style={{
+      width: 34, height: 34,
+      display: 'grid', placeItems: 'center',
+      background: 'var(--card)',
+      boxShadow: 'var(--ring)',
+      borderRadius: 'var(--radius-pill)',
+      color: n > 0 ? 'var(--navy)' : 'var(--text-faint)',
       position: 'relative',
     }}>
       {FinIcons.bell}
       {n > 0 && (
         <span style={{
-          position: 'absolute', top: -6, right: -6,
-          minWidth: 16, height: 16, padding: '0 3px',
-          background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-          color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-          fontFamily: 'var(--font-pixel)', fontSize: 12,
+          position: 'absolute', top: -4, right: -4,
+          minWidth: 16, height: 16, padding: '0 5px',
+          background: 'var(--red)', color: '#fff',
+          borderRadius: 'var(--radius-pill)',
+          fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 10,
           display: 'grid', placeItems: 'center',
-        }}>{String(n).padStart(2,'0')}</span>
+          fontVariantNumeric: 'tabular-nums',
+          boxShadow: 'var(--shadow-xs)',
+        }}>{n}</span>
       )}
     </div>
   );
@@ -133,19 +143,32 @@ function Bell({ n }) {
 
 function ActionBtn({ label, tone = 'flat' }) {
   const TONES = {
-    flat:  { bg: 'var(--card)',  fg: 'var(--text)' },
-    navy:  { bg: 'var(--navy)',  fg: 'var(--gold)' },
-    amber: { bg: 'var(--gold)',  fg: '#1a1a1a' },
-    red:   { bg: 'var(--red)',   fg: '#fff' },
-    green: { bg: 'var(--green)', fg: '#06201a' },
+    flat:  { bg: 'var(--card)',  fg: 'var(--text)',  shadow: 'var(--ring)',        hoverBg: 'var(--sunken)' },
+    navy:  { bg: 'var(--navy)',  fg: '#fff',         shadow: 'var(--shadow-sm)',   hoverBg: '#0d2547' },
+    amber: { bg: 'var(--gold)',  fg: 'var(--navy)',  shadow: 'var(--shadow-gold)', hoverBg: 'var(--gold-hover)' },
+    red:   { bg: 'var(--red)',   fg: '#fff',         shadow: 'var(--shadow-sm)',   hoverBg: '#b91c1c' },
+    green: { bg: 'var(--green)', fg: '#fff',         shadow: 'var(--shadow-sm)',   hoverBg: '#059669' },
   };
-  const t = TONES[tone];
+  const t = TONES[tone] || TONES.flat;
+  // Normalize label: ALL CAPS input → Title case output so the button row
+  // doesn't shout. Short enough that we can do this inline.
+  const niceLabel = (label || '').length <= 2 || (label || '').match(/[a-z]/)
+    ? label
+    : (label || '').charAt(0) + (label || '').slice(1).toLowerCase();
   return (
-    <button className="tactile-raised" style={{
-      height: 28, padding: '0 10px',
+    <button style={{
+      height: 30, padding: '0 14px',
       background: t.bg, color: t.fg,
-      fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-    }}>{label}</button>
+      fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+      letterSpacing: '0.01em',
+      borderRadius: 'var(--radius-pill)',
+      boxShadow: t.shadow,
+      border: 'none', cursor: 'pointer',
+      transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = t.hoverBg }}
+    onMouseLeave={e => { e.currentTarget.style.background = t.bg }}
+    >{niceLabel}</button>
   );
 }
 
@@ -179,34 +202,45 @@ const money = n => '$' + n.toLocaleString('en-US');
 function ProposalsTable() {
   return (
     <div style={{
-      margin: '16px',
-      background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      margin: 16,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      overflow: 'hidden',
     }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: '260px 90px 120px 110px 60px 200px',
-        height: 36, alignItems: 'center', padding: '0 14px', gap: 12,
-        borderBottom: '1px solid rgba(0,0,0,.15)',
+        height: 40, alignItems: 'center', padding: '0 18px', gap: 12,
+        borderBottom: '1px solid var(--divider-faint)',
+        background: 'var(--sunken)',
       }}>
-        {['CUSTOMER','SENT','STATUS','TOTAL','BELL','ACTION'].map((h, i) => (
-          <span key={i} className="chrome-label" style={{
-            fontSize: 10, color: 'var(--text-muted)',
+        {['Customer','Sent','Status','Total','','Actions'].map((h, i) => (
+          <span key={i} style={{
+            fontFamily: 'var(--font-display)', fontWeight: 600,
+            fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: 'var(--text-muted)',
             textAlign: i >= 3 && i !== 3 ? (i === 5 ? 'right' : 'center') : i === 3 ? 'right' : 'left',
-          }}>{h === 'BELL' ? '' : h}</span>
+          }}>{h}</span>
         ))}
       </div>
       {PROPOSALS.map((r, i) => (
-        <div key={i} className="tactile-flat" style={{
+        <div key={i} style={{
           display: 'grid',
           gridTemplateColumns: '260px 90px 120px 110px 60px 200px',
-          height: 60, alignItems: 'center', padding: '0 14px', gap: 12,
-          borderBottom: i < PROPOSALS.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <MiniAv initials={r.i} />
+          height: 64, alignItems: 'center', padding: '0 18px', gap: 12,
+          borderBottom: i < PROPOSALS.length - 1 ? '1px solid var(--divider-faint)' : 'none',
+          transition: 'background var(--dur) var(--ease)',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--sunken)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <MiniAv initials={r.i} size={32} />
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{r.name}</span>
           </div>
-          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 15, color: 'var(--text-muted)', letterSpacing: '.06em' }}>{r.sent}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', letterSpacing: 0 }}>{r.sent}</span>
           <StatusPill s={r.st} />
           <span style={{
             fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700,
@@ -226,43 +260,50 @@ function ProposalsTable() {
 function InvoicesTable() {
   return (
     <div style={{
-      margin: '16px',
-      background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      margin: 16,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      overflow: 'hidden',
     }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: '260px 90px 120px 140px 60px 200px',
-        height: 36, alignItems: 'center', padding: '0 14px', gap: 12,
-        borderBottom: '1px solid rgba(0,0,0,.15)',
+        height: 40, alignItems: 'center', padding: '0 18px', gap: 12,
+        borderBottom: '1px solid var(--divider-faint)',
+        background: 'var(--sunken)',
       }}>
-        {['CUSTOMER','SENT','STATUS','TOTAL',' ','ACTION'].map((h, i) => (
-          <span key={i} className="chrome-label" style={{
-            fontSize: 10, color: 'var(--text-muted)',
+        {['Customer','Sent','Status','Total',' ','Actions'].map((h, i) => (
+          <span key={i} style={{
+            fontFamily: 'var(--font-display)', fontWeight: 600,
+            fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: 'var(--text-muted)',
             textAlign: i === 3 ? 'right' : i === 5 ? 'right' : 'left',
           }}>{h}</span>
         ))}
       </div>
       {INVOICES.map((r, i) => (
-        <div key={i} className="tactile-flat" style={{
+        <div key={i} style={{
           display: 'grid',
           gridTemplateColumns: '260px 90px 120px 140px 60px 200px',
-          height: 60, alignItems: 'center', padding: '0 14px', gap: 12,
-          borderBottom: i < INVOICES.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <MiniAv initials={r.i} />
+          height: 64, alignItems: 'center', padding: '0 18px', gap: 12,
+          borderBottom: i < INVOICES.length - 1 ? '1px solid var(--divider-faint)' : 'none',
+          transition: 'background var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--sunken)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <MiniAv initials={r.i} size={32} />
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{r.name}</span>
           </div>
-          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 15, color: 'var(--text-muted)', letterSpacing: '.06em' }}>{r.sent}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>{r.sent}</span>
           <StatusPill s={r.st} />
           <span style={{
-            display: 'inline-flex', justifyContent: 'flex-end', height: 28,
-            padding: '0 10px', alignItems: 'center',
-            background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-            color: r.paid ? 'var(--lcd-green)' : 'var(--lcd-red)',
-            textShadow: r.paid ? 'var(--lcd-glow-green)' : 'var(--lcd-glow-red)',
-            fontFamily: 'var(--font-pixel)', fontSize: 18,
-            fontVariantNumeric: 'tabular-nums', letterSpacing: '.04em',
+            justifySelf: 'end',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+            fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
+            color: r.paid ? 'var(--green)' : 'var(--text)',
           }}>{money(r.total)}</span>
           <div style={{ display: 'flex', justifyContent: 'center' }}><Bell n={r.bell} /></div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
@@ -278,60 +319,72 @@ function PaymentsFeed() {
   const total = PAYMENTS.reduce((s, p) => s + p.amount, 0);
   return (
     <div style={{
-      margin: '16px',
-      background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      margin: 16,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      overflow: 'hidden',
     }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: '90px 260px 1fr 160px',
-        height: 36, alignItems: 'center', padding: '0 14px', gap: 12,
-        borderBottom: '1px solid rgba(0,0,0,.15)',
+        height: 40, alignItems: 'center', padding: '0 18px', gap: 12,
+        borderBottom: '1px solid var(--divider-faint)',
+        background: 'var(--sunken)',
       }}>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>DATE</span>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>CUSTOMER</span>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>METHOD</span>
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>AMOUNT</span>
+        {['Date','Customer','Method','Amount'].map((h, i) => (
+          <span key={i} style={{
+            fontFamily: 'var(--font-display)', fontWeight: 600,
+            fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            textAlign: i === 3 ? 'right' : 'left',
+          }}>{h}</span>
+        ))}
       </div>
       {PAYMENTS.map((p, i) => (
-        <div key={i} className="tactile-flat" style={{
+        <div key={i} style={{
           display: 'grid',
           gridTemplateColumns: '90px 260px 1fr 160px',
-          height: 56, alignItems: 'center', padding: '0 14px', gap: 12,
-          borderBottom: '1px solid rgba(0,0,0,.08)',
-        }}>
-          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 15, color: 'var(--text)', letterSpacing: '.06em' }}>{p.date}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <MiniAv initials={p.name.split(' ').map(w=>w[0]).join('')} />
+          height: 60, alignItems: 'center', padding: '0 18px', gap: 12,
+          borderBottom: '1px solid var(--divider-faint)',
+          transition: 'background var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--sunken)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>{p.date}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <MiniAv initials={p.name.split(' ').map(w=>w[0]).join('')} size={32} />
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{p.name}</span>
           </div>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>{p.method}</span>
           <span style={{
-            display: 'inline-flex', justifyContent: 'flex-end', height: 28,
-            padding: '0 10px', alignItems: 'center',
-            background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-            color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-            fontFamily: 'var(--font-pixel)', fontSize: 18,
-            fontVariantNumeric: 'tabular-nums', letterSpacing: '.04em',
+            justifySelf: 'end',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+            fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
+            color: 'var(--green)',
           }}>+{money(p.amount)}</span>
         </div>
       ))}
       <div style={{
         display: 'grid',
         gridTemplateColumns: '90px 260px 1fr 160px',
-        height: 48, alignItems: 'center', padding: '0 14px', gap: 12,
-        background: 'rgba(11,31,59,.04)',
+        height: 52, alignItems: 'center', padding: '0 18px', gap: 12,
+        background: 'var(--sunken)',
+        borderTop: '1px solid var(--divider)',
       }}>
         <span />
-        <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text)' }}>WEEK TOTAL</span>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+          letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text)',
+        }}>Week total</span>
         <span />
         <span style={{
-          display: 'inline-flex', justifyContent: 'flex-end', height: 32,
-          padding: '0 10px', alignItems: 'center',
-          background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-          color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-          fontFamily: 'var(--font-pixel)', fontSize: 22,
-          fontVariantNumeric: 'tabular-nums', letterSpacing: '.04em',
-        }}>{money(total)}</span>
+          justifySelf: 'end',
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20,
+          fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
+          color: 'var(--green)',
+        }}>+{money(total)}</span>
       </div>
     </div>
   );
@@ -341,11 +394,11 @@ function PaymentsFeed() {
 function FinanceDesktop({ view = 'prop' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: '16px 16px 8px', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <KPI tone="red"   big="$3,482"  label="OUTSTANDING" />
-        <KPI tone="green" big="$5,988"  label="PAID THIS WEEK" />
-        <KPI tone="amber" big="03"      label="AWAITING DEPOSIT" />
-        <KPI tone="red"   big="00"      label="OVERDUE" />
+      <div style={{ padding: '16px 16px 8px', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <KPI tone="red"   big="$3,482" label="Outstanding" />
+        <KPI tone="green" big="$5,988" label="Paid this week" />
+        <KPI tone="amber" big="3"      label="Awaiting deposit" />
+        <KPI tone="red"   big="0"      label="Overdue" />
       </div>
       <FinBadges />
       <SubTabs active={view} />
@@ -362,97 +415,104 @@ function FinanceDesktop({ view = 'prop' }) {
 function FinanceMobile({ view = 'prop' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ padding: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {[
-          { tone:'red',   big:'$3.4k', label:'OUTSTANDING' },
-          { tone:'green', big:'$5.9k', label:'PAID WK' },
-          { tone:'amber', big:'03',    label:'DEPOSITS' },
-          { tone:'red',   big:'00',    label:'OVERDUE' },
-        ].map((k, i) => (
-          <div key={i} className="tactile-raised" style={{
-            height: 72, background: 'var(--card)', padding: 8,
-            display: 'flex', flexDirection: 'column', gap: 4,
-          }}>
-            <div style={{
-              flex: 1, background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-              display: 'grid', placeItems: 'center',
-              color: k.tone==='red' ? 'var(--lcd-red)' : k.tone==='green' ? 'var(--lcd-green)' : 'var(--lcd-amber)',
-              textShadow: k.tone==='red' ? 'var(--lcd-glow-red)' : k.tone==='green' ? 'var(--lcd-glow-green)' : 'var(--lcd-glow-amber)',
-              fontFamily: 'var(--font-pixel)', fontSize: 24, letterSpacing: '.04em',
-            }}>{k.big}</div>
-            <span className="chrome-label" style={{ fontSize: 9, color: 'var(--text-muted)', textAlign: 'center' }}>{k.label}</span>
-          </div>
-        ))}
+          { tone:'red',   big:'$3.4k', label:'Outstanding' },
+          { tone:'green', big:'$5.9k', label:'Paid week' },
+          { tone:'amber', big:'3',     label:'Deposits' },
+          { tone:'red',   big:'0',     label:'Overdue' },
+        ].map((k, i) => {
+          const toneColor = k.tone === 'red' ? 'var(--red)' : k.tone === 'green' ? 'var(--green)' : 'var(--gold)';
+          return (
+            <div key={i} style={{
+              background: 'var(--card)', padding: 14,
+              borderRadius: 'var(--radius-md)',
+              boxShadow: 'var(--shadow-sm), var(--ring)',
+              display: 'flex', flexDirection: 'column', gap: 4,
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-display)', fontWeight: 600,
+                fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+              }}>{k.label}</span>
+              <div style={{
+                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24,
+                letterSpacing: '-0.02em', lineHeight: 1.1,
+                color: toneColor, fontVariantNumeric: 'tabular-nums',
+              }}>{k.big}</div>
+            </div>
+          );
+        })}
       </div>
       <SubTabs active={view} />
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
         {view === 'prop' && PROPOSALS.map((r, i) => (
           <div key={i} style={{
-            background: 'var(--card)', boxShadow: 'var(--raised-2)',
-            padding: 12, marginBottom: 8,
-            display: 'flex', flexDirection: 'column', gap: 8,
+            background: 'var(--card)', boxShadow: 'var(--shadow-sm), var(--ring)',
+            borderRadius: 'var(--radius-md)',
+            padding: 14, marginBottom: 10,
+            display: 'flex', flexDirection: 'column', gap: 10,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <MiniAv initials={r.i} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{r.name}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <MiniAv initials={r.i} size={36} />
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{r.name}</span>
               <Bell n={r.bell} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <StatusPill s={r.st} />
-              <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 15, color: 'var(--text-muted)', letterSpacing: '.06em' }}>{r.sent}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{money(r.total)}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>{r.sent}</span>
+              <span style={{
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+                color: 'var(--text)', fontVariantNumeric: 'tabular-nums',
+              }}>{money(r.total)}</span>
             </div>
-            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               {r.actions.map((a, j) => <ActionBtn key={j} label={a[0]} tone={a[1]} />)}
             </div>
           </div>
         ))}
         {view === 'inv' && INVOICES.map((r, i) => (
           <div key={i} style={{
-            background: 'var(--card)', boxShadow: 'var(--raised-2)',
-            padding: 12, marginBottom: 8,
-            display: 'flex', flexDirection: 'column', gap: 8,
+            background: 'var(--card)', boxShadow: 'var(--shadow-sm), var(--ring)',
+            borderRadius: 'var(--radius-md)',
+            padding: 14, marginBottom: 10,
+            display: 'flex', flexDirection: 'column', gap: 10,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <MiniAv initials={r.i} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{r.name}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <MiniAv initials={r.i} size={36} />
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{r.name}</span>
               <StatusPill s={r.st} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 14, color: 'var(--text-muted)' }}>{r.sent}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>{r.sent}</span>
               <span style={{
-                height: 26, padding: '0 8px',
-                display: 'inline-flex', alignItems: 'center',
-                background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-                color: r.paid ? 'var(--lcd-green)' : 'var(--lcd-red)',
-                textShadow: r.paid ? 'var(--lcd-glow-green)' : 'var(--lcd-glow-red)',
-                fontFamily: 'var(--font-pixel)', fontSize: 16,
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+                fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
+                color: r.paid ? 'var(--green)' : 'var(--text)',
               }}>{money(r.total)}</span>
             </div>
-            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               {r.actions.map((a, j) => <ActionBtn key={j} label={a[0]} tone={a[1]} />)}
             </div>
           </div>
         ))}
         {view === 'pay' && PAYMENTS.map((p, i) => (
           <div key={i} style={{
-            background: 'var(--card)', boxShadow: 'var(--raised-2)',
-            padding: 12, marginBottom: 8,
-            display: 'flex', alignItems: 'center', gap: 10,
+            background: 'var(--card)', boxShadow: 'var(--shadow-sm), var(--ring)',
+            borderRadius: 'var(--radius-md)',
+            padding: 14, marginBottom: 10,
+            display: 'flex', alignItems: 'center', gap: 12,
           }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 14, color: 'var(--text)' }}>{p.date}</span>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{p.name}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>{p.date}</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{p.name}</span>
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{p.method}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{p.method}</div>
             </div>
             <span style={{
-              height: 26, padding: '0 8px',
-              display: 'inline-flex', alignItems: 'center',
-              background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-              color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-              fontFamily: 'var(--font-pixel)', fontSize: 15,
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+              fontVariantNumeric: 'tabular-nums', color: 'var(--green)',
             }}>+{money(p.amount)}</span>
           </div>
         ))}
