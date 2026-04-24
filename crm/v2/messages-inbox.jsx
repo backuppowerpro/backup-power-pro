@@ -20,22 +20,24 @@ const THREADS = [
   { name:'Carl W',   i:'CW', tint:'red',   dir:'in',    prev:'I decided to go with another company', ts:'APR 11', unread:0 },
 ];
 
-const TINTS = { navy:'var(--navy)', gold:'var(--gold)', red:'var(--ms-3)', green:'var(--ms-2)' };
+const TINTS = { navy:'var(--navy)', gold:'var(--gold)', red:'var(--red)', green:'var(--green)', purple:'var(--purple)' };
 
 function ThreadAvatar({ t, size = 48 }) {
   if (!t) return null;
   const tint = t.tint || 'navy';
+  // Gold avatars get navy initials for contrast; everything else white.
+  const fg = tint === 'gold' ? 'var(--navy)' : '#fff';
   return (
     <div style={{
       width: size, height: size, flex: '0 0 auto',
       background: TINTS[tint] || 'var(--navy)',
-      clipPath: 'var(--avatar-clip)',
+      borderRadius: '50%',
       display: 'grid', placeItems: 'center',
     }}>
       <span style={{
-        fontFamily: 'var(--font-chrome)', fontWeight: 700,
-        color: tint === 'gold' ? '#1a1a1a' : 'var(--gold)',
-        fontSize: size >= 48 ? 14 : 11, letterSpacing: '.04em',
+        fontFamily: 'var(--font-body)', fontWeight: 600,
+        color: fg,
+        fontSize: size >= 48 ? 14 : 11, letterSpacing: '0.01em',
       }}>{t.i || '?'}</span>
     </div>
   );
@@ -44,11 +46,13 @@ function ThreadAvatar({ t, size = 48 }) {
 function AlexBadge() {
   return (
     <span style={{
-      marginLeft: 6, padding: '1px 5px',
-      color: 'var(--text-faint)',
-      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '.08em',
-      border: '1px solid rgba(0,0,0,.15)',
-    }}>alex</span>
+      marginLeft: 6, padding: '2px 8px',
+      color: 'var(--blue)',
+      background: 'color-mix(in srgb, var(--blue) 12%, var(--card))',
+      fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 10,
+      letterSpacing: '0.04em',
+      borderRadius: 'var(--radius-pill)',
+    }}>Alex</span>
   );
 }
 
@@ -56,7 +60,7 @@ function Preview({ t }) {
   const icon = t.dir === 'out' ? MsgIcons.arrR : t.dir === 'call' ? MsgIcons.phone : MsgIcons.arrL;
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 6,
+      display: 'flex', alignItems: 'center', gap: 8,
       fontFamily: 'var(--font-body)', fontSize: 13,
       color: t.unread ? 'var(--text)' : 'var(--text-muted)',
       fontWeight: t.unread ? 500 : 400,
@@ -65,13 +69,15 @@ function Preview({ t }) {
       <span style={{ color: 'var(--text-faint)', display:'inline-flex', flex:'0 0 auto' }}>{icon}</span>
       {t.call && (
         <span style={{
-          padding:'0 4px', background:'var(--lcd-bg)', boxShadow:'var(--pressed-2)',
-          color:'var(--lcd-red)', textShadow:'var(--lcd-glow-red)',
-          fontFamily:'var(--font-pixel)', fontSize:12,
+          padding:'2px 8px', background:'var(--sunken)',
+          color:'var(--navy)',
+          fontFamily:'var(--font-mono)', fontWeight: 600, fontSize:11,
+          borderRadius: 'var(--radius-sm)',
+          boxShadow: 'var(--ring)',
         }}>{t.call}</span>
       )}
       <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-        {t.alex && <span style={{ color: 'var(--text-faint)', marginRight: 4 }}>Alex:</span>}
+        {t.alex && <span style={{ color: 'var(--blue)', marginRight: 4, fontWeight: 500 }}>Alex:</span>}
         {t.prev}
       </span>
     </div>

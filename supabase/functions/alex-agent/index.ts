@@ -455,27 +455,31 @@ Panel photo:
 
 RECEIVING ANY PHOTO — this is the most important rule about photos:
 
-  Every inbound photo is pre-classified by vision before you see it. The user turn carries a tag like "[VISION CHECK: appears to be a panel]" or "[VISION CHECK: appears to be a selfie]". Use that tag to pick your response path:
+  Every inbound photo is pre-classified by vision before you see it. The user turn carries a tag like "[VISION CHECK: appears to be a panel]" or "[VISION CHECK: appears to be a selfie]". Vision class is the WHOLE signal. Follow exactly ONE branch:
 
-  - **panel, outlet, generator, meter** → proceed with the normal ack + next-ask flow below. DO NOT say "I see your panel" or any specific visual content — just warmly acknowledge the photo and move on.
-  - **selfie, pet, screenshot, receipt, other, unclear** → do NOT treat it as the panel. Warmly + briefly ask for the right thing: e.g. *"Ha — cute dog. Could you grab one of the electrical panel with the door open whenever you get a chance?"* or *"That looks like a screenshot — mind snapping one of the panel itself, breakers visible? That's what Key needs to put the quote together."* Don't be critical or scolding; acknowledge what they sent and redirect with a question.
+  ▲ WORK-PHOTO branch (panel, outlet, generator, meter)
+    1. Save the photo URL with write_memory (the code also saves it — this is a belt-and-suspenders extra tag, key: "photo_url" is fine).
+    2. Warm, generic acknowledgment: "Got it, thanks — that goes to Key." / "Nice, he'll take a look." / "Perfect, appreciate you sending that." Vary wording. No "I see the breakers are rusty" or "looks like a 200A panel" — you get ONE word of visual info (the class) and nothing more.
+    3. Call notify_key with reason "photo_received". Every single work-photo. No exceptions.
+    4. In the SAME message, ask for the SINGLE next missing item (panel location, address, or generator outlet — whichever is highest priority). One question only. If everything is collected, call mark_complete instead.
 
-  Whatever the vision class, NEVER describe what's in the image beyond the class-appropriate framing above. Don't say how many breakers. Don't describe brand. Don't say the panel is rusty. You get exactly ONE word of visual information (the class); anything more is a hallucination risk.
+  ▼ WRONG-PHOTO branch (selfie, pet, screenshot, receipt, other, unclear)
+    1. Warmly acknowledge what they sent without scolding — one short sentence of genuine reaction: "Ha, that's a handsome cat." / "That looks like a screenshot." / "Nice selfie."
+    2. Immediately redirect to the panel photo, ONE short sentence: "Whenever you get a chance, could you grab one of the electrical panel with the door open?" Pick the phrasing, just one redirect.
+    3. DO NOT call notify_key. DO NOT ask a second question. DO NOT ask for address, location, outlet, or anything else in this turn. You haven't received the panel yet — any other question is a non-sequitur.
+    4. Length: two sentences MAX. Under 200 characters.
 
-  What to do on ANY photo (ALL FOUR STEPS EVERY TIME — no exceptions):
-    1. Save the photo URL with write_memory immediately. The code also saves it automatically; calling write_memory is an extra safety net and tags the most recent semantic context (key: "photo_url" is fine).
-    2. Write a warm, GENERIC acknowledgment that works whether it's a panel, an outlet, a selfie, or a blurry thumb. Vary wording so it never sounds canned. Good examples:
-       "Got it, thanks for sending that."
-       "Perfect, Key will take a look."
-       "Appreciate you grabbing that — he'll look it over."
-       "Nice, thanks — that goes straight to Key."
-    3. Call notify_key with reason "photo_received" so Key opens the thread and classifies it himself. THIS IS NON-NEGOTIABLE — every single photo gets a notify_key call. No reasoning around it, no "this is a follow-up photo so Key already knows" — every photo.
-    4. In the SAME message as the acknowledgment, ask for whichever of the remaining items (panel location, address, generator outlet) is still missing — pick ONE, not two. If nothing is missing, call mark_complete instead.
+  Whichever branch: NEVER narrate your decision process in the reply text. Lines that leak the playbook are banned:
+    ✘ "Noted, I already fell into that exact pitfall. Moving on."
+    ✘ "Ha, ignore me, talking to myself."
+    ✘ "As the pitfalls file notes…"
+    ✘ "Per the briefing…"
+  All four of those were observed in real customer conversations on 2026-04-24. Every one of them sent the customer a window into Alex's internal plumbing. If you catch yourself writing anything about pitfalls, memory, the briefing, or your own reasoning — delete that sentence before sending.
 
-  A PHOTO REPLY THAT IS ONLY "Got it, thanks." IS A FAILURE.
-  A PHOTO REPLY WITHOUT A QUESTION MARK IS A FAILURE (unless you just called mark_complete).
-  A PHOTO REPLY WITHOUT notify_key IS A FAILURE.
-  These three failures are exactly what happened with a real customer on 2026-04-23 — you replied "Got it, thanks." to a media attachment, asked nothing, and never pinged Key. Do not repeat that mistake.
+  A WORK-PHOTO reply that is only "Got it, thanks." IS A FAILURE.
+  A WORK-PHOTO reply without a question mark IS A FAILURE (unless you just called mark_complete).
+  A WORK-PHOTO reply without notify_key IS A FAILURE.
+  A WRONG-PHOTO reply that asks for anything OTHER than a panel photo IS A FAILURE.
 
   Concrete example of a GOOD photo reply (photo + location already on file, still need address):
     Alex: "Got it, thanks — that goes straight to Key. What's the full install address, street and city?"
@@ -2473,13 +2477,16 @@ Deno.serve(async (req) => {
     })
     await Promise.all(photoSaves)
 
-    // Mark photo received on session — used by follow-up engine to pick the right track
-    await supabase.from('alex_sessions')
-      .update({ photo_received: true })
-      .eq('session_id', session.id)
+    // photo_received is set BELOW, AFTER vision classifies the photo —
+    // we only flag "a work-photo arrived" when the class is actually a
+    // work-photo (panel / outlet / generator / meter). A cat, selfie, or
+    // screenshot used to flip the flag to true, which caused the safety
+    // net to proceed to "which part of the house is that in?" after a
+    // cat photo (real bug 2026-04-24). See the update call right after
+    // vision classification below.
 
-    // Cancel any pending reminder — they already sent the photo, no need to nag
-    await supabase.from('sparky_memory').delete().eq('key', `reminder:${fromPhone}`)
+    // Don't cancel pending reminders yet either — if the photo turns out
+    // to be a pet or screenshot, we still need the reminder active.
 
     // ── VISION CLASSIFICATION ────────────────────────────────────────────
     // opus-4-7 has vision. Before the main Alex loop, classify the first
@@ -2529,6 +2536,21 @@ Deno.serve(async (req) => {
       category: 'contact',
       importance: 3,
     }, { onConflict: 'key' })
+
+    // Only set photo_received for work-photo classes. A cat photo is a
+    // photo, but it is NOT the panel photo Alex is waiting for; flipping
+    // the flag would let the safety net fast-forward to "which part of
+    // the house is the panel in?" even though no panel was seen.
+    const WORK_PHOTO_CLASSES = new Set(['panel', 'outlet', 'generator', 'meter'])
+    const isWorkPhoto = WORK_PHOTO_CLASSES.has(photoClass)
+    if (isWorkPhoto) {
+      await supabase.from('alex_sessions')
+        .update({ photo_received: true })
+        .eq('session_id', session.id)
+      // Only cancel pending reminder on a work photo — a pet photo still
+      // means Key's panel isn't known yet, keep the nudge active.
+      await supabase.from('sparky_memory').delete().eq('key', `reminder:${fromPhone}`)
+    }
 
     // Tell Alex the class via the user message — so the model picks the right
     // response path (proceed vs retake-ask) without needing a system-prompt
@@ -2846,12 +2868,19 @@ Deno.serve(async (req) => {
     // / "that answers" / reasoning framing, it's reasoning not a reply.
     const thirdPerson = /(^\s*)(the customer|this customer|the lead|the user|the person|based on (the|what|this)|looking at (the|this|what)|it seems (that|the)|appears (that|the)|they said|they mentioned|they gave me|they told me|they're asking|since i |note on (the|my) briefing|name says|briefing (says|shows|notes|indicates))/i
     const reasoningFramer = /\b(that answers (the|my)|worth noting (that|—|-)|also worth noting|let me pivot|let me ask|this is the|this answers|the question (is|was|becomes)|so my (next|move|plan)|my (next|move|plan) (is|will))\b/i
+    // Self-referential "I'm talking to myself" / "fell into pitfall" / "as
+    // pitfalls.md notes" / "ignore me" leaks — Alex narrating his own
+    // playbook awareness to the customer. Observed live 2026-04-24 on a
+    // pet photo: "Noted, I already fell into that exact pitfall. Moving on."
+    // followed two turns later by "Ha, ignore me, talking to myself."
+    const playbookLeak = /\b(fell into (that|a|the|my|an?) (exact )?pitfall|pitfalls?\.md|according to (the|my) (playbook|memory|notes)|as (the )?(pitfalls|patterns|playbook|memory) (say|says|note|notes|show|shows)|ignore me|talking to myself|never mind me|never mind that|disregard (the|my) last|strike that)\b/i
     const looksLikeMonologue =
       (response.length > 40 && selfRef.test(response)) ||
       (mRx.test(response.slice(0, 80)) && response.length > 80) ||
       classicMono ||
       thirdPerson.test(response.slice(0, 120)) ||
-      (response.length > 120 && reasoningFramer.test(response))
+      (response.length > 120 && reasoningFramer.test(response)) ||
+      playbookLeak.test(response)
     // SMART STRIP — if monologue sits at the START of an otherwise-clean
     // message (a greeting follows), slice the monologue prefix away rather
     // than replacing the whole reply. Saves good content when Alex just
