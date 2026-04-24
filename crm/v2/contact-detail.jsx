@@ -45,31 +45,49 @@ function Header({ mobile, onClose, showStagePicker }) {
   return (
     <div style={{
       position: 'relative',
-      padding: mobile ? '16px 16px 12px' : '14px 16px 12px',
-      background: 'var(--card)', boxShadow: 'var(--raised)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+      padding: mobile ? '22px 20px 20px' : '22px 24px 22px',
+      background: 'var(--navy)', color: '#fff',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
     }}>
-      <button className="tactile-raised" style={{
-        position: 'absolute', top: 12, left: 12,
-        width: 32, height: 32, display: 'grid', placeItems: 'center',
-        fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 16,
-      }}>{mobile ? '‹' : '×'}</button>
+      {/* Back / close button — top-left */}
+      <button style={{
+        position: 'absolute', top: 14, left: 14,
+        width: 34, height: 34,
+        background: 'rgba(255,255,255,0.08)', color: '#fff',
+        borderRadius: 'var(--radius-pill)',
+        display: 'grid', placeItems: 'center',
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+        cursor: 'pointer',
+        transition: 'background var(--dur) var(--ease)',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+      >{mobile ? '‹' : '×'}</button>
 
-      <button className="tactile-raised" style={{
-        position: 'absolute', top: 12, right: 12,
-        height: 28, padding: '0 10px',
-        fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 10,
-        letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-muted)',
-      }}>· · ·</button>
+      {/* Overflow menu — top-right */}
+      <button style={{
+        position: 'absolute', top: 14, right: 14,
+        width: 34, height: 34,
+        background: 'rgba(255,255,255,0.08)', color: '#fff',
+        borderRadius: 'var(--radius-pill)',
+        display: 'grid', placeItems: 'center',
+        cursor: 'pointer',
+        transition: 'background var(--dur) var(--ease)',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+      ><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/></svg></button>
 
-      <HouseBlock size={64} />
+      <HouseBlock size={68} />
       <div style={{
-        fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 700, color: 'var(--text)',
-        lineHeight: 1.1, marginTop: 2,
+        fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
+        letterSpacing: '-0.01em',
+        color: '#fff',
+        lineHeight: 1.15, marginTop: 4,
       }}>Sarah M</div>
       <div style={{
-        fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)',
-        textAlign: 'center', lineHeight: 1.4, letterSpacing: '.02em',
+        fontFamily: 'var(--font-mono)', fontSize: 12, color: 'rgba(255,255,255,0.65)',
+        textAlign: 'center', lineHeight: 1.5, letterSpacing: '0.01em',
       }}>
         (864) 555-0101<br/>
         412 Laurel Ridge Rd · Greenville SC
@@ -81,22 +99,27 @@ function Header({ mobile, onClose, showStagePicker }) {
 function StageStrip() {
   return (
     <button style={{
-      width: '100%', height: 40, padding: '0 14px',
+      width: '100%', height: 52, padding: '0 20px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-      cursor: 'pointer', color: 'inherit',
+      background: 'var(--card)',
+      boxShadow: '0 1px 0 var(--divider)',
+      cursor: 'pointer', color: 'inherit', border: 0,
     }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--purple)' }} />
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
+          color: 'var(--text)', letterSpacing: '0.01em',
+        }}>Quoted</span>
+      </span>
       <span style={{
-        fontFamily: 'var(--font-pixel)', fontSize: 18, lineHeight: 1,
-        color: '#a78bfa',
-        textShadow: '0 0 6px rgba(167,139,250,.55)',
-        letterSpacing: '.12em', textTransform: 'uppercase',
-      }}>◆ QUOTED</span>
-      <span style={{
-        fontFamily: 'var(--font-pixel)', fontSize: 14,
-        color: 'var(--lcd-amber)', textShadow: 'var(--lcd-glow-amber)',
-        letterSpacing: '.08em',
-      }}>07D IN STAGE ▾</span>
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: 12,
+        color: 'var(--text-muted)',
+      }}>
+        <span>7 days in stage</span>
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6 L8 10 L12 6" /></svg>
+      </span>
     </button>
   );
 }
