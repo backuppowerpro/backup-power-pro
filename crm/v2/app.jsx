@@ -5916,14 +5916,22 @@ function ToastRoot() {
             <span style={{ width: 8, height: 8, background: color, borderRadius: '50%', flex: '0 0 auto' }} />
             <span style={{ flex: 1 }}>{t.text}</span>
             {t.action ? (
-              <button onClick={() => {
+              <button onClick={(e) => {
+                e.stopPropagation();
                 try { t.action.onClick(); } catch {}
                 dismiss();
               }} style={{
-                padding: '4px 10px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
-                background: 'transparent', color: 'var(--navy)',
-                boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
-              }}>{t.action.label}</button>
+                padding: '4px 14px', height: 26,
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                background: 'var(--navy)', color: '#fff',
+                border: 'none', cursor: 'pointer',
+                borderRadius: 'var(--radius-pill)',
+                flex: '0 0 auto',
+                transition: 'background var(--dur) var(--ease)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--navy-mid)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--navy)' }}
+              >{t.action.label}</button>
             ) : null}
           </div>
         );
