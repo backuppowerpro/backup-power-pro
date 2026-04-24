@@ -3758,16 +3758,16 @@ function SmartQuoteHint({ total, state }) {
   const BASE_HIGH = 1497;
   let tone = 'muted', label = '', body = '';
   if (total < BASE_LOW - 50) {
-    tone = 'red'; label = 'BELOW MARGIN';
+    tone = 'red'; label = 'Below margin';
     body = `Below the $${BASE_LOW.toLocaleString()} floor — confirm scope, margin may be too thin.`;
   } else if (total >= BASE_LOW - 50 && total <= BASE_HIGH + 50) {
-    tone = 'green'; label = 'IN RANGE';
+    tone = 'green'; label = 'In range';
     body = `Sits inside the $${BASE_LOW}–$${BASE_HIGH} base-offer window.`;
   } else if (total <= BASE_HIGH + 400) {
-    tone = 'gold'; label = 'CUSTOM';
+    tone = 'gold'; label = 'Custom';
     body = `Above base offer — price-anchor the $15K standby before sending.`;
   } else {
-    tone = 'gold'; label = 'HIGH TICKET';
+    tone = 'gold'; label = 'High ticket';
     body = `High ticket. Consider splitting with a deposit + remainder invoice.`;
   }
   return (
@@ -8413,7 +8413,7 @@ function LiveCalendar() {
                   position: 'absolute', right: 6, top: 6,
                   zIndex: 2,
                 }}>
-                  <span className="smart-chip smart-chip--red">OVERLAP</span>
+                  <span className="smart-chip smart-chip--red">Overlap</span>
                 </div>
               ) : null}
               <div style={{
