@@ -30,22 +30,22 @@ const Ico = {
 // of the different left hand items all as tabs, no tabs within tabs").
 // Mobile scrolls horizontally; active tab auto-scrolls into view.
 const TABS = [
-  { id: 'quick',     label: 'QUICK',     icon: Ico.leads },
-  { id: 'calendar',  label: 'CALENDAR',  icon: Ico.calendar },
+  { id: 'quick',     label: 'Quick',     icon: Ico.leads },
+  { id: 'calendar',  label: 'Calendar',  icon: Ico.calendar },
   // LIST removed 2026-04-21 — QUICK is now a Sparky-scored smart list.
   // PIPELINE removed 2026-04-22 (Key: "i really dislike the pipeline view,
   // lets just scrap that") — Smart List + priority tables replace it.
-  { id: 'messages',  label: 'MESSAGES',  icon: Ico.messages },
-  { id: 'calls',     label: 'CALLS',     icon: Ico.messages },
-  { id: 'proposals', label: 'PROPOSALS', icon: Ico.finance },
-  { id: 'invoices',  label: 'INVOICES',  icon: Ico.finance },
-  { id: 'permits',   label: 'PERMITS',   icon: Ico.leads },
-  { id: 'materials', label: 'MATERIALS', icon: Ico.leads },
-  { id: 'finance',   label: 'FINANCE',   icon: Ico.finance },
+  { id: 'messages',  label: 'Messages',  icon: Ico.messages },
+  { id: 'calls',     label: 'Calls',     icon: Ico.messages },
+  { id: 'proposals', label: 'Proposals', icon: Ico.finance },
+  { id: 'invoices',  label: 'Invoices',  icon: Ico.finance },
+  { id: 'permits',   label: 'Permits',   icon: Ico.leads },
+  { id: 'materials', label: 'Materials', icon: Ico.leads },
+  { id: 'finance',   label: 'Finance',   icon: Ico.finance },
   // 2026-04-24: Playbook tab backs the /memories/ filesystem that
   // Alex + Sparky + post-mortem Alex read and write. Key reviews,
   // prunes bad patterns, and adds his own field insights.
-  { id: 'playbook',  label: 'PLAYBOOK',  icon: Ico.finance },
+  { id: 'playbook',  label: 'Playbook',  icon: Ico.finance },
 ];
 
 /* ────────── Top bar (desktop + mobile share layout) ────────── */
@@ -59,22 +59,19 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark
       background: 'var(--card)',
       position: 'relative', zIndex: 3,
     }}>
-      {/* Logo */}
+      {/* Logo — compact wordmark */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width: compact ? 14 : 16, height: compact ? 14 : 16,
+          width: compact ? 22 : 26, height: compact ? 22 : 26,
           background: 'var(--gold)',
-          boxShadow: 'var(--shadow-sm)',
+          borderRadius: 'var(--radius-sm)',
+          boxShadow: 'var(--shadow-xs)',
         }}/>
         <div style={{
-          fontFamily: 'var(--font-pixel)', fontSize: compact ? 24 : 28,
-          lineHeight: 1, letterSpacing: '.08em', color: 'var(--navy)',
-        }}>BPP</div>
-        <div style={{
-          fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 10,
-          letterSpacing: '.12em', color: 'var(--text-muted)',
-          textTransform: 'uppercase', transform: 'translateY(1px)',
-        }}>CRM</div>
+          fontFamily: 'var(--font-body)', fontWeight: 700,
+          fontSize: compact ? 15 : 17, letterSpacing: '-0.01em',
+          color: 'var(--navy)',
+        }}>Backup Power Pro</div>
       </div>
 
       <div style={{ flex: 1 }} />
@@ -110,12 +107,12 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark
         }}>{Ico.plus}</button>
         <div style={{
           width: 36, height: 36, background: 'var(--navy)',
-          clipPath: 'var(--avatar-clip)',
+          borderRadius: '50%',
           display: 'grid', placeItems: 'center',
         }}>
           <span style={{
-            fontFamily: 'var(--font-chrome)', fontWeight: 700,
-            color: 'var(--gold)', fontSize: 14, letterSpacing: '.04em',
+            fontFamily: 'var(--font-body)', fontWeight: 600,
+            color: '#fff', fontSize: 13, letterSpacing: '0.01em',
           }}>KG</span>
         </div>
       </div>
@@ -135,10 +132,10 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark
 //   MONEY      PROPOSALS · INVOICES        (no finance dashboard)
 //   CALENDAR   standalone — tomorrow's installs at a glance
 const MOBILE_GROUPS = [
-  { id: 'quick',    label: 'QUICK',    icon: Ico.leads,    children: null },
-  { id: 'leads',    label: 'LEADS',    icon: Ico.leads,    children: ['messages', 'calls'] },
-  { id: 'money',    label: 'MONEY',    icon: Ico.finance,  children: ['proposals', 'invoices'] },
-  { id: 'calendar', label: 'CAL',      icon: Ico.calendar, children: null },
+  { id: 'quick',    label: 'Quick',    icon: Ico.leads,    children: null },
+  { id: 'leads',    label: 'Leads',    icon: Ico.leads,    children: ['messages', 'calls'] },
+  { id: 'money',    label: 'Money',    icon: Ico.finance,  children: ['proposals', 'invoices'] },
+  { id: 'calendar', label: 'Calendar', icon: Ico.calendar, children: null },
 ];
 
 // Tabs that don't belong on a phone — pipeline needs width, table views

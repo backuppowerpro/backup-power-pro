@@ -8112,25 +8112,28 @@ function reasonChipFor({ contact, signals }) {
   }
   if (signals.installWithin3d) {
     const t = new Date(contact.install_date);
-    const day = t.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
-    return { label: `INSTALL ${day}`, tone: 'green' };
+    const day = t.toLocaleDateString(undefined, { weekday: 'short' });
+    return { label: `Install ${day}`, tone: 'green' };
   }
   if (signals.installWithinWeek) {
     const t = new Date(contact.install_date);
-    const day = t.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
-    return { label: `INSTALL ${day}`, tone: 'navy' };
+    const day = t.toLocaleDateString(undefined, { weekday: 'short' });
+    return { label: `Install ${day}`, tone: 'navy' };
   }
-  if (contact.stage === 7 || contact.stage === 8) return { label: 'AWAITING INSPECTION', tone: 'purple' };
+  if (contact.stage === 7 || contact.stage === 8) return { label: 'Awaiting inspection', tone: 'purple' };
   if (signals.stuckQuoteDays > 2) {
     const d = Math.round(signals.stuckQuoteDays);
-    const f = d >= 7 ? 'EXIT' : d >= 4 ? 'F/U 2' : 'F/U 1';
-    return { label: `[${f}] ${d}D SILENT`, tone: 'red' };
+    const f = d >= 7 ? 'Exit' : d >= 4 ? 'Follow up #2' : 'Follow up #1';
+    return { label: `${f} · ${d}d silent`, tone: 'red' };
   }
-  if (contact.stage >= 4 && contact.stage <= 6) return { label: STAGE_MAP[contact.stage] || `STAGE ${contact.stage}`, tone: 'purple' };
-  if (contact.stage === 3 && !contact.install_date) return { label: 'BOOKED · NEEDS DATE', tone: 'gold' };
-  if (contact.stage === 1 && signals.ageHours < 24) return { label: 'NEW LEAD', tone: 'navy' };
+  if (contact.stage >= 4 && contact.stage <= 6) {
+    const s = STAGE_MAP[contact.stage]; return { label: s ? s.charAt(0) + s.slice(1).toLowerCase() : `Stage ${contact.stage}`, tone: 'purple' };
+  }
+  if (contact.stage === 3 && !contact.install_date) return { label: 'Booked · needs date', tone: 'gold' };
+  if (contact.stage === 1 && signals.ageHours < 24) return { label: 'New lead', tone: 'navy' };
   if (contact.do_not_contact) return { label: 'DNC', tone: 'red' };
-  return { label: STAGE_MAP[contact.stage] || `STAGE ${contact.stage || 1}`, tone: 'muted' };
+  const s = STAGE_MAP[contact.stage] || `STAGE ${contact.stage || 1}`;
+  return { label: s.charAt(0) + s.slice(1).toLowerCase(), tone: 'muted' };
 }
 
 // Smart Today widget — 3-5 bullets summarizing what meaningfully changed
@@ -9062,22 +9065,29 @@ function AgentsInboxStrip() {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {items.map(item => {
-          const agentLabel = String(item.agent || 'agent').toUpperCase();
+          const agentLabel = item.agent
+            ? item.agent.charAt(0).toUpperCase() + item.agent.slice(1)
+            : 'Agent';
           const isUrgent = item.priority === 'urgent';
           const contactName = item.contacts?.name || '';
           return (
             <div key={item.id} style={{
-              padding: '10px 12px',
-              background: 'var(--bg)',
-              boxShadow: 'var(--pressed-2)',
-              borderLeft: `3px solid ${isUrgent ? 'var(--ms-3)' : 'var(--ms-1)'}`,
-              display: 'flex', flexDirection: 'column', gap: 4,
+              padding: '12px 14px',
+              background: 'var(--card)',
+              boxShadow: 'var(--ring)',
+              borderRadius: 'var(--radius-md)',
+              borderLeft: `3px solid ${isUrgent ? 'var(--red)' : 'var(--blue)'}`,
+              display: 'flex', flexDirection: 'column', gap: 6,
             }}>
-              <div className="mono" style={{
-                fontSize: 10, letterSpacing: '.08em',
-                color: isUrgent ? 'var(--ms-3)' : 'var(--text-faint)',
+              <div style={{
+                fontSize: 12, fontWeight: 500,
+                color: isUrgent ? 'var(--red)' : 'var(--text-muted)',
+                display: 'flex', alignItems: 'center', gap: 6,
               }}>
-                {agentLabel}{contactName ? ` · ${contactName}` : ''} · {fmtAge(item.created_at)}
+                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{agentLabel}</span>
+                {contactName ? <><span style={{ color: 'var(--text-faint)' }}>·</span><span>{contactName}</span></> : null}
+                <span style={{ color: 'var(--text-faint)' }}>·</span>
+                <span style={{ color: 'var(--text-faint)' }}>{fmtAge(item.created_at)}</span>
               </div>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)' }}>
                 {item.summary}
