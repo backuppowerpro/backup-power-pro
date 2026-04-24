@@ -433,31 +433,47 @@ function AuthGate({ onAuth }) {
           display: 'flex', flexDirection: 'column', gap: 18,
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.01em' }}>Email</label>
+            <label style={{
+              fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600,
+              color: 'var(--text-muted)', letterSpacing: '0.01em',
+            }}>Email</label>
             <input
               type="email" value={email}
               onChange={e => setEmail(e.target.value)}
+              onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
+              onBlur={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
               style={{
                 padding: '12px 14px', height: 44,
                 background: 'var(--sunken)',
                 boxShadow: 'var(--ring)',
                 borderRadius: 'var(--radius-sm)',
-                fontSize: 15,
+                fontSize: 15, fontFamily: 'var(--font-body)',
+                color: 'var(--text)',
+                border: 'none', outline: 'none',
+                boxSizing: 'border-box',
               }}
               required autoFocus
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.01em' }}>Password</label>
+            <label style={{
+              fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600,
+              color: 'var(--text-muted)', letterSpacing: '0.01em',
+            }}>Password</label>
             <input
               type="password" value={password}
               onChange={e => setPassword(e.target.value)}
+              onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
+              onBlur={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
               style={{
                 padding: '12px 14px', height: 44,
                 background: 'var(--sunken)',
                 boxShadow: 'var(--ring)',
                 borderRadius: 'var(--radius-sm)',
-                fontSize: 15,
+                fontSize: 15, fontFamily: 'var(--font-body)',
+                color: 'var(--text)',
+                border: 'none', outline: 'none',
+                boxSizing: 'border-box',
               }}
               required
             />
