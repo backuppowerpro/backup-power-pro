@@ -8,7 +8,9 @@
  * Bumps CACHE_VERSION on any shell change so clients get the new files.
  */
 
-const CACHE_VERSION = 'bpp-v2-2026-04-18-02';
+// Brand-alignment cache bump — invalidates the old Minesweeper/pixel
+// assets that Key's browser was still serving from SW cache.
+const CACHE_VERSION = 'bpp-v2-2026-04-24-brand';
 const SHELL_FILES = [
   '/crm/v2/',
   '/crm/v2/index.html',
@@ -29,6 +31,7 @@ const SHELL_FILES = [
   '/crm/v2/voice-call.jsx',
   '/crm/v2/compressed-list.jsx',
   '/crm/v2/design-canvas.jsx',
+  '/crm/v2/design-system.html',
   '/crm/v2/manifest.json',
 ];
 

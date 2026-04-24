@@ -322,19 +322,20 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
             aria-label={badge ? `${t.label} (${badge})` : t.label}
             onClick={() => onChange && onChange(t.id)}
             style={{
-              height: '100%', padding: '0 10px', minWidth: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              height: '100%', padding: '0 6px', minWidth: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               flex: '1 1 0',
               color: isActive ? 'var(--navy)' : 'var(--text-muted)',
               fontFamily: 'var(--font-display)',
-              fontWeight: isActive ? 700 : 600,
-              fontSize: 13,
-              letterSpacing: '0.01em',
+              fontWeight: isActive ? 700 : 500,
+              fontSize: isActive ? 13 : 12.5,
+              letterSpacing: 0,
               boxShadow: isActive ? 'inset 0 -2px 0 var(--gold)' : 'none',
               transition: 'box-shadow var(--dur) var(--ease), color var(--dur) var(--ease)',
               cursor: 'pointer',
               background: 'transparent', border: 'none',
               overflow: 'hidden', textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.label}</span>
             {badge ? (

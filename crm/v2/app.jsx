@@ -785,25 +785,26 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
   // Filter chip definitions. Counts render inline so Key can see "21 waiting"
   // at a glance without applying the filter first.
   const chips = [
-    { id: 'all',     label: 'ALL',     count: stageCounts.all },
-    { id: 'waiting', label: 'WAITING', count: stageCounts.waiting, tint: 'var(--gold)' },
-    { id: 'new',     label: 'NEW',     count: stageCounts.new },
-    { id: 'quoted',  label: 'QUOTED',  count: stageCounts.quoted },
-    { id: 'booked',  label: 'BOOKED+', count: stageCounts.booked },
-    { id: 'done',    label: 'DONE',    count: stageCounts.done },
+    { id: 'all',     label: 'All',     count: stageCounts.all },
+    { id: 'waiting', label: 'Waiting', count: stageCounts.waiting, tint: 'var(--gold)' },
+    { id: 'new',     label: 'New',     count: stageCounts.new },
+    { id: 'quoted',  label: 'Quoted',  count: stageCounts.quoted },
+    { id: 'booked',  label: 'Booked+', count: stageCounts.booked },
+    { id: 'done',    label: 'Done',    count: stageCounts.done },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
-      <div style={{ padding: '8px 16px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ padding: '12px 16px 0', display: 'flex', gap: 10, alignItems: 'center' }}>
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder={`Search ${totalCount} contacts by name, phone, address…`}
           style={{
-            flex: 1, height: 36, padding: '0 12px',
+            flex: 1, height: 40, padding: '0 14px',
             fontFamily: 'var(--font-body)', fontSize: 14,
-            background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+            background: 'var(--sunken)', boxShadow: 'var(--ring)',
+            borderRadius: 'var(--radius-pill)',
             border: 'none',
           }}
         />
@@ -811,33 +812,47 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
           onClick={() => { if (selectMode) exitSelectMode(); else setSelectMode(true); }}
           title={selectMode ? 'Cancel bulk select' : 'Select multiple for bulk actions'}
           style={{
-            height: 36, padding: '0 12px',
-            fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, letterSpacing: '.06em',
+            height: 40, padding: '0 18px',
+            fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, letterSpacing: '0.01em',
             background: selectMode ? 'var(--navy)' : 'var(--card)',
-            color: selectMode ? 'var(--gold)' : 'var(--text-muted)',
-            boxShadow: selectMode ? 'var(--pressed-2)' : 'var(--raised-2)',
-            border: 'none', cursor: 'pointer', textTransform: 'uppercase',
+            color: selectMode ? '#fff' : 'var(--text-muted)',
+            boxShadow: selectMode ? 'var(--shadow-sm)' : 'var(--ring)',
+            borderRadius: 'var(--radius-pill)',
+            border: 'none', cursor: 'pointer',
+            transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
           }}>
-          {selectMode ? 'CANCEL' : 'SELECT'}
+          {selectMode ? 'Cancel' : 'Select'}
         </button>
       </div>
-      {/* Stage filter chips — persisted via localStorage. WAITING highlighted
-          gold because it's the single most actionable filter. */}
+      {/* Stage filter chips — pill-shaped, tone-tinted backgrounds. Waiting
+          gets the gold treatment because it's the single most actionable. */}
       <div style={{
-        padding: '8px 16px 4px',
-        display: 'flex', gap: 6, flexWrap: 'wrap',
+        padding: '12px 16px 8px',
+        display: 'flex', gap: 8, flexWrap: 'wrap',
       }}>
         {chips.map(c => {
           const active = stageFilter === c.id;
+          const isTinted = !!c.tint;
           return (
             <button key={c.id} onClick={() => setStageFilter(c.id)} style={{
-              padding: '4px 10px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
-              background: active ? 'var(--navy)' : 'var(--card)',
-              color: active ? (c.tint || 'var(--gold)') : (c.tint || 'var(--text-muted)'),
-              boxShadow: active ? 'var(--pressed-2)' : 'var(--raised-2)',
-              cursor: 'pointer', border: 'none', letterSpacing: '.06em',
+              padding: '6px 12px', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 600,
+              background: active
+                ? 'var(--navy)'
+                : (isTinted ? 'color-mix(in srgb, var(--gold) 14%, var(--card))' : 'var(--card)'),
+              color: active
+                ? '#fff'
+                : (c.tint || 'var(--text-muted)'),
+              boxShadow: active ? 'var(--shadow-sm)' : 'var(--ring)',
+              borderRadius: 'var(--radius-pill)',
+              cursor: 'pointer', border: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
             }}>
-              {c.label} <span style={{ marginLeft: 4, opacity: .6 }}>{c.count}</span>
+              {c.label}
+              <span style={{
+                fontSize: 11, fontWeight: 700, opacity: active ? 0.8 : 0.65,
+                fontVariantNumeric: 'tabular-nums',
+              }}>{c.count}</span>
             </button>
           );
         })}
@@ -2002,7 +2017,7 @@ function InstallBriefModal({ contact, onClose }) {
           padding: '14px 16px', background: 'var(--navy)', color: 'var(--gold)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <span className="chrome-label" style={{ fontSize: 11, letterSpacing: '.12em' }}>INSTALL BRIEF</span>
+          <span className="eyebrow" style={{ fontSize: 11, color: 'var(--gold)' }}>Install brief</span>
           <button onClick={onClose} style={{
             width: 26, height: 26, fontSize: 14, display: 'grid', placeItems: 'center',
             background: 'transparent', border: '1px solid rgba(255,186,0,.4)',
@@ -6276,8 +6291,8 @@ function LivePlaybook() {
       {/* Left pane — file tree */}
       <div style={{ width: 280, flexShrink: 0, borderRight: '1px solid var(--divider-faint)', overflowY: 'auto', background: 'var(--card)' }}>
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--divider-faint)' }}>
-          <div className="chrome-label" style={{ fontSize: 10, letterSpacing: '.12em', color: 'var(--text-muted)' }}>AI PLAYBOOK</div>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4, lineHeight: 1.4 }}>
+          <div className="eyebrow" style={{ fontSize: 11, color: 'var(--gold)' }}>AI playbook</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
             What Alex + Sparky have learned. Edit to correct patterns or add your own insight.
           </div>
         </div>
@@ -7982,9 +7997,12 @@ function LiveCalls({ onSelect }) {
 
   if (loading) return <Loading label="Loading calls" />;
   if (rows.length === 0) return (
-    <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-      <div className="chrome-label" style={{ fontSize: 14, letterSpacing: '.12em', marginBottom: 8 }}>NO CALLS YET</div>
-      <div style={{ fontSize: 13, fontFamily: 'var(--font-body)' }}>Inbound and outbound calls log here once Twilio Voice is dialed.</div>
+    <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+      <div style={{
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20,
+        letterSpacing: '-0.01em', color: 'var(--text)', marginBottom: 8,
+      }}>No calls yet</div>
+      <div style={{ fontSize: 14, fontFamily: 'var(--font-body)', lineHeight: 1.5 }}>Inbound and outbound calls log here once Twilio Voice is dialed.</div>
     </div>
   );
 
@@ -8403,9 +8421,12 @@ function LiveQuickList({ onSelect }) {
 
   if (rows.length === 0) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-        <div className="chrome-label" style={{ fontSize: 14, letterSpacing: '.12em', marginBottom: 8 }}>CLEAR DESK</div>
-        <div style={{ fontSize: 13, fontFamily: 'var(--font-body)' }}>No open replies, no installs this week, no stuck quotes. Go advertise or chase a new lead.</div>
+      <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20,
+          letterSpacing: '-0.01em', color: 'var(--text)', marginBottom: 8,
+        }}>Clear desk.</div>
+        <div style={{ fontSize: 14, fontFamily: 'var(--font-body)', lineHeight: 1.5 }}>No open replies, no installs this week, no stuck quotes. Go advertise or chase a new lead.</div>
       </div>
     );
   }
@@ -10004,27 +10025,31 @@ function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseConta
     // Sparky auto-detects the right ai-taskmaster mode from the question
     // text inside LiveSparky (detectMode), so no mode state leaks here.
     const asks = [
-      { label: 'BRIEF',    q: "Give me today's briefing — what needs my attention, who's hot, what's overdue." },
-      { label: 'HOT',      q: "Which leads are showing buying signals right now? Rank them most to least urgent." },
-      { label: 'WAITING',  q: "Who hasn't gotten a reply from me in 3+ days? Show name + last message." },
-      { label: 'DRAFT',    q: "Draft follow-up SMS for every lead waiting on me — one message per person." },
-      { label: 'TODAY',    q: "What installs, quotes, and follow-ups do I have on my plate today?" },
+      { label: 'Brief',    q: "Give me today's briefing — what needs my attention, who's hot, what's overdue." },
+      { label: 'Hot',      q: "Which leads are showing buying signals right now? Rank them most to least urgent." },
+      { label: 'Waiting',  q: "Who hasn't gotten a reply from me in 3+ days? Show name + last message." },
+      { label: 'Draft',    q: "Draft follow-up SMS for every lead waiting on me — one message per person." },
+      { label: 'Today',    q: "What installs, quotes, and follow-ups do I have on my plate today?" },
     ];
     buttons = (
       <>
         {asks.map(a => (
           <button key={a.label}
             onClick={() => window.dispatchEvent(new CustomEvent('bpp:sparky-prefill', { detail: { text: a.q } }))}
-            className="chrome-label"
             title={a.q}
             style={{
               height: '100%', padding: compact ? '0 12px' : '0 4px', minWidth: 0,
               background: 'transparent', border: 'none',
               color: 'var(--text-muted)',
-              fontSize: 11, cursor: 'pointer',
+              fontFamily: 'var(--font-display)', fontWeight: 500,
+              fontSize: 12.5, cursor: 'pointer',
               flex: compact ? '0 0 auto' : '1 1 0',
-              whiteSpace: 'nowrap',
-            }}>{a.label}</button>
+              whiteSpace: 'nowrap', letterSpacing: '0.01em',
+              transition: 'color var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--navy)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >{a.label}</button>
         ))}
       </>
     );
