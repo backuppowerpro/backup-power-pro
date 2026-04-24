@@ -1,54 +1,68 @@
 /* global React */
 // Compressed 360px list (desktop slide-over left side) — just enough
-// to show rows collapsing with Sarah M active/depressed.
+// to show rows collapsing with Sarah M active.
+// Brand-aligned 2026-04-24: pill tabs + smart-chip stage pills.
 
 const COMPRESSED_ROWS = [
-  { name: 'Sarah M',  initials: 'SM', phone: '(864) 555-0101', stage: 'QUOTED',  ts: '07D', active: true },
-  { name: 'Robert K', initials: 'RK', phone: '(864) 555-0123', stage: 'NEW',     ts: '3:12' },
-  { name: 'Ashley P', initials: 'AP', phone: '(864) 555-0145', stage: 'NEW',     ts: 'Y-DAY' },
-  { name: 'Dave H',   initials: 'DH', phone: '(864) 555-0167', stage: 'NEW',     ts: '08D',  overdue: true },
-  { name: 'Mike J',   initials: 'MJ', phone: '(864) 555-0189', stage: 'QUOTED',  ts: '04D',  overdue: true },
-  { name: 'Mark L',   initials: 'ML', phone: '(864) 555-0202', stage: 'BOOKED',  ts: '01D' },
-  { name: 'Susan E',  initials: 'SE', phone: '(864) 555-0224', stage: 'BOOKED',  ts: '02D' },
-  { name: 'Bill C',   initials: 'BC', phone: '(864) 555-0246', stage: 'PERMIT',  ts: '03D' },
-  { name: 'Helen S',  initials: 'HS', phone: '(864) 555-0268', stage: 'INSPECT', ts: 'TODAY' },
+  { name: 'Sarah M',  initials: 'SM', phone: '(864) 555-0101', stage: 'QUOTED',  ts: '7d',    active: true },
+  { name: 'Robert K', initials: 'RK', phone: '(864) 555-0123', stage: 'NEW',     ts: '3:12 PM' },
+  { name: 'Ashley P', initials: 'AP', phone: '(864) 555-0145', stage: 'NEW',     ts: 'Yesterday' },
+  { name: 'Dave H',   initials: 'DH', phone: '(864) 555-0167', stage: 'NEW',     ts: '8d',   overdue: true },
+  { name: 'Mike J',   initials: 'MJ', phone: '(864) 555-0189', stage: 'QUOTED',  ts: '4d',   overdue: true },
+  { name: 'Mark L',   initials: 'ML', phone: '(864) 555-0202', stage: 'BOOKED',  ts: '1d' },
+  { name: 'Susan E',  initials: 'SE', phone: '(864) 555-0224', stage: 'BOOKED',  ts: '2d' },
+  { name: 'Bill C',   initials: 'BC', phone: '(864) 555-0246', stage: 'PERMIT',  ts: '3d' },
+  { name: 'Helen S',  initials: 'HS', phone: '(864) 555-0268', stage: 'INSPECT', ts: 'Today' },
 ];
 
-const STG = {
-  NEW: 'var(--ms-1)', QUOTED: 'var(--ms-4)', BOOKED: 'var(--ms-2)',
-  PERMIT: 'var(--ms-5)', PAY: 'var(--ms-3)', PAID: 'var(--ms-2)',
-  PRINT: 'var(--ms-6)', INSPECT: 'var(--ms-7)',
+// Stage short label + tone for smart-chip. Matches the system elsewhere.
+const STAGE_INFO = {
+  NEW:     { label: 'New',        tone: 'navy'   },
+  QUOTED:  { label: 'Quoted',     tone: 'purple' },
+  BOOKED:  { label: 'Booked',     tone: 'green'  },
+  PERMIT:  { label: 'Permit',     tone: 'gold'   },
+  PAY:     { label: 'Pay',        tone: 'red'    },
+  PAID:    { label: 'Paid',       tone: 'green'  },
+  PRINT:   { label: 'Printed',    tone: 'navy'   },
+  INSPECT: { label: 'Inspection', tone: 'purple' },
 };
 
 function CompressedRow({ r }) {
+  const info = STAGE_INFO[r.stage] || { label: r.stage, tone: 'muted' };
   return (
     <div style={{
       position: 'relative',
-      height: 64, padding: '8px 12px',
-      display: 'flex', alignItems: 'center', gap: 10,
-      background: 'var(--card)',
-      boxShadow: r.active ? 'var(--pressed-2)' : 'none',
-      borderBottom: '1px solid rgba(0,0,0,.08)',
-    }}>
+      minHeight: 64, padding: '10px 14px',
+      display: 'flex', alignItems: 'center', gap: 12,
+      background: r.active ? 'var(--sunken)' : 'var(--card)',
+      borderBottom: '1px solid var(--divider-faint)',
+      transition: 'background var(--dur) var(--ease)',
+      cursor: 'pointer',
+    }}
+    onMouseEnter={e => { if (!r.active) e.currentTarget.style.background = 'var(--sunken)' }}
+    onMouseLeave={e => { if (!r.active) e.currentTarget.style.background = 'var(--card)' }}
+    >
       {r.overdue && (
         <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
+          position: 'absolute', left: 0, top: 6, bottom: 6, width: 3,
           background: 'var(--red)',
+          borderRadius: '0 2px 2px 0',
         }}/>
       )}
       <div style={{
         width: 36, height: 36, flex: '0 0 auto',
-        background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
+        background: 'var(--navy)',
+        borderRadius: '50%',
         display: 'grid', placeItems: 'center',
       }}>
         <span style={{
-          fontFamily: 'var(--font-chrome)', fontWeight: 700,
-          color: 'var(--gold)', fontSize: 11, letterSpacing: '.04em',
+          fontFamily: 'var(--font-body)', fontWeight: 600,
+          color: '#fff', fontSize: 12,
         }}>{r.initials}</span>
       </div>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{
-          fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+          fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
           color: 'var(--text)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{r.name}</span>
@@ -58,15 +72,12 @@ function CompressedRow({ r }) {
         }}>{r.phone}</span>
       </div>
       <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
         flex: '0 0 auto',
       }}>
-        <span className="chrome-label" style={{
-          fontSize: 9, color: STG[r.stage], lineHeight: 1,
-        }}>{r.stage}</span>
+        <span className={`smart-chip smart-chip--${info.tone}`}>{info.label}</span>
         <span style={{
-          fontFamily: 'var(--font-pixel)', fontSize: 13, color: 'var(--text-muted)',
-          letterSpacing: '.06em',
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)',
         }}>{r.ts}</span>
       </div>
     </div>
@@ -80,21 +91,37 @@ function CompressedList() {
         padding: 12,
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
-        <div style={{ display: 'flex', height: 30, boxShadow: 'var(--raised-2)' }}>
-          {['PIPELINE','LIST','PERMITS','MATERIALS'].map(s => {
-            const on = s === 'LIST';
+        <div style={{
+          display: 'flex', height: 32,
+          background: 'var(--card)',
+          boxShadow: 'var(--ring)',
+          borderRadius: 'var(--radius-pill)',
+          padding: 3,
+        }}>
+          {['Pipeline','List','Permits','Materials'].map(s => {
+            const on = s === 'List';
             return (
-              <button key={s} className="chrome-label" style={{
-                height: 30, padding: '0 10px', fontSize: 10,
+              <button key={s} style={{
+                height: 26, padding: '0 10px',
                 background: on ? 'var(--navy)' : 'transparent',
-                color: on ? 'var(--gold)' : 'var(--text)',
-                boxShadow: on ? 'var(--pressed-2)' : 'none',
+                color: on ? '#fff' : 'var(--text-muted)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: on ? 700 : 500, fontSize: 11,
+                borderRadius: 'var(--radius-pill)',
+                border: 'none', cursor: 'pointer',
               }}>{s}</button>
             );
           })}
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', margin: '0 8px', boxShadow: 'var(--pressed-2)' }}>
+      <div style={{
+        flex: 1, overflowY: 'auto',
+        margin: '0 10px 10px',
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-sm), var(--ring)',
+        borderRadius: 'var(--radius-md)',
+        overflow: 'auto',
+      }}>
         {COMPRESSED_ROWS.map((r, i) => <CompressedRow key={i} r={r} />)}
       </div>
     </div>

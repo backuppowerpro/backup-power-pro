@@ -5,16 +5,19 @@
 // more horizontal space when viewport has room). Triage-heavy columns (NEW,
 // QUOTED) are wider because that's where daily volume lives; quiet columns
 // (RTR, PRINTED, INSPECTION) stay compact.
+// Pipeline columns. Label uses title case; tone maps to the brand
+// status palette so every column header chip reads consistently with
+// the stage chips used in leads-list, finance, permits, etc.
 const columns = [
-  { id: 'new',     label: 'NEW LEAD',         color: 'var(--ms-1)', count: 42, weight: 1.6 },
-  { id: 'quoted',  label: 'QUOTED',           color: 'var(--ms-4)', count: 8,  weight: 1.3 },
-  { id: 'booked',  label: 'BOOKED',           color: 'var(--ms-2)', count: 3,  weight: 1 },
-  { id: 'permit',  label: 'PERMIT SUBMITTED', color: 'var(--ms-5)', count: 2,  weight: 1 },
-  { id: 'pay',     label: 'READY TO PAY',     color: 'var(--ms-3)', count: 1,  weight: 1 },
-  { id: 'paid',    label: 'PAID',             color: 'var(--ms-2)', count: 1,  weight: 1 },
-  { id: 'rprint',  label: 'READY TO PRINT',   color: 'var(--ms-5)', count: 0,  weight: .8 },
-  { id: 'printed', label: 'PRINTED',          color: 'var(--ms-6)', count: 1,  weight: .8 },
-  { id: 'inspect', label: 'INSPECTION',       color: 'var(--ms-7)', count: 1,  weight: 1 },
+  { id: 'new',     label: 'New lead',         tone: 'navy',   color: 'var(--navy)',   count: 42, weight: 1.6 },
+  { id: 'quoted',  label: 'Quoted',           tone: 'purple', color: 'var(--purple)', count: 8,  weight: 1.3 },
+  { id: 'booked',  label: 'Booked',           tone: 'green',  color: 'var(--green)',  count: 3,  weight: 1 },
+  { id: 'permit',  label: 'Permit submitted', tone: 'gold',   color: 'var(--gold)',   count: 2,  weight: 1 },
+  { id: 'pay',     label: 'Ready to pay',     tone: 'red',    color: 'var(--red)',    count: 1,  weight: 1 },
+  { id: 'paid',    label: 'Paid',             tone: 'green',  color: 'var(--green)',  count: 1,  weight: 1 },
+  { id: 'rprint',  label: 'Ready to print',   tone: 'gold',   color: 'var(--gold)',   count: 0,  weight: .8 },
+  { id: 'printed', label: 'Printed',          tone: 'navy',   color: 'var(--navy)',   count: 1,  weight: .8 },
+  { id: 'inspect', label: 'Inspection',       tone: 'purple', color: 'var(--purple)', count: 1,  weight: 1 },
 ];
 
 const dots = ([photo, quote, permit]) => ({ photo, quote, permit });
@@ -50,10 +53,11 @@ const cards = {
 function DaysChip({ n }) {
   // Just a subtle mono number — no LCD chrome.
   // Tone shifts red past 7d, otherwise a muted gray.
-  const color = n >= 7 ? 'var(--ms-3)' : 'var(--text-faint)';
+  const color = n >= 7 ? 'var(--red)' : 'var(--text-faint)';
   return (
-    <span className="mono" style={{
-      fontSize: 11, color, letterSpacing: '.02em',
+    <span style={{
+      fontFamily: 'var(--font-mono)', fontSize: 11, color,
+      fontVariantNumeric: 'tabular-nums',
     }}>{n}d</span>
   );
 }
@@ -69,30 +73,23 @@ function DaysChip({ n }) {
 // Text format: "TODAY", "+1d", "+4d", "-2d", "Apr 28" (7+ days out)
 function InstallChip({ n }) {
   if (typeof n !== 'number' || isNaN(n)) return null;
-  let color = 'var(--text-faint)';
+  let tone = 'muted';
   let label = '';
-  if (n < 0) {
-    color = 'var(--ms-3)';
-    label = `-${Math.abs(n)}d`;
-  } else if (n === 0) {
-    color = 'var(--gold)';
-    label = 'TODAY';
-  } else if (n <= 6) {
-    color = 'var(--navy)';
-    label = `+${n}d`;
-  } else {
+  if (n < 0) { tone = 'red';    label = `-${Math.abs(n)}d`; }
+  else if (n === 0) { tone = 'gold'; label = 'Today'; }
+  else if (n <= 6)  { tone = 'navy'; label = `+${n}d`; }
+  else {
     // Show short-form date for anything a week+ out so the card still
     // gives a landmark without cluttering with "+14d".
     const d = new Date(Date.now() + n * 86400000);
     label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    tone = 'muted';
   }
   return (
-    <span className="mono" title={`Install ${n === 0 ? 'today' : n < 0 ? `${Math.abs(n)} days ago (overdue)` : `in ${n} day${n === 1 ? '' : 's'}`}`} style={{
-      fontSize: 10, color, letterSpacing: '.04em', fontWeight: 600,
-      padding: '1px 5px', boxShadow: 'var(--raised-2)',
-      background: 'var(--card)',
-      whiteSpace: 'nowrap',
-    }}>{label}</span>
+    <span className={`smart-chip smart-chip--${tone}`}
+      title={`Install ${n === 0 ? 'today' : n < 0 ? `${Math.abs(n)} days ago (overdue)` : `in ${n} day${n === 1 ? '' : 's'}`}`}
+      style={{ fontSize: 10, padding: '3px 8px' }}
+    >{label}</span>
   );
 }
 
@@ -230,17 +227,24 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
         transition: 'background var(--dur) var(--step)',
       }}>
       <div style={{
-        padding: '10px 4px 8px',
+        padding: '12px 8px 10px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
-        borderBottom: '1px solid var(--divider)',
+        borderBottom: '2px solid ' + col.color,
       }}>
-        <span className="chrome-label" style={{
-          fontSize: 10, color: 'var(--text-muted)', lineHeight: 1,
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700,
+          fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
+          color: 'var(--text)', lineHeight: 1,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          letterSpacing: '.12em',
         }}>{col.label}</span>
-        <span className="mono" style={{
-          fontSize: 11, color: 'var(--text-faint)', flex: '0 0 auto',
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 11,
+          color: 'var(--text-muted)',
+          fontVariantNumeric: 'tabular-nums',
+          padding: '1px 8px',
+          background: 'var(--sunken)',
+          borderRadius: 'var(--radius-pill)',
+          flex: '0 0 auto',
         }}>{displayCount}</span>
       </div>
       {/* Smart Pipeline column stats — shows average days-in-column and a
@@ -290,17 +294,21 @@ function Column({ col, items, count, onCardClick, onDropCard }) {
           };
           return (
             <div style={{
-              margin: '6px 4px', padding: '12px 8px',
+              margin: '6px 4px', padding: '14px 10px',
               display: 'flex', flexDirection: 'column', gap: 6,
               alignItems: 'center',
-              border: '1px dashed rgba(0,0,0,.2)',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--sunken)',
+              boxShadow: 'var(--ring)',
               color: 'var(--text-faint)',
-              fontFamily: 'var(--font-body)', fontSize: 10, lineHeight: 1.35,
+              fontFamily: 'var(--font-body)', fontSize: 11, lineHeight: 1.4,
               textAlign: 'center',
             }}>
-              <span className="chrome-label" style={{ fontSize: 9, letterSpacing: '.1em' }}>
-                empty
-              </span>
+              <span style={{
+                fontFamily: 'var(--font-display)', fontWeight: 600,
+                fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+              }}>Empty</span>
               <span>{GHOST[col.id] || 'Nothing here yet.'}</span>
             </div>
           );
