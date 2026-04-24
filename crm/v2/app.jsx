@@ -8563,97 +8563,140 @@ function CalendarEventModal({ defaults, onClose, onSaved }) {
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <form ref={rootRef} onSubmit={save} onClick={e => e.stopPropagation()} style={{
-        width: 420, maxWidth: '100%',
-        padding: 24, display: 'flex', flexDirection: 'column', gap: 12,
-        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        width: 460, maxWidth: '100%',
+        padding: '26px 26px 22px', display: 'flex', flexDirection: 'column', gap: 14,
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
       }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 700, letterSpacing: '-.01em' }}>
-          Add calendar event
-        </div>
-        <input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="Title (e.g. Inspection walkthrough)" style={{
-          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-        }} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.06em', textTransform: 'uppercase' }}>Start</span>
-            <input type="datetime-local" value={startAt} onChange={e => setStartAt(e.target.value)} required style={{
-              padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-              background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-            }} />
-          </label>
-          <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.06em', textTransform: 'uppercase' }}>End (optional)</span>
-            <input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} style={{
-              padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-              background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-            }} />
-          </label>
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {[
-            { id: 'install', label: 'Install' },
-            { id: 'meeting', label: 'Meeting' },
-            { id: 'pickup',  label: 'Pickup' },
-            { id: 'inspect', label: 'Inspection' },
-            { id: 'other',   label: 'Other' },
-          ].map(t => (
-            <button type="button" key={t.id} onClick={() => setEventType(t.id)} style={{
-              padding: '6px 12px', fontSize: 11, fontFamily: 'var(--font-body)', fontWeight: 600,
-              background: eventType === t.id ? 'var(--navy)' : 'var(--card)',
-              color: eventType === t.id ? 'var(--gold)' : 'var(--text-muted)',
-              boxShadow: eventType === t.id ? 'var(--pressed-2)' : 'var(--raised-2)',
-              cursor: 'pointer', border: 'none', letterSpacing: '.04em',
-            }}>{t.label}</button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, position: 'relative' }}>
-          <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.06em', textTransform: 'uppercase' }}>Contact (optional)</span>
-          <input value={contactQuery} onChange={e => { setContactQuery(e.target.value); setSelectedContact(null); }}
-            placeholder="Search contact name…" style={{
-              padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-              background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-            }} />
-          {!selectedContact && contactMatches.length > 0 ? (
+        {(() => {
+          const inputStyle = {
+            padding: '10px 12px', height: 42,
+            fontFamily: 'var(--font-body)', fontSize: 14,
+            color: 'var(--text)',
+            background: 'var(--sunken)',
+            border: 'none', outline: 'none',
+            borderRadius: 'var(--radius-sm)',
+            boxSizing: 'border-box',
+          };
+          const subLabel = {
+            fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+          };
+          const onFocusRing = (e) => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' };
+          const onBlurRing = (e) => { e.currentTarget.style.boxShadow = 'none' };
+          return (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span className="eyebrow">Calendar</span>
+              <h2 style={{
+                margin: 0,
+                fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800,
+                letterSpacing: '-0.015em', color: 'var(--text)',
+              }}>Add event</h2>
+            </div>
+            <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
+              placeholder="Title (e.g. Inspection walkthrough)"
+              onFocus={onFocusRing} onBlur={onBlurRing}
+              style={inputStyle} />
+            <div style={{ display: 'flex', gap: 10 }}>
+              <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <span style={subLabel}>Start</span>
+                <input type="datetime-local" value={startAt} onChange={e => setStartAt(e.target.value)} required
+                  onFocus={onFocusRing} onBlur={onBlurRing} style={inputStyle} />
+              </label>
+              <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <span style={subLabel}>End (optional)</span>
+                <input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)}
+                  onFocus={onFocusRing} onBlur={onBlurRing} style={inputStyle} />
+              </label>
+            </div>
             <div style={{
-              position: 'absolute', top: '100%', left: 0, right: 0,
-              background: 'var(--card)', boxShadow: 'var(--raised-2)',
-              zIndex: 5,
+              display: 'flex', gap: 2, padding: 2,
+              background: 'var(--sunken)',
+              borderRadius: 'var(--radius-pill)',
+              flexWrap: 'wrap',
             }}>
-              {contactMatches.map(c => (
-                <button key={c.id} type="button" onClick={() => { setSelectedContact(c); setContactQuery(c.name); setContactMatches([]); }} style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  padding: '8px 12px', fontFamily: 'var(--font-body)', fontSize: 13,
-                  background: 'transparent', color: 'var(--text)', cursor: 'pointer', border: 'none',
-                  borderBottom: '1px solid var(--divider-faint)',
-                }}>
-                  {c.name} <span className="mono" style={{ color: 'var(--text-faint)', fontSize: 11 }}>{c.phone || ''}</span>
-                </button>
+              {[
+                { id: 'install', label: 'Install' },
+                { id: 'meeting', label: 'Meeting' },
+                { id: 'pickup',  label: 'Pickup' },
+                { id: 'inspect', label: 'Inspection' },
+                { id: 'other',   label: 'Other' },
+              ].map(t => (
+                <button type="button" key={t.id} onClick={() => setEventType(t.id)} style={{
+                  flex: 1, padding: '6px 10px', height: 30,
+                  background: eventType === t.id ? 'var(--navy)' : 'transparent',
+                  color: eventType === t.id ? '#fff' : 'var(--text-muted)',
+                  cursor: 'pointer', border: 'none',
+                  fontFamily: 'var(--font-display)', fontWeight: eventType === t.id ? 700 : 500, fontSize: 12,
+                  letterSpacing: '-0.005em',
+                  borderRadius: 'var(--radius-pill)',
+                  transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+                }}>{t.label}</button>
               ))}
             </div>
-          ) : null}
-        </div>
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)" rows={3} style={{
-          padding: '10px 12px', fontFamily: 'var(--font-body)', fontSize: 14, resize: 'vertical',
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-        }} />
-        {err ? <div className="mono" style={{ fontSize: 11, color: 'var(--ms-3)' }}>{err}</div> : null}
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button type="button" onClick={onClose} style={{
-            flex: 1, height: 40, fontSize: 12, cursor: 'pointer',
-            fontFamily: 'var(--font-body)', letterSpacing: '.04em',
-            boxShadow: 'var(--raised-2)', background: 'var(--card)', color: 'var(--text-muted)',
-            border: 'none',
-          }}>Cancel</button>
-          <button type="submit" disabled={saving} style={{
-            flex: 1, height: 40, fontSize: 12, fontWeight: 600, letterSpacing: '.04em',
-            fontFamily: 'var(--font-body)',
-            background: 'var(--navy)', color: 'var(--gold)',
-            boxShadow: 'var(--raised-2)', border: 'none',
-            cursor: saving ? 'wait' : 'pointer',
-            opacity: saving ? 0.6 : 1,
-          }}>{saving ? 'Saving…' : 'Save event'}</button>
-        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, position: 'relative' }}>
+              <span style={subLabel}>Contact (optional)</span>
+              <input value={contactQuery} onChange={e => { setContactQuery(e.target.value); setSelectedContact(null); }}
+                placeholder="Search contact name…"
+                onFocus={onFocusRing} onBlur={onBlurRing}
+                style={inputStyle} />
+              {!selectedContact && contactMatches.length > 0 ? (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+                  background: 'var(--card)',
+                  boxShadow: 'var(--shadow-md), var(--ring)',
+                  borderRadius: 'var(--radius-md)',
+                  zIndex: 5, overflow: 'hidden',
+                }}>
+                  {contactMatches.map(c => (
+                    <button key={c.id} type="button" onClick={() => { setSelectedContact(c); setContactQuery(c.name); setContactMatches([]); }} style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '10px 14px',
+                      fontFamily: 'var(--font-body)', fontSize: 13,
+                      background: 'transparent', color: 'var(--text)', cursor: 'pointer', border: 'none',
+                      borderBottom: '1px solid var(--divider-faint)',
+                      transition: 'background var(--dur) var(--ease)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <span style={{ fontWeight: 600 }}>{c.name}</span>
+                      {' '}
+                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', fontSize: 11.5 }}>{c.phone || ''}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes (optional)" rows={3}
+              onFocus={onFocusRing} onBlur={onBlurRing}
+              style={{ ...inputStyle, height: 'auto', resize: 'vertical', lineHeight: 1.45 }} />
+            {err ? (
+              <div style={{
+                padding: '10px 12px', fontSize: 13,
+                background: 'color-mix(in srgb, var(--red) 10%, var(--card))',
+                color: 'var(--red)', fontWeight: 600,
+                fontFamily: 'var(--font-body)',
+                borderRadius: 'var(--radius-sm)',
+                borderLeft: '3px solid var(--red)',
+              }}>{err}</div>
+            ) : null}
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button type="button" onClick={onClose} className="btn-ghost" style={{ flex: 1 }}>
+                Cancel
+              </button>
+              <button type="submit" disabled={saving} className="btn-navy" style={{
+                flex: 1,
+                cursor: saving ? 'wait' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}>{saving ? 'Saving…' : 'Save event'}</button>
+            </div>
+          </>
+          );
+        })()}
       </form>
     </div>
   );
