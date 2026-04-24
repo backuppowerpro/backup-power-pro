@@ -7,16 +7,34 @@
 //   navy   → neutral / new    red → exit/overdue/ready-pay
 //   gold   → waiting on Key   green → confirmed/done
 //   purple → waiting external blue → informational
+// Keys accept BOTH uppercase (legacy mock rows at bottom of this file)
+// AND title-case (contactToRow sends 'New' / 'Quoted' / … after the
+// 2026-04-24 STAGE_MAP rename). Lookup falls back to a navy "—" chip if
+// an unexpected value slips through, so one unfamiliar stage never
+// crashes the whole list (was the cause of the ErrorBoundary crash on
+// the /list tab when STAGE_MAP returned 'New' but this map only had
+// 'NEW').
 const STAGE = {
-  NEW:     { label: 'New lead',   abbr: 'New',         tone: 'navy'   },
-  QUOTED:  { label: 'Quoted',     abbr: 'Quoted',      tone: 'purple' },
-  BOOKED:  { label: 'Booked',     abbr: 'Booked',      tone: 'green'  },
-  PERMIT:  { label: 'Permit',     abbr: 'Permit',      tone: 'gold'   },
-  PAY:     { label: 'Ready to pay', abbr: 'Pay',       tone: 'red'    },
-  PAID:    { label: 'Paid',       abbr: 'Paid',        tone: 'green'  },
-  PRINT:   { label: 'Printed',    abbr: 'Printed',     tone: 'navy'   },
-  INSPECT: { label: 'Inspection', abbr: 'Inspection',  tone: 'purple' },
+  // Title-case (post-rename)
+  'New':        { label: 'New lead',     abbr: 'New',        tone: 'navy'   },
+  'Quoted':     { label: 'Quoted',       abbr: 'Quoted',     tone: 'purple' },
+  'Booked':     { label: 'Booked',       abbr: 'Booked',     tone: 'green'  },
+  'Permit':     { label: 'Permit',       abbr: 'Permit',     tone: 'gold'   },
+  'Pay':        { label: 'Ready to pay', abbr: 'Pay',        tone: 'red'    },
+  'Paid':       { label: 'Paid',         abbr: 'Paid',       tone: 'green'  },
+  'Printed':    { label: 'Printed',      abbr: 'Printed',    tone: 'navy'   },
+  'Inspection': { label: 'Inspection',   abbr: 'Inspection', tone: 'purple' },
+  // Uppercase (mock rows + legacy)
+  'NEW':        { label: 'New lead',     abbr: 'New',        tone: 'navy'   },
+  'QUOTED':     { label: 'Quoted',       abbr: 'Quoted',     tone: 'purple' },
+  'BOOKED':     { label: 'Booked',       abbr: 'Booked',     tone: 'green'  },
+  'PERMIT':     { label: 'Permit',       abbr: 'Permit',     tone: 'gold'   },
+  'PAY':        { label: 'Ready to pay', abbr: 'Pay',        tone: 'red'    },
+  'PAID':       { label: 'Paid',         abbr: 'Paid',       tone: 'green'  },
+  'PRINT':      { label: 'Printed',      abbr: 'Printed',    tone: 'navy'   },
+  'INSPECT':    { label: 'Inspection',   abbr: 'Inspection', tone: 'purple' },
 };
+const STAGE_FALLBACK = { label: 'Unknown', abbr: '—', tone: 'navy' };
 
 const rows = [
   { name: 'Sarah M',  initials: 'SM', photo: 'ridge',   phone: '(864) 555-0101', stage: 'QUOTED',  ts: '07D AGO',   unread: true },
@@ -140,7 +158,7 @@ function Avatar({ row, size = 48 }) {
 }
 
 function LeadRow({ r, desktop = false }) {
-  const stage = STAGE[r.stage];
+  const stage = STAGE[r.stage] || STAGE_FALLBACK;
   const [hover, setHover] = React.useState(false);
   // When the parent list is in "select mode" each row can be marked
   // `_selected: true`. Visual: navy 3px left stripe + faint navy tint so

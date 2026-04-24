@@ -136,10 +136,11 @@ function contactToRow(c) {
   // overdue if last activity > 7 days and stage < 4
   const createdAt = c.created_at;
   const ageDays = createdAt ? Math.round((Date.now() - new Date(createdAt).getTime()) / 86400000) : 0;
+  const displayName = displayNameFor(c);
   return {
     id: c.id,
-    name: c.name || '—',
-    initials: initials(c.name),
+    name: displayName,
+    initials: initials(displayName),
     // Street View photo of the house at their service address, or null if
     // no address on file. Avatar component renders an <img> with onError
     // fallback to the initials chip when Street View has no coverage there.
