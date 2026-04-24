@@ -4669,11 +4669,29 @@ function DetailPhotos({ contactId, contactPhone }) {
   }
   if (photos.length === 0) {
     return (
-      <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 600 }}>No photos yet</div>
-          <div style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', marginTop: 6 }}>
-            Customer-sent MMS or photos you attach from compose will appear here.
+      <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 32 }}>
+        <div style={{ textAlign: 'center', maxWidth: 360 }}>
+          <div style={{
+            width: 56, height: 56, margin: '0 auto 12px',
+            background: 'var(--sunken)', borderRadius: 'var(--radius-md)',
+            display: 'grid', placeItems: 'center',
+            color: 'var(--text-faint)',
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+              <circle cx="8.5" cy="10.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 19"/>
+            </svg>
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700,
+            color: 'var(--text-muted)', letterSpacing: '-0.005em',
+          }}>No photos yet</div>
+          <div style={{
+            fontSize: 13, fontFamily: 'var(--font-body)',
+            color: 'var(--text-faint)', marginTop: 6, lineHeight: 1.5,
+          }}>
+            Customer MMS or photos you attach from compose will appear here.
           </div>
         </div>
       </div>
@@ -4694,78 +4712,152 @@ function DetailPhotos({ contactId, contactPhone }) {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
         gap: 10,
       }}>
-        {photos.map((p, idx) => (
+        {photos.map((p, idx) => {
+          const senderLabel = p.direction === 'outbound' ? (p.sender === 'ai' ? 'Alex' : 'Key') : 'Customer';
+          const senderColor = p.sender === 'ai' ? 'var(--blue)' : p.direction === 'outbound' ? 'var(--gold)' : '#fff';
+          return (
           <button key={p.url}
             onClick={() => setLightboxIndex(idx)}
-            title={p.caption || `${p.direction === 'outbound' ? 'Sent' : 'Received'} ${fmtAge(p.at)}`}
+            title={p.caption || `${senderLabel} · ${fmtAge(p.at)}`}
             style={{
               position: 'relative', padding: 0, border: 'none', cursor: 'pointer',
-              background: 'var(--card)', boxShadow: 'var(--raised-2)',
+              background: 'var(--card)',
+              boxShadow: 'var(--shadow-sm), var(--ring)',
+              borderRadius: 'var(--radius-md)',
               aspectRatio: '1 / 1', overflow: 'hidden',
-            }}>
+              transition: 'transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md), var(--ring)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm), var(--ring)'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
             <img src={p.url} alt="" loading="lazy" decoding="async" style={{
               width: '100%', height: '100%', objectFit: 'cover', display: 'block',
             }} />
             <div style={{
               position: 'absolute', left: 0, right: 0, bottom: 0,
-              padding: '4px 6px',
-              background: 'linear-gradient(0deg, rgba(0,0,0,.75), rgba(0,0,0,0))',
-              color: '#fff', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '.04em',
+              padding: '8px 10px 6px',
+              background: 'linear-gradient(0deg, rgba(11,31,59,0.82) 0%, rgba(11,31,59,0) 100%)',
+              color: '#fff', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+              letterSpacing: '0.02em',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
-              <span>{p.direction === 'outbound' ? (p.sender === 'ai' ? 'ALEX' : 'KEY') : 'CUSTOMER'}</span>
-              <span>{fmtAge(p.at)}</span>
+              <span style={{ color: senderColor }}>{senderLabel}</span>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500,
+                color: 'rgba(255,255,255,0.72)',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: 0,
+              }}>{fmtAge(p.at)}</span>
             </div>
           </button>
-        ))}
+          );
+        })}
       </div>
       {lightbox ? (
         <div onClick={() => setLightboxIndex(-1)} style={{
           position: 'fixed', inset: 0, zIndex: 120,
-          background: 'rgba(0,0,0,.92)',
-          display: 'grid', placeItems: 'center', padding: 24, cursor: 'zoom-out',
+          background: 'rgba(11,31,59,0.94)',
+          backdropFilter: 'blur(4px)',
+          display: 'grid', placeItems: 'center', padding: 32, cursor: 'zoom-out',
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            maxWidth: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column', gap: 8,
+            maxWidth: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column', gap: 12,
+            cursor: 'default',
           }}>
             <img src={lightbox.url} alt="" style={{
-              maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain',
-              boxShadow: '0 0 0 1px rgba(255,255,255,.1)',
+              maxWidth: '100%', maxHeight: '78vh', objectFit: 'contain',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)',
             }} />
             {lightbox.caption ? (
-              <div style={{ color: '#fff', fontFamily: 'var(--font-body)', fontSize: 13, textAlign: 'center' }}>
+              <div style={{
+                color: '#fff', fontFamily: 'var(--font-body)', fontSize: 14,
+                textAlign: 'center', lineHeight: 1.5,
+                padding: '8px 16px',
+              }}>
                 {lightbox.caption}
               </div>
             ) : null}
-            <div className="mono" style={{ color: 'rgba(255,255,255,.6)', fontSize: 10, letterSpacing: '.06em', textAlign: 'center' }}>
-              {lightboxIndex + 1} / {photos.length} · {lightbox.direction === 'outbound' ? (lightbox.sender === 'ai' ? 'Sent by Alex' : 'Sent by Key') : 'Received from customer'} · {fmtAge(lightbox.at)} · <a href={safeHref(lightbox.url)} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ color: 'var(--gold)' }}>open original ↗</a>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 10, flexWrap: 'wrap',
+              color: 'rgba(255,255,255,0.62)', fontSize: 12,
+              fontFamily: 'var(--font-body)', textAlign: 'center',
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
+                padding: '2px 10px',
+                background: 'rgba(255,255,255,0.08)',
+                borderRadius: 'var(--radius-pill)',
+              }}>{lightboxIndex + 1} / {photos.length}</span>
+              <span style={{ color: 'rgba(255,255,255,0.38)' }}>·</span>
+              <span>
+                {lightbox.direction === 'outbound' ? (lightbox.sender === 'ai' ? 'Sent by Alex' : 'Sent by Key') : 'Received from customer'}
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.38)' }}>·</span>
+              <span>{fmtAge(lightbox.at)}</span>
+              <span style={{ color: 'rgba(255,255,255,0.38)' }}>·</span>
+              <a href={safeHref(lightbox.url)} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{
+                color: 'var(--gold)', textDecoration: 'none', fontWeight: 600,
+                display: 'inline-flex', alignItems: 'center', gap: 3,
+              }}>Open original <span aria-hidden>↗</span></a>
             </div>
           </div>
           {/* Prev / next buttons — visible only when there are neighbors to
               navigate to. Key sees them on desktop; arrow keys work
               regardless of hover/reach. */}
           {lightboxIndex > 0 ? (
-            <button onClick={e => { e.stopPropagation(); setLightboxIndex(i => Math.max(i - 1, 0)); }} style={{
-              position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
-              width: 48, height: 48, background: 'rgba(255,255,255,.1)', color: '#fff',
-              border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer',
-              fontSize: 20, display: 'grid', placeItems: 'center',
-            }}>‹</button>
+            <button
+              onClick={e => { e.stopPropagation(); setLightboxIndex(i => Math.max(i - 1, 0)); }}
+              aria-label="Previous photo"
+              style={{
+                position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)',
+                width: 48, height: 48,
+                background: 'rgba(255,255,255,0.1)', color: '#fff',
+                border: 'none', cursor: 'pointer',
+                fontSize: 22, display: 'grid', placeItems: 'center',
+                borderRadius: '50%',
+                backdropFilter: 'blur(6px)',
+                transition: 'background var(--dur) var(--ease)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+            >‹</button>
           ) : null}
           {lightboxIndex < photos.length - 1 ? (
-            <button onClick={e => { e.stopPropagation(); setLightboxIndex(i => Math.min(i + 1, photos.length - 1)); }} style={{
-              position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
-              width: 48, height: 48, background: 'rgba(255,255,255,.1)', color: '#fff',
-              border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer',
-              fontSize: 20, display: 'grid', placeItems: 'center',
-            }}>›</button>
+            <button
+              onClick={e => { e.stopPropagation(); setLightboxIndex(i => Math.min(i + 1, photos.length - 1)); }}
+              aria-label="Next photo"
+              style={{
+                position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)',
+                width: 48, height: 48,
+                background: 'rgba(255,255,255,0.1)', color: '#fff',
+                border: 'none', cursor: 'pointer',
+                fontSize: 22, display: 'grid', placeItems: 'center',
+                borderRadius: '50%',
+                backdropFilter: 'blur(6px)',
+                transition: 'background var(--dur) var(--ease)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+            >›</button>
           ) : null}
-          <button onClick={() => setLightboxIndex(-1)} style={{
-            position: 'absolute', top: 16, right: 16,
-            width: 40, height: 40, background: 'rgba(255,255,255,.1)', color: '#fff',
-            border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer',
-            fontSize: 18, display: 'grid', placeItems: 'center',
-          }}>×</button>
+          <button
+            onClick={() => setLightboxIndex(-1)}
+            aria-label="Close lightbox"
+            style={{
+              position: 'absolute', top: 20, right: 20,
+              width: 40, height: 40,
+              background: 'rgba(255,255,255,0.1)', color: '#fff',
+              border: 'none', cursor: 'pointer',
+              fontSize: 18, display: 'grid', placeItems: 'center',
+              borderRadius: '50%',
+              backdropFilter: 'blur(6px)',
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,100,100,0.3)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+          >×</button>
         </div>
       ) : null}
     </>
@@ -10129,14 +10221,20 @@ function LiveSparky({ currentContactId = null }) {
           Top padding added so the first chip row doesn't touch the
           action-bar underline sitting above this panel. */}
       {messages.length <= 1 && !sending ? (
-        <div style={{ padding: '14px 16px 4px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ padding: '14px 16px 6px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {quickAsks.map(q => (
             <button key={q} onClick={() => send(q)} style={{
-              padding: '6px 12px', fontSize: 12,
-              fontFamily: 'var(--font-body)', color: 'var(--text-muted)',
-              background: 'var(--card)', boxShadow: 'var(--raised-2)',
+              padding: '6px 14px', height: 28,
+              fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 500,
+              color: 'var(--text-muted)',
+              background: 'var(--sunken)',
               border: 'none', cursor: 'pointer',
-            }}>{q}</button>
+              borderRadius: 'var(--radius-pill)',
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--gold) 14%, var(--sunken))'; e.currentTarget.style.color = 'var(--gold-ink)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+            >{q}</button>
           ))}
         </div>
       ) : null}
@@ -10147,34 +10245,59 @@ function LiveSparky({ currentContactId = null }) {
         display: 'flex', flexDirection: 'column',
       }}>
         {messages.map((m, i) => m.who === 'key' ? (
-          <div key={i} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+          <div key={i} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
             <div style={{
-              maxWidth: '72%', background: 'var(--navy)', color: '#fff',
-              padding: '10px 14px', boxShadow: 'var(--raised-2)',
-              fontSize: 14, lineHeight: 1.4,
+              maxWidth: '76%', background: 'var(--navy)', color: '#fff',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-md)',
+              borderBottomRightRadius: 'var(--radius-xs)',
+              fontSize: 14, lineHeight: 1.5,
+              boxShadow: 'var(--shadow-sm)',
             }}><MessageBody body={m.text} isOut={true} /></div>
           </div>
         ) : (
-          <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-start' }}>
+          <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'flex-start' }}>
             <span style={{
-              width: 20, height: 20, flex: '0 0 auto',
-              background: 'var(--gold)', color: '#1a1a1a',
+              width: 26, height: 26, flex: '0 0 auto',
+              background: 'var(--gold)', color: 'var(--navy)',
               display: 'grid', placeItems: 'center',
-              fontFamily: 'var(--font-pixel)', fontSize: 14,
-              boxShadow: 'var(--shadow-xs), var(--ring)',
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: 'var(--shadow-xs)',
             }}>S</span>
             <div style={{
-              maxWidth: '72%', background: 'var(--card)',
-              boxShadow: 'var(--pressed-2)', padding: '10px 14px',
-              fontSize: 14, lineHeight: 1.4, color: 'var(--text)',
+              maxWidth: '76%', background: 'var(--card)',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-md)',
+              borderTopLeftRadius: 'var(--radius-xs)',
+              fontSize: 14, lineHeight: 1.55, color: 'var(--text)',
               whiteSpace: 'pre-wrap',
+              boxShadow: 'var(--shadow-sm), var(--ring)',
             }}><MessageBody body={m.text} isOut={false} /></div>
           </div>
         ))}
         {sending ? (
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ width: 20, height: 20, background: 'var(--gold)', boxShadow: 'var(--raised-2)' }} />
-            <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>THINKING...</span>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', paddingLeft: 2 }}>
+            <span style={{
+              width: 26, height: 26, flex: '0 0 auto',
+              background: 'var(--gold)', color: 'var(--navy)',
+              display: 'grid', placeItems: 'center',
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: 'var(--shadow-xs)',
+            }}>S</span>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '8px 14px',
+              background: 'var(--card)',
+              boxShadow: 'var(--shadow-sm), var(--ring)',
+              borderRadius: 'var(--radius-md)',
+              borderTopLeftRadius: 'var(--radius-xs)',
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', animation: 'pulse 1.2s infinite', animationDelay: '0s' }}/>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', animation: 'pulse 1.2s infinite', animationDelay: '0.2s' }}/>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', animation: 'pulse 1.2s infinite', animationDelay: '0.4s' }}/>
+            </div>
           </div>
         ) : null}
       </div>
@@ -10182,28 +10305,52 @@ function LiveSparky({ currentContactId = null }) {
       {/* Sparky compose bar — bottom. Textarea so long prompts wrap +
           the box grows. Enter sends; Shift+Enter inserts a newline. */}
       <div style={{
-        padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
-        background: 'var(--card)', boxShadow: 'var(--raised)',
-        display: 'flex', alignItems: 'flex-end', gap: 8,
+        padding: '12px 14px calc(12px + env(safe-area-inset-bottom))',
+        background: 'var(--card)',
+        borderTop: '1px solid var(--divider-faint)',
+        display: 'flex', alignItems: 'flex-end', gap: 10,
       }}>
-        <div style={{ flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 8, boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+        <div style={{
+          flex: 1, padding: '8px 14px',
+          display: 'flex', alignItems: 'flex-start', gap: 8,
+          background: 'var(--sunken)',
+          borderRadius: 'var(--radius-lg)',
+          minHeight: 40,
+        }}>
           <textarea value={input} onChange={e => setInput(e.target.value)}
             autoFocus
             rows={1}
             onInput={e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(200, e.target.scrollHeight) + 'px'; }}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Ask anything…"
-            style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 14, background: 'transparent', border: 'none', resize: 'none', minHeight: 20, maxHeight: 200, lineHeight: 1.4, overflowY: 'auto' }}
+            placeholder="Ask Sparky anything…"
+            style={{
+              flex: 1, fontFamily: 'var(--font-body)', fontSize: 14,
+              color: 'var(--text)',
+              background: 'transparent', border: 'none', outline: 'none',
+              resize: 'none', minHeight: 24, maxHeight: 200, lineHeight: 1.45,
+              overflowY: 'auto',
+            }}
           />
         </div>
-        <button onClick={() => send()} disabled={sending || !input.trim()} style={{
-          width: 40, height: 40, background: 'var(--navy)', color: '#fff',
-          boxShadow: 'var(--shadow-sm)',
-          opacity: sending || !input.trim() ? 0.5 : 1, display: 'grid', placeItems: 'center',
-          flex: '0 0 auto',
-        }}>
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
-            <path d="M1 2 L15 8 L1 14 L3 8 L1 2 Z M3 8 L9 8"/>
+        <button
+          onClick={() => send()}
+          disabled={sending || !input.trim()}
+          title="Send (Enter)"
+          style={{
+            width: 40, height: 40,
+            background: input.trim() ? 'var(--navy)' : 'var(--sunken)',
+            color: input.trim() ? 'var(--gold)' : 'var(--text-faint)',
+            boxShadow: input.trim() ? 'var(--shadow-sm)' : 'none',
+            opacity: sending ? 0.5 : 1,
+            display: 'grid', placeItems: 'center',
+            border: 'none', cursor: sending || !input.trim() ? 'default' : 'pointer',
+            flex: '0 0 auto',
+            borderRadius: 'var(--radius-pill)',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+          }}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
         </button>
       </div>
