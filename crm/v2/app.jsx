@@ -38,22 +38,34 @@ function invokeFn(name, opts = {}) {
 
 // Normalize DB contact row → list-view row shape expected by LeadRow
 const STAGE_MAP = {
-  1: 'NEW',       // New Lead
-  2: 'QUOTED',    // Quoted
-  3: 'BOOKED',    // Booked
-  4: 'PERMIT',    // Permit Submitted
-  5: 'PAY',       // Ready to Pay
-  6: 'PAID',      // Paid
-  7: 'PRINT',     // Printed
-  8: 'INSPECT',   // Inspection
-  9: 'INSPECT',   // Inspection (legacy)
+  1: 'New',        // New Lead
+  2: 'Quoted',     // Quoted
+  3: 'Booked',     // Booked
+  4: 'Permit',     // Permit Submitted
+  5: 'Pay',        // Ready to Pay
+  6: 'Paid',       // Paid
+  7: 'Printed',    // Printed
+  8: 'Inspection', // Inspection
+  9: 'Inspection', // Inspection (legacy)
 };
 
 function initials(name) {
-  if (!name) return '??';
-  const parts = String(name).trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  if (!name) return '?';
+  // Strip leading dots / symbols so "···8307" doesn't show ".." as initials.
+  const cleaned = String(name).replace(/^[^a-z0-9]+/i, '').trim();
+  if (!cleaned) return '?';
+  const parts = cleaned.split(/\s+/);
+  if (parts.length === 1) {
+    // Use first letter — if all digits (e.g. phone last-4), show a # glyph
+    // so it visually reads as "unknown contact" rather than a missing avatar.
+    const first = parts[0][0];
+    if (/[0-9]/.test(first)) return '#';
+    const second = parts[0][1];
+    return (first + (second || '')).toUpperCase();
+  }
+  const firstInitial = parts[0][0];
+  const lastInitial = parts[parts.length - 1][0];
+  return ((firstInitial || '') + (lastInitial || '')).toUpperCase();
 }
 
 function relTimestamp(iso) {
@@ -120,7 +132,7 @@ function streetViewUrl(address, size = 96) {
 }
 
 function contactToRow(c) {
-  const stage = STAGE_MAP[c.stage || 1] || 'NEW';
+  const stage = STAGE_MAP[c.stage || 1] || 'New';
   // overdue if last activity > 7 days and stage < 4
   const createdAt = c.created_at;
   const ageDays = createdAt ? Math.round((Date.now() - new Date(createdAt).getTime()) / 86400000) : 0;
@@ -1790,7 +1802,10 @@ function computeNextAction({ contact, messages, alexSession, profileEntries }) {
   }
 
   // R4 — Stage 3, quiet 7d+. Final soft check-in ("No response" snippet).
-  if (stage === 3 && hoursSinceInbound > 168) {
+  // Require a finite inbound timestamp — otherwise "Infinity days quiet"
+  // leaks through when the thread has zero inbound messages (new leads
+  // that never replied land in the R2/R6 branches, not this one).
+  if (stage === 3 && Number.isFinite(hoursSinceInbound) && hoursSinceInbound > 168) {
     return {
       tint: 'var(--text-muted)',
       icon: '×',
@@ -2530,8 +2545,8 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
     return () => { db.removeChannel(ch); };
   }, [contact?.phone]);
 
-  const stageAbbr = contact?.stage ? (STAGE_MAP[contact.stage] || 'NEW') : 'NEW';
-  const displayName = contact?.name || 'LOADING...';
+  const stageAbbr = contact?.stage ? (STAGE_MAP[contact.stage] || 'New') : 'New';
+  const displayName = contact ? displayNameFor(contact) : 'Loading…';
   const displayPhone = contact?.phone ? formatPhone(contact.phone) : '';
 
   return (
@@ -3054,19 +3069,19 @@ const INVOICE_BASE_URL  = 'https://backuppowerpro.com/invoice.html';
 // Key 2026-04-23: build the scaffold, decide extras later.
 const TIER_META = {
   standard: {
-    label: 'STANDARD',
+    label: 'Standard',
     tone: 'muted',
     uplift: 0,
     blurb: 'Core install, standard bundle.',
   },
   premium: {
-    label: 'PREMIUM',
+    label: 'Premium',
     tone: 'navy',
     uplift: 300,
     blurb: '+$300 — premium bundle (TBD: expedite, extended warranty, upgraded whip).',
   },
   premium_plus: {
-    label: 'PREMIUM+',
+    label: 'Premium+',
     tone: 'gold',
     uplift: 600,
     blurb: '+$600 — premium+ bundle (TBD: panel write-up, spare parts kit, annual recheck).',
@@ -5707,8 +5722,8 @@ async function exportContactsCsv() {
   }
 
   const STAGE_LABEL = {
-    1: 'NEW', 2: 'QUOTED', 3: 'BOOKED', 4: 'PERMIT', 5: 'PAY',
-    6: 'PAID', 7: 'PRINT', 8: 'INSPECT', 9: 'COMPLETE',
+    1: 'New', 2: 'Quoted', 3: 'Booked', 4: 'Permit', 5: 'Pay',
+    6: 'Paid', 7: 'Printed', 8: 'Inspection', 9: 'Complete',
   };
 
   const header = [
@@ -6911,16 +6926,30 @@ function MatCheck({ on, onClick }) {
 function FunnelStep({ label, count }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
-      <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{count}</span>
-      <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '.08em' }}>{label}</span>
+      <span style={{
+        fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
+        color: 'var(--text)', letterSpacing: '-0.02em',
+        fontVariantNumeric: 'tabular-nums',
+      }}>{count}</span>
+      <span style={{
+        fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 600,
+        color: 'var(--text-muted)', letterSpacing: '-0.005em',
+      }}>{label}</span>
     </span>
   );
 }
 function FunnelArrow({ rate }) {
   return (
-    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 1, color: 'var(--text-faint)' }}>
-      <span className="mono" style={{ fontSize: 9, letterSpacing: '.04em' }}>{rate}</span>
-      <span style={{ fontSize: 12, lineHeight: 1 }}>→</span>
+    <span style={{
+      display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+      color: 'var(--text-faint)', minWidth: 38,
+    }}>
+      <span style={{
+        fontFamily: 'var(--font-mono)', fontSize: 10.5, fontWeight: 600,
+        color: 'var(--text-faint)',
+        fontVariantNumeric: 'tabular-nums',
+      }}>{rate}</span>
+      <span style={{ fontSize: 14, lineHeight: 1, color: 'var(--text-faint)' }}>→</span>
     </span>
   );
 }
@@ -7150,32 +7179,40 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* 7-day funnel — the CEO glance: top-of-funnel + conversion rates */}
       <div style={{
-        margin: '16px 16px 0', padding: '10px 14px',
-        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
-        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+        margin: '16px 16px 0', padding: '14px 18px',
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-sm), var(--ring)',
+        borderRadius: 'var(--radius-md)',
+        display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
         fontFamily: 'var(--font-body)', fontSize: 12,
       }}>
-        <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.08em', marginRight: 4 }}>
-          LAST 7 DAYS
+        <span style={{
+          fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700,
+          letterSpacing: '0.12em', textTransform: 'uppercase',
+          color: 'var(--text-faint)', marginRight: 4,
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }}/>
+          Last 7 days
         </span>
-        <FunnelStep label="NEW" count={data.newLeads7d} />
+        <FunnelStep label="New" count={data.newLeads7d} />
         <FunnelArrow rate={pct(data.proposals7d, data.newLeads7d)} />
-        <FunnelStep label="QUOTED" count={data.proposals7d} />
+        <FunnelStep label="Quoted" count={data.proposals7d} />
         <FunnelArrow rate={pct(data.depositsPaid7d, data.proposals7d)} />
-        <FunnelStep label="PAID" count={data.depositsPaid7d} />
+        <FunnelStep label="Paid" count={data.depositsPaid7d} />
         <FunnelArrow rate={pct(data.installs7d, data.depositsPaid7d)} />
-        <FunnelStep label="INSTALLED" count={data.installs7d} />
+        <FunnelStep label="Installed" count={data.installs7d} />
       </div>
       {/* Smart Pricing rollup — tier × variant close-rates so Key can see
           which bundle-uplift is converting once enough deals log tier data. */}
       <div style={{ marginTop: 12 }}><SmartPricingRollup /></div>
       {/* KPI strip */}
       <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <KpiCard label="INSTALLS THIS WEEK" value={String(data.installsThisWeek).padStart(2, '0')} tone="green" />
-        <KpiCard label="OUTSTANDING" value={`$${kpis.outstanding.toLocaleString()}`} tone="red" onClick={() => setSubView('inv')} />
-        <KpiCard label="THIS MONTH" value={`$${kpis.paidThisMonth.toLocaleString()}`} tone="green" onClick={() => setSubView('pay')} />
-        <KpiCard label="DEPOSITS PENDING" value={String(kpis.awaitingDeposit).padStart(2, '0')} tone="amber" onClick={() => setSubView('inv')} />
-        <KpiCard label="OVERDUE" value={String(kpis.overdue).padStart(2, '0')} tone={kpis.overdue > 0 ? 'red' : 'green'} onClick={() => setSubView('inv')} />
+        <KpiCard label="Installs this week" value={String(data.installsThisWeek).padStart(2, '0')} tone="green" />
+        <KpiCard label="Outstanding"        value={`$${kpis.outstanding.toLocaleString()}`}     tone="red"   onClick={() => setSubView('inv')} />
+        <KpiCard label="This month"         value={`$${kpis.paidThisMonth.toLocaleString()}`}   tone="green" onClick={() => setSubView('pay')} />
+        <KpiCard label="Deposits pending"   value={String(kpis.awaitingDeposit).padStart(2, '0')} tone="amber" onClick={() => setSubView('inv')} />
+        <KpiCard label="Overdue"            value={String(kpis.overdue).padStart(2, '0')}      tone={kpis.overdue > 0 ? 'red' : 'green'} onClick={() => setSubView('inv')} />
       </div>
       {/* Sub tabs */}
       <div style={{ padding: '0 16px', display: 'flex', gap: 0, borderBottom: '1px solid var(--divider)' }}>
@@ -7254,7 +7291,7 @@ function followUpState(p) {
   if (days < 2)  return null;
   if (days < 4)  return { label: 'F/U 1',  tint: 'var(--ms-4)' };
   if (days < 7)  return { label: 'F/U 2',  tint: 'var(--ms-3)' };
-  return                { label: 'EXIT',   tint: 'var(--ms-3)' };
+  return                { label: 'Exit',   tint: 'var(--ms-3)' };
 }
 
 // Smart Proposals — compute the row's most actionable signal.
@@ -7269,10 +7306,10 @@ function smartProposalFlag(p) {
   if (status === 'approved' || status === 'declined' || status === 'cancelled') return null;
   const views = Number(p.view_count) || 0;
   const ageDays = p.created_at ? (Date.now() - new Date(p.created_at).getTime()) / 86400000 : 0;
-  if (views >= 10) return { tone: 'red', label: 'STUCK' };
-  if (views >= 3 && ageDays < 7) return { tone: 'gold', label: 'HOT' };
-  if (views === 0 && ageDays >= 2) return { tone: 'red', label: 'UNOPENED' };
-  if (ageDays >= 7) return { tone: 'red', label: 'EXIT' };
+  if (views >= 10) return { tone: 'red', label: 'Stuck' };
+  if (views >= 3 && ageDays < 7) return { tone: 'gold', label: 'Hot' };
+  if (views === 0 && ageDays >= 2) return { tone: 'red', label: 'Unopened' };
+  if (ageDays >= 7) return { tone: 'red', label: 'Exit' };
   return null;
 }
 
@@ -7299,10 +7336,10 @@ function ProposalsLiveTable({ rows }) {
   const sortRank = (p) => {
     const f = smartProposalFlag(p);
     if (!f) return 5;
-    if (f.label === 'HOT') return 0;
-    if (f.label === 'STUCK') return 1;
-    if (f.label === 'UNOPENED') return 2;
-    if (f.label === 'EXIT') return 3;
+    if (f.label === 'Hot') return 0;
+    if (f.label === 'Stuck') return 1;
+    if (f.label === 'Unopened') return 2;
+    if (f.label === 'Exit') return 3;
     return 4;
   };
   const sorted = filteredRows.slice().sort((a, b) => {
@@ -7381,10 +7418,10 @@ function smartInvoiceFlag(inv) {
   if (status === 'paid' || status === 'cancelled') return null;
   const ageDays = inv.created_at ? (Date.now() - new Date(inv.created_at).getTime()) / 86400000 : 0;
   const viewed = !!inv.viewed_at;
-  if (ageDays >= 14) return { tone: 'red',  label: 'STALE' };
-  if (viewed && ageDays >= 1) return { tone: 'gold', label: 'VIEWED · UNPAID' };
-  if (ageDays >= 7) return { tone: 'red',  label: 'OVERDUE' };
-  if (!viewed && ageDays >= 2) return { tone: 'red',  label: 'UNOPENED' };
+  if (ageDays >= 14) return { tone: 'red',  label: 'Stale' };
+  if (viewed && ageDays >= 1) return { tone: 'gold', label: 'Viewed · unpaid' };
+  if (ageDays >= 7) return { tone: 'red',  label: 'Overdue' };
+  if (!viewed && ageDays >= 2) return { tone: 'red',  label: 'Unopened' };
   return null;
 }
 
@@ -7412,10 +7449,10 @@ function InvoicesLiveTable({ rows }) {
     if (status === 'cancelled') return 8;
     const f = smartInvoiceFlag(inv);
     if (!f) return 5;
-    if (f.label === 'VIEWED · UNPAID') return 0;
-    if (f.label === 'OVERDUE') return 1;
-    if (f.label === 'UNOPENED') return 2;
-    if (f.label === 'STALE') return 3;
+    if (f.label === 'Viewed · unpaid') return 0;
+    if (f.label === 'Overdue') return 1;
+    if (f.label === 'Unopened') return 2;
+    if (f.label === 'Stale') return 3;
     return 4;
   };
   const sorted = filteredRows.slice().sort((a, b) => {
@@ -7619,14 +7656,14 @@ function LiveCalendar() {
       const sixMonthsAhead = new Date(Date.now() + 180 * 86400000).toISOString();
       const [schedRes, unschedRes, eventsRes] = await Promise.all([
         db.from('contacts')
-          .select('id, name, address, stage, install_date, assigned_installer, installer_pay, do_not_contact')
+          .select('id, name, phone, address, stage, install_date, assigned_installer, installer_pay, do_not_contact')
           .not('install_date', 'is', null)
           .gte('install_date', sixMonthsAgo)
           .lte('install_date', sixMonthsAhead)
           .order('install_date', { ascending: true })
           .limit(200),
         db.from('contacts')
-          .select('id, name, address, stage, assigned_installer')
+          .select('id, name, phone, address, stage, assigned_installer')
           .is('install_date', null)
           .in('stage', [3, 4, 5, 6, 7, 8])
           .eq('do_not_contact', false)
@@ -7990,30 +8027,41 @@ function LiveCalendar() {
                   return (
                     <button key={e.id}
                       onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
-                      title={`${e.name}${e.address ? ' · ' + e.address : ''} · stage ${e.stage}`}
+                      title={`${displayNameFor(e)}${e.address ? ' · ' + e.address : ''} · stage ${e.stage}`}
                       style={{
-                        textAlign: 'left', padding: '6px 8px', background: 'var(--card)',
-                        boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
+                        textAlign: 'left', padding: '8px 10px',
+                        background: 'var(--card)',
+                        boxShadow: 'var(--ring)',
+                        border: 'none', cursor: 'pointer',
                         borderLeft: `3px solid ${stageTint}`,
+                        borderRadius: 'var(--radius-sm)',
                         opacity: e.do_not_contact ? 0.5 : 1,
-                        display: 'flex', flexDirection: 'column', gap: 2,
+                        display: 'flex', flexDirection: 'column', gap: 3,
+                        transition: 'box-shadow var(--dur) var(--ease)',
+                      }}
+                      onMouseEnter={ev => { ev.currentTarget.style.boxShadow = 'var(--shadow-sm), var(--ring)' }}
+                      onMouseLeave={ev => { ev.currentTarget.style.boxShadow = 'var(--ring)' }}
+                    >
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text-faint)',
+                        fontVariantNumeric: 'tabular-nums',
                       }}>
-                      <span className="mono" style={{ fontSize: 9, color: 'var(--text-faint)', letterSpacing: '.06em' }}>
                         {timeLabel}
                       </span>
                       <span style={{
-                        fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--text)',
+                        fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, color: 'var(--text)',
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>{e.name || '—'}</span>
+                      }}>{displayNameFor(e)}</span>
                       {e.address ? (
-                        <span className="mono" style={{
-                          fontSize: 9, color: 'var(--text-faint)',
+                        <span style={{
+                          fontFamily: 'var(--font-body)', fontSize: 10.5, color: 'var(--text-faint)',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>{e.address.slice(0, 28)}</span>
                       ) : null}
                       {e.assigned_installer && installerFilter === 'all' ? (
-                        <span className="mono" style={{
-                          fontSize: 8, color: 'var(--ms-2)', letterSpacing: '.08em',
+                        <span style={{
+                          fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                          color: 'var(--green)', letterSpacing: '0.08em',
                           textTransform: 'uppercase',
                         }}>{e.assigned_installer}</span>
                       ) : null}
@@ -8032,35 +8080,66 @@ function LiveCalendar() {
       {filteredUnscheduled.length > 0 ? (
         <div style={{ marginTop: 28 }}>
           <div style={{
-            fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            color: 'var(--red)',
-            padding: '10px 0 8px', marginBottom: 6,
-            borderBottom: '1px solid color-mix(in srgb, var(--red) 20%, transparent)',
-            display: 'flex', alignItems: 'center', gap: 6,
+            fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700,
+            color: 'var(--text)',
+            padding: '10px 0 10px', marginBottom: 8,
+            borderBottom: '1px solid var(--divider-faint)',
+            display: 'flex', alignItems: 'center', gap: 8,
+            letterSpacing: '-0.01em',
           }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red)' }}/>
-            Awaiting date ({filteredUnscheduled.length})
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }}/>
+            Awaiting date
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600,
+              padding: '2px 8px',
+              background: 'color-mix(in srgb, var(--red) 12%, transparent)',
+              color: 'var(--red)',
+              borderRadius: 'var(--radius-pill)',
+              fontVariantNumeric: 'tabular-nums',
+              letterSpacing: 0,
+            }}>{filteredUnscheduled.length}</span>
           </div>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: 6,
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: 8,
           }}>
             {filteredUnscheduled.map(e => (
               <button key={e.id}
                 onClick={() => e.id && (window.location.hash = `#contact=${e.id}`)}
                 style={{
-                  textAlign: 'left', padding: '10px 12px', background: 'var(--card)',
-                  boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
-                  display: 'flex', flexDirection: 'column', gap: 2,
+                  textAlign: 'left', padding: '12px 14px',
+                  background: 'var(--card)',
+                  boxShadow: 'var(--shadow-sm), var(--ring)',
+                  borderRadius: 'var(--radius-md)',
+                  border: 'none', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', gap: 4,
+                  transition: 'box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease)',
+                }}
+                onMouseEnter={ev => { ev.currentTarget.style.boxShadow = 'var(--shadow-md), var(--ring)'; ev.currentTarget.style.transform = 'translateY(-1px)' }}
+                onMouseLeave={ev => { ev.currentTarget.style.boxShadow = 'var(--shadow-sm), var(--ring)'; ev.currentTarget.style.transform = 'translateY(0)' }}
+              >
+                <span style={{
+                  fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
+                  color: 'var(--text)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{displayNameFor(e)}</span>
+                <span style={{
+                  fontFamily: 'var(--font-body)', fontSize: 12,
+                  color: 'var(--text-faint)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600 }}>{e.name || '—'}</span>
-                <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
                   {e.address || '—'}
                 </span>
-                <span className="mono" style={{ fontSize: 9, color: 'var(--ms-3)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                  Stage {e.stage} · needs date
+                <span style={{
+                  fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: 'var(--red)',
+                  marginTop: 4,
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)' }}/>
+                  Stage {e.stage} · Needs date
                 </span>
               </button>
             ))}
@@ -8369,10 +8448,10 @@ function smartCallFlag(c) {
   const hasRec = !!c.recordingUrl;
   const dur = c.durationSec || 0;
   const ageHours = c.at ? (Date.now() - new Date(c.at).getTime()) / 3600000 : 0;
-  if (inbound && hasRec && dur < 5 && ageHours < 72) return { tone: 'red',  label: 'VOICEMAIL' };
-  if (inbound && !hasRec && dur <= 5 && ageHours < 72) return { tone: 'red',  label: 'MISSED' };
-  if (inbound && hasRec && ageHours < 24) return { tone: 'gold', label: 'VOICEMAIL' };
-  if (!inbound && dur > 30 && ageHours > 24 && ageHours < 168) return { tone: 'gold', label: 'RETURN' };
+  if (inbound && hasRec && dur < 5 && ageHours < 72) return { tone: 'red',  label: 'Voicemail' };
+  if (inbound && !hasRec && dur <= 5 && ageHours < 72) return { tone: 'red',  label: 'Missed' };
+  if (inbound && hasRec && ageHours < 24) return { tone: 'gold', label: 'Voicemail' };
+  if (!inbound && dur > 30 && ageHours > 24 && ageHours < 168) return { tone: 'gold', label: 'Return' };
   return null;
 }
 
@@ -8415,9 +8494,9 @@ function LiveCalls({ onSelect }) {
       const priority = (r) => {
         const f = smartCallFlag(r);
         if (!f) return 5;
-        if (f.label === 'VOICEMAIL') return 0;
-        if (f.label === 'MISSED') return 1;
-        if (f.label === 'RETURN') return 2;
+        if (f.label === 'Voicemail') return 0;
+        if (f.label === 'Missed') return 1;
+        if (f.label === 'Return') return 2;
         return 3;
       };
       shaped.sort((a, b) => {
@@ -8575,11 +8654,11 @@ function reasonChipFor({ contact, signals }) {
   if (signals.waitingOnKey) {
     const age = signals.lastInboundMinutes;
     const ageText = age < 60 ? `${Math.max(1, Math.round(age))}m` : age < 60 * 24 ? `${Math.round(age / 60)}h` : `${Math.round(age / (60 * 24))}d`;
-    return { label: `REPLIED ${ageText} AGO`, tone: 'gold' };
+    return { label: `Replied ${ageText} ago`, tone: 'gold' };
   }
   if (signals.installToday) {
     const t = new Date(contact.install_date);
-    return { label: `INSTALL TODAY ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, tone: 'green' };
+    return { label: `Install today ${t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, tone: 'green' };
   }
   if (signals.installWithin3d) {
     const t = new Date(contact.install_date);
@@ -8602,8 +8681,8 @@ function reasonChipFor({ contact, signals }) {
   }
   if (contact.stage === 3 && !contact.install_date) return { label: 'Booked · needs date', tone: 'gold' };
   if (contact.stage === 1 && signals.ageHours < 24) return { label: 'New lead', tone: 'navy' };
-  if (contact.do_not_contact) return { label: 'DNC', tone: 'red' };
-  const s = STAGE_MAP[contact.stage] || `STAGE ${contact.stage || 1}`;
+  if (contact.do_not_contact) return { label: 'Do not contact', tone: 'red' };
+  const s = STAGE_MAP[contact.stage] || `Stage ${contact.stage || 1}`;
   return { label: s.charAt(0) + s.slice(1).toLowerCase(), tone: 'muted' };
 }
 
@@ -8852,11 +8931,11 @@ function LiveQuickList({ onSelect }) {
     install: rows.filter(r => r.stage === 7 || r.stage === 8).length,
   };
   const stageChips = [
-    { id: 'all',     label: 'ALL',     count: stageCounts.all },
-    { id: 'new',     label: 'NEW',     count: stageCounts.new },
-    { id: 'quoted',  label: 'QUOTED',  count: stageCounts.quoted },
-    { id: 'booked',  label: 'BOOKED',  count: stageCounts.booked },
-    { id: 'install', label: 'INSTALL', count: stageCounts.install },
+    { id: 'all',     label: 'All',     count: stageCounts.all },
+    { id: 'new',     label: 'New',     count: stageCounts.new },
+    { id: 'quoted',  label: 'Quoted',  count: stageCounts.quoted },
+    { id: 'booked',  label: 'Booked',  count: stageCounts.booked },
+    { id: 'install', label: 'Install', count: stageCounts.install },
   ];
   function matchesStage(r) {
     if (stageFilter === 'all') return true;
@@ -9590,45 +9669,72 @@ function AgentsInboxStrip() {
               <div style={{
                 fontSize: 12, fontWeight: 500,
                 color: isUrgent ? 'var(--red)' : 'var(--text-muted)',
-                display: 'flex', alignItems: 'center', gap: 6,
+                display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
               }}>
                 <span style={{ fontWeight: 600, color: 'var(--text)' }}>{agentLabel}</span>
                 {contactName ? <><span style={{ color: 'var(--text-faint)' }}>·</span><span>{contactName}</span></> : null}
-                <span style={{ color: 'var(--text-faint)' }}>·</span>
-                <span style={{ color: 'var(--text-faint)' }}>{fmtAge(item.created_at)}</span>
+                {(() => {
+                  // Strip bracketed markers like [photo_received_safety_net]
+                  // from the summary body and surface them as their own chip.
+                  const raw = String(item.summary || '');
+                  const m = raw.match(/\[([a-z0-9_]+)\]/i);
+                  if (!m) return null;
+                  const human = m[1].replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                  return (
+                    <span style={{
+                      fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                      letterSpacing: '0.08em', textTransform: 'uppercase',
+                      padding: '2px 6px',
+                      background: isUrgent
+                        ? 'color-mix(in srgb, var(--red) 14%, transparent)'
+                        : 'color-mix(in srgb, var(--blue) 12%, transparent)',
+                      color: isUrgent ? 'var(--red)' : 'var(--blue)',
+                      borderRadius: 'var(--radius-pill)',
+                    }}>{human}</span>
+                  );
+                })()}
+                <span style={{ color: 'var(--text-faint)', marginLeft: 'auto' }}>{fmtAge(item.created_at)}</span>
               </div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)' }}>
-                {item.summary}
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)', lineHeight: 1.45 }}>
+                {(() => {
+                  // Strip the leading "Alex → Key [marker]:" pattern and the
+                  // standalone [marker] tokens; the type now lives in the chip above.
+                  let s = String(item.summary || '');
+                  s = s.replace(/^(alex|sparky|brief|permit-morning-check|pipeline)\s*(?:→|->)\s*key\s*(?:\[[a-z0-9_]+\])?\s*:\s*/i, '');
+                  s = s.replace(/\[[a-z0-9_]+\]:?\s*/gi, '');
+                  return s.trim() || item.summary;
+                })()}
               </div>
               {item.draft_reply ? (
                 <div style={{
-                  padding: '6px 8px', marginTop: 2,
-                  background: 'var(--card)', boxShadow: 'var(--raised-2)',
-                  fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-muted)',
+                  padding: '8px 12px', marginTop: 2,
+                  background: 'var(--sunken)',
+                  borderRadius: 'var(--radius-sm)',
+                  fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-muted)',
                   fontStyle: 'italic',
                 }}>
-                  Draft: "{item.draft_reply}"
+                  <span style={{
+                    display: 'block', fontStyle: 'normal',
+                    fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                    letterSpacing: '0.12em', textTransform: 'uppercase',
+                    color: 'var(--text-faint)', marginBottom: 3,
+                  }}>Draft reply</span>
+                  "{item.draft_reply}"
                 </div>
               ) : null}
               <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
                 {item.draft_reply && item.contact_id ? (
-                  <button onClick={() => sendDraft(item)} style={{
-                    padding: '4px 10px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
-                    background: 'var(--navy)', color: 'var(--gold)', boxShadow: 'var(--raised-2)',
-                    border: 'none', cursor: 'pointer', letterSpacing: '.04em',
-                  }}>Load draft</button>
+                  <button onClick={() => sendDraft(item)} className="btn-navy" style={{ height: 26, padding: '0 12px', fontSize: 11.5 }}>Load draft</button>
                 ) : null}
                 {item.contact_id ? (
-                  <button onClick={() => openContact(item)} style={{
-                    padding: '4px 10px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
-                    background: 'var(--card)', color: 'var(--text)', boxShadow: 'var(--raised-2)',
-                    border: 'none', cursor: 'pointer', letterSpacing: '.04em',
-                  }}>Open contact</button>
+                  <button onClick={() => openContact(item)} className="btn-ghost" style={{ height: 26, padding: '0 12px', fontSize: 11.5 }}>Open contact</button>
                 ) : null}
                 <button onClick={() => dismiss(item.id)} style={{
-                  padding: '4px 10px', fontSize: 10, fontFamily: 'var(--font-body)', fontWeight: 600,
+                  padding: '0 10px', height: 26,
                   background: 'transparent', color: 'var(--text-muted)',
-                  border: 'none', cursor: 'pointer', letterSpacing: '.04em',
+                  border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 11.5,
+                  borderRadius: 'var(--radius-pill)',
                 }}>Dismiss</button>
               </div>
             </div>
@@ -10031,7 +10137,7 @@ async function smartSearchIntent(q) {
       intent: 'installs-today',
       hits: (data || []).map(c => ({
         type: 'contact', id: c.id, name: displayNameFor(c),
-        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'New',
         _intent: 'TODAY',
       })),
     };
@@ -10076,7 +10182,7 @@ async function smartSearchIntent(q) {
       intent: 'waiting',
       hits: ids.map(id => byId[id]).filter(Boolean).map(c => ({
         type: 'contact', id: c.id, name: displayNameFor(c),
-        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'New',
         _intent: 'REPLY',
       })),
     };
@@ -10090,7 +10196,7 @@ async function smartSearchIntent(q) {
       intent: 'new-today',
       hits: (data || []).map(c => ({
         type: 'contact', id: c.id, name: displayNameFor(c),
-        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'New',
         _intent: 'NEW',
       })),
     };
@@ -10106,7 +10212,7 @@ async function smartSearchIntent(q) {
       intent: 'near-' + city.toLowerCase(),
       hits: (data || []).map(c => ({
         type: 'contact', id: c.id, name: displayNameFor(c),
-        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'New',
         _intent: city.slice(0, 14).toUpperCase(),
       })),
     };
@@ -10150,7 +10256,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
       const byId = Object.fromEntries((data || []).map(c => [c.id, c]));
       const hits = ids.map(id => byId[id]).filter(Boolean).map(c => ({
         type: 'contact', id: c.id, name: c.name, phone: formatPhone(c.phone),
-        stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        stage: STAGE_MAP[c.stage || 1] || 'New',
         _recent: true,
       }));
       setResults(hits);
@@ -10198,7 +10304,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
       const [contactsRes, messagesRes] = await Promise.all([runContacts, runMessages]);
       if (!alive) return;
       const contactHits = (contactsRes.data || []).map(c => ({
-        type: 'contact', id: c.id, name: c.name, phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'NEW',
+        type: 'contact', id: c.id, name: c.name, phone: formatPhone(c.phone), stage: STAGE_MAP[c.stage || 1] || 'New',
       }));
       // De-dupe message hits by contact_id so a chatty lead doesn't flood
       // the results. Keep the most recent hit per contact. Then hydrate
@@ -10226,7 +10332,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
           const preview = (start > 0 ? '…' : '') + body.slice(start, start + 80) + (body.length > start + 80 ? '…' : '');
           return {
             type: 'message', id: c.id, name: c.name || '(unnamed)',
-            stage: STAGE_MAP[c.stage || 1] || 'NEW',
+            stage: STAGE_MAP[c.stage || 1] || 'New',
             preview, direction: m.direction,
           };
         }).filter(Boolean);
@@ -11276,7 +11382,7 @@ function App() {
             c.phone ? formatPhone(c.phone) : null,
             c.email || null,
             c.address || null,
-            `Stage: ${STAGE_MAP[c.stage || 1] || 'NEW'}`,
+            `Stage: ${STAGE_MAP[c.stage || 1] || 'New'}`,
           ].filter(Boolean).join('\n');
           try {
             await navigator.clipboard.writeText(block);

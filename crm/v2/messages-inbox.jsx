@@ -209,8 +209,26 @@ function MessagesInbox({ compact = false, threads, onSelect, activeId }) {
         background: 'var(--card)',
       }}>
         {data.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-faint)' }}>
-            {query ? 'no matches' : 'inbox clear'}
+          <div style={{
+            padding: 64, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 8,
+            textAlign: 'center',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700,
+              color: 'var(--text-muted)',
+              letterSpacing: '-0.005em',
+            }}>
+              {query ? 'No matches' : 'Inbox clear'}
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-faint)',
+              maxWidth: 380, lineHeight: 1.5,
+            }}>
+              {query
+                ? `Nothing matched "${query}". Try a looser term or clear the filter.`
+                : 'No open replies or unread threads. New inbound SMS will show up here.'}
+            </div>
           </div>
         ) : data.map((t, i) => (
           <div key={t.contactId || i} onClick={() => onSelect && onSelect(t)} style={{ cursor: onSelect ? 'pointer' : 'default' }}>
