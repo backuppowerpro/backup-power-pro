@@ -2683,10 +2683,18 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
             textDecoration: contact?.do_not_contact ? 'line-through' : 'none',
           }}>{displayName}</div>
           {contact?.do_not_contact ? (
-            <span className="mono" title="Do not contact" style={{
-              fontSize: 9, padding: '2px 6px', letterSpacing: '.08em',
-              color: '#fff', background: 'var(--ms-3)',
-            }}>DNC</span>
+            <span title="Do not contact" style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: 10.5, padding: '3px 10px',
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              color: 'var(--red)',
+              background: 'color-mix(in srgb, var(--red) 14%, transparent)',
+              borderRadius: 'var(--radius-pill)',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)' }}/>
+              DNC
+            </span>
           ) : null}
         </div>
         <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
