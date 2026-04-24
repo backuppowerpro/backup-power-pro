@@ -1,7 +1,7 @@
 /* global React */
 // Leads — Permits sub-view. 7-step permit pipeline per jurisdiction.
 
-const STEP_HEADS = ['SUBMIT', 'PAY', 'PAID', 'PRINT', 'PRINTED', 'INSPECT\u00a0SCHED', 'INSPECT\u00a0PASS'];
+const STEP_HEADS = ['Submit', 'Pay', 'Paid', 'Print', 'Printed', 'Inspect\u00a0sched', 'Inspect\u00a0pass'];
 
 const PermitIcons = {
   clock: <svg viewBox="0 0 16 16" width="14" height="14"><rect x="3" y="3" width="10" height="10"/><path d="M8 6 L8 8 L10 10"/></svg>,
@@ -9,19 +9,25 @@ const PermitIcons = {
   x:     <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 4 L12 12 M12 4 L4 12"/></svg>,
 };
 
-/* ── Minesweeper-style step cell ── */
-function StepCell({ state }) {
+/* ── Step cell — soft square showing progress of each permit stage ── */
+function StepCell({ state, first = false, last = false }) {
   const base = {
     width: 40, height: 40,
     display: 'grid', placeItems: 'center',
-    background: 'var(--card)', color: 'var(--text)',
+    background: 'var(--card)',
+    color: 'var(--text-faint)',
+    borderRight: last ? 'none' : '1px solid var(--divider-faint)',
   };
   if (state === 'empty') {
-    return <div style={{ ...base, boxShadow: 'var(--pressed-2)' }} />;
+    return <div style={{ ...base, background: 'var(--sunken)' }} />;
   }
   if (state === 'progress') {
     return (
-      <div style={{ ...base, boxShadow: 'var(--raised-2)', color: 'var(--text-muted)' }}>
+      <div style={{
+        ...base,
+        background: 'color-mix(in srgb, var(--gold) 14%, var(--card))',
+        color: 'var(--gold)',
+      }}>
         {PermitIcons.clock}
       </div>
     );
@@ -29,8 +35,9 @@ function StepCell({ state }) {
   if (state === 'done') {
     return (
       <div style={{
-        ...base, boxShadow: 'var(--pressed-2)',
-        color: 'var(--ms-2)',
+        ...base,
+        background: 'color-mix(in srgb, var(--green) 14%, var(--card))',
+        color: 'var(--green)',
       }}>
         {PermitIcons.check}
       </div>
@@ -40,10 +47,8 @@ function StepCell({ state }) {
     return (
       <div style={{
         ...base,
-        background: 'var(--lcd-bg)',
-        boxShadow: 'var(--pressed-2)',
-        color: 'var(--lcd-red)',
-        textShadow: 'var(--lcd-glow-red)',
+        background: 'color-mix(in srgb, var(--red) 16%, var(--card))',
+        color: 'var(--red)',
       }}>
         {PermitIcons.x}
       </div>
@@ -56,55 +61,49 @@ function StepRow({ cells }) {
   return (
     <div style={{
       display: 'flex', gap: 0,
-      boxShadow: '0 0 0 1px rgba(0,0,0,.15)',
+      borderRadius: 'var(--radius-sm)',
+      boxShadow: 'var(--ring)',
+      overflow: 'hidden',
     }}>
-      {cells.map((s, i) => <StepCell key={i} state={s} />)}
+      {cells.map((s, i) => <StepCell key={i} state={s} last={i === cells.length - 1} first={i === 0} />)}
     </div>
   );
 }
 
 const ROWS = [
   { name: 'Sarah M',  initials:'SM', jur: null,        cells: Array(7).fill('empty'),
-    action: { kind: 'amber', label: 'SET JURISDICTION' } },
-  { name: 'Mike J',   initials:'MJ', jur: 'GREENVILLE COUNTY',
+    action: { kind: 'amber', label: 'Set jurisdiction' } },
+  { name: 'Mike J',   initials:'MJ', jur: 'Greenville County',
     cells: ['done','done','blocked','empty','empty','empty','empty'],
-    action: { kind: 'blocked', label: 'BLOCKED — CALL COUNTY' } },
-  { name: 'Robert K', initials:'RK', jur: 'GREENVILLE COUNTY',
+    action: { kind: 'blocked', label: 'Blocked — call county' } },
+  { name: 'Robert K', initials:'RK', jur: 'Greenville County',
     cells: ['done','done','progress','empty','empty','empty','empty'],
-    action: { kind: 'wait',  label: 'AWAITING PAYMENT' } },
-  { name: 'Mark L',   initials:'ML', jur: 'GREENVILLE COUNTY',
+    action: { kind: 'wait',  label: 'Awaiting payment' } },
+  { name: 'Mark L',   initials:'ML', jur: 'Greenville County',
     cells: ['done','done','done','done','progress','empty','empty'],
-    action: { kind: 'wait',  label: 'READY TO PRINT' } },
-  { name: 'Bill C',   initials:'BC', jur: 'SPARTANBURG COUNTY',
+    action: { kind: 'wait',  label: 'Ready to print' } },
+  { name: 'Bill C',   initials:'BC', jur: 'Spartanburg County',
     cells: ['done','empty','empty','empty','empty','empty','empty'],
-    action: { kind: 'wait',  label: 'PAY TO SPARTANBURG' } },
-  { name: 'Paul R',   initials:'PR', jur: 'SPARTANBURG COUNTY',
+    action: { kind: 'wait',  label: 'Pay to Spartanburg' } },
+  { name: 'Paul R',   initials:'PR', jur: 'Spartanburg County',
     cells: ['done','done','empty','empty','empty','empty','empty'],
-    action: { kind: 'wait',  label: 'PAY TO SPARTANBURG' } },
-  { name: 'Carl W',   initials:'CW', jur: 'GREENVILLE COUNTY',
+    action: { kind: 'wait',  label: 'Pay to Spartanburg' } },
+  { name: 'Carl W',   initials:'CW', jur: 'Greenville County',
     cells: ['done','done','done','done','done','done','empty'],
-    action: { kind: 'wait',  label: 'SCHEDULE INSPECTION' } },
-  { name: 'Helen S',  initials:'HS', jur: 'PICKENS COUNTY',
+    action: { kind: 'wait',  label: 'Schedule inspection' } },
+  { name: 'Helen S',  initials:'HS', jur: 'Pickens County',
     cells: ['done','done','done','done','done','done','progress'],
-    action: { kind: 'today', label: 'INSPECTION TODAY' } },
+    action: { kind: 'today', label: 'Inspection today' } },
 ];
 
 function JurisCell({ jur }) {
   if (!jur) {
-    return (
-      <span style={{
-        height: 24, padding: '0 8px',
-        display: 'inline-flex', alignItems: 'center',
-        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        color: 'var(--lcd-amber)', textShadow: 'var(--lcd-glow-amber)',
-        fontFamily: 'var(--font-pixel)', fontSize: 13,
-        letterSpacing: '.08em',
-      }}>NO JURISDICTION</span>
-    );
+    return <span className="smart-chip smart-chip--gold">No jurisdiction</span>;
   }
   return (
-    <span className="chrome-label" style={{
-      fontSize: 11, color: 'var(--text)', letterSpacing: '.08em',
+    <span style={{
+      fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: 12,
+      color: 'var(--text-muted)',
     }}>{jur}</span>
   );
 }
@@ -112,40 +111,31 @@ function JurisCell({ jur }) {
 function ActionCell({ action }) {
   if (action.kind === 'amber') {
     return (
-      <button className="tactile-raised chrome-label" style={{
-        height: 28, padding: '0 10px', fontSize: 11,
-        background: 'var(--gold)', color: '#1a1a1a',
-      }}>{action.label}</button>
+      <button style={{
+        height: 30, padding: '0 14px',
+        background: 'var(--gold)', color: 'var(--navy)',
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+        letterSpacing: '0.01em',
+        borderRadius: 'var(--radius-pill)',
+        boxShadow: 'var(--shadow-gold)',
+        border: 'none', cursor: 'pointer',
+        transition: 'background var(--dur) var(--ease)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)' }}
+      >{action.label}</button>
     );
   }
   if (action.kind === 'blocked') {
-    return (
-      <span style={{
-        height: 28, padding: '0 10px',
-        display: 'inline-flex', alignItems: 'center',
-        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-        fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-      }}>{action.label}</span>
-    );
+    return <span className="smart-chip smart-chip--red">{action.label}</span>;
   }
   if (action.kind === 'today') {
-    return (
-      <span style={{
-        height: 28, padding: '0 10px',
-        display: 'inline-flex', alignItems: 'center',
-        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-        fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-      }}>{action.label}</span>
-    );
+    return <span className="smart-chip smart-chip--green">{action.label}</span>;
   }
   return (
-    <span className="chrome-label" style={{
-      height: 28, padding: '0 10px',
-      display: 'inline-flex', alignItems: 'center',
-      background: 'var(--card)', boxShadow: 'var(--pressed-2)',
-      fontSize: 11, color: 'var(--text)',
+    <span style={{
+      fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: 12,
+      color: 'var(--text-muted)',
     }}>{action.label}</span>
   );
 }
@@ -153,13 +143,14 @@ function ActionCell({ action }) {
 function MiniAvatar({ initials }) {
   return (
     <div style={{
-      width: 28, height: 28, flex: '0 0 auto',
-      background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
+      width: 30, height: 30, flex: '0 0 auto',
+      background: 'var(--navy)',
+      borderRadius: '50%',
       display: 'grid', placeItems: 'center',
     }}>
       <span style={{
-        fontFamily: 'var(--font-chrome)', fontWeight: 700,
-        color: 'var(--gold)', fontSize: 10, letterSpacing: '.04em',
+        fontFamily: 'var(--font-body)', fontWeight: 600,
+        color: '#fff', fontSize: 11,
       }}>{initials}</span>
     </div>
   );
@@ -167,56 +158,58 @@ function MiniAvatar({ initials }) {
 
 function PermitsToolbar() {
   const subs = [
-    { id: 'pipeline', label: 'PIPELINE' },
-    { id: 'list',     label: 'LIST' },
-    { id: 'permits',  label: 'PERMITS', active: true },
-    { id: 'mat',      label: 'MATERIALS' },
+    { id: 'pipeline', label: 'Pipeline' },
+    { id: 'list',     label: 'List' },
+    { id: 'permits',  label: 'Permits', active: true },
+    { id: 'mat',      label: 'Materials' },
   ];
   const jurs = [
-    { id: 'all', label: 'ALL', active: true },
-    { id: 'gv',  label: 'GREENVILLE' },
-    { id: 'sb',  label: 'SPARTANBURG' },
-    { id: 'pk',  label: 'PICKENS' },
+    { id: 'all', label: 'All', active: true },
+    { id: 'gv',  label: 'Greenville' },
+    { id: 'sb',  label: 'Spartanburg' },
+    { id: 'pk',  label: 'Pickens' },
   ];
   const stat = [
-    { id: 'ns',  label: 'NOT STARTED' },
-    { id: 'ip',  label: 'IN PROGRESS', active: true },
-    { id: 'cp',  label: 'COMPLETE' },
+    { id: 'ns',  label: 'Not started' },
+    { id: 'ip',  label: 'In progress', active: true },
+    { id: 'cp',  label: 'Complete' },
   ];
+  const pillStyle = (active) => ({
+    height: 30, padding: '0 14px',
+    background: active ? 'var(--navy)' : 'var(--card)',
+    color: active ? '#fff' : 'var(--text-muted)',
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+    letterSpacing: '0.01em',
+    borderRadius: 'var(--radius-pill)',
+    boxShadow: active ? 'var(--shadow-sm)' : 'var(--ring)',
+    border: 'none', cursor: 'pointer',
+    transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+  });
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
-      padding: '16px 16px 8px',
+      padding: '16px 16px 10px',
     }}>
-      <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
+      <div style={{
+        display: 'flex', height: 36,
+        background: 'var(--card)',
+        boxShadow: 'var(--ring)',
+        borderRadius: 'var(--radius-pill)',
+        padding: 3,
+      }}>
         {subs.map(s => (
-          <button key={s.id} className="chrome-label" style={{
-            height: 36, padding: '0 16px', fontSize: 12,
+          <button key={s.id} style={{
+            ...pillStyle(s.active),
+            height: 30, boxShadow: s.active ? 'var(--shadow-sm)' : 'none',
             background: s.active ? 'var(--navy)' : 'transparent',
-            color: s.active ? 'var(--gold)' : 'var(--text)',
-            boxShadow: s.active ? 'var(--pressed-2)' : 'none',
           }}>{s.label}</button>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {jurs.map(f => (
-          <button key={f.id} className="chrome-label" style={{
-            height: 28, padding: '0 12px', fontSize: 11,
-            background: f.active ? 'var(--navy)' : 'var(--card)',
-            color: f.active ? '#fff' : 'var(--text)',
-            boxShadow: f.active ? 'var(--pressed-2)' : 'var(--raised-2)',
-          }}>{f.label}</button>
-        ))}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {jurs.map(f => (<button key={f.id} style={pillStyle(f.active)}>{f.label}</button>))}
       </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {stat.map(f => (
-          <button key={f.id} className="chrome-label" style={{
-            height: 28, padding: '0 12px', fontSize: 11,
-            background: f.active ? 'var(--navy)' : 'var(--card)',
-            color: f.active ? '#fff' : 'var(--text)',
-            boxShadow: f.active ? 'var(--pressed-2)' : 'var(--raised-2)',
-          }}>{f.label}</button>
-        ))}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {stat.map(f => (<button key={f.id} style={pillStyle(f.active)}>{f.label}</button>))}
       </div>
     </div>
   );
@@ -225,23 +218,11 @@ function PermitsToolbar() {
 function CornerBadges() {
   return (
     <div style={{
-      display: 'flex', gap: 8, padding: '0 16px 8px',
+      display: 'flex', gap: 10, padding: '0 16px 8px',
       justifyContent: 'flex-end',
     }}>
-      <span style={{
-        height: 26, padding: '0 10px',
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-        fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-      }}>◆ 8 ACTIVE PERMITS</span>
-      <span style={{
-        height: 26, padding: '0 10px',
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-        fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-      }}>◆ 1 BLOCKED</span>
+      <span className="smart-chip smart-chip--green" style={{ height: 28, fontSize: 11 }}>8 active permits</span>
+      <span className="smart-chip smart-chip--red"   style={{ height: 28, fontSize: 11 }}>1 blocked</span>
     </div>
   );
 }
@@ -252,43 +233,61 @@ function PermitsDesktop() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <PermitsToolbar />
       <CornerBadges />
-      <div style={{ padding: '0 16px 88px', flex: 1, overflow: 'hidden' }}>
+      <div style={{ padding: '0 16px 88px', flex: 1, overflow: 'auto' }}>
         <div style={{
           background: 'var(--card)',
-          boxShadow: 'var(--pressed-2)',
+          boxShadow: 'var(--shadow-sm), var(--ring)',
+          borderRadius: 'var(--radius-md)',
+          overflow: 'hidden',
         }}>
           {/* Header row */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '200px 200px auto 200px',
-            height: 36, alignItems: 'center',
-            padding: '0 14px',
-            borderBottom: '1px solid rgba(0,0,0,.15)',
+            gridTemplateColumns: '200px 200px auto 220px',
+            height: 42, alignItems: 'center',
+            padding: '0 18px',
+            borderBottom: '1px solid var(--divider-faint)',
+            background: 'var(--sunken)',
           }}>
-            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>CUSTOMER</span>
-            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)' }}>JURISDICTION</span>
+            {['Customer','Jurisdiction'].map((h, i) => (
+              <span key={i} style={{
+                fontFamily: 'var(--font-display)', fontWeight: 600,
+                fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+              }}>{h}</span>
+            ))}
             <div style={{ display: 'flex', gap: 0, justifyContent: 'center' }}>
               {STEP_HEADS.map((s, i) => (
-                <span key={i} className="chrome-label" style={{
-                  width: 40, fontSize: 8, color: 'var(--text-muted)',
-                  textAlign: 'center', letterSpacing: '.04em',
+                <span key={i} style={{
+                  width: 40,
+                  fontFamily: 'var(--font-display)', fontWeight: 600,
+                  fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
+                  color: 'var(--text-muted)', textAlign: 'center',
                 }}>{s}</span>
               ))}
             </div>
-            <span className="chrome-label" style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'right' }}>ACTION</span>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontWeight: 600,
+              fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+              color: 'var(--text-muted)', textAlign: 'right',
+            }}>Action</span>
           </div>
 
           {/* Data rows */}
           {ROWS.map((r, i) => (
-            <div key={i} className="tactile-flat" style={{
+            <div key={i} style={{
               display: 'grid',
-              gridTemplateColumns: '200px 200px auto 200px',
-              height: 64, alignItems: 'center',
-              padding: '0 14px',
-              borderBottom: i < ROWS.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
+              gridTemplateColumns: '200px 200px auto 220px',
+              minHeight: 68, alignItems: 'center',
+              padding: '12px 18px',
+              borderBottom: i < ROWS.length - 1 ? '1px solid var(--divider-faint)' : 'none',
               background: 'var(--card)',
-              gap: 10,
-            }}>
+              gap: 12,
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--sunken)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--card)'}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <MiniAvatar initials={r.initials} />
                 <span style={{
@@ -314,49 +313,54 @@ function PermitsDesktop() {
 /* ────────── Mobile list ────────── */
 function PermitsMobile() {
   const subs = [
-    { id: 'pipeline', label: 'PIPELINE' },
-    { id: 'list',     label: 'LIST' },
-    { id: 'permits',  label: 'PERMITS', active: true },
-    { id: 'mat',      label: 'MATERIALS' },
+    { id: 'pipeline', label: 'Pipeline' },
+    { id: 'list',     label: 'List' },
+    { id: 'permits',  label: 'Permits', active: true },
+    { id: 'mat',      label: 'Materials' },
   ];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ padding: '12px 8px 4px' }}>
-        <div style={{ display: 'flex', height: 32, boxShadow: 'var(--raised-2)', alignSelf: 'flex-start' }}>
+      <div style={{ padding: '14px 12px 6px' }}>
+        <div style={{
+          display: 'flex', height: 34,
+          background: 'var(--card)',
+          boxShadow: 'var(--ring)',
+          borderRadius: 'var(--radius-pill)',
+          padding: 3,
+          alignSelf: 'flex-start',
+        }}>
           {subs.map(s => (
-            <button key={s.id} className="chrome-label" style={{
-              height: 32, padding: '0 10px', fontSize: 10,
+            <button key={s.id} style={{
+              height: 28, padding: '0 12px',
               background: s.active ? 'var(--navy)' : 'transparent',
-              color: s.active ? 'var(--gold)' : 'var(--text)',
-              boxShadow: s.active ? 'var(--pressed-2)' : 'none',
+              color: s.active ? '#fff' : 'var(--text-muted)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: s.active ? 700 : 500, fontSize: 11,
+              borderRadius: 'var(--radius-pill)',
+              border: 'none', cursor: 'pointer',
             }}>{s.label}</button>
           ))}
         </div>
       </div>
-      <div style={{ padding: '4px 8px', display: 'flex', gap: 6, justifyContent: 'space-between' }}>
-        <span style={{
-          height: 22, padding: '0 8px',
-          display: 'inline-flex', alignItems: 'center',
-          background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-          color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-          fontFamily: 'var(--font-pixel)', fontSize: 12, letterSpacing: '.08em',
-        }}>8 ACTIVE</span>
-        <span style={{
-          height: 22, padding: '0 8px',
-          display: 'inline-flex', alignItems: 'center',
-          background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-          color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-          fontFamily: 'var(--font-pixel)', fontSize: 12, letterSpacing: '.08em',
-        }}>1 BLOCKED</span>
+      <div style={{ padding: '6px 12px', display: 'flex', gap: 8, justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+        <span className="smart-chip smart-chip--green">8 active</span>
+        <span className="smart-chip smart-chip--red">1 blocked</span>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', margin: '4px 8px', boxShadow: 'var(--pressed-2)', background: 'var(--card)' }}>
+      <div style={{
+        flex: 1, overflowY: 'auto',
+        margin: '6px 10px 12px',
+        boxShadow: 'var(--shadow-sm), var(--ring)',
+        borderRadius: 'var(--radius-md)',
+        background: 'var(--card)',
+        overflow: 'auto',
+      }}>
         {ROWS.map((r, i) => (
           <div key={i} style={{
-            padding: '10px 12px',
-            borderBottom: i < ROWS.length - 1 ? '1px solid rgba(0,0,0,.08)' : 'none',
-            display: 'flex', flexDirection: 'column', gap: 8,
+            padding: '14px 14px',
+            borderBottom: i < ROWS.length - 1 ? '1px solid var(--divider-faint)' : 'none',
+            display: 'flex', flexDirection: 'column', gap: 10,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <MiniAvatar initials={r.initials} />
               <span style={{
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
@@ -364,7 +368,7 @@ function PermitsMobile() {
               }}>{r.name}</span>
               <JurisCell jur={r.jur} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <div style={{ overflowX: 'auto', flex: '0 0 auto' }}>
                 <StepRow cells={r.cells} />
               </div>
