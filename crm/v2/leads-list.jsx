@@ -1,15 +1,21 @@
 /* global React */
 // Leads — List view. Row-based, mobile-first.
 
+// Stage → smart-chip tone + sentence-case label. Abbreviation is what
+// renders in the compressed-row slot; fullLabel is for tooltips and
+// screen readers. Tone matches the design system map:
+//   navy   → neutral / new    red → exit/overdue/ready-pay
+//   gold   → waiting on Key   green → confirmed/done
+//   purple → waiting external blue → informational
 const STAGE = {
-  NEW:     { label: 'NEW LEAD',  abbr: 'NEW',         color: 'var(--ms-1)' },
-  QUOTED:  { label: 'QUOTED',    abbr: 'QUOTED',      color: 'var(--ms-4)' },
-  BOOKED:  { label: 'BOOKED',    abbr: 'BOOKED',      color: 'var(--ms-2)' },
-  PERMIT:  { label: 'PERMIT',    abbr: 'PERMIT SUB.', color: 'var(--ms-5)' },
-  PAY:     { label: 'READY PAY', abbr: 'READY PAY',   color: 'var(--ms-3)' },
-  PAID:    { label: 'PAID',      abbr: 'PAID',        color: 'var(--ms-2)' },
-  PRINT:   { label: 'PRINTED',   abbr: 'PRINTED',     color: 'var(--ms-6)' },
-  INSPECT: { label: 'INSPECT',   abbr: 'INSPECTION',  color: 'var(--ms-7)' },
+  NEW:     { label: 'New lead',   abbr: 'New',         tone: 'navy'   },
+  QUOTED:  { label: 'Quoted',     abbr: 'Quoted',      tone: 'purple' },
+  BOOKED:  { label: 'Booked',     abbr: 'Booked',      tone: 'green'  },
+  PERMIT:  { label: 'Permit',     abbr: 'Permit',      tone: 'gold'   },
+  PAY:     { label: 'Ready to pay', abbr: 'Pay',       tone: 'red'    },
+  PAID:    { label: 'Paid',       abbr: 'Paid',        tone: 'green'  },
+  PRINT:   { label: 'Printed',    abbr: 'Printed',     tone: 'navy'   },
+  INSPECT: { label: 'Inspection', abbr: 'Inspection',  tone: 'purple' },
 };
 
 const rows = [
@@ -168,7 +174,8 @@ function LeadRow({ r, desktop = false }) {
       {r.overdue && !selected && (
         <div style={{
           position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
-          background: 'var(--ms-3)',
+          background: 'var(--red)',
+          borderRadius: '0 2px 2px 0',
         }}/>
       )}
 
@@ -187,37 +194,36 @@ function LeadRow({ r, desktop = false }) {
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{r.name}</span>
           {r.unread && (
-            <span title="unread" style={{
-              width: 6, height: 6, flex: '0 0 auto',
-              background: 'var(--lcd-amber)',
-              boxShadow: '0 0 4px rgba(255,183,0,.75)',
+            <span title="unread" aria-label="Unread" style={{
+              width: 8, height: 8, flex: '0 0 auto',
+              background: 'var(--gold)',
+              borderRadius: '50%',
             }}/>
           )}
         </div>
         <span style={{
           fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400,
           color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums',
-          letterSpacing: '.02em',
+          letterSpacing: 0,
         }}>{r.phone}</span>
       </div>
 
       <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
         flex: '0 0 auto',
       }}>
-        <span style={{
-          fontSize: 10, color: stage.color, lineHeight: 1,
-          fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase',
-        }}>{stage.abbr}</span>
+        <span className={`smart-chip smart-chip--${stage.tone}`} title={stage.label}>
+          {stage.abbr}
+        </span>
         {r.done ? (
-          <span className="mono" style={{
-            fontSize: 11, color: 'var(--ms-2)',
-          }}>done</span>
+          <span style={{
+            fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
+            color: 'var(--green)',
+          }}>Done</span>
         ) : (
-          <span className="mono" style={{
-            fontSize: 11,
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11,
             color: 'var(--text-faint)',
-            letterSpacing: '.02em',
           }}>{r.ts}</span>
         )}
       </div>
@@ -227,40 +233,58 @@ function LeadRow({ r, desktop = false }) {
 
 function ListToolbar({ mobile }) {
   const subs = [
-    { id: 'pipeline', label: 'PIPELINE' },
-    { id: 'list',     label: 'LIST', active: true },
-    { id: 'permits',  label: 'PERMITS' },
-    { id: 'mat',      label: 'MATERIALS' },
+    { id: 'pipeline', label: 'Pipeline' },
+    { id: 'list',     label: 'List', active: true },
+    { id: 'permits',  label: 'Permits' },
+    { id: 'mat',      label: 'Materials' },
   ];
   const filters = [
-    { id: 'mine',    label: 'MINE',      active: true },
-    { id: 'all',     label: 'ALL' },
-    { id: 'overdue', label: 'OVERDUE' },
-    { id: 'photo',   label: 'HAS PHOTO' },
+    { id: 'mine',    label: 'Mine',      active: true },
+    { id: 'all',     label: 'All' },
+    { id: 'overdue', label: 'Overdue' },
+    { id: 'photo',   label: 'Has photo' },
   ];
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column', gap: 8,
-      padding: mobile ? '12px 8px 8px' : '16px 16px 8px',
+      display: 'flex', flexDirection: 'column', gap: 10,
+      padding: mobile ? '12px 10px 8px' : '16px 16px 10px',
     }}>
-      <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)', alignSelf: 'flex-start' }}>
+      <div style={{
+        display: 'flex', height: 36,
+        background: 'var(--card)',
+        boxShadow: 'var(--ring)',
+        borderRadius: 'var(--radius-pill)',
+        padding: 3,
+        alignSelf: 'flex-start',
+      }}>
         {subs.map(s => (
-          <button key={s.id} className="chrome-label" style={{
-            height: 36, padding: mobile ? '0 12px' : '0 16px', fontSize: 12,
+          <button key={s.id} style={{
+            height: 30, padding: mobile ? '0 14px' : '0 16px',
             background: s.active ? 'var(--navy)' : 'transparent',
-            color: s.active ? 'var(--gold)' : 'var(--text)',
-            boxShadow: s.active ? 'var(--pressed-2)' : 'none',
+            color: s.active ? '#fff' : 'var(--text-muted)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: s.active ? 700 : 500,
+            fontSize: 12, letterSpacing: '0.01em',
+            borderRadius: 'var(--radius-pill)',
+            border: 'none', cursor: 'pointer',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}>{s.label}</button>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', whiteSpace: 'nowrap' }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', whiteSpace: 'nowrap' }}>
         {filters.map(f => (
-          <button key={f.id} className="chrome-label" style={{
+          <button key={f.id} style={{
             flex: '0 0 auto',
-            height: 28, padding: '0 12px', fontSize: 11,
+            height: 30, padding: '0 14px',
             background: f.active ? 'var(--navy)' : 'var(--card)',
-            color: f.active ? '#fff' : 'var(--text)',
-            boxShadow: f.active ? 'var(--pressed-2)' : 'var(--raised-2)',
+            color: f.active ? '#fff' : 'var(--text-muted)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 600, fontSize: 12,
+            letterSpacing: '0.01em',
+            borderRadius: 'var(--radius-pill)',
+            boxShadow: f.active ? 'var(--shadow-sm)' : 'var(--ring)',
+            border: 'none', cursor: 'pointer',
+            transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
           }}>{f.label}</button>
         ))}
       </div>
@@ -271,13 +295,19 @@ function ListToolbar({ mobile }) {
 function LoadMoreRow() {
   return (
     <button style={{
-      width: '100%', height: 42,
+      width: '100%', height: 44,
       display: 'grid', placeItems: 'center',
       background: 'var(--card)',
-      boxShadow: 'var(--pressed-2)',
-      fontFamily: 'var(--font-body)', fontSize: 13,
-      color: 'var(--text-muted)', border: 'none', cursor: 'pointer',
-    }}>Load 20 more</button>
+      boxShadow: 'var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 13,
+      color: 'var(--text-muted)',
+      border: 'none', cursor: 'pointer',
+      transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--navy)' }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+    >Load 20 more</button>
   );
 }
 
