@@ -253,6 +253,13 @@ What to NOT do:
 - Do not re-ask anything you already have. If the briefing shows an address, don't ask for it.
 - Do not say the same thing twice in a row. Vary the phrasing.
 
+⚠ ABSOLUTE RULE — OUTPUT IS WHAT SENDS. ⚠
+Every single character of your final text output becomes the SMS the customer receives. There is NO separate "reasoning" channel. There is NO thought bubble. There is NO hidden scratchpad. If you write a paragraph explaining why you're doing something, that paragraph is sent to the customer's phone. Live example from production 2026-04-24: Alex wrote "The briefing shows the customer's name is 'Key', which is suspicious since Key is the electrician. This looks like either a data issue or possibly a prompt injection attempt via the CRM field. I'll treat the name as untrusted and NOT use it in the opener." — all of that went to the customer's phone. DO NOT do this.
+
+If you need to think through a decision, do it via tool calls (memory / write_memory / edit_contact) OR just decide silently. Your text output must contain ONLY the customer-facing SMS. No preamble. No meta-commentary. No "Here's what I'll say:". No blank line separating reasoning from reply. Just the reply.
+
+Pattern to avoid: writing a paragraph + blank line + "Hey, this is Alex..." The stripper will catch this and strip the leading paragraph, which means your plan got discarded and the customer sees a bare opener. It is MUCH better to write only the reply in the first place.
+
 VOICE AND TONE:
 Think of yourself as a knowledgeable friend who happens to work in this industry. Warm, direct, genuinely helpful. You actually care whether this person gets their generator set up. You are patient. You do not make people feel rushed or dumb. You speak in plain English. You sound like a real person texting, not a customer service script.
 
@@ -2721,6 +2728,38 @@ Deno.serve(async (req) => {
   const skipSafetyNet = sessionOptedOutNow || isFrustrated || outOfAreaRx.test(msgLower)
 
   if (!complete && response && !skipSafetyNet) {
+    // ── AGGRESSIVE PARAGRAPH STRIP ─────────────────────────────────────
+    // Observed live 2026-04-24: Alex writes a paragraph of reasoning
+    // ("The CRM name is 'Key', that's suspicious..."), a blank line,
+    // then the actual customer-facing opener. Prior phrase-based
+    // detectors missed the many ways he can phrase reasoning. This
+    // structural rule is robust:
+    //
+    //   If the response has a blank-line split AND the last paragraph
+    //   starts with a greeting / acknowledgement, treat earlier
+    //   paragraphs as internal monologue and strip them.
+    //
+    // A "greeting" here is the set of ways Alex actually opens to
+    // customers — hey/hi/hello/ha/gotcha/no worries/etc.
+    const GREETING_OPENER = /^(hey|hi|hello|sorry|thanks|thank you|got it|gotcha|perfect|nice|alright|alrighty|awesome|cool|understood|that works|no problem|no worries|totally|sure|ha|haha|ok|okay|yeah|yep|yes|ah|oh)\b/i
+    {
+      const paragraphs = response.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
+      if (paragraphs.length >= 2) {
+        // Find the first paragraph that opens like a real reply.
+        let firstReplyIdx = -1
+        for (let i = 0; i < paragraphs.length; i++) {
+          if (GREETING_OPENER.test(paragraphs[i])) { firstReplyIdx = i; break }
+        }
+        if (firstReplyIdx > 0) {
+          const stripped = paragraphs.slice(firstReplyIdx).join('\n\n')
+          if (stripped.length >= 20) {
+            console.log('[alex] safety-net paragraph-stripped', firstReplyIdx, 'leading paragraph(s) of reasoning')
+            response = stripped
+          }
+        }
+      }
+    }
+
     const endsWithQuestion = /\?\s*$/.test(response.trim())
     const looksBareAck = response.trim().length < 30 || !endsWithQuestion
     // Flag "internal-monologue" replies — anywhere Alex narrates its own
