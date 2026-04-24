@@ -64,7 +64,7 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark
         <div style={{
           width: compact ? 14 : 16, height: compact ? 14 : 16,
           background: 'var(--gold)',
-          boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.55), inset -2px -2px 0 rgba(0,0,0,.35)',
+          boxShadow: 'var(--shadow-sm)',
         }}/>
         <div style={{
           fontFamily: 'var(--font-pixel)', fontSize: compact ? 24 : 28,

@@ -33,7 +33,7 @@ function CmdGroupHead({ color, label }) {
       <span style={{
         position: 'absolute', left: 0, top: 6, bottom: 6, width: 4,
         background: color,
-        boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.35), inset -1px -1px 0 rgba(0,0,0,.35)',
+        boxShadow: 'var(--shadow-xs), var(--ring)',
       }} />
       <span className="chrome-label" style={{
         fontSize: 11, color: color, letterSpacing: '.12em',
@@ -172,7 +172,7 @@ function CommandPalette({ mobile = false }) {
             width: 20, height: 20, background: 'var(--gold)', color: '#1a1a1a',
             display:'inline-grid', placeItems:'center',
             fontFamily:'var(--font-pixel)', fontSize: 14,
-            boxShadow:'inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35)',
+            boxShadow:'var(--shadow-xs), var(--ring)',
           }}>S</span>}
           title={<>Ask Sparky: "sa<QueryHighlight q="r" />"</>}
           hint="⏎"

@@ -13,7 +13,7 @@ function SparkSBadge({ size = 20 }) {
       background: 'var(--gold)', color: '#1a1a1a',
       display: 'inline-grid', placeItems: 'center',
       fontFamily: 'var(--font-pixel)', fontSize: size * .8,
-      boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35)',
+      boxShadow: 'var(--shadow-xs), var(--ring)',
     }}>S</span>
   );
 }
@@ -71,7 +71,7 @@ function SilentList() {
             fontSize:9, padding:'2px 6px',
             background: r.color, color:'#fff',
             textAlign:'center',
-            boxShadow:'inset 1px 1px 0 rgba(255,255,255,.25), inset -1px -1px 0 rgba(0,0,0,.35)',
+            boxShadow:'var(--shadow-xs), var(--ring)',
           }}>{r.stage}</span>
         </div>
       ))}
@@ -90,7 +90,7 @@ function ConfirmCard() {
       <div style={{
         position:'absolute', left:0, top:0, bottom:0, width:4,
         background:'var(--gold)',
-        boxShadow:'inset 1px 1px 0 rgba(255,255,255,.35), inset -1px -1px 0 rgba(0,0,0,.35)',
+        boxShadow:'var(--shadow-xs), var(--ring)',
       }} />
       <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:8 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>

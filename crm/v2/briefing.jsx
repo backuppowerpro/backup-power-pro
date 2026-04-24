@@ -17,7 +17,7 @@ function BriefHeaderStrip({ color, label }) {
       color: '#fff',
       fontFamily: 'var(--font-chrome)', fontWeight: 700,
       fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase',
-      boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.25), inset -1px -1px 0 rgba(0,0,0,.35)',
+      boxShadow: 'var(--shadow-xs), var(--ring)',
     }}>{label}</div>
   );
 }

@@ -318,7 +318,7 @@ function OfflineBanner() {
 // PrimaryButton: navy background, white text, hard inset bevel. Use for the
 // primary confirmation action in modals and forms. SecondaryButton: flat
 // card background, muted text, raised-2 bevel. Cancel / secondary actions.
-const PRIMARY_BTN_BEVEL = 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)';
+const PRIMARY_BTN_BEVEL = 'var(--shadow-sm)';
 function PrimaryButton({ children, disabled, onClick, type = 'button', style, ...rest }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled} style={{
@@ -369,54 +369,85 @@ function AuthGate({ onAuth }) {
       background: 'var(--bg)',
       display: 'grid', placeItems: 'center',
       padding: 'env(safe-area-inset-top) 24px env(safe-area-inset-bottom)',
-    }} className="grid-bg">
-      <div style={{ width: 380, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: 48, lineHeight: 1, color: 'var(--navy)' }}>BPP</div>
-        <div className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)' }}>OPERATOR TERMINAL // AUTHORIZED USE ONLY</div>
-        <div style={{ width: 48, height: 2, background: 'var(--gold)' }} />
-        <form onSubmit={submit} className="raised" style={{
-          width: '100%', padding: 24,
+    }}>
+      <div style={{ width: 380, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 32, height: 32,
+            background: 'var(--gold)',
+            borderRadius: 'var(--radius-sm)',
+            boxShadow: 'var(--shadow-sm)',
+          }} />
+          <div style={{
+            fontFamily: 'var(--font-body)',
+            fontWeight: 700, fontSize: 22, letterSpacing: '-0.01em',
+            color: 'var(--navy)',
+          }}>Backup Power Pro</div>
+        </div>
+        <div style={{
+          fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', marginTop: -8,
+        }}>Sign in to the operator console</div>
+        <form onSubmit={submit} style={{
+          width: '100%',
+          background: 'var(--card)',
+          padding: 24,
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-md), var(--ring)',
           display: 'flex', flexDirection: 'column', gap: 16,
-          outline: '1px solid rgba(0,0,0,.4)',
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)' }}>EMAIL</label>
+            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>Email</label>
             <input
               type="email" value={email}
               onChange={e => setEmail(e.target.value)}
-              className="pressed-2"
-              style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }}
+              style={{
+                padding: '10px 12px', height: 40,
+                background: 'var(--sunken)',
+                boxShadow: 'var(--ring)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 14,
+              }}
               required autoFocus
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)' }}>PASSWORD</label>
+            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>Password</label>
             <input
               type="password" value={password}
               onChange={e => setPassword(e.target.value)}
-              className="pressed-2"
-              style={{ padding: '10px 12px', height: 40, fontFamily: 'var(--font-mono)', fontSize: 14 }}
+              style={{
+                padding: '10px 12px', height: 40,
+                background: 'var(--sunken)',
+                boxShadow: 'var(--ring)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 14,
+              }}
               required
             />
           </div>
           {error ? (
-            <div className="lcd" style={{ padding: '6px 12px', fontSize: 13, height: 32, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="pixel" style={{ fontSize: 14 }}>ACCESS DENIED</span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, opacity: .85 }}>{error}</span>
-            </div>
+            <div style={{
+              padding: '10px 12px', fontSize: 13,
+              background: 'color-mix(in srgb, var(--red) 10%, var(--card))',
+              color: 'var(--red)',
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--red) 30%, transparent)',
+            }}>{error}</div>
           ) : null}
-          <button type="submit" disabled={busy} className="tactile-raised" style={{
+          <button type="submit" disabled={busy} style={{
             width: '100%', height: 44,
             background: 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 14,
-            letterSpacing: '.08em', textTransform: 'uppercase',
-            boxShadow: 'inset 3px 3px 0 rgba(255,255,255,.25), inset -3px -3px 0 rgba(0,0,0,.55)',
+            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14,
+            letterSpacing: '0.01em',
+            borderRadius: 'var(--radius-sm)',
+            boxShadow: 'var(--shadow-sm)',
             opacity: busy ? 0.6 : 1,
             cursor: busy ? 'wait' : 'pointer',
-          }}>{busy ? 'AUTHENTICATING…' : 'SIGN IN'}</button>
+            transition: 'background var(--dur) var(--ease), transform var(--dur) var(--ease)',
+          }}>{busy ? 'Signing in…' : 'Sign in'}</button>
         </form>
-        <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-          V4.2 // BPP INTERNAL // CRM V2
+        <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+          BPP CRM · v4.2
         </div>
       </div>
     </div>
@@ -2145,7 +2176,7 @@ function InstallBriefModal({ contact, onClose }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                 padding: '14px 20px',
                 background: 'var(--ms-2)', color: '#fff',
-                boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.3), inset -2px -2px 0 rgba(0,0,0,.4)',
+                boxShadow: 'var(--shadow-sm)',
                 fontFamily: 'var(--font-chrome)', fontSize: 14, fontWeight: 700,
                 letterSpacing: '.1em', textTransform: 'uppercase',
                 textDecoration: 'none',
@@ -3630,7 +3661,7 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
           <button onClick={submit} disabled={busy} style={{
             flex: 2, height: 40, background: busy ? 'var(--text-muted)' : 'var(--navy)', color: '#fff',
             fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
-            boxShadow: busy ? 'var(--pressed-2)' : 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            boxShadow: busy ? 'var(--pressed-2)' : 'var(--shadow-sm)',
             cursor: busy ? 'wait' : 'pointer', border: 'none',
           }}>{busy ? 'Creating...' : 'Create & Copy SMS'}</button>
         </div>
@@ -4555,7 +4586,7 @@ function DetailNotes({ contact, onUpdate }) {
             background: 'var(--navy)', color: '#fff',
             fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
             letterSpacing: '.04em',
-            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            boxShadow: 'var(--shadow-sm)',
             cursor: (saving || text === lastSavedRef.current) ? 'default' : 'pointer',
             opacity: (saving || text === lastSavedRef.current) ? 0.45 : 1, border: 'none',
           }}>{saving ? 'Saving…' : 'Save'}</button>
@@ -5247,7 +5278,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
           style={{
             width: 40, height: 40,
             background: 'var(--navy)', color: '#fff',
-            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            boxShadow: 'var(--shadow-sm)',
             opacity: sending || !text.trim() ? 0.5 : 1,
             display: 'grid', placeItems: 'center', border: 'none',
           }}
@@ -5625,7 +5656,7 @@ function NewLeadModal({ open, onClose, onCreated }) {
             background: 'var(--navy)', color: '#fff',
             fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
             letterSpacing: '.04em',
-            boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+            boxShadow: 'var(--shadow-sm)',
             opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer', border: 'none',
           }}>{busy ? 'Saving…' : 'Create lead'}</button>
         </div>
@@ -5803,7 +5834,7 @@ function VoiceCallModal({ voice, onClose }) {
       <button onClick={voice.hangup} style={{
         width: '80%', margin: '0 auto', height: 56, background: 'var(--red)', color: '#fff',
         fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 16, letterSpacing: '.1em',
-        boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.2), inset -2px -2px 0 rgba(0,0,0,.4)',
+        boxShadow: 'var(--shadow-sm)',
         cursor: 'pointer', display: 'block',
       }}>HANG UP</button>
     </CallCard>
@@ -8906,7 +8937,7 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
             <button onClick={onClose} style={{
               padding: '10px 20px', background: 'var(--navy)', color: '#fff',
               fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
-              boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+              boxShadow: 'var(--shadow-sm)',
               cursor: 'pointer', border: 'none',
             }}>Open CRM</button>
           </div>
@@ -9246,7 +9277,7 @@ function LiveSparky({ currentContactId = null }) {
               background: 'var(--gold)', color: '#1a1a1a',
               display: 'grid', placeItems: 'center',
               fontFamily: 'var(--font-pixel)', fontSize: 14,
-              boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35)',
+              boxShadow: 'var(--shadow-xs), var(--ring)',
             }}>S</span>
             <div style={{
               maxWidth: '72%', background: 'var(--card)',
@@ -9283,7 +9314,7 @@ function LiveSparky({ currentContactId = null }) {
         </div>
         <button onClick={() => send()} disabled={sending || !input.trim()} style={{
           width: 40, height: 40, background: 'var(--navy)', color: '#fff',
-          boxShadow: 'inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.5)',
+          boxShadow: 'var(--shadow-sm)',
           opacity: sending || !input.trim() ? 0.5 : 1, display: 'grid', placeItems: 'center',
           flex: '0 0 auto',
         }}>

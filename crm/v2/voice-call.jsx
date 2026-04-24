@@ -90,13 +90,13 @@ function RingCard() {
           width: 72, height: 72, clipPath: 'var(--avatar-clip)',
           background: 'var(--ms-3)', color: '#fff',
           display: 'grid', placeItems: 'center',
-          boxShadow: 'inset 3px 3px 0 rgba(255,255,255,.25), inset -3px -3px 0 rgba(0,0,0,.35)',
+          boxShadow: 'var(--shadow-md)',
         }}>{VcIcons.decline}</button>
         <button style={{
           width: 72, height: 72, clipPath: 'var(--avatar-clip)',
           background: 'var(--ms-2)', color: '#fff',
           display: 'grid', placeItems: 'center',
-          boxShadow: 'inset 3px 3px 0 rgba(255,255,255,.25), inset -3px -3px 0 rgba(0,0,0,.35)',
+          boxShadow: 'var(--shadow-md)',
           animation: 'ringPulse 800ms steps(4) infinite',
         }}>{VcIcons.accept}</button>
       </div>

@@ -157,7 +157,7 @@ function OutboundBubble({ children, alex }) {
             width: 16, height: 16, display: 'grid', placeItems: 'center',
             background: 'var(--gold)', color: '#000',
             fontFamily: 'var(--font-pixel)', fontSize: 14, lineHeight: 1,
-            boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35)',
+            boxShadow: 'var(--shadow-xs), var(--ring)',
           }}>A</span>
         )}
         {children}
@@ -325,7 +325,7 @@ function TimelineFeed() {
           }}>{e.when}</span>
           <div style={{
             width: 14, height: 14, background: 'var(--gold)',
-            boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.5), inset -1px -1px 0 rgba(0,0,0,.35)',
+            boxShadow: 'var(--shadow-xs), var(--ring)',
             justifySelf: 'center',
           }}/>
           <div style={{
@@ -368,7 +368,7 @@ function StagePicker() {
           }}>
             <span style={{
               width: 10, height: 10, background: s.color,
-              boxShadow: 'inset 1px 1px 0 rgba(255,255,255,.4), inset -1px -1px 0 rgba(0,0,0,.3)',
+              boxShadow: 'var(--shadow-xs), var(--ring)',
             }}/>
             <span className="chrome-label" style={{
               flex: 1, textAlign: 'left', fontSize: 11,
