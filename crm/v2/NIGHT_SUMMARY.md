@@ -4,6 +4,8 @@
 
 When you wake up, read this first, then follow `crm/v2/CUTOVER.md` to shakedown-test before deciding on cut-over.
 
+> **2026-04-24 update:** CRM v2 has been fully brand-aligned to match the customer-facing website (proposal.html, backuppowerpro.com). The Minesweeper/8-bit/LCD aesthetic described below is fully retired: no `.lcd`, `.chrome-label`, or `.pixel` classes remain, and `.smart-chip` no longer forces uppercase. `--lcd-*`, `--font-pixel`, and `--font-chrome` tokens still exist in `tokens.css` but are aliased to modern brand tokens for backward compat. This document references the old aesthetic for historical context — the live CRM uses navy #0b1f3b + gold #ffba00 + Outfit display + Inter body with soft 20-60px shadows and radii 16/20/100/pill. See `wiki/CRM/Style Guide.md` + `crm/v2/design-system.html` for the current spec.
+
 ---
 
 ## What works — test checklist in order of Key's daily workflow
