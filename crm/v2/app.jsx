@@ -2068,7 +2068,7 @@ function InstallBriefModal({ contact, onClose }) {
               ) : null}
             </div>
             {contact.do_not_contact ? (
-              <div className="mono" style={{ marginTop: 6, padding: '4px 8px', background: 'var(--ms-3)', color: '#fff', fontSize: 10, letterSpacing: '.08em', display: 'inline-block' }}>DNC — DO NOT CONTACT</div>
+              <span className="smart-chip smart-chip--red" style={{ marginTop: 8, display: 'inline-flex' }}>Do not contact</span>
             ) : null}
           </Section>
 
@@ -2610,14 +2610,20 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         <button
           onClick={() => setStagePickerOpen(true)}
           style={{
-            height: 36, padding: '0 14px',
+            height: 38, padding: '0 16px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             flex: 1, cursor: 'pointer',
-            background: 'var(--card)', boxShadow: 'var(--raised-2)',
+            background: 'var(--card)',
+            boxShadow: 'var(--ring)',
+            borderRadius: 'var(--radius-pill)',
             border: 0, textAlign: 'left',
-          }}>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 700, letterSpacing: '.08em', color: 'var(--text)' }}>{stageAbbr}</span>
-          <span className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>stage {contact?.stage || 1} ›</span>
+            transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+          >
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, letterSpacing: '0.01em', color: 'var(--text)' }}>{stageAbbr}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>stage {contact?.stage || 1} ›</span>
         </button>
         {/* Brief — one-page view of everything Key needs on install day.
             Hidden on stages < 3 (no install scheduled yet = nothing to brief). */}
@@ -2626,13 +2632,20 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
             onClick={() => setBriefOpen(true)}
             title="Install brief (B)"
             style={{
-              height: 36, padding: '0 14px',
+              height: 38, padding: '0 18px',
               display: 'flex', alignItems: 'center', gap: 6,
-              cursor: 'pointer', background: 'var(--navy)', color: 'var(--gold)',
-              boxShadow: 'var(--raised-2)', border: 0,
-              fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 700, letterSpacing: '.08em',
-            }}>
-            BRIEF
+              cursor: 'pointer',
+              background: 'var(--gold)', color: 'var(--navy)',
+              boxShadow: 'var(--shadow-gold)',
+              borderRadius: 'var(--radius-pill)',
+              border: 0,
+              fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, letterSpacing: '0.01em',
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)' }}
+          >
+            Brief
           </button>
         ) : null}
       </div>
@@ -5355,7 +5368,7 @@ function ToastRoot() {
         const color =
           t.kind === 'success' ? 'var(--green)' :
           t.kind === 'error'   ? 'var(--red)'   :
-          t.kind === 'warn'    ? 'var(--lcd-amber)' :
+          t.kind === 'warn'    ? 'var(--gold)'  :
                                   'var(--navy)';
         const dismiss = () => setToasts(prev => prev.filter(x => x.id !== t.id));
         return (
@@ -5363,14 +5376,16 @@ function ToastRoot() {
             onClick={e => { if (!e.target.closest('button')) dismiss(); }}
             title="Click to dismiss"
             style={{
-              padding: '10px 14px',
+              padding: '12px 16px',
               background: 'var(--card)',
-              boxShadow: 'var(--raised)',
-              borderLeft: `4px solid ${color}`,
+              boxShadow: 'var(--shadow-md), var(--ring)',
+              borderLeft: `3px solid ${color}`,
+              borderRadius: 'var(--radius-md)',
               display: 'flex', alignItems: 'center', gap: 10,
-              fontSize: 13, cursor: 'pointer',
+              fontFamily: 'var(--font-body)', fontSize: 13,
+              cursor: 'pointer',
             }}>
-            <span style={{ width: 8, height: 8, background: color, flex: '0 0 auto' }} />
+            <span style={{ width: 8, height: 8, background: color, borderRadius: '50%', flex: '0 0 auto' }} />
             <span style={{ flex: 1 }}>{t.text}</span>
             {t.action ? (
               <button onClick={() => {
