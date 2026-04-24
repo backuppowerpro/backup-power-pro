@@ -2312,29 +2312,37 @@ function InstallBriefModal({ contact, onClose }) {
           ) : null}
         </div>
 
-        {/* Smart GO CTA — big green tactile button at the bottom of the
+        {/* Smart GO CTA — big green pill button at the bottom of the
             brief. On install day Key hits this and the address opens in
             Maps so he's driving before the brief scrolls off the screen.
             Hides when no address or no install_date. */}
         {contact.address && install ? (
-          <div style={{ padding: '12px 12px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--divider)', background: 'var(--card)' }}>
+          <div style={{
+            padding: '14px 16px calc(14px + env(safe-area-inset-bottom))',
+            borderTop: '1px solid var(--divider-faint)',
+            background: 'var(--card)',
+          }}>
             <a
               href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
               target="_blank" rel="noopener"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                padding: '14px 20px',
-                background: 'var(--ms-2)', color: '#fff',
-                boxShadow: 'var(--shadow-sm)',
-                fontFamily: 'var(--font-chrome)', fontSize: 14, fontWeight: 700,
-                letterSpacing: '.1em', textTransform: 'uppercase',
+                padding: '14px 22px', width: '100%', boxSizing: 'border-box',
+                background: 'var(--green)', color: '#fff',
+                boxShadow: '0 4px 14px color-mix(in srgb, var(--green) 36%, transparent)',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
+                letterSpacing: '-0.005em',
                 textDecoration: 'none',
+                borderRadius: 'var(--radius-pill)',
+                transition: 'transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
               }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 18px color-mix(in srgb, var(--green) 48%, transparent)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px color-mix(in srgb, var(--green) 36%, transparent)' }}
             >
-              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
-                <path d="M2 8 L14 8 M10 4 L14 8 L10 12"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"/>
               </svg>
-              GO · OPEN IN MAPS
+              Open in Maps
             </a>
           </div>
         ) : null}
