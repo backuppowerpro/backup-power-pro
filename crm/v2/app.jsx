@@ -6396,13 +6396,13 @@ function PermitStepCell({ state }) {
 
 function stageToLabel(stage) {
   const s = Number(stage) || 1;
-  if (s <= 3) return 'AWAITING SUBMIT';
-  if (s === 4) return 'AWAITING PAYMENT';
-  if (s === 5) return 'PAY PENDING';
-  if (s === 6) return 'READY TO PRINT';
-  if (s === 7) return 'PRINT PENDING';
-  if (s === 8) return 'INSPECTION SOON';
-  if (s === 9) return 'COMPLETE';
+  if (s <= 3) return 'Awaiting submit';
+  if (s === 4) return 'Awaiting payment';
+  if (s === 5) return 'Pay pending';
+  if (s === 6) return 'Ready to print';
+  if (s === 7) return 'Print pending';
+  if (s === 8) return 'Inspection soon';
+  if (s === 9) return 'Complete';
   return '—';
 }
 
@@ -7083,6 +7083,10 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
     loading: true,
   });
   const [subView, setSubView] = useState(initialSub);
+  // When the top-level tab changes (Proposals → Invoices), the parent still
+  // renders <LiveFinance /> so the component doesn't remount — without this
+  // effect, subView stayed on the old tab's value. Mirror initialSub.
+  useEffect(() => { setSubView(initialSub); }, [initialSub]);
   const [refreshTick, setRefreshTick] = useState(0);
 
   // Realtime: re-run the fetch when anything Finance-relevant changes.
@@ -7748,7 +7752,7 @@ function LiveCalendar() {
   };
 
   return (
-    <div style={{ height: '100%', padding: 24, overflow: 'auto' }}>
+    <div style={{ height: '100%', padding: 24, overflowY: 'auto', overflowX: 'hidden' }}>
       <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 0 auto' }}>
           <span className="eyebrow">Schedule</span>
@@ -7828,14 +7832,20 @@ function LiveCalendar() {
         </div>
       ) : null}
 
-      {/* 7-day grid. Mobile collapses to stacked day cards; desktop keeps 7
-          columns. Each day column shows header + a stack of install blocks. */}
+      {/* 7-day grid. Wrapped in overflow-x scroller so narrow viewports
+          don't push the whole page sideways — grid itself needs 7×120px =
+          840px minimum, the wrapper clamps that to parent width. */}
+      <div style={{
+        overflowX: 'auto', overflowY: 'hidden',
+        paddingBottom: 4,
+        width: '100%',
+        WebkitOverflowScrolling: 'touch',
+      }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(7, minmax(120px, 1fr))',
         gap: 6,
-        overflowX: 'auto',
-        paddingBottom: 4,
+        minWidth: 840,
       }}>
         {days.map((d, dayIdx) => {
           const key = dayKey(d);
@@ -8072,6 +8082,7 @@ function LiveCalendar() {
             </div>
           );
         })}
+      </div>
       </div>
 
       {/* Awaiting date — sidebar below the grid so it doesn't steal horizontal
