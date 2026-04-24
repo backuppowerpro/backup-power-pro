@@ -5888,7 +5888,8 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
         <button
           onClick={send}
           disabled={sending || !text.trim()}
-          title="Send"
+          title="Send (Enter)"
+          aria-label="Send SMS"
           style={{
             width: 40, height: 40,
             background: text.trim() ? 'var(--navy)' : 'var(--sunken)',
@@ -5901,7 +5902,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
             transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="22" y1="2" x2="11" y2="13"/>
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
@@ -5936,7 +5937,12 @@ function ToastRoot() {
   }, []);
 
   return (
-    <div style={isMobile ? {
+    <div
+      role="region"
+      aria-label="Notifications"
+      aria-live="polite"
+      aria-atomic="false"
+      style={isMobile ? {
       // Mobile: top-center, below the top nav, above everything else.
       // Avoids the compose bar at the bottom of the screen.
       position: 'fixed', top: 'calc(100px + env(safe-area-inset-top))',
@@ -10645,6 +10651,7 @@ function LiveSparky({ currentContactId = null }) {
           onClick={() => send()}
           disabled={sending || !input.trim()}
           title="Send (Enter)"
+          aria-label="Send message to Sparky"
           style={{
             width: 40, height: 40,
             background: input.trim() ? 'var(--navy)' : 'var(--sunken)',
@@ -10657,7 +10664,7 @@ function LiveSparky({ currentContactId = null }) {
             borderRadius: 'var(--radius-pill)',
             transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="22" y1="2" x2="11" y2="13"/>
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
