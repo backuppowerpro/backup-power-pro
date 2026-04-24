@@ -9,26 +9,29 @@ const BriefIcons = {
   follow: <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 4 L13 4 L13 10 L8 10 L5 13 L5 10 L3 10 Z"/></svg>,
 };
 
-function BriefHeaderStrip({ color, label }) {
-  return (
-    <div style={{
-      padding: '8px 12px',
-      background: color,
-      color: '#fff',
-      fontFamily: 'var(--font-chrome)', fontWeight: 700,
-      fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase',
-      boxShadow: 'var(--shadow-xs), var(--ring)',
-    }}>{label}</div>
-  );
-}
-
 function BriefSection({ color, label, children }) {
   return (
     <div style={{
-      boxShadow: 'var(--pressed-2)', background: 'var(--card)',
-      marginBottom: 10,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      overflow: 'hidden',
+      marginBottom: 14,
     }}>
-      <BriefHeaderStrip color={color} label={label} />
+      <div style={{
+        padding: '10px 16px 8px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        borderBottom: '1px solid var(--divider-faint)',
+      }}>
+        <span style={{
+          width: 8, height: 8, borderRadius: '50%', flex: '0 0 auto', background: color,
+        }} />
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700,
+          fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: 'var(--text-muted)',
+        }}>{label}</span>
+      </div>
       <div>{children}</div>
     </div>
   );
@@ -36,12 +39,16 @@ function BriefSection({ color, label, children }) {
 
 function BriefRow({ left, main, right }) {
   return (
-    <div className="tactile-flat" style={{
+    <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
-      padding: '10px 12px',
-      borderBottom: '1px solid rgba(0,0,0,.06)',
+      padding: '12px 16px',
+      borderBottom: '1px solid var(--divider-faint)',
       background: 'var(--card)',
-    }}>
+      transition: 'background var(--dur) var(--ease)',
+    }}
+    onMouseEnter={e => e.currentTarget.style.background = 'var(--sunken)'}
+    onMouseLeave={e => e.currentTarget.style.background = 'var(--card)'}
+    >
       {left}
       <div style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
         {main}
@@ -53,40 +60,60 @@ function BriefRow({ left, main, right }) {
 
 function DoneBtn() {
   return (
-    <button className="tactile-raised" style={{
-      width: 28, height: 28, background: 'var(--card)',
-      display: 'grid', placeItems: 'center', color: 'var(--text)',
-    }}>{BriefIcons.plus}</button>
+    <button style={{
+      width: 30, height: 30,
+      background: 'var(--card)',
+      color: 'var(--text-muted)',
+      borderRadius: 'var(--radius-pill)',
+      boxShadow: 'var(--ring)',
+      display: 'grid', placeItems: 'center',
+      cursor: 'pointer',
+      transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#fff' }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+    >{BriefIcons.plus}</button>
   );
 }
 
 function LcdTime({ t }) {
   return (
     <span style={{
-      minWidth: 60, padding: '2px 6px',
-      background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-      color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-      fontFamily: 'var(--font-pixel)', fontSize: 16, letterSpacing: '.04em',
+      minWidth: 58, padding: '4px 10px',
+      background: 'var(--sunken)',
+      color: 'var(--navy)',
+      fontFamily: 'var(--font-mono)', fontWeight: 600,
+      fontSize: 13, letterSpacing: '0.02em',
+      borderRadius: 'var(--radius-sm)',
       textAlign: 'center',
+      boxShadow: 'var(--ring)',
     }}>{t}</span>
   );
 }
 
 function OrderBtn() {
   return (
-    <button className="tactile-raised" style={{
-      height: 28, padding: '0 10px',
-      background: 'var(--navy)', color: 'var(--gold)',
-      fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.08em',
-    }}>ORDER</button>
+    <button style={{
+      height: 30, padding: '0 14px',
+      background: 'var(--gold)', color: 'var(--navy)',
+      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+      letterSpacing: '0.06em', textTransform: 'uppercase',
+      borderRadius: 'var(--radius-pill)',
+      boxShadow: 'var(--shadow-gold)',
+      cursor: 'pointer',
+      transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold-hover)' }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold)' }}
+    >Order</button>
   );
 }
 
 function GoodDot() {
   return (
     <span style={{
-      width: 10, height: 10, flex: '0 0 auto',
-      background: 'var(--lcd-green)', boxShadow: '0 0 4px var(--lcd-green)',
+      width: 8, height: 8, flex: '0 0 auto',
+      background: 'var(--green)', borderRadius: '50%',
     }} />
   );
 }
@@ -101,99 +128,109 @@ function MorningBriefing({ mobile = false }) {
       boxShadow: mobile ? 'none' : 'var(--raised-2)',
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Top strip */}
+      {/* Hero-card header — navy panel with eyebrow + wordmark-style greeting */}
       <div style={{
-        height: 72, padding: '10px 16px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(0,0,0,.12)',
+        padding: '22px 24px 20px',
+        background: 'var(--navy)',
+        color: '#fff',
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{
-            fontFamily: 'var(--font-pixel)', fontSize: 30,
-            color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-            letterSpacing: '.06em',
-          }}>GOOD MORNING, KEY</span>
-          <span className="chrome-label" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            FRIDAY · APR 18 · 2026
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span className="eyebrow" style={{ fontSize: 11, color: 'var(--gold)' }}>
+            Morning briefing · Friday · Apr 18
           </span>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800,
+            fontSize: 28, letterSpacing: '-0.02em',
+            color: '#fff',
+          }}>Good morning, Key.</span>
         </div>
         {!mobile && (
-          <button className="tactile-raised" style={{
-            width: 32, height: 32, background: 'var(--card)',
-            display: 'grid', placeItems: 'center', color: 'var(--text)',
-          }}>{BriefIcons.x}</button>
+          <button style={{
+            width: 34, height: 34,
+            background: 'rgba(255,255,255,0.08)', color: '#fff',
+            borderRadius: 'var(--radius-pill)',
+            display: 'grid', placeItems: 'center',
+            cursor: 'pointer',
+            transition: 'background var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          >{BriefIcons.x}</button>
         )}
       </div>
 
       <div style={{
-        flex: 1, overflowY: 'auto', padding: 14,
+        flex: 1, overflowY: 'auto', padding: 16,
+        background: 'var(--bg)',
       }}>
-        <BriefSection color="var(--ms-3)" label="◆ OVERDUE · 03">
+        <BriefSection color="var(--red)" label="Overdue · 3">
           <BriefRow
-            left={<span style={{ width: 6, height: 6, background: 'var(--ms-3)' }} />}
+            left={<span style={{ width: 6, height: 6, background: 'var(--red)', borderRadius: '50%' }} />}
             main="Follow up with Sarah M — 5 days silent"
             right={<DoneBtn />}
           />
           <BriefRow
-            left={<span style={{ width: 6, height: 6, background: 'var(--ms-3)' }} />}
+            left={<span style={{ width: 6, height: 6, background: 'var(--red)', borderRadius: '50%' }} />}
             main="Send reminder to Mike J — quote expiring"
             right={<DoneBtn />}
           />
           <BriefRow
-            left={<span style={{ width: 6, height: 6, background: 'var(--ms-3)' }} />}
+            left={<span style={{ width: 6, height: 6, background: 'var(--red)', borderRadius: '50%' }} />}
             main="Call back Dave H — voicemail from Tuesday"
             right={<DoneBtn />}
           />
         </BriefSection>
 
-        <BriefSection color="var(--ms-5)" label="◆ TODAY · 03 SCHEDULED">
+        <BriefSection color="var(--gold)" label="Today · 3 scheduled">
           <BriefRow
-            left={<LcdTime t="09:00" />}
-            main={<><span className="chrome-label" style={{ fontSize: 9, color: 'var(--gold)', marginRight: 8 }}>INSTALL</span>Helen S</>}
+            left={<LcdTime t="9:00" />}
+            main={<><span className="smart-chip smart-chip--gold" style={{ marginRight: 8 }}>Install</span>Helen S</>}
           />
           <BriefRow
             left={<LcdTime t="11:30" />}
-            main={<><span className="chrome-label" style={{ fontSize: 9, color: 'var(--ms-5)', marginRight: 8 }}>INSPECT</span>Mark L</>}
+            main={<><span className="smart-chip smart-chip--purple" style={{ marginRight: 8 }}>Inspect</span>Mark L</>}
           />
           <BriefRow
             left={<LcdTime t="14:00" />}
-            main={<><span className="chrome-label" style={{ fontSize: 9, color: 'var(--ms-4)', marginRight: 8 }}>FOLLOW-UP</span>Tom B</>}
+            main={<><span className="smart-chip smart-chip--navy" style={{ marginRight: 8 }}>Follow-up</span>Tom B</>}
           />
         </BriefSection>
 
-        <BriefSection color="var(--navy)" label="◆ MATERIALS TO ORDER · 02">
+        <BriefSection color="var(--navy)" label="Materials to order · 2">
           <BriefRow
-            left={<span className="chrome-label" style={{ fontSize: 9, color: 'var(--navy)' }}>50A</span>}
-            main={<>Robert K — <span style={{ color: 'var(--text-muted)' }}>INLET BOX</span></>}
+            left={<span className="smart-chip smart-chip--navy">50A</span>}
+            main={<>Robert K · <span style={{ color: 'var(--text-muted)' }}>Inlet box</span></>}
             right={<OrderBtn />}
           />
           <BriefRow
-            left={<span className="chrome-label" style={{ fontSize: 9, color: 'var(--gold)' }}>+$375</span>}
-            main={<>Helen S — <span style={{ color: 'var(--text-muted)' }}>SURGE PROTECTOR</span></>}
+            left={<span className="smart-chip smart-chip--gold">+$375</span>}
+            main={<>Helen S · <span style={{ color: 'var(--text-muted)' }}>Surge protector</span></>}
             right={<OrderBtn />}
           />
         </BriefSection>
 
-        <BriefSection color="var(--ms-2)" label="◆ GOOD NEWS · 03">
-          <BriefRow left={<GoodDot />} main={<>Sarah M approved <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>$1,497</span> proposal</>} />
+        <BriefSection color="var(--green)" label="Good news · 3">
+          <BriefRow left={<GoodDot />} main={<>Sarah M approved <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>$1,497</span> proposal</>} />
           <BriefRow left={<GoodDot />} main="Alex collected 3 new photos overnight" />
-          <BriefRow left={<GoodDot />} main={<>Mark L paid deposit <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>$748</span></>} />
+          <BriefRow left={<GoodDot />} main={<>Mark L paid deposit <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>$748</span></>} />
         </BriefSection>
       </div>
 
       <div style={{
-        height: 64, padding: '0 16px',
+        height: 72, padding: '0 20px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderTop: '1px solid rgba(0,0,0,.12)',
+        borderTop: '1px solid var(--divider)',
+        background: 'var(--card)',
       }}>
-        <button className="chrome-label" style={{
-          height: 36, padding: '0 12px', fontSize: 11,
+        <button style={{
+          height: 40, padding: '0 16px',
           background: 'transparent', color: 'var(--text-muted)',
-        }}>DISMISS</button>
-        <button className="tactile-raised chrome-label" style={{
-          height: 44, padding: '0 20px', fontSize: 12,
-          background: 'var(--navy)', color: 'var(--gold)',
-        }}>OPEN CRM →</button>
+          fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14,
+          borderRadius: 'var(--radius-pill)',
+          cursor: 'pointer',
+        }}>Dismiss</button>
+        <button className="btn-gold" style={{ height: 44 }}>Open CRM →</button>
       </div>
     </div>
   );
