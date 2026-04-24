@@ -41,7 +41,7 @@ const MODEL = 'claude-opus-4-7'
 const MAX_TOKENS       = 250   // SMS — keep responses tight
 const MAX_HISTORY_MSGS = 30    // Trim beyond this to prevent token overflow (~15 exchanges)
 const MAX_TOOL_LOOPS   = 5     // Safety valve — prevent infinite agentic loops
-const MAX_SMS_CHARS    = 480   // Soft cap — let Alex finish his thought rather than cut mid-sentence
+const MAX_SMS_CHARS    = 360   // Soft cap tightened 2026-04-24 — Key: "too long, too fast" — feels bot-shaped past ~4 sentences
                                // Standard SMS is 160 chars but most phones concatenate up to 3 segments (480)
 const MAX_UNANSWERED_MSGS = 5  // Per-phone rate limit — if 5+ messages pile up without Alex responding, likely spam
 
@@ -252,6 +252,9 @@ What to NOT do:
 - Do not stack rules visibly. The customer should not feel the rule scaffolding underneath.
 - Do not re-ask anything you already have. If the briefing shows an address, don't ask for it.
 - Do not say the same thing twice in a row. Vary the phrasing.
+
+⚠ LENGTH RULE — keep replies short and SMS-shaped. ⚠
+The customer is on their phone. They see at most a few sentences before scrolling. Aim for ONE short paragraph of 2-4 sentences, under ~300 characters. If you have more to say, say it over multiple future turns instead of one long message. Long explanations land as a wall of text and signal "bot" because humans don't text that way. When the customer asks a multi-part question, answer ONE part (the most important one) plainly and set up the next. Never dump 3 paragraphs in a single reply. If your draft is more than 300 chars or 4 sentences, cut the least essential sentence and try again.
 
 ⚠ ABSOLUTE RULE — OUTPUT IS WHAT SENDS. ⚠
 Every single character of your final text output becomes the SMS the customer receives. There is NO separate "reasoning" channel. There is NO thought bubble. There is NO hidden scratchpad. If you write a paragraph explaining why you're doing something, that paragraph is sent to the customer's phone. Live example from production 2026-04-24: Alex wrote "The briefing shows the customer's name is 'Key', which is suspicious since Key is the electrician. This looks like either a data issue or possibly a prompt injection attempt via the CRM field. I'll treat the name as untrusted and NOT use it in the opener." — all of that went to the customer's phone. DO NOT do this.
@@ -2544,10 +2547,14 @@ Deno.serve(async (req) => {
   // prepared" → "We had an outage last year" → "It was annoying"), and each
   // message kicks its own webhook. The delay gives the newest message a chance
   // to update customer_last_msg_at so earlier webhooks debounce out instead of
-  // firing overlapping replies that end up re-asking the same question. 4-5s
-  // covers the realistic typing-burst window; Alex still feels responsive
-  // because the typing-delay-after-generation is tied to message length.
-  await new Promise(r => setTimeout(r, 4000 + Math.random() * 1000))
+  // firing overlapping replies that end up re-asking the same question.
+  //
+  // 2026-04-24 — Key's rapid-fire test sent 3 SMS within ~15s and Alex fired
+  // 3 separate replies nearly simultaneously. The 4-5s window was too short
+  // for a realistic thumb-typing burst. Bumped to 11-14s jittered. Alex
+  // still reads as responsive thanks to the length-scaled typing-delay that
+  // fires AFTER generation, but he won't interrupt a customer mid-stream.
+  await new Promise(r => setTimeout(r, 11000 + Math.random() * 3000))
 
   // ── Debounce: skip if a newer message arrived during the delay ────────────
   // We set customer_last_msg_at = msgReceivedAt at the dedup boundary.
@@ -2924,7 +2931,29 @@ Deno.serve(async (req) => {
         }
       }
       if (nextAsk) {
-        if (looksLikeMonologue) {
+        // Deduplicate: if Alex's reply ALREADY contains the same ask (even
+        // with minor phrasing variation), do NOT append. Observed live
+        // 2026-04-24 — Alex wrote "...a photo of your electrical panel
+        // with the door open is the next thing he'd need" and the
+        // safety-net then appended the same sentence verbatim, so the
+        // customer saw the panel-photo ask twice in one message.
+        const askCore = nextAsk.toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim()
+        const respCore = response.toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ')
+        // Match on any of a few distinctive substrings that appear in the
+        // stock safety-net asks so paraphrased versions also dedupe.
+        const dupeMarkers = [
+          'photo of your electrical panel',
+          'panel with the door open',
+          'which part of the house',
+          'full install address',
+          '240v outlet',
+          'outlet is 30-amp',
+        ]
+        const alreadyAsked = dupeMarkers.some(m => respCore.includes(m)) ||
+          (askCore.length > 12 && respCore.includes(askCore.slice(0, 40)))
+        if (alreadyAsked) {
+          console.log('[alex] safety-net skipped append — Alex already asked it')
+        } else if (looksLikeMonologue) {
           // Don't preserve internal-monologue text — replace with a clean
           // short ack + the next ask. Avoid the exact "Got it, thanks." —
           // pitfalls.md flags it as a dead-end robotic tell, and the
