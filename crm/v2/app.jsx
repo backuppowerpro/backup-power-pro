@@ -11474,27 +11474,30 @@ function GlobalSearchBar({ tab }) {
   const placeholder = GLOBAL_SEARCH_PLACEHOLDER[tab] || 'Search…';
   return (
     <div style={{
-      padding: '8px 12px',
+      padding: '10px 14px',
       background: 'var(--bg)',
       display: 'flex', alignItems: 'center', gap: 8,
       borderBottom: '1px solid var(--divider-faint)',
     }}>
       <div style={{
         flex: 1, minWidth: 0,
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 12px',
-        background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '8px 14px',
+        background: 'var(--sunken)',
+        borderRadius: 'var(--radius-pill)',
+        transition: 'box-shadow var(--dur) var(--ease)',
       }}>
-        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="var(--text-muted)" strokeWidth="2.5" strokeLinecap="square">
-          <circle cx="7" cy="7" r="4"/><path d="M10 10 L13 13"/>
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
           value={q}
           onChange={e => setQ(e.target.value)}
           placeholder={placeholder}
           style={{
-            flex: 1, background: 'transparent', border: 'none',
-            fontFamily: 'var(--font-body)', fontSize: 13,
+            flex: 1, background: 'transparent', border: 'none', outline: 'none',
+            fontFamily: 'var(--font-body)', fontSize: 13.5,
+            color: 'var(--text)',
           }}
         />
         {q ? (
