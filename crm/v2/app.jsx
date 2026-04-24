@@ -5811,7 +5811,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
         </div>
       ) : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={() => setSnippetsOpen(o => !o)} title="Snippets" style={{
+        <button onClick={() => setSnippetsOpen(o => !o)} title="Snippets" aria-label="Toggle SMS snippets" aria-expanded={snippetsOpen} style={{
           width: 36, height: 36,
           background: 'var(--sunken)',
           border: 'none', cursor: 'pointer',
@@ -5836,7 +5836,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
           letterSpacing: '0.04em',
           transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
         }}>{suggesting ? '…' : 'AI'}</button>
-        <button onClick={pickPhoto} disabled={sending} title="Attach photo (MMS)" style={{
+        <button onClick={pickPhoto} disabled={sending} title="Attach photo (MMS)" aria-label="Attach photo for MMS" style={{
           width: 36, height: 36,
           background: 'var(--sunken)',
           color: 'var(--text-muted)',
