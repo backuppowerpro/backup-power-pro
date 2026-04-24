@@ -5470,19 +5470,41 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
       {snippetsOpen ? (
         <div style={{
           position: 'absolute', left: 12, right: 12, bottom: '100%',
-          marginBottom: 4, padding: 6, zIndex: 5,
-          background: 'var(--card)', boxShadow: 'var(--raised-2)',
-          display: 'flex', flexDirection: 'column', gap: 2,
+          marginBottom: 6, padding: 6, zIndex: 5,
+          background: 'var(--card)',
+          boxShadow: 'var(--shadow-lg), var(--ring)',
+          borderRadius: 'var(--radius-md)',
+          maxHeight: 280, overflowY: 'auto',
+          display: 'flex', flexDirection: 'column', gap: 1,
         }}>
+          <div style={{
+            padding: '8px 12px 6px',
+            fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: 'var(--text-faint)',
+          }}>SMS snippets</div>
           {SMS_SNIPPETS.map(s => (
             <button key={s.label} onClick={() => applySnippet(s.body)} style={{
-              padding: '8px 10px', textAlign: 'left',
-              fontFamily: 'var(--font-body)', fontSize: 12,
+              padding: '10px 12px', textAlign: 'left',
+              fontFamily: 'var(--font-body)', fontSize: 13,
               background: 'transparent', border: 'none', cursor: 'pointer',
               color: 'var(--text)',
-            }}>
-              <span style={{ fontWeight: 600, marginRight: 8 }}>{s.label}</span>
-              <span style={{ color: 'var(--text-faint)' }}>{s.body.slice(0, 60)}…</span>
+              borderRadius: 'var(--radius-sm)',
+              display: 'flex', alignItems: 'baseline', gap: 10,
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >
+              <span style={{
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+                minWidth: 90, color: 'var(--text)',
+              }}>{s.label}</span>
+              <span style={{
+                color: 'var(--text-muted)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                flex: 1, minWidth: 0,
+              }}>{s.body.slice(0, 70)}…</span>
             </button>
           ))}
         </div>
@@ -5490,34 +5512,52 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button onClick={() => setSnippetsOpen(o => !o)} title="Snippets" style={{
           width: 36, height: 36,
-          background: 'var(--card)', boxShadow: 'var(--raised-2)',
+          background: 'var(--sunken)',
           border: 'none', cursor: 'pointer',
-          fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--text-muted)',
-        }}>…</button>
+          fontFamily: 'var(--font-body)', fontSize: 18, color: 'var(--text-muted)',
+          borderRadius: 'var(--radius-pill)',
+          display: 'grid', placeItems: 'center',
+          transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--navy) 6%, var(--sunken))'; e.currentTarget.style.color = 'var(--text)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+        >…</button>
         <button onClick={suggestReply} disabled={suggesting} title="Suggest reply (Sparky)" style={{
           width: 36, height: 36,
-          background: suggesting ? 'var(--navy)' : 'var(--card)',
-          color: suggesting ? 'var(--gold)' : 'var(--text-muted)',
-          boxShadow: suggesting ? 'var(--pressed-2)' : 'var(--raised-2)',
+          background: suggesting
+            ? 'var(--gold)'
+            : 'color-mix(in srgb, var(--gold) 14%, var(--sunken))',
+          color: suggesting ? 'var(--navy)' : 'var(--gold-ink)',
           border: 'none', cursor: suggesting ? 'wait' : 'pointer',
-          fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+          fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 800,
+          borderRadius: 'var(--radius-pill)',
+          display: 'grid', placeItems: 'center',
+          letterSpacing: '0.04em',
+          transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
         }}>{suggesting ? '…' : 'AI'}</button>
         <button onClick={pickPhoto} disabled={sending} title="Attach photo (MMS)" style={{
           width: 36, height: 36,
-          background: 'var(--card)', color: 'var(--text-muted)',
-          boxShadow: sending ? 'var(--pressed-2)' : 'var(--raised-2)',
+          background: 'var(--sunken)',
+          color: 'var(--text-muted)',
           border: 'none', cursor: sending ? 'wait' : 'pointer',
           display: 'grid', placeItems: 'center',
-        }}>
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="square" strokeLinejoin="miter">
-            <rect x="1.5" y="2.5" width="13" height="11"/>
+          borderRadius: 'var(--radius-pill)',
+          transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--navy) 6%, var(--sunken))'; e.currentTarget.style.color = 'var(--text)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/>
             <path d="M1.5 10 L5 7 L8 10 L11 6 L14.5 10.5"/>
             <circle cx="5.5" cy="5.5" r="1"/>
           </svg>
         </button>
         <div style={{
-          flex: 1, padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 8,
-          boxShadow: 'var(--pressed-2)', background: 'var(--card)',
+          flex: 1, padding: '8px 14px', display: 'flex', alignItems: 'flex-start', gap: 8,
+          background: 'var(--sunken)',
+          borderRadius: 'var(--radius-lg)',
+          minHeight: 36,
         }}>
           <textarea
             value={text}
@@ -5529,29 +5569,40 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
             style={{
               flex: 1, fontFamily: 'var(--font-body)', fontSize: 14,
               background: 'transparent', border: 'none', resize: 'none',
-              minHeight: 20, maxHeight: 180, lineHeight: 1.4,
+              outline: 'none',
+              color: 'var(--text)',
+              minHeight: 20, maxHeight: 180, lineHeight: 1.45,
               overflowY: 'auto',
             }}
           />
           {len > 0 ? (
-            <span className="mono" title={`${len} chars · ${segments} SMS segment${segments === 1 ? '' : 's'}${isUnicode ? ' · unicode' : ''}`} style={{
-              fontSize: 10, color: segments > 1 ? 'var(--ms-4)' : 'var(--text-faint)', paddingTop: 4, flex: '0 0 auto',
+            <span title={`${len} chars · ${segments} SMS segment${segments === 1 ? '' : 's'}${isUnicode ? ' · unicode' : ''}`} style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10.5, fontWeight: 600,
+              color: segments > 1 ? 'var(--gold-ink)' : 'var(--text-faint)',
+              paddingTop: 4, flex: '0 0 auto',
+              fontVariantNumeric: 'tabular-nums',
             }}>{len}{segments > 1 ? `/${segments}` : ''}</span>
           ) : null}
         </div>
         <button
           onClick={send}
           disabled={sending || !text.trim()}
+          title="Send"
           style={{
             width: 40, height: 40,
-            background: 'var(--navy)', color: '#fff',
-            boxShadow: 'var(--shadow-sm)',
-            opacity: sending || !text.trim() ? 0.5 : 1,
+            background: text.trim() ? 'var(--navy)' : 'var(--sunken)',
+            color: text.trim() ? 'var(--gold)' : 'var(--text-faint)',
+            boxShadow: text.trim() ? 'var(--shadow-sm)' : 'none',
+            opacity: sending ? 0.5 : 1,
             display: 'grid', placeItems: 'center', border: 'none',
+            borderRadius: 'var(--radius-pill)',
+            cursor: sending || !text.trim() ? 'default' : 'pointer',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}
         >
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
-            <path d="M1 2 L15 8 L1 14 L3 8 L1 2 Z M3 8 L9 8"/>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
         </button>
       </div>
