@@ -1493,7 +1493,7 @@ function AlexSessionStrip({ session, contactId, contactPhone }) {
             <button onClick={toggleAlex} disabled={toggling} title={localActive ? 'Pause Alex — Key takes over' : 'Resume Alex — auto-respond'} style={{
               padding: '1px 6px', fontSize: 10, letterSpacing: '.04em', flex: '0 0 auto',
               background: 'transparent', color: 'var(--text-muted)',
-              border: '1px solid rgba(0,0,0,.15)', cursor: toggling ? 'wait' : 'pointer',
+              border: '1px solid var(--divider)', cursor: toggling ? 'wait' : 'pointer',
               fontFamily: 'var(--font-body)',
             }}>{toggling ? '…' : localActive ? 'pause' : 'resume'}</button>
           ) : null}
@@ -1523,7 +1523,7 @@ function AlexSessionStrip({ session, contactId, contactPhone }) {
           <button onClick={e => { e.stopPropagation(); setTranscriptOpen(v => !v); }} style={{
             padding: '1px 6px', fontSize: 10, letterSpacing: '.04em',
             background: 'transparent', color: 'var(--text-muted)',
-            border: '1px solid rgba(0,0,0,.15)', cursor: 'pointer',
+            border: '1px solid var(--divider)', cursor: 'pointer',
             fontFamily: 'var(--font-body)',
           }}>
             {transcriptOpen ? 'hide transcript' : `${normalisedMessages.length} msg transcript`}
@@ -2103,7 +2103,8 @@ function InstallBriefModal({ contact, onClose }) {
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 95,
-      background: 'rgba(0,0,0,.6)',
+      background: 'rgba(11,31,59,0.5)',
+      backdropFilter: 'blur(3px)',
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
       padding: 16, overflowY: 'auto',
     }}>
@@ -2292,7 +2293,7 @@ function InstallBriefModal({ contact, onClose }) {
             Maps so he's driving before the brief scrolls off the screen.
             Hides when no address or no install_date. */}
         {contact.address && install ? (
-          <div style={{ padding: '12px 12px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid rgba(0,0,0,.15)', background: 'var(--card)' }}>
+          <div style={{ padding: '12px 12px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--divider)', background: 'var(--card)' }}>
             <a
               href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
               target="_blank" rel="noopener"
@@ -2622,7 +2623,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
                 title="Call via phone"
                 style={{
                   color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
-                  textDecoration: 'none', borderBottom: '1px dashed rgba(0,0,0,.2)',
+                  textDecoration: 'none', borderBottom: '1px dashed var(--divider)',
                 }}>{displayPhone}</a>
             ) : (
               <button
@@ -2648,7 +2649,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
               title="Open in Google Maps"
               style={{
                 color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
-                textDecoration: 'none', borderBottom: '1px dashed rgba(0,0,0,.2)',
+                textDecoration: 'none', borderBottom: '1px dashed var(--divider)',
               }}
             >{contact.address}</a>
           ) : <span>—</span>}
@@ -2660,7 +2661,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
                 title="Email contact"
                 style={{
                   color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
-                  textDecoration: 'none', borderBottom: '1px dashed rgba(0,0,0,.2)',
+                  textDecoration: 'none', borderBottom: '1px dashed var(--divider)',
                 }}
               >{contact.email}</a>
             </>
@@ -2915,7 +2916,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
                   background: 'var(--card)',
                   color: 'var(--text-faint)',
                   fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '.08em',
-                  border: '1px solid rgba(0,0,0,.15)',
+                  border: '1px solid var(--divider)',
                 }}>alex</span>
               ) : null}
               <MessageBody body={m.body} isOut={isOut} />
@@ -3771,7 +3772,8 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 95,
-      background: 'rgba(0,0,0,.45)',
+      background: 'rgba(11,31,59,0.45)',
+      backdropFilter: 'blur(3px)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
@@ -6433,7 +6435,8 @@ function CallCard({ title, color, name, children }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 80,
-      background: 'rgba(0,0,0,.7)',
+      background: 'rgba(11,31,59,0.65)',
+      backdropFilter: 'blur(3px)',
       display: 'grid', placeItems: 'center',
     }}>
       <div style={{
@@ -8288,7 +8291,7 @@ function LiveCalendar() {
                     style={{
                       textAlign: 'left', padding: '6px 6px',
                       background: 'transparent',
-                      border: '1px dashed rgba(0,0,0,.25)',
+                      border: '1px dashed var(--divider)',
                       color: 'var(--text-muted)', cursor: 'pointer',
                       fontFamily: 'var(--font-body)', fontSize: 10, lineHeight: 1.3,
                       display: 'flex', flexDirection: 'column', gap: 2,
@@ -8555,7 +8558,8 @@ function CalendarEventModal({ defaults, onClose, onSaved }) {
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 95,
-      background: 'rgba(0,0,0,.5)',
+      background: 'rgba(11,31,59,0.5)',
+      backdropFilter: 'blur(3px)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <form ref={rootRef} onSubmit={save} onClick={e => e.stopPropagation()} style={{
