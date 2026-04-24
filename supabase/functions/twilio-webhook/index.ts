@@ -184,6 +184,46 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Return empty TwiML — no auto-reply (Key handles replies from CRM)
+  // ── FORWARD TO ALEX (fire-and-forget) ─────────────────────────────────────
+  // Before the Quo→Twilio port, OpenPhone webhooked alex-agent directly.
+  // After the port, inbounds land here and Alex never saw them. Bridge the
+  // gap by POSTing an OpenPhone-shaped payload to alex-agent, so the same
+  // code path (TEST_MODE, DNC, frustration detector, memory briefing,
+  // turn-reflection, vision classification, etc.) runs regardless of carrier.
+  //
+  // We don't await this — the webhook returns TwiML immediately so Twilio
+  // doesn't retry. Alex's reply goes out through Alex's own send path.
+  try {
+    const mediaArr = numMedia > 0
+      ? Array.from({ length: numMedia }).map((_, i) => ({
+          url: params.get(`MediaUrl${i}`) || '',
+          type: params.get(`MediaContentType${i}`) || 'image/jpeg',
+        })).filter(m => m.url)
+      : undefined
+
+    const forwardPayload = {
+      type: 'message.received',
+      data: {
+        object: {
+          from:      from,
+          to:        [params.get('To') || ''],
+          body:      body || '',
+          id:        messageSid,
+          createdAt: new Date().toISOString(),
+          ...(mediaArr && mediaArr.length > 0 ? { media: mediaArr } : {}),
+        },
+      },
+    }
+    const sr = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    fetch('https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sr}` },
+      body: JSON.stringify(forwardPayload),
+    }).catch((e) => console.error('[twilio-webhook] alex forward failed:', e))
+  } catch (err) {
+    console.error('[twilio-webhook] alex forward construction failed:', err)
+  }
+
+  // Return empty TwiML — no auto-reply (Alex handles replies async above)
   return twiml()
 })

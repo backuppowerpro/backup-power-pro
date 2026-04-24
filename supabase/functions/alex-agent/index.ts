@@ -2739,7 +2739,7 @@ Deno.serve(async (req) => {
     // info in one message: they have a Champion 30-amp 240V outlet..."
     // If the message opens with a third-person reference or uses "they said"
     // / "that answers" / reasoning framing, it's reasoning not a reply.
-    const thirdPerson = /(^\s*)(the customer|this customer|the lead|the user|the person|based on (the|what|this)|looking at (the|this|what)|it seems (that|the)|appears (that|the)|they said|they mentioned|they gave me|they told me|they're asking|since i )/i
+    const thirdPerson = /(^\s*)(the customer|this customer|the lead|the user|the person|based on (the|what|this)|looking at (the|this|what)|it seems (that|the)|appears (that|the)|they said|they mentioned|they gave me|they told me|they're asking|since i |note on (the|my) briefing|name says|briefing (says|shows|notes|indicates))/i
     const reasoningFramer = /\b(that answers (the|my)|worth noting (that|—|-)|also worth noting|let me pivot|let me ask|this is the|this answers|the question (is|was|becomes)|so my (next|move|plan)|my (next|move|plan) (is|will))\b/i
     const looksLikeMonologue =
       (response.length > 40 && selfRef.test(response)) ||

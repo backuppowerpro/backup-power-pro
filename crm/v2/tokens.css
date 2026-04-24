@@ -1,53 +1,57 @@
 /* ============================================================
-   BPP CRM — DESIGN TOKENS (minimal refresh — 2026-04-24)
+   BPP CRM — DESIGN TOKENS (aligned with customer-facing brand)
 
-   The former Minesweeper-brutalist language (flat #c0c0c0, 3px chiseled
-   bevels, steps(4) animations, VT323 pixel headlines, zero border-radius)
-   read as "harsh and blocky" in use. This refresh keeps the same token
-   NAMES — so every component that references --raised, --card, --bg,
-   etc. picks up the new aesthetic automatically — but retargets the
-   VALUES toward a cleaner, warmer, more modern feel:
+   Key's 2026-04-24 directive: "i want my CRM to more reflect my
+   customer facing project designs like my websites and proposals."
 
-     — soft off-white surfaces + white cards with 1px rings
-     — subtle stacked shadows instead of hard bevels
-     — smooth cubic-bezier easing instead of stepped motion
-     — Inter everywhere (the pixel font is retired)
-     — gentle border-radius on cards, inputs, and buttons
-     — palette warmed slightly (stone-200 background, zinc text)
+   Source of truth: backuppowerpro.com + proposal.html + invoice.html
+   Palette + type + radii + motion are copied forward so the CRM,
+   website, and customer deliverables all read as one brand.
 
-   Brand colors (navy + gold) stay. Accent status hues stay. Smart-layer
-   classes stay. Only the "brutalist atoms" are softened.
+   Brand anchors:
+     --navy   #0b1f3b    hero surfaces, primary buttons, wordmark
+     --gold   #ffba00    accents, CTAs, active tab underline
+     Outfit   700/800    headings, wordmark, category labels
+     Inter    400-600    body, inputs, captions, numerics
+     16/20/100           card radius / hero-card radius / pill radius
+
+   CRM-specific choices the customer-facing site doesn't cover:
+   dense lists stay on white content surfaces with soft shadows
+   (inverting everything to navy would hurt scannability), but
+   every nav moment, hero, CTA, and accent uses the brand deck.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* ---------- Surfaces ----------
-     bg      = page background (warm off-white)
-     card    = panel / row / modal surface (pure white for max contrast)
-     sunken  = inset / input wells / subtle recessed areas
-     text    = near-black with a hint of warmth
-     text-muted / text-faint follow Zinc-ish steps */
-  --bg: #f4f4f2;
-  --card: #ffffff;
-  --sunken: #f6f6f4;
-  --text: #1a1a1c;
-  --text-muted: #5b5d63;
-  --text-faint: #93969d;
+  /* ---------- Brand (match customer-facing exactly) ---------- */
+  --navy:       #0b1f3b;
+  --navy-mid:   #1a3a5c;
+  --navy-deep:  #081528;
+  --gold:       #ffba00;
+  --gold-hover: #ffc519;
+  --light-blue: #e8f1f8;   /* website alt section tint */
 
-  /* ---------- Brand ---------- */
-  --navy: #0f2344;
-  --gold: #c68a12;
+  /* ---------- Surfaces ----------
+     bg is a soft white; card is pure white. CRM needs dense list
+     scannability, so we lean lighter than the full-bleed navy the
+     website uses for heroes. Navy shows up in the top bar, hero
+     cards, primary buttons, and badges. */
+  --bg:         #fafbfc;
+  --card:       #ffffff;
+  --sunken:     #f4f6fa;
+  --text:       #1a1a2e;
+  --text-muted: #4a4a5a;
+  --text-faint: #6b7280;
 
   /* ---------- Status ---------- */
-  --green: #059669;
-  --red:   #dc2626;
-  --blue:  #2563eb;
-  --purple:#7c3aed;
+  --green:  #16a34a;
+  --red:    #dc2626;
+  --blue:   #2563eb;
+  --purple: #7c3aed;
 
-  /* ---------- Legacy palette aliases (kept for components that already
-      reference ms-N slot colors — remap them to the softer accents so
-      old references don't need a migration) ---------- */
+  /* Legacy aliases kept so components that reference --ms-N still
+     resolve to a valid value. */
   --ms-1: var(--blue);
   --ms-2: var(--green);
   --ms-3: var(--red);
@@ -57,75 +61,73 @@
   --ms-7: #18181b;
   --ms-8: #6b7280;
 
-  /* ---------- Borders + shadows (replaces hard bevels) ----------
-     The key move: swap 3px chiseled inset borders for a 1px inset ring
-     plus a subtle dropped shadow. Components keep their shape and
-     depth but read as "card" instead of "control panel". */
-  --ring:          inset 0 0 0 1px rgba(16, 18, 24, 0.08);
-  --ring-strong:   inset 0 0 0 1px rgba(16, 18, 24, 0.14);
-  --ring-focus:    inset 0 0 0 2px var(--gold);
+  /* ---------- Borders, rings, shadows ----------
+     Website uses rgba(11,31,59,.07) for card borders — we adopt
+     the same value so any panel / pill / CTA that transfers over
+     reads identically on and off the CRM. Shadow stack grows
+     richer than the previous minimal iteration because the site
+     leans on soft 20-60px drops for depth. */
+  --ring:        inset 0 0 0 1px rgba(11, 31, 59, 0.07);
+  --ring-strong: inset 0 0 0 1px rgba(11, 31, 59, 0.14);
+  --ring-gold:   inset 0 0 0 1.5px var(--gold);
+  --ring-focus:  inset 0 0 0 2px var(--gold);
 
-  --shadow-xs:     0 1px 1px rgba(16, 18, 24, 0.04);
-  --shadow-sm:     0 1px 2px rgba(16, 18, 24, 0.05), 0 1px 1px rgba(16, 18, 24, 0.03);
-  --shadow-md:     0 2px 4px rgba(16, 18, 24, 0.06), 0 1px 2px rgba(16, 18, 24, 0.04);
-  --shadow-lg:     0 8px 16px rgba(16, 18, 24, 0.08), 0 2px 4px rgba(16, 18, 24, 0.05);
-  --shadow-xl:     0 20px 40px rgba(16, 18, 24, 0.10), 0 4px 8px rgba(16, 18, 24, 0.06);
+  --shadow-xs: 0 1px 2px rgba(11, 31, 59, 0.04);
+  --shadow-sm: 0 2px 6px rgba(11, 31, 59, 0.06), 0 1px 2px rgba(11, 31, 59, 0.04);
+  --shadow-md: 0 8px 20px rgba(11, 31, 59, 0.08), 0 2px 6px rgba(11, 31, 59, 0.05);
+  --shadow-lg: 0 20px 60px rgba(11, 31, 59, 0.15), 0 4px 12px rgba(11, 31, 59, 0.08);
+  --shadow-xl: 0 40px 96px rgba(11, 31, 59, 0.25), 0 8px 24px rgba(11, 31, 59, 0.12);
+  /* Gold glow — reserved for primary CTAs, matches .btn-gold on site */
+  --shadow-gold: 0 4px 20px rgba(255, 186, 0, 0.25);
+  --shadow-gold-hover: 0 4px 24px rgba(255, 186, 0, 0.40);
 
-  /* ---------- Bevel atoms (backward-compat slot names) ----------
-     Components still reference --raised / --pressed / --raised-2. We
-     redirect them at the token level so the CRM updates in one pass
-     without touching each component. "raised" now means "card with a
-     subtle ring + soft shadow"; "pressed" means "sunken with an inset
-     fill + subtle inner ring". */
+  /* ---------- Legacy bevel slots (backward-compat) ----------
+     Components reference --raised / --pressed / --raised-2. We
+     retarget them to the brand-aligned shadow stack so the whole
+     CRM updates in one pass. */
   --bevel-hi: rgba(255, 255, 255, 0.9);
-  --bevel-lo: rgba(16, 18, 24, 0.12);
+  --bevel-lo: rgba(11, 31, 59, 0.12);
 
   --raised:    var(--shadow-sm), var(--ring);
-  --pressed:   inset 0 1px 2px rgba(16, 18, 24, 0.06), var(--ring-strong);
+  --pressed:   inset 0 1px 2px rgba(11, 31, 59, 0.07), var(--ring-strong);
   --raised-2:  var(--shadow-xs), var(--ring);
-  --pressed-2: inset 0 1px 1px rgba(16, 18, 24, 0.05), var(--ring);
+  --pressed-2: inset 0 1px 1px rgba(11, 31, 59, 0.06), var(--ring);
 
-  /* ---------- Radii ---------- */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --radius-pill: 999px;
-
-  /* ---------- LCD screen (retained for Voice Call / Finance meters) ---------- */
-  --lcd-bg:    #0b0d10;
-  --lcd-red:   #ff3d3d;
-  --lcd-green: #3fd774;
-  --lcd-amber: #f5b400;
-  --lcd-glow-red:   0 0 8px rgba(255, 61, 61, 0.45);
-  --lcd-glow-green: 0 0 8px rgba(63, 215, 116, 0.45);
-  --lcd-glow-amber: 0 0 8px rgba(245, 180, 0, 0.45);
+  /* ---------- Radii (exact copy of website scale) ----------
+     The site uses --r:16 / --r2:20 / --r3:100 (pill). We also keep
+     a small 6px step for chips and a 4px step for tight controls. */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   16px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-pill: 100px;
 
   /* ---------- Typography ----------
-     font-pixel and font-chrome retained as variables for slots that
-     still reference them, but both now resolve to Inter weights so
-     the pixel/military chrome language is gone. JetBrains Mono stays
-     for tabular numerics. */
-  --font-body:   'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-pixel:  'Inter', system-ui, sans-serif;
-  --font-chrome: 'Inter', system-ui, sans-serif;
-  --font-mono:   'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+     Outfit is the display font everywhere Key's customer deliverables
+     use it (brand wordmark, section headings, eyebrow labels). Inter
+     handles body + data + forms. JetBrains Mono for tabular numerics.
+
+     font-pixel and font-chrome retained only as aliases for
+     components that still reference them — both resolve to the
+     brand-aligned display / body as appropriate. */
+  --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-pixel:   var(--font-display);    /* legacy alias */
+  --font-chrome:  var(--font-display);    /* legacy alias */
 
   /* ---------- Motion ----------
-     Smooth ease-out curves. The former steps(4) caused visible frame
-     jumps that read as "retro / arcade" and clashed with the rest of
-     the UI. dur bumped to 200ms for a calmer feel. */
-  --dur-fast: 140ms;
-  --dur: 200ms;
-  --dur-slow: 300ms;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
-  --step: var(--ease);
+     Smooth cubic-bezier (was steps(4) arcade jumps). Durations
+     match the .2s standard the website .btn uses. */
+  --dur-fast:     140ms;
+  --dur:          200ms;
+  --dur-slow:     300ms;
+  --ease:         cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:  cubic-bezier(0.45, 0, 0.25, 1);
+  --step:         var(--ease);
 
-  /* ---------- Avatar ----------
-     16-vertex blocky clip retired; avatars are now circular. Variable
-     kept so old references still resolve to something valid. */
+  /* ---------- Avatar ---------- */
   --avatar-clip: circle(50% at 50% 50%);
 
   /* ---------- Smart layer ---------- */
@@ -136,7 +138,6 @@
   --smart-purple: var(--purple);
   --smart-muted:  var(--text-muted);
 
-  /* Ring outlines used to flag a card/row without changing its layout. */
   --smart-ring-gold:   inset 0 0 0 1.5px var(--gold);
   --smart-ring-red:    inset 0 0 0 1.5px var(--red);
   --smart-ring-green:  inset 0 0 0 1.5px var(--green);
@@ -145,28 +146,36 @@
 
   --smart-bar-height: 3px;
 
-  /* Row / section separators — theme-aware so dark mode doesn't lose
-     them to the black-alpha approximation used throughout the app. */
-  --divider: rgba(16, 18, 24, 0.08);
-  --divider-faint: rgba(16, 18, 24, 0.05);
+  /* ---------- LCD (retained for Voice Call / Finance meters) ---------- */
+  --lcd-bg:    #081528;
+  --lcd-red:   #ff3d3d;
+  --lcd-green: #3fd774;
+  --lcd-amber: var(--gold);
+  --lcd-glow-red:   0 0 8px rgba(255, 61, 61, 0.45);
+  --lcd-glow-green: 0 0 8px rgba(63, 215, 116, 0.45);
+  --lcd-glow-amber: 0 0 8px rgba(255, 186, 0, 0.45);
+
+  /* ---------- Dividers ---------- */
+  --divider:       rgba(11, 31, 59, 0.08);
+  --divider-faint: rgba(11, 31, 59, 0.05);
 }
 
 [data-theme="dark"] {
-  --bg:         #0f0f11;
-  --card:       #17181b;
-  --sunken:     #121215;
-  --text:       #f0f1f3;
-  --text-muted: #a5a9b0;
-  --text-faint: #6b6e75;
+  --bg:         #0b1220;
+  --card:       #0f1a2e;
+  --sunken:     #0d1524;
+  --text:       #f1f4f9;
+  --text-muted: #a5b0c2;
+  --text-faint: #6b7a95;
 
   --ring:          inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   --ring-strong:   inset 0 0 0 1px rgba(255, 255, 255, 0.14);
 
-  --shadow-xs:     0 1px 1px rgba(0, 0, 0, 0.25);
-  --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.25);
-  --shadow-md:     0 2px 6px rgba(0, 0, 0, 0.40), 0 1px 2px rgba(0, 0, 0, 0.30);
-  --shadow-lg:     0 12px 24px rgba(0, 0, 0, 0.50), 0 2px 4px rgba(0, 0, 0, 0.35);
-  --shadow-xl:     0 24px 48px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.40);
+  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.30), 0 1px 2px rgba(0, 0, 0, 0.20);
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 40px 96px rgba(0, 0, 0, 0.60), 0 8px 24px rgba(0, 0, 0, 0.40);
 
   --bevel-hi: rgba(255, 255, 255, 0.05);
   --bevel-lo: rgba(0, 0, 0, 0.6);
@@ -189,6 +198,14 @@ body {
   text-rendering: optimizeLegibility;
   font-feature-settings: "ss01", "cv11";
 }
+/* Any semantic heading gets the display font by default, matching
+   the website's h1-h4 treatment. Components that want Inter-weight
+   headings can opt out via style=font-family or a utility class. */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
 button {
   font-family: inherit;
   color: inherit;
@@ -206,7 +223,6 @@ input, textarea, select {
   outline: 0;
   border-radius: var(--radius-sm);
 }
-/* Icons: antialiased, rounded caps + joins — no more crispEdges + miter */
 svg {
   shape-rendering: geometricPrecision;
   stroke-linecap: round;
@@ -220,12 +236,11 @@ button svg { stroke-width: 2; }
 /* ============================================================
    Utilities
    ============================================================ */
-.raised   { box-shadow: var(--raised);   background: var(--card); border-radius: var(--radius-md); }
+.raised   { box-shadow: var(--raised);   background: var(--card);   border-radius: var(--radius-md); }
 .pressed  { box-shadow: var(--pressed);  background: var(--sunken); border-radius: var(--radius-md); }
-.raised-2 { box-shadow: var(--raised-2); background: var(--card); border-radius: var(--radius-sm); }
+.raised-2 { box-shadow: var(--raised-2); background: var(--card);   border-radius: var(--radius-sm); }
 .pressed-2{ box-shadow: var(--pressed-2);background: var(--sunken); border-radius: var(--radius-sm); }
 
-/* Raised → subtle lift on hover, flatten on click */
 .tactile-raised {
   background: var(--card);
   box-shadow: var(--raised);
@@ -235,10 +250,9 @@ button svg { stroke-width: 2; }
     transform  var(--dur) var(--ease),
     background var(--dur) var(--ease);
 }
-.tactile-raised:hover { box-shadow: var(--shadow-md), var(--ring); transform: translateY(-1px); }
+.tactile-raised:hover  { box-shadow: var(--shadow-md), var(--ring); transform: translateY(-1px); }
 .tactile-raised:active { box-shadow: var(--pressed-2); transform: translateY(0); }
 
-/* Flat → subtle depress on click */
 .tactile-flat {
   background: transparent;
   box-shadow: none;
@@ -248,22 +262,81 @@ button svg { stroke-width: 2; }
 .tactile-flat:hover  { background: var(--sunken); }
 .tactile-flat:active { box-shadow: var(--pressed-2); background: var(--sunken); }
 
-/* Graph-paper background retired — replaced with very subtle dotted texture
-   only when a component explicitly opts in via .grid-bg. Default panels
-   should be clean. */
+/* Brand-aligned button utilities — mirror the website .btn-gold /
+   .btn-navy so any CTA in the CRM reads like a site CTA. */
+.btn-gold {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-display); font-weight: 600; font-size: 15px;
+  padding: 14px 28px;
+  background: var(--gold); color: var(--navy);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-gold);
+  transition: background var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+  cursor: pointer;
+}
+.btn-gold:hover  { background: var(--gold-hover); box-shadow: var(--shadow-gold-hover); }
+.btn-gold:active { transform: scale(.97); }
+
+.btn-navy {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-display); font-weight: 600; font-size: 15px;
+  padding: 14px 28px;
+  background: var(--navy); color: #fff;
+  border-radius: var(--radius-pill);
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  cursor: pointer;
+}
+.btn-navy:hover  { background: #0d2547; }
+.btn-navy:active { transform: scale(.97); }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-display); font-weight: 600; font-size: 14px;
+  padding: 12px 22px;
+  background: transparent; color: var(--text-muted);
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1.5px rgba(11, 31, 59, 0.18);
+  transition: box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
+  cursor: pointer;
+}
+.btn-ghost:hover { box-shadow: inset 0 0 0 1.5px var(--navy); color: var(--navy); }
+
+/* Eyebrow label — the uppercase gold "GREENVILLE, SC · LICENSED &
+   INSURED" style from the site hero. Use for category labels above
+   section headings in the CRM. */
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* Hero card — full-navy panel with white text, matches the
+   proposal.html .hero-card language. Use sparingly for "big moment"
+   surfaces like the login, the Quick-tab welcome panel, etc. */
+.hero-card {
+  background: var(--navy);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 28px 28px 24px;
+  box-shadow: var(--shadow-md);
+}
+.hero-card h1, .hero-card h2, .hero-card h3, .hero-card h4 { color: #fff; }
+.hero-card .eyebrow { color: var(--gold); }
+
+/* Graph-paper background retired — dotted texture opt-in */
 .grid-bg {
-  background-image: radial-gradient(rgba(16,18,24,0.05) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(11,31,59,0.05) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 [data-theme="dark"] .grid-bg {
   background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
 }
 
-/* Avatar clip — circular (was blocky 16-vertex polygon) */
 .avatar-clip { clip-path: var(--avatar-clip); border-radius: 50%; }
 
-/* LCD text — retained for Finance meters + Voice Call timer. Softer glow
-   and less "monotype terminal" letter-spacing. */
 .lcd {
   background: var(--lcd-bg);
   color: var(--lcd-red);
@@ -276,50 +349,47 @@ button svg { stroke-width: 2; }
 .lcd--green { color: var(--lcd-green); text-shadow: var(--lcd-glow-green); }
 .lcd--amber { color: var(--lcd-amber); text-shadow: var(--lcd-glow-amber); }
 
-/* Chrome label → retired as "uppercase military" affectation. Now a
-   plain subtle label in Inter medium. Anywhere that needs SHOUT CASE
-   can still add text-transform inline, but the default is readable. */
+/* Chrome label → now a plain label in Outfit medium. Anywhere the
+   site uses .label / .hdr-ke we match that treatment. */
 .chrome-label {
-  font-family: var(--font-body);
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   font-size: 12px;
   color: var(--text-muted);
 }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.pixel { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; }
 
 /* ============================================================
    Smart layer — consistent visuals for any "smart X" feature
    ============================================================ */
 
-/* Smart chip: compact labeled badge. Tone-colored bg + fg. */
 .smart-chip {
   display: inline-flex; align-items: center;
-  padding: 3px 8px;
-  font-family: var(--font-body);
-  font-weight: 600;
+  padding: 4px 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: 10px;
-  letter-spacing: .04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   border-radius: var(--radius-pill);
   box-shadow: var(--ring);
 }
-.smart-chip--gold   { background: color-mix(in srgb, var(--gold)   14%, var(--card)); color: var(--gold); }
+.smart-chip--gold   { background: color-mix(in srgb, var(--gold)   18%, var(--card)); color: #8a5a00; }
 .smart-chip--red    { background: color-mix(in srgb, var(--red)    12%, var(--card)); color: var(--red); }
-.smart-chip--green  { background: color-mix(in srgb, var(--green)  12%, var(--card)); color: var(--green); }
-.smart-chip--navy   { background: color-mix(in srgb, var(--navy)   10%, var(--card)); color: var(--navy); }
+.smart-chip--green  { background: color-mix(in srgb, var(--green)  14%, var(--card)); color: var(--green); }
+.smart-chip--navy   { background: color-mix(in srgb, var(--navy)    8%, var(--card)); color: var(--navy); }
 .smart-chip--purple { background: color-mix(in srgb, var(--purple) 12%, var(--card)); color: var(--purple); }
 .smart-chip--muted  { background: var(--sunken); color: var(--text-muted); }
 
-/* Smart ring: flag a card/row without pushing layout. */
 .smart-ring-gold   { box-shadow: var(--smart-ring-gold); }
 .smart-ring-red    { box-shadow: var(--smart-ring-red); }
 .smart-ring-green  { box-shadow: var(--smart-ring-green); }
 .smart-ring-navy   { box-shadow: var(--smart-ring-navy); }
 .smart-ring-purple { box-shadow: var(--smart-ring-purple); }
 
-/* Smart bar: 3px tone strip above a section. */
 .smart-bar {
   height: var(--smart-bar-height);
   width: 100%;
@@ -331,45 +401,42 @@ button svg { stroke-width: 2; }
 .smart-bar--navy   { background: var(--navy); }
 .smart-bar--purple { background: var(--purple); }
 
-/* Smart hint card: dismissible "next best action" banner. */
 .smart-hint {
   background: var(--card);
   color: var(--text);
-  padding: 12px 16px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
   gap: 12px;
   box-shadow: var(--raised);
   border-radius: var(--radius-md);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
 }
 .smart-hint__label {
-  font-family: var(--font-body);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: 11px;
-  letter-spacing: .04em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--gold);
 }
 .smart-hint__body  { flex: 1; min-width: 0; color: var(--text); }
 .smart-hint__cta {
-  padding: 6px 12px;
-  background: var(--navy);
-  color: #fff;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: .02em;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
+  padding: 10px 20px;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-gold);
   cursor: pointer;
-  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  transition: background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-.smart-hint__cta:hover  { background: color-mix(in srgb, var(--navy) 90%, #000); }
-.smart-hint__cta:active { transform: translateY(1px); }
+.smart-hint__cta:hover { background: var(--gold-hover); box-shadow: var(--shadow-gold-hover); }
 
-/* Smart dot: tiny colored dot used as a leading indicator on a row. */
 .smart-dot {
   width: 8px; height: 8px;
   flex: 0 0 auto;
@@ -382,9 +449,6 @@ button svg { stroke-width: 2; }
 .smart-dot--navy   { background: var(--navy); }
 .smart-dot--purple { background: var(--purple); }
 
-/* .pixel retained only as an alias — renders as Inter at regular weight. */
-.pixel { font-family: var(--font-body); letter-spacing: .02em; font-weight: 600; }
-
 /* ============================================================
    Accessibility
    ============================================================ */
@@ -395,8 +459,7 @@ button svg { stroke-width: 2; }
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
-button:focus-visible,
-a:focus-visible {
+button:focus-visible, a:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
@@ -414,21 +477,18 @@ a:focus-visible {
 .skip-link {
   position: absolute;
   top: -40px; left: 8px;
-  padding: 8px 16px;
+  padding: 10px 22px;
   background: var(--navy);
   color: #fff;
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: .02em;
   text-decoration: none;
   z-index: 1000;
   transition: top var(--dur) var(--ease);
   box-shadow: var(--shadow-md);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
 }
-.skip-link:focus {
-  top: 8px;
-}
+.skip-link:focus { top: 8px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
