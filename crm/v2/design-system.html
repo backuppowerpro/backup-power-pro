@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#0b1f3b" />
+<title>BPP Design System</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  /* Design-system-only layout. Nothing here cascades back into the
+     CRM — this page is a reference gallery. All visual atoms below
+     come from tokens.css, the exact same file the CRM consumes. */
+  body { background: var(--bg); padding: 48px 24px 96px; }
+  .ds-wrap { max-width: 1100px; margin: 0 auto; }
+  .ds-head {
+    background: var(--navy);
+    color: #fff;
+    border-radius: var(--radius-lg);
+    padding: 40px 40px 36px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 40px;
+  }
+  .ds-head .ds-eyebrow { color: var(--gold); font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .ds-head h1 { font-family: var(--font-display); font-weight: 800; font-size: 44px; letter-spacing: -0.02em; line-height: 1.1; margin-top: 12px; }
+  .ds-head h1 em { font-style: normal; color: var(--gold); }
+  .ds-head p { font-family: var(--font-body); color: rgba(255,255,255,0.75); font-size: 16px; line-height: 1.6; margin-top: 16px; max-width: 640px; }
+  .ds-head .ds-meta { font-family: var(--font-mono); color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 24px; }
+
+  .ds-section { margin-bottom: 56px; }
+  .ds-section-head { margin-bottom: 20px; }
+  .ds-section-eyebrow { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+  .ds-section-h { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: -0.01em; color: var(--text); margin-top: 6px; }
+  .ds-section-sub { font-family: var(--font-body); color: var(--text-muted); font-size: 15px; line-height: 1.55; margin-top: 6px; max-width: 720px; }
+
+  .ds-grid { display: grid; gap: 16px; }
+  .ds-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ds-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ds-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 720px) { .ds-grid--3, .ds-grid--4 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+  .ds-card {
+    background: var(--card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm), var(--ring);
+    padding: 20px;
+  }
+
+  /* Palette swatches */
+  .sw-row { display: flex; align-items: center; gap: 16px; padding: 14px 16px; background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow-sm), var(--ring); }
+  .sw-chip { width: 40px; height: 40px; border-radius: var(--radius-sm); box-shadow: var(--ring); flex: 0 0 auto; }
+  .sw-meta { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .sw-name { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--text); }
+  .sw-hex { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .sw-use { font-family: var(--font-body); font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Type specimens */
+  .type-row { padding: 16px 18px; background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow-sm), var(--ring); display: flex; align-items: baseline; gap: 20px; }
+  .type-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); flex: 0 0 140px; }
+  .type-sample { flex: 1; color: var(--text); }
+
+  /* Shadow scale */
+  .shadow-tile { height: 100px; background: var(--card); border-radius: var(--radius-md); display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+  .shadow-tile-xs { box-shadow: var(--shadow-xs); }
+  .shadow-tile-sm { box-shadow: var(--shadow-sm); }
+  .shadow-tile-md { box-shadow: var(--shadow-md); }
+  .shadow-tile-lg { box-shadow: var(--shadow-lg); }
+  .shadow-tile-xl { box-shadow: var(--shadow-xl); }
+  .shadow-tile-gold { box-shadow: var(--shadow-gold); background: var(--gold); color: var(--navy); font-weight: 700; }
+
+  /* Radii */
+  .rad-tile { height: 80px; background: var(--navy); color: #fff; display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; }
+
+  /* Component demos live in light-blue alt sections so they pop */
+  .ds-alt { background: var(--light-blue); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px; }
+
+  .hero-demo {
+    background: var(--navy); color: #fff;
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    position: relative; overflow: hidden;
+  }
+  .hero-demo h2 { font-family: var(--font-display); font-weight: 800; font-size: 40px; letter-spacing: -0.02em; line-height: 1.1; }
+  .hero-demo h2 em { font-style: normal; color: var(--gold); }
+  .hero-demo p { font-family: var(--font-body); color: rgba(255,255,255,0.75); font-size: 16px; line-height: 1.6; max-width: 480px; margin-top: 14px; }
+  .hero-demo .eyebrow { color: var(--gold); font-family: var(--font-display); font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; }
+
+  .input-demo {
+    background: var(--sunken);
+    box-shadow: var(--ring);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    height: 44px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text);
+    width: 100%;
+    border: 0; outline: 0;
+  }
+  .input-demo::placeholder { color: var(--text-faint); }
+  .label-demo { font-family: var(--font-body); font-weight: 600; font-size: 12px; color: var(--text-muted); letter-spacing: 0.01em; display: block; margin-bottom: 8px; }
+
+  .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--navy); color: #fff; font-family: var(--font-body); font-weight: 600; font-size: 14px; display: grid; place-items: center; }
+
+  .list-demo { background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow-sm), var(--ring); overflow: hidden; }
+  .list-row { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--divider-faint); transition: background var(--dur) var(--ease); cursor: pointer; }
+  .list-row:last-child { border-bottom: 0; }
+  .list-row:hover { background: var(--sunken); }
+  .list-row__accent { width: 3px; align-self: stretch; border-radius: 2px; }
+  .list-row__name { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--text); }
+  .list-row__sub  { font-family: var(--font-body); font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .list-row__col  { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+
+  .hero-card-demo { background: var(--navy); color: #fff; border-radius: var(--radius-lg); padding: 24px; }
+  .hero-card-demo .eyebrow { color: var(--gold); font-family: var(--font-display); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .hero-card-demo h3 { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; margin-top: 8px; }
+  .hero-card-demo p { color: rgba(255,255,255,0.75); font-size: 14px; line-height: 1.5; margin-top: 10px; }
+
+  .nav-example {
+    background: var(--card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm), var(--ring);
+    overflow: hidden;
+  }
+  .nav-example__bar {
+    height: 60px; display: flex; align-items: center; padding: 0 20px; gap: 14px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .nav-example__logo {
+    width: 30px; height: 30px; background: var(--gold);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-xs);
+    display: grid; place-items: center;
+  }
+  .nav-example__wordmark { font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--navy); letter-spacing: -0.02em; }
+  .nav-example__wordmark em { font-style: normal; color: var(--gold); }
+  .nav-example__spacer { flex: 1; }
+  .nav-example__tabs { height: 48px; display: flex; padding: 0 12px; }
+  .nav-example__tab {
+    flex: 1; display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: 0.01em;
+    color: var(--text-muted);
+  }
+  .nav-example__tab--active {
+    color: var(--navy); font-weight: 700;
+    box-shadow: inset 0 -2px 0 var(--gold);
+  }
+</style>
+</head>
+<body>
+<div class="ds-wrap">
+
+  <!-- COVER -->
+  <div class="ds-head">
+    <div class="ds-eyebrow">Design system · v1</div>
+    <h1>Backup Power Pro<br/><em>One brand, every surface.</em></h1>
+    <p>
+      The language shared by backuppowerpro.com, customer proposals, customer invoices,
+      and the internal CRM. Navy + gold, Outfit display on Inter body, confident pill CTAs,
+      soft shadows, generous radii. Pulled directly from <code>crm/v2/tokens.css</code> —
+      this page stays in sync because it consumes the same stylesheet the CRM does.
+    </p>
+    <div class="ds-meta">Source: index.html · proposal.html · invoice.html · crm/v2/tokens.css</div>
+  </div>
+
+  <!-- PALETTE -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">01 · Palette</div>
+      <h2 class="ds-section-h">Navy, gold, and the supporting cast</h2>
+      <p class="ds-section-sub">
+        Brand anchors taken verbatim from the website. Every other color is either a
+        recede (surfaces, text) or a status tone with a specific meaning.
+      </p>
+    </div>
+
+    <div class="ds-grid ds-grid--2">
+      <div class="sw-row"><div class="sw-chip" style="background:var(--navy);"></div><div class="sw-meta"><span class="sw-name">Navy</span><span class="sw-hex">#0b1f3b</span><span class="sw-use">Hero surfaces · wordmark · primary buttons · avatars · links</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--gold);"></div><div class="sw-meta"><span class="sw-name">Gold</span><span class="sw-hex">#ffba00</span><span class="sw-use">Accent · primary CTA · eyebrow labels · active tab underline</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--navy-mid);"></div><div class="sw-meta"><span class="sw-name">Navy Mid</span><span class="sw-hex">#1a3a5c</span><span class="sw-use">Hero gradient endpoint · dark-section mid stop</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--gold-hover);"></div><div class="sw-meta"><span class="sw-name">Gold Hover</span><span class="sw-hex">#ffc519</span><span class="sw-use">+4% luminance on gold-button hover · never in content</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--card);"></div><div class="sw-meta"><span class="sw-name">Card</span><span class="sw-hex">#ffffff</span><span class="sw-use">Panels · rows · modals · anything elevated</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--bg);"></div><div class="sw-meta"><span class="sw-name">Background</span><span class="sw-hex">#fafbfc</span><span class="sw-use">Page surface — warm off-white, not flat gray</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--sunken);"></div><div class="sw-meta"><span class="sw-name">Sunken</span><span class="sw-hex">#f4f6fa</span><span class="sw-use">Inputs · wells · subtle recessed areas</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--light-blue);"></div><div class="sw-meta"><span class="sw-name">Light Blue</span><span class="sw-hex">#e8f1f8</span><span class="sw-use">Alternating section tint on marketing pages</span></div></div>
+    </div>
+
+    <div class="ds-grid ds-grid--3" style="margin-top:16px;">
+      <div class="sw-row"><div class="sw-chip" style="background:var(--green);"></div><div class="sw-meta"><span class="sw-name">Green</span><span class="sw-hex">#16a34a</span><span class="sw-use">Confirmed · paid · installed</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--red);"></div><div class="sw-meta"><span class="sw-name">Red</span><span class="sw-hex">#dc2626</span><span class="sw-use">Exit · DNC · destructive</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--blue);"></div><div class="sw-meta"><span class="sw-name">Blue</span><span class="sw-hex">#2563eb</span><span class="sw-use">Informational</span></div></div>
+      <div class="sw-row"><div class="sw-chip" style="background:var(--purple);"></div><div class="sw-meta"><span class="sw-name">Purple</span><span class="sw-hex">#7c3aed</span><span class="sw-use">Waiting on external (inspection)</span></div></div>
+    </div>
+  </section>
+
+  <!-- TYPOGRAPHY -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">02 · Typography</div>
+      <h2 class="ds-section-h">Outfit for voice, Inter for data</h2>
+      <p class="ds-section-sub">
+        Two typefaces. Outfit handles every display moment — wordmarks, section titles,
+        eyebrows, buttons. Inter does the rest. JetBrains Mono shows up only for
+        tabular numerics (phone, currency, timestamps).
+      </p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="type-row"><span class="type-label">Outfit 800 · 48</span><span class="type-sample" style="font-family:var(--font-display);font-weight:800;font-size:48px;letter-spacing:-0.02em;line-height:1.1;">You Already Own<br/>the Generator.</span></div>
+      <div class="type-row"><span class="type-label">Outfit 700 · 28</span><span class="type-sample" style="font-family:var(--font-display);font-weight:700;font-size:28px;letter-spacing:-0.01em;">Section heading — 28px</span></div>
+      <div class="type-row"><span class="type-label">Outfit 800 · 22</span><span class="type-sample" style="font-family:var(--font-display);font-weight:800;font-size:22px;letter-spacing:-0.02em;">Backup Power <span style="color:var(--gold);">Pro</span></span></div>
+      <div class="type-row"><span class="type-label">Outfit 700 · 12 up</span><span class="type-sample eyebrow" style="font-size:12px;">Greenville, SC · Licensed &amp; Insured</span></div>
+      <div class="type-row"><span class="type-label">Inter 400 · 16</span><span class="type-sample" style="font-family:var(--font-body);font-size:16px;line-height:1.6;">Body copy — permanent generator connection with permit and inspection handled in one day.</span></div>
+      <div class="type-row"><span class="type-label">Inter 500 · 13</span><span class="type-sample" style="font-family:var(--font-body);font-weight:500;font-size:13px;color:var(--text-muted);">Secondary body — 13px muted, for captions and row meta.</span></div>
+      <div class="type-row"><span class="type-label">JetBrains 500 · 14</span><span class="type-sample" style="font-family:var(--font-mono);font-weight:500;font-size:14px;">(864) 555-0100 · $1,497 · 3h ago</span></div>
+    </div>
+  </section>
+
+  <!-- SHADOWS -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">03 · Shadows</div>
+      <h2 class="ds-section-h">Softness instead of hard bevels</h2>
+      <p class="ds-section-sub">
+        Five standard drops plus a gold glow. The glow is reserved for primary
+        gold CTAs — everything else picks from the five.
+      </p>
+    </div>
+    <div class="ds-grid ds-grid--3">
+      <div class="shadow-tile shadow-tile-xs">--shadow-xs</div>
+      <div class="shadow-tile shadow-tile-sm">--shadow-sm</div>
+      <div class="shadow-tile shadow-tile-md">--shadow-md</div>
+      <div class="shadow-tile shadow-tile-lg">--shadow-lg</div>
+      <div class="shadow-tile shadow-tile-xl">--shadow-xl</div>
+      <div class="shadow-tile shadow-tile-gold">--shadow-gold (primary CTA)</div>
+    </div>
+  </section>
+
+  <!-- RADII -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">04 · Radii</div>
+      <h2 class="ds-section-h">4, 8, 16, 20, 28, pill</h2>
+      <p class="ds-section-sub">
+        Six steps. 16 covers most cards. 20 is reserved for hero cards and modals.
+        Every CTA, chip, and eyebrow badge is a pill (100px).
+      </p>
+    </div>
+    <div class="ds-grid ds-grid--3">
+      <div class="rad-tile" style="border-radius: var(--radius-xs);">4px — tight controls</div>
+      <div class="rad-tile" style="border-radius: var(--radius-sm);">8px — buttons, inputs</div>
+      <div class="rad-tile" style="border-radius: var(--radius-md);">16px — cards</div>
+      <div class="rad-tile" style="border-radius: var(--radius-lg);">20px — hero / modal</div>
+      <div class="rad-tile" style="border-radius: var(--radius-xl);">28px — large panels</div>
+      <div class="rad-tile" style="border-radius: var(--radius-pill);">Pill — CTAs, chips</div>
+    </div>
+  </section>
+
+  <!-- BUTTONS -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">05 · Buttons</div>
+      <h2 class="ds-section-h">Three pill tiers</h2>
+      <p class="ds-section-sub">
+        One primary per screen (gold), one secondary (navy), everything else ghost.
+        Icon-only pills for top-bar chrome.
+      </p>
+    </div>
+    <div class="ds-alt">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+        <button class="btn-gold">Send proposal</button>
+        <button class="btn-navy">Schedule install</button>
+        <button class="btn-ghost">Cancel</button>
+        <button style="width:36px;height:36px;border-radius:var(--radius-pill);background:var(--card);box-shadow:var(--ring);display:grid;place-items:center;">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="var(--text-muted)" stroke-width="1.75" stroke-linecap="round"><circle cx="7" cy="7" r="4"/><path d="M10 10 L13 13"/></svg>
+        </button>
+        <button style="height:36px;padding:0 16px;border-radius:var(--radius-pill);background:var(--gold);color:var(--navy);font-family:var(--font-display);font-weight:700;font-size:13px;box-shadow:var(--shadow-gold);">+ New lead</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HERO CARDS + EYEBROW -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">06 · Hero card</div>
+      <h2 class="ds-section-h">The one navy moment per viewport</h2>
+      <p class="ds-section-sub">
+        Navy fill, 20px radius, white body, gold accents. Proposal hero, CRM briefing,
+        login chrome, and smart-hint callouts all use this. Never stack two in a row.
+      </p>
+    </div>
+    <div class="hero-demo">
+      <div class="eyebrow">Greenville, SC · Licensed &amp; Insured</div>
+      <h2 style="margin-top:14px;">You Already Own the Generator.<br/><em>Now Make It Worth Every Dollar.</em></h2>
+      <p>One day. One visit. Your fridge, lights, WiFi, well pump, and more, all running through your panel. Permitted and inspected. $1,197–$1,497 all-in.</p>
+      <div style="display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;">
+        <button class="btn-gold">Get my free quote</button>
+        <button class="btn-ghost" style="color:rgba(255,255,255,0.9);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.25);">See how it works</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- NAV / TABS -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">07 · Navigation</div>
+      <h2 class="ds-section-h">Top bar + tabs</h2>
+    </div>
+    <div class="nav-example">
+      <div class="nav-example__bar">
+        <div class="nav-example__logo">
+          <svg viewBox="0 0 16 16" width="16" height="16" style="stroke:var(--navy);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;"><path d="M9 1 L4 9 L7 9 L6 15 L12 6 L9 6 Z" /></svg>
+        </div>
+        <div class="nav-example__wordmark">Backup Power <em>Pro</em></div>
+        <div class="nav-example__spacer"></div>
+        <div style="height:34px;padding:0 14px;display:flex;align-items:center;gap:8px;background:var(--sunken);border-radius:var(--radius-pill);box-shadow:var(--ring);color:var(--text-muted);">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="4"/><path d="M10 10 L13 13"/></svg>
+          <span style="font-family:var(--font-mono);font-size:11px;">⌘K</span>
+        </div>
+        <button style="height:34px;padding:0 16px;background:var(--gold);color:var(--navy);font-family:var(--font-display);font-weight:700;font-size:13px;border-radius:var(--radius-pill);box-shadow:var(--shadow-gold);">+ New lead</button>
+        <div class="avatar">KG</div>
+      </div>
+      <div class="nav-example__tabs">
+        <div class="nav-example__tab nav-example__tab--active">Quick</div>
+        <div class="nav-example__tab">Calendar</div>
+        <div class="nav-example__tab">Messages</div>
+        <div class="nav-example__tab">Calls</div>
+        <div class="nav-example__tab">Proposals</div>
+        <div class="nav-example__tab">Invoices</div>
+        <div class="nav-example__tab">Permits</div>
+        <div class="nav-example__tab">Materials</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHIPS / PILLS -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">08 · Chips &amp; status pills</div>
+      <h2 class="ds-section-h">Sentence case, tinted backgrounds</h2>
+      <p class="ds-section-sub">
+        Tone map: red = exit/DNC, purple = waiting, gold = needs input, green = confirmed,
+        navy = neutral, blue = informational. Never use bracket notation like [EXIT].
+      </p>
+    </div>
+    <div class="ds-card" style="display:flex;gap:12px;flex-wrap:wrap;">
+      <span class="smart-chip smart-chip--gold">Install Thu</span>
+      <span class="smart-chip smart-chip--green">Booked</span>
+      <span class="smart-chip smart-chip--purple">Awaiting inspection</span>
+      <span class="smart-chip smart-chip--red">Exit · 21d silent</span>
+      <span class="smart-chip smart-chip--navy">New lead</span>
+      <span class="smart-chip smart-chip--muted">Draft</span>
+    </div>
+  </section>
+
+  <!-- INPUTS -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">09 · Inputs</div>
+      <h2 class="ds-section-h">Sunken wells with gold focus</h2>
+    </div>
+    <div class="ds-card" style="max-width:480px;display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <label class="label-demo">Email</label>
+        <input class="input-demo" placeholder="you@example.com" value="hello@backuppowerpro.com"/>
+      </div>
+      <div>
+        <label class="label-demo">Panel outlet</label>
+        <input class="input-demo" placeholder="30-amp or 50-amp" />
+      </div>
+      <div>
+        <label class="label-demo">Error state</label>
+        <input class="input-demo" value="wrong" style="background:color-mix(in srgb, var(--red) 10%, var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--red) 30%, transparent);color:var(--red);"/>
+        <div style="font-family:var(--font-body);font-size:11px;color:var(--red);margin-top:6px;">That doesn't look right — try again.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIST ROW -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">10 · Lists</div>
+      <h2 class="ds-section-h">Smart list rows</h2>
+      <p class="ds-section-sub">
+        White on warm off-white, 60-72px min-height, 16px gutters. Accent bar on the
+        left, chip on the right. Hover tints to sunken.
+      </p>
+    </div>
+    <div class="list-demo">
+      <div class="list-row">
+        <div class="list-row__accent" style="background:var(--gold);"></div>
+        <div class="avatar" style="background:var(--navy);">SM</div>
+        <div class="list-row__col">
+          <div class="list-row__name">Sarah Mitchell</div>
+          <div class="list-row__sub">Generac 22kW · Mauldin · replied 12m ago</div>
+        </div>
+        <span class="smart-chip smart-chip--gold">Install Thu</span>
+      </div>
+      <div class="list-row">
+        <div class="list-row__accent" style="background:var(--purple);"></div>
+        <div class="avatar" style="background:var(--navy);">JW</div>
+        <div class="list-row__col">
+          <div class="list-row__name">Jennifer Walshe</div>
+          <div class="list-row__sub">Greenville · inspection scheduled 4/28</div>
+        </div>
+        <span class="smart-chip smart-chip--purple">Awaiting inspection</span>
+      </div>
+      <div class="list-row">
+        <div class="list-row__accent" style="background:var(--red);"></div>
+        <div class="avatar" style="background:var(--navy);">WW</div>
+        <div class="list-row__col">
+          <div class="list-row__name">William Watson</div>
+          <div class="list-row__sub">Quote sent 5/14 · no reply</div>
+        </div>
+        <span class="smart-chip smart-chip--red">Exit · 21d silent</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HERO CARD SECONDARY / SMART HINT -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">11 · Smart hint</div>
+      <h2 class="ds-section-h">Single-action next-best-thing banner</h2>
+    </div>
+    <div class="smart-hint">
+      <span class="smart-hint__label">Up next</span>
+      <span class="smart-hint__body">Sarah M's install lands Thursday — Key's cord stock on 50A is at 1, order before Tuesday.</span>
+      <button class="smart-hint__cta">Order cord</button>
+    </div>
+  </section>
+
+  <!-- MOTION -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">12 · Motion</div>
+      <h2 class="ds-section-h">Smooth ease-out, no stepped jumps</h2>
+      <p class="ds-section-sub">
+        Default ease <code style="font-family:var(--font-mono);">cubic-bezier(0.16, 1, 0.3, 1)</code>.
+        Durations 140 / 200 / 300ms. Hover lifts 1px, active presses back, never more than
+        a 3% scale.
+      </p>
+    </div>
+    <div class="ds-card" style="padding:32px;display:flex;gap:18px;flex-wrap:wrap;">
+      <button class="btn-gold">Hover me</button>
+      <button class="btn-navy">Click me</button>
+      <button class="btn-ghost">Then tab away</button>
+    </div>
+  </section>
+
+  <!-- ADOPTION -->
+  <section class="ds-section">
+    <div class="ds-section-head">
+      <div class="ds-section-eyebrow">13 · CRM adoption map</div>
+      <h2 class="ds-section-h">What's shipped, what's next</h2>
+    </div>
+    <div class="ds-grid ds-grid--2">
+      <div class="ds-card">
+        <div class="eyebrow" style="font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--green);">Shipped</div>
+        <ul style="font-family:var(--font-body);color:var(--text);font-size:14px;line-height:1.7;margin-top:10px;padding-left:18px;">
+          <li>tokens.css aligned to website deck</li>
+          <li>Login hero treatment + navy pill CTA</li>
+          <li>Top bar: Outfit wordmark + gold "New lead" pill</li>
+          <li>Tabs: Title case, pill badges, 2px gold underline</li>
+          <li>Status pills: sentence case (Exit · 21d silent)</li>
+          <li>Agents Inbox: white cards + color accent border</li>
+          <li>Morning briefing: navy hero header + pill CTAs</li>
+          <li>Bevel sweep: 80 hardcoded chisels → shadow tokens</li>
+        </ul>
+      </div>
+      <div class="ds-card">
+        <div class="eyebrow" style="font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);">Next</div>
+        <ul style="font-family:var(--font-body);color:var(--text);font-size:14px;line-height:1.7;margin-top:10px;padding-left:18px;">
+          <li>Contact detail header → hero-card treatment</li>
+          <li>Smart list rows → 60-72px with accent + chip</li>
+          <li>Playbook memory viewer → eyebrow-grouped cards</li>
+          <li>Finance dashboard → pill chips, soft shadows</li>
+          <li>Dark mode spot check on all new components</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
