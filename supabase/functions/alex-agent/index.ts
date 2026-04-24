@@ -2204,6 +2204,65 @@ Deno.serve(async (req) => {
   // happens to type RETEST cannot wipe their own in-flight session.
   if (messageText.toUpperCase() === 'RETEST' && (TEST_MODE || fromPhone === KEY_PHONE)) {
     await clearSessions(supabase, fromPhone)
+
+    // ── WIPE contact info so Alex sees a truly fresh lead ───────────────
+    // Key's request 2026-04-24: "make it so RETEST wipes my contact info."
+    // Hard-gated to KEY_PHONE only — we must NEVER blank a real customer's
+    // contact row via the ALLOWLIST path. Preserved: id, phone, do_not_contact
+    // flag, consent_* records, any columns that are legally/TCPA-sensitive.
+    // Wiped: everything Alex would collect during a normal discovery flow.
+    if (fromPhone === KEY_PHONE) {
+      try {
+        // Schema-aware wipe — only real columns (verified 2026-04-24
+        // against information_schema.columns where table_name='contacts').
+        // NOT NULL columns (kept to valid values): name='', pricing_tier
+        // left alone (has a required default).
+        // PROTECTED (never wiped): id, created_at, phone,
+        // do_not_contact, dnc_at, dnc_source, consent_* (legal/TCPA).
+        const { error: updErr } = await supabase
+          .from('contacts')
+          .update({
+            name:               '',    // NOT NULL — use empty string instead of null
+            email:              null,
+            address:            null,
+            generator:          null,
+            status:             'New Lead',
+            notes:              null,
+            stage:              1,
+            jurisdiction_id:    null,
+            peace_of_mind:      false,
+            surge_protector:    false,
+            quote_amount:       null,
+            install_notes:      null,
+            install_date:       null,
+            assigned_installer: null,
+            installer_pay:      null,
+            ai_enabled:         true,  // re-engage Alex after wipe
+            ai_paused_until:    null,
+          })
+          .eq('phone', fromPhone)
+        if (updErr) {
+          console.warn('[alex] RETEST contact update error (continuing):', updErr.message)
+        }
+        // Scrub the per-contact sparky_memory entries (panel_location,
+        // address, outlet type, strategic_notes, etc) so the briefing
+        // is truly blank on the next run.
+        await supabase
+          .from('sparky_memory')
+          .delete()
+          .like('key', `contact:${fromPhone}:%`)
+        // Also clear the dedup so the next inbound isn't squashed as a
+        // duplicate of something that happened before the wipe.
+        await supabase
+          .from('alex_dedup')
+          .delete()
+          .like('message_id', `fp:${fromPhone}:%`)
+        console.log('[alex] RETEST: wiped contact + sparky_memory + dedup for KEY_PHONE')
+      } catch (e) {
+        console.warn('[alex] RETEST contact wipe warning (continuing):', String(e).slice(0, 200))
+      }
+    }
+
     const session = await createSession(supabase, fromPhone)
 
     const context = await buildContactContext(supabase, fromPhone)
