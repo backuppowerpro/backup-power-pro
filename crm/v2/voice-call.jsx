@@ -1,5 +1,9 @@
 /* global React */
 // Voice Call UI — Incoming / Active / Keypad
+// Brand-aligned 2026-04-24: retired LCD-red/green chrome status badges,
+// stepped ringPulse animation, pixel timer, and chrome-label button
+// labels. Replaces them with navy/gold status chips, smooth fades,
+// JetBrains Mono timer, and clean Inter captions.
 
 const VcIcons = {
   decline: <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6 L18 18 M18 6 L6 18"/></svg>,
@@ -12,55 +16,55 @@ const VcIcons = {
   hang:    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 12 A11 11 0 0 1 21 12 L19 15 L15 13 L15 10 A6 6 0 0 0 9 10 L9 13 L5 15 Z M6 6 L18 18"/></svg>,
 };
 
-function VcHeader({ status, statusColor, glow, name = 'Sarah M', phone = '(864) 555-0101', small = false, timer }) {
+function VcHeader({ status, tone = 'navy', name = 'Sarah M', phone = '(864) 555-0101', small = false, timer, isRinging = false }) {
+  const avatarSize = small ? 56 : 104;
   return (
     <div style={{
-      padding: small ? '14px 16px 8px' : '20px 20px 12px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: small ? 6 : 10,
-      borderBottom: '1px solid rgba(0,0,0,.1)',
+      padding: small ? '16px 18px 12px' : '24px 24px 18px',
+      background: 'var(--navy)',
+      color: '#fff',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: small ? 8 : 12,
+      borderRadius: small ? '0' : 'var(--radius-lg) var(--radius-lg) 0 0',
     }}>
-      {!small && (
-        <div style={{
-          width: 112, height: 112,
-          background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
-          display: 'grid', placeItems: 'center',
-          marginBottom: 4,
-        }}>
-          <span style={{
-            fontFamily: 'var(--font-chrome)', fontWeight: 700,
-            color: 'var(--gold)', fontSize: 34, letterSpacing: '.04em',
-          }}>SM</span>
-        </div>
-      )}
-      {small && (
-        <div style={{
-          width: 48, height: 48,
-          background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
-          display: 'grid', placeItems: 'center',
-        }}>
-          <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 16 }}>SM</span>
-        </div>
-      )}
-      <span style={{ fontFamily: 'var(--font-body)', fontSize: small ? 16 : 20, fontWeight: 700, color: 'var(--text)' }}>
-        {name}
-      </span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>
-        {phone}
-      </span>
+      <div style={{
+        width: avatarSize, height: avatarSize,
+        background: 'rgba(255,255,255,0.08)',
+        borderRadius: '50%',
+        display: 'grid', placeItems: 'center',
+        boxShadow: isRinging ? '0 0 0 4px rgba(255,186,0,0.18), 0 0 0 8px rgba(255,186,0,0.08)' : 'none',
+        transition: 'box-shadow 600ms var(--ease-in-out)',
+        animation: isRinging ? 'vcRing 1.2s ease-in-out infinite' : 'none',
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-body)', fontWeight: 600,
+          color: '#fff', fontSize: small ? 16 : 30,
+          letterSpacing: '0.01em',
+        }}>SM</span>
+      </div>
       <span style={{
-        marginTop: 4, padding: '3px 10px',
-        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        color: statusColor, textShadow: glow,
-        fontFamily: 'var(--font-pixel)', fontSize: 14, letterSpacing: '.12em',
-        animation: status === 'INCOMING CALL' ? 'ringPulse 800ms steps(4) infinite' : 'none',
+        fontFamily: 'var(--font-display)', fontWeight: 700,
+        fontSize: small ? 16 : 22, color: '#fff',
+        letterSpacing: '-0.01em',
+      }}>{name}</span>
+      <span style={{
+        fontFamily: 'var(--font-mono)', fontSize: 13,
+        color: 'rgba(255,255,255,0.65)',
+      }}>{phone}</span>
+      <span style={{
+        marginTop: 4, padding: '4px 12px',
+        background: tone === 'green' ? 'color-mix(in srgb, var(--green) 22%, var(--navy))' : 'color-mix(in srgb, var(--gold) 22%, var(--navy))',
+        color: tone === 'green' ? '#d3fae4' : 'var(--gold)',
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+        letterSpacing: '0.16em', textTransform: 'uppercase',
+        borderRadius: 'var(--radius-pill)',
       }}>{status}</span>
       {timer && (
         <span style={{
-          marginTop: 4,
-          padding: '6px 14px',
-          background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-          color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-          fontFamily: 'var(--font-pixel)', fontSize: 36, letterSpacing: '.06em',
+          marginTop: 6,
+          fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 30,
+          color: '#fff',
+          fontVariantNumeric: 'tabular-nums',
+          letterSpacing: '0.02em',
         }}>{timer}</span>
       )}
     </div>
@@ -71,54 +75,86 @@ function RingCard() {
   return (
     <div style={{
       width: 320, height: 480,
-      background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-lg), var(--ring)',
+      borderRadius: 'var(--radius-lg)',
       display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
     }}>
       <style>{`
-        @keyframes ringPulse { 0%,49%{opacity:1} 50%,100%{opacity:.35} }
+        @keyframes vcRing {
+          0%, 100% { transform: scale(1); }
+          50%      { transform: scale(1.04); }
+        }
       `}</style>
-      <VcHeader
-        status="INCOMING CALL"
-        statusColor="var(--lcd-red)"
-        glow="var(--lcd-glow-red)"
-      />
+      <VcHeader status="Incoming call" tone="gold" isRinging />
       <div style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        gap: 24, padding: 16,
+        gap: 32, padding: 16,
+        background: 'var(--card)',
       }}>
-        <button style={{
-          width: 72, height: 72, clipPath: 'var(--avatar-clip)',
-          background: 'var(--ms-3)', color: '#fff',
+        <button aria-label="Decline call" style={{
+          width: 72, height: 72,
+          borderRadius: '50%',
+          background: 'var(--red)', color: '#fff',
           display: 'grid', placeItems: 'center',
           boxShadow: 'var(--shadow-md)',
-        }}>{VcIcons.decline}</button>
-        <button style={{
-          width: 72, height: 72, clipPath: 'var(--avatar-clip)',
-          background: 'var(--ms-2)', color: '#fff',
+          border: 'none', cursor: 'pointer',
+          transition: 'transform var(--dur-fast) var(--ease), background var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#b91c1c' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--red)' }}
+        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.94)' }}
+        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+        >{VcIcons.decline}</button>
+        <button aria-label="Accept call" style={{
+          width: 72, height: 72,
+          borderRadius: '50%',
+          background: 'var(--green)', color: '#fff',
           display: 'grid', placeItems: 'center',
-          boxShadow: 'var(--shadow-md)',
-          animation: 'ringPulse 800ms steps(4) infinite',
-        }}>{VcIcons.accept}</button>
+          boxShadow: '0 4px 20px rgba(22,163,74,0.35)',
+          border: 'none', cursor: 'pointer',
+          animation: 'vcRing 1.2s ease-in-out infinite',
+          transition: 'transform var(--dur-fast) var(--ease), background var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#059669' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--green)' }}
+        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.94)' }}
+        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+        >{VcIcons.accept}</button>
       </div>
     </div>
   );
 }
 
-function ActiveBtn({ icon, label, tone = 'flat' }) {
+function ActiveBtn({ icon, label, tone = 'flat', onClick, active = false }) {
   const TONES = {
-    flat: { bg: 'var(--card)',  fg: 'var(--text)' },
-    red:  { bg: 'var(--ms-3)',  fg: '#fff' },
+    flat: { bg: 'var(--card)', fg: 'var(--text)',  hoverBg: 'var(--sunken)' },
+    red:  { bg: 'var(--red)',  fg: '#fff',         hoverBg: '#b91c1c' },
+    navy: { bg: 'var(--navy)', fg: '#fff',         hoverBg: '#0d2547' },
   };
   const t = TONES[tone];
   return (
-    <button className="tactile-raised" style={{
-      width: 56, height: 56,
-      background: t.bg, color: t.fg,
-      display: 'grid', placeItems: 'center', gridTemplateRows: '1fr auto',
-      padding: 6, gap: 2,
-    }}>
-      <span style={{ display:'grid', placeItems:'center' }}>{icon}</span>
-      <span className="chrome-label" style={{ fontSize: 8, letterSpacing: '.08em' }}>{label}</span>
+    <button onClick={onClick} style={{
+      width: 64, height: 64,
+      background: active ? 'var(--navy)' : t.bg,
+      color: active ? '#fff' : t.fg,
+      borderRadius: '50%',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 3,
+      boxShadow: active ? 'var(--shadow-sm)' : 'var(--ring)',
+      border: 'none', cursor: 'pointer',
+      transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+    }}
+    onMouseEnter={e => { if (!active) e.currentTarget.style.background = t.hoverBg }}
+    onMouseLeave={e => { if (!active) e.currentTarget.style.background = t.bg }}
+    >
+      <span style={{ display:'grid', placeItems:'center', marginTop: 2 }}>{icon}</span>
+      <span style={{
+        fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 9,
+        letterSpacing: '0.04em', textTransform: 'uppercase',
+        marginTop: -2,
+      }}>{label}</span>
     </button>
   );
 }
@@ -127,28 +163,27 @@ function ActiveCard() {
   return (
     <div style={{
       width: 320, height: 480,
-      background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-lg), var(--ring)',
+      borderRadius: 'var(--radius-lg)',
       display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
     }}>
-      <VcHeader
-        status="ON CALL"
-        statusColor="var(--lcd-green)"
-        glow="var(--lcd-glow-green)"
-        timer="00:03:42"
-      />
+      <VcHeader status="On call" tone="green" timer="00:03:42" />
       <div style={{
-        flex: 1, padding: 16,
+        flex: 1, padding: 18,
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gridTemplateRows: 'repeat(2, 1fr)',
         gap: 10, justifyItems: 'center', alignItems: 'center',
+        background: 'var(--card)',
       }}>
-        <ActiveBtn icon={VcIcons.mute} label="MUTE" />
-        <ActiveBtn icon={VcIcons.pad}  label="KEYPAD" />
-        <ActiveBtn icon={VcIcons.spk}  label="SPEAKER" />
-        <ActiveBtn icon={VcIcons.rec}  label="RECORD" />
-        <ActiveBtn icon={VcIcons.hold} label="HOLD" />
-        <ActiveBtn icon={VcIcons.hang} label="HANG UP" tone="red" />
+        <ActiveBtn icon={VcIcons.mute} label="Mute" />
+        <ActiveBtn icon={VcIcons.pad}  label="Keypad" />
+        <ActiveBtn icon={VcIcons.spk}  label="Speaker" />
+        <ActiveBtn icon={VcIcons.rec}  label="Record" />
+        <ActiveBtn icon={VcIcons.hold} label="Hold" />
+        <ActiveBtn icon={VcIcons.hang} label="End"  tone="red" />
       </div>
     </div>
   );
@@ -156,16 +191,31 @@ function ActiveCard() {
 
 function DialKey({ num, letters }) {
   return (
-    <button className="tactile-raised" style={{
+    <button style={{
       width: 72, height: 72,
       background: 'var(--card)', color: 'var(--text)',
-      display: 'grid', placeItems: 'center', gridTemplateRows: '1fr auto',
-      padding: '6px 4px', gap: 0,
-    }}>
-      <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 30, color: 'var(--text)', lineHeight: 1 }}>{num}</span>
-      <span className="chrome-label" style={{
-        fontSize: 9, color: 'var(--text-muted)', letterSpacing: '.16em',
-      }}>{letters}</span>
+      borderRadius: '50%',
+      boxShadow: 'var(--ring)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 0,
+      padding: '4px', border: 'none', cursor: 'pointer',
+      transition: 'background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease)',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+    onMouseDown={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)' }}
+    onMouseUp={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
+    >
+      <span style={{
+        fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 26,
+        letterSpacing: '-0.02em', color: 'var(--text)', lineHeight: 1,
+      }}>{num}</span>
+      {letters && (
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 9,
+          color: 'var(--text-muted)', letterSpacing: '0.14em', marginTop: 2,
+        }}>{letters}</span>
+      )}
     </button>
   );
 }
@@ -180,32 +230,37 @@ function KeypadCard() {
   return (
     <div style={{
       width: 320, height: 480,
-      background: 'var(--card)', boxShadow: 'var(--raised-2)',
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-lg), var(--ring)',
+      borderRadius: 'var(--radius-lg)',
       display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
     }}>
-      <VcHeader
-        small
-        status="ON CALL"
-        statusColor="var(--lcd-green)"
-        glow="var(--lcd-glow-green)"
-        timer="00:03:42"
-      />
+      <VcHeader small status="On call" tone="green" timer="00:03:42" />
       <div style={{
-        flex: 1, padding: 12,
+        flex: 1, padding: 14,
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: 8, justifyItems: 'center', alignItems: 'center',
+        background: 'var(--card)',
       }}>
         {keys.map((k, i) => <DialKey key={i} num={k[0]} letters={k[1]} />)}
       </div>
-      <button className="tactile-raised" style={{
-        height: 44, margin: '0 12px 12px',
-        background: 'var(--ms-3)', color: '#fff',
-        fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 13,
-        letterSpacing: '.14em', textTransform: 'uppercase',
+      <button style={{
+        height: 48, margin: '0 14px 14px',
+        background: 'var(--red)', color: '#fff',
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
+        letterSpacing: '0.01em',
+        borderRadius: 'var(--radius-pill)',
+        boxShadow: 'var(--shadow-sm)',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-      }}>
-        {VcIcons.hang} HANG UP
+        border: 'none', cursor: 'pointer',
+        transition: 'background var(--dur) var(--ease)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = '#b91c1c' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--red)' }}
+      >
+        {VcIcons.hang} End call
       </button>
     </div>
   );
