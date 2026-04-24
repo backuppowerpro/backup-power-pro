@@ -213,7 +213,13 @@ When THIS conversation teaches you something about how THIS person specifically 
 Overwrite the key when you have a newer + better note; keep it ≤3 short lines.
 
 (B) CROSS-CUSTOMER memory — the "memory" tool (/memories/ filesystem).
-Before the first reply of every conversation, use the "memory" tool to view /memories. Then read /memories/patterns.md, /memories/objections.md, /memories/openers.md, and /memories/pitfalls.md. These are your own notes from prior customer conversations (all customers, anonymized) — signals that predict outcomes, objection moves, opener variants, phrasing traps. Apply what you learned across customers.
+Before the first reply of every conversation, use the "memory" tool to view /memories. Then read /memories/shared/sales-psychology.md (trust-building without pushy/desperate/overconfident tone), /memories/alex/patterns.md, /memories/alex/objections.md, /memories/alex/openers.md, and /memories/alex/pitfalls.md. These are your own notes from prior customer conversations (all customers, anonymized) — signals that predict outcomes, objection moves, opener variants, phrasing traps. Apply what you learned across customers.
+
+THREE TONES THAT KILL TRUST — never slip into these (from /memories/shared/sales-psychology.md):
+  - Desperate: "sorry to bother", "any chance", "just checking in", "hoping you could", over-apologizing, over-explaining.
+  - Pushy: re-asking the same thing, false urgency ("last slot"), stacked asks, presuming the sale, following up > 3 times.
+  - Overconfident: "absolutely!", "100%!", "for sure!", "definitely!", superlatives stacked, naming the customer every sentence, claiming vision ("I can see the panel"), percentages you don't have.
+Trust shows up in CLARITY and SPECIFICITY, not exclamation marks. Third-party authority (Key, code, inspection) beats first-person boasts. Match the customer's energy one notch lower than theirs — you're the professional, not the cheerleader.
 
 When THIS conversation is teaching you something that would help on a FUTURE DIFFERENT lead — a pattern, a phrasing that worked, an objection framing, a pitfall — use the "memory" tool (command=str_replace or insert or create) to write it down in the right /memories/ file. Be specific, be anonymized. NEVER write a customer name, phone number, street address, or exact price into /memories/. Examples of GOOD memory entries:
   - "Signal: just need it hooked up + named generator brand → low-friction close, skip the discovery phase, go straight to photo ask. ~3 conversations, high confidence."
@@ -434,7 +440,12 @@ Panel photo:
 
 RECEIVING ANY PHOTO — this is the most important rule about photos:
 
-  You cannot actually see what's in the image, and you never will. The customer assumes you did. Under NO circumstances do anything that reveals you can't see — that includes asking what's in the photo, asking whether it's the panel or the outlet, asking them to describe it, or committing to what it shows. Treat every incoming photo the same way: warm, brief, topic-agnostic acknowledgment + Key will take it from here.
+  Every inbound photo is pre-classified by vision before you see it. The user turn carries a tag like "[VISION CHECK: appears to be a panel]" or "[VISION CHECK: appears to be a selfie]". Use that tag to pick your response path:
+
+  - **panel, outlet, generator, meter** → proceed with the normal ack + next-ask flow below. DO NOT say "I see your panel" or any specific visual content — just warmly acknowledge the photo and move on.
+  - **selfie, pet, screenshot, receipt, other, unclear** → do NOT treat it as the panel. Warmly + briefly ask for the right thing: e.g. *"Ha — cute dog. Could you grab one of the electrical panel with the door open whenever you get a chance?"* or *"That looks like a screenshot — mind snapping one of the panel itself, breakers visible? That's what Key needs to put the quote together."* Don't be critical or scolding; acknowledge what they sent and redirect with a question.
+
+  Whatever the vision class, NEVER describe what's in the image beyond the class-appropriate framing above. Don't say how many breakers. Don't describe brand. Don't say the panel is rusty. You get exactly ONE word of visual information (the class); anything more is a hallucination risk.
 
   What to do on ANY photo (ALL FOUR STEPS EVERY TIME — no exceptions):
     1. Save the photo URL with write_memory immediately. The code also saves it automatically; calling write_memory is an extra safety net and tags the most recent semantic context (key: "photo_url" is fine).
@@ -2308,11 +2319,16 @@ Deno.serve(async (req) => {
   // Build user message + capture photo URLs into memory
   let userText = messageText
   if (hasMedia) {
-    userText = userText ? `${userText}\n\n[Customer sent a photo]` : '[Customer sent a photo]'
-
     // Persist photo URLs SYNCHRONOUSLY before runAlex so notify_key can read them immediately.
     // Cap at 5 photos per message to prevent storage abuse.
     const mediaItems: any[] = (messageData.media || []).slice(0, 5)
+    const firstPhotoUrl: string | null = (() => {
+      for (const item of mediaItems) {
+        const u = item?.url || item?.mediaUrl
+        if (u && typeof u === 'string' && u.startsWith('http')) return u
+      }
+      return null
+    })()
     const photoSaves = mediaItems.map(async (item: any, idx: number) => {
       const url = item?.url || item?.mediaUrl
       if (url && typeof url === 'string' && url.startsWith('http')) {
@@ -2338,6 +2354,64 @@ Deno.serve(async (req) => {
 
     // Cancel any pending reminder — they already sent the photo, no need to nag
     await supabase.from('sparky_memory').delete().eq('key', `reminder:${fromPhone}`)
+
+    // ── VISION CLASSIFICATION ────────────────────────────────────────────
+    // opus-4-7 has vision. Before the main Alex loop, classify the first
+    // photo so Alex can adapt: panel → proceed, outlet → count it, selfie/
+    // pet/unclear → gracefully ask for a retake instead of faking "got the
+    // panel photo!" on a dog picture. Result lives in sparky_memory as
+    // contact:{phone}:last_photo_class so Alex's prompt + safety net can
+    // read it. Fail-safe: if vision fails, classify as 'unclear' and Alex
+    // falls back to the generic-ack path.
+    let photoClass = 'unclear'
+    if (firstPhotoUrl) {
+      try {
+        const visionResp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5',
+            max_tokens: 60,
+            system: 'You classify one image into ONE of these categories exactly (lowercase, no explanation): panel, outlet, generator, meter, receipt, selfie, pet, screenshot, unclear, other. Output ONLY the word.',
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'url', url: firstPhotoUrl } },
+                { type: 'text', text: 'Category?' },
+              ],
+            }],
+          }),
+        })
+        const vd = await visionResp.json()
+        const raw = Array.isArray(vd.content)
+          ? vd.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim().toLowerCase()
+          : ''
+        const allowed = new Set(['panel', 'outlet', 'generator', 'meter', 'receipt', 'selfie', 'pet', 'screenshot', 'unclear', 'other'])
+        photoClass = allowed.has(raw) ? raw : 'unclear'
+        console.log('[alex] vision class:', photoClass, 'raw:', raw.slice(0, 40))
+      } catch (e) {
+        console.error('[alex] vision classification failed:', e)
+      }
+    }
+    await supabase.from('sparky_memory').upsert({
+      key: `contact:${fromPhone}:last_photo_class`,
+      value: photoClass,
+      category: 'contact',
+      importance: 3,
+    }, { onConflict: 'key' })
+
+    // Tell Alex the class via the user message — so the model picks the right
+    // response path (proceed vs retake-ask) without needing a system-prompt
+    // branch. Wrapped in [VISION CHECK] so Alex treats it as internal context.
+    userText = userText
+      ? `${userText}\n\n[Customer sent a photo]\n[VISION CHECK: appears to be a ${photoClass}]`
+      : `[Customer sent a photo]\n[VISION CHECK: appears to be a ${photoClass}]`
+  } else {
+    userText = userText
   }
   messages.push({ role: 'user', content: userText })
 
@@ -2377,6 +2451,50 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── Detect Key's manual takeover since Alex's last turn ──────────────
+  // If Key sent an SMS directly via the CRM (via send-sms, `sender: 'key'`)
+  // while Alex was still technically active, that IS Key correcting Alex
+  // in real time — the highest-signal training data we have. Fire a
+  // specialized post-mortem to learn from the correction, then note the
+  // takeover in the context so Alex doesn't re-ask what Key already asked.
+  try {
+    const lastOutbound = (session as any)?.lastOutboundAt
+    if (lastOutbound) {
+      // Resolve contact id for this phone
+      const { data: matchedContact } = await supabase
+        .from('contacts').select('id').eq('phone', normalizePhone(fromPhone)).limit(1).maybeSingle()
+      const contactId = matchedContact?.id
+      if (contactId) {
+        const { data: keyMsgs } = await supabase
+          .from('messages')
+          .select('body, created_at, sender')
+          .eq('contact_id', contactId)
+          .eq('direction', 'outbound')
+          .eq('sender', 'key')
+          .gt('created_at', lastOutbound)
+          .order('created_at', { ascending: true })
+          .limit(5)
+        if (keyMsgs && keyMsgs.length > 0) {
+          console.log('[alex] takeover detected — Key sent', keyMsgs.length, 'manual message(s)')
+          // Fire post-mortem with outcome='takeover' — non-blocking.
+          const sr = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+          const keyText = keyMsgs.map((m: any) => m.body).filter(Boolean).join('\n---\n').slice(0, 1200)
+          fetch('https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-postmortem', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sr}` },
+            body: JSON.stringify({
+              sessionId: session.id,
+              outcome: 'takeover',
+              note: `Key took over the conversation. Key's manual message(s) to the customer:\n${keyText}\n\nLearn from what Key chose to say — that's the correct answer.`,
+            }),
+          }).catch((e) => console.error('[alex] takeover postmortem fire-and-forget error:', e))
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[alex] takeover detection error:', e)
+  }
+
   // Run Alex — fresh context injected at API level, not stored
   let response: string
   let complete = false
@@ -2387,7 +2505,35 @@ Deno.serve(async (req) => {
   const reEngageNote = (session as any).keyReEngage
     ? '\n[CONTEXT: Key was responding to this customer directly but has been quiet for several hours. The customer just messaged in again. Re-engage naturally, briefly acknowledge you are following back up, and continue from where things left off. Do not re-introduce yourself.]'
     : ''
-  const fullContext = (contactContext || '') + reEngageNote
+
+  // ── Time-of-day awareness (Eastern time — BPP serves Upstate SC) ──────
+  // Tell Alex the current hour so he can adapt tone / offer "photo tomorrow
+  // is fine" framing without refusing to engage. Key's note 2026-04-24: it's
+  // OK to respond at night, just acknowledge + set expectation that Key
+  // reviews in the morning.
+  const nowET = new Date(Date.now() - 4 * 3600 * 1000) // EDT-ish; close enough for tone, not legal logic
+  const hourET = nowET.getUTCHours()
+  const isLateNight = hourET >= 21 || hourET < 7
+  const isEarlyMorning = hourET >= 7 && hourET < 10
+  const timeNote = isLateNight
+    ? '\n[CONTEXT: Current time is late-night in Eastern. The customer reached out outside normal hours. Acknowledge warmly without apologizing for yourself — something like "appreciate you reaching out tonight, Key\'s done for the day but I can line up what he needs" — and offer that photo / address / etc can wait until tomorrow if easier. Do NOT ask the customer to do homework tonight; offer the option.]'
+    : isEarlyMorning
+    ? '\n[CONTEXT: Current time is early morning Eastern — most engaged reply window. Lean in slightly, one clear question per message, move forward.]'
+    : ''
+
+  // ── Frustration / repetition detector ────────────────────────────────
+  // If the customer's incoming text carries one of the irritation signals,
+  // tell Alex to back off: shorter reply, acknowledge their frustration,
+  // offer to hand to Key, no more asks this turn. Simple regex — the
+  // cost of a false positive (Alex becomes too reserved) is low; the cost
+  // of missing real frustration is high.
+  const frustrationRx = /\b(stop (asking|messaging|texting|bugging)|you already (asked|told|said)|annoying|leave me alone|not interested|unsubscribe|remove me|too much|quit it|chill|relax|easy there|back off|enough)\b/i
+  const isFrustrated = frustrationRx.test(messageText)
+  const frustrationNote = isFrustrated
+    ? '\n[CONTEXT: Customer is showing frustration signals in their message. Back off — acknowledge briefly ("totally fair — I\'ll step back"), offer to pass them to Key directly, and DO NOT ask another question this turn. Respect their stated preference. If they ask to unsubscribe/stop/remove, treat that as an opt-out and call notify_key with reason="opted_out".]'
+    : ''
+
+  const fullContext = (contactContext || '') + reEngageNote + timeNote + frustrationNote
 
   try {
     const result = await runAlex(supabase, fromPhone, session.id, messages, fullContext || undefined)

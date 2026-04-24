@@ -6,6 +6,8 @@
  *   - outcome='installed' when contact.stage transitions to 9
  *   - outcome='cold'      when a scheduled sweep detects a 30-day silent lead
  *   - outcome='exit'      when a customer opts out / session deactivates
+ *   - outcome='takeover'  when Key manually takes over mid-conversation
+ *                         (highest-signal: Key's manual reply = correct answer)
  *
  * Reads the full chat transcript + existing /memories/ + outcome, calls
  * Claude Sonnet (not Opus — this is a cheap reflective pass), then writes
@@ -52,6 +54,8 @@ Outcome semantics:
 - installed  = install completed (stage 9)
 - cold       = 30-day silent, lead gave up on us
 - exit       = customer explicitly declined / opted out / went with a competitor
+- takeover   = Key manually stepped in and sent a message to the customer that Alex should learn from
+               — for takeovers, Key's actual message IS the correct response. Compare what Alex last said (or would have said) to what Key actually said, then write a learning: "Alex said X, Key corrected to Y. Pattern: when <situation>, prefer <Key's framing>."
 
 Example good learning:
   "Signal: first inbound mentions a specific generator wattage → outcome booked at ~2x baseline rate. Skip the 'do you own a generator' qualifier."
@@ -155,8 +159,8 @@ Deno.serve(async (req: Request) => {
   const sessionId = (body?.sessionId || '').toString()
   const outcome   = (body?.outcome || '').toString()
   const note      = (body?.note || '').toString()
-  if (!sessionId || !['booked', 'installed', 'cold', 'exit'].includes(outcome)) {
-    return new Response(JSON.stringify({ error: 'sessionId + outcome in {booked,installed,cold,exit} required' }), { status: 400, headers: CORS })
+  if (!sessionId || !['booked', 'installed', 'cold', 'exit', 'takeover'].includes(outcome)) {
+    return new Response(JSON.stringify({ error: 'sessionId + outcome in {booked,installed,cold,exit,takeover} required' }), { status: 400, headers: CORS })
   }
 
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
