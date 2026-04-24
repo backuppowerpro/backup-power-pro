@@ -1,116 +1,178 @@
 /* ============================================================
-   BPP CRM — LOCKED DESIGN TOKENS
-   Do not reinvent. Every value here is non-negotiable.
+   BPP CRM — DESIGN TOKENS (minimal refresh — 2026-04-24)
+
+   The former Minesweeper-brutalist language (flat #c0c0c0, 3px chiseled
+   bevels, steps(4) animations, VT323 pixel headlines, zero border-radius)
+   read as "harsh and blocky" in use. This refresh keeps the same token
+   NAMES — so every component that references --raised, --card, --bg,
+   etc. picks up the new aesthetic automatically — but retargets the
+   VALUES toward a cleaner, warmer, more modern feel:
+
+     — soft off-white surfaces + white cards with 1px rings
+     — subtle stacked shadows instead of hard bevels
+     — smooth cubic-bezier easing instead of stepped motion
+     — Inter everywhere (the pixel font is retired)
+     — gentle border-radius on cards, inputs, and buttons
+     — palette warmed slightly (stone-200 background, zinc text)
+
+   Brand colors (navy + gold) stay. Accent status hues stay. Smart-layer
+   classes stay. Only the "brutalist atoms" are softened.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* ---------- Surfaces (light mode default) ---------- */
-  --bg: #c0c0c0;
-  --card: #c0c0c0;
-  --text: #181818;
-  --text-muted: #555555;
-  --text-faint: #888888;
+  /* ---------- Surfaces ----------
+     bg      = page background (warm off-white)
+     card    = panel / row / modal surface (pure white for max contrast)
+     sunken  = inset / input wells / subtle recessed areas
+     text    = near-black with a hint of warmth
+     text-muted / text-faint follow Zinc-ish steps */
+  --bg: #f4f4f2;
+  --card: #ffffff;
+  --sunken: #f6f6f4;
+  --text: #1a1a1c;
+  --text-muted: #5b5d63;
+  --text-faint: #93969d;
 
   /* ---------- Brand ---------- */
-  --navy: #0b1f3b;
-  --gold: #d4911a;
+  --navy: #0f2344;
+  --gold: #c68a12;
 
   /* ---------- Status ---------- */
-  --green: #10b981;
-  --red: #dc2626;
-  --blue: #3b82f6;
-  --purple: #8b5cf6;
+  --green: #059669;
+  --red:   #dc2626;
+  --blue:  #2563eb;
+  --purple:#7c3aed;
 
-  /* ---------- Minesweeper number palette ---------- */
-  --ms-1: #1d4ed8;
-  --ms-2: #047857;
-  --ms-3: #dc2626;
-  --ms-4: #6d28d9;
+  /* ---------- Legacy palette aliases (kept for components that already
+      reference ms-N slot colors — remap them to the softer accents so
+      old references don't need a migration) ---------- */
+  --ms-1: var(--blue);
+  --ms-2: var(--green);
+  --ms-3: var(--red);
+  --ms-4: var(--purple);
   --ms-5: #b45309;
   --ms-6: #0891b2;
-  --ms-7: #111111;
+  --ms-7: #18181b;
   --ms-8: #6b7280;
 
-  /* ---------- Bevel atoms ---------- */
-  --bevel-hi: #ffffff;
-  --bevel-lo: #5a5e63;
+  /* ---------- Borders + shadows (replaces hard bevels) ----------
+     The key move: swap 3px chiseled inset borders for a 1px inset ring
+     plus a subtle dropped shadow. Components keep their shape and
+     depth but read as "card" instead of "control panel". */
+  --ring:          inset 0 0 0 1px rgba(16, 18, 24, 0.08);
+  --ring-strong:   inset 0 0 0 1px rgba(16, 18, 24, 0.14);
+  --ring-focus:    inset 0 0 0 2px var(--gold);
 
-  --raised:  inset 3px 3px 0 var(--bevel-hi), inset -3px -3px 0 var(--bevel-lo);
-  --pressed: inset 3px 3px 0 var(--bevel-lo), inset -3px -3px 0 var(--bevel-hi);
+  --shadow-xs:     0 1px 1px rgba(16, 18, 24, 0.04);
+  --shadow-sm:     0 1px 2px rgba(16, 18, 24, 0.05), 0 1px 1px rgba(16, 18, 24, 0.03);
+  --shadow-md:     0 2px 4px rgba(16, 18, 24, 0.06), 0 1px 2px rgba(16, 18, 24, 0.04);
+  --shadow-lg:     0 8px 16px rgba(16, 18, 24, 0.08), 0 2px 4px rgba(16, 18, 24, 0.05);
+  --shadow-xl:     0 20px 40px rgba(16, 18, 24, 0.10), 0 4px 8px rgba(16, 18, 24, 0.06);
 
-  /* thin 2px variant for smaller controls */
-  --raised-2:  inset 2px 2px 0 var(--bevel-hi), inset -2px -2px 0 var(--bevel-lo);
-  --pressed-2: inset 2px 2px 0 var(--bevel-lo), inset -2px -2px 0 var(--bevel-hi);
+  /* ---------- Bevel atoms (backward-compat slot names) ----------
+     Components still reference --raised / --pressed / --raised-2. We
+     redirect them at the token level so the CRM updates in one pass
+     without touching each component. "raised" now means "card with a
+     subtle ring + soft shadow"; "pressed" means "sunken with an inset
+     fill + subtle inner ring". */
+  --bevel-hi: rgba(255, 255, 255, 0.9);
+  --bevel-lo: rgba(16, 18, 24, 0.12);
 
-  /* ---------- LCD screen ---------- */
-  --lcd-bg: #0a0a0a;
-  --lcd-red: #ff2e2e;
-  --lcd-green: #2aff5f;
-  --lcd-amber: #ffb700;
-  --lcd-glow-red: 0 0 6px rgba(255, 46, 46, .55);
-  --lcd-glow-green: 0 0 6px rgba(42, 255, 95, .55);
-  --lcd-glow-amber: 0 0 6px rgba(255, 183, 0, .55);
+  --raised:    var(--shadow-sm), var(--ring);
+  --pressed:   inset 0 1px 2px rgba(16, 18, 24, 0.06), var(--ring-strong);
+  --raised-2:  var(--shadow-xs), var(--ring);
+  --pressed-2: inset 0 1px 1px rgba(16, 18, 24, 0.05), var(--ring);
 
-  /* ---------- Type ---------- */
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-pixel: 'VT323', monospace;
-  --font-chrome: 'Rajdhani', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* ---------- Radii ---------- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
 
-  /* ---------- Motion ---------- */
-  --step: steps(4, end);
-  --dur: 120ms;
+  /* ---------- LCD screen (retained for Voice Call / Finance meters) ---------- */
+  --lcd-bg:    #0b0d10;
+  --lcd-red:   #ff3d3d;
+  --lcd-green: #3fd774;
+  --lcd-amber: #f5b400;
+  --lcd-glow-red:   0 0 8px rgba(255, 61, 61, 0.45);
+  --lcd-glow-green: 0 0 8px rgba(63, 215, 116, 0.45);
+  --lcd-glow-amber: 0 0 8px rgba(245, 180, 0, 0.45);
 
-  /* ---------- Avatar clip ---------- */
-  --avatar-clip: polygon(
-    37.5% 0, 62.5% 0, 75% 12.5%, 87.5% 12.5%,
-    100% 37.5%, 100% 62.5%, 87.5% 87.5%, 75% 87.5%,
-    62.5% 100%, 37.5% 100%, 25% 87.5%, 12.5% 87.5%,
-    0 62.5%, 0 37.5%, 12.5% 12.5%, 25% 12.5%
-  );
+  /* ---------- Typography ----------
+     font-pixel and font-chrome retained as variables for slots that
+     still reference them, but both now resolve to Inter weights so
+     the pixel/military chrome language is gone. JetBrains Mono stays
+     for tabular numerics. */
+  --font-body:   'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-pixel:  'Inter', system-ui, sans-serif;
+  --font-chrome: 'Inter', system-ui, sans-serif;
+  --font-mono:   'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* ---------- Smart layer (Apple Smart Shuffle pattern) ----------
-     The visual language for all "smart" features. Consistent chips,
-     rings, bars, and dots so Key learns the pattern once and it carries
-     across Smart List, Smart Pipeline, Smart Calendar, Smart Messages,
-     etc. Tones match the list's scoring signals. */
+  /* ---------- Motion ----------
+     Smooth ease-out curves. The former steps(4) caused visible frame
+     jumps that read as "retro / arcade" and clashed with the rest of
+     the UI. dur bumped to 200ms for a calmer feel. */
+  --dur-fast: 140ms;
+  --dur: 200ms;
+  --dur-slow: 300ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
+  --step: var(--ease);
+
+  /* ---------- Avatar ----------
+     16-vertex blocky clip retired; avatars are now circular. Variable
+     kept so old references still resolve to something valid. */
+  --avatar-clip: circle(50% at 50% 50%);
+
+  /* ---------- Smart layer ---------- */
   --smart-gold:   var(--gold);
   --smart-red:    var(--red);
-  --smart-green:  var(--ms-2);
+  --smart-green:  var(--green);
   --smart-navy:   var(--navy);
-  --smart-purple: var(--ms-4);
+  --smart-purple: var(--purple);
   --smart-muted:  var(--text-muted);
 
   /* Ring outlines used to flag a card/row without changing its layout. */
-  --smart-ring-gold:   inset 0 0 0 2px var(--gold);
-  --smart-ring-red:    inset 0 0 0 2px var(--red);
-  --smart-ring-green:  inset 0 0 0 2px var(--ms-2);
-  --smart-ring-navy:   inset 0 0 0 2px var(--navy);
-  --smart-ring-purple: inset 0 0 0 2px var(--ms-4);
+  --smart-ring-gold:   inset 0 0 0 1.5px var(--gold);
+  --smart-ring-red:    inset 0 0 0 1.5px var(--red);
+  --smart-ring-green:  inset 0 0 0 1.5px var(--green);
+  --smart-ring-navy:   inset 0 0 0 1.5px var(--navy);
+  --smart-ring-purple: inset 0 0 0 1.5px var(--purple);
 
-  /* Horizontal "smart bar" atop sections / surfaces. */
-  --smart-bar-height: 4px;
+  --smart-bar-height: 3px;
 
   /* Row / section separators — theme-aware so dark mode doesn't lose
      them to the black-alpha approximation used throughout the app. */
-  --divider: rgba(0,0,0,.08);
-  --divider-faint: rgba(0,0,0,.06);
+  --divider: rgba(16, 18, 24, 0.08);
+  --divider-faint: rgba(16, 18, 24, 0.05);
 }
 
 [data-theme="dark"] {
-  --bg: #3d3d3d;
-  --card: #3d3d3d;
-  --text: #e8eaec;
-  --text-muted: #b0b4b8;
-  --text-faint: #7e8388;
-  --bevel-hi: #7b8088;
-  --bevel-lo: #0d0f12;
-  /* Theme-aware dividers — black-alpha is invisible against the dark
-     card bg, so swap to a white-alpha variant in dark mode. */
-  --divider: rgba(255,255,255,.12);
-  --divider-faint: rgba(255,255,255,.08);
+  --bg:         #0f0f11;
+  --card:       #17181b;
+  --sunken:     #121215;
+  --text:       #f0f1f3;
+  --text-muted: #a5a9b0;
+  --text-faint: #6b6e75;
+
+  --ring:          inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --ring-strong:   inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+
+  --shadow-xs:     0 1px 1px rgba(0, 0, 0, 0.25);
+  --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.25);
+  --shadow-md:     0 2px 6px rgba(0, 0, 0, 0.40), 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-lg:     0 12px 24px rgba(0, 0, 0, 0.50), 0 2px 4px rgba(0, 0, 0, 0.35);
+  --shadow-xl:     0 24px 48px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.40);
+
+  --bevel-hi: rgba(255, 255, 255, 0.05);
+  --bevel-lo: rgba(0, 0, 0, 0.6);
+
+  --divider:       rgba(255, 255, 255, 0.08);
+  --divider-faint: rgba(255, 255, 255, 0.05);
 }
 
 /* ============================================================
@@ -123,6 +185,8 @@ body {
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   font-feature-settings: "ss01", "cv11";
 }
 button {
@@ -132,6 +196,7 @@ button {
   border: 0;
   padding: 0;
   cursor: pointer;
+  border-radius: var(--radius-sm);
 }
 input, textarea, select {
   font-family: inherit;
@@ -139,78 +204,88 @@ input, textarea, select {
   background: none;
   border: 0;
   outline: 0;
+  border-radius: var(--radius-sm);
 }
+/* Icons: antialiased, rounded caps + joins — no more crispEdges + miter */
 svg {
-  shape-rendering: crispEdges;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
+  shape-rendering: geometricPrecision;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.5;
+  stroke-width: 1.75;
 }
-button svg { stroke-width: 3; }
+button svg { stroke-width: 2; }
 
 /* ============================================================
    Utilities
    ============================================================ */
-.raised   { box-shadow: var(--raised); background: var(--card); }
-.pressed  { box-shadow: var(--pressed); background: var(--card); }
-.raised-2 { box-shadow: var(--raised-2); background: var(--card); }
-.pressed-2{ box-shadow: var(--pressed-2); background: var(--card); }
+.raised   { box-shadow: var(--raised);   background: var(--card); border-radius: var(--radius-md); }
+.pressed  { box-shadow: var(--pressed);  background: var(--sunken); border-radius: var(--radius-md); }
+.raised-2 { box-shadow: var(--raised-2); background: var(--card); border-radius: var(--radius-sm); }
+.pressed-2{ box-shadow: var(--pressed-2);background: var(--sunken); border-radius: var(--radius-sm); }
 
-/* Raised → flatten on click */
+/* Raised → subtle lift on hover, flatten on click */
 .tactile-raised {
   background: var(--card);
   box-shadow: var(--raised);
-  transition: box-shadow var(--dur) var(--step), transform var(--dur) var(--step);
+  border-radius: var(--radius-md);
+  transition:
+    box-shadow var(--dur) var(--ease),
+    transform  var(--dur) var(--ease),
+    background var(--dur) var(--ease);
 }
-.tactile-raised:active { box-shadow: none; }
+.tactile-raised:hover { box-shadow: var(--shadow-md), var(--ring); transform: translateY(-1px); }
+.tactile-raised:active { box-shadow: var(--pressed-2); transform: translateY(0); }
 
-/* Flat → depress on click */
+/* Flat → subtle depress on click */
 .tactile-flat {
-  background: var(--card);
+  background: transparent;
   box-shadow: none;
-  transition: box-shadow var(--dur) var(--step);
+  border-radius: var(--radius-sm);
+  transition: background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-.tactile-flat:active { box-shadow: var(--pressed-2); }
+.tactile-flat:hover  { background: var(--sunken); }
+.tactile-flat:active { box-shadow: var(--pressed-2); background: var(--sunken); }
 
-/* Graph-paper background for content areas */
+/* Graph-paper background retired — replaced with very subtle dotted texture
+   only when a component explicitly opts in via .grid-bg. Default panels
+   should be clean. */
 .grid-bg {
-  background-image:
-    linear-gradient(to right, rgba(0,0,0,.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,.04) 1px, transparent 1px);
-  background-size: 8px 8px;
+  background-image: radial-gradient(rgba(16,18,24,0.05) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 [data-theme="dark"] .grid-bg {
-  background-image:
-    linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
 }
 
-/* Avatar clip */
-.avatar-clip { clip-path: var(--avatar-clip); }
+/* Avatar clip — circular (was blocky 16-vertex polygon) */
+.avatar-clip { clip-path: var(--avatar-clip); border-radius: 50%; }
 
-/* LCD text */
+/* LCD text — retained for Finance meters + Voice Call timer. Softer glow
+   and less "monotype terminal" letter-spacing. */
 .lcd {
   background: var(--lcd-bg);
   color: var(--lcd-red);
-  font-family: var(--font-pixel);
+  font-family: var(--font-mono);
   text-shadow: var(--lcd-glow-red);
-  box-shadow: var(--pressed-2);
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  box-shadow: var(--pressed);
+  letter-spacing: .04em;
+  border-radius: var(--radius-sm);
 }
 .lcd--green { color: var(--lcd-green); text-shadow: var(--lcd-glow-green); }
 .lcd--amber { color: var(--lcd-amber); text-shadow: var(--lcd-glow-amber); }
 
-/* Chrome label */
+/* Chrome label → now a standard subtle uppercase label in Inter */
 .chrome-label {
-  font-family: var(--font-chrome);
-  font-weight: 700;
-  letter-spacing: .06em;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: .04em;
   text-transform: uppercase;
+  font-size: 11px;
+  color: var(--text-muted);
 }
-.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
 
 /* ============================================================
    Smart layer — consistent visuals for any "smart X" feature
@@ -219,21 +294,22 @@ button svg { stroke-width: 3; }
 /* Smart chip: compact labeled badge. Tone-colored bg + fg. */
 .smart-chip {
   display: inline-flex; align-items: center;
-  padding: 3px 7px;
-  font-family: var(--font-chrome);
-  font-weight: 700;
-  font-size: 9px;
-  letter-spacing: .08em;
+  padding: 3px 8px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: .04em;
   text-transform: uppercase;
   white-space: nowrap;
-  box-shadow: inset 1px 1px 0 rgba(255,255,255,.2), inset -1px -1px 0 rgba(0,0,0,.25);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--ring);
 }
-.smart-chip--gold   { background: var(--gold);    color: var(--navy); }
-.smart-chip--red    { background: var(--red);     color: #fff; }
-.smart-chip--green  { background: var(--ms-2);    color: #fff; }
-.smart-chip--navy   { background: var(--navy);    color: var(--gold); }
-.smart-chip--purple { background: var(--ms-4);    color: #fff; }
-.smart-chip--muted  { background: var(--card);    color: var(--text-muted); box-shadow: var(--pressed-2); }
+.smart-chip--gold   { background: color-mix(in srgb, var(--gold)   14%, var(--card)); color: var(--gold); }
+.smart-chip--red    { background: color-mix(in srgb, var(--red)    12%, var(--card)); color: var(--red); }
+.smart-chip--green  { background: color-mix(in srgb, var(--green)  12%, var(--card)); color: var(--green); }
+.smart-chip--navy   { background: color-mix(in srgb, var(--navy)   10%, var(--card)); color: var(--navy); }
+.smart-chip--purple { background: color-mix(in srgb, var(--purple) 12%, var(--card)); color: var(--purple); }
+.smart-chip--muted  { background: var(--sunken); color: var(--text-muted); }
 
 /* Smart ring: flag a card/row without pushing layout. */
 .smart-ring-gold   { box-shadow: var(--smart-ring-gold); }
@@ -242,83 +318,88 @@ button svg { stroke-width: 3; }
 .smart-ring-navy   { box-shadow: var(--smart-ring-navy); }
 .smart-ring-purple { box-shadow: var(--smart-ring-purple); }
 
-/* Smart bar: 4px tone strip above a section. */
+/* Smart bar: 3px tone strip above a section. */
 .smart-bar {
   height: var(--smart-bar-height);
   width: 100%;
+  border-radius: var(--radius-pill);
 }
 .smart-bar--gold   { background: var(--gold); }
 .smart-bar--red    { background: var(--red); }
-.smart-bar--green  { background: var(--ms-2); }
+.smart-bar--green  { background: var(--green); }
 .smart-bar--navy   { background: var(--navy); }
-.smart-bar--purple { background: var(--ms-4); }
+.smart-bar--purple { background: var(--purple); }
 
 /* Smart hint card: dismissible "next best action" banner. */
 .smart-hint {
-  background: var(--navy);
-  color: var(--gold);
-  padding: 10px 14px;
+  background: var(--card);
+  color: var(--text);
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: inset 1px 1px 0 rgba(255,255,255,.2), inset -1px -1px 0 rgba(0,0,0,.35);
+  gap: 12px;
+  box-shadow: var(--raised);
+  border-radius: var(--radius-md);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 13px;
 }
 .smart-hint__label {
-  font-family: var(--font-chrome);
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: .12em;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: .04em;
   text-transform: uppercase;
   color: var(--gold);
-  opacity: .85;
 }
-.smart-hint__body  { flex: 1; min-width: 0; color: #fff; }
+.smart-hint__body  { flex: 1; min-width: 0; color: var(--text); }
 .smart-hint__cta {
-  padding: 4px 10px;
-  background: var(--gold);
-  color: var(--navy);
-  font-family: var(--font-chrome);
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  box-shadow: var(--raised-2);
+  padding: 6px 12px;
+  background: var(--navy);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: .02em;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
+.smart-hint__cta:hover  { background: color-mix(in srgb, var(--navy) 90%, #000); }
+.smart-hint__cta:active { transform: translateY(1px); }
 
-/* Smart dot: 6px colored dot used as a leading indicator on a row. */
+/* Smart dot: tiny colored dot used as a leading indicator on a row. */
 .smart-dot {
   width: 8px; height: 8px;
   flex: 0 0 auto;
   display: inline-block;
+  border-radius: 50%;
 }
 .smart-dot--gold   { background: var(--gold); }
 .smart-dot--red    { background: var(--red); }
-.smart-dot--green  { background: var(--ms-2); }
+.smart-dot--green  { background: var(--green); }
 .smart-dot--navy   { background: var(--navy); }
-.smart-dot--purple { background: var(--ms-4); }
-.pixel { font-family: var(--font-pixel); text-transform: uppercase; letter-spacing: .06em; }
+.smart-dot--purple { background: var(--purple); }
+
+/* .pixel retained only as an alias — renders as Inter at regular weight. */
+.pixel { font-family: var(--font-body); letter-spacing: .02em; font-weight: 600; }
 
 /* ============================================================
    Accessibility
    ============================================================ */
 
-/* Visible focus ring: gold outline with hard offset.
-   Keyboard users see clear focus; mouse users don't (focus-visible). */
 :focus { outline: none; }
 :focus-visible {
   outline: 2px solid var(--gold);
-  outline-offset: -2px;
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--gold);
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
-/* Screen-reader-only content */
 .sr-only {
   position: absolute;
   width: 1px; height: 1px;
@@ -329,26 +410,25 @@ a:focus-visible {
   border: 0;
 }
 
-/* Skip link — visible only on focus, jumps over the chrome */
 .skip-link {
   position: absolute;
   top: -40px; left: 8px;
   padding: 8px 16px;
   background: var(--navy);
   color: #fff;
-  font-family: var(--font-chrome);
-  font-weight: 700;
-  letter-spacing: .06em;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: .02em;
   text-decoration: none;
   z-index: 1000;
-  transition: top var(--dur) var(--step);
-  box-shadow: var(--raised);
+  transition: top var(--dur) var(--ease);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-sm);
 }
 .skip-link:focus {
   top: 8px;
 }
 
-/* Reduced motion — honor user preference */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -357,7 +437,6 @@ a:focus-visible {
   }
 }
 
-/* Touch target minimum 44px on coarse pointers (iOS / Android) */
 @media (pointer: coarse) {
   button, [role="button"], a {
     min-height: 44px;
