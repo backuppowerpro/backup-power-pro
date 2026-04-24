@@ -370,64 +370,70 @@ function AuthGate({ onAuth }) {
       display: 'grid', placeItems: 'center',
       padding: 'env(safe-area-inset-top) 24px env(safe-area-inset-bottom)',
     }}>
-      <div style={{ width: 380, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ width: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
+        {/* Brand mark — matches proposal.html hero-card wordmark treatment */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 32, height: 32,
+            width: 36, height: 36,
             background: 'var(--gold)',
             borderRadius: 'var(--radius-sm)',
-            boxShadow: 'var(--shadow-sm)',
-          }} />
+            boxShadow: 'var(--shadow-gold)',
+            display: 'grid', placeItems: 'center',
+          }}>
+            <svg viewBox="0 0 16 16" width="18" height="18" style={{ stroke: 'var(--navy)', strokeWidth: 2.2, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M9 1 L4 9 L7 9 L6 15 L12 6 L9 6 Z" />
+            </svg>
+          </div>
           <div style={{
-            fontFamily: 'var(--font-body)',
-            fontWeight: 700, fontSize: 22, letterSpacing: '-0.01em',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800, fontSize: 24, letterSpacing: '-0.02em',
             color: 'var(--navy)',
-          }}>Backup Power Pro</div>
+          }}>Backup Power <span style={{ color: 'var(--gold)' }}>Pro</span></div>
         </div>
         <div style={{
-          fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', marginTop: -8,
+          fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', marginTop: -12,
         }}>Sign in to the operator console</div>
         <form onSubmit={submit} style={{
           width: '100%',
           background: 'var(--card)',
-          padding: 24,
+          padding: 28,
           borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-md), var(--ring)',
-          display: 'flex', flexDirection: 'column', gap: 16,
+          boxShadow: 'var(--shadow-lg), var(--ring)',
+          display: 'flex', flexDirection: 'column', gap: 18,
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>Email</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.01em' }}>Email</label>
             <input
               type="email" value={email}
               onChange={e => setEmail(e.target.value)}
               style={{
-                padding: '10px 12px', height: 40,
+                padding: '12px 14px', height: 44,
                 background: 'var(--sunken)',
                 boxShadow: 'var(--ring)',
                 borderRadius: 'var(--radius-sm)',
-                fontSize: 14,
+                fontSize: 15,
               }}
               required autoFocus
             />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>Password</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.01em' }}>Password</label>
             <input
               type="password" value={password}
               onChange={e => setPassword(e.target.value)}
               style={{
-                padding: '10px 12px', height: 40,
+                padding: '12px 14px', height: 44,
                 background: 'var(--sunken)',
                 boxShadow: 'var(--ring)',
                 borderRadius: 'var(--radius-sm)',
-                fontSize: 14,
+                fontSize: 15,
               }}
               required
             />
           </div>
           {error ? (
             <div style={{
-              padding: '10px 12px', fontSize: 13,
+              padding: '10px 14px', fontSize: 13,
               background: 'color-mix(in srgb, var(--red) 10%, var(--card))',
               color: 'var(--red)',
               borderRadius: 'var(--radius-sm)',
@@ -435,18 +441,18 @@ function AuthGate({ onAuth }) {
             }}>{error}</div>
           ) : null}
           <button type="submit" disabled={busy} style={{
-            width: '100%', height: 44,
+            width: '100%', height: 48,
             background: 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14,
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15,
             letterSpacing: '0.01em',
-            borderRadius: 'var(--radius-sm)',
+            borderRadius: 'var(--radius-pill)',
             boxShadow: 'var(--shadow-sm)',
             opacity: busy ? 0.6 : 1,
             cursor: busy ? 'wait' : 'pointer',
             transition: 'background var(--dur) var(--ease), transform var(--dur) var(--ease)',
           }}>{busy ? 'Signing in…' : 'Sign in'}</button>
         </form>
-        <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+        <div style={{ fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.04em' }}>
           BPP CRM · v4.2
         </div>
       </div>

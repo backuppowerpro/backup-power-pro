@@ -50,61 +50,91 @@ const TABS = [
 
 /* ────────── Top bar (desktop + mobile share layout) ────────── */
 function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark }) {
-  const h = compact ? 48 : 56;
+  const h = compact ? 52 : 60;
   return (
     <div style={{
       height: h, display: 'flex', alignItems: 'center',
-      padding: '0 16px', gap: 12,
-      boxShadow: 'var(--raised)',
+      padding: '0 20px', gap: 14,
+      boxShadow: '0 1px 0 var(--divider)',
       background: 'var(--card)',
       position: 'relative', zIndex: 3,
     }}>
-      {/* Logo — compact wordmark */}
+      {/* Logo — matches website header: gold-tile brand mark + Outfit wordmark */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width: compact ? 22 : 26, height: compact ? 22 : 26,
+          width: compact ? 26 : 30, height: compact ? 26 : 30,
           background: 'var(--gold)',
           borderRadius: 'var(--radius-sm)',
           boxShadow: 'var(--shadow-xs)',
-        }}/>
+          display: 'grid', placeItems: 'center', flex: '0 0 auto',
+        }}>
+          <svg viewBox="0 0 16 16" width={compact ? 14 : 16} height={compact ? 14 : 16}
+               style={{ stroke: 'var(--navy)', strokeWidth: 2.2, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path d="M9 1 L4 9 L7 9 L6 15 L12 6 L9 6 Z" />
+          </svg>
+        </div>
         <div style={{
-          fontFamily: 'var(--font-body)', fontWeight: 700,
-          fontSize: compact ? 15 : 17, letterSpacing: '-0.01em',
+          fontFamily: 'var(--font-display)', fontWeight: 800,
+          fontSize: compact ? 16 : 18, letterSpacing: '-0.02em',
           color: 'var(--navy)',
-        }}>Backup Power Pro</div>
+          whiteSpace: 'nowrap',
+        }}>Backup Power <span style={{ color: 'var(--gold)' }}>Pro</span></div>
       </div>
 
       <div style={{ flex: 1 }} />
 
       {/* Right cluster */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <button onClick={onOpenSearch}
           aria-label="Open smart search (Cmd+K)"
           title="Search (⌘K)"
-          className="tactile-raised" style={{
-          height: 28, padding: '0 10px', display: 'flex', alignItems: 'center', gap: 6,
+          style={{
+          height: 34, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 8,
           color: 'var(--text-muted)', cursor: 'pointer',
-        }}>
-          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square">
+          background: 'var(--sunken)',
+          borderRadius: 'var(--radius-pill)',
+          boxShadow: 'var(--ring)',
+          transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.boxShadow = 'var(--ring)' }}
+        >
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
             <circle cx="7" cy="7" r="4"/>
             <path d="M10 10 L13 13"/>
           </svg>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: '.04em' }}>⌘K</span>
+          <span className="mono" style={{ fontSize: 11, letterSpacing: '.02em' }}>⌘K</span>
         </button>
         <button onClick={onToggleDark}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDark ? 'Light mode' : 'Dark mode'}
-          className="tactile-raised" style={{
-          width: 28, height: 28, display: 'grid', placeItems: 'center',
-          color: 'var(--text)', cursor: 'pointer',
-        }}>{Ico.sun}</button>
+          style={{
+          width: 34, height: 34, display: 'grid', placeItems: 'center',
+          color: 'var(--text-muted)', cursor: 'pointer',
+          borderRadius: 'var(--radius-pill)',
+          boxShadow: 'var(--ring)',
+          background: 'var(--card)',
+          transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+        >{Ico.sun}</button>
         <button onClick={onNewLead}
           aria-label="Create new lead"
           title="New lead"
-          className="tactile-raised" style={{
-          width: 36, height: 36, display: 'grid', placeItems: 'center',
-          background: 'var(--navy)', color: '#fff', cursor: 'pointer',
-        }}>{Ico.plus}</button>
+          style={{
+          height: 34, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 6,
+          background: 'var(--gold)', color: 'var(--navy)',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+          letterSpacing: '0.01em',
+          borderRadius: 'var(--radius-pill)',
+          boxShadow: 'var(--shadow-gold)',
+          cursor: 'pointer',
+          transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold-hover)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold)' }}
+        >{Ico.plus}<span>New lead</span></button>
         <div style={{
           width: 36, height: 36, background: 'var(--navy)',
           borderRadius: '50%',
@@ -274,10 +304,10 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
   // keeps every label at least partly visible.
   return (
     <div ref={barRef} role="tablist" aria-label="Main navigation" style={{
-      height: 44, display: 'flex', alignItems: 'stretch',
-      padding: 0,
+      height: 48, display: 'flex', alignItems: 'stretch',
+      padding: '0 12px',
       background: 'var(--card)',
-      boxShadow: 'var(--pressed-2)',
+      boxShadow: '0 1px 0 var(--divider)',
       whiteSpace: 'nowrap',
       position: 'relative', zIndex: 2,
     }}>
@@ -285,29 +315,34 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
         const isActive = t.id === active;
         const badge = badges[t.id];
         return (
-          <button key={t.id} className="chrome-label"
+          <button key={t.id}
             role="tab"
             data-tab-id={t.id}
             aria-selected={isActive}
             aria-label={badge ? `${t.label} (${badge})` : t.label}
             onClick={() => onChange && onChange(t.id)}
             style={{
-              height: '100%', padding: '0 8px', minWidth: 0,
+              height: '100%', padding: '0 10px', minWidth: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               flex: '1 1 0',
-              color: isActive ? 'var(--text)' : 'var(--text-muted)',
-              fontSize: 12,
-              boxShadow: isActive ? 'inset 0 -3px 0 var(--gold)' : 'none',
-              transition: 'box-shadow var(--dur) var(--step), color var(--dur) var(--step)',
+              color: isActive ? 'var(--navy)' : 'var(--text-muted)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: isActive ? 700 : 600,
+              fontSize: 13,
+              letterSpacing: '0.01em',
+              boxShadow: isActive ? 'inset 0 -2px 0 var(--gold)' : 'none',
+              transition: 'box-shadow var(--dur) var(--ease), color var(--dur) var(--ease)',
               cursor: 'pointer',
               background: 'transparent', border: 'none',
               overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.label}</span>
             {badge ? (
-              <span className="mono" style={{
-                fontSize: 10, padding: '1px 5px', letterSpacing: '.04em',
-                color: '#fff', background: 'var(--ms-3)',
+              <span style={{
+                fontSize: 10, padding: '2px 7px', letterSpacing: 0,
+                fontWeight: 700,
+                color: '#fff', background: 'var(--red)',
+                borderRadius: 'var(--radius-pill)',
                 flex: '0 0 auto',
               }}>{badge}</span>
             ) : null}
