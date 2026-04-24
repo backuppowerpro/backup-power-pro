@@ -6112,28 +6112,43 @@ function NewLeadModal({ open, onClose, onCreated }) {
     onClose();
   }
 
+  const inputBase = {
+    padding: '10px 12px', height: 42,
+    fontFamily: 'var(--font-body)', fontSize: 14,
+    color: 'var(--text)',
+    background: 'var(--sunken)',
+    border: 'none', outline: 'none',
+    borderRadius: 'var(--radius-sm)',
+    boxSizing: 'border-box',
+    transition: 'box-shadow var(--dur) var(--ease)',
+  };
+  const onFocusRing = (e) => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' };
+  const onBlurRing = (e) => { e.currentTarget.style.boxShadow = 'none' };
+
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 90,
-      background: 'rgba(0,0,0,.5)',
+      background: 'rgba(11,31,59,0.5)',
+      backdropFilter: 'blur(3px)',
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <form ref={rootRef} onSubmit={submit} onClick={e => e.stopPropagation()} style={{
-        width: 380, maxWidth: '100%',
-        padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 16,
-        background: 'var(--card)', boxShadow: 'var(--raised-2)',
+        width: 420, maxWidth: '100%',
+        padding: '28px 26px', display: 'flex', flexDirection: 'column', gap: 14,
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
       }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 700, letterSpacing: '-.01em' }}>
-          New lead
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span className="eyebrow">Add contact</span>
+          <h2 style={{
+            margin: 0,
+            fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
+            letterSpacing: '-0.015em', color: 'var(--text)',
+          }}>New lead</h2>
         </div>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Name" autoFocus style={{
-          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-        }} />
-        <input value={phone} onChange={e => setPhone(formatPhoneInput(e.target.value))} placeholder="Phone" style={{
-          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-        }} />
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Name" autoFocus onFocus={onFocusRing} onBlur={onBlurRing} style={inputBase} />
+        <input value={phone} onChange={e => setPhone(formatPhoneInput(e.target.value))} placeholder="Phone" onFocus={onFocusRing} onBlur={onBlurRing} style={inputBase} />
         {/* Smart New Lead hint — derives likely source from the area code
             once the phone is populated. 864/803/704/828 = SC/NC local
             (Meta ad + organic); other = likely out-of-market or referral. */}
@@ -6144,11 +6159,26 @@ function NewLeadModal({ open, onClose, onCreated }) {
           const scNc = ['864', '803', '843', '704', '828', '919', '980', '252', '910'];
           const local = scNc.includes(area);
           return (
-            <div className="smart-hint" style={{ padding: '6px 10px' }}>
-              <span className={`smart-chip smart-chip--${local ? 'green' : 'gold'}`}>
-                {local ? 'LOCAL' : 'OUT-OF-MARKET'}
+            <div style={{
+              padding: '10px 12px',
+              background: local
+                ? 'color-mix(in srgb, var(--green) 12%, var(--card))'
+                : 'color-mix(in srgb, var(--gold) 14%, var(--card))',
+              borderRadius: 'var(--radius-sm)',
+              borderLeft: `3px solid ${local ? 'var(--green)' : 'var(--gold)'}`,
+              display: 'flex', flexDirection: 'column', gap: 4,
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                color: local ? 'var(--green)' : 'var(--gold-ink)',
+              }}>
+                {local ? 'Local' : 'Out-of-market'}
               </span>
-              <span className="smart-hint__body" style={{ fontSize: 11 }}>
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 12.5,
+                color: 'var(--text-muted)', lineHeight: 1.45,
+              }}>
                 {local
                   ? `Area code ${area} is in our service footprint — likely Meta ad or referral.`
                   : `Area code ${area} is outside SC/NC — likely an online form from travel or referral.`}
@@ -6156,46 +6186,51 @@ function NewLeadModal({ open, onClose, onCreated }) {
             </div>
           );
         })()}
-        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)" type="email" style={{
-          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-        }} />
-        <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Address (optional)" style={{
-          padding: '10px 12px', height: 40, fontFamily: 'var(--font-body)', fontSize: 14,
-          background: 'var(--card)', boxShadow: 'var(--pressed-2)', border: 'none',
-        }} />
-        {err ? <div className="mono" style={{ fontSize: 11, color: 'var(--ms-3)' }}>{err}</div> : null}
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)" type="email" onFocus={onFocusRing} onBlur={onBlurRing} style={inputBase} />
+        <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Address (optional)" onFocus={onFocusRing} onBlur={onBlurRing} style={inputBase} />
+        {err ? (
+          <div style={{
+            padding: '10px 12px', fontSize: 13,
+            background: 'color-mix(in srgb, var(--red) 10%, var(--card))',
+            color: 'var(--red)', fontFamily: 'var(--font-body)', fontWeight: 600,
+            borderRadius: 'var(--radius-sm)',
+            borderLeft: '3px solid var(--red)',
+          }}>{err}</div>
+        ) : null}
         {dupe ? (
-          <div className="mono" style={{
-            padding: '8px 10px', fontSize: 11,
-            background: 'var(--card)', boxShadow: 'var(--raised-2)',
-            color: 'var(--ms-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+          <div style={{
+            padding: '10px 14px', fontSize: 13,
+            background: 'color-mix(in srgb, var(--gold) 12%, var(--card))',
+            borderRadius: 'var(--radius-sm)',
+            borderLeft: '3px solid var(--gold)',
+            color: 'var(--gold-ink)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+            fontFamily: 'var(--font-body)',
           }}>
-            <span>⚠ Existing contact with this phone</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }}/>
+              Existing contact on this phone
+            </span>
             <button type="button" onClick={() => {
               window.location.hash = `#contact=${dupe.id}`;
               onClose();
             }} style={{
-              padding: '2px 6px', fontSize: 11, fontFamily: 'var(--font-body)',
-              background: 'transparent', color: 'var(--navy)', cursor: 'pointer',
-              border: 'none', textDecoration: 'underline',
-            }}>Open {dupe.name || 'contact'} →</button>
+              padding: '4px 12px', fontSize: 12,
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              background: 'var(--navy)', color: '#fff',
+              borderRadius: 'var(--radius-pill)',
+              border: 'none', cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}>Open {dupe.name || 'contact'} <span aria-hidden>→</span></button>
           </div>
         ) : null}
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button type="button" onClick={onClose} style={{
-            flex: 1, height: 40, fontSize: 12, cursor: 'pointer',
-            fontFamily: 'var(--font-body)', letterSpacing: '.04em',
-            boxShadow: 'var(--raised-2)', background: 'var(--card)', color: 'var(--text-muted)',
-            border: 'none',
-          }}>Cancel</button>
-          <button type="submit" disabled={busy} style={{
-            flex: 2, height: 40,
-            background: 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
-            letterSpacing: '.04em',
-            boxShadow: 'var(--shadow-sm)',
-            opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer', border: 'none',
+        <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+          <button type="button" onClick={onClose} className="btn-ghost" style={{ flex: 1 }}>
+            Cancel
+          </button>
+          <button type="submit" disabled={busy} className="btn-navy" style={{
+            flex: 2,
+            opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer',
           }}>{busy ? 'Saving…' : 'Create lead'}</button>
         </div>
       </form>
