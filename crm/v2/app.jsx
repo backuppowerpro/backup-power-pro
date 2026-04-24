@@ -7496,32 +7496,46 @@ function SmartPricingRollup() {
           close-rate × avg total (variant A / B)
         </span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
         {TIER_IDS.map(id => {
           const m = TIER_META[id];
           const a = grid[id].A, b = grid[id].B;
+          const tintColor = m.tone === 'gold' ? 'var(--gold-ink)'
+                          : m.tone === 'navy' ? 'var(--navy)'
+                                              : 'var(--text-muted)';
           return (
             <div key={id} style={{
-              padding: '8px 10px',
-              background: 'var(--bg)', boxShadow: 'var(--pressed-2)',
-              display: 'flex', flexDirection: 'column', gap: 4,
+              padding: '10px 14px',
+              background: 'var(--sunken)',
+              borderRadius: 'var(--radius-sm)',
+              display: 'flex', flexDirection: 'column', gap: 6,
             }}>
               <span style={{
-                fontSize: 10, letterSpacing: '.08em', fontWeight: 700,
-                color: m.tone === 'gold' ? 'var(--gold)' : m.tone === 'navy' ? 'var(--navy)' : 'var(--text-muted)',
-                fontFamily: 'var(--font-chrome)',
+                fontFamily: 'var(--font-display)',
+                fontSize: 11, fontWeight: 700,
+                letterSpacing: '0.04em', textTransform: 'uppercase',
+                color: tintColor,
               }}>{m.label}</span>
-              <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'var(--text-muted)' }}>
+              <div style={{
+                display: 'flex', gap: 14, fontSize: 12,
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-mono)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
                 <div>
-                  <span className="mono" style={{ color: 'var(--text)' }}>A</span>{' '}
-                  <span className="mono">{a.length ? `${closeRate(a)}% · $${avg(a)}` : '—'}</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>A</span>{' '}
+                  <span>{a.length ? `${closeRate(a)}% · $${avg(a)}` : '—'}</span>
                 </div>
                 <div>
-                  <span className="mono" style={{ color: 'var(--text)' }}>B</span>{' '}
-                  <span className="mono">{b.length ? `${closeRate(b)}% · $${avg(b)}` : '—'}</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>B</span>{' '}
+                  <span>{b.length ? `${closeRate(b)}% · $${avg(b)}` : '—'}</span>
                 </div>
               </div>
-              <span className="mono" style={{ fontSize: 9, color: 'var(--text-faint)' }}>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10.5,
+                color: 'var(--text-faint)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
                 {a.length + b.length} deal{a.length + b.length === 1 ? '' : 's'}
               </span>
             </div>
