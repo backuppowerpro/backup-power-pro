@@ -5,15 +5,15 @@ const SAFE_TOP = 47;      // iPhone 14/15 notch zone
 const SAFE_BOTTOM = 34;   // home indicator zone
 
 const STAGES = [
-  { id: 'new',     label: 'NEW LEAD',         color: 'var(--ms-1)' },
-  { id: 'quoted',  label: 'QUOTED',           color: 'var(--ms-4)', active: true },
-  { id: 'booked',  label: 'BOOKED',           color: 'var(--ms-2)' },
-  { id: 'permit',  label: 'PERMIT SUBMITTED', color: 'var(--ms-5)' },
-  { id: 'pay',     label: 'READY TO PAY',     color: 'var(--ms-3)' },
-  { id: 'paid',    label: 'PAID',             color: 'var(--ms-2)' },
-  { id: 'rprint',  label: 'READY TO PRINT',   color: 'var(--ms-5)' },
-  { id: 'printed', label: 'PRINTED',          color: 'var(--ms-6)' },
-  { id: 'inspect', label: 'INSPECTION',       color: 'var(--ms-7)' },
+  { id: 'new',     label: 'New lead',         color: 'var(--navy)'   },
+  { id: 'quoted',  label: 'Quoted',           color: 'var(--purple)', active: true },
+  { id: 'booked',  label: 'Booked',           color: 'var(--green)'  },
+  { id: 'permit',  label: 'Permit submitted', color: 'var(--gold)'   },
+  { id: 'pay',     label: 'Ready to pay',     color: 'var(--red)'    },
+  { id: 'paid',    label: 'Paid',             color: 'var(--green)'  },
+  { id: 'rprint',  label: 'Ready to print',   color: 'var(--gold)'   },
+  { id: 'printed', label: 'Printed',          color: 'var(--navy)'   },
+  { id: 'inspect', label: 'Inspection',       color: 'var(--purple)' },
 ];
 
 /* ─── Pixel house for avatars ─── */
@@ -206,19 +206,27 @@ function MediaBubble() {
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
       <div style={{
-        maxWidth: '78%', padding: 8,
-        background: 'var(--card)', boxShadow: 'var(--raised)',
-        display: 'flex', flexDirection: 'column', gap: 6,
+        maxWidth: '78%', padding: 10,
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-sm), var(--ring)',
+        borderRadius: 'var(--radius-md)',
+        display: 'flex', flexDirection: 'column', gap: 8,
       }}>
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)',
-          letterSpacing: '.02em',
-        }}>📷 panel_photo.jpg · 1.2 MB</div>
+          fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500,
+          color: 'var(--text-muted)',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          <span>📷</span>
+          <span>panel_photo.jpg</span>
+          <span style={{ color: 'var(--text-faint)' }}>· 1.2 MB</span>
+        </div>
         <div style={{
           width: 200, height: 120, padding: 8,
-          background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
+          background: 'var(--navy-deep, #081528)',
+          borderRadius: 'var(--radius-sm)',
           display: 'grid', gridTemplateColumns: 'repeat(20, 1fr)', gridTemplateRows: 'repeat(12, 1fr)',
-          fontFamily: 'var(--font-mono)', fontSize: 8,
+          boxShadow: 'var(--ring)',
         }}>
           {/* Tiny pixel-block placeholder representing an electrical panel */}
           {Array.from({ length: 240 }, (_, i) => {
@@ -227,7 +235,7 @@ function MediaBubble() {
             const isBreaker = inPanel && (col % 2 === 0) && (row >= 3 && row <= 8);
             const c = isBreaker ? '#8b5a1a'
                    : inPanel ? '#4a2f16'
-                   : '#0f0f0f';
+                   : 'transparent';
             return <div key={i} style={{ background: c }}/>;
           })}
         </div>
@@ -240,19 +248,24 @@ function StageEventRow() {
   return (
     <div style={{
       position: 'relative',
-      height: 32, padding: '0 14px',
+      height: 36, padding: '0 14px 0 18px',
       display: 'flex', alignItems: 'center', gap: 10,
-      background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      background: 'var(--sunken)',
+      borderRadius: 'var(--radius-sm)',
     }}>
       <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
-        background: 'var(--lcd-amber)',
+        position: 'absolute', left: 0, top: 6, bottom: 6, width: 3,
+        background: 'var(--gold)',
+        borderRadius: '0 2px 2px 0',
       }}/>
       <span style={{
-        fontFamily: 'var(--font-pixel)', fontSize: 14,
-        letterSpacing: '.08em', textTransform: 'uppercase',
+        fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13,
         color: 'var(--text)',
-      }}>→ MOVED TO QUOTED · 3:12 PM</span>
+      }}>→ Moved to Quoted</span>
+      <span style={{
+        marginLeft: 'auto',
+        fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)',
+      }}>3:12 PM</span>
     </div>
   );
 }
@@ -260,23 +273,23 @@ function StageEventRow() {
 function CallEventRow() {
   return (
     <div style={{
-      height: 40, padding: '0 14px',
-      display: 'flex', alignItems: 'center', gap: 10,
-      background: 'var(--card)', boxShadow: 'var(--pressed-2)',
+      height: 44, padding: '0 14px',
+      display: 'flex', alignItems: 'center', gap: 12,
+      background: 'var(--sunken)',
+      borderRadius: 'var(--radius-sm)',
     }}>
-      <svg viewBox="0 0 16 16" width="14" height="14" style={{stroke:'var(--text)', strokeWidth:2.5}}>
+      <svg viewBox="0 0 16 16" width="14" height="14" style={{stroke:'var(--text-muted)', strokeWidth: 1.75, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round'}}>
         <path d="M2 3 L6 3 L7 7 L5 8 L8 11 L9 9 L13 10 L13 14 L9 14 Q2 12 2 3 Z"/>
       </svg>
       <span style={{
         flex: 1, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text)', fontWeight: 500,
-      }}>INCOMING CALL · ALEX</span>
+      }}>Incoming call · <span style={{ color: 'var(--blue)', fontWeight: 600 }}>Alex</span></span>
       <span style={{
-        height: 22, padding: '0 8px',
-        background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-        color: 'var(--lcd-red)', textShadow: 'var(--lcd-glow-red)',
-        fontFamily: 'var(--font-pixel)', fontSize: 14,
-        display: 'inline-flex', alignItems: 'center',
-        letterSpacing: '.08em',
+        padding: '2px 10px',
+        background: 'var(--card)', boxShadow: 'var(--ring)',
+        color: 'var(--navy)',
+        fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 12,
+        borderRadius: 'var(--radius-sm)',
       }}>0:43</span>
     </div>
   );
@@ -310,12 +323,12 @@ function MessagesThread() {
 
 /* ─── Timeline tab ─── */
 const TIMELINE_EVENTS = [
-  { k: 'form',   label: 'FORM SUBMITTED', when: 'APR 13 · 10:22', ico: 'doc' },
-  { k: 'msg',    label: 'ALEX MESSAGED',  when: 'APR 13 · 10:22', ico: 'msg' },
-  { k: 'photo',  label: 'PHOTO RECEIVED', when: 'APR 14 ·  2:33', ico: 'cam' },
-  { k: 'quote',  label: 'QUOTE SENT',     when: 'APR 14 ·  4:12', ico: 'dollar' },
-  { k: 'view',   label: 'VIEWED',         when: 'APR 14 ·  6:30', ico: 'eye' },
-  { k: 'msg2',   label: 'ALEX FOLLOWUP',  when: 'APR 17 ·  9:18', ico: 'msg' },
+  { k: 'form',   label: 'Form submitted', when: 'Apr 13 · 10:22', ico: 'doc' },
+  { k: 'msg',    label: 'Alex messaged',  when: 'Apr 13 · 10:22', ico: 'msg' },
+  { k: 'photo',  label: 'Photo received', when: 'Apr 14 · 2:33',  ico: 'cam' },
+  { k: 'quote',  label: 'Quote sent',     when: 'Apr 14 · 4:12',  ico: 'dollar' },
+  { k: 'view',   label: 'Viewed',         when: 'Apr 14 · 6:30',  ico: 'eye' },
+  { k: 'msg2',   label: 'Alex follow-up', when: 'Apr 17 · 9:18',  ico: 'msg' },
 ];
 const TIcons = {
   doc: <svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 2 L11 2 L13 4 L13 14 L3 14 Z"/><path d="M5 6 L11 6 M5 9 L10 9"/></svg>,
@@ -329,34 +342,36 @@ function TimelineFeed() {
   return (
     <div style={{ padding: '16px 16px 24px', position: 'relative' }}>
       <div style={{
-        position: 'absolute', left: 106, top: 24, bottom: 24,
+        position: 'absolute', left: 118, top: 24, bottom: 24,
         width: 2, background: 'var(--gold)',
+        opacity: 0.35,
       }}/>
       {TIMELINE_EVENTS.map((e, i) => (
         <div key={i} style={{
-          display: 'grid', gridTemplateColumns: '96px 14px 1fr',
-          gap: 10, alignItems: 'center',
-          marginBottom: 12,
+          display: 'grid', gridTemplateColumns: '104px 16px 1fr',
+          gap: 12, alignItems: 'center',
+          marginBottom: 10,
         }}>
           <span style={{
-            height: 22, padding: '0 8px',
-            background: 'var(--lcd-bg)', boxShadow: 'var(--pressed-2)',
-            color: 'var(--lcd-green)', textShadow: 'var(--lcd-glow-green)',
-            fontFamily: 'var(--font-pixel)', fontSize: 13,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
-            letterSpacing: '.04em',
+            fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: 'var(--text-muted)',
+            textAlign: 'right',
           }}>{e.when}</span>
           <div style={{
-            width: 14, height: 14, background: 'var(--gold)',
-            boxShadow: 'var(--shadow-xs), var(--ring)',
+            width: 12, height: 12,
+            background: 'var(--gold)',
+            borderRadius: '50%',
+            boxShadow: '0 0 0 3px var(--bg)',
             justifySelf: 'center',
           }}/>
           <div style={{
-            height: 40, padding: '0 12px',
+            padding: '10px 14px',
             display: 'flex', alignItems: 'center', gap: 10,
-            background: 'var(--card)', boxShadow: 'var(--pressed-2)',
-            fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 12,
-            letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text)',
+            background: 'var(--card)',
+            boxShadow: 'var(--shadow-sm), var(--ring)',
+            borderRadius: 'var(--radius-md)',
+            fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: 13,
+            color: 'var(--text)',
           }}>
             <span style={{color:'var(--text-muted)'}}>{TIcons[e.ico]}</span>
             {e.label}
@@ -371,35 +386,48 @@ function TimelineFeed() {
 function StagePicker() {
   return (
     <div style={{
-      width: 320, padding: 8,
-      background: 'var(--card)', boxShadow: 'var(--raised), 0 0 0 1px rgba(0,0,0,.4)',
+      width: 320, padding: 10,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-lg), var(--ring)',
+      borderRadius: 'var(--radius-lg)',
       display: 'flex', flexDirection: 'column', gap: 4,
     }}>
       <div style={{
-        padding: '6px 10px',
-        fontFamily: 'var(--font-chrome)', fontWeight: 700, fontSize: 10,
-        letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-muted)',
-      }}>MOVE TO STAGE</div>
+        padding: '8px 12px 6px',
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+        letterSpacing: '0.12em', textTransform: 'uppercase',
+        color: 'var(--gold)',
+      }}>Move to stage</div>
       {STAGES.map(s => {
         const on = s.active;
         return (
           <button key={s.id} style={{
-            height: 36, padding: '0 12px',
-            display: 'flex', alignItems: 'center', gap: 10,
-            background: on ? 'var(--lcd-bg)' : 'var(--card)',
-            boxShadow: on ? 'var(--pressed-2)' : 'var(--raised-2)',
-          }}>
+            height: 40, padding: '0 14px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            background: on ? 'var(--sunken)' : 'transparent',
+            color: 'var(--text)',
+            boxShadow: on ? 'inset 0 0 0 1.5px var(--gold)' : 'none',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none', cursor: 'pointer',
+            transition: 'background var(--dur-fast) var(--ease)',
+          }}
+          onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'var(--sunken)' }}
+          onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent' }}
+          >
             <span style={{
-              width: 10, height: 10, background: s.color,
-              boxShadow: 'var(--shadow-xs), var(--ring)',
+              width: 8, height: 8, background: s.color,
+              borderRadius: '50%',
+              flex: '0 0 auto',
             }}/>
-            <span className="chrome-label" style={{
-              flex: 1, textAlign: 'left', fontSize: 11,
-              color: on ? '#a78bfa' : 'var(--text)',
-              textShadow: on ? '0 0 6px rgba(167,139,250,.55)' : 'none',
-            }}>{s.label}</span>
+            <span style={{
+              flex: 1, textAlign: 'left',
+              fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 500, fontSize: 13,
+              letterSpacing: '0.01em',
+              color: on ? 'var(--navy)' : 'var(--text)',
+            }}>{(s.label || '').charAt(0) + (s.label || '').slice(1).toLowerCase()}</span>
             {on && (
-              <svg viewBox="0 0 16 16" width="12" height="12" style={{stroke:'var(--gold)'}}>
+              <svg viewBox="0 0 16 16" width="12" height="12"
+                style={{stroke:'var(--gold)', strokeWidth: 2.5, fill:'none', strokeLinecap: 'round', strokeLinejoin: 'round'}}>
                 <path d="M3 8 L7 12 L13 4"/>
               </svg>
             )}
