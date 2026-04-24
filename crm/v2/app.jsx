@@ -2109,21 +2109,45 @@ function InstallBriefModal({ contact, onClose }) {
       padding: 16, overflowY: 'auto',
     }}>
       <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
-        width: 520, maxWidth: '100%', margin: '12px 0',
-        background: 'var(--bg)', boxShadow: 'var(--raised-2)',
+        width: 560, maxWidth: '100%', margin: '12px 0',
+        background: 'var(--bg)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
+        overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
       }}>
-        {/* Header */}
+        {/* Header — navy hero */}
         <div style={{
-          padding: '14px 16px', background: 'var(--navy)', color: 'var(--gold)',
+          padding: '18px 20px 16px',
+          background: 'var(--navy)', color: '#fff',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <span className="eyebrow" style={{ fontSize: 11, color: 'var(--gold)' }}>Install brief</span>
-          <button onClick={onClose} style={{
-            width: 26, height: 26, fontSize: 14, display: 'grid', placeItems: 'center',
-            background: 'transparent', border: '1px solid rgba(255,186,0,.4)',
-            color: 'var(--gold)', cursor: 'pointer',
-          }}>×</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700,
+              letterSpacing: '0.16em', textTransform: 'uppercase',
+              color: 'var(--gold)',
+            }}>Install brief</span>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800,
+              letterSpacing: '-0.015em', color: '#fff',
+            }}>{contact.name || displayPhone}</span>
+          </div>
+          <button onClick={onClose}
+            aria-label="Close install brief"
+            style={{
+              width: 32, height: 32,
+              fontSize: 18, display: 'grid', placeItems: 'center',
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              color: '#fff', cursor: 'pointer',
+              borderRadius: 'var(--radius-pill)',
+              transition: 'background var(--dur) var(--ease)',
+              lineHeight: 1,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,100,100,0.25)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+          >×</button>
         </div>
 
         <div style={{ padding: 12 }}>
