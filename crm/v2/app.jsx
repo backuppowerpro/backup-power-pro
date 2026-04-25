@@ -9685,7 +9685,10 @@ function reasonChipFor({ contact, signals }) {
   if (contact.stage === 7 || contact.stage === 8) return { label: 'Awaiting inspection', tone: 'purple' };
   if (signals.stuckQuoteDays > 2) {
     const d = Math.round(signals.stuckQuoteDays);
-    const f = d >= 7 ? 'Exit' : d >= 4 ? 'Follow up #2' : 'Follow up #1';
+    // Sentence-clear labels — a new hire reading 'Exit · 18d silent' has
+    // no idea what to do. 'Send exit message · 18d silent' is the action.
+    // 'Follow up · 4d silent' tells them to reply.
+    const f = d >= 7 ? 'Send exit message' : 'Follow up';
     return { label: `${f} · ${d}d silent`, tone: 'red' };
   }
   if (contact.stage >= 4 && contact.stage <= 6) {
