@@ -81,9 +81,10 @@ function LcdTime({ t }) {
     <span style={{
       minWidth: 58, padding: '4px 10px',
       background: 'var(--sunken)',
-      color: 'var(--navy)',
+      color: 'var(--text)',
       fontFamily: 'var(--font-mono)', fontWeight: 600,
       fontSize: 13, letterSpacing: '0.02em',
+      fontVariantNumeric: 'tabular-nums',
       borderRadius: 'var(--radius-sm)',
       textAlign: 'center',
       boxShadow: 'var(--ring)',
@@ -121,11 +122,13 @@ function GoodDot() {
 function MorningBriefing({ mobile = false }) {
   return (
     <div style={{
-      width: mobile ? '100%' : 640,
+      width: mobile ? '100%' : 680,
       height: mobile ? '100%' : 'auto',
       maxHeight: mobile ? '100%' : '90vh',
       background: 'var(--card)',
-      boxShadow: mobile ? 'none' : 'var(--raised-2)',
+      boxShadow: mobile ? 'none' : 'var(--shadow-xl), var(--ring)',
+      borderRadius: mobile ? 0 : 'var(--radius-lg)',
+      overflow: 'hidden',
       display: 'flex', flexDirection: 'column',
     }}>
       {/* Hero-card header — navy panel with eyebrow + wordmark-style greeting */}
