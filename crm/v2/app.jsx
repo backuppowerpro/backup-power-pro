@@ -6136,19 +6136,25 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
         onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--navy) 6%, var(--sunken))'; e.currentTarget.style.color = 'var(--text)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
         >…</button>
-        <button onClick={suggestReply} disabled={suggesting} title="Suggest reply (Sparky)" style={{
-          width: 36, height: 36,
-          background: suggesting
-            ? 'var(--gold)'
-            : 'color-mix(in srgb, var(--gold) 14%, var(--sunken))',
-          color: suggesting ? 'var(--navy)' : 'var(--gold-ink)',
-          border: 'none', cursor: suggesting ? 'wait' : 'pointer',
-          fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 800,
-          borderRadius: 'var(--radius-pill)',
-          display: 'grid', placeItems: 'center',
-          letterSpacing: '0.04em',
-          transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
-        }}>{suggesting ? '…' : 'AI'}</button>
+        <button
+          onClick={suggestReply}
+          disabled={suggesting}
+          aria-label={suggesting ? 'Sparky is suggesting a reply' : 'Suggest reply with Sparky AI'}
+          aria-busy={suggesting}
+          title="Suggest reply (Sparky)"
+          style={{
+            width: 36, height: 36,
+            background: suggesting
+              ? 'var(--gold)'
+              : 'color-mix(in srgb, var(--gold) 14%, var(--sunken))',
+            color: suggesting ? 'var(--navy)' : 'var(--gold-ink)',
+            border: 'none', cursor: suggesting ? 'wait' : 'pointer',
+            fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 800,
+            borderRadius: 'var(--radius-pill)',
+            display: 'grid', placeItems: 'center',
+            letterSpacing: '0.04em',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+          }}>{suggesting ? '…' : 'AI'}</button>
         <button onClick={pickPhoto} disabled={sending} title="Attach photo (MMS)" aria-label="Attach photo for MMS" style={{
           width: 36, height: 36,
           background: 'var(--sunken)',
@@ -6161,7 +6167,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
         onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--navy) 6%, var(--sunken))'; e.currentTarget.style.color = 'var(--text)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
         >
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/>
             <path d="M1.5 10 L5 7 L8 10 L11 6 L14.5 10.5"/>
             <circle cx="5.5" cy="5.5" r="1"/>
