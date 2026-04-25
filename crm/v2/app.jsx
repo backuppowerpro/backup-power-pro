@@ -7121,9 +7121,14 @@ function LivePermits() {
         }}>Jurisdiction</span>
         {headers.map(h => (
           <span key={h} style={{
-            fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
+            // Step columns are 44px wide; uppercase + 0.1em letter-spacing
+            // pushed 'PRINTED' / 'INSPECT' past their cell width and they
+            // visually merged into 'PRINTEDINSPECT'. Sentence case + tight
+            // letter-spacing fits cleanly.
+            fontFamily: 'var(--font-display)', fontSize: 10.5, fontWeight: 700,
+            letterSpacing: '-0.005em',
             color: 'var(--text-muted)', textAlign: 'center',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{h}</span>
         ))}
         <span style={{
