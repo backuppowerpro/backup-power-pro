@@ -50,33 +50,42 @@ function Header({ mobile, onClose, showStagePicker }) {
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
     }}>
       {/* Back / close button — top-left */}
-      <button style={{
-        position: 'absolute', top: 14, left: 14,
-        width: 34, height: 34,
-        background: 'rgba(255,255,255,0.08)', color: '#fff',
-        borderRadius: 'var(--radius-pill)',
-        display: 'grid', placeItems: 'center',
-        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
-        cursor: 'pointer',
-        transition: 'background var(--dur) var(--ease)',
-      }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-      >{mobile ? '‹' : '×'}</button>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={mobile ? 'Back to list' : 'Close contact'}
+        title={mobile ? 'Back to list' : 'Close contact (Esc)'}
+        style={{
+          position: 'absolute', top: 14, left: 14,
+          width: 34, height: 34,
+          background: 'rgba(255,255,255,0.08)', color: '#fff',
+          borderRadius: 'var(--radius-pill)',
+          display: 'grid', placeItems: 'center',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+          cursor: 'pointer', border: 'none',
+          transition: 'background var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+      ><span aria-hidden="true">{mobile ? '‹' : '×'}</span></button>
 
       {/* Overflow menu — top-right */}
-      <button style={{
-        position: 'absolute', top: 14, right: 14,
-        width: 34, height: 34,
-        background: 'rgba(255,255,255,0.08)', color: '#fff',
-        borderRadius: 'var(--radius-pill)',
-        display: 'grid', placeItems: 'center',
-        cursor: 'pointer',
-        transition: 'background var(--dur) var(--ease)',
-      }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-      ><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/></svg></button>
+      <button
+        type="button"
+        aria-label="More actions"
+        title="More actions"
+        style={{
+          position: 'absolute', top: 14, right: 14,
+          width: 34, height: 34,
+          background: 'rgba(255,255,255,0.08)', color: '#fff',
+          borderRadius: 'var(--radius-pill)',
+          display: 'grid', placeItems: 'center',
+          cursor: 'pointer', border: 'none',
+          transition: 'background var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+      ><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/></svg></button>
 
       <HouseBlock size={68} />
       <div style={{
