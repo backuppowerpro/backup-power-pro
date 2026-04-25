@@ -9921,18 +9921,24 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
         .filter(Boolean);
 
       // Stuck quotes: turn each into a row with the age-based F/U label
-      // (F/U 1 / F/U 2 / EXIT), same rule the Finance chips use. Cap 5.
+      // (F/U 1 / F/U 2 / Exit), same rule the Finance chips use. Cap 5.
+      // Structured `chip` lets BriefSection render a proper smart-chip pill
+      // instead of leaking raw [bracket] markers into the body text.
       const stuckQuotes = (stuckPropsRes.data || [])
         .filter(p => p.contact_id && !isSnoozedFor(p.contact_id))
         .slice(0, 5)
         .map(p => {
           const days = (Date.now() - new Date(p.created_at).getTime()) / 86400000;
-          const label = days >= 7 ? 'EXIT' : days >= 4 ? 'F/U 2' : 'F/U 1';
+          const label = days >= 7 ? 'Exit' : days >= 4 ? 'F/U 2' : 'F/U 1';
+          const tone  = days >= 7 ? 'red'  : days >= 4 ? 'red'   : 'gold';
           const total = Number(p.total) || 0;
           const fromContact = lookupContactMap[p.contact_id];
           const name = displayNameFor(fromContact ? fromContact : { name: p.contact_name });
           return {
-            text: `[${label}] ${name} · $${total.toLocaleString()} · ${Math.round(days)}d silent`,
+            // BriefSection prefers `chip` + `text` when chip is set; falls
+            // back to raw `text` for legacy callers.
+            chip: { label, tone },
+            text: `${name} · $${total.toLocaleString()} · ${Math.round(days)}d silent`,
             id: p.contact_id,
           };
         });
@@ -9979,17 +9985,25 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
       setSections({
         urgent,
         installsToday: (installsRes.data || []).map(c => ({
-          text: `${new Date(c.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} — ${displayNameFor(c)}${c.address ? ' · ' + c.address.split(',')[0] : ''}`,
+          chip: {
+            label: new Date(c.install_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+            tone: 'green',
+          },
+          text: `${displayNameFor(c)}${c.address ? ' · ' + c.address.split(',')[0] : ''}`,
           id: c.id,
         })),
         waiting,
         stuckQuotes,
         overdue: (overdueRes.data || [])
           .filter(c => !isSnoozedFor(c.id))
-          .map(c => ({
-            text: `${displayNameFor(c)} — ${Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000)} days silent`,
-            id: c.id,
-          })),
+          .map(c => {
+            const days = Math.round((Date.now() - new Date(c.created_at).getTime()) / 86400000);
+            return {
+              chip: { label: `${days}d`, tone: 'red' },
+              text: `${displayNameFor(c)} silent`,
+              id: c.id,
+            };
+          }),
         today: (recentRes.data || []).map(c => ({
           text: `New today: ${displayNameFor(c)}`, id: c.id,
         })),
@@ -10216,17 +10230,25 @@ function BriefSection({ label, tint, items, onPick }) {
           }}>Nothing here — clean.</div>
         ) : items.map((it, i) => (
           <button key={i} onClick={() => onPick && it.id && onPick(it.id)} style={{
-            display: 'block', width: '100%', textAlign: 'left',
+            display: 'flex', alignItems: 'center', gap: 10,
+            width: '100%', textAlign: 'left',
             padding: '10px 12px', fontSize: 13.5,
             fontFamily: 'var(--font-body)', color: 'var(--text)',
             background: 'transparent', border: 'none',
             cursor: onPick && it.id ? 'pointer' : 'default',
             borderRadius: 'var(--radius-sm)',
-            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+            transition: 'background var(--dur) var(--ease)',
           }}
-          onMouseEnter={e => { if (onPick && it.id) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; } }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text)'; }}
-          >{it.text}</button>
+          onMouseEnter={e => { if (onPick && it.id) e.currentTarget.style.background = 'var(--sunken)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+          >
+            {it.chip ? (
+              <span className={`smart-chip smart-chip--${it.chip.tone}`} style={{ flex: '0 0 auto' }}>
+                {it.chip.label}
+              </span>
+            ) : null}
+            <span style={{ flex: 1, minWidth: 0 }}>{it.text}</span>
+          </button>
         ))}
       </div>
     </div>
