@@ -3018,13 +3018,25 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
           return (
             <React.Fragment key={m.id}>
               {showTs && thisTime ? (
-                <div className="mono" style={{
-                  alignSelf: 'center', fontSize: 10, color: 'var(--text-faint)',
-                  margin: '6px 0 2px', letterSpacing: '.04em',
+                <div style={{
+                  alignSelf: 'center',
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  margin: '14px 0 4px',
                 }}>
-                  {sameDay
-                    ? thisTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-                    : thisTime.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  <span style={{ width: 24, height: 1, background: 'var(--divider-faint)' }}/>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11,
+                    color: 'var(--text-faint)',
+                    fontVariantNumeric: 'tabular-nums',
+                    padding: '2px 10px',
+                    background: 'var(--sunken)',
+                    borderRadius: 'var(--radius-pill)',
+                  }}>
+                    {sameDay
+                      ? thisTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                      : thisTime.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  </span>
+                  <span style={{ width: 24, height: 1, background: 'var(--divider-faint)' }}/>
                 </div>
               ) : null}
             <div
@@ -3040,20 +3052,26 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
                 padding: '10px 14px',
                 background: isOut ? 'var(--navy)' : 'var(--card)',
                 color: isOut ? '#fff' : 'var(--text)',
-                boxShadow: 'var(--raised-2)',
-                fontSize: 15, lineHeight: 1.4,
+                boxShadow: isOut ? 'var(--shadow-sm)' : 'var(--shadow-sm), var(--ring)',
+                borderRadius: 'var(--radius-md)',
+                borderBottomRightRadius: isOut ? 'var(--radius-xs)' : 'var(--radius-md)',
+                borderTopLeftRadius: !isOut ? 'var(--radius-xs)' : 'var(--radius-md)',
+                fontSize: 15, lineHeight: 1.45,
                 position: 'relative',
                 cursor: 'pointer',
+                marginTop: 4,
               }}>
               {isOut && m.sender === 'ai' ? (
                 <span style={{
-                  position: 'absolute', left: -6, top: -6,
-                  padding: '0 4px',
-                  background: 'var(--card)',
-                  color: 'var(--text-faint)',
-                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '.08em',
-                  border: '1px solid var(--divider)',
-                }}>alex</span>
+                  position: 'absolute', left: -4, top: -8,
+                  padding: '2px 8px',
+                  background: 'var(--blue)',
+                  color: '#fff',
+                  fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  borderRadius: 'var(--radius-pill)',
+                  boxShadow: 'var(--shadow-xs)',
+                }}>Alex</span>
               ) : null}
               <MessageBody body={m.body} isOut={isOut} />
               {m.recording_url ? (
@@ -3065,7 +3083,12 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
                 />
               ) : null}
               {m.duration_seconds ? (
-                <div className="mono" style={{ fontSize: 10, color: isOut ? 'rgba(255,255,255,.65)' : 'var(--text-faint)', marginTop: 4 }}>
+                <div style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 11,
+                  color: isOut ? 'rgba(255,255,255,.65)' : 'var(--text-faint)',
+                  marginTop: 4,
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
                   {Math.floor(m.duration_seconds / 60)}:{String(m.duration_seconds % 60).padStart(2, '0')} call
                 </div>
               ) : null}
@@ -3077,16 +3100,32 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
                   permanently stuck at 'sent' — Key had no visibility when a
                   text failed. Now failed shows red so he sees it at a glance. */}
               {isOut && (m.status === 'failed' || m.status === 'undelivered') ? (
-                <div className="mono" style={{
-                  fontSize: 9, marginTop: 4, letterSpacing: '.08em',
-                  color: 'var(--ms-3)', textTransform: 'uppercase',
-                }}>⚠ Not delivered</div>
+                <div style={{
+                  fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+                  marginTop: 4, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: '#ff8a8a',
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  Not delivered
+                </div>
               ) : null}
               {isOut && m.status === 'delivered' ? (
-                <div className="mono" style={{
-                  fontSize: 9, marginTop: 4, letterSpacing: '.06em',
-                  color: 'rgba(255,255,255,.45)', textTransform: 'lowercase',
-                }}>delivered</div>
+                <div style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 10,
+                  marginTop: 4,
+                  color: 'rgba(255,255,255,.55)',
+                  display: 'inline-flex', alignItems: 'center', gap: 3,
+                }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Delivered
+                </div>
               ) : null}
             </div>
             </React.Fragment>
