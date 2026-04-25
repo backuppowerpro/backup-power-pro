@@ -6967,21 +6967,31 @@ function VoiceCallModal({ voice, onClose }) {
     return (
       <CallCard title="INCOMING CALL" color="var(--lcd-red)" name={display}>
         <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
-          <button onClick={voice.decline} style={{
-            width: 72, height: 72, background: 'var(--red)', color: '#fff',
-            clipPath: 'var(--avatar-clip)', cursor: 'pointer',
-            display: 'grid', placeItems: 'center',
-          }}>
-            <svg viewBox="0 0 16 16" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+          <button
+            onClick={voice.decline}
+            type="button"
+            aria-label="Decline call"
+            title="Decline call"
+            style={{
+              width: 72, height: 72, background: 'var(--red)', color: '#fff',
+              clipPath: 'var(--avatar-clip)', cursor: 'pointer', border: 'none',
+              display: 'grid', placeItems: 'center',
+            }}>
+            <svg viewBox="0 0 16 16" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" aria-hidden="true">
               <path d="M3 3 L13 13 M13 3 L3 13"/>
             </svg>
           </button>
-          <button onClick={voice.accept} style={{
-            width: 72, height: 72, background: 'var(--green)', color: '#fff',
-            clipPath: 'var(--avatar-clip)', cursor: 'pointer',
-            display: 'grid', placeItems: 'center',
-          }}>
-            <svg viewBox="0 0 16 16" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+          <button
+            onClick={voice.accept}
+            type="button"
+            aria-label="Accept call"
+            title="Accept call"
+            style={{
+              width: 72, height: 72, background: 'var(--green)', color: '#fff',
+              clipPath: 'var(--avatar-clip)', cursor: 'pointer', border: 'none',
+              display: 'grid', placeItems: 'center',
+            }}>
+            <svg viewBox="0 0 16 16" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" aria-hidden="true">
               <path d="M3 3 L5 3 L6 6 L5 7 A5 5 0 0 0 9 11 L10 10 L13 11 L13 13 A1 1 0 0 1 12 14 A11 11 0 0 1 2 4 A1 1 0 0 1 3 3 Z"/>
             </svg>
           </button>
@@ -7884,7 +7894,7 @@ function LiveMaterials() {
   );
 }
 
-function MatCheck({ on, onClick }) {
+function MatCheck({ on, onClick, label }) {
   const base = {
     width: 32, height: 32,
     cursor: onClick ? 'pointer' : 'default',
@@ -7892,23 +7902,42 @@ function MatCheck({ on, onClick }) {
     borderRadius: 'var(--radius-sm)',
     transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
   };
+  // Both states need an aria-label so a screen-reader user knows which
+  // material this checkbox is for. The `aria-pressed` flag carries the
+  // current state so they hear "checked" / "not checked" instead of having
+  // to infer from the icon's presence.
+  const ariaLabel = label
+    ? (on ? `Mark ${label} not received` : `Mark ${label} received`)
+    : (on ? 'Mark unchecked' : 'Mark checked');
   if (on) {
-    return <button onClick={onClick} style={{
-      ...base,
-      background: 'color-mix(in srgb, var(--green) 18%, var(--card))',
-      display: 'grid', placeItems: 'center', color: 'var(--green)',
-      boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent)',
-    }}>
-      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    return <button
+      onClick={onClick}
+      type="button"
+      aria-pressed="true"
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      style={{
+        ...base,
+        background: 'color-mix(in srgb, var(--green) 18%, var(--card))',
+        display: 'grid', placeItems: 'center', color: 'var(--green)',
+        boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent)',
+      }}>
+      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M3 8 L7 12 L13 4"/>
       </svg>
     </button>;
   }
-  return <button onClick={onClick} style={{
-    ...base,
-    background: 'var(--sunken)',
-    boxShadow: 'inset 0 0 0 1px var(--divider-faint)',
-  }} aria-label="Check off" />;
+  return <button
+    onClick={onClick}
+    type="button"
+    aria-pressed="false"
+    aria-label={ariaLabel}
+    title={ariaLabel}
+    style={{
+      ...base,
+      background: 'var(--sunken)',
+      boxShadow: 'inset 0 0 0 1px var(--divider-faint)',
+    }} />;
 }
 
 // ── Funnel widget primitives ───────────────────────────────────────────────
