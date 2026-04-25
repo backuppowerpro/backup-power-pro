@@ -12252,7 +12252,7 @@ const GLOBAL_SEARCH_PLACEHOLDER = {
   materials: 'Search materials — name, address…',
   finance:   'Search money — name, amount…',
 };
-function GlobalSearchBar({ tab }) {
+function GlobalSearchBar({ tab, onOpenHelp }) {
   const [q, setQ] = React.useState('');
   const lastTab = React.useRef(tab);
   // Re-broadcast the current query whenever the active tab changes so the
@@ -12305,6 +12305,31 @@ function GlobalSearchBar({ tab }) {
           }}>×</button>
         ) : null}
       </div>
+      {/* Keyboard-help button. Without a visible affordance, the ? hotkey is
+          invisible to anyone who hasn't read the source — exactly the kind of
+          new-hire failure the UX standard targets. The button is a small
+          ghost circle so it doesn't compete with the search pill. */}
+      {onOpenHelp ? (
+        <button
+          onClick={onOpenHelp}
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
+          style={{
+            flex: '0 0 auto',
+            width: 32, height: 32,
+            display: 'grid', placeItems: 'center',
+            background: 'var(--card)',
+            color: 'var(--text-muted)',
+            boxShadow: 'var(--ring)',
+            border: 'none', borderRadius: 'var(--radius-pill)',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--navy)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+        >?</button>
+      ) : null}
     </div>
   );
 }
@@ -13062,7 +13087,7 @@ function App() {
           smart-searches the left section based on whichever tab is active.
           Placeholder updates per-tab, input value broadcasts via
           bpp:global-search so each list component can filter. */}
-      <GlobalSearchBar tab={tab} />
+      <GlobalSearchBar tab={tab} onOpenHelp={() => setHelpOpen(true)} />
       {/* Two separate tab strips side-by-side above the two content columns.
           Left = main-tab nav. Right = dynamic hotkey strip for the open
           right-panel surface (Sparky pinned; contact toolbar when one is
