@@ -3614,7 +3614,13 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
   // install, Key needs to record the payment, flip the invoice to paid, and
   // fire the auto review text. Mirrors crm.html:5850-5870 markProposalComplete.
   async function markPaidOffline(proposal) {
-    const method = window.prompt('Payment method? (Cash / Check / Other)', 'Cash');
+    const method = await window.__bpp_prompt({
+      eyebrow: 'Mark paid offline',
+      title: 'Record payment method',
+      body: 'How did the customer pay? Used to log a payments row + flip the invoice to paid.',
+      input: { placeholder: 'Cash / Check / Zelle / etc.', default: 'Cash', required: true },
+      confirmLabel: 'Mark paid',
+    });
     if (!method) return;
     const total = Number(proposal.total) || 0;
     try {
@@ -6050,8 +6056,128 @@ window.__bpp_toast = (text, kind = 'info', action = null) => {
 // });
 const confirmSubs = new Set();
 window.__bpp_confirm = (opts) => new Promise((resolve) => {
-  confirmSubs.forEach(fn => fn({ id: Date.now() + Math.random(), opts: opts || {}, resolve }));
+  confirmSubs.forEach(fn => fn({ id: Date.now() + Math.random(), opts: opts || {}, resolve, kind: 'confirm' }));
 });
+// Same dialog runtime, but resolves with the typed string (or null on cancel)
+// when opts.input is set. Replaces native window.prompt().
+//   await window.__bpp_prompt({ title, body, input: { placeholder, default } })
+window.__bpp_prompt = (opts) => new Promise((resolve) => {
+  const merged = { ...(opts || {}), input: opts?.input || {} };
+  confirmSubs.forEach(fn => fn({ id: Date.now() + Math.random(), opts: merged, resolve, kind: 'prompt' }));
+});
+
+function ConfirmDialogEntry({ entry, dismiss }) {
+  const opts = entry.opts;
+  const isPrompt = entry.kind === 'prompt';
+  const [text, setText] = useState(isPrompt ? (opts.input?.default || '') : '');
+  const danger = !!opts.danger;
+  const confirmLabel = opts.confirmLabel || (isPrompt ? 'OK' : 'Confirm');
+  const cancelLabel  = opts.cancelLabel  || 'Cancel';
+  const onConfirm = () => {
+    if (isPrompt) {
+      const trimmed = (text || '').trim();
+      if (opts.input?.required && !trimmed) return;
+      dismiss(entry.id, trimmed || null);
+    } else {
+      dismiss(entry.id, true);
+    }
+  };
+  const onCancel = () => dismiss(entry.id, isPrompt ? null : false);
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={`confirm-title-${entry.id}`}
+      onClick={onCancel}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 130,
+        background: 'rgba(11,31,59,0.5)',
+        backdropFilter: 'blur(3px)',
+        display: 'grid', placeItems: 'center', padding: 16,
+      }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 420, maxWidth: '100%',
+        padding: '24px 26px 22px',
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-xl), var(--ring)',
+        borderRadius: 'var(--radius-lg)',
+        display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        {opts.eyebrow ? (
+          <span className="eyebrow" style={{ color: danger ? 'var(--red)' : 'var(--gold-ink)' }}>
+            {opts.eyebrow}
+          </span>
+        ) : null}
+        <h3
+          id={`confirm-title-${entry.id}`}
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-display)', fontWeight: 800,
+            fontSize: 20, letterSpacing: '-0.015em',
+            color: 'var(--text)',
+          }}>
+          {opts.title || 'Confirm'}
+        </h3>
+        {opts.body ? (
+          <p style={{
+            margin: 0,
+            fontFamily: 'var(--font-body)', fontSize: 14,
+            lineHeight: 1.5,
+            color: 'var(--text-muted)',
+          }}>
+            {opts.body}
+          </p>
+        ) : null}
+        {isPrompt ? (
+          <input
+            autoFocus
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); onConfirm(); }
+              if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+            }}
+            placeholder={opts.input?.placeholder || ''}
+            type={opts.input?.type || 'text'}
+            style={{
+              padding: '11px 14px', height: 44,
+              fontFamily: 'var(--font-body)', fontSize: 14,
+              color: 'var(--text)',
+              background: 'var(--sunken)',
+              border: 'none', outline: 'none',
+              borderRadius: 'var(--radius-sm)',
+              boxSizing: 'border-box',
+            }}
+            onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
+            onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
+          />
+        ) : null}
+        <div style={{ display: 'flex', gap: 10, marginTop: 4, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onCancel}
+            className="btn-ghost"
+          >{cancelLabel}</button>
+          <button
+            autoFocus={!isPrompt}
+            onClick={onConfirm}
+            disabled={isPrompt && opts.input?.required && !(text || '').trim()}
+            style={danger ? {
+              height: 36, padding: '0 18px',
+              background: 'var(--red)', color: '#fff',
+              border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+              letterSpacing: '-0.005em',
+              borderRadius: 'var(--radius-pill)',
+              boxShadow: '0 2px 8px color-mix(in srgb, var(--red) 30%, transparent)',
+              opacity: (isPrompt && opts.input?.required && !(text || '').trim()) ? 0.55 : 1,
+            } : undefined}
+            className={danger ? '' : 'btn-navy'}
+          >{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ConfirmRoot() {
   const [stack, setStack] = useState([]);
@@ -6069,19 +6195,15 @@ function ConfirmRoot() {
     confirmSubs.add(sub);
     return () => { confirmSubs.delete(sub); };
   }, []);
-  // Single Esc closes the most recently opened confirm
+  // Esc closes the most recently opened modal; Enter handled per-entry so
+  // prompts respect their input field.
   useEffect(() => {
     if (stack.length === 0) return;
     const onKey = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         const top = stack[stack.length - 1];
-        dismiss(top.id, false);
-      }
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const top = stack[stack.length - 1];
-        dismiss(top.id, true);
+        dismiss(top.id, top.kind === 'prompt' ? null : false);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -6090,80 +6212,9 @@ function ConfirmRoot() {
   if (stack.length === 0) return null;
   return (
     <>
-      {stack.map((entry) => {
-        const opts = entry.opts;
-        const danger = !!opts.danger;
-        const confirmLabel = opts.confirmLabel || 'Confirm';
-        const cancelLabel  = opts.cancelLabel  || 'Cancel';
-        return (
-          <div key={entry.id}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`confirm-title-${entry.id}`}
-            onClick={() => dismiss(entry.id, false)}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 130,
-              background: 'rgba(11,31,59,0.5)',
-              backdropFilter: 'blur(3px)',
-              display: 'grid', placeItems: 'center', padding: 16,
-            }}>
-            <div onClick={e => e.stopPropagation()} style={{
-              width: 420, maxWidth: '100%',
-              padding: '24px 26px 22px',
-              background: 'var(--card)',
-              boxShadow: 'var(--shadow-xl), var(--ring)',
-              borderRadius: 'var(--radius-lg)',
-              display: 'flex', flexDirection: 'column', gap: 14,
-            }}>
-              {opts.eyebrow ? (
-                <span className="eyebrow" style={{ color: danger ? 'var(--red)' : 'var(--gold-ink)' }}>
-                  {opts.eyebrow}
-                </span>
-              ) : null}
-              <h3
-                id={`confirm-title-${entry.id}`}
-                style={{
-                  margin: 0,
-                  fontFamily: 'var(--font-display)', fontWeight: 800,
-                  fontSize: 20, letterSpacing: '-0.015em',
-                  color: 'var(--text)',
-                }}>
-                {opts.title || 'Confirm'}
-              </h3>
-              {opts.body ? (
-                <p style={{
-                  margin: 0,
-                  fontFamily: 'var(--font-body)', fontSize: 14,
-                  lineHeight: 1.5,
-                  color: 'var(--text-muted)',
-                }}>
-                  {opts.body}
-                </p>
-              ) : null}
-              <div style={{ display: 'flex', gap: 10, marginTop: 4, justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => dismiss(entry.id, false)}
-                  className="btn-ghost"
-                >{cancelLabel}</button>
-                <button
-                  autoFocus
-                  onClick={() => dismiss(entry.id, true)}
-                  style={danger ? {
-                    height: 36, padding: '0 18px',
-                    background: 'var(--red)', color: '#fff',
-                    border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
-                    letterSpacing: '-0.005em',
-                    borderRadius: 'var(--radius-pill)',
-                    boxShadow: '0 2px 8px color-mix(in srgb, var(--red) 30%, transparent)',
-                  } : undefined}
-                  className={danger ? '' : 'btn-navy'}
-                >{confirmLabel}</button>
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      {stack.map(entry => (
+        <ConfirmDialogEntry key={entry.id} entry={entry} dismiss={dismiss} />
+      ))}
     </>
   );
 }
@@ -12788,14 +12839,20 @@ function App() {
           else if (id === 'toggle_dark') setIsDark(d => !d);
           else if (id === 'create_installer_token') {
             (async () => {
-              const name = window.prompt('Installer name (e.g. "Marcus")');
-              if (!name || !name.trim()) return;
+              const name = await window.__bpp_prompt({
+                eyebrow: 'New installer token',
+                title: 'Installer name',
+                body: 'Generates a one-off URL the installer can use to view assigned jobs without a full account.',
+                input: { placeholder: 'Marcus', required: true },
+                confirmLabel: 'Generate token',
+              });
+              if (!name) return;
               const token = (crypto.randomUUID && crypto.randomUUID()) || Math.random().toString(36).slice(2) + Date.now().toString(36);
-              const { error } = await db.from('installer_tokens').insert({ token, installer_name: name.trim() });
+              const { error } = await db.from('installer_tokens').insert({ token, installer_name: name });
               if (error) { window.__bpp_toast && window.__bpp_toast(`Failed: ${error.message}`, 'error'); return; }
               const url = `https://backuppowerpro.com/sub/?token=${token}`;
               try { await navigator.clipboard.writeText(url); } catch {}
-              window.__bpp_toast && window.__bpp_toast(`Token for ${name.trim()} copied. Text it to them.`, 'success', {
+              window.__bpp_toast && window.__bpp_toast(`Token for ${name} copied. Text it to them.`, 'success', {
                 label: 'View',
                 onClick: () => window.open(url, '_blank'),
               });
