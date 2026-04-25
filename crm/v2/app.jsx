@@ -433,12 +433,18 @@ function AuthGate({ onAuth }) {
           display: 'flex', flexDirection: 'column', gap: 18,
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{
+            {/* Programmatic label↔input association via htmlFor + id so a
+                screen-reader user hears "Email, edit text" not just
+                "edit text". DOM-order proximity isn't enough for ATs. */}
+            <label htmlFor="bpp-login-email" style={{
               fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600,
               color: 'var(--text-muted)', letterSpacing: '0.01em',
             }}>Email</label>
             <input
+              id="bpp-login-email"
+              name="email"
               type="email" value={email}
+              autoComplete="email"
               onChange={e => setEmail(e.target.value)}
               onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
               onBlur={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
@@ -456,12 +462,15 @@ function AuthGate({ onAuth }) {
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{
+            <label htmlFor="bpp-login-password" style={{
               fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600,
               color: 'var(--text-muted)', letterSpacing: '0.01em',
             }}>Password</label>
             <input
+              id="bpp-login-password"
+              name="password"
               type="password" value={password}
+              autoComplete="current-password"
               onChange={e => setPassword(e.target.value)}
               onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
               onBlur={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
@@ -479,7 +488,7 @@ function AuthGate({ onAuth }) {
             />
           </div>
           {error ? (
-            <div style={{
+            <div role="alert" aria-live="assertive" style={{
               padding: '10px 14px', fontSize: 13,
               background: 'color-mix(in srgb, var(--red) 10%, var(--card))',
               color: 'var(--red)',
