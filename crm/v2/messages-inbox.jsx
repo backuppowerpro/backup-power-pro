@@ -88,12 +88,12 @@ function Preview({ t }) {
 // keywords that imply something Key should drop what he's doing for.
 // Returns the matched bucket or null so the thread row can paint a chip.
 const SMART_URGENT_PATTERNS = [
-  { tone: 'red',  label: 'URGENT',   re: /\b(urgent|emergency|asap|right now|today|this morning|tonight|now|immediately)\b/i },
-  { tone: 'red',  label: 'STORM',    re: /\b(storm|power out|outage|no power|hurricane|ice storm|snow)\b/i },
-  { tone: 'red',  label: 'MEDICAL',  re: /\b(medical|oxygen|cpap|dialysis|medication|doctor|prescription)\b/i },
-  { tone: 'gold', label: 'READY',    re: /\b(ready to pay|ready to book|let'?s do it|sign me up|book it|lock it in|when can you)\b/i },
-  { tone: 'gold', label: 'QUESTION', re: /\?\s*$/ },
-  { tone: 'navy', label: 'OFFER',    re: /\b(afterpay|financing|discount|deposit|cash)\b/i },
+  { tone: 'red',  label: 'Urgent',   re: /\b(urgent|emergency|asap|right now|today|this morning|tonight|now|immediately)\b/i },
+  { tone: 'red',  label: 'Storm',    re: /\b(storm|power out|outage|no power|hurricane|ice storm|snow)\b/i },
+  { tone: 'red',  label: 'Medical',  re: /\b(medical|oxygen|cpap|dialysis|medication|doctor|prescription)\b/i },
+  { tone: 'gold', label: 'Ready',    re: /\b(ready to pay|ready to book|let'?s do it|sign me up|book it|lock it in|when can you)\b/i },
+  { tone: 'gold', label: 'Question', re: /\?\s*$/ },
+  { tone: 'navy', label: 'Offer',    re: /\b(afterpay|financing|discount|deposit|cash)\b/i },
 ];
 function smartMessageFlag(t) {
   if (!t?.prev) return null;
@@ -110,31 +110,40 @@ function ThreadRow({ t, compact = false, active = false }) {
       display: 'grid',
       gridTemplateColumns: compact ? '48px 1fr 64px' : '48px 1fr 100px',
       gap: 12, alignItems: 'center',
-      padding: '10px 14px', minHeight: 72,
-      background: 'var(--card)',
-      boxShadow: active ? 'var(--pressed-2)' : 'none',
+      padding: '12px 14px', minHeight: 72,
+      background: active ? 'var(--sunken)' : 'var(--card)',
       borderBottom: '1px solid var(--divider-faint)',
       borderLeft: t.waiting ? '3px solid var(--gold)' : '3px solid transparent',
       paddingLeft: 11,
+      transition: 'background var(--dur) var(--ease)',
     }}>
       <ThreadAvatar t={t} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span style={{
             fontFamily: 'var(--font-body)', fontSize: 15,
             fontWeight: t.unread ? 700 : 600, color: 'var(--text)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{t.name}</span>
-          {t.unread > 0 && <span style={{ width:6, height:6, background:'var(--gold)', display:'inline-block' }} />}
+          {t.unread > 0 && <span style={{ width:7, height:7, background:'var(--gold)', borderRadius: '50%', display:'inline-block', flex: '0 0 auto' }} />}
           {t.alex && <AlexBadge />}
           {flag ? <span className={`smart-chip smart-chip--${flag.tone}`}>{flag.label}</span> : null}
         </div>
         <Preview t={t} />
       </div>
       <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-        <span className="mono" style={{ fontSize:11, color:'var(--text-faint)', letterSpacing:'.04em' }}>{t.ts}</span>
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 11,
+          color: 'var(--text-faint)',
+          fontVariantNumeric: 'tabular-nums',
+        }}>{t.ts}</span>
         {t.unread > 0 && (
-          <span className="mono" style={{
-            fontSize: 11, color: 'var(--ms-3)',
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 10.5, fontWeight: 700,
+            padding: '1px 8px', minWidth: 22, textAlign: 'center',
+            background: 'var(--red)', color: '#fff',
+            borderRadius: 'var(--radius-pill)',
+            fontVariantNumeric: 'tabular-nums',
           }}>{t.unread}</span>
         )}
       </div>
