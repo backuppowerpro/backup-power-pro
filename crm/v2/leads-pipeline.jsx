@@ -126,32 +126,41 @@ function LeadCard({ c }) {
       }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
-          width: 24, height: 24, background: c.dnc ? 'var(--ms-3)' : 'var(--navy)',
-          clipPath: 'var(--avatar-clip)',
+          width: 24, height: 24, background: c.dnc ? 'var(--red)' : 'var(--navy)',
+          borderRadius: '50%',
           display: 'grid', placeItems: 'center', flex: '0 0 auto',
         }}>
           <span style={{
-            fontFamily: 'var(--font-chrome)', fontWeight: 700,
-            color: 'var(--gold)', fontSize: 10, letterSpacing: '.04em',
+            fontFamily: 'var(--font-body)', fontWeight: 600,
+            color: '#fff', fontSize: 10, letterSpacing: '0.01em',
           }}>{c.initials}</span>
         </div>
         <div style={{
-          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4,
+          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 5,
           fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-          color: c.overdue ? 'var(--ms-3)' : 'var(--text)',
+          color: c.overdue ? 'var(--red)' : 'var(--text)',
           overflow: 'hidden',
         }}>
-          {c.pinned ? <span style={{ color: 'var(--gold)', fontSize: 11, flex: '0 0 auto' }}>★</span> : null}
+          {c.pinned ? (
+            <span style={{ color: 'var(--gold)', flex: '0 0 auto', display: 'inline-grid', placeItems: 'center' }} aria-label="Pinned">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </span>
+          ) : null}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-          {/* Alex indicator — tiny mono tag when Alex is actively handling
-              the conversation (ai_enabled + early stage). Helps Key scan and
-              know "don't need to reply there, Alex has it". */}
+          {/* Alex indicator — tiny pill when Alex is actively handling the
+              conversation. Helps Key scan and know "don't need to reply
+              there, Alex has it". */}
           {c.alexActive ? (
-            <span className="mono" title="Alex is handling this conversation" style={{
-              padding: '1px 4px', fontSize: 8, letterSpacing: '.08em',
-              color: 'var(--text-faint)', background: 'var(--bg)',
-              border: '1px solid rgba(0,0,0,.15)', flex: '0 0 auto',
-            }}>ALEX</span>
+            <span title="Alex is handling this conversation" style={{
+              padding: '1px 6px', fontSize: 9, fontWeight: 700,
+              fontFamily: 'var(--font-display)', letterSpacing: '0.06em',
+              color: 'var(--blue)',
+              background: 'color-mix(in srgb, var(--blue) 12%, transparent)',
+              borderRadius: 'var(--radius-pill)',
+              flex: '0 0 auto', textTransform: 'uppercase',
+            }}>Alex</span>
           ) : null}
         </div>
         {typeof c.installOffsetDays === 'number'
