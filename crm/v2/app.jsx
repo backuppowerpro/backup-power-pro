@@ -1338,43 +1338,33 @@ function TierStrip({ contact, messages }) {
 
   return (
     <div style={{
-      padding: '10px 14px',
-      background: 'var(--card)',
-      boxShadow: 'var(--shadow-sm), var(--ring)',
-      borderRadius: 'var(--radius-md)',
+      padding: '8px 14px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
         <button
           onClick={() => setPickerOpen(p => !p)}
-          title="Change pricing tier"
+          title={`Change pricing tier · score ${score}`}
           className={`smart-chip smart-chip--${meta.tone || 'muted'}`}
           style={{
             border: 'none', cursor: 'pointer',
-            padding: '4px 12px', fontSize: 11,
-          }}>{meta.label} · {score}</button>
+            padding: '3px 10px', fontSize: 11,
+          }}>{meta.label}</button>
         {showSuggest ? (
           <button
             onClick={() => setTier(recommended)}
             title={`Signals: ${reasons.join(', ') || 'baseline'}`}
             style={{
-              padding: '4px 12px', height: 24,
+              padding: '3px 10px', height: 22,
               background: 'color-mix(in srgb, var(--gold) 14%, transparent)',
               color: 'var(--gold-ink)',
-              border: '1px solid color-mix(in srgb, var(--gold) 40%, transparent)',
+              border: 'none',
               borderRadius: 'var(--radius-pill)',
               fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 11,
               cursor: 'pointer',
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-            }}>→ {suggestMeta.label}</button>
-        ) : (
-          <span style={{
-            fontFamily: 'var(--font-body)', fontSize: 11,
-            color: 'var(--text-faint)',
-          }}>
-            {reasons[0] ? `· ${reasons[0]}` : ''}
-          </span>
-        )}
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+            }}>↑ {suggestMeta.label}</button>
+        ) : null}
       </div>
       {pickerOpen ? (
         <div onClick={() => setPickerOpen(false)} style={{
@@ -2647,22 +2637,26 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      height: '100%', background: 'var(--card)', boxShadow: 'var(--raised)',
+      height: '100%', background: 'var(--card)',
     }}>
-      {/* Header */}
+      {/* Compact header — one horizontal row instead of the old stacked
+          tower (avatar centered, then name, then phone, then address, then
+          email, then last-activity, then install-pill — Key called it
+          'crammed' and he was right). One row says: who is this contact +
+          how do I reach them + close + call. Address/email move into a
+          tappable secondary line. */}
       <div style={{
-        padding: '16px 16px 12px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-        position: 'relative',
-        paddingTop: mobile ? 'calc(16px + env(safe-area-inset-top))' : 16,
+        padding: '14px 16px 12px',
+        paddingTop: mobile ? 'calc(14px + env(safe-area-inset-top))' : 14,
+        display: 'flex', alignItems: 'center', gap: 12,
+        borderBottom: '1px solid var(--divider-faint)',
       }}>
         <button
           onClick={onBack}
           aria-label={mobile ? 'Back to list' : 'Close contact'}
           style={{
-            position: 'absolute', left: 12, top: mobile ? 'calc(12px + env(safe-area-inset-top))' : 12,
-            width: 34, height: 34, display: 'grid', placeItems: 'center',
-            fontSize: 18, lineHeight: 1,
+            width: 32, height: 32, display: 'grid', placeItems: 'center',
+            fontSize: 18, lineHeight: 1, flex: '0 0 auto',
             color: 'var(--text-muted)',
             background: 'var(--sunken)',
             border: 'none', cursor: 'pointer',
@@ -2672,14 +2666,121 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
           onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--red) 14%, var(--sunken))'; e.currentTarget.style.color = 'var(--red)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
         >{mobile ? '‹' : '×'}</button>
+        {/* Avatar — circular, 44px (was 64px clipPath polygon). Aligns
+            visually with the row avatars in the contact list so Key sees
+            the same person represented consistently. */}
+        <div style={{
+          width: 44, height: 44, flex: '0 0 auto',
+          background: 'var(--navy)',
+          borderRadius: '50%',
+          display: 'grid', placeItems: 'center',
+        }}>
+          <span style={{
+            fontFamily: 'var(--font-body)', fontWeight: 600,
+            color: '#fff', fontSize: 14, letterSpacing: '0.01em',
+          }}>
+            {initials(displayName)}
+          </span>
+        </div>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17,
+              letterSpacing: '-0.01em',
+              color: contact?.do_not_contact ? 'var(--text-muted)' : 'var(--text)',
+              textDecoration: contact?.do_not_contact ? 'line-through' : 'none',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{displayName}</span>
+            <PinButton contactId={contactId} />
+            {contact?.do_not_contact ? (
+              <span title="Do not contact" style={{
+                fontFamily: 'var(--font-display)', fontWeight: 700,
+                fontSize: 10, padding: '2px 8px',
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                color: 'var(--red)',
+                background: 'color-mix(in srgb, var(--red) 14%, transparent)',
+                borderRadius: 'var(--radius-pill)',
+                flex: '0 0 auto',
+              }}>DNC</span>
+            ) : null}
+          </div>
+          {/* Phone + address + email collapsed into a single secondary line
+              with bullet separators. Click any one to copy / open Maps /
+              compose email. Truncates with ellipsis, full address visible
+              on hover via title. */}
+          <div style={{
+            fontFamily: 'var(--font-body)', fontSize: 12.5,
+            color: 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', gap: 8,
+            overflow: 'hidden',
+          }}>
+            {displayPhone ? (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(contact?.phone || '')
+                    .then(() => window.__bpp_toast && window.__bpp_toast(`Phone copied — ${displayPhone}`, 'success'))
+                    .catch(() => {});
+                }}
+                title="Click to copy phone"
+                style={{
+                  background: 'transparent', border: 'none', padding: 0,
+                  color: 'var(--link)',
+                  fontFamily: 'var(--font-mono)', fontSize: 'inherit', fontWeight: 500,
+                  fontVariantNumeric: 'tabular-nums',
+                  cursor: 'pointer',
+                  flex: '0 0 auto',
+                }}
+              >{displayPhone}</button>
+            ) : null}
+            {contact?.address ? (
+              <>
+                <span style={{ color: 'var(--text-faint)', flex: '0 0 auto' }}>·</span>
+                <a
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
+                  target="_blank" rel="noopener"
+                  title={contact.address + ' — open in Google Maps'}
+                  style={{
+                    color: 'var(--link)',
+                    fontFamily: 'inherit', fontSize: 'inherit',
+                    textDecoration: 'none',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    minWidth: 0,
+                  }}
+                >{contact.address.split(',')[0]}</a>
+              </>
+            ) : null}
+            {contact?.email ? (
+              <>
+                <span style={{ color: 'var(--text-faint)', flex: '0 0 auto' }}>·</span>
+                <a
+                  href={`mailto:${contact.email}`}
+                  title={`Email ${contact.email}`}
+                  aria-label={`Email ${contact.email}`}
+                  style={{
+                    color: 'var(--text-faint)',
+                    fontFamily: 'inherit', fontSize: 'inherit',
+                    textDecoration: 'none',
+                    flex: '0 0 auto',
+                    display: 'inline-grid', placeItems: 'center',
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                </a>
+              </>
+            ) : null}
+          </div>
+        </div>
         {contact?.phone && !contact?.do_not_contact ? (
           <button
             onClick={() => window.__bpp_dial && window.__bpp_dial(contact.phone)}
             title="Call (D)"
             aria-label={`Call ${contact.name || 'contact'}`}
             style={{
-              position: 'absolute', right: 12, top: mobile ? 'calc(12px + env(safe-area-inset-top))' : 12,
-              width: 38, height: 38, display: 'grid', placeItems: 'center',
+              width: 40, height: 40, display: 'grid', placeItems: 'center',
+              flex: '0 0 auto',
               background: 'var(--green)', color: '#fff', cursor: 'pointer',
               border: 'none',
               borderRadius: 'var(--radius-pill)',
@@ -2694,141 +2795,6 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
             </svg>
           </button>
         ) : null}
-        <div style={{
-          width: 64, height: 64,
-          clipPath: 'var(--avatar-clip)',
-          background: 'var(--navy)',
-          display: 'grid', placeItems: 'center',
-        }}>
-          <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 22 }}>
-            {initials(displayName)}
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <PinButton contactId={contactId} />
-          <div style={{
-            fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 18,
-            color: contact?.do_not_contact ? 'var(--ms-3)' : 'var(--text)',
-            textDecoration: contact?.do_not_contact ? 'line-through' : 'none',
-          }}>{displayName}</div>
-          {contact?.do_not_contact ? (
-            <span title="Do not contact" style={{
-              fontFamily: 'var(--font-display)', fontWeight: 700,
-              fontSize: 10.5, padding: '3px 10px',
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: 'var(--red)',
-              background: 'color-mix(in srgb, var(--red) 14%, transparent)',
-              borderRadius: 'var(--radius-pill)',
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-            }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)' }}/>
-              DNC
-            </span>
-          ) : null}
-        </div>
-        <div style={{
-          fontFamily: 'var(--font-body)', fontSize: 12.5,
-          color: 'var(--text-muted)', textAlign: 'center',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-        }}>
-          {displayPhone ? (
-            mobile ? (
-              <a href={`tel:${contact?.phone || ''}`}
-                title="Call via phone"
-                style={{
-                  color: 'var(--link)',
-                  fontFamily: 'var(--font-mono)',
-                  fontVariantNumeric: 'tabular-nums',
-                  textDecoration: 'none',
-                  borderBottom: '1px dashed color-mix(in srgb, var(--link) 40%, transparent)',
-                }}>{displayPhone}</a>
-            ) : (
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(contact?.phone || '')
-                    .then(() => window.__bpp_toast && window.__bpp_toast(`Phone copied — ${displayPhone}`, 'success'))
-                    .catch(() => {});
-                }}
-                title="Click to copy"
-                style={{
-                  background: 'transparent', border: 'none', padding: 0,
-                  color: 'var(--link)',
-                  fontFamily: 'var(--font-mono)', fontSize: 'inherit',
-                  fontVariantNumeric: 'tabular-nums',
-                  cursor: 'pointer',
-                  borderBottom: '1px dashed color-mix(in srgb, var(--link) 40%, transparent)',
-                }}
-              >{displayPhone}</button>
-            )
-          ) : <span style={{ color: 'var(--text-faint)' }}>—</span>}
-          {contact?.address ? (
-            <a
-              href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
-              target="_blank" rel="noopener"
-              title="Open in Google Maps"
-              style={{
-                color: 'var(--link)',
-                fontFamily: 'inherit', fontSize: 'inherit',
-                textDecoration: 'none',
-                borderBottom: '1px dashed color-mix(in srgb, var(--link) 40%, transparent)',
-                maxWidth: '90%',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}
-            >{contact.address}</a>
-          ) : null}
-          {contact?.email ? (
-            <a
-              href={`mailto:${contact.email}`}
-              title="Email contact"
-              style={{
-                color: 'var(--link)',
-                fontFamily: 'inherit', fontSize: 'inherit',
-                textDecoration: 'none',
-                borderBottom: '1px dashed color-mix(in srgb, var(--link) 40%, transparent)',
-              }}
-            >{contact.email}</a>
-          ) : null}
-        </div>
-        {messages.length > 0 ? (() => {
-          const latest = messages[messages.length - 1];
-          const latestTime = latest?.created_at ? new Date(latest.created_at) : null;
-          if (!latestTime) return null;
-          const mins = Math.floor((Date.now() - latestTime.getTime()) / 60000);
-          const ago = mins < 60
-            ? `${mins}m ago`
-            : mins < 1440
-              ? `${Math.floor(mins / 60)}h ago`
-              : `${Math.floor(mins / 1440)}d ago`;
-          return (
-            <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
-              Last activity · {ago}
-            </div>
-          );
-        })() : null}
-        {/* Install date pill — surfaces the scheduled install directly in
-            the header so Key never has to open the edit tab to know when
-            he's coming out. Colour shifts as it approaches: red=past-due,
-            gold=today/tomorrow, navy=<=7d, muted otherwise. */}
-        {contact?.install_date ? (() => {
-          const inst = new Date(contact.install_date);
-          if (isNaN(inst.getTime())) return null;
-          const diffDays = Math.round((inst.getTime() - Date.now()) / 86400000);
-          let color = 'var(--text-faint)';
-          if (diffDays < 0) color = 'var(--ms-3)';
-          else if (diffDays <= 1) color = 'var(--gold)';
-          else if (diffDays <= 7) color = 'var(--navy)';
-          const dateLabel = inst.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-          const timeLabel = inst.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-          return (
-            <div className="mono" title={`Install ${diffDays === 0 ? 'today' : diffDays < 0 ? `${Math.abs(diffDays)}d past-due` : `in ${diffDays}d`}`} style={{
-              fontSize: 10, color, letterSpacing: '.04em', fontWeight: 600,
-              padding: '3px 8px', marginTop: 4, boxShadow: 'var(--raised-2)',
-              background: 'var(--card)', whiteSpace: 'nowrap',
-            }}>
-              Install · {dateLabel} · {timeLabel}
-            </div>
-          );
-        })() : null}
       </div>
 
       {/* Stage strip (click to open picker) + install-brief trigger */}
@@ -2903,13 +2869,11 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         <LeadProfileStrip contactPhone={contact.phone} />
       ) : null}
 
-      {contact ? (
-        <NextActionCard
-          contact={contact}
-          messages={messages}
-          alexSession={alexSession}
-        />
-      ) : null}
+      {/* NextActionCard retired 2026-04-25 — was rendering an icon-card hint
+          immediately above the LLM-powered SmartNextActionHint, which Key
+          flagged as 'lots of info crammed in here.' SmartNextActionHint
+          (further down, just before the tab content) carries the single
+          most-relevant suggestion now. */}
 
       {duplicates.length > 0 ? (
         <DuplicateStrip duplicates={duplicates} />
@@ -5410,16 +5374,16 @@ function SmartNextActionHint({ contact, messages, outstandingBalance, onJumpTab,
     if (dnc) return { body: 'Customer is marked Do Not Contact.', cta: null, tab: null };
     if (waiting) {
       const preview = (latest.body || '').slice(0, 56);
-      return { body: `Customer replied: "${preview}${preview.length >= 56 ? '…' : ''}"`, cta: 'REPLY NOW', tab: 'MESSAGES' };
+      return { body: `Customer replied: "${preview}${preview.length >= 56 ? '…' : ''}"`, cta: 'Reply now', tab: 'MESSAGES' };
     }
-    if (hoursToInstall !== null && hoursToInstall >= 0 && hoursToInstall <= 24) return { body: 'Install is today. Open the install brief and drive out.', cta: 'BRIEF →', tab: 'BRIEF' };
-    if (hoursToInstall !== null && hoursToInstall > 24 && hoursToInstall <= 72) return { body: 'Install is in the next 72 hours. Confirm materials + permit are ready.', cta: 'PERMITS', tab: 'PERMITS' };
-    if (stage === 1) return { body: 'New lead. Draft a quote or let Alex collect panel photo + amp + address.', cta: 'NEW QUOTE', tab: 'QUOTE' };
-    if (stage === 2) return { body: 'Quote is out — follow up or pivot to a deposit link if the customer viewed it.', cta: 'SEE QUOTE', tab: 'QUOTE' };
-    if (stage === 3 && !hasInstallDate) return { body: 'Booked but no install date set. Send a scheduling text with your open slots.', cta: 'REPLY', tab: 'MESSAGES' };
-    if (stage >= 4 && stage <= 6) return { body: 'Permit in flight. Check status and bump the jurisdiction if it has been >3 days.', cta: 'PERMITS', tab: 'PERMITS' };
-    if (stage === 7 || stage === 8) return { body: 'Inspection window — schedule or confirm the inspector visit.', cta: 'PERMITS', tab: 'PERMITS' };
-    if (outstandingBalance > 0) return { body: `Outstanding balance: $${Number(outstandingBalance).toLocaleString()}. Nudge the invoice.`, cta: 'INVOICE', tab: 'QUOTE' };
+    if (hoursToInstall !== null && hoursToInstall >= 0 && hoursToInstall <= 24) return { body: 'Install is today. Open the install brief and drive out.', cta: 'Open brief', tab: 'BRIEF' };
+    if (hoursToInstall !== null && hoursToInstall > 24 && hoursToInstall <= 72) return { body: 'Install is in the next 72 hours. Confirm materials + permit are ready.', cta: 'Open permit', tab: 'PERMITS' };
+    if (stage === 1) return { body: 'New lead. Draft a quote or let Alex collect panel photo + amp + address.', cta: 'New quote', tab: 'QUOTE' };
+    if (stage === 2) return { body: 'Quote is out — follow up or pivot to a deposit link if the customer viewed it.', cta: 'See quote', tab: 'QUOTE' };
+    if (stage === 3 && !hasInstallDate) return { body: 'Booked but no install date set. Send a scheduling text with your open slots.', cta: 'Reply', tab: 'MESSAGES' };
+    if (stage >= 4 && stage <= 6) return { body: 'Permit in flight. Check status and bump the jurisdiction if it has been >3 days.', cta: 'Open permit', tab: 'PERMITS' };
+    if (stage === 7 || stage === 8) return { body: 'Inspection window — schedule or confirm the inspector visit.', cta: 'Open permit', tab: 'PERMITS' };
+    if (outstandingBalance > 0) return { body: `Outstanding balance: $${Number(outstandingBalance).toLocaleString()}. Nudge the invoice.`, cta: 'Send invoice', tab: 'QUOTE' };
     return null;
   }, [contact, messages, outstandingBalance]);
 
@@ -11199,48 +11163,142 @@ function SnoozeRow({ contactId, contactName, stage }) {
   // booked+ leads sleep for 7d. Rendered as a gold ring on the preset
   // that matches the current contact's lifecycle stage.
   const smartPreset = stage === 1 ? 1 : stage === 2 ? 3 : 7;
+  // Active snoozed state: subtle banner with one Clear action.
   if (daysLeft > 0) {
     return (
       <div style={{
-        padding: '6px 14px', borderBottom: '1px solid var(--divider-faint)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)',
+        padding: '8px 14px',
+        background: 'color-mix(in srgb, var(--purple) 8%, var(--card))',
+        borderBottom: '1px solid var(--divider-faint)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
+        fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--purple)',
       }}>
-        <span>Snoozed · {daysLeft} day{daysLeft === 1 ? '' : 's'} left</span>
-        <button onClick={() => { unsnoozeContact(contactId); window.__bpp_toast && window.__bpp_toast('Snooze cleared', 'info'); }} style={{
-          padding: '2px 8px', fontSize: 11, fontFamily: 'var(--font-body)',
-          background: 'transparent', color: 'var(--text-muted)',
-          boxShadow: 'var(--raised-2)', border: 'none', cursor: 'pointer',
-        }}>Clear</button>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Snoozed · {daysLeft} day{daysLeft === 1 ? '' : 's'} left
+        </span>
+        <button onClick={() => { unsnoozeContact(contactId); window.__bpp_toast && window.__bpp_toast('Snooze cleared', 'info'); }}
+          aria-label="Clear snooze"
+          style={{
+            padding: '3px 10px', fontSize: 11.5, fontFamily: 'var(--font-display)', fontWeight: 600,
+            background: 'transparent', color: 'var(--purple)',
+            border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-pill)',
+          }}>Clear</button>
       </div>
     );
   }
+  // Idle (not snoozed) — collapse to a small clock-icon button that opens
+  // a popover when clicked. Replaces the always-visible "Snooze 1d 3d 7d"
+  // pill row that was using header real estate without telling the user
+  // anything until they hovered. New hire test: the clock icon + tooltip
+  // explains itself ("Snooze") and the popover surfaces presets only on
+  // demand.
   return (
-    <div style={{
-      padding: '4px 14px', borderBottom: '1px solid var(--divider-faint)',
-      display: 'flex', alignItems: 'center', gap: 6,
-      fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--text-faint)',
+    <SnoozePopover
+      contactId={contactId}
+      contactName={contactName}
+      smartPreset={smartPreset}
+      stage={stage}
+    />
+  );
+}
+
+function SnoozePopover({ contactId, contactName, smartPreset, stage }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    window.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); window.removeEventListener('keydown', onKey); };
+  }, [open]);
+  const presets = [1, 3, 7];
+  return (
+    <div ref={ref} style={{
+      padding: '6px 14px',
+      borderBottom: '1px solid var(--divider-faint)',
+      display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+      position: 'relative',
     }}>
-      <span>Snooze</span>
-      {presets.map(n => {
-        const suggested = n === smartPreset;
-        return (
-          <button key={n} onClick={() => {
-            snoozeContact(contactId, n);
-            window.__bpp_toast && window.__bpp_toast(`${contactName || 'Contact'} snoozed ${n} day${n === 1 ? '' : 's'}`, 'info');
-          }}
-          title={suggested ? `Suggested for stage ${stage}` : `${n} day snooze`}
-          style={{
-            padding: '2px 8px', fontSize: 10, fontFamily: 'var(--font-body)',
-            background: 'transparent', color: suggested ? 'var(--navy)' : 'var(--text-muted)',
-            boxShadow: suggested
-              ? 'inset 0 0 0 1px var(--gold), var(--raised-2)'
-              : 'var(--raised-2)',
-            border: 'none', cursor: 'pointer',
-            fontWeight: suggested ? 700 : 400,
-          }}>{n}d</button>
-        );
-      })}
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Snooze contact"
+        aria-label="Open snooze options"
+        aria-expanded={open}
+        style={{
+          height: 26, padding: '0 10px',
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: open ? 'var(--sunken)' : 'transparent',
+          color: 'var(--text-muted)',
+          border: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontSize: 11.5, fontWeight: 600,
+          borderRadius: 'var(--radius-pill)',
+          transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+        }}
+        onMouseEnter={e => { if (!open) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)' } }}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' } }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Snooze
+      </button>
+      {open ? (
+        <div style={{
+          position: 'absolute', top: '100%', right: 14, marginTop: 4, zIndex: 8,
+          padding: 6,
+          background: 'var(--card)',
+          boxShadow: 'var(--shadow-md), var(--ring)',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex', flexDirection: 'column', gap: 2,
+          minWidth: 140,
+        }}>
+          {presets.map(n => {
+            const suggested = n === smartPreset;
+            return (
+              <button key={n}
+                onClick={() => {
+                  snoozeContact(contactId, n);
+                  window.__bpp_toast && window.__bpp_toast(`${contactName || 'Contact'} snoozed ${n} day${n === 1 ? '' : 's'}`, 'info');
+                  setOpen(false);
+                }}
+                style={{
+                  padding: '8px 12px', textAlign: 'left',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--font-body)', fontSize: 13,
+                  color: 'var(--text)',
+                  borderRadius: 'var(--radius-sm)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                  transition: 'background var(--dur) var(--ease)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <span>{n} day{n === 1 ? '' : 's'}</span>
+                {suggested ? (
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    padding: '2px 6px',
+                    background: 'color-mix(in srgb, var(--gold) 18%, transparent)',
+                    color: 'var(--gold-ink)',
+                    borderRadius: 'var(--radius-pill)',
+                  }}>Suggested</span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
