@@ -640,11 +640,11 @@ function LiveLeadsList({ desktop = false, onSelect }) {
   }, [rows, pinsTick, query, waitingSet]);
 
   if (loading) {
-    return <Loading label="Loading contacts" />;
+    return <ListSkeleton count={8} />;
   }
   if (err) {
     return (
-      <div style={{
+      <div role="alert" style={{
         margin: 16, padding: '12px 14px',
         fontFamily: 'var(--font-body)', fontSize: 13,
         background: 'color-mix(in srgb, var(--red) 10%, var(--card))',
@@ -8481,7 +8481,7 @@ function Loading({ label = 'Loading' }) {
     return s;
   })();
   return (
-    <div style={{
+    <div role="status" aria-live="polite" style={{
       padding: 32,
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
       fontFamily: 'var(--font-body)',
@@ -8493,8 +8493,53 @@ function Loading({ label = 'Loading' }) {
         background: 'var(--gold)',
         animation: 'pulse 1.2s infinite',
         flex: '0 0 auto',
-      }}/>
+      }} aria-hidden="true"/>
       {pretty}…
+    </div>
+  );
+}
+
+// Skeleton row — shimmer-animated placeholder that matches the live LeadRow
+// shape (avatar + name line + phone line + chip + timestamp). Used during
+// the initial fetch so Key sees the surface settle into real rows instead
+// of a centered "Loading…" spinner. Reads as 'this is what's coming' rather
+// than 'we're stuck'.
+function ListSkeleton({ count = 6 }) {
+  const shimmer = {
+    background: 'linear-gradient(90deg, var(--sunken) 0%, color-mix(in srgb, var(--sunken) 40%, var(--card)) 50%, var(--sunken) 100%)',
+    backgroundSize: '400px 100%',
+    animation: 'shimmer 1.4s linear infinite',
+  };
+  const bar = (w) => (
+    <span style={{
+      ...shimmer,
+      display: 'block', height: 10, width: w,
+      borderRadius: 'var(--radius-pill)',
+    }}/>
+  );
+  return (
+    <div role="status" aria-live="polite" aria-label="Loading contacts">
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 14px', minHeight: 72,
+          borderBottom: '1px solid var(--divider-faint)',
+        }}>
+          <span style={{
+            ...shimmer,
+            width: 44, height: 44, flex: '0 0 auto',
+            borderRadius: '50%',
+          }}/>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {bar('45%')}
+            {bar('30%')}
+          </div>
+          <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+            {bar(70)}
+            {bar(34)}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
