@@ -13046,9 +13046,16 @@ function App() {
           }
         })();
       }
-      // / → focus a visible search input on whatever tab is active
+      // / → focus a visible search input on whatever tab is active. Tries
+      // tab-specific search inputs first (threads / Sparky), then falls
+      // through to the global search bar above the tabs (placeholder
+      // starts with "Search "). Without that fallback, /quick / /money /
+      // /permits etc. had no visible search-bar focus on the / key even
+      // though the global search bar exists on every tab.
       if (e.key === '/') {
-        const search = document.querySelector('input[placeholder="Search threads…"], textarea[placeholder="Ask anything…"], input[placeholder="Ask anything…"]');
+        const search = document.querySelector(
+          'input[placeholder="Search threads…"], textarea[placeholder="Ask anything…"], input[placeholder="Ask anything…"]'
+        ) || document.querySelector('input[placeholder^="Search "]');
         if (search) { e.preventDefault(); search.focus(); }
       }
     };
