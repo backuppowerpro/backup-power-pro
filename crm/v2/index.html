@@ -24,6 +24,27 @@
 <div id="app"></div>
 
 <script>
+  // Suppress Babel-standalone's "code generator deoptimised" perf notice.
+  // It fires at error level whenever a JSX file is over 500KB, but it is
+  // NOT a runtime error — the code still runs fine. The notice was flooding
+  // the dev console with what looked like real errors (Key, 2026-04-25).
+  // We also filter the matching "in-browser Babel transformer" warning since
+  // we're knowingly running Babel in the browser for now.
+  (function() {
+    const origError = console.error;
+    const origWarn  = console.warn;
+    console.error = function(...args) {
+      const first = args[0];
+      if (typeof first === 'string' && /\[BABEL\] Note: The code generator has deoptimised/.test(first)) return;
+      return origError.apply(console, args);
+    };
+    console.warn = function(...args) {
+      const first = args[0];
+      if (typeof first === 'string' && /You are using the in-browser Babel transformer/.test(first)) return;
+      return origWarn.apply(console, args);
+    };
+  })();
+
   // Register service worker (crm/v2/sw.js) for offline shell + faster reloads.
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
