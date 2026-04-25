@@ -856,12 +856,16 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder={`Search ${totalCount} contacts by name, phone, address…`}
+          onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
+          onBlur={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
           style={{
-            flex: 1, height: 40, padding: '0 14px',
+            flex: 1, height: 40, padding: '0 16px',
             fontFamily: 'var(--font-body)', fontSize: 14,
+            color: 'var(--text)',
             background: 'var(--sunken)', boxShadow: 'var(--ring)',
             borderRadius: 'var(--radius-pill)',
-            border: 'none',
+            border: 'none', outline: 'none',
+            transition: 'box-shadow var(--dur) var(--ease)',
           }}
         />
         <button
