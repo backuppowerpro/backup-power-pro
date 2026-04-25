@@ -10446,7 +10446,37 @@ function AgentsInboxStrip() {
                   let s = String(item.summary || '');
                   s = s.replace(/^(alex|sparky|brief|permit-morning-check|pipeline)\s*(?:→|->)\s*key\s*(?:\[[a-z0-9_]+\])?\s*:\s*/i, '');
                   s = s.replace(/\[[a-z0-9_]+\]:?\s*/gi, '');
-                  return s.trim() || item.summary;
+                  // Pull out 'Photo: <url>' fragments so we can render them
+                  // as a thumbnail instead of a long unreadable URL string.
+                  // Inline image preview keeps the card scannable and gives
+                  // Key a visual sanity check before he opens the contact.
+                  const photoMatch = s.match(/Photo:\s*(https?:\/\/\S+)/i);
+                  const photoUrl = photoMatch ? photoMatch[1] : null;
+                  if (photoUrl) {
+                    s = s.replace(/Photo:\s*https?:\/\/\S+/i, '').trim();
+                  }
+                  const body = s.trim() || item.summary;
+                  return (
+                    <>
+                      <div>{body}</div>
+                      {photoUrl ? (
+                        <a href={photoUrl} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{
+                          display: 'block', marginTop: 8,
+                          borderRadius: 'var(--radius-sm)',
+                          overflow: 'hidden',
+                          background: 'var(--sunken)',
+                          maxWidth: 200,
+                          aspectRatio: '4 / 3',
+                          textDecoration: 'none',
+                          boxShadow: 'var(--ring)',
+                        }}>
+                          <img src={photoUrl} alt="Customer photo" loading="lazy" decoding="async" style={{
+                            width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                          }} />
+                        </a>
+                      ) : null}
+                    </>
+                  );
                 })()}
               </div>
               {item.draft_reply ? (
