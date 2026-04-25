@@ -6488,11 +6488,14 @@ function KeyboardHelp({ open, onClose }) {
     { keys: 'P', label: 'Pin / unpin open contact' },
     { keys: 'Y', label: 'Yank contact summary to clipboard' },
     { keys: 'X', label: 'Export SMS thread transcript' },
-    { keys: 'J', label: 'Jump to next waiting thread' },
-    { keys: '/', label: 'Focus search (Messages / Sparky)' },
+    { keys: 'J', label: 'Jump to next waiting thread (most tabs)' },
+    { keys: 'J / K', label: 'Step rows on /list (Vim-style)' },
+    { keys: '↑ / ↓', label: 'Step rows on /list (arrow keys)' },
+    { keys: 'Enter', label: 'Open focused row on /list' },
+    { keys: '/', label: 'Focus search bar' },
     { keys: '1–9', label: 'Set stage → auto-advance to next waiting' },
     { keys: '⌘S', label: 'Save notes' },
-    { keys: 'Esc', label: 'Close detail or modal' },
+    { keys: 'Esc', label: 'Close detail, clear focus, or close modal' },
     { keys: '?', label: 'Show this help' },
   ];
   return (
@@ -12882,8 +12885,10 @@ function App() {
         return null;
       };
       // j → jump to next waiting thread (customer sent last message).
-      // Works from anywhere — opens the slide-over on the Leads tab.
-      if (e.key === 'j') {
+      // Works from anywhere EXCEPT /list, where j/k mean "step focused row"
+      // (handled by LeadsListWithBulkActions). Without this guard the row
+      // step and the next-waiting jump fight each other on the same press.
+      if (e.key === 'j' && tab !== 'list') {
         e.preventDefault();
         (async () => {
           const next = await findNextWaiting(selectedContact);
@@ -12954,7 +12959,10 @@ function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [gPending, selectedContact, briefOpen, newLeadOpen]);
+    // tab is in deps because the global `j` handler now bails when tab === 'list'
+    // — local LeadsListWithBulkActions owns j/k there. Without `tab` in deps
+    // the closure would see whatever tab was active when the effect first ran.
+  }, [gPending, selectedContact, briefOpen, newLeadOpen, tab]);
 
   // Auth bootstrap
   useEffect(() => {
