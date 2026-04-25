@@ -5219,6 +5219,20 @@ function DetailNotes({ contact, onUpdate }) {
   // size). Renders as a chip row above the textarea so Key can see what
   // was auto-detected without scrolling to install brief. Pure client-
   // side today; swappable to an LLM extractor later.
+  // Brand-name → canonical capitalization. "SQUARE D" reads as shouting in
+  // a smart-chip; "Square D" reads as a proper brand name. "GE" is genuinely
+  // all-caps so it stays.
+  const PANEL_BRAND_LABEL = {
+    'square d': 'Square D',
+    'siemens': 'Siemens',
+    'eaton': 'Eaton',
+    'ge': 'GE',
+    'cutler-hammer': 'Cutler-Hammer',
+    'cutler hammer': 'Cutler-Hammer',
+    'homeline': 'Homeline',
+    'bryant': 'Bryant',
+    'murray': 'Murray',
+  };
   const smartFacts = React.useMemo(() => {
     const out = [];
     if (!text) return out;
@@ -5226,11 +5240,14 @@ function DetailNotes({ contact, onUpdate }) {
     const amp = t.match(/\b(30|50)\s*a(?:mp)?\b/);
     if (amp) out.push({ label: `${amp[1]}A`, tone: 'navy' });
     const panel = t.match(/\b(square d|siemens|eaton|ge|cutler[- ]hammer|homeline|bryant|murray)\b/i);
-    if (panel) out.push({ label: panel[1].toUpperCase(), tone: 'purple' });
+    if (panel) {
+      const k = panel[1].toLowerCase();
+      out.push({ label: PANEL_BRAND_LABEL[k] || (k.charAt(0).toUpperCase() + k.slice(1)), tone: 'purple' });
+    }
     const watts = t.match(/\b(\d{1,2}(?:\.\d)?)\s*k\s*w\b/i);
     if (watts) out.push({ label: `${watts[1]} kW`, tone: 'gold' });
     const service = t.match(/\b(100|125|150|200|400)\s*(?:a|amp)\s*service\b/i);
-    if (service) out.push({ label: `${service[1]}A SERVICE`, tone: 'green' });
+    if (service) out.push({ label: `${service[1]}A service`, tone: 'green' });
     const sqft = t.match(/\b(\d{3,4})\s*(?:sq ?ft|sq\.? ft)\b/i);
     if (sqft) out.push({ label: `${sqft[1]} sqft`, tone: 'muted' });
     return out;
@@ -9678,10 +9695,16 @@ function LiveCalls({ onSelect }) {
         const smart = smartCallFlag(r);
         const isVm = r.status === 'voicemail' || (!!r.recordingUrl && r.direction === 'inbound');
         return (
-          <div key={r.id} style={{
-            display: 'flex', flexDirection: 'column',
-            borderBottom: '1px solid var(--divider-faint)',
-            background: 'var(--card)',
+          <div key={r.id}
+            // Row-level hover tint so the cursor isn't flying over a static
+            // surface — mirrors the tone Money / Permits / Messages now use.
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; }}
+            style={{
+              display: 'flex', flexDirection: 'column',
+              borderBottom: '1px solid var(--divider-faint)',
+              background: 'var(--card)',
+              transition: 'background var(--dur) var(--ease)',
           }}>
             <button onClick={() => r.contactId && onSelect && onSelect(r.contactId)}
               className="tactile-flat" style={{
@@ -10148,13 +10171,18 @@ function LiveQuickList({ onSelect }) {
   );
 
   if (visibleRows.length === 0) {
+    // Sentence case for the empty-state filter label so it reads like prose
+    // — "No leads in Quoted" not "No leads in QUOTED" (fails the new-hire
+    // shouting test). The chip itself is sentence case ("All"), so the hint
+    // matches that exactly.
+    const stageNice = stageFilter.charAt(0).toUpperCase() + stageFilter.slice(1);
     return (
       <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 24px' }}>
         <SmartTodayWidget />
         {chipRow}
         <Empty
-          label={globalQ ? `No matches for "${globalQ}"` : `No leads in ${stageFilter.toUpperCase()}`}
-          hint={globalQ ? "Try fewer characters or ⌘K for a cross-section smart search." : "Tap ALL above to see everyone."}
+          label={globalQ ? `No matches for "${globalQ}"` : `No leads in ${stageNice}`}
+          hint={globalQ ? "Try fewer characters or ⌘K for a cross-section smart search." : "Tap All above to see everyone."}
         />
       </div>
     );
@@ -12044,7 +12072,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
 //   INVOICE  → VIEW · COPY LINK · RESEND · MARK PAID · REFUND   (future)
 //   PROPOSAL → VIEW · COPY SMS · RESEND · CONVERT TO INVOICE    (future)
 //   CALL     → PLAY · TRANSCRIBE · CALL BACK                    (future)
-function RightTabBar({ selectedContact, contactLabel, contactPhone, onCloseContact, onOpenBrief, compact = false }) {
+function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrief, compact = false }) {
   // Mirror of LiveContactDetail's internal detailTab so we can highlight
   // the active button here. LiveContactDetail dispatches
   // `bpp:detail-tab-changed` whenever its detailTab changes; we dispatch
@@ -12306,17 +12334,18 @@ function App() {
     const deskOnly = window.MOBILE_DESKTOP_ONLY_TABS;
     if (window.innerWidth < 768 && deskOnly && deskOnly.has(tab)) setTab('quick');
   }, [tab]);
-  // Cheap fetch of the current contact's display name + phone so the
-  // right-side action bar can label the contact and wire the CALL button.
-  // Re-fires only when selectedContact changes.
-  const [rightPanelContactLabel, setRightPanelContactLabel] = useState('');
+  // Cheap fetch of the current contact's phone so the right-side action bar
+  // can wire the Call button. Earlier the same effect also set
+  // rightPanelContactLabel via .toUpperCase(), but that value was never
+  // rendered (RightTabBar destructured the prop and dropped it on the floor).
+  // The all-caps would have shouted contact names if anyone ever wired it
+  // back up; better to remove the dead pipe entirely.
   const [rightPanelContactPhone, setRightPanelContactPhone] = useState('');
   useEffect(() => {
     let alive = true;
-    if (!selectedContact) { setRightPanelContactLabel(''); setRightPanelContactPhone(''); return; }
-    db.from('contacts').select('name, phone').eq('id', selectedContact).maybeSingle()
+    if (!selectedContact) { setRightPanelContactPhone(''); return; }
+    db.from('contacts').select('phone').eq('id', selectedContact).maybeSingle()
       .then(({ data }) => { if (!alive) return;
-        setRightPanelContactLabel(displayNameFor(data || {}).toUpperCase());
         setRightPanelContactPhone(data?.phone || '');
       });
     return () => { alive = false; };
@@ -13050,7 +13079,6 @@ function App() {
           <div style={{ flex: '0 0 480px', width: 480 }}>
             <RightTabBar
               selectedContact={selectedContact}
-              contactLabel={rightPanelContactLabel}
               contactPhone={rightPanelContactPhone}
               onCloseContact={() => setSelectedContact(null)}
               onOpenBrief={() => window.dispatchEvent(new CustomEvent('bpp:open-install-brief'))}
@@ -13130,7 +13158,6 @@ function App() {
                 width and renders the same sub-tab / CALL / BRIEF / × row. */}
             <RightTabBar
               selectedContact={selectedContact}
-              contactLabel={rightPanelContactLabel}
               contactPhone={rightPanelContactPhone}
               onCloseContact={() => setSelectedContact(null)}
               onOpenBrief={() => window.dispatchEvent(new CustomEvent('bpp:open-install-brief'))}
