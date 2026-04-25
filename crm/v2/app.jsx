@@ -5784,12 +5784,18 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
   if (disabled) {
     return (
       <div style={{
-        padding: '12px 14px calc(12px + env(safe-area-inset-bottom))',
-        background: 'var(--card)', boxShadow: 'var(--raised)',
-        textAlign: 'center',
-        fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--ms-3)',
+        padding: '14px 16px calc(14px + env(safe-area-inset-bottom))',
+        background: 'var(--card)',
+        borderTop: '1px solid var(--divider-faint)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        fontFamily: 'var(--font-body)', fontSize: 13,
+        color: 'var(--red)', fontWeight: 600,
       }}>
-        This contact is marked Do Not Contact — messaging is disabled.
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+        </svg>
+        Marked do-not-contact — messaging disabled.
       </div>
     );
   }
@@ -5801,10 +5807,10 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
 
   return (
     <div style={{
-      padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
+      padding: '12px 14px calc(12px + env(safe-area-inset-bottom))',
       background: 'var(--card)',
-      boxShadow: 'var(--raised)',
-      display: 'flex', flexDirection: 'column', gap: 6,
+      borderTop: '1px solid var(--divider-faint)',
+      display: 'flex', flexDirection: 'column', gap: 8,
       position: 'relative',
     }}>
       {/* Smart Quick Replies — only appear when the latest message is an
