@@ -2842,7 +2842,19 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         ) : null}
       </div>
 
-      {contact ? <TierStrip contact={contact} messages={messages} /> : null}
+      {/* Meta row — tier pill on the left, snooze button on the right.
+          Combined into a single horizontal row instead of two stacked
+          rows so the panel breathes. */}
+      {contact ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 8,
+          borderBottom: '1px solid var(--divider-faint)',
+        }}>
+          <TierStrip contact={contact} messages={messages} />
+          <SnoozeRow contactId={contactId} contactName={contact?.name} stage={contact?.stage} embedded />
+        </div>
+      ) : null}
 
       {outstandingBalance > 0 ? (
         <button
@@ -2886,8 +2898,8 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         <ReviewAskStrip contactName={contact?.name} />
       ) : null}
 
-      <SnoozeRow contactId={contactId} contactName={contact?.name} stage={contact?.stage} />
-
+      {/* SnoozeRow now embedded inside the meta row above (next to TierStrip).
+          The previous standalone row is retired. */}
 
       {briefOpen ? (
         <InstallBriefModal contact={contact} onClose={() => setBriefOpen(false)} />
@@ -11148,7 +11160,7 @@ function togglePin(id) {
 }
 function isPinned(id) { return id && readPins().includes(id); }
 
-function SnoozeRow({ contactId, contactName, stage }) {
+function SnoozeRow({ contactId, contactName, stage, embedded = false }) {
   const [daysLeft, setDaysLeft] = useState(() => isSnoozedFor(contactId));
   useEffect(() => {
     setDaysLeft(isSnoozedFor(contactId));
@@ -11169,9 +11181,10 @@ function SnoozeRow({ contactId, contactName, stage }) {
       <div style={{
         padding: '8px 14px',
         background: 'color-mix(in srgb, var(--purple) 8%, var(--card))',
-        borderBottom: '1px solid var(--divider-faint)',
+        borderBottom: embedded ? 'none' : '1px solid var(--divider-faint)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
         fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--purple)',
+        ...(embedded ? { flex: '1 1 auto' } : {}),
       }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -11203,11 +11216,12 @@ function SnoozeRow({ contactId, contactName, stage }) {
       contactName={contactName}
       smartPreset={smartPreset}
       stage={stage}
+      embedded={embedded}
     />
   );
 }
 
-function SnoozePopover({ contactId, contactName, smartPreset, stage }) {
+function SnoozePopover({ contactId, contactName, smartPreset, stage, embedded = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -11223,10 +11237,11 @@ function SnoozePopover({ contactId, contactName, smartPreset, stage }) {
   const presets = [1, 3, 7];
   return (
     <div ref={ref} style={{
-      padding: '6px 14px',
-      borderBottom: '1px solid var(--divider-faint)',
+      padding: embedded ? '0 14px 0 0' : '6px 14px',
+      borderBottom: embedded ? 'none' : '1px solid var(--divider-faint)',
       display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
       position: 'relative',
+      flex: embedded ? '0 0 auto' : undefined,
     }}>
       <button
         onClick={() => setOpen(o => !o)}
