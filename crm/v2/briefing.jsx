@@ -58,20 +58,24 @@ function BriefRow({ left, main, right }) {
   );
 }
 
-function DoneBtn() {
+function DoneBtn({ label = 'Mark done' }) {
   return (
-    <button style={{
-      width: 30, height: 30,
-      background: 'var(--card)',
-      color: 'var(--text-muted)',
-      borderRadius: 'var(--radius-pill)',
-      boxShadow: 'var(--ring)',
-      display: 'grid', placeItems: 'center',
-      cursor: 'pointer',
-      transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
-    }}
-    onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#fff' }}
-    onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      style={{
+        width: 30, height: 30,
+        background: 'var(--card)',
+        color: 'var(--text-muted)',
+        borderRadius: 'var(--radius-pill)',
+        boxShadow: 'var(--ring)',
+        display: 'grid', placeItems: 'center',
+        cursor: 'pointer', border: 'none',
+        transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#fff' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)' }}
     >{BriefIcons.plus}</button>
   );
 }
@@ -149,16 +153,20 @@ function MorningBriefing({ mobile = false }) {
           }}>Good morning, Key.</span>
         </div>
         {!mobile && (
-          <button style={{
-            width: 34, height: 34,
-            background: 'rgba(255,255,255,0.08)', color: '#fff',
-            borderRadius: 'var(--radius-pill)',
-            display: 'grid', placeItems: 'center',
-            cursor: 'pointer',
-            transition: 'background var(--dur) var(--ease)',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          <button
+            type="button"
+            aria-label="Close briefing"
+            title="Close briefing"
+            style={{
+              width: 34, height: 34,
+              background: 'rgba(255,255,255,0.08)', color: '#fff',
+              borderRadius: 'var(--radius-pill)',
+              display: 'grid', placeItems: 'center',
+              cursor: 'pointer', border: 'none',
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
           >{BriefIcons.x}</button>
         )}
       </div>

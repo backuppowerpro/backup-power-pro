@@ -1,10 +1,12 @@
 /* global React */
 // Messages — Inbox list + open-thread split view
 
+// Decorative direction icons. aria-hidden so screen readers don't announce
+// raw geometry — the row's own text already says "incoming/outgoing/call".
 const MsgIcons = {
-  arrL:  <svg viewBox="0 0 16 16" width="10" height="10"><path d="M10 3 L4 8 L10 13"/></svg>,
-  arrR:  <svg viewBox="0 0 16 16" width="10" height="10"><path d="M6 3 L12 8 L6 13"/></svg>,
-  phone: <svg viewBox="0 0 16 16" width="11" height="11"><path d="M3 3 L5 3 L6 6 L5 7 A5 5 0 0 0 9 11 L10 10 L13 11 L13 13 A1 1 0 0 1 12 14 A11 11 0 0 1 2 4 A1 1 0 0 1 3 3 Z"/></svg>,
+  arrL:  <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path d="M10 3 L4 8 L10 13"/></svg>,
+  arrR:  <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path d="M6 3 L12 8 L6 13"/></svg>,
+  phone: <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M3 3 L5 3 L6 6 L5 7 A5 5 0 0 0 9 11 L10 10 L13 11 L13 13 A1 1 0 0 1 12 14 A11 11 0 0 1 2 4 A1 1 0 0 1 3 3 Z"/></svg>,
 };
 
 const THREADS = [
@@ -105,18 +107,24 @@ function smartMessageFlag(t) {
 
 function ThreadRow({ t, compact = false, active = false }) {
   const flag = smartMessageFlag(t);
+  const [hover, setHover] = React.useState(false);
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: compact ? '48px 1fr 64px' : '48px 1fr 100px',
-      gap: 12, alignItems: 'center',
-      padding: '12px 14px', minHeight: 72,
-      background: active ? 'var(--sunken)' : 'var(--card)',
-      borderBottom: '1px solid var(--divider-faint)',
-      borderLeft: t.waiting ? '3px solid var(--gold)' : '3px solid transparent',
-      paddingLeft: 11,
-      transition: 'background var(--dur) var(--ease)',
-    }}>
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: compact ? '48px 1fr 64px' : '48px 1fr 100px',
+        gap: 12, alignItems: 'center',
+        padding: '12px 14px', minHeight: 72,
+        // Active row uses --sunken (selected). Hover uses a lighter --bg tint
+        // so the user gets affordance feedback before clicking. Active wins.
+        background: active ? 'var(--sunken)' : (hover ? 'var(--bg)' : 'var(--card)'),
+        borderBottom: '1px solid var(--divider-faint)',
+        borderLeft: t.waiting ? '3px solid var(--gold)' : '3px solid transparent',
+        paddingLeft: 11,
+        transition: 'background var(--dur) var(--ease)',
+      }}>
       <ThreadAvatar t={t} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>

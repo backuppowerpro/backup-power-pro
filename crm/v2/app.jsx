@@ -697,6 +697,15 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [applying, setApplying] = useState(false);
+  // Power-user keyboard nav: j/k or arrow keys step through rows, Enter opens
+  // the focused row, Esc clears focus, "/" focuses search. Only active on
+  // desktop (the typing surface where Vim-style nav makes sense). The first
+  // press from -1 lands on row 0 either direction so the user doesn't get
+  // confused by an off-by-one.
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [hintShown, setHintShown] = useState(() => {
+    try { return localStorage.getItem('bpp_v2_jk_hint_shown') === '1'; } catch { return true; }
+  });
   // Stage filter — narrow the visible rows to a single pipeline stage (or
   // "done" = stage 9+). 'all' shows everything. Persisted to localStorage so
   // Key's filter sticks across reloads.
@@ -757,6 +766,82 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
     if (!selectMode) return filteredByStage;
     return filteredByStage.map(r => ({ ...r, _selected: selectedIds.has(r.id) }));
   }, [filteredByStage, selectMode, selectedIds]);
+
+  // Clamp focusedIndex if the visible row count shrinks (filter change, search).
+  // Without this the focus ring stays on row 14 even when the filter only
+  // returns 3 rows — confusing.
+  useEffect(() => {
+    if (focusedIndex >= rowsWithSelectState.length) {
+      setFocusedIndex(rowsWithSelectState.length === 0 ? -1 : rowsWithSelectState.length - 1);
+    }
+  }, [rowsWithSelectState.length, focusedIndex]);
+
+  // j/k/arrow keyboard navigation. Only on desktop — the keyboard isn't the
+  // primary input on mobile. Skip if user is typing in a form field.
+  useEffect(() => {
+    if (!desktop) return;
+    const onKey = (e) => {
+      const t = e.target;
+      const tag = (t?.tagName || '').toUpperCase();
+      const editable = tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable);
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const len = rowsWithSelectState.length;
+      // "/" focuses search even from row context — universal hotkey
+      if (e.key === '/' && !editable) {
+        e.preventDefault();
+        const input = document.querySelector('input[placeholder^="Search"]');
+        if (input) input.focus();
+        return;
+      }
+      if (editable) return;
+      if (len === 0) return;
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(i => {
+          if (i < 0) return 0;
+          return Math.min(len - 1, i + 1);
+        });
+        if (!hintShown) {
+          try { localStorage.setItem('bpp_v2_jk_hint_shown', '1'); } catch {}
+          setHintShown(true);
+        }
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(i => {
+          if (i < 0) return 0;
+          return Math.max(0, i - 1);
+        });
+      } else if (e.key === 'Enter') {
+        if (focusedIndex >= 0 && focusedIndex < len) {
+          e.preventDefault();
+          const row = rowsWithSelectState[focusedIndex];
+          if (selectMode) toggleSelected(row);
+          else onSelect && onSelect(row);
+        }
+      } else if (e.key === 'Escape') {
+        if (focusedIndex >= 0) {
+          e.preventDefault();
+          setFocusedIndex(-1);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [desktop, rowsWithSelectState, focusedIndex, selectMode, onSelect, toggleSelected, hintShown]);
+
+  // Auto-scroll the focused row into view. `block: 'nearest'` means it only
+  // scrolls when the row is actually offscreen — no jitter when stepping
+  // between adjacent visible rows.
+  const focusedId = (focusedIndex >= 0 && focusedIndex < rowsWithSelectState.length)
+    ? rowsWithSelectState[focusedIndex]?.id
+    : null;
+  useEffect(() => {
+    if (!focusedId) return;
+    const el = document.querySelector(`[data-lead-row-id="${focusedId}"]`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [focusedId]);
 
   function exitSelectMode() {
     setSelectMode(false);
@@ -935,9 +1020,38 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
       ) : null}
       <div style={{ flex: 1, minHeight: 0 }}>
         {desktop
-          ? <LeadsListDesktop rows={rowsWithSelectState} onSelect={handleRowClick} />
-          : <LeadsListMobile  rows={rowsWithSelectState} onSelect={handleRowClick} />}
+          ? <LeadsListDesktop rows={rowsWithSelectState} onSelect={handleRowClick} focusedId={focusedId} />
+          : <LeadsListMobile  rows={rowsWithSelectState} onSelect={handleRowClick} focusedId={focusedId} />}
       </div>
+      {/* j/k hotkey hint — first time only, dismisses itself once user actually
+          presses j/k. Floats above the bulk-action bar. Helps discovery without
+          adding permanent chrome. */}
+      {desktop && !hintShown && rowsWithSelectState.length > 0 && (
+        <div role="status" aria-live="polite" style={{
+          position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
+          padding: '8px 14px',
+          background: 'var(--navy)', color: '#fff',
+          borderRadius: 'var(--radius-pill)',
+          fontFamily: 'var(--font-body)', fontSize: 12,
+          boxShadow: 'var(--shadow-md)',
+          display: 'inline-flex', alignItems: 'center', gap: 10,
+          opacity: 0.96, zIndex: 5, pointerEvents: 'none',
+        }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
+            background: 'rgba(255,255,255,0.16)',
+            padding: '2px 6px', borderRadius: 4,
+          }}>j</span>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
+            background: 'rgba(255,255,255,0.16)',
+            padding: '2px 6px', borderRadius: 4,
+          }}>k</span>
+          <span>to step rows · Enter opens · / focuses search</span>
+        </div>
+      )}
       {/* Bulk action bar — slides up from the bottom when at least one lead
           is selected. Four buttons: move to stage, archive, DNC, cancel. */}
       {selectMode && selectedIds.size > 0 ? (

@@ -157,13 +157,16 @@ function Avatar({ row, size = 48 }) {
   );
 }
 
-function LeadRow({ r, desktop = false }) {
+function LeadRow({ r, desktop = false, focused = false }) {
   const stage = STAGE[r.stage] || STAGE_FALLBACK;
   const [hover, setHover] = React.useState(false);
   // When the parent list is in "select mode" each row can be marked
   // `_selected: true`. Visual: navy 3px left stripe + faint navy tint so
   // selected rows read clearly without needing a checkbox column.
   const selected = r._selected === true;
+  // `focused` comes from j/k keyboard nav. Gold left stripe + faint gold tint
+  // so it's distinct from selected (navy) and overdue (red). When both
+  // selected AND focused, keep navy stripe but add a gold ring outline.
   // Quick-action click handlers — bubble out so the row's outer click
   // (open contact) doesn't fire. Each guarded against missing data.
   const onQuickCall = (e) => {
@@ -179,18 +182,31 @@ function LeadRow({ r, desktop = false }) {
     }
   };
   const showQuickActions = hover && !selected && desktop && r.id;
+  // Layered shadow: selected stripe (navy) + focused stripe (gold) + focused
+  // outline (when both apply). filter(Boolean).join(', ') keeps the rule legal
+  // when only some layers are active.
+  const stripes = [
+    selected && 'inset 3px 0 0 var(--navy)',
+    focused && !selected && 'inset 3px 0 0 var(--gold)',
+    focused && selected && 'inset 0 0 0 2px var(--gold)',
+  ].filter(Boolean).join(', ') || 'none';
+  const bg = focused && !selected
+    ? 'color-mix(in srgb, var(--gold) 8%, var(--card))'
+    : (selected || hover) ? 'var(--bg)' : 'var(--card)';
   return (
     <div
+      data-lead-row-id={r.id || ''}
+      data-focused={focused ? '1' : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
         position: 'relative',
         minHeight: 72, padding: '12px 14px',
         display: 'flex', alignItems: 'center', gap: 12,
-        background: selected ? 'var(--bg)' : (hover ? 'var(--bg)' : 'var(--card)'),
-        boxShadow: selected ? 'inset 3px 0 0 var(--navy)' : 'none',
+        background: bg,
+        boxShadow: stripes,
         borderBottom: '1px solid var(--divider-faint)',
-        transition: 'background var(--dur, 80ms) var(--step, linear)',
+        transition: 'background var(--dur, 80ms) var(--step, linear), box-shadow var(--dur, 80ms) var(--step, linear)',
       }}>
       {selected && (
         <div style={{
@@ -401,7 +417,7 @@ function LoadMoreRow() {
 }
 
 /* ────────── Mobile list ────────── */
-function LeadsListMobile({ rows: rowsProp, onSelect, showToolbar = false }) {
+function LeadsListMobile({ rows: rowsProp, onSelect, showToolbar = false, focusedId = null }) {
   const data = rowsProp || rows;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -414,7 +430,7 @@ function LeadsListMobile({ rows: rowsProp, onSelect, showToolbar = false }) {
       }}>
         {data.map((r, i) => (
           <div key={r.id || i} onClick={() => onSelect && onSelect(r)} style={{ cursor: onSelect ? 'pointer' : 'default' }}>
-            <LeadRow r={r} />
+            <LeadRow r={r} focused={r.id != null && r.id === focusedId} />
           </div>
         ))}
         {!rowsProp && <LoadMoreRow />}
@@ -424,7 +440,7 @@ function LeadsListMobile({ rows: rowsProp, onSelect, showToolbar = false }) {
 }
 
 /* ────────── Desktop list — 3-column row grid ────────── */
-function LeadsListDesktop({ rows: rowsProp, onSelect, showToolbar = false }) {
+function LeadsListDesktop({ rows: rowsProp, onSelect, showToolbar = false, focusedId = null }) {
   const data = rowsProp || rows;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -446,7 +462,7 @@ function LeadsListDesktop({ rows: rowsProp, onSelect, showToolbar = false }) {
               boxShadow: i % 3 !== 2 ? 'inset -1px 0 0 rgba(0,0,0,.08)' : 'none',
               cursor: onSelect ? 'pointer' : 'default',
             }}>
-              <LeadRow r={r} desktop />
+              <LeadRow r={r} desktop focused={r.id != null && r.id === focusedId} />
             </div>
           ))}
         </div>
@@ -460,9 +476,11 @@ function LeadsListDesktop({ rows: rowsProp, onSelect, showToolbar = false }) {
 
 // Memoize LeadRow so each row only re-renders when its own `r` object
 // changes, not every time the parent list state ticks (realtime inserts,
-// scroll, etc). At 200 rows this noticeably cuts re-render work.
+// scroll, etc). At 200 rows this noticeably cuts re-render work. The
+// `focused` flag MUST be in the comparator — if you forget it, j/k keypresses
+// don't redraw the focus stripe and you lose the visual indicator.
 const MemoLeadRow = React.memo(LeadRow, (prev, next) =>
-  prev.r === next.r && prev.desktop === next.desktop
+  prev.r === next.r && prev.desktop === next.desktop && prev.focused === next.focused
 );
 
 Object.assign(window, { LeadsListMobile, LeadsListDesktop, LeadRow: MemoLeadRow, ListToolbar, LoadMoreRow, Avatar });
