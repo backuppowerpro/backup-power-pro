@@ -5834,9 +5834,32 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
 
   // Drag-and-drop file support — Key can drop a photo straight onto the
   // compose bar (or anywhere over the card if we wire dragOver up the tree)
-  // instead of opening the file picker. Standard MMS rules apply via the
-  // existing sendPhoto path — image/* only, 5MB cap.
+  // instead of opening the file picker. Also supports clipboard paste of
+  // an image (e.g. Key copies a screenshot, hits Cmd+V on the compose).
+  // Standard MMS rules apply via the existing sendPhoto path — image/* only,
+  // 5MB cap.
   const [dragOver, setDragOver] = useState(false);
+
+  useEffect(() => {
+    if (disabled) return;
+    const onPaste = (e) => {
+      // Only intercept when the compose textarea has focus — avoids stealing
+      // pastes from other inputs on the page (Notes textarea, search bar, etc.).
+      const active = document.activeElement;
+      if (!active || active.tagName !== 'TEXTAREA') return;
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItem = items.find(it => it.kind === 'file' && /^image\//.test(it.type));
+      if (!imageItem) return;
+      const file = imageItem.getAsFile();
+      if (!file) return;
+      e.preventDefault();
+      sendPhoto(file);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled, contactId]);
+
   const onDragOver = (e) => {
     if (disabled) return;
     if (e.dataTransfer && Array.from(e.dataTransfer.items || []).some(it => it.kind === 'file')) {
