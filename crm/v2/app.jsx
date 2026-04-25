@@ -2709,14 +2709,21 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
             </span>
           ) : null}
         </div>
-        <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+        <div style={{
+          fontFamily: 'var(--font-body)', fontSize: 12.5,
+          color: 'var(--text-muted)', textAlign: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+        }}>
           {displayPhone ? (
             mobile ? (
               <a href={`tel:${contact?.phone || ''}`}
                 title="Call via phone"
                 style={{
-                  color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
-                  textDecoration: 'none', borderBottom: '1px dashed var(--divider)',
+                  color: 'var(--link)',
+                  fontFamily: 'var(--font-mono)',
+                  fontVariantNumeric: 'tabular-nums',
+                  textDecoration: 'none',
+                  borderBottom: '1px dashed color-mix(in srgb, var(--link) 40%, transparent)',
                 }}>{displayPhone}</a>
             ) : (
               <button
@@ -2725,39 +2732,44 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
                     .then(() => window.__bpp_toast && window.__bpp_toast(`Phone copied — ${displayPhone}`, 'success'))
                     .catch(() => {});
                 }}
-                title="Copy phone"
+                title="Click to copy"
                 style={{
                   background: 'transparent', border: 'none', padding: 0,
-                  color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
+                  color: 'var(--link)',
+                  fontFamily: 'var(--font-mono)', fontSize: 'inherit',
+                  fontVariantNumeric: 'tabular-nums',
                   cursor: 'pointer',
+                  borderBottom: '1px dashed color-mix(in srgb, var(--link) 40%, transparent)',
                 }}
               >{displayPhone}</button>
             )
-          ) : <span>—</span>}
-          <br/>
+          ) : <span style={{ color: 'var(--text-faint)' }}>—</span>}
           {contact?.address ? (
             <a
               href={`https://maps.google.com/maps?q=${encodeURIComponent(contact.address)}`}
               target="_blank" rel="noopener"
               title="Open in Google Maps"
               style={{
-                color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
-                textDecoration: 'none', borderBottom: '1px dashed var(--divider)',
+                color: 'var(--link)',
+                fontFamily: 'inherit', fontSize: 'inherit',
+                textDecoration: 'none',
+                borderBottom: '1px dashed color-mix(in srgb, var(--link) 40%, transparent)',
+                maxWidth: '90%',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}
             >{contact.address}</a>
-          ) : <span>—</span>}
+          ) : null}
           {contact?.email ? (
-            <>
-              <br/>
-              <a
-                href={`mailto:${contact.email}`}
-                title="Email contact"
-                style={{
-                  color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 'inherit',
-                  textDecoration: 'none', borderBottom: '1px dashed var(--divider)',
-                }}
-              >{contact.email}</a>
-            </>
+            <a
+              href={`mailto:${contact.email}`}
+              title="Email contact"
+              style={{
+                color: 'var(--link)',
+                fontFamily: 'inherit', fontSize: 'inherit',
+                textDecoration: 'none',
+                borderBottom: '1px dashed color-mix(in srgb, var(--link) 40%, transparent)',
+              }}
+            >{contact.email}</a>
           ) : null}
         </div>
         {messages.length > 0 ? (() => {
@@ -2958,10 +2970,41 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
         {loading ? (
-          <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
+          <div style={{
+            padding: '40px 20px', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', gap: 10,
+            fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)',
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)', animation: 'pulse 1.2s infinite' }}/>
+            Loading messages…
+          </div>
         ) : messages.length === 0 ? (
-          <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '48px 0' }}>
-            No messages yet
+          <div style={{
+            padding: '60px 32px', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 12,
+            textAlign: 'center',
+          }}>
+            <div style={{
+              width: 56, height: 56, background: 'var(--sunken)',
+              borderRadius: 'var(--radius-md)',
+              display: 'grid', placeItems: 'center',
+              color: 'var(--text-faint)',
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+              color: 'var(--text-muted)', letterSpacing: '-0.005em',
+            }}>No messages yet</div>
+            <div style={{
+              fontFamily: 'var(--font-body)', fontSize: 13,
+              color: 'var(--text-faint)', maxWidth: 280, lineHeight: 1.5,
+            }}>
+              Type a message below or tap <strong style={{ color: 'var(--text-muted)' }}>···</strong> for a snippet.
+              Press <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '1px 6px', background: 'var(--sunken)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--ring)', color: 'var(--text-muted)' }}>R</kbd> to focus.
+            </div>
           </div>
         ) : messages.map((m, idx) => {
           const isOut = m.direction === 'outbound';
@@ -10792,6 +10835,7 @@ function SnoozeRow({ contactId, contactName, stage }) {
 
 function PinButton({ contactId }) {
   const [pinned, setPinned] = useState(() => isPinned(contactId));
+  const [hover, setHover] = useState(false);
   useEffect(() => {
     setPinned(isPinned(contactId));
     const onChange = () => setPinned(isPinned(contactId));
@@ -10801,18 +10845,37 @@ function PinButton({ contactId }) {
   if (!contactId) return null;
   return (
     <button
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         const now = togglePin(contactId);
         setPinned(now);
         window.__bpp_toast && window.__bpp_toast(now ? 'Pinned' : 'Unpinned', 'info');
       }}
-      title={pinned ? 'Unpin contact' : 'Pin contact'}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      title={pinned ? 'Unpin contact (P)' : 'Pin contact (P)'}
+      aria-label={pinned ? 'Unpin contact' : 'Pin contact'}
+      aria-pressed={pinned}
       style={{
-        padding: 0, background: 'transparent', border: 'none',
-        color: pinned ? 'var(--gold)' : 'var(--text-faint)',
-        fontSize: 16, lineHeight: 1, cursor: 'pointer',
+        width: 28, height: 28,
+        padding: 0,
+        background: pinned
+          ? 'color-mix(in srgb, var(--gold) 18%, transparent)'
+          : (hover ? 'var(--sunken)' : 'transparent'),
+        border: 'none',
+        color: pinned ? 'var(--gold-ink)' : (hover ? 'var(--text-muted)' : 'var(--text-faint)'),
+        cursor: 'pointer',
+        display: 'inline-grid', placeItems: 'center',
+        borderRadius: 'var(--radius-pill)',
+        transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
       }}
-    >{pinned ? '★' : '☆'}</button>
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24"
+        fill={pinned ? 'currentColor' : 'none'}
+        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </button>
   );
 }
 
