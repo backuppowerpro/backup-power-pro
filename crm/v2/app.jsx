@@ -5832,6 +5832,32 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
     }
   }
 
+  // Drag-and-drop file support — Key can drop a photo straight onto the
+  // compose bar (or anywhere over the card if we wire dragOver up the tree)
+  // instead of opening the file picker. Standard MMS rules apply via the
+  // existing sendPhoto path — image/* only, 5MB cap.
+  const [dragOver, setDragOver] = useState(false);
+  const onDragOver = (e) => {
+    if (disabled) return;
+    if (e.dataTransfer && Array.from(e.dataTransfer.items || []).some(it => it.kind === 'file')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!dragOver) setDragOver(true);
+    }
+  };
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    if (disabled) return;
+    const file = e.dataTransfer?.files?.[0];
+    if (file) sendPhoto(file);
+  };
+
   function pickPhoto() {
     const input = document.createElement('input')
     input.type = 'file'
@@ -5868,13 +5894,38 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
   );
 
   return (
-    <div style={{
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      style={{
       padding: '12px 14px calc(12px + env(safe-area-inset-bottom))',
-      background: 'var(--card)',
+      background: dragOver ? 'color-mix(in srgb, var(--gold) 12%, var(--card))' : 'var(--card)',
       borderTop: '1px solid var(--divider-faint)',
       display: 'flex', flexDirection: 'column', gap: 8,
       position: 'relative',
+      transition: 'background var(--dur) var(--ease)',
     }}>
+      {dragOver ? (
+        <div style={{
+          position: 'absolute', inset: 8,
+          background: 'color-mix(in srgb, var(--gold) 8%, var(--card))',
+          border: '2px dashed var(--gold)',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
+          color: 'var(--gold-ink)',
+          pointerEvents: 'none',
+          zIndex: 4,
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Drop photo to send
+        </div>
+      ) : null}
       {/* Smart Quick Replies — only appear when the latest message is an
           un-replied inbound. Click a chip → prefills the compose bar so Key
           can edit + send. Tuned to the common BPP flows (photo ask, price
