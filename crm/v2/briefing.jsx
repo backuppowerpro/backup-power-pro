@@ -96,20 +96,29 @@ function LcdTime({ t }) {
   );
 }
 
-function OrderBtn() {
+function OrderBtn({ label }) {
+  // `label` is the part name + customer (e.g. "Order inlet box for Robert K").
+  // Visible text stays short ("Order") so the row reads cleanly; aria-label
+  // expands it for screen readers + tooltip so a sighted user can hover to
+  // confirm which row's button they're about to click.
+  const aria = label ? `Order ${label}` : 'Order this material';
   return (
-    <button style={{
-      height: 30, padding: '0 14px',
-      background: 'var(--gold)', color: 'var(--navy)',
-      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-      letterSpacing: '0.06em', textTransform: 'uppercase',
-      borderRadius: 'var(--radius-pill)',
-      boxShadow: 'var(--shadow-gold)',
-      cursor: 'pointer',
-      transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
-    }}
-    onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold-hover)' }}
-    onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold)' }}
+    <button
+      type="button"
+      aria-label={aria}
+      title={aria}
+      style={{
+        height: 30, padding: '0 14px',
+        background: 'var(--gold)', color: 'var(--navy)',
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+        letterSpacing: '0.06em', textTransform: 'uppercase',
+        borderRadius: 'var(--radius-pill)',
+        boxShadow: 'var(--shadow-gold)',
+        cursor: 'pointer', border: 'none',
+        transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold-hover)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold)' }}
     >Order</button>
   );
 }
@@ -212,12 +221,12 @@ function MorningBriefing({ mobile = false }) {
           <BriefRow
             left={<span className="smart-chip smart-chip--navy">50A</span>}
             main={<>Robert K · <span style={{ color: 'var(--text-muted)' }}>Inlet box</span></>}
-            right={<OrderBtn />}
+            right={<OrderBtn label="inlet box for Robert K" />}
           />
           <BriefRow
             left={<span className="smart-chip smart-chip--gold">+$375</span>}
             main={<>Helen S · <span style={{ color: 'var(--text-muted)' }}>Surge protector</span></>}
-            right={<OrderBtn />}
+            right={<OrderBtn label="surge protector for Helen S" />}
           />
         </BriefSection>
 
