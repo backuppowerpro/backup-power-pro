@@ -799,7 +799,13 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
   async function bulkArchive() {
     if (selectedIds.size === 0) return;
     const count = selectedIds.size;
-    if (!confirm(`Archive ${count} contact${count === 1 ? '' : 's'}? They're hidden from the list but not deleted.`)) return;
+    const ok = await window.__bpp_confirm({
+      eyebrow: 'Bulk action',
+      title: `Archive ${count} contact${count === 1 ? '' : 's'}?`,
+      body: 'Hidden from the list but not deleted. You can unarchive any contact from their Edit tab.',
+      confirmLabel: `Archive ${count}`,
+    });
+    if (!ok) return;
     setApplying(true);
     const ids = Array.from(selectedIds);
     try {
@@ -818,7 +824,14 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
   async function bulkDnc() {
     if (selectedIds.size === 0) return;
     const count = selectedIds.size;
-    if (!confirm(`Mark ${count} contact${count === 1 ? '' : 's'} as Do Not Contact? All automated follow-ups and Alex replies stop for them.`)) return;
+    const ok = await window.__bpp_confirm({
+      eyebrow: 'Compliance action',
+      title: `Mark ${count} contact${count === 1 ? '' : 's'} as Do Not Contact?`,
+      body: 'All automated follow-ups + Alex replies stop for them. This is a compliance action — undoing it requires opening each contact and unchecking DNC manually.',
+      confirmLabel: `Mark ${count} as DNC`,
+      danger: true,
+    });
+    if (!ok) return;
     setApplying(true);
     const ids = Array.from(selectedIds);
     try {
@@ -6024,6 +6037,137 @@ window.__bpp_toast = (text, kind = 'info', action = null) => {
   toastSubs.forEach(fn => fn({ id: Date.now() + Math.random(), text, kind, action }));
 };
 
+// ── Confirm dialog system ──────────────────────────────────────────────────
+// Replaces native window.confirm() with a brand-aligned modal that supports
+// danger styling, custom button labels, and an optional body. Returns a
+// Promise<boolean> that resolves true on confirm / false on cancel-or-close.
+//
+// Usage: const ok = await window.__bpp_confirm({
+//   title: 'Archive 3 contacts?',
+//   body:  'Hidden from the list but not deleted.',
+//   confirmLabel: 'Archive',
+//   danger: false,
+// });
+const confirmSubs = new Set();
+window.__bpp_confirm = (opts) => new Promise((resolve) => {
+  confirmSubs.forEach(fn => fn({ id: Date.now() + Math.random(), opts: opts || {}, resolve }));
+});
+
+function ConfirmRoot() {
+  const [stack, setStack] = useState([]);
+  const dismiss = (id, value) => {
+    setStack(prev => {
+      const item = prev.find(p => p.id === id);
+      if (item) {
+        try { item.resolve(value); } catch {}
+      }
+      return prev.filter(p => p.id !== id);
+    });
+  };
+  useEffect(() => {
+    const sub = (entry) => setStack(prev => [...prev, entry]);
+    confirmSubs.add(sub);
+    return () => { confirmSubs.delete(sub); };
+  }, []);
+  // Single Esc closes the most recently opened confirm
+  useEffect(() => {
+    if (stack.length === 0) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        const top = stack[stack.length - 1];
+        dismiss(top.id, false);
+      }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const top = stack[stack.length - 1];
+        dismiss(top.id, true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [stack]);
+  if (stack.length === 0) return null;
+  return (
+    <>
+      {stack.map((entry) => {
+        const opts = entry.opts;
+        const danger = !!opts.danger;
+        const confirmLabel = opts.confirmLabel || 'Confirm';
+        const cancelLabel  = opts.cancelLabel  || 'Cancel';
+        return (
+          <div key={entry.id}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`confirm-title-${entry.id}`}
+            onClick={() => dismiss(entry.id, false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 130,
+              background: 'rgba(11,31,59,0.5)',
+              backdropFilter: 'blur(3px)',
+              display: 'grid', placeItems: 'center', padding: 16,
+            }}>
+            <div onClick={e => e.stopPropagation()} style={{
+              width: 420, maxWidth: '100%',
+              padding: '24px 26px 22px',
+              background: 'var(--card)',
+              boxShadow: 'var(--shadow-xl), var(--ring)',
+              borderRadius: 'var(--radius-lg)',
+              display: 'flex', flexDirection: 'column', gap: 14,
+            }}>
+              {opts.eyebrow ? (
+                <span className="eyebrow" style={{ color: danger ? 'var(--red)' : 'var(--gold-ink)' }}>
+                  {opts.eyebrow}
+                </span>
+              ) : null}
+              <h3
+                id={`confirm-title-${entry.id}`}
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-display)', fontWeight: 800,
+                  fontSize: 20, letterSpacing: '-0.015em',
+                  color: 'var(--text)',
+                }}>
+                {opts.title || 'Confirm'}
+              </h3>
+              {opts.body ? (
+                <p style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-body)', fontSize: 14,
+                  lineHeight: 1.5,
+                  color: 'var(--text-muted)',
+                }}>
+                  {opts.body}
+                </p>
+              ) : null}
+              <div style={{ display: 'flex', gap: 10, marginTop: 4, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => dismiss(entry.id, false)}
+                  className="btn-ghost"
+                >{cancelLabel}</button>
+                <button
+                  autoFocus
+                  onClick={() => dismiss(entry.id, true)}
+                  style={danger ? {
+                    height: 36, padding: '0 18px',
+                    background: 'var(--red)', color: '#fff',
+                    border: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+                    letterSpacing: '-0.005em',
+                    borderRadius: 'var(--radius-pill)',
+                    boxShadow: '0 2px 8px color-mix(in srgb, var(--red) 30%, transparent)',
+                  } : undefined}
+                  className={danger ? '' : 'btn-navy'}
+                >{confirmLabel}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 function ToastRoot() {
   const [toasts, setToasts] = useState([]);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -7139,7 +7283,14 @@ function LivePlaybook() {
 
   const del = async () => {
     if (!selectedPath) return;
-    if (!confirm(`Delete ${selectedPath}? This cannot be undone.`)) return;
+    const ok = await window.__bpp_confirm({
+      eyebrow: 'Permanent delete',
+      title: `Delete ${selectedPath}?`,
+      body: 'Removes this playbook file from /memories/ for every Alex / Sparky / post-mortem agent. This cannot be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await callMemoryAdmin({ method: 'DELETE', path: selectedPath });
       setSelectedPath(null); setContent('');
@@ -8603,7 +8754,13 @@ function LiveCalendar() {
                 {gapCandidate ? (
                   <button
                     onClick={async () => {
-                      if (!confirm(`Book ${displayNameFor(gapCandidate)} for install on ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}?`)) return;
+                      const ok = await window.__bpp_confirm({
+                        eyebrow: 'Schedule install',
+                        title: `Book ${displayNameFor(gapCandidate)}?`,
+                        body: `Install on ${d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} at 10:00 AM. You can adjust the time after booking from the contact's Edit tab.`,
+                        confirmLabel: 'Book install',
+                      });
+                      if (!ok) return;
                       const slot = new Date(d); slot.setHours(10, 0, 0, 0);
                       const { error } = await db.from('contacts').update({ install_date: slot.toISOString() }).eq('id', gapCandidate.id);
                       if (error) window.__bpp_toast?.(`Book failed: ${error.message}`, 'error');
@@ -8647,13 +8804,19 @@ function LiveCalendar() {
                   const cn = ev.contacts?.name || null;
                   return (
                     <button key={'ev-' + ev.id}
-                      onClick={() => {
-                        if (confirm(`Delete event "${ev.title}"?`)) {
-                          db.from('calendar_events').delete().eq('id', ev.id).then(
-                            () => window.__bpp_toast && window.__bpp_toast('Event deleted', 'info'),
-                            (e) => window.__bpp_toast && window.__bpp_toast('Delete failed: ' + (e.message || e), 'error')
-                          );
-                        }
+                      onClick={async () => {
+                        const ok = await window.__bpp_confirm({
+                          eyebrow: 'Delete event',
+                          title: `Delete "${ev.title}"?`,
+                          body: 'This removes the calendar event. The associated contact (if any) is unaffected.',
+                          confirmLabel: 'Delete',
+                          danger: true,
+                        });
+                        if (!ok) return;
+                        db.from('calendar_events').delete().eq('id', ev.id).then(
+                          () => window.__bpp_toast && window.__bpp_toast('Event deleted', 'info'),
+                          (e) => window.__bpp_toast && window.__bpp_toast('Delete failed: ' + (e.message || e), 'error')
+                        );
                       }}
                       title={`${ev.title}${cn ? ' · ' + cn : ''}${ev.notes ? '\n' + ev.notes : ''}\n(click to delete)`}
                       style={{
@@ -12667,6 +12830,7 @@ function App() {
       <VoiceCallModal voice={voice} />
       <OfflineBanner />
       <ToastRoot />
+      <ConfirmRoot />
     </div>
   );
 }
