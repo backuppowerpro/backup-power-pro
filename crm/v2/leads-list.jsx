@@ -164,6 +164,21 @@ function LeadRow({ r, desktop = false }) {
   // `_selected: true`. Visual: navy 3px left stripe + faint navy tint so
   // selected rows read clearly without needing a checkbox column.
   const selected = r._selected === true;
+  // Quick-action click handlers — bubble out so the row's outer click
+  // (open contact) doesn't fire. Each guarded against missing data.
+  const onQuickCall = (e) => {
+    e.stopPropagation();
+    if (window.__bpp_dial && r.raw?.phone && !r.raw?.do_not_contact) {
+      window.__bpp_dial(r.raw.phone);
+    }
+  };
+  const onQuickSnooze = (e) => {
+    e.stopPropagation();
+    if (r.id && window.__bpp_snoozeContact) {
+      window.__bpp_snoozeContact(r.id, 1);
+    }
+  };
+  const showQuickActions = hover && !selected && desktop && r.id;
   return (
     <div
       onMouseEnter={() => setHover(true)}
@@ -174,7 +189,7 @@ function LeadRow({ r, desktop = false }) {
         display: 'flex', alignItems: 'center', gap: 12,
         background: selected ? 'var(--bg)' : (hover ? 'var(--bg)' : 'var(--card)'),
         boxShadow: selected ? 'inset 3px 0 0 var(--navy)' : 'none',
-        borderBottom: '1px solid rgba(0,0,0,.08)',
+        borderBottom: '1px solid var(--divider-faint)',
         transition: 'background var(--dur, 80ms) var(--step, linear)',
       }}>
       {selected && (
@@ -203,8 +218,13 @@ function LeadRow({ r, desktop = false }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           {r.pinned ? (
             <span title="Pinned" aria-label="Pinned" style={{
-              color: 'var(--gold)', fontSize: 13, lineHeight: 1, flex: '0 0 auto',
-            }}>★</span>
+              flex: '0 0 auto', display: 'inline-grid', placeItems: 'center',
+              color: 'var(--gold)',
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </span>
           ) : null}
           <span style={{
             fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600,
@@ -226,25 +246,76 @@ function LeadRow({ r, desktop = false }) {
         }}>{r.phone}</span>
       </div>
 
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
-        flex: '0 0 auto',
-      }}>
-        <span className={`smart-chip smart-chip--${stage.tone}`} title={stage.label}>
-          {stage.abbr}
-        </span>
-        {r.done ? (
-          <span style={{
-            fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
-            color: 'var(--green)',
-          }}>Done</span>
-        ) : (
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 11,
-            color: 'var(--text-faint)',
-          }}>{r.ts}</span>
-        )}
-      </div>
+      {/* Right cluster: stage chip + timestamp by default; on desktop hover
+          we slide in a tight quick-action row (Call · Snooze) over them so
+          Key can act without opening the contact. */}
+      {showQuickActions ? (
+        <div
+          onMouseDown={e => e.stopPropagation()}
+          style={{
+            display: 'flex', gap: 4, flex: '0 0 auto',
+          }}>
+          {r.raw?.phone && !r.raw?.do_not_contact ? (
+            <button onClick={onQuickCall}
+              title="Call (D)" aria-label={`Call ${r.name}`}
+              style={{
+                width: 32, height: 32, padding: 0,
+                background: 'color-mix(in srgb, var(--green) 14%, var(--card))',
+                color: 'var(--green)',
+                border: 'none', cursor: 'pointer',
+                borderRadius: 'var(--radius-pill)',
+                display: 'grid', placeItems: 'center',
+                transition: 'background var(--dur) var(--ease)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 14%, var(--card))'; e.currentTarget.style.color = 'var(--green)' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </button>
+          ) : null}
+          <button onClick={onQuickSnooze}
+            title="Snooze 1 day" aria-label={`Snooze ${r.name} 1 day`}
+            style={{
+              width: 32, height: 32, padding: 0,
+              background: 'var(--sunken)',
+              color: 'var(--text-muted)',
+              border: 'none', cursor: 'pointer',
+              borderRadius: 'var(--radius-pill)',
+              display: 'grid', placeItems: 'center',
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--gold) 18%, var(--sunken))'; e.currentTarget.style.color = 'var(--gold-ink)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </button>
+        </div>
+      ) : (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
+          flex: '0 0 auto',
+        }}>
+          <span className={`smart-chip smart-chip--${stage.tone}`} title={stage.label}>
+            {stage.abbr}
+          </span>
+          {r.done ? (
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
+              color: 'var(--green)',
+            }}>Done</span>
+          ) : (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 11,
+              color: 'var(--text-faint)',
+            }}>{r.ts}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

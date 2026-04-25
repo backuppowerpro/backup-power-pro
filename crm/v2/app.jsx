@@ -10924,6 +10924,14 @@ function snoozeContact(id, days) {
   obj[id] = Date.now() + (days * 86400000);
   writeSnoozes(obj);
 }
+// Expose to window so list-row quick actions (in leads-list.jsx) can
+// snooze without importing this function across the bundle boundary.
+if (typeof window !== 'undefined') {
+  window.__bpp_snoozeContact = (id, days) => {
+    snoozeContact(id, days);
+    if (window.__bpp_toast) window.__bpp_toast(`Snoozed ${days} day${days === 1 ? '' : 's'}`, 'info');
+  };
+}
 function unsnoozeContact(id) {
   const obj = readSnoozes();
   if (obj[id]) { delete obj[id]; writeSnoozes(obj); }
