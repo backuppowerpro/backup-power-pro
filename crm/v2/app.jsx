@@ -8670,12 +8670,15 @@ const EMPTY_HINTS = {
   'NO ACTIVE PERMITS':  "Permits show up once a contact moves to stage 3 (Booked). Want to skip ahead?",
   'NO ACTIVE MATERIALS':"Parts tracker activates when someone books. Nobody in the pipeline yet.",
   'NO CALLS YET':       "Inbound and outbound calls log here once Twilio Voice dials out.",
-  'NO MATCHES':         "No matches — try a looser term, or ⌘K for smart search ('who owes me money').",
+  'NO MATCHES':         "Try a looser term, or open ⌘K for natural-language search ('who owes me money').",
   'NO ACTIVITY YET':    "Activity shows up here as Alex messages, quotes, and stage changes roll in.",
 };
 function Empty({ label, hint }) {
   const key = (label || '').toUpperCase().trim();
-  const body = hint || EMPTY_HINTS[key] || null;
+  // Fall through "NO MATCHES FOR ..." labels to the generic NO MATCHES hint
+  // so every search-empty state sells the next move (try a looser term, ⌘K).
+  // Without this, every search dead-end was a label-only with no guidance.
+  const body = hint || EMPTY_HINTS[key] || (key.startsWith('NO MATCHES') ? EMPTY_HINTS['NO MATCHES'] : null);
   return (
     <div style={{
       padding: 48, display: 'flex', flexDirection: 'column',
