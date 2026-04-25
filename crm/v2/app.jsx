@@ -8754,7 +8754,7 @@ function LiveCalendar() {
             display: 'flex', gap: 2, padding: 2,
             background: 'var(--sunken)', borderRadius: 'var(--radius-pill)',
           }}>
-            <button onClick={() => stepWeek(-1)} title="Previous week" style={{
+            <button onClick={() => stepWeek(-1)} title="Previous week" aria-label="Previous week" style={{
               width: 30, height: 30,
               background: 'transparent', border: 'none', cursor: 'pointer',
               fontSize: 14, color: 'var(--text-muted)',
@@ -8769,7 +8769,7 @@ function LiveCalendar() {
               borderRadius: 'var(--radius-pill)',
               boxShadow: '0 2px 8px rgba(255,186,0,0.22)',
             }}>Today</button>
-            <button onClick={() => stepWeek(1)} title="Next week" style={{
+            <button onClick={() => stepWeek(1)} title="Next week" aria-label="Next week" style={{
               width: 30, height: 30,
               background: 'transparent', border: 'none', cursor: 'pointer',
               fontSize: 14, color: 'var(--text-muted)',
@@ -8905,7 +8905,7 @@ function LiveCalendar() {
                   const iso = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`;
                   setEventModalDefaults({ start_at: iso });
                   setEventModalOpen(true);
-                }} title="Add event on this day" style={{
+                }} title="Add event on this day" aria-label="Add event" style={{
                   width: 22, height: 22,
                   background: highlight ? 'rgba(255,255,255,0.14)' : 'var(--sunken)',
                   color: highlight ? 'var(--gold)' : 'var(--text-faint)',
