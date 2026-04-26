@@ -1782,6 +1782,32 @@ export function containsPricing(text: string): boolean {
   return MONEY_RX.test(text)
 }
 
+// HARD SAFETY: regex that catches internal-monologue / meta-commentary that
+// LLM-based agents leak when reasoning out loud. Per the SMS-bot research
+// (wiki/Operations/SMS Bot Best Practices.md §6 — "Internal-monologue leak")
+// LLM critics miss this often enough that a regex must also ship.
+//
+// Production leaks captured here:
+//   "I need to see the conversation history…"
+//   "Let me check the conversation flow:"
+//   "Based on the briefing…"
+//   "Per the pitfalls file…"
+//   "The briefing shows the customer's name is 'Key', which is suspicious…"
+//
+// Patterns are anchored to the START of the message OR to a paragraph break,
+// because these always appear at the top of a leaked reasoning paragraph
+// before the actual customer-facing reply.
+const META_LEAK_RX = /(^|\n\s*)(?:I\s+need\s+to\s+(?:see|evaluate|check|verify|look\s+at)|Let\s+me\s+(?:check|see|verify|evaluate|look\s+at|think|pull\s+up|find\s+out)|Looking\s+at\s+(?:the|this)\s+(?:conversation|history|briefing|context)|Based\s+on\s+(?:the|my)\s+(?:briefing|instructions|system\s+prompt|memory|context|conversation)|Per\s+the\s+(?:pitfalls|briefing|memory|playbook|rules|system\s+prompt)|The\s+briefing\s+shows|My\s+system\s+prompt\s+says|My\s+instructions\s+(?:say|tell\s+me)|Noted,?\s+I\s+already\s+fell|As\s+the\s+pitfalls\s+file\s+notes|Ha,?\s+ignore\s+me,?\s+talking\s+to\s+myself|Could\s+you\s+(?:please\s+)?share\s+what\s+the\s+\[INTERNAL)/i
+export function containsMetaLeak(text: string): boolean {
+  return META_LEAK_RX.test(text)
+}
+
+// When meta-commentary leaks, the safest move is NOT to send a partial reply
+// (the leaked sentence might be the whole message). Replace with a generic
+// warm acknowledgment + a single forward-motion question. Same pattern as
+// PRICE_DEFLECTION — better a clean redirect than a half-redacted leak.
+const META_LEAK_DEFLECTION = "Got it, thanks. What's a good way for me to keep moving on the quote, you still good with the panel pic when you get a sec?"
+
 // Replacement used when Alex generates a reply that mentions dollar amounts.
 // Rather than silently stripping and sending a mutilated sentence, swap the
 // whole reply for a safe deflection that redirects to Key. This is a hard
@@ -1817,6 +1843,14 @@ function cleanSms(text: string): string {
   if (containsPricing(cleaned)) {
     console.warn('[alex] BLOCKED price leak:', cleaned.slice(0, 200))
     cleaned = PRICE_DEFLECTION
+  }
+
+  // HARD SAFETY: meta-commentary / internal-monologue leak. Per the SMS-bot
+  // research postmortem, LLM critics miss this often enough that we need
+  // a regex net too. Replace the entire reply with a safe deflection.
+  if (containsMetaLeak(cleaned)) {
+    console.warn('[alex] BLOCKED meta-commentary leak:', cleaned.slice(0, 200))
+    cleaned = META_LEAK_DEFLECTION
   }
 
   // Typographic cleanup — runs AFTER the pricing substitution so the
@@ -1857,10 +1891,13 @@ function cleanSms(text: string): string {
 //   "log"     — review + log corrections, but ship Alex's original draft
 //   "rewrite" — review + ship the corrected version when the critic rewrites
 //
-// Use a smaller/cheaper model (Sonnet, not Opus) since the critic only
-// pattern-matches against a fixed rubric — doesn't need the long-tail
-// reasoning that drives Alex's main reply.
-const SHADOW_MODEL = 'claude-sonnet-4-5-20250929'
+// Use a smaller/cheaper model (Haiku, not Opus). Per the SMS-bot research
+// (wiki/Operations/SMS Bot Best Practices.md §7) and the OpenAI critics
+// paper: structured-output critics with explicit yes/no rubrics close
+// the intelligence gap to larger models, so Haiku gets the same precision
+// at ~1/8 the cost and ~3x the speed. Verdict latency drops from ~2s to
+// ~600ms which keeps the pre-send delay tolerable.
+const SHADOW_MODEL = 'claude-haiku-4-5-20251001'
 const SHADOW_PROMPT = `You are the senior coach for Alex, an SMS sales agent for Backup Power Pro (a generator-inlet electrician in Upstate SC). Alex just drafted a reply. Your job: review the draft against the conversation and the rules below. Output JSON only.
 
 HARD RULES (rewrite if any of these is broken):
