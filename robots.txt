@@ -1,7 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /quote-calculator.html
+Disallow: /daily/
+Disallow: /crm/
+Disallow: /permit-app/
 
 Sitemap: https://backuppowerpro.com/sitemap.xml
-User-agent: *
-Disallow: /daily/
