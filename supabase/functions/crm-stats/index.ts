@@ -31,7 +31,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info, x-bpp-brain-token',
 }
 
 Deno.serve(async (req: Request) => {
@@ -40,14 +40,17 @@ Deno.serve(async (req: Request) => {
   const url = Deno.env.get('SUPABASE_URL')!
   const sr  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-  // Caller must present either the publishable key or the SR key as
-  // bearer. The publishable key is acceptable here because the response
-  // contains only count rollups, no PII. SR support kept for trusted
-  // server-side callers.
-  // Supabase reserves the SUPABASE_ prefix for secrets so we use BPP_.
-  const PUB = Deno.env.get('BPP_PUBLISHABLE_KEY') || 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB'
+  // Caller must present EITHER (a) the SR key as bearer, OR (b) a valid
+  // x-bpp-brain-token header. The publishable key alone is NOT enough —
+  // anyone scraping the website's view-source has it, and we'd rather
+  // not leak revenue rollups (pipeline_value, message counts) to
+  // arbitrary internet readers. The brain token is a 32-byte random
+  // value stored only in supabase secrets + ~/.claude/credentials.md.
+  const BRAIN_TOKEN = Deno.env.get('BPP_BRAIN_TOKEN') || ''
   const auth = req.headers.get('authorization') || req.headers.get('Authorization') || ''
-  if (!auth.includes(sr) && (!PUB || !auth.includes(PUB))) {
+  const sentToken = req.headers.get('x-bpp-brain-token') || ''
+  const tokenMatches = !!BRAIN_TOKEN && sentToken === BRAIN_TOKEN
+  if (!auth.includes(sr) && !tokenMatches) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
     })

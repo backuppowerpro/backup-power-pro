@@ -10,8 +10,11 @@
  * publishable-key path can't be turned into an arbitrary database write
  * surface) and writes them via SR auth that Supabase auto-injects.
  *
- * Auth: bearer must match either the publishable key (BPP_PUBLISHABLE_KEY
- * env or hardcoded fallback) or the service role.
+ * Auth: caller must present EITHER (a) the SR key as bearer, OR (b) a
+ * valid `x-bpp-brain-token` header (32-byte random secret stored in
+ * supabase secrets + ~/.claude/credentials.md). The publishable key
+ * alone is NOT enough — it's in the website source, so anyone could
+ * vandalize the brief.
  *
  * POST /brain-write  { key: "ceo_morning_brief", value: "<text>" }
  *
@@ -23,7 +26,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info, x-bpp-brain-token',
 }
 
 // Keys this endpoint is allowed to write. Adding a key here is an
@@ -61,9 +64,11 @@ Deno.serve(async (req: Request) => {
 
   const url = Deno.env.get('SUPABASE_URL')!
   const sr  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const PUB = Deno.env.get('BPP_PUBLISHABLE_KEY') || 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB'
+  const BRAIN_TOKEN = Deno.env.get('BPP_BRAIN_TOKEN') || ''
   const auth = req.headers.get('authorization') || req.headers.get('Authorization') || ''
-  if (!auth.includes(sr) && (!PUB || !auth.includes(PUB))) {
+  const sentToken = req.headers.get('x-bpp-brain-token') || ''
+  const tokenMatches = !!BRAIN_TOKEN && sentToken === BRAIN_TOKEN
+  if (!auth.includes(sr) && !tokenMatches) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
     })

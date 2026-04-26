@@ -11,10 +11,23 @@ set -e
 WIKI_PAGE="/Users/keygoodson/Desktop/CLAUDE/wiki/CRM/CRM Usage.md"
 ENDPOINT="https://reowtzedjflwmlptupbk.supabase.co/functions/v1/crm-stats"
 PUB_KEY="sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB"
+CREDS="/Users/keygoodson/.claude/credentials.md"
 TODAY=$(date +%Y-%m-%d)
 TS=$(date "+%Y-%m-%d %H:%M")
 
-JSON=$(curl -s -f "$ENDPOINT" -H "Authorization: Bearer $PUB_KEY") || {
+# 32-byte brain token authenticates this script to the crm-stats edge
+# function. The publishable key alone is NOT enough — it's in every
+# page of the public website, so it's not really a secret. The brain
+# token lives only in credentials.md + supabase secrets.
+BRAIN_TOKEN=$(grep -E 'BPP_BRAIN_TOKEN|brain[-_]token' "$CREDS" | grep -oE '[0-9a-f]{64}' | head -1)
+if [ -z "$BRAIN_TOKEN" ]; then
+  echo "ERROR: BPP_BRAIN_TOKEN missing from $CREDS" >&2
+  exit 1
+fi
+
+JSON=$(curl -s -f "$ENDPOINT" \
+  -H "Authorization: Bearer $PUB_KEY" \
+  -H "x-bpp-brain-token: $BRAIN_TOKEN") || {
   echo "ERROR: crm-stats endpoint failed" >&2
   exit 1
 }

@@ -17,9 +17,16 @@ ANTHROPIC_KEY=$(grep "sk-ant-api" "$CREDS" | grep -o "sk-ant-[A-Za-z0-9_-]*" | h
 SUPABASE_URL="https://reowtzedjflwmlptupbk.supabase.co"
 # Service role key was rotated out of credentials.md in the 2026-04-23
 # leak audit. Local scripts now write via the brain-write edge function
-# (allowlisted memory keys) using the publishable key for auth. Reads
-# stay on direct PostgREST since they go through public endpoints.
+# (allowlisted memory keys), authenticating with a 32-byte brain token
+# that lives in credentials.md (and supabase secrets server-side).
+# The publishable key is NOT used for these calls — it's on every page
+# of the website, so it's not really a secret.
 PUBLISHABLE_KEY="sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB"
+BRAIN_TOKEN=$(grep -E 'BPP_BRAIN_TOKEN|brain[-_]token' "$CREDS" | grep -oE '[0-9a-f]{64}' | head -1)
+if [ -z "$BRAIN_TOKEN" ]; then
+  echo "[synthesize-ceo-brief] ERROR: BPP_BRAIN_TOKEN missing from $CREDS" >&2
+  exit 1
+fi
 SERVICE_KEY="$PUBLISHABLE_KEY"  # legacy alias for code below
 
 if [ -z "$ANTHROPIC_KEY" ]; then
@@ -31,13 +38,14 @@ sb_get() {
     -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY"
 }
 sb_upsert() {
-  # Routes through the brain-write edge function which holds the
-  # SR key server-side. The SR JWT was rotated out of credentials.md
-  # in the 2026-04-23 leak audit so direct PostgREST writes from the
-  # local script are no longer possible. brain-write enforces an
-  # allowlist on which sparky_memory keys can be written via this path.
+  # Routes through the brain-write edge function which holds the SR key
+  # server-side. Authenticated with the brain token (NOT the publishable
+  # key — that's on every page of the public website and a vandal could
+  # corrupt the morning brief). brain-write enforces an allowlist on
+  # which sparky_memory keys can be written via this path.
   curl -s -X POST "$SUPABASE_URL/functions/v1/brain-write" \
     -H "Authorization: Bearer $PUBLISHABLE_KEY" \
+    -H "x-bpp-brain-token: $BRAIN_TOKEN" \
     -H "Content-Type: application/json" \
     -d "$1" > /dev/null
 }
