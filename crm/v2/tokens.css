@@ -273,6 +273,30 @@ button svg { stroke-width: 2; }
 .tactile-flat:hover  { background: var(--sunken); }
 .tactile-flat:active { box-shadow: var(--pressed-2); background: var(--sunken); }
 
+/* Global button UA-chrome reset.
+ *
+ * Without this, every <button style="border:none; background:transparent">
+ * inline-styled in the codebase still picks up macOS / iOS / Android
+ * native button shadows + bevels + focus rings. Symptom: filter chip
+ * rows render with a curved arc under each button (Key 2026-04-26:
+ * "ugly buttons"). Fixing it inline on every button is a 141-site
+ * touch; resetting once globally and re-introducing focus-visible
+ * outlines for keyboard users gets us 100% coverage in one rule.
+ *
+ * `:focus-visible` keeps a keyboard-only focus outline so accessibility
+ * doesn't regress — mouse clicks won't show the outline, Tab key will.
+ */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
 /* Brand-aligned button utilities — mirror the website .btn-gold /
    .btn-navy so any CTA in the CRM reads like a site CTA. */
 .btn-gold {
