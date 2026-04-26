@@ -1841,17 +1841,24 @@ function LeadProfileStrip({ contactPhone }) {
       onClick={() => setExpanded(v => !v)}
       title="Click to expand the full lead profile"
       style={{
-        padding: '6px 14px',
+        padding: '10px 20px',
         background: 'var(--card)',
         borderBottom: '1px solid var(--divider-faint)',
-        borderLeft: '3px solid var(--ms-2)',
-        fontFamily: 'var(--font-body)', fontSize: 11,
+        fontFamily: 'var(--font-body)', fontSize: 12,
         color: 'var(--text-muted)', cursor: 'pointer',
-        display: 'flex', flexDirection: 'column', gap: 4,
-      }}>
+        display: 'flex', flexDirection: 'column', gap: 6,
+        transition: 'background var(--dur) var(--ease)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+      >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-          <span style={{ flex: '0 0 auto', color: 'var(--ms-2)' }}>Profile</span>
+          <span style={{
+            flex: '0 0 auto', color: 'var(--green)',
+            fontFamily: 'var(--font-display)', fontWeight: 700,
+            fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase',
+          }}>Profile</span>
           {!expanded ? (
             <span style={{
               flex: 1, minWidth: 0,
@@ -2154,29 +2161,43 @@ function NextActionCard({ contact, messages, alexSession }) {
 function DuplicateStrip({ duplicates }) {
   return (
     <div style={{
-      padding: '6px 14px',
-      background: 'var(--card)',
+      padding: '12px 20px',
+      background: 'color-mix(in srgb, var(--gold) 8%, var(--card))',
       borderBottom: '1px solid var(--divider-faint)',
-      borderLeft: '3px solid var(--ms-4)',
-      fontFamily: 'var(--font-body)', fontSize: 11,
-      color: 'var(--text-muted)',
-      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+      fontFamily: 'var(--font-body)', fontSize: 12.5,
+      color: 'var(--text)',
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10,
     }}>
-      <span style={{ color: 'var(--ms-4)' }}>⚠</span>
-      <span>
-        {duplicates.length === 1 ? 'Duplicate phone:' : `${duplicates.length} duplicates:`}
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        color: 'var(--gold-ink)', fontWeight: 600,
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        {duplicates.length === 1 ? 'Duplicate phone' : `${duplicates.length} duplicates`}
       </span>
-      {duplicates.map((d, i) => (
-        <button key={d.id}
-          onClick={() => { window.location.hash = `#contact=${d.id}`; }}
-          style={{
-            padding: '2px 6px', fontSize: 11, fontFamily: 'var(--font-body)',
-            background: 'transparent', color: 'var(--navy)',
-            border: 'none', cursor: 'pointer', textDecoration: 'underline',
-          }}>
-          {d.name || 'Unnamed'} · stage {d.stage || 1}
-        </button>
-      ))}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {duplicates.map((d) => (
+          <button key={d.id}
+            type="button"
+            onClick={() => { window.location.hash = `#contact=${d.id}`; }}
+            style={{
+              padding: '4px 10px', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 600,
+              background: 'var(--card)', color: 'var(--navy)',
+              border: 'none', cursor: 'pointer',
+              borderRadius: 'var(--radius-pill)',
+              transition: 'background var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+          >
+            {d.name || 'Unnamed'} <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>· stage {d.stage || 1}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
