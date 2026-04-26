@@ -164,9 +164,14 @@ async function runProfile(profile, alexSystem, maxTurns = 10) {
   console.log(`\n--- ${profile.id} (${profile.name}) ---`);
   // Kick-start: Alex-agent would normally send the opener via quo-ai-new-lead.
   // We prime Alex's transcript with the actual opener text so the first
-  // customer reply is against what real customers see.
-  const firstName = profile.name.split(' ')[0];
-  const opener = `Hey ${firstName}, this is Alex with Backup Power Pro. Thanks for reaching out. I help Key, our licensed electrician, line up his installs. Before we put a quote together, mind if I ask: what are you using for backup power right now, or is this your first setup? Reply STOP to opt out.`;
+  // customer reply is against what real customers see. Some profiles
+  // (e.g. minimal-form-lead) have name=null to simulate a phone-only form
+  // submission — opener drops the name slot in that case, matching what
+  // alex-initiate sends in production when no name was captured.
+  const firstName = profile.name ? profile.name.split(' ')[0] : null;
+  const opener = firstName
+    ? `Hey ${firstName}, this is Alex with Backup Power Pro. Thanks for reaching out. I help Key, our licensed electrician, line up his installs. Before we put a quote together, what got you interested in finding a backup power solution? Reply STOP to opt out.`
+    : `Hey, this is Alex with Backup Power Pro. Thanks for reaching out. I help Key, our licensed electrician, line up his installs. Before we put a quote together, what got you interested in finding a backup power solution? Reply STOP to opt out.`;
 
   const alexHistory = [{ role: 'assistant', content: opener }];
   const customerHistory = [{ role: 'user', content: `Alex just texted: "${opener}"` }];
