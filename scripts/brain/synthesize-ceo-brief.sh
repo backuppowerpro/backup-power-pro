@@ -15,7 +15,12 @@ TS=$(date +%H:%M)
 # ── Credentials ──
 ANTHROPIC_KEY=$(grep "sk-ant-api" "$CREDS" | grep -o "sk-ant-[A-Za-z0-9_-]*" | head -1)
 SUPABASE_URL="https://reowtzedjflwmlptupbk.supabase.co"
-SERVICE_KEY=$(grep "Service Role Key" "$CREDS" | grep -o "eyJ[A-Za-z0-9._-]*" | head -1)
+# Service role key was rotated out of credentials.md in the 2026-04-23
+# leak audit. Local scripts now write via the brain-write edge function
+# (allowlisted memory keys) using the publishable key for auth. Reads
+# stay on direct PostgREST since they go through public endpoints.
+PUBLISHABLE_KEY="sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB"
+SERVICE_KEY="$PUBLISHABLE_KEY"  # legacy alias for code below
 
 if [ -z "$ANTHROPIC_KEY" ]; then
   echo "[synthesize-ceo-brief] ERROR: No Anthropic key found" >&2; exit 1
@@ -26,9 +31,14 @@ sb_get() {
     -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY"
 }
 sb_upsert() {
-  curl -s -X POST "$SUPABASE_URL/rest/v1/sparky_memory" \
-    -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
-    -H "Content-Type: application/json" -H "Prefer: resolution=merge-duplicates" \
+  # Routes through the brain-write edge function which holds the
+  # SR key server-side. The SR JWT was rotated out of credentials.md
+  # in the 2026-04-23 leak audit so direct PostgREST writes from the
+  # local script are no longer possible. brain-write enforces an
+  # allowlist on which sparky_memory keys can be written via this path.
+  curl -s -X POST "$SUPABASE_URL/functions/v1/brain-write" \
+    -H "Authorization: Bearer $PUBLISHABLE_KEY" \
+    -H "Content-Type: application/json" \
     -d "$1" > /dev/null
 }
 
@@ -56,16 +66,37 @@ meta = """$META_DATA"""
 ph   = """$POSTHOG_DATA"""
 crm  = """$CRM_DATA"""
 
-meta_cpl    = first_num(r'(?:cost per lead|CPL)[^\d\$]*[\$]?([\d,]+\.?\d*)', meta)
-meta_spend  = first_num(r'(?:spend|amount spent)[^\d\$]*[\$]?([\d,]+\.?\d*)', meta)
-meta_leads  = first_num(r'(?:^|\|)\s*(?:leads|lead count)\s*\|\s*([\d,]+)', meta)
-site_uv     = first_num(r'(?:unique visitor)[^\d]*([\d,]+)', ph)
-site_conv   = first_num(r'(?:conversion rate)[^\d]*([\d.]+)', ph)
-site_leads  = first_num(r'(?:lead form|lead_captured|lead submit)[^\d]*([\d]+)', ph)
-crm_active  = first_num(r'(?:active contact)[^\d]*([\d]+)', crm)
-crm_pipe    = first_num(r'(?:pipeline value)[^\d\$]*[\$]?([\d,]+)', crm)
-crm_close   = first_num(r'(?:conversion rate|close rate)[^\d]*([\d.]+)', crm)
-crm_new     = first_num(r'(?:new lead|new contact)[^\d]*([\d]+)', crm)
+# Markdown tables wrap labels in **bold**, so allow optional ** before/after
+# the label. Without these, fresh fetches of Meta Performance.md and Site
+# Analytics.md silently extracted 0 because the regex hit "Leads" (bold)
+# but couldn't see past the asterisks to the value.
+# Match values that appear in markdown table cells of the form
+# pipe-space-label-space-pipe-space-value-pipe. Without the table-cell
+# anchor, the regex caught text like "CPL across campaigns" and extracted
+# bogus numbers (got 7 instead of 29.06). Multi-line so ^ matches each
+# row start.
+# Label match consumes the start of the cell up through the next column
+# delimiter. The trailing pattern after label allows extra tokens such as
+# "(stage 1-8)" before the delimiter without breaking the value capture.
+TBL = lambda label, val: r'(?:^|\|)\s*[*]{0,2}\s*(?:' + label + r')[^|\n]*\|\s*[$]?\s*(' + val + r')'
+NUM = r'[\d,]+\.?\d*'
+INT = r'[\d,]+'
+def first_num_table(label, text, default='0', val=NUM):
+    m = re.search(TBL(label, val), text, re.IGNORECASE | re.MULTILINE)
+    if m:
+        return re.sub(r'[,\$]', '', m.group(1))
+    return default
+
+meta_cpl    = first_num_table(r'cpl|cost per lead', meta)
+meta_spend  = first_num_table(r'spend|amount spent', meta)
+meta_leads  = first_num_table(r'leads|lead count', meta, val=INT)
+site_uv     = first_num_table(r'unique visitor[s]?', ph, val=INT)
+site_conv   = first_num_table(r'conversion rate', ph)
+site_leads  = first_num_table(r'lead form submit[s]?|lead form|lead submits?', ph, val=INT)
+crm_active  = first_num_table(r'active contact[s]?|active leads', crm, val=INT)
+crm_pipe    = first_num_table(r'pipeline value|pipeline \\\$', crm, val=INT)
+crm_close   = first_num_table(r'conversion rate|close rate', crm)
+crm_new     = first_num_table(r'new lead[s]?|new contact[s]?', crm, val=INT)
 
 print(meta_cpl, meta_spend, meta_leads, site_uv, site_conv, site_leads, crm_active, crm_pipe, crm_close, crm_new)
 PYEOF
@@ -274,31 +305,65 @@ RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
   -d "@$REQUEST_FILE")
 rm -f "$REQUEST_FILE"
 
-RAW_TEXT=$(echo "$RESPONSE" | python3 -c "
+# Write the raw response to a temp file so the Python parser can read it
+# verbatim — past attempts inlined RAW_TEXT into a heredoc, which was
+# fragile any time the content contained quotes or escape sequences the
+# bash heredoc misinterpreted.
+RAW_FILE=$(mktemp /tmp/bpp-brief-raw-XXXXXX)
+echo "$RESPONSE" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
     print(d['content'][0]['text'])
 except Exception as e:
     print('ERROR: ' + str(e))
-")
+" > "$RAW_FILE"
+RAW_TEXT=$(head -c 200 "$RAW_FILE")  # short preview only, used in error message
 
 # ── Parse structured JSON from Claude ──
-PARSE_RESULT=$(python3 - <<PYEOF
-import json, re, sys
+PARSE_RESULT=$(RAW_FILE="$RAW_FILE" python3 - <<'PYEOF'
+import json, re, sys, os
 
-raw = """$RAW_TEXT"""
+with open(os.environ['RAW_FILE'], 'r') as f:
+    raw = f.read()
 
-# Extract JSON object from response
-m = re.search(r'\{[\s\S]*\}', raw)
-if not m:
+# Strip markdown code-fence wrappers (three-backtick + optional language tag)
+# the model frequently emits even when asked for raw JSON.
+fence = chr(96) * 3  # 3 backticks
+stripped = raw.strip()
+if stripped.startswith(fence):
+    # drop the opening fence (and optional language tag) plus the closing fence
+    stripped = re.sub(r'^' + fence + r'[a-zA-Z]*\s*', '', stripped)
+    stripped = re.sub(r'\s*' + fence + r'\s*$', '', stripped)
+
+# Try direct JSON parse first (most reliable).
+parsed = None
+try:
+    parsed = json.loads(stripped)
+except Exception:
+    # Fall back to scanning for the outermost balanced {...} block.
+    depth = 0
+    start = -1
+    for i, ch in enumerate(stripped):
+        if ch == '{':
+            if depth == 0: start = i
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0 and start >= 0:
+                try:
+                    parsed = json.loads(stripped[start:i+1])
+                    break
+                except Exception:
+                    start = -1
+
+if not parsed:
     print('PARSE_FAIL')
     sys.exit(0)
 
 try:
-    obj = json.loads(m.group(0))
-    brief = obj.get('brief', '')
-    sms   = obj.get('sms', brief)  # fallback to brief if sms missing
+    brief = parsed.get('brief', '')
+    sms   = parsed.get('sms', brief)  # fallback to brief if sms missing
     if not brief:
         print('PARSE_FAIL')
         sys.exit(0)
@@ -336,17 +401,22 @@ TACKLE=$(echo "$BRIEF" | grep -A2 "What I.d tackle first" | tail -1 | sed 's/^[[
 
 INBOX_SUMMARY="Morning brief — CPL \$$META_CPL | $META_LEADS leads | Pipeline \$$CRM_PIPELINE | Close $CRM_CLOSE%"
 
-INBOX_JSON=$(python3 -c "
-import json, sys
-sms = sys.stdin.read()
+# Read all three vars from env to avoid bash interpolating apostrophes
+# in TACKLE / INBOX_SUMMARY into Python string-literal syntax errors.
+INBOX_JSON=$(
+  INBOX_SUMMARY="$INBOX_SUMMARY" \
+  TACKLE="$TACKLE" \
+  BRIEF_SMS="$BRIEF_SMS" \
+  python3 -c '
+import json, os
 print(json.dumps({
-  'agent': 'brief',
-  'priority': 'normal',
-  'summary': '$INBOX_SUMMARY',
-  'suggested_action': '$TACKLE',
-  'sms_body': sms
+    "agent": "brief",
+    "priority": "normal",
+    "summary": os.environ.get("INBOX_SUMMARY", ""),
+    "suggested_action": os.environ.get("TACKLE", ""),
+    "sms_body": os.environ.get("BRIEF_SMS", ""),
 }))
-" <<< "$BRIEF_SMS")
+')
 
 curl -s -X POST "$SUPABASE_URL/functions/v1/sparky-notify" \
   -H "Authorization: Bearer $SERVICE_KEY" \
