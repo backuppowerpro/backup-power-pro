@@ -182,10 +182,30 @@ function useGlobalSearch(tabId) {
 // "Unknown" into the form — "Unknown" is useless in a briefing / Quick
 // List row. Fall back to the last 4 digits of the phone so Key can still
 // recognise the thread at a glance. Anything else → 'Lead'.
+// Title-case a name string ONLY when it's clearly a typing artifact:
+//   "key goodson"  → "Key Goodson"   (all lowercase)
+//   "JOHN SMITH"   → "John Smith"    (all uppercase, more than 3 chars)
+//   "McDonald"     → "McDonald"      (mixed case — user's intent, preserve)
+//   "O'Brien"      → "O'Brien"       (preserved)
+//   "Mary-Jane"    → "Mary-Jane"     (preserved)
+// Capitalizes the letter after spaces, hyphens, apostrophes, periods.
+function formatName(s) {
+  const n = String(s || '').trim();
+  if (!n) return n;
+  const isAllLower = n === n.toLowerCase();
+  const isAllUpper = n === n.toUpperCase() && n.length > 3 && /[A-Z]/.test(n);
+  if (!isAllLower && !isAllUpper) return n;
+  // Lowercase first so we can safely title-case from a known baseline.
+  const lower = n.toLowerCase();
+  return lower.replace(/(^|[\s\-'.])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
+}
+
 function displayNameFor(c) {
   if (!c) return 'Lead';
-  const n = String(c.name || c.contact_name || '').trim();
-  if (n && !/^unknown$/i.test(n) && !/^customer$/i.test(n) && !/^lead$/i.test(n) && !/^-+$|^—$/.test(n)) return n;
+  const raw = String(c.name || c.contact_name || '').trim();
+  if (raw && !/^unknown$/i.test(raw) && !/^customer$/i.test(raw) && !/^lead$/i.test(raw) && !/^-+$|^—$/.test(raw)) {
+    return formatName(raw);
+  }
   const last4 = String(c.phone || '').replace(/\D/g, '').slice(-4);
   return last4 ? `···${last4}` : 'Lead';
 }
@@ -1429,7 +1449,7 @@ function LivePipeline({ onCardClick, onSubView }) {
 // chip + a heuristic-scored recommendation hint, and lets Key override the
 // tier with a click. Sits directly under the stage strip in the contact
 // detail header. Dispatches a realtime update when the tier changes.
-function TierStrip({ contact, messages }) {
+function TierStrip({ contact, messages, embedded = false }) {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [localTier, setLocalTier] = React.useState(contact?.pricing_tier || 'standard');
@@ -1459,12 +1479,17 @@ function TierStrip({ contact, messages }) {
     window.__bpp_toast && window.__bpp_toast(`Tier → ${TIER_META[next].label}`, 'success');
   }
 
+  // When `embedded`, drop the wrapper padding so the parent row controls
+  // spacing — keeps the combined Stage / Tier / Snooze row from
+  // double-padding. Picker modal is fixed-position so DOM nesting doesn't
+  // matter for visual placement.
   return (
     <div style={{
-      padding: '8px 14px',
+      padding: embedded ? 0 : '8px 14px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+      flex: embedded ? '0 0 auto' : undefined,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: embedded ? '0 0 auto' : 1 }}>
         <button
           onClick={() => setPickerOpen(p => !p)}
           title={`Change pricing tier · score ${score}`}
@@ -2769,26 +2794,34 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
           how do I reach them + close + call. Address/email move into a
           tappable secondary line. */}
       <div style={{
-        padding: '14px 16px 12px',
-        paddingTop: mobile ? 'calc(14px + env(safe-area-inset-top))' : 14,
-        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '18px 20px 16px',
+        paddingTop: mobile ? 'calc(18px + env(safe-area-inset-top))' : 18,
+        display: 'flex', alignItems: 'center', gap: 14,
         borderBottom: '1px solid var(--divider-faint)',
       }}>
-        <button
-          onClick={onBack}
-          aria-label={mobile ? 'Back to list' : 'Close contact'}
-          style={{
-            width: 32, height: 32, display: 'grid', placeItems: 'center',
-            fontSize: 18, lineHeight: 1, flex: '0 0 auto',
-            color: 'var(--text-muted)',
-            background: 'var(--sunken)',
-            border: 'none', cursor: 'pointer',
-            borderRadius: 'var(--radius-pill)',
-            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--red) 14%, var(--sunken))'; e.currentTarget.style.color = 'var(--red)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
-        >{mobile ? '‹' : '×'}</button>
+        {/* Mobile keeps the back-arrow because the RightTabBar's × is at the
+            far right of a horizontally-scrolling toolbar — easy to miss when
+            you've scrolled to the start of it. Desktop drops the close
+            button entirely; the RightTabBar above already owns ×, Call, and
+            Brief (Key 2026-04-26: "all this space and you can't display
+            his name??? you have redundant info"). */}
+        {mobile ? (
+          <button
+            onClick={onBack}
+            aria-label="Back to list"
+            style={{
+              width: 32, height: 32, display: 'grid', placeItems: 'center',
+              fontSize: 18, lineHeight: 1, flex: '0 0 auto',
+              color: 'var(--text-muted)',
+              background: 'var(--sunken)',
+              border: 'none', cursor: 'pointer',
+              borderRadius: 'var(--radius-pill)',
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--red) 14%, var(--sunken))'; e.currentTarget.style.color = 'var(--red)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          ><span aria-hidden="true">‹</span></button>
+        ) : null}
         {/* Avatar — circular, 44px (was 64px clipPath polygon). Aligns
             visually with the row avatars in the contact list so Key sees
             the same person represented consistently. */}
@@ -2896,85 +2929,47 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
             ) : null}
           </div>
         </div>
-        {contact?.phone && !contact?.do_not_contact ? (
-          <button
-            onClick={() => window.__bpp_dial && window.__bpp_dial(contact.phone)}
-            title="Call (D)"
-            aria-label={`Call ${contact.name || 'contact'}`}
-            style={{
-              width: 40, height: 40, display: 'grid', placeItems: 'center',
-              flex: '0 0 auto',
-              background: 'var(--green)', color: '#fff', cursor: 'pointer',
-              border: 'none',
-              borderRadius: 'var(--radius-pill)',
-              boxShadow: '0 3px 10px color-mix(in srgb, var(--green) 32%, transparent)',
-              transition: 'transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px color-mix(in srgb, var(--green) 45%, transparent)' }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 10px color-mix(in srgb, var(--green) 32%, transparent)' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
-          </button>
-        ) : null}
+        {/* Green Call button intentionally removed — RightTabBar above the
+            panel already has a green 'Call' tab. Same for the Brief gold
+            pill that used to live in the stage strip below. The header is
+            now just identity (avatar + name + phone/address) so a new hire
+            isn't staring at three places to start a call. */}
       </div>
 
-      {/* Stage strip (click to open picker) + install-brief trigger */}
-      <div style={{ display: 'flex', gap: 6 }}>
-        <button
-          onClick={() => setStagePickerOpen(true)}
-          style={{
-            height: 38, padding: '0 16px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flex: 1, cursor: 'pointer',
-            background: 'var(--card)',
-            boxShadow: 'var(--ring)',
-            borderRadius: 'var(--radius-pill)',
-            border: 0, textAlign: 'left',
-            transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
-          >
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, letterSpacing: '0.01em', color: 'var(--text)' }}>{stageAbbr}</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>stage {contact?.stage || 1} ›</span>
-        </button>
-        {/* Brief — one-page view of everything Key needs on install day.
-            Hidden on stages < 3 (no install scheduled yet = nothing to brief). */}
-        {(contact?.stage || 1) >= 3 ? (
-          <button
-            onClick={() => setBriefOpen(true)}
-            title="Install brief (B)"
-            style={{
-              height: 38, padding: '0 18px',
-              display: 'flex', alignItems: 'center', gap: 6,
-              cursor: 'pointer',
-              background: 'var(--gold)', color: 'var(--navy)',
-              boxShadow: 'var(--shadow-gold)',
-              borderRadius: 'var(--radius-pill)',
-              border: 0,
-              fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, letterSpacing: '0.01em',
-              transition: 'background var(--dur) var(--ease)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)' }}
-          >
-            Brief
-          </button>
-        ) : null}
-      </div>
-
-      {/* Meta row — tier pill on the left, snooze button on the right.
-          Combined into a single horizontal row instead of two stacked
-          rows so the panel breathes. */}
+      {/* One combined status row: Stage button + Tier pill + Snooze button.
+          Used to be three separate strips (stage / brief / meta). Brief
+          moved to RightTabBar; stage + tier + snooze share one row so the
+          panel breathes. */}
       {contact ? (
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 8,
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '14px 20px',
           borderBottom: '1px solid var(--divider-faint)',
         }}>
-          <TierStrip contact={contact} messages={messages} />
+          <button
+            onClick={() => setStagePickerOpen(true)}
+            style={{
+              height: 34, padding: '0 16px',
+              display: 'flex', alignItems: 'center', gap: 10,
+              flex: 1, minWidth: 0, cursor: 'pointer',
+              background: 'var(--card)',
+              boxShadow: 'var(--ring)',
+              borderRadius: 'var(--radius-pill)',
+              border: 0, textAlign: 'left',
+              transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+          >
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700,
+              letterSpacing: '0.01em', color: 'var(--text)',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              minWidth: 0,
+            }}>{stageAbbr}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)', flex: '0 0 auto' }}>stage {contact?.stage || 1} ›</span>
+          </button>
+          <TierStrip contact={contact} messages={messages} embedded />
           <SnoozeRow contactId={contactId} contactName={contact?.name} stage={contact?.stage} embedded />
         </div>
       ) : null}
@@ -2984,15 +2979,22 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
           onClick={() => { window.location.hash = '#tab=finance'; }}
           title="Open Finance → Invoices"
           style={{
-            padding: '8px 14px',
+            padding: '12px 20px',
             background: 'var(--card)',
-            borderBottom: '2px solid var(--ms-3)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            fontFamily: 'var(--font-body)', fontSize: 12,
+            borderBottom: '1px solid var(--divider-faint)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+            fontFamily: 'var(--font-body)', fontSize: 13,
             width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left',
-          }}>
-          <span style={{ color: 'var(--text-muted)' }}>Outstanding</span>
-          <span style={{ color: 'var(--ms-3)', fontWeight: 700 }}>${outstandingBalance.toLocaleString()}</span>
+            transition: 'background var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--red) 4%, var(--card))' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+        >
+          <span style={{ color: 'var(--text-muted)' }}>Outstanding balance</span>
+          <span style={{
+            fontFamily: 'var(--font-mono)', color: 'var(--red)', fontWeight: 700,
+            fontVariantNumeric: 'tabular-nums', display: 'inline-flex', alignItems: 'center', gap: 6,
+          }}>${outstandingBalance.toLocaleString()} <span style={{ fontFamily: 'var(--font-display)', fontSize: 11 }}>›</span></span>
         </button>
       ) : null}
 
@@ -7203,8 +7205,11 @@ function LivePermits() {
   }, [refreshTick]);
 
   // Smart chip per row — what the priority bucket means in words.
+  // 'No jurisdiction' is intentionally NOT a chip — the Jurisdiction column
+  // already shows '—' and the Next column says 'Set jurisdiction →'. A chip
+  // would be the third place saying the same thing (Key 2026-04-26: "why
+  // are you telling me his jurisdiction is not set 3 times").
   const smartPermitFlag = (r) => {
-    if (r.priority === 0) return { tone: 'red',  label: 'No jurisdiction' };
     if (r.priority === 1) return { tone: 'gold', label: 'Submit next' };
     if (r.priority === 2) return { tone: 'red',  label: 'Stalled' };
     return null;
@@ -7326,15 +7331,17 @@ function LivePermits() {
               </span>
               <span style={{
                 fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
-                color: r.jurisdiction ? 'var(--text)' : 'var(--gold-ink)',
+                color: r.jurisdiction ? 'var(--text)' : 'var(--text-faint)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>{r.jurisdiction || 'Not set'}</span>
+              }}>{r.jurisdiction || '—'}</span>
               {r.cells.map((state, i) => <PermitStepCell key={i} state={state} />)}
               <span style={{
-                fontFamily: 'var(--font-body)', fontSize: 11.5, fontWeight: 500,
-                color: 'var(--text-muted)', textAlign: 'right',
+                fontFamily: 'var(--font-body)', fontSize: 11.5,
+                fontWeight: !r.jurisdiction ? 700 : 500,
+                color: !r.jurisdiction ? 'var(--gold-ink)' : 'var(--text-muted)',
+                textAlign: 'right',
               }}>
-                {!r.jurisdiction ? 'Set jurisdiction' : stageToLabel(r.stage)}
+                {!r.jurisdiction ? 'Set jurisdiction →' : stageToLabel(r.stage)}
               </span>
             </button>
           );
@@ -12161,10 +12168,13 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
             <button key={t.id} onClick={() => focusDetail(t.id)} style={{
               height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
               background: 'transparent', border: 'none',
-              color: on ? 'var(--text)' : 'var(--text-muted)',
-              fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 600,
+              // Active state: navy text + bold weight (no gold sliver — Key
+              // 2026-04-26: "i don't like the little sliver under the
+              // selected tabs"). The weight + color contrast carry the
+              // signal cleanly.
+              color: on ? 'var(--navy)' : 'var(--text-muted)',
+              fontFamily: 'var(--font-display)', fontWeight: on ? 800 : 600,
               fontSize: 12.5, letterSpacing: '-0.005em',
-              boxShadow: on ? 'inset 0 -2px 0 var(--gold)' : 'none',
               cursor: 'pointer',
               flex: compact ? '0 0 auto' : '1 1 0',
               whiteSpace: 'nowrap',

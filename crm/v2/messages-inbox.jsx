@@ -160,30 +160,44 @@ function ThreadRow({ t, compact = false, active = false }) {
 }
 
 function MsgChips({ active = 'all', onChange }) {
-  // Minimal — text tabs, no LCD count, no raised pills.
+  // Proper pill chips — match the rest of the CRM (Quick filter chips,
+  // stage filter chips, tier pills). The previous version was a hybrid
+  // (text tab + border-bottom) that rendered as native macOS buttons
+  // with a curved-arc bevel underneath because border:'none' didn't
+  // fully reset UA styling — Key 2026-04-26: "ugly buttons".
   const chips = [
     { id:'all',   label:'All',     title: 'All threads' },
     { id:'pin',   label:'Pinned',  title: 'Only pinned contacts' },
     { id:'un',    label:'Waiting', title: 'Threads where the customer sent the last message' },
     { id:'alex',  label:'Alex',    title: 'Threads where Alex sent the latest outbound' },
-    { id:'key',   label:'Me',      title: "Threads where you sent the latest outbound" },
+    { id:'key',   label:'Me',      title: 'Threads where you sent the latest outbound' },
     { id:'call',  label:'Calls',   title: 'Threads containing voice calls' },
   ];
   return (
-    <div style={{ display:'flex', gap:18, padding:'14px 16px 10px' }}>
+    <div style={{ display: 'flex', gap: 8, padding: '12px 16px 10px', flexWrap: 'wrap' }}>
       {chips.map(c => {
         const on = c.id === active;
         return (
           <button key={c.id} onClick={() => onChange && onChange(c.id)}
+            type="button"
             title={c.title}
+            aria-pressed={on}
             style={{
-              padding: '4px 0', fontSize: 12,
-              fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500,
-              color: on ? 'var(--text)' : 'var(--text-muted)',
-              borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent',
-              background: 'transparent', border: 'none',
-              borderBottomStyle: 'solid', cursor: 'pointer',
-            }}>{c.label}</button>
+              padding: '6px 14px', fontSize: 12,
+              fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 600,
+              letterSpacing: '0.01em',
+              color: on ? '#fff' : 'var(--text-muted)',
+              background: on ? 'var(--navy)' : 'var(--card)',
+              boxShadow: on ? 'var(--shadow-sm)' : 'var(--ring)',
+              border: 'none', outline: 'none',
+              borderRadius: 'var(--radius-pill)',
+              cursor: 'pointer',
+              appearance: 'none', WebkitAppearance: 'none',
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'var(--sunken)' }}
+            onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'var(--card)' }}
+          >{c.label}</button>
         );
       })}
     </div>
