@@ -27,11 +27,17 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { timingSafeEqual, allowRate } from '../_shared/auth.ts'
 
+// CORS: scoped to the production origin and the local refresh scripts. The
+// previous wildcard (`*`) didn't match the threat model — this is a
+// server-to-server endpoint (brain refresh + supabase callers), not
+// browser-cross-origin traffic.
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://backuppowerpro.com',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info, x-bpp-brain-token',
+  'Vary': 'Origin',
 }
 
 Deno.serve(async (req: Request) => {
@@ -40,19 +46,39 @@ Deno.serve(async (req: Request) => {
   const url = Deno.env.get('SUPABASE_URL')!
   const sr  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-  // Caller must present EITHER (a) the SR key as bearer, OR (b) a valid
-  // x-bpp-brain-token header. The publishable key alone is NOT enough —
-  // anyone scraping the website's view-source has it, and we'd rather
-  // not leak revenue rollups (pipeline_value, message counts) to
-  // arbitrary internet readers. The brain token is a 32-byte random
+  // ── Auth (timing-safe + fail-closed) ────────────────────────────────────
+  // Caller must present EITHER (a) the SR key as bearer/apikey, OR (b) a
+  // valid x-bpp-brain-token header. The brain token is a 32-byte random
   // value stored only in supabase secrets + ~/.claude/credentials.md.
+  //
+  // SECURITY: prior version used `auth.includes(sr)` which is exploitable
+  // when `sr` is empty during deploy/rotation (`"x".includes("")` === true).
+  // Now both halves of the OR fail closed when the secret env var is empty.
+  // Both comparisons are timing-safe.
   const BRAIN_TOKEN = Deno.env.get('BPP_BRAIN_TOKEN') || ''
-  const auth = req.headers.get('authorization') || req.headers.get('Authorization') || ''
+  const authHdr = req.headers.get('authorization') || req.headers.get('Authorization') || ''
+  const apiKey  = req.headers.get('apikey') || ''
+  const bearer  = authHdr.toLowerCase().startsWith('bearer ') ? authHdr.slice(7).trim() : ''
   const sentToken = req.headers.get('x-bpp-brain-token') || ''
-  const tokenMatches = !!BRAIN_TOKEN && sentToken === BRAIN_TOKEN
-  if (!auth.includes(sr) && !tokenMatches) {
+
+  const srMatches    = !!sr && (timingSafeEqual(bearer, sr) || timingSafeEqual(apiKey, sr))
+  const tokenMatches = !!BRAIN_TOKEN && timingSafeEqual(sentToken, BRAIN_TOKEN)
+
+  if (!srMatches && !tokenMatches) {
+    // Best-effort observability so brute-force attempts surface in logs.
+    console.warn('[crm-stats] auth failed', { hasAuth: !!authHdr, hasToken: !!sentToken })
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Per-IP rate limit. Token-bucket refills 30/min. The brain refresh
+  // runs once a day so 30 is generous, but enough to defeat slow
+  // brute-force without ever blocking legit traffic.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!allowRate(`crm-stats:${ip}`, 30)) {
+    return new Response(JSON.stringify({ error: 'rate limited' }), {
+      status: 429, headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   }
 
