@@ -1670,19 +1670,26 @@ function AlexSessionStrip({ session, contactId, contactPhone }) {
       }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-          <span style={{ flex: '0 0 auto' }}>Alex</span>
+          <span style={{ flex: '0 0 auto', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>Alex</span>
           <span style={{
-            padding: '1px 6px', fontSize: 10, letterSpacing: '.04em', flex: '0 0 auto',
+            padding: '2px 8px', fontSize: 10.5, letterSpacing: '0.02em', flex: '0 0 auto',
             color: statusColor,
-            border: '1px solid currentColor',
+            background: `color-mix(in srgb, ${statusColor} 12%, var(--card))`,
+            borderRadius: 'var(--radius-pill)',
+            fontFamily: 'var(--font-display)', fontWeight: 600,
           }}>{status}</span>
           {canToggle ? (
             <button onClick={toggleAlex} disabled={toggling} title={localActive ? 'Pause Alex — Key takes over' : 'Resume Alex — auto-respond'} style={{
-              padding: '1px 6px', fontSize: 10, letterSpacing: '.04em', flex: '0 0 auto',
+              padding: '2px 10px', fontSize: 10.5, letterSpacing: '0.02em', flex: '0 0 auto',
               background: 'transparent', color: 'var(--text-muted)',
-              border: '1px solid var(--divider)', cursor: toggling ? 'wait' : 'pointer',
-              fontFamily: 'var(--font-body)',
-            }}>{toggling ? '…' : localActive ? 'pause' : 'resume'}</button>
+              border: 'none', cursor: toggling ? 'wait' : 'pointer',
+              fontFamily: 'var(--font-display)', fontWeight: 600,
+              borderRadius: 'var(--radius-pill)',
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { if (!toggling) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; } }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+            >{toggling ? '…' : localActive ? 'Pause' : 'Resume'}</button>
           ) : null}
           {hasSummary && !expanded ? (
             <span style={{
@@ -1708,12 +1715,17 @@ function AlexSessionStrip({ session, contactId, contactPhone }) {
       {normalisedMessages.length > 0 ? (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
           <button onClick={e => { e.stopPropagation(); setTranscriptOpen(v => !v); }} style={{
-            padding: '1px 6px', fontSize: 10, letterSpacing: '.04em',
-            background: 'transparent', color: 'var(--text-muted)',
-            border: '1px solid var(--divider)', cursor: 'pointer',
-            fontFamily: 'var(--font-body)',
-          }}>
-            {transcriptOpen ? 'hide transcript' : `${normalisedMessages.length} msg transcript`}
+            padding: '3px 10px', fontSize: 10.5, letterSpacing: '0.02em',
+            background: 'var(--sunken)', color: 'var(--text-muted)',
+            border: 'none', cursor: 'pointer',
+            fontFamily: 'var(--font-display)', fontWeight: 600,
+            borderRadius: 'var(--radius-pill)',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--gold) 14%, var(--sunken))'; e.currentTarget.style.color = 'var(--gold-ink)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+          >
+            {transcriptOpen ? 'Hide transcript' : `${normalisedMessages.length} msg transcript`}
           </button>
           {transcriptOpen ? (
             <span className="mono" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
