@@ -183,20 +183,22 @@ function MsgChips({ active = 'all', onChange }) {
             title={c.title}
             aria-pressed={on}
             style={{
-              padding: '6px 14px', fontSize: 12,
+              padding: '7px 14px', fontSize: 12,
               fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 600,
               letterSpacing: '0.01em',
               color: on ? '#fff' : 'var(--text-muted)',
-              background: on ? 'var(--navy)' : 'var(--card)',
-              boxShadow: on ? 'var(--shadow-sm)' : 'var(--ring)',
+              // Inactive chips: just a sunken background, NO inset ring/outline
+              // (Key 2026-04-26: "i still see the ugly sliver around a lot of
+              // buttons"). Active chips keep the navy + soft elevation.
+              background: on ? 'var(--navy)' : 'transparent',
+              boxShadow: on ? 'var(--shadow-sm)' : 'none',
               border: 'none', outline: 'none',
               borderRadius: 'var(--radius-pill)',
               cursor: 'pointer',
-              appearance: 'none', WebkitAppearance: 'none',
               transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
             }}
-            onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'var(--sunken)' }}
-            onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'var(--card)' }}
+            onMouseEnter={e => { if (!on) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; } }}
+            onMouseLeave={e => { if (!on) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
           >{c.label}</button>
         );
       })}

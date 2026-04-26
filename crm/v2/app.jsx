@@ -1020,21 +1020,28 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
         {chips.map(c => {
           const active = stageFilter === c.id;
           const isTinted = !!c.tint;
+          // Inactive chips drop the inset ring (Key 2026-04-26: "i still see
+          // the ugly sliver around a lot of buttons"). Tinted chips
+          // (Waiting → gold) keep their gold-tint background as the affordance;
+          // plain chips just fade to transparent and tint on hover.
           return (
             <button key={c.id} onClick={() => setStageFilter(c.id)} style={{
-              padding: '6px 12px', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 600,
+              padding: '7px 13px', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 600,
               background: active
                 ? 'var(--navy)'
-                : (isTinted ? 'color-mix(in srgb, var(--gold) 14%, var(--card))' : 'var(--card)'),
+                : (isTinted ? 'color-mix(in srgb, var(--gold) 14%, transparent)' : 'transparent'),
               color: active
                 ? '#fff'
                 : (c.tint || 'var(--text-muted)'),
-              boxShadow: active ? 'var(--shadow-sm)' : 'var(--ring)',
+              boxShadow: active ? 'var(--shadow-sm)' : 'none',
               borderRadius: 'var(--radius-pill)',
               cursor: 'pointer', border: 'none',
               display: 'inline-flex', alignItems: 'center', gap: 6,
               transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
-            }}>
+            }}
+            onMouseEnter={e => { if (!active && !isTinted) e.currentTarget.style.background = 'var(--sunken)' }}
+            onMouseLeave={e => { if (!active && !isTinted) e.currentTarget.style.background = 'transparent' }}
+            >
               {c.label}
               <span style={{
                 fontSize: 11, fontWeight: 700, opacity: active ? 0.8 : 0.65,
@@ -2965,9 +2972,12 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
               fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700,
               letterSpacing: '0.01em', color: 'var(--text)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              minWidth: 0,
+              minWidth: 0, flex: 1,
             }}>{stageAbbr}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)', flex: '0 0 auto' }}>stage {contact?.stage || 1} ›</span>
+            {/* "stage N" suffix removed — saying "Booked stage 3" is the same
+                thing twice (Booked = stage 3). The chevron alone signals the
+                button opens the picker. */}
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-faint)', flex: '0 0 auto', lineHeight: 1 }}>›</span>
           </button>
           <TierStrip contact={contact} messages={messages} embedded />
           <SnoozeRow contactId={contactId} contactName={contact?.name} stage={contact?.stage} embedded />
@@ -8274,18 +8284,43 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
         <KpiCard label="Deposits pending"   value={String(kpis.awaitingDeposit).padStart(2, '0')} tone="amber" onClick={() => setSubView('inv')} />
         <KpiCard label="Overdue"            value={String(kpis.overdue).padStart(2, '0')}      tone={kpis.overdue > 0 ? 'red' : 'green'} onClick={() => setSubView('inv')} />
       </div>
-      {/* Sub tabs */}
-      <div style={{ padding: '0 16px', display: 'flex', gap: 0, borderBottom: '1px solid var(--divider)' }}>
-        {subTabs.map(s => (
-          <button key={s.id} onClick={() => setSubView(s.id)} style={{
-            height: 40, padding: '0 16px', fontSize: 13,
-            fontFamily: 'var(--font-body)', fontWeight: s.id === subView ? 600 : 500,
-            color: s.id === subView ? 'var(--text)' : 'var(--text-muted)',
-            borderBottom: s.id === subView ? '2px solid var(--gold)' : '2px solid transparent',
-            cursor: 'pointer', background: 'transparent', border: 'none',
-            borderBottomStyle: 'solid',
-          }}>{s.label} <span style={{ color: 'var(--text-faint)', marginLeft: 4, fontWeight: 400 }}>{s.count}</span></button>
-        ))}
+      {/* Sub tabs — proper navy pill chips matching the rest of the CRM
+          (Quick filter row, messages inbox row). The previous "border-
+          bottom + border:none" hybrid was the same broken pattern that
+          rendered as a macOS native button bevel — Key 2026-04-26: "i
+          still see the ugly sliver around a lot of buttons". */}
+      <div style={{ padding: '12px 16px 8px', display: 'flex', gap: 8 }}>
+        {subTabs.map(s => {
+          const on = s.id === subView;
+          return (
+            <button key={s.id} onClick={() => setSubView(s.id)} type="button" style={{
+              height: 34, padding: '0 16px', fontSize: 12.5,
+              fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 600,
+              letterSpacing: '0.01em',
+              color: on ? '#fff' : 'var(--text-muted)',
+              // Same clean treatment as messages-inbox chips: no inset ring,
+              // active = navy + shadow, inactive = transparent (hover tints).
+              background: on ? 'var(--navy)' : 'transparent',
+              boxShadow: on ? 'var(--shadow-sm)' : 'none',
+              cursor: 'pointer',
+              border: 'none', borderRadius: 'var(--radius-pill)',
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { if (!on) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; } }}
+            onMouseLeave={e => { if (!on) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
+            >
+              {s.label}
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10.5,
+                padding: '1px 7px', borderRadius: 'var(--radius-pill)',
+                background: on ? 'rgba(255,255,255,0.16)' : 'var(--sunken)',
+                color: on ? 'rgba(255,255,255,0.85)' : 'var(--text-muted)',
+                fontVariantNumeric: 'tabular-nums', fontWeight: 700,
+              }}>{s.count}</span>
+            </button>
+          );
+        })}
       </div>
       {/* Table */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
@@ -8375,7 +8410,7 @@ function smartProposalFlag(p) {
 
 function ProposalsLiveTable({ rows }) {
   const gq = useGlobalSearch('proposals');
-  if (rows.length === 0) return <Empty label="NO PROPOSALS" />;
+  if (rows.length === 0) return <Empty label="No proposals yet" />;
   const filteredRows = gq
     ? rows.filter(p =>
         (p.contact_name || '').toLowerCase().includes(gq) ||
@@ -8419,19 +8454,29 @@ function ProposalsLiveTable({ rows }) {
         const status = (p.status || 'sent').toLowerCase();
         const tone = statusTone[status] || 'muted';
         const word = statusWord[status] || status;
-        const fuToneMap = { 'F/U 1': 'gold', 'F/U 2': 'red', 'EXIT': 'red' };
+        const fuToneMap = { 'F/U 1': 'gold', 'F/U 2': 'red', 'Exit': 'red' };
         const fu = followUpState(p);
         const fuTone = fu ? (fuToneMap[fu.label] || 'muted') : null;
         const views = Number(p.view_count) || 0;
         const smart = smartProposalFlag(p);
+        // Row used to render THREE smart-chip pills competing for attention:
+        // smart flag (Hot/Stuck/Unopened/Exit), F/U cadence (F/U 1, F/U 2,
+        // Exit), and lifecycle status (Sent/Viewed/Approved). Smart and F/U
+        // overlap in most rows ("Unopened" + "F/U 1" both signal the same
+        // urgency). Show smart when present (it's the higher-signal of the
+        // two), otherwise fall through to F/U. Status pill always renders
+        // because lifecycle is its own axis (Approved is not urgency).
+        const urgencyChip = smart
+          ? { tone: smart.tone, label: smart.label }
+          : (fu ? { tone: fuTone, label: fu.label } : null);
         return (
           <div key={p.id}
             onClick={() => p.contact_id && (window.location.hash = `#contact=${p.contact_id}`)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '82px 1fr 88px 56px 68px 100px 110px',
-              gap: 12, alignItems: 'center',
-              padding: '12px 16px',
+              gridTemplateColumns: '92px 1fr 90px 64px 110px 110px',
+              gap: 14, alignItems: 'center',
+              padding: '14px 18px',
               borderTop: i === 0 ? 'none' : '1px solid var(--divider-faint)',
               cursor: p.contact_id ? 'pointer' : 'default',
               transition: 'background var(--dur) var(--ease)',
@@ -8439,8 +8484,11 @@ function ProposalsLiveTable({ rows }) {
             onMouseEnter={e => { if (p.contact_id) e.currentTarget.style.background = 'var(--sunken)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
-            <span>{smart ? <span className={`smart-chip smart-chip--${smart.tone}`}>{smart.label}</span> : null}</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{p.contact_name || '—'}</span>
+            <span>{urgencyChip ? <span className={`smart-chip smart-chip--${urgencyChip.tone}`}>{urgencyChip.label}</span> : null}</span>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--text)',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{p.contact_name || '—'}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>
               {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
             </span>
@@ -8449,12 +8497,9 @@ function ProposalsLiveTable({ rows }) {
               fontVariantNumeric: 'tabular-nums',
               color: views === 0 ? 'var(--red)' : views >= 3 ? 'var(--green)' : 'var(--text-muted)',
             }}>{views === 0 ? '👁 0' : `👁 ${views}`}</span>
-            {fu ? (
-              <span className={`smart-chip smart-chip--${fuTone}`} style={{ justifySelf: 'center' }}>{fu.label}</span>
-            ) : <span />}
             <span className={`smart-chip smart-chip--${tone}`} style={{ justifySelf: 'center' }}>{word}</span>
             <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+              fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700,
               textAlign: 'right', color: 'var(--text)',
               fontVariantNumeric: 'tabular-nums',
             }}>
@@ -8487,7 +8532,7 @@ function smartInvoiceFlag(inv) {
 
 function InvoicesLiveTable({ rows }) {
   const gq = useGlobalSearch('invoices');
-  if (rows.length === 0) return <Empty label="NO INVOICES" />;
+  if (rows.length === 0) return <Empty label="No invoices yet" />;
   const filteredRows = gq
     ? rows.filter(p =>
         (p.contact_name || '').toLowerCase().includes(gq) ||
@@ -8726,10 +8771,24 @@ const EMPTY_HINTS = {
 };
 function Empty({ label, hint }) {
   const key = (label || '').toUpperCase().trim();
-  // Fall through "NO MATCHES FOR ..." labels to the generic NO MATCHES hint
-  // so every search-empty state sells the next move (try a looser term, ⌘K).
-  // Without this, every search dead-end was a label-only with no guidance.
-  const body = hint || EMPTY_HINTS[key] || (key.startsWith('NO MATCHES') ? EMPTY_HINTS['NO MATCHES'] : null);
+  // Fall-through hint matches: any "NO X..." label resolves to the longest
+  // prefix that has a hint registered. Lets call sites use sentence-case
+  // ("No proposals yet") without losing the hint that's keyed by the
+  // shouting form ("NO PROPOSALS"). Without this, label/key drift silently
+  // dropped the actionable hint.
+  function fallbackHint(k) {
+    if (EMPTY_HINTS[k]) return EMPTY_HINTS[k];
+    if (k.startsWith('NO MATCHES')) return EMPTY_HINTS['NO MATCHES'];
+    if (k.startsWith('NO PROPOSALS')) return EMPTY_HINTS['NO PROPOSALS'];
+    if (k.startsWith('NO INVOICES')) return EMPTY_HINTS['NO INVOICES'];
+    if (k.startsWith('NO PAYMENTS')) return EMPTY_HINTS['NO PAYMENTS YET'];
+    if (k.startsWith('NO ACTIVE PERMITS')) return EMPTY_HINTS['NO ACTIVE PERMITS'];
+    if (k.startsWith('NO ACTIVE MATERIALS')) return EMPTY_HINTS['NO ACTIVE MATERIALS'];
+    if (k.startsWith('NO CALLS')) return EMPTY_HINTS['NO CALLS YET'];
+    if (k.startsWith('NO ACTIVITY')) return EMPTY_HINTS['NO ACTIVITY YET'];
+    return null;
+  }
+  const body = hint || fallbackHint(key);
   return (
     <div style={{
       padding: 48, display: 'flex', flexDirection: 'column',
@@ -10189,8 +10248,8 @@ function LiveQuickList({ onSelect }) {
   // state below can still render it above the message.
   const chipRow = (
     <div style={{
-      padding: '10px 16px 6px',
-      display: 'flex', gap: 6, flexWrap: 'wrap',
+      padding: '12px 16px 8px',
+      display: 'flex', gap: 8, flexWrap: 'wrap',
     }}>
       {stageChips.map(c => {
         const active = stageFilter === c.id;
@@ -10198,17 +10257,23 @@ function LiveQuickList({ onSelect }) {
           <button key={c.id}
             onClick={() => setStageFilter(c.id)}
             style={{
-              padding: '5px 12px', height: 26,
-              background: active ? 'var(--navy)' : 'var(--card)',
+              padding: '7px 13px', height: 30,
+              // No inset ring on inactive (Key 2026-04-26: "ugly sliver
+              // around a lot of buttons"). Active = navy + soft shadow,
+              // inactive = transparent that tints on hover.
+              background: active ? 'var(--navy)' : 'transparent',
               color: active ? '#fff' : 'var(--text-muted)',
-              boxShadow: active ? 'none' : 'var(--ring)',
+              boxShadow: active ? 'var(--shadow-sm)' : 'none',
               border: 'none', cursor: 'pointer',
               borderRadius: 'var(--radius-pill)',
               fontFamily: 'var(--font-display)', fontWeight: active ? 700 : 600,
-              fontSize: 11.5, letterSpacing: '-0.005em',
+              fontSize: 12, letterSpacing: '-0.005em',
               display: 'inline-flex', alignItems: 'center', gap: 6,
               transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
-            }}>
+            }}
+            onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; } }}
+            onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
+            >
             <span>{c.label}</span>
             <span style={{
               fontFamily: 'var(--font-mono)', fontSize: 10,
