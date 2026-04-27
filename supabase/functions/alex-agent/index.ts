@@ -21,7 +21,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { escapeIlike } from '../_shared/auth.ts'
+import { escapeIlike, timingSafeEqual } from '../_shared/auth.ts'
 import { handleMemoryTool as sharedHandleMemoryTool } from '../_shared/memory.ts'
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
@@ -62,6 +62,19 @@ const CORS = {
 const MAX_WEBHOOK_AGE_MS = 5 * 60 * 1000  // 5 minutes
 
 async function verifyWebhookSignature(rawBody: string, req: Request): Promise<boolean> {
+  // Internal-forward bypass: trusted callers (twilio-webhook forwarding
+  // port-side inbound, smoke tests, RETEST loops) authenticate with the
+  // service-role bearer instead of an OpenPhone HMAC. The SR bearer is a
+  // stronger guarantee than the HMAC — only Supabase env can mint it. Without
+  // this bypass, any inbound that lands on (864) 863-7800 (Twilio) instead
+  // of (864) 400-5302 (Quo) silently 401s here, including Key's RETEST text.
+  // Apr 27 — fixed after Key reported RETEST silence on Twilio number.
+  const auth = req.headers.get('authorization') || ''
+  const sr = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+  if (auth.startsWith('Bearer ') && sr && timingSafeEqual(auth.slice(7).trim(), sr)) {
+    return true
+  }
+
   const secret = Deno.env.get('QUO_WEBHOOK_SECRET')
   if (!secret) {
     // In production (TEST_MODE=false), require the secret — fail closed
