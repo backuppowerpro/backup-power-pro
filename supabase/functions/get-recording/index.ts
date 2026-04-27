@@ -7,12 +7,17 @@
  *
  * GET /get-recording?sid=RECORDING_SID
  *
- * Auth: requires the Supabase anon key in Authorization or apikey header.
+ * Auth: requireAnonOrServiceRole (timing-safe). Apr 27 — replaced the banned
+ *   `authHeader.includes(ANON_KEY.slice(-20))` pattern, which (a) fails open
+ *   when ANON_KEY is empty in env (`''.includes('') === true`) and (b) leaks
+ *   acceptance criteria into every public landing page that ships the anon
+ *   key in plaintext. CLAUDE.md hard rule.
  */
+
+import { requireAnonOrServiceRole, allowRate } from '../_shared/auth.ts'
 
 const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
 const TWILIO_AUTH_TOKEN  = Deno.env.get('TWILIO_AUTH_TOKEN') || ''
-const ANON_KEY           = Deno.env.get('SUPABASE_ANON_KEY') || ''
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -29,11 +34,16 @@ Deno.serve(async (req) => {
     return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
   }
 
-  // Validate caller — must send the anon key
-  const authHeader = req.headers.get('authorization') || req.headers.get('apikey') || ''
-  if (!ANON_KEY || !authHeader.includes(ANON_KEY.slice(-20))) {
-    return new Response(JSON.stringify({ error: 'unauthorized' }), {
-      status: 401,
+  // Validate caller — must send the anon key (or service role)
+  const gate = requireAnonOrServiceRole(req)
+  if (gate) return gate
+
+  // Per-IP rate limit so a leaked anon key can't be turned into a recording
+  // scraper. 30/min is plenty for Key replaying recent calls in the CRM.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!allowRate(`get-recording:${ip}`, 30)) {
+    return new Response(JSON.stringify({ error: 'rate limited' }), {
+      status: 429,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     })
   }
