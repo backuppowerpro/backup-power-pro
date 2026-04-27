@@ -34,9 +34,13 @@ const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER') || '+18648637800
 const TWILIO_ACCOUNT_SID  = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
 const TWILIO_AUTH_TOKEN   = Deno.env.get('TWILIO_AUTH_TOKEN') || ''
 
-// Voicemail greeting — override via Supabase secret VOICEMAIL_GREETING
+// Voicemail greeting — override via Supabase secret VOICEMAIL_GREETING.
+// Until Key records his own audio (cued in the Visual Consistency Audit), we
+// use Polly.Matthew-Neural which is dramatically more natural than the
+// default Alice TTS. Apr 27: rewrote the script to sound like Key vs a
+// generic answering machine.
 const VOICEMAIL_GREETING = Deno.env.get('VOICEMAIL_GREETING')
-  || "You've reached Backup Power Pro. We're unavailable right now. Please leave your name and number and we'll call you back shortly. Beep."
+  || "Hey, you've reached Key with Backup Power Pro. I'm probably on a roof or under a panel. Leave your name and what you're working on after the beep and I'll call you back today."
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -219,12 +223,12 @@ Deno.serve(async (req) => {
       }
       // Fall through to return voicemail TwiML
       return twiml(
-        `<Say voice="alice">${xesc(VOICEMAIL_GREETING)}</Say>` +
+        `<Say voice="Polly.Matthew-Neural">${xesc(VOICEMAIL_GREETING)}</Say>` +
         `<Record maxLength="120" playBeep="true" finishOnKey="#" trim="trim-silence" ` +
           `transcribe="true" ` +
           `recordingStatusCallback="${xesc(url.origin + url.pathname + '?event=voicemail-complete')}" ` +
           `recordingStatusCallbackMethod="POST"/>` +
-        `<Say voice="alice">Thank you. Goodbye.</Say>` +
+        `<Say voice="Polly.Matthew-Neural">Thank you. Goodbye.</Say>` +
         `<Hangup/>`
       )
     }

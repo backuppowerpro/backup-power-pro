@@ -116,12 +116,28 @@ serve(async (req) => {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: { name: lineItemName },
+          product_data: {
+            name: lineItemName,
+            description: pay_full
+              ? 'Permitted, inspected, single-day install of generator inlet box + interlock kit by Backup Power Pro (Key Electric LLC, SC LIC #2942).'
+              : '50% upfront — second 50% due on install day. Permitted, inspected, single-day install of generator inlet box + interlock kit. Backup Power Pro · SC LIC #2942.',
+          },
           unit_amount: chargeAmt * 100,
         },
         quantity: 1,
       }],
       customer_email: prop.contact_email || undefined,
+      // Brand the Stripe Checkout page itself — without these the customer
+      // experiences a generic stripe.com hand-off mid-flow. With these set,
+      // the header reads "Backup Power Pro" and the receipt + statement-
+      // descriptor lineage carries through to the customer's bank statement.
+      // (Apr 27 visual audit caught the brand drop.)
+      payment_intent_data: {
+        statement_descriptor_suffix: 'BPP',
+        description: pay_full
+          ? `Backup Power Pro install — full payment (proposal ${String(prop.id).slice(0, 8)})`
+          : `Backup Power Pro install — 50% deposit (proposal ${String(prop.id).slice(0, 8)})`,
+      },
       metadata: {
         invoice_token: invToken,
         contact_id: String(prop.contact_id || ''),
