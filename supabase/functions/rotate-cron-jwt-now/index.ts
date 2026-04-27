@@ -160,13 +160,55 @@ Deno.serve(async (req: Request) => {
       },
       {
         name: 'sparky-daily-digest-evening',
-        cron: '0 22 * * *',  // 10pm UTC = ~6pm ET (close enough for an evening summary)
+        cron: '0 22 * * *',  // 10pm UTC = ~6pm ET
         url:  'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/sparky-daily-digest',
       },
       {
         name: 'permit-morning-check-daily',
         cron: '0 12 * * *',  // 12pm UTC = 8am ET (DST) / 7am ET (winter)
         url:  'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/permit-morning-check',
+      },
+      {
+        // 14:00 UTC = 10am EDT / 9am EST. Texts go out 24–72h post-stage-9
+        // when customers are at peak happiness with the new install. Each
+        // 5★ Google review compounds the GBP organic loop. Apr 27: confirmed
+        // this cron was either unscheduled OR scheduled without auth, so
+        // adding it here as a guaranteed schedule with the fresh SR JWT.
+        name: 'auto-review-ask-daily',
+        cron: '0 14 * * *',
+        url:  'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/auto-review-ask',
+      },
+      {
+        // 13:00 UTC = 9am EDT. Daily zero-day alert: if yesterday saw 0
+        // leads through the form, page Key. Catches form-broken-overnight
+        // scenarios before another full day of ad spend wastes.
+        name: 'lead-volume-alert-daily',
+        cron: '30 13 * * *',
+        url:  'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/lead-volume-alert',
+      },
+      {
+        // 02:00 UTC daily — Alex cold-lead sweeper. Closes post-mortem
+        // analysis on sessions that went cold (≥30d no reply) so the
+        // learning loop captures dead leads, not just bookings.
+        name: 'alex-cold-lead-sweep-daily',
+        cron: '0 2 * * *',
+        url:  'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-cold-lead-sweep',
+      },
+      {
+        // 03:00 UTC daily — Alex ghost follow-up sender. Sends day-1 / day-3
+        // / day-7 ghost messages to alex_sessions that went silent.
+        name: 'alex-ghost-daily',
+        cron: '0 3 * * *',
+        url:  'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-ghost',
+      },
+      {
+        // 15:00 UTC = 11am EDT. Daily proposal-nudge — finds un-signed
+        // proposals ≥18h old and sends a smart F/U based on view_count
+        // (0 / 1-2 / 3+). Capped at 2 nudges per proposal lifetime.
+        // Apr 27: shipped to lift the 1.2% 30d close rate.
+        name: 'proposal-nudge-daily',
+        cron: '0 15 * * *',
+        url:  'https://reowtzedjflwmlptupbk.supabase.co/functions/v1/proposal-nudge',
       },
     ]
 
