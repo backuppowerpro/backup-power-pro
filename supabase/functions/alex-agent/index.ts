@@ -85,30 +85,55 @@ async function verifyWebhookSignature(rawBody: string, req: Request): Promise<bo
     return true // dev/test only
   }
 
-  const signature = (
+  // OpenPhone signs webhooks with a header in the form:
+  //   openphone-signature: hmac;1;<timestamp_ms>;<base64_signature>
+  // The signing key returned by POST /v1/webhooks is itself base64-encoded.
+  // Algorithm: HMAC-SHA256 over `${timestamp}.${rawBody}` with the
+  // base64-decoded key. Apr 27 rewrite — earlier code parsed the signature
+  // as hex with a `v1=` prefix, which was wrong for OpenPhone's actual
+  // format and made every real webhook 401. With this fix in, TEST_MODE
+  // can be flipped back off and real customer SMS reaches Alex again.
+  const signatureHdr = (
     req.headers.get('openphone-signature') ||
     req.headers.get('x-openphone-signature') ||
-    req.headers.get('x-signature')
+    req.headers.get('x-signature') ||
+    ''
   )
-  if (!signature) {
+  if (!signatureHdr) {
     console.warn('[alex] Webhook received without signature header — rejected')
     return false
   }
 
-  // Replay defense: reject any webhook older than 5 min. OpenPhone sends
-  // a timestamp header on signed webhooks; if not present, attempt to parse
-  // from the body's createdAt. If neither is present in prod → reject.
-  const tsHeader = req.headers.get('openphone-timestamp') || req.headers.get('x-openphone-timestamp') || req.headers.get('x-timestamp')
+  // Parse `hmac;<version>;<timestamp_ms>;<base64_sig>` (preferred) OR a bare
+  // base64/hex blob (legacy fallback). Capture timestamp from the header
+  // first; only fall back to body createdAt if absent.
+  let scheme = ''
+  let version = ''
+  let tsHeader = req.headers.get('openphone-timestamp') ||
+                 req.headers.get('x-openphone-timestamp') ||
+                 req.headers.get('x-timestamp') || ''
+  let sigBlob = signatureHdr
+  if (signatureHdr.includes(';')) {
+    const parts = signatureHdr.split(';')
+    if (parts.length >= 4) {
+      scheme  = parts[0].trim()
+      version = parts[1].trim()
+      tsHeader = tsHeader || parts[2].trim()
+      sigBlob = parts.slice(3).join(';').trim()
+    }
+  } else {
+    sigBlob = signatureHdr.replace(/^v\d+=/, '')
+  }
+
+  // Replay defense: reject any webhook older than 5 min.
   let tsMs: number | null = null
   if (tsHeader) {
     const parsed = parseInt(tsHeader, 10)
     if (Number.isFinite(parsed)) {
-      // OpenPhone timestamps are seconds since epoch
-      tsMs = parsed < 1e12 ? parsed * 1000 : parsed
+      tsMs = parsed < 1e12 ? parsed * 1000 : parsed  // sec vs ms
     }
   }
   if (tsMs == null) {
-    // Fallback: parse createdAt from body JSON (best-effort)
     try {
       const bodyJson = JSON.parse(rawBody)
       const createdAt = bodyJson?.data?.object?.createdAt || bodyJson?.createdAt
@@ -123,26 +148,47 @@ async function verifyWebhookSignature(rawBody: string, req: Request): Promise<bo
     return false
   }
 
+  // Decode helpers — sig + key are typically base64; secret may be raw text
+  // for legacy installs, so fall back gracefully.
+  const fromBase64 = (s: string): Uint8Array | null => {
+    try {
+      const bin = atob(s)
+      const out = new Uint8Array(bin.length)
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+      return out
+    } catch { return null }
+  }
+  const fromHex = (s: string): Uint8Array | null => {
+    if (!/^[0-9a-fA-F]+$/.test(s) || s.length % 2 !== 0) return null
+    const out = new Uint8Array(s.length / 2)
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+    return out
+  }
+
   try {
     const enc = new TextEncoder()
+    // Try base64-decoded key first (OpenPhone's documented format), then
+    // raw-text fallback (legacy / pre-rotation envs).
+    const decodedKey = fromBase64(secret)
+    const keyBytes: Uint8Array = decodedKey ?? enc.encode(secret)
     const key = await crypto.subtle.importKey(
-      'raw', enc.encode(secret),
+      'raw', keyBytes,
       { name: 'HMAC', hash: 'SHA-256' },
       false, ['verify'],
     )
-    // Signature may be hex or prefixed (v1=abc123) — strip prefix, parse hex
-    const hexSig = signature.replace(/^v\d+=/, '').toLowerCase()
-    const sigBytes = Uint8Array.from(
-      (hexSig.match(/.{2}/g) ?? []).map((b: string) => parseInt(b, 16)),
-    )
-    // Security audit round 2 note: OpenPhone's documented signing format may
-    // be `timestamp.body` rather than just `body`. If timestamp header is
-    // present, sign the canonical combined string; fall back to body-only.
-    // This is dual-mode compatible until OP's exact format is confirmed.
+
+    // Signature in the header is base64; legacy code path was hex.
+    const sigBytes = fromBase64(sigBlob) ?? fromHex(sigBlob.toLowerCase())
+    if (!sigBytes) {
+      console.warn('[alex] Could not decode signature blob:', sigBlob.slice(0, 40))
+      return false
+    }
+
+    // OpenPhone signs `${timestamp}.${rawBody}`; if no timestamp parsed,
+    // try body-only as fallback (some legacy installs).
     if (tsHeader) {
       const combined = `${tsHeader}.${rawBody}`
-      const combinedValid = await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(combined))
-      if (combinedValid) return true
+      if (await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(combined))) return true
     }
     return await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(rawBody))
   } catch (err) {
