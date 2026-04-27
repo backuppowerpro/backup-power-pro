@@ -490,13 +490,38 @@ window.addEventListener('DOMContentLoaded', async () => {
   // access was blocked on this migration — see the 2026-04-23 RLS
   // hardening migration for the full story.
   const [proposalRes, ctxRes] = await Promise.all([
+    // Pass through both ok payloads AND 410 Gone (superseded) so the page can
+    // show a helpful "you have a newer quote" message instead of "not found".
     fetch(`${SUPABASE_URL}/functions/v1/proposal-view?token=${encodeURIComponent(token)}`, {
       headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
-    }).then(r => r.ok ? r.json() : ({ proposal: null })).catch(() => ({ proposal: null })),
+    }).then(async r => {
+      if (r.ok) return r.json();
+      if (r.status === 410) return { _superseded: true, ...(await r.json().catch(() => ({}))) };
+      return { proposal: null };
+    }).catch(() => ({ proposal: null })),
     fetch(`${SUPABASE_URL}/functions/v1/proposal-context?token=${encodeURIComponent(token)}`, {
       headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
     }).then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
+
+  // Superseded quote — newer one exists for this customer
+  if (proposalRes?._superseded) {
+    const latestToken = proposalRes.latest_token;
+    const latestUrl = latestToken ? `/proposal.html?token=${encodeURIComponent(latestToken)}` : null;
+    document.getElementById('main').innerHTML =
+      '<div style="text-align:center;padding:60px 20px;max-width:420px;margin:0 auto">' +
+        '<div style="font-size:48px;margin-bottom:16px">📄</div>' +
+        '<div style="font-family:Outfit,sans-serif;font-size:22px;font-weight:800;color:var(--navy);margin-bottom:12px">This quote was replaced</div>' +
+        '<div style="font-size:14px;color:var(--text3);line-height:1.6;margin-bottom:20px">' +
+          'A newer version of your quote was sent. Please use that one — the price and details may have changed.' +
+        '</div>' +
+        (latestUrl
+          ? '<a href="' + latestUrl + '" style="display:inline-block;background:var(--gold);color:var(--navy);font-family:Outfit,sans-serif;font-weight:800;font-size:15px;padding:12px 24px;border-radius:100px;text-decoration:none">View latest quote &rarr;</a>'
+          : '<a href="tel:8644005302" style="display:inline-block;background:var(--gold);color:var(--navy);font-family:Outfit,sans-serif;font-weight:800;font-size:15px;padding:12px 24px;border-radius:100px;text-decoration:none">Call (864) 400-5302</a>') +
+      '</div>';
+    return;
+  }
+
   const data = proposalRes?.proposal || null;
   if (!data) { showError('Proposal not found.', 'This link may be invalid or has been removed.'); return; }
   P = data;

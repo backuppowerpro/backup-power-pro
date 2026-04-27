@@ -83,12 +83,27 @@ Deno.serve(async (req) => {
   // ── LOOK UP CONTACT ──────────────────────────────────────────────────────────
   const { data: contact, error: contactErr } = await supabase
     .from('contacts')
-    .select('id, name, phone')
+    .select('id, name, phone, do_not_contact')
     .eq('id', contactId)
     .single()
 
   if (contactErr || !contact) return json(404, { success: false, error: 'contact not found' })
   if (!contact.phone)         return json(400, { success: false, error: 'contact has no phone number' })
+
+  // ── TCPA DNC GATE ────────────────────────────────────────────────────────────
+  // CLAUDE.md hard rule: any outbound SMS checks contacts.do_not_contact first.
+  // alex-followup, alex-agent, alex-ghost, proposal-nudge already enforce this;
+  // CRM's primary outbound surface (this file) was missing the check until
+  // 2026-04-27. Twilio will also 21610 if the recipient texted STOP at the
+  // carrier level — but we shouldn't even attempt the API call if Key's CRM
+  // already has the contact flagged DNC.
+  if (contact.do_not_contact) {
+    console.warn(`[send-sms] DNC blocked: contact ${contactId} (${contact.name || 'unnamed'})`)
+    return json(403, {
+      success: false,
+      error: 'Contact is marked Do Not Contact. Unflag in CRM if this is wrong.',
+    })
+  }
 
   // Normalize to E.164
   const digits = String(contact.phone).replace(/\D/g, '')

@@ -45,6 +45,16 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Proposal not found' }), { status: 404, headers: corsHeaders })
     }
 
+    // Superseded gate (Apr 27): refuse to create checkout for a stale quote
+    // that's been replaced by a newer one. Customer should pay the latest
+    // price, not whatever was in their inbox 3 weeks ago. Already-signed
+    // proposals are exempt — once signed, the price was locked.
+    if (prop.superseded_by && !prop.signed_at) {
+      return new Response(JSON.stringify({
+        error: 'This quote was replaced by a newer one. Please use the latest link or contact (864) 400-5302.',
+      }), { status: 410, headers: corsHeaders })
+    }
+
     const total = prop.total || 0
     if (!total || total <= 0) {
       return new Response(JSON.stringify({ error: 'Invalid proposal total' }), { status: 400, headers: corsHeaders })

@@ -32,6 +32,28 @@ Deno.serve(async (req: Request) => {
   if (error || !data) {
     return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers: { ...CORS, 'Content-Type': 'application/json' } })
   }
+
+  // Superseded check (Apr 27 visual audit): if a newer proposal exists for the
+  // same contact, this row was auto-marked `superseded_by`. Don't render it
+  // (and especially don't accept payment through its deposit-checkout); send
+  // the customer to the latest one. Skip the check if this proposal was
+  // already signed — at that point the price was locked in.
+  if (data.superseded_by && !data.signed_at) {
+    const { data: latest } = await sb
+      .from('proposals')
+      .select('token')
+      .eq('id', data.superseded_by)
+      .maybeSingle()
+    return new Response(JSON.stringify({
+      error: 'superseded',
+      latest_token: latest?.token || null,
+      superseded_at: data.superseded_at,
+    }), {
+      status: 410, // Gone
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    })
+  }
+
   return new Response(JSON.stringify({ proposal: data }), {
     status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
   })
