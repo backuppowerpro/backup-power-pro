@@ -1320,12 +1320,23 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
     var icon=document.getElementById('varGenIcon');
     var lbl=document.getElementById('varGenLabel');
     if(this.checked){
+      // Full-card feedback: gold border + gold-tinted background so the
+      // visual response lands AT the tap site, not 200px away in the
+      // top-left checkbox. Three rageclicks on PostHog 7d traced to
+      // users tapping the bolded outlet text and seeing no immediate
+      // change at the tap location (Apr 26 landing audit).
       box.style.background='var(--gold)'; box.style.borderColor='var(--gold)';
-      icon.style.display='block'; lbl.style.borderColor='var(--gold)';
+      icon.style.display='block';
+      lbl.style.borderColor='var(--gold)';
+      lbl.style.background='rgba(255,186,0,.14)';
+      lbl.style.boxShadow='0 0 0 3px rgba(255,186,0,.25)';
       document.getElementById('varGenErr').style.display='none';
     } else {
       box.style.background='transparent'; box.style.borderColor='rgba(255,255,255,.3)';
-      icon.style.display='none'; lbl.style.borderColor='rgba(255,255,255,.15)';
+      icon.style.display='none';
+      lbl.style.borderColor='rgba(255,255,255,.15)';
+      lbl.style.background='rgba(255,255,255,.07)';
+      lbl.style.boxShadow='none';
     }
     varCheckReady();
   });
