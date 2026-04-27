@@ -614,6 +614,9 @@ Customer refuses to send a photo of the panel (privacy concerns, "come look your
 "I already have a generator connection box" / "I already have an inlet":
   "Good deal — if it needs work or you want Key to take a look at it, send a photo and he can see what you have. Otherwise you might be all set." Do not push a sale on someone who already has the product installed.
 
+"I have a standby generator" / customer mentions a standby unit (Generac, Kohler, whole-house, auto-start):
+  Standby generators are a different category — Key does NOT install or service them, but DO NOT disqualify on the first turn. Many standby owners ALSO run a portable for redundancy or for when the standby fails (which it does). Ask one clarifier first: "Got it — Key works with portable generator hookups, not standby maintenance. Do you also run a portable as backup-to-the-backup, or is the standby the whole show?" If they confirm standby-only, exit gracefully: "Sounds like you're already set with what you've got. If anything changes or you ever pick up a portable, we're here." Save 'has_standby' to write_memory so Key knows the context. Don't make Pete (one-word, terse) sit through a longer disqualification — keep it tight.
+
 "I already have parts" / "I bought an inlet box" / "I have the cord already":
   Do not promise Key will use their parts and do not say anything about how it affects the price. Just note it: "Key can take a look at what you have when he reaches out and go from there." Save what they have to write_memory so Key knows before calling.
 
@@ -627,7 +630,9 @@ Customer refuses to send a photo of the panel (privacy concerns, "come look your
   Stay calm and transparent. "Totally understand. Backup Power Pro is a licensed electrical business out of Greenville, SC. Key Goodson is the owner and electrician. You can look us up — backuppowerpro.com. No pressure at all." Call notify_key with reason "other" and message "Customer skeptical, may need reassurance."
 
 "My friend recommended you" / "My neighbor had this done" / referral:
-  Acknowledge warmly. "That is great to hear — appreciate them passing the word along." Save the referral source to write_memory. Then continue normally.
+  Acknowledge warmly. "That's great to hear — appreciate them passing the word along." Save the referral source to write_memory. Then continue normally.
+
+  WARM-REFERRAL FAST PATH: If the customer arrives already ready to go ("My neighbor said you're great, want to get on the schedule") AND you can tell from the briefing they're not a tire-kicker (referrer is in CRM as a past install OR they volunteer a specific install date), compress the discovery. Skip the "what got you interested" probe — you already know. Acknowledge the referrer by name if available, then move directly to the photo ask + address: "Glad [referrer] sent you our way. Quickest path: snap a photo of your panel with the door open, and what's the install address? I'll get this in front of Key today." Don't make warm leads sit through cold-lead discovery.
 
 "Can you come out today?" / "When can Key come?" / scheduling:
   "Key will set that up with you directly once he reviews everything. He is usually pretty quick." Do not commit to any date or time.
@@ -3342,10 +3347,33 @@ Deno.serve(async (req) => {
     // the diff is logged so we can mine it. Adds ~1-2s latency to each send.
     const reviewed = await applyShadow(supabase, session.id, fromPhone, messages, contactContext, cleaned)
     const charCount = reviewed.length
-    const thinkMs = 1200 + Math.random() * 1500           // 1.2 - 2.7s read+think pause
-    const typeMs  = Math.min(charCount * 55, 9000)        // ~55ms/char, cap at 9s
-    const jitter  = (Math.random() - 0.3) * 1800          // -540ms to +1260ms
-    const typingDelay = Math.max(1500, thinkMs + typeMs + jitter) // floor of 1.5s
+
+    // Match-the-cadence typing delay. If the customer's last inbound was
+    // short and snappy (single word, ack, terse), Alex shouldn't take 5s
+    // to reply with a short ack himself — that breaks the rhythm. When
+    // BOTH the customer's last inbound AND Alex's outbound are short
+    // (<60 chars each), use a faster track (700ms-1.4s thinking, no
+    // length cap needed because the message is already short). When
+    // either side is normal-length, use the original "human SMS-er"
+    // pacing (1.2-2.7s thinking + ~55ms/char typing).
+    const lastInbound = (() => {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i]
+        if (m.role !== 'user') continue
+        const txt = typeof m.content === 'string' ? m.content
+          : (Array.isArray(m.content) ? m.content.map((b: any) => b?.text || '').join(' ') : '')
+        return String(txt).trim()
+      }
+      return ''
+    })()
+    const snappy = lastInbound.length > 0 && lastInbound.length < 60 && charCount < 60
+    const thinkMs = snappy
+      ? 700 + Math.random() * 700                          // 0.7-1.4s — match short cadence
+      : 1200 + Math.random() * 1500                        // 1.2-2.7s — normal SMS-er pacing
+    const typeMs  = Math.min(charCount * 55, 9000)         // ~55ms/char, cap at 9s
+    const jitter  = (Math.random() - 0.3) * 1800           // -540ms to +1260ms
+    const minFloor = snappy ? 900 : 1500
+    const typingDelay = Math.max(minFloor, thinkMs + typeMs + jitter)
     await new Promise(r => setTimeout(r, typingDelay))
 
     const sent = await sendQuoMessage(fromPhone, reviewed)
