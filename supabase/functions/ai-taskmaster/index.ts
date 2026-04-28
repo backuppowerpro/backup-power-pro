@@ -210,6 +210,27 @@ Do not describe problems without a next move. A report without a next move is a 
 // MODE INSTRUCTIONS
 // ──────────────────────────────────────────────────────────────────────
 
+const MODE_REPLY_CHIPS = `MODE: REPLY CHIPS — Three single-tap quick-reply options for Key.
+
+The customer just sent an inbound. Key needs to answer fast. Return THREE short reply options he can tap to fill his composer. Each option is a complete, send-ready SMS in Key's voice (warm, plain, no em-dashes, no emojis, no "Hey {Firstname}" templating — already populated).
+
+Output format — STRICT. Return ONLY a single JSON object on one line, no preamble, no markdown, no commentary:
+{"chips":["...","...","..."]}
+
+Each chip: 6–18 words. Each chip must move the conversation forward in a different direction:
+- Chip 1: Direct answer / acknowledgment that addresses their message head-on.
+- Chip 2: Asks the next thing Key needs (panel photo, address, scheduling, generator amp).
+- Chip 3: Soft close / scheduling proposal IF the conversation is at that stage; otherwise, a warm reassurance that defers slightly ("Going to look at this and circle back, give me an hour").
+
+Hard rules:
+- Customer-safe — chips will be sent verbatim if Key taps. Never include other-customer data, never fabricate prices, never use [BRACKET] tags.
+- No two chips should be paraphrases of each other.
+- If the inbound is unclear or empty, fall back to: "Got your message. What's the best way to keep this moving?" / "Mind sharing the panel photo when you have a sec?" / "Got it. I'll look this over and reach out shortly."
+- Never include questions Sparky doesn't have an answer to. Don't say "Will Tuesday work?" if you don't know whether Tuesday is open.
+- No phone numbers, no email addresses, no full addresses in chip text.
+
+Output is JSON only. No surrounding text.`
+
 const MODE_NEC_CONSULT = `MODE: NEC CONSULT — Authoritative NEC + SC amendment expert.
 
 Hard rules (never violate):
@@ -2020,6 +2041,7 @@ Deno.serve(async (req: Request) => {
     contact_insight: MODE_CONTACT_INSIGHT,
     draft_followup: MODE_DRAFT_FOLLOWUP,
     nec_consult: MODE_NEC_CONSULT,
+    reply_chips: MODE_REPLY_CHIPS,
   }
 
   const modeInstructions = modeMap[mode]
@@ -2116,6 +2138,28 @@ Deno.serve(async (req: Request) => {
     maxTokens = 280
     if (!contact) return jsonResp({ error: 'contact required for draft_followup mode' }, 400)
     messages = [{ role: 'user', content: `Contact:\n${describeContact(contact)}\n\nWrite the check-in message.` }]
+
+  } else if (mode === 'reply_chips') {
+    // Apr 28: 3 quick-reply chips for the contact-detail composer.
+    // Question is the customer's latest inbound. Contact is optional but
+    // helps Claude personalize.
+    tools = undefined
+    maxTokens = 280
+    if (!question) return jsonResp({ error: 'question (latest inbound) required for reply_chips mode' }, 400)
+    const userContent = contact
+      ? `Customer just texted: "${question}"\n\nContact context:\n${describeContact(contact)}\n\nRespond with the JSON object only.`
+      : `Customer just texted: "${question}"\n\nRespond with the JSON object only.`
+    messages = [{ role: 'user', content: userContent }]
+
+  } else if (mode === 'nec_consult') {
+    // The actual nec_consult logic lives in the ask_nec_code tool, which
+    // does multi-agent. This mode just provides the persona; if Sparky is
+    // ever called directly with mode=nec_consult and no tool, it can still
+    // answer single-shot, but the proper path is mode=chat → tool dispatch.
+    tools = undefined
+    maxTokens = 1500
+    if (!question) return jsonResp({ error: 'question required for nec_consult mode' }, 400)
+    messages = [{ role: 'user', content: question }]
   }
 
   // Model: haiku for simple one-liners (contact_insight, draft_followup),

@@ -1552,7 +1552,7 @@ function TierStrip({ contact, messages, embedded = false }) {
                   style={{
                     padding: '12px 14px', textAlign: 'left', display: 'flex',
                     alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                    background: on ? 'var(--navy)' : 'var(--sunken)',
+                    background: on ? 'var(--tab-active-bg)' : 'var(--sunken)',
                     color: on ? '#fff' : 'var(--text)',
                     borderRadius: 'var(--radius-md)',
                     border: 'none', cursor: saving ? 'wait' : 'pointer',
@@ -4265,7 +4265,7 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
               <button key={id} onClick={() => setTier(id)} title={m.blurb} style={{
                 flex: 1, padding: '8px 6px', fontSize: 10, letterSpacing: '.06em', fontWeight: 700,
                 fontFamily: 'var(--font-chrome)',
-                background: on ? 'var(--navy)' : 'var(--card)',
+                background: on ? 'var(--tab-active-bg)' : 'var(--card)',
                 color: on ? 'var(--gold)' : 'var(--text-muted)',
                 boxShadow: on ? 'var(--pressed-2)' : 'var(--raised-2)',
                 border: 'none', cursor: 'pointer',
@@ -5896,6 +5896,60 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
   const [sending, setSending] = useState(false);
   const [snippetsOpen, setSnippetsOpen] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
+  // Apr 28: 3-chip quick-reply suggestions when an inbound is waiting on
+  // Key. Cached per-contact + per-inbound-message so swapping contacts
+  // and coming back doesn't re-bill. Fades in when there's something to
+  // reply to; hidden otherwise so the composer doesn't feel cluttered.
+  const [replyChips, setReplyChips] = useState([]);
+  const [chipsLoading, setChipsLoading] = useState(false);
+  const inboundFingerprint = `${contactId}|${(latestInbound || '').slice(0, 80)}`;
+  const chipsCacheKey = `bpp_v2_chips:${inboundFingerprint}`;
+  useEffect(() => {
+    setReplyChips([]);
+    if (!contactId || !latestInbound) return;
+    if (disabled) return;
+    // Cached?
+    try {
+      const raw = sessionStorage.getItem(chipsCacheKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.t && Date.now() - parsed.t < 30 * 60 * 1000 && Array.isArray(parsed.chips)) {
+          setReplyChips(parsed.chips);
+          return;
+        }
+      }
+    } catch {}
+    let alive = true;
+    setChipsLoading(true);
+    (async () => {
+      try {
+        const { data } = await invokeFn('ai-taskmaster', {
+          body: {
+            mode: 'reply_chips',
+            question: latestInbound,
+            contact: { id: contactId, name: contactName, phone: contactPhone },
+            context_source: 'sparky',
+          },
+        });
+        const ans = (data?.answer || '').trim();
+        // Parse the JSON line — tolerate fence accidents
+        const jsonStart = ans.indexOf('{');
+        const jsonEnd = ans.lastIndexOf('}');
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const body = ans.slice(jsonStart, jsonEnd + 1);
+          const parsed = JSON.parse(body);
+          const chips = Array.isArray(parsed?.chips) ? parsed.chips.filter(s => typeof s === 'string').slice(0, 3) : [];
+          if (alive && chips.length) {
+            setReplyChips(chips);
+            try { sessionStorage.setItem(chipsCacheKey, JSON.stringify({ t: Date.now(), chips })); } catch {}
+          }
+        }
+      } catch (_) { /* fail silently — chips are optional */ }
+      if (alive) setChipsLoading(false);
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inboundFingerprint, disabled]);
 
   // Persist draft on every keystroke to sessionStorage
   useEffect(() => {
@@ -6264,6 +6318,35 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
                 flex: 1, minWidth: 0,
               }}>{s.body.slice(0, 70)}…</span>
             </button>
+          ))}
+        </div>
+      ) : null}
+      {/* Apr 28: 3 quick-reply chips when an inbound is waiting on Key.
+          Sparky generates them per-thread via the reply_chips mode. Tap a
+          chip to drop the text into the composer; Key reviews + sends.
+          Hidden when DNC, when no inbound is waiting, or while loading. */}
+      {!disabled && replyChips.length > 0 ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 4 }}>
+          {replyChips.map((chip, i) => (
+            <button key={i}
+              onClick={() => { setText(chip); setReplyChips([]); }}
+              title="Tap to use this reply"
+              style={{
+                padding: '6px 12px', height: 'var(--ctrl-sm)',
+                fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 500,
+                color: 'var(--text-muted)',
+                background: 'var(--sunken)',
+                border: 'none', cursor: 'pointer',
+                borderRadius: 'var(--radius-pill)',
+                maxWidth: '100%',
+                textAlign: 'left',
+                whiteSpace: 'normal',
+                lineHeight: 1.35,
+                transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--gold) 14%, var(--sunken))'; e.currentTarget.style.color = 'var(--text)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+            >{chip}</button>
           ))}
         </div>
       ) : null}
@@ -7772,7 +7855,7 @@ function LivePlaybook() {
                 <button key={f.path} onClick={() => loadFile(f.path)} style={{
                   width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '9px 16px 9px 28px', gap: 8,
-                  background: on ? 'var(--navy)' : 'transparent',
+                  background: on ? 'var(--tab-active-bg)' : 'transparent',
                   color: on ? '#fff' : 'var(--text)',
                   border: 'none', cursor: 'pointer', textAlign: 'left',
                   fontFamily: 'var(--font-body)', fontSize: 13,
@@ -8051,7 +8134,7 @@ function LiveMaterials() {
                       flex: 1, fontSize: 10.5,
                       fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.02em',
                       display: 'grid', placeItems: 'center',
-                      background: on ? 'var(--navy)' : 'transparent',
+                      background: on ? 'var(--tab-active-bg)' : 'transparent',
                       color: on ? '#fff' : 'var(--text-muted)',
                       border: 'none', cursor: 'pointer',
                       borderRadius: 'var(--radius-pill)',
@@ -8454,7 +8537,7 @@ function LiveFinance({ initialSub = 'prop' } = {}) {
               color: on ? '#fff' : 'var(--text-muted)',
               // Same clean treatment as messages-inbox chips: no inset ring,
               // active = navy + shadow, inactive = transparent (hover tints).
-              background: on ? 'var(--navy)' : 'transparent',
+              background: on ? 'var(--tab-active-bg)' : 'transparent',
               boxShadow: on ? 'var(--shadow-sm)' : 'none',
               cursor: 'pointer',
               border: 'none', borderRadius: 'var(--radius-pill)',
@@ -9168,7 +9251,7 @@ function LiveCalendar() {
             return (
               <button key={i} onClick={() => setInstallerFilter(i)} style={{
                 padding: '6px 14px', height: 'var(--ctrl-sm)',
-                background: on ? 'var(--navy)' : 'var(--card)',
+                background: on ? 'var(--tab-active-bg)' : 'var(--card)',
                 color: on ? '#fff' : 'var(--text-muted)',
                 boxShadow: on ? 'none' : 'var(--ring)',
                 cursor: 'pointer', border: 'none',
@@ -12597,7 +12680,7 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
               // Active state: navy text + 800 weight. Apr 27 cohesion audit:
               // unified weight (was 800/600) and font-size (was 12.5) with
               // the left main TabBar (now 800/500, 13/12.5).
-              color: on ? 'var(--text)' : 'var(--text-muted)',
+              color: on ? 'var(--tab-active-fg)' : 'var(--text-muted)',
               fontFamily: 'var(--font-display)',
               fontWeight: on ? 800 : 500,
               fontSize: on ? 13 : 12.5,

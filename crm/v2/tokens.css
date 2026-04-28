@@ -149,6 +149,17 @@
   --z-toast:   300;
   --z-tooltip: 400;
 
+  /* ---------- Theme-aware accents (Apr 28) ----------
+     Contrast issues in dark mode came from using --navy as the active
+     marker (navy on dark navy = unreadable). These tokens swap to gold
+     in dark mode so active state always pops, regardless of theme.
+       --tab-active-fg:    text color of an active tab / pill
+       --tab-active-bg:    fill of a "selected" pill
+       --primary-on-dark:  brand accent color that's safe on a dark bg */
+  --tab-active-fg: var(--navy);
+  --tab-active-bg: var(--navy);
+  --primary-on-dark: var(--navy);
+
   /* ---------- Typography ----------
      Outfit is the display font everywhere Key's customer deliverables
      use it (brand wordmark, section headings, eyebrow labels). Inter
@@ -207,6 +218,13 @@
 }
 
 [data-theme="dark"] {
+  /* Brand accents need to flip in dark mode — navy on near-black is
+     invisible. Gold is the brand pop and reads cleanly on the dark
+     surface. Apr 28 fix after Key flagged the active-tab being unreadable. */
+  --tab-active-fg: var(--gold);
+  --tab-active-bg: color-mix(in srgb, var(--gold) 18%, transparent);
+  --primary-on-dark: var(--gold);
+
   --bg:         #0b1220;
   --card:       #0f1a2e;
   --sunken:     #0d1524;
