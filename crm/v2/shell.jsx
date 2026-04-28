@@ -83,28 +83,13 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark
 
       <div style={{ flex: 1 }} />
 
-      {/* Right cluster */}
+      {/* Right cluster — search button retired Apr 27. Key feedback: "I don't
+          get what this search is for, I should be able to ask Sparky those
+          questions." Sparky lives in the right pane on every screen and is
+          already the natural place to ask "who owes me money," "what's
+          stuck," etc. The ⌘K keyboard shortcut still works for power users
+          but no longer takes a slot in the top bar. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={onOpenSearch}
-          aria-label="Open smart search (Cmd+K)"
-          title="Search (⌘K)"
-          style={{
-          height: 34, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 8,
-          color: 'var(--text-muted)', cursor: 'pointer',
-          background: 'var(--sunken)',
-          borderRadius: 'var(--radius-pill)',
-          boxShadow: 'var(--ring)',
-          transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.boxShadow = 'var(--ring)' }}
-        >
-          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <circle cx="7" cy="7" r="4"/>
-            <path d="M10 10 L13 13"/>
-          </svg>
-          <span className="mono" style={{ fontSize: 11, letterSpacing: '.02em' }}>⌘K</span>
-        </button>
         <button onClick={onToggleDark}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDark ? 'Light mode' : 'Dark mode'}

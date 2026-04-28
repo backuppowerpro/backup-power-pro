@@ -11090,12 +11090,24 @@ function AgentsInboxStrip() {
       boxShadow: 'var(--shadow-sm), var(--ring)',
       borderRadius: 'var(--radius-md)',
       display: 'flex', flexDirection: 'column', gap: 10,
+      // Bound the strip so it can't eat the entire panel and freeze the
+      // chat scroll + composer underneath. Apr 27: with 13+ photo cards
+      // the strip was rendering ~1000px of content; the parent flex
+      // column of LiveSparky had no scroll, so everything below it
+      // (composer included) was unreachable. Cap at 38vh + own overflow.
+      maxHeight: '38vh',
+      overflowY: 'auto',
+      flexShrink: 0,
     }}>
       <div style={{
         fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
         letterSpacing: '0.14em', textTransform: 'uppercase',
         color: 'var(--gold-ink)',
         display: 'flex', alignItems: 'center', gap: 6,
+        position: 'sticky', top: 0,
+        background: 'var(--card)',
+        paddingTop: 4, paddingBottom: 8,
+        zIndex: 1,
       }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }}/>
         Agents inbox
@@ -11360,6 +11372,7 @@ function LiveSparky({ currentContactId = null, onBack = null }) {
             cursor: 'pointer', textAlign: 'left',
             fontFamily: 'var(--font-body)', fontSize: 12.5,
             color: 'var(--text-muted)',
+            flexShrink: 0,
             transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; }}
