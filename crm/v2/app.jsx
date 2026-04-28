@@ -373,7 +373,7 @@ const PRIMARY_BTN_BEVEL = 'var(--shadow-sm)';
 function PrimaryButton({ children, disabled, onClick, type = 'button', style, ...rest }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled} style={{
-      height: 40, padding: '0 20px',
+      height: 'var(--ctrl-lg)', padding: '0 20px',
       background: disabled ? 'var(--text-muted)' : 'var(--navy)',
       color: '#fff',
       fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
@@ -387,7 +387,7 @@ function PrimaryButton({ children, disabled, onClick, type = 'button', style, ..
 function SecondaryButton({ children, onClick, type = 'button', style, ...rest }) {
   return (
     <button type={type} onClick={onClick} style={{
-      height: 40, padding: '0 18px',
+      height: 'var(--ctrl-lg)', padding: '0 18px',
       background: 'var(--card)', color: 'var(--text-muted)',
       fontFamily: 'var(--font-body)', fontSize: 13, letterSpacing: '.04em',
       boxShadow: 'var(--raised-2)', border: 'none',
@@ -986,7 +986,7 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
           onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
           onBlur={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
           style={{
-            flex: 1, height: 40, padding: '0 16px',
+            flex: 1, height: 'var(--ctrl-lg)', padding: '0 16px',
             fontFamily: 'var(--font-body)', fontSize: 14,
             color: 'var(--text)',
             background: 'var(--sunken)', boxShadow: 'var(--ring)',
@@ -999,7 +999,7 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
           onClick={() => { if (selectMode) exitSelectMode(); else setSelectMode(true); }}
           title={selectMode ? 'Cancel bulk select' : 'Select multiple for bulk actions'}
           style={{
-            height: 40, padding: '0 18px',
+            height: 'var(--ctrl-lg)', padding: '0 18px',
             fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, letterSpacing: '0.01em',
             background: selectMode ? 'var(--navy)' : 'var(--card)',
             color: selectMode ? '#fff' : 'var(--text-muted)',
@@ -1115,7 +1115,7 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
           </span>
           <div style={{ display: 'flex', gap: 8, flex: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button onClick={() => setStagePickerOpen(true)} disabled={applying} style={{
-              padding: '8px 16px', height: 32,
+              padding: '8px 16px', height: 'var(--ctrl-md)',
               background: 'var(--gold)', color: 'var(--navy)', border: 'none',
               borderRadius: 'var(--radius-pill)',
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12.5,
@@ -1123,14 +1123,14 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
               boxShadow: '0 2px 8px rgba(255,186,0,0.3)',
             }}>Move to stage</button>
             <button onClick={bulkArchive} disabled={applying} style={{
-              padding: '8px 14px', height: 32,
+              padding: '8px 14px', height: 'var(--ctrl-md)',
               background: 'rgba(255,255,255,0.08)', color: '#fff', border: 'none',
               borderRadius: 'var(--radius-pill)',
               fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12.5,
               cursor: applying ? 'wait' : 'pointer',
             }}>Archive</button>
             <button onClick={bulkDnc} disabled={applying} style={{
-              padding: '8px 14px', height: 32,
+              padding: '8px 14px', height: 'var(--ctrl-md)',
               background: 'transparent', color: '#ff8a8a',
               border: '1px solid rgba(255,138,138,0.4)',
               borderRadius: 'var(--radius-pill)',
@@ -1138,7 +1138,7 @@ function LeadsListWithBulkActions({ rows, totalCount, query, setQuery, desktop, 
               cursor: applying ? 'wait' : 'pointer',
             }}>Do not contact</button>
             <button onClick={exitSelectMode} disabled={applying} style={{
-              padding: '8px 14px', height: 32,
+              padding: '8px 14px', height: 'var(--ctrl-md)',
               background: 'transparent', color: 'rgba(255,255,255,0.6)',
               border: 'none',
               fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 12.5,
@@ -2356,7 +2356,7 @@ function InstallBriefModal({ contact, onClose }) {
           <button onClick={onClose}
             aria-label="Close install brief"
             style={{
-              width: 32, height: 32,
+              width: 32, height: 'var(--ctrl-md)',
               fontSize: 18, display: 'grid', placeItems: 'center',
               background: 'rgba(255,255,255,0.1)',
               border: 'none',
@@ -2874,7 +2874,7 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab, onAs
             onClick={onBack}
             aria-label="Back to list"
             style={{
-              width: 32, height: 32, display: 'grid', placeItems: 'center',
+              width: 32, height: 'var(--ctrl-md)', display: 'grid', placeItems: 'center',
               fontSize: 18, lineHeight: 1, flex: '0 0 auto',
               color: 'var(--text-muted)',
               background: 'var(--sunken)',
@@ -4052,13 +4052,13 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <a href={`${PROPOSAL_BASE_URL}?token=${p.token}&preview=1`} target="_blank" rel="noopener"
                    title="Preview without counting as a customer view" className="btn-ghost" style={{
-                  textDecoration: 'none', height: 28, padding: '0 12px', fontSize: 12,
+                  textDecoration: 'none', height: 'var(--ctrl-sm)', padding: '0 12px', fontSize: 12,
                 }}>View</a>
                 <button onClick={() => copyLink(p.token)} className="btn-ghost" style={{
-                  height: 28, padding: '0 12px', fontSize: 12,
+                  height: 'var(--ctrl-sm)', padding: '0 12px', fontSize: 12,
                 }}>Copy</button>
                 <button onClick={() => sendReminder(p)} className="btn-ghost" style={{
-                  height: 28, padding: '0 12px', fontSize: 12,
+                  height: 'var(--ctrl-sm)', padding: '0 12px', fontSize: 12,
                 }}>Remind</button>
               </div>
             ) : null}
@@ -4069,7 +4069,7 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
               (already paid) and Cancelled (dead) proposals. */}
           {p.token && !isPaid && !isCancelled ? (
             <button onClick={() => depositLink(p)} style={{
-              width: '100%', height: 40,
+              width: '100%', height: 'var(--ctrl-lg)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               background: 'var(--green)', color: '#fff',
               cursor: 'pointer', border: 'none',
@@ -4092,10 +4092,10 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
           {p.token && !isPaid && !isCancelled ? (
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => copyInvoiceLink(p)} className="btn-ghost" style={{
-                flex: 1, height: 32, fontSize: 12,
+                flex: 1, height: 'var(--ctrl-md)', fontSize: 12,
               }} title="Generate /invoice.html link for this contact">Copy invoice</button>
               <button onClick={() => markPaidOffline(p)} className="btn-ghost" style={{
-                flex: 1, height: 32, fontSize: 12,
+                flex: 1, height: 'var(--ctrl-md)', fontSize: 12,
               }} title="Record cash/check payment + approve this proposal">Mark paid (offline)</button>
             </div>
           ) : null}
@@ -4104,7 +4104,7 @@ function DetailQuote({ contactId, openTrigger = 0 }) {
               payment confirmation. */}
           {p.token && isPaid ? (
             <button onClick={() => copyReceiptLink(p)} className="btn-ghost" style={{
-              height: 32, fontSize: 12, alignSelf: 'flex-start',
+              height: 'var(--ctrl-md)', fontSize: 12, alignSelf: 'flex-start',
             }} title="Copy /invoice.html link in receipt mode">Copy receipt</button>
           ) : null}
         </div>
@@ -4300,12 +4300,12 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
 
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onClose} style={{
-            flex: 1, height: 40, boxShadow: 'var(--raised-2)', cursor: 'pointer',
+            flex: 1, height: 'var(--ctrl-lg)', boxShadow: 'var(--raised-2)', cursor: 'pointer',
             background: 'var(--card)', color: 'var(--text-muted)', border: 'none', fontSize: 12,
             fontFamily: 'var(--font-body)', letterSpacing: '.04em',
           }}>Cancel</button>
           <button onClick={submit} disabled={busy} style={{
-            flex: 2, height: 40, background: busy ? 'var(--text-muted)' : 'var(--navy)', color: '#fff',
+            flex: 2, height: 'var(--ctrl-lg)', background: busy ? 'var(--text-muted)' : 'var(--navy)', color: '#fff',
             fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
             boxShadow: busy ? 'var(--pressed-2)' : 'var(--shadow-sm)',
             cursor: busy ? 'wait' : 'pointer', border: 'none',
@@ -4777,7 +4777,7 @@ function DetailEditContact({ contact, onUpdate }) {
           value={form.jurisdiction_id || ''}
           onChange={e => setForm({ ...form, jurisdiction_id: e.target.value ? Number(e.target.value) : '' })}
           style={{
-            padding: '10px 12px', height: 40,
+            padding: '10px 12px', height: 'var(--ctrl-lg)',
             fontFamily: 'var(--font-body)', fontSize: 14,
             color: 'var(--text)',
             background: 'var(--sunken)',
@@ -4939,7 +4939,7 @@ function EditField({ label, value, onChange, placeholder, type = 'text' }) {
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         style={{
-          padding: '10px 12px', height: 40,
+          padding: '10px 12px', height: 'var(--ctrl-lg)',
           fontFamily: 'var(--font-body)', fontSize: 14,
           color: 'var(--text)',
           background: 'var(--sunken)',
@@ -5290,7 +5290,7 @@ function DetailPhotos({ contactId, contactPhone }) {
             aria-label="Close lightbox"
             style={{
               position: 'absolute', top: 20, right: 20,
-              width: 40, height: 40,
+              width: 40, height: 'var(--ctrl-lg)',
               background: 'rgba(255,255,255,0.1)', color: '#fff',
               border: 'none', cursor: 'pointer',
               fontSize: 18, display: 'grid', placeItems: 'center',
@@ -6354,7 +6354,7 @@ function ComposeBar({ contactId, contactName, contactPhone, installDate = null, 
           title="Send (Enter)"
           aria-label="Send SMS"
           style={{
-            width: 40, height: 40,
+            width: 40, height: 'var(--ctrl-lg)',
             background: text.trim() ? 'var(--navy)' : 'var(--sunken)',
             color: text.trim() ? 'var(--gold)' : 'var(--text-faint)',
             boxShadow: text.trim() ? 'var(--shadow-sm)' : 'none',
@@ -7519,7 +7519,7 @@ function LivePermits() {
 function PermitStepCell({ state }) {
   // state: 'flat' | 'progress' | 'done' | 'blocked'
   const base = {
-    width: 40, height: 40,
+    width: 40, height: 'var(--ctrl-lg)',
     borderRadius: 'var(--radius-sm)',
     display: 'grid', placeItems: 'center',
     transition: 'background var(--dur) var(--ease)',
@@ -8082,7 +8082,7 @@ function LiveMaterials() {
 
 function MatCheck({ on, onClick, label }) {
   const base = {
-    width: 32, height: 32,
+    width: 32, height: 'var(--ctrl-md)',
     cursor: onClick ? 'pointer' : 'default',
     border: 'none', padding: 0,
     borderRadius: 'var(--radius-sm)',
@@ -9167,7 +9167,7 @@ function LiveCalendar() {
             const on = installerFilter === i;
             return (
               <button key={i} onClick={() => setInstallerFilter(i)} style={{
-                padding: '6px 14px', height: 28,
+                padding: '6px 14px', height: 'var(--ctrl-sm)',
                 background: on ? 'var(--navy)' : 'var(--card)',
                 color: on ? '#fff' : 'var(--text-muted)',
                 boxShadow: on ? 'none' : 'var(--ring)',
@@ -11013,7 +11013,7 @@ function LiveMorningBriefing({ onClose, onPickContact }) {
             onClick={onClose}
             aria-label="Close briefing"
             style={{
-              width: 32, height: 32, fontSize: 18,
+              width: 32, height: 'var(--ctrl-md)', fontSize: 18,
               display: 'grid', placeItems: 'center',
               background: 'var(--sunken)',
               color: 'var(--text-muted)',
@@ -11635,7 +11635,7 @@ function LiveSparky({ currentContactId = null, onBack = null }) {
         <div style={{ padding: '14px 16px 6px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {quickAsks.map(q => (
             <button key={q} onClick={() => send(q)} style={{
-              padding: '6px 14px', height: 28,
+              padding: '6px 14px', height: 'var(--ctrl-sm)',
               fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 500,
               color: 'var(--text-muted)',
               background: 'var(--sunken)',
@@ -11749,7 +11749,7 @@ function LiveSparky({ currentContactId = null, onBack = null }) {
           title="Send (Enter)"
           aria-label="Send message to Sparky"
           style={{
-            width: 40, height: 40,
+            width: 40, height: 'var(--ctrl-lg)',
             background: input.trim() ? 'var(--navy)' : 'var(--sunken)',
             color: input.trim() ? 'var(--gold)' : 'var(--text-faint)',
             boxShadow: input.trim() ? 'var(--shadow-sm)' : 'none',
@@ -11973,7 +11973,7 @@ function PinButton({ contactId }) {
       aria-label={pinned ? 'Unpin contact' : 'Pin contact'}
       aria-pressed={pinned}
       style={{
-        width: 28, height: 28,
+        width: 28, height: 'var(--ctrl-sm)',
         padding: 0,
         background: pinned
           ? 'color-mix(in srgb, var(--gold) 18%, transparent)'
@@ -12366,7 +12366,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
         <div style={{ padding: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
             display: 'inline-grid', placeItems: 'center',
-            width: 28, height: 28,
+            width: 28, height: 'var(--ctrl-sm)',
             background: 'var(--navy)', color: 'var(--gold)',
             borderRadius: 'var(--radius-sm)',
             flex: '0 0 auto',
@@ -12380,7 +12380,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKey}
             placeholder="Search or ask — 'who owes me money', 'installs today'…"
             style={{
-              flex: 1, padding: '10px 12px', height: 40,
+              flex: 1, padding: '10px 12px', height: 'var(--ctrl-lg)',
               background: 'var(--sunken)', color: 'var(--text)',
               border: 'none', outline: 'none',
               borderRadius: 'var(--radius-pill)',
@@ -12459,7 +12459,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
                 {r.type === 'contact' ? (
                   <>
                     <span style={{
-                      width: 32, height: 32, background: 'var(--navy)',
+                      width: 32, height: 'var(--ctrl-md)', background: 'var(--navy)',
                       borderRadius: '50%',
                       display: 'grid', placeItems: 'center', flex: '0 0 auto',
                     }}><span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, color: '#fff', fontSize: 11 }}>{initials(r.name)}</span></span>
@@ -12474,7 +12474,7 @@ function CommandPalette({ open, onClose, onSelectContact, onSwitchTab, onAction 
                   // quote content rather than just name.
                   <>
                     <span style={{
-                      width: 32, height: 32, background: 'var(--navy)',
+                      width: 32, height: 'var(--ctrl-md)', background: 'var(--navy)',
                       borderRadius: '50%',
                       display: 'grid', placeItems: 'center', flex: '0 0 auto',
                     }}><span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, color: '#fff', fontSize: 11 }}>{initials(r.name)}</span></span>
@@ -12803,7 +12803,7 @@ function GlobalSearchBar({ tab, onOpenHelp }) {
           title="Keyboard shortcuts (?)"
           style={{
             flex: '0 0 auto',
-            width: 32, height: 32,
+            width: 32, height: 'var(--ctrl-md)',
             display: 'grid', placeItems: 'center',
             background: 'var(--card)',
             color: 'var(--text-muted)',
