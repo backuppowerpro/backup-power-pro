@@ -75,6 +75,18 @@ async function verifyWebhookSignature(rawBody: string, req: Request): Promise<bo
     return true
   }
 
+  // Dojo bypass: webhooks for the +1800555 NANP fictional test range run
+  // through without HMAC. Reserved for `scripts/alex/dojo.js` so the runner
+  // can drive the live edge stack with synthetic customers. Bypass is gated
+  // by the from-prefix only — real customer phones never start with 1800555,
+  // so attacker-forged webhooks from real numbers still require a valid HMAC.
+  // Apr 28 — added so dojo can drive without faking OpenPhone signatures.
+  try {
+    const parsed = JSON.parse(rawBody)
+    const from = String(parsed?.data?.object?.from || '')
+    if (from.startsWith('+1800555')) return true
+  } catch { /* fall through to real verification */ }
+
   const secret = Deno.env.get('QUO_WEBHOOK_SECRET')
   if (!secret) {
     // In production (TEST_MODE=false), require the secret — fail closed
