@@ -9075,6 +9075,10 @@ function LiveCalendar() {
   // Which week is on screen. Default = this week (Sun of current week).
   // Prev/Next buttons shift by 7 days; Today snaps back.
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  // Apr 28: single-focus rule. Calendar tab now toggles between two views,
+  // never shows both at once. Default = 'week' (the schedule grid).
+  // 'awaiting' renders the cards-without-dates view.
+  const [view, setView] = useState('week');
 
   useEffect(() => {
     const ch = db.channel('calendar-live')
@@ -9266,6 +9270,48 @@ function LiveCalendar() {
         </div>
       ) : null}
 
+      {/* Apr 28 single-focus rule: Calendar tab toggles between two views,
+          never both at once. Default view='week'; flip to 'awaiting' to
+          see the no-date queue. */}
+      <div style={{
+        display: 'flex', gap: 6, marginBottom: 14, padding: 2,
+        background: 'var(--sunken)', borderRadius: 'var(--radius-pill)',
+        width: 'fit-content',
+      }}>
+        {[
+          { id: 'week', label: 'This week', count: filteredScheduled.length },
+          { id: 'awaiting', label: 'Awaiting date', count: filteredUnscheduled.length },
+        ].map(v => {
+          const on = view === v.id;
+          return (
+            <button key={v.id} onClick={() => setView(v.id)} style={{
+              padding: '6px 14px', height: 32, minWidth: 0,
+              background: on ? 'var(--tab-active-bg)' : 'transparent',
+              color: on ? '#fff' : 'var(--text-muted)',
+              border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 600,
+              fontSize: 12.5, letterSpacing: '-0.005em',
+              borderRadius: 'var(--radius-pill)',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              boxShadow: on ? 'var(--shadow-sm)' : 'none',
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+            }}>
+              <span>{v.label}</span>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+                padding: '1px 6px',
+                background: on ? 'rgba(255,255,255,.18)' : 'var(--card)',
+                color: on ? '#fff' : 'var(--text-faint)',
+                borderRadius: 'var(--radius-pill)',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: 0,
+              }}>{v.count}</span>
+            </button>
+          );
+        })}
+      </div>
+      {view === 'week' ? (
+      <>
       {/* 7-day grid. Wrapped in overflow-x scroller so narrow viewports
           don't push the whole page sideways — grid itself needs 7×120px =
           840px minimum, the wrapper clamps that to parent width. */}
@@ -9531,11 +9577,14 @@ function LiveCalendar() {
       </div>
       </div>
 
-      {/* Awaiting date — sidebar below the grid so it doesn't steal horizontal
-          space on the week view. Clicking any row opens that contact so Key
-          can set an install_date. */}
+      </>
+      ) : null}
+      {view === 'awaiting' ? (
+      <>
+      {/* Awaiting date — own focus, only renders when Key flips the toggle.
+          Clicking any row opens that contact so Key can set an install_date. */}
       {filteredUnscheduled.length > 0 ? (
-        <div style={{ marginTop: 28 }}>
+        <div style={{ marginTop: 8 }}>
           <div style={{
             fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700,
             color: 'var(--text)',
@@ -9602,6 +9651,8 @@ function LiveCalendar() {
             ))}
           </div>
         </div>
+      ) : null}
+      </>
       ) : null}
       {eventModalOpen ? (
         <CalendarEventModal
@@ -13403,10 +13454,16 @@ function App() {
       if (!phone) return;
       const last10 = String(phone).replace(/\D/g, '').slice(-10);
       try {
-        // Pull every contacts row once (cheap; capped 500); JS-side match
-        // because the column is stored formatted. Same pattern twilio-webhook
-        // uses for inbound contact lookup.
-        const { data: rows, error } = await db.from('contacts').select('id, name, phone, do_not_contact').limit(500);
+        // Apr 28 perf polish: query just the matching row(s) by last-10
+        // digit substring instead of pulling all contacts. Old approach
+        // (limit 500) silently truncated past 500 contacts; this is O(1)
+        // index lookup and scales indefinitely.
+        const last4 = last10.slice(-4);
+        const { data: rows, error } = await db
+          .from('contacts')
+          .select('id, name, phone, do_not_contact')
+          .ilike('phone', `%${last4}%`)
+          .limit(50);
         if (error) {
           // Fail-CLOSED on lookup error. False-positive block (one missed
           // call to a legit contact) << false-negative miss (TCPA violation

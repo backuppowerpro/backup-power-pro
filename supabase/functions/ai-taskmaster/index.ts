@@ -63,6 +63,7 @@ const SERVER_SIDE_TOOLS = new Set([
   'get_revenue_by_period',      // Phase 3 analytics (Apr 27)
   'find_unread_threads',        // Phase 3 analytics (Apr 27)
   'ask_nec_code',               // NEC code expert (Apr 27)
+  'summarize_contact_thread',   // Apr 28 catch-me-up tool
   'memory',  // Anthropic memory_20250818 — always server-side
 ])
 
@@ -271,6 +272,7 @@ CRM CONTROL — you can drive the UI directly. Call these tools when Key's inten
 - "what's my pipeline look like?" / "snapshot" / "where am I" → get_pipeline_health, then summarize the top 2-3 surprises (oldest in a stage, biggest stage by $, outstanding total).
 - "draft a follow-up to X" / "text Y about Z" → compose_sms. NEVER include a pre-canned send — Key reviews and clicks Send himself. Always also call open_contact for X so the composer is visible.
 - "remember Sarah's gate code is 1234" / "note that John prefers texts" → set_contact_note (after lookup_contact to get the id).
+- "catch me up on John" / "where am I with this lead" / "summary on Sarah" / "what's the status here" → summarize_contact_thread (after lookup_contact).
 - "what's stuck" / "stale quotes" / "who hasn't signed" → find_overdue_proposals, then summarize and ideally apply_left_filter on the contact_ids so Key can see them.
 - "how much did I make this week / month / YTD" / "what's my revenue" → get_revenue_by_period.
 - "who am I waiting on" / "unread" / "who's pinging me" → find_unread_threads, surface top 3-5 by hours_waiting + offer to apply_left_filter.
@@ -786,6 +788,17 @@ const ALL_TOOLS: any[] = [
       properties: {
         period: { type: 'string', enum: ['7d','30d','90d','ytd','all'], description: 'Window: 7d / 30d / 90d / ytd / all-time. Default 30d.' },
       },
+    },
+  },
+  {
+    name: 'summarize_contact_thread',
+    description: 'Catch Key up on a long SMS thread in 3-5 bullets. Pulls the full message history with the contact, returns a condensed summary: where the conversation stands, what was said last, what info has been collected (panel / outlet / address / generator), and what the next move looks like. Use when Key opens a quiet lead and asks "where am I with this", "catch me up", "what\'s the status", or whenever the thread is 30+ messages and Key needs the gist.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+      },
+      required: ['contactId'],
     },
   },
   {
@@ -1508,6 +1521,93 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
           radius_miles: maxMiles,
           count: results.length,
           contacts: results.slice(0, limit),
+        }
+      }
+
+      case 'summarize_contact_thread': {
+        const cid = String(input?.contactId || '').trim()
+        if (!cid) return { error: 'contactId required' }
+        // Pull contact + last 100 messages (oldest-first for narrative coherence)
+        const { data: contact } = await supabase
+          .from('contacts')
+          .select('id, name, phone, address, stage, status, generator, panel_brand, jurisdiction_id, install_date, do_not_contact, notes, install_notes')
+          .eq('id', cid)
+          .maybeSingle()
+        if (!contact) return { error: 'contact not found' }
+        const { data: msgs } = await supabase
+          .from('messages')
+          .select('direction, body, sender, created_at, status')
+          .eq('contact_id', cid)
+          .order('created_at', { ascending: true })
+          .limit(100)
+        const messageCount = (msgs || []).length
+        if (messageCount === 0) {
+          return {
+            contact_id: cid,
+            contact_name: contact.name || null,
+            stage: contact.stage,
+            message_count: 0,
+            summary: 'No messages on file yet. Likely a brand-new lead — open the contact and draft the opener.',
+          }
+        }
+        // Build a compact transcript for Claude. Strip [media:URL] inline
+        // markers to a [photo] tag so the Sonnet call doesn't waste tokens
+        // on long URLs.
+        const transcript = (msgs || []).map(m => {
+          const who = m.direction === 'outbound'
+            ? (m.sender === 'ai' ? 'Alex' : 'Key')
+            : 'Customer'
+          const body = String(m.body || '').replace(/\[media:[^\]]+\]/g, '[photo]').trim()
+          if (!body) return null
+          const ts = String(m.created_at || '').slice(0, 16).replace('T', ' ')
+          return `[${ts}] ${who}: ${body.slice(0, 600)}`
+        }).filter(Boolean).join('\n').slice(0, 16000)
+
+        const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+        if (!apiKey) return { error: 'ANTHROPIC_API_KEY missing' }
+        const sys = `You are catching Key up on a customer thread. Output a tight, actionable summary in this exact format:
+
+**Where it stands:** one sentence — current state, who owes the next move.
+**Last said:** quote-or-paraphrase of the customer's most recent message; one sentence.
+**What we have:** comma-separated list of what's been collected (panel location, outlet type, address, generator brand, name, email). If something's missing, mention it.
+**Sticking points / vibes:** any objections, hesitation, frustration, or unanswered questions you can read from the thread. One sentence. If none, write "None — momentum looks good."
+**Next move:** one sentence — what Key should do right now to move this forward.
+
+Hard rules:
+- Under 250 words total.
+- No "in summary" / "to recap" filler.
+- Don't restate the customer's name in every line.
+- Don't fabricate facts not in the transcript.`
+        try {
+          const r = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-5',
+              max_tokens: 600,
+              temperature: 0.0,
+              system: sys,
+              messages: [{
+                role: 'user',
+                content: `Contact: ${contact.name || '(no name)'}, stage ${contact.stage}, ${contact.address || 'no address'}.\nGenerator: ${contact.generator || 'unknown'}, Panel: ${contact.panel_brand || 'unknown'}.\n\nTranscript:\n${transcript}`,
+              }],
+            }),
+          })
+          if (!r.ok) {
+            return { error: `Claude API ${r.status}`, message_count: messageCount }
+          }
+          const json = await r.json()
+          const summary = (json.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
+          return {
+            contact_id: cid,
+            contact_name: contact.name || null,
+            stage: contact.stage,
+            message_count: messageCount,
+            last_message_at: msgs?.[msgs.length - 1]?.created_at || null,
+            summary,
+          }
+        } catch (e: any) {
+          return { error: 'summarize failed: ' + String(e?.message || e).slice(0, 200) }
         }
       }
 
