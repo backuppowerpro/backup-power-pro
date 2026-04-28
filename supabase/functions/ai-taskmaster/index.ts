@@ -62,6 +62,7 @@ const SERVER_SIDE_TOOLS = new Set([
   'find_overdue_proposals',     // Phase 3 analytics (Apr 27)
   'get_revenue_by_period',      // Phase 3 analytics (Apr 27)
   'find_unread_threads',        // Phase 3 analytics (Apr 27)
+  'ask_nec_code',               // NEC code expert (Apr 27)
   'memory',  // Anthropic memory_20250818 — always server-side
 ])
 
@@ -209,6 +210,29 @@ Do not describe problems without a next move. A report without a next move is a 
 // MODE INSTRUCTIONS
 // ──────────────────────────────────────────────────────────────────────
 
+const MODE_NEC_CONSULT = `MODE: NEC CONSULT — Authoritative NEC + SC amendment expert.
+
+Hard rules (never violate):
+- NEVER cite forum posts, blog opinions, AI-generated explanations from other tools, or anyone-can-edit sources. ONLY official sources: NFPA 70 / NEC text, NFPA 70 Handbook commentary, SC LLR Reg 19-700, the local AHJ's published amendments.
+- ALWAYS cite the specific section number AND edition where you can. Example: "NEC 2023 Article 702.4(B) requires…". If you're not sure of the edition, say so (we use the 2023 edition in SC unless the AHJ specifies otherwise, but verify).
+- ALWAYS show your work for multi-step calculations. Don't just state the answer — walk through the math: load calc, ampacity de-rating, voltage drop, conduit fill, etc.
+- If the question requires piecing together multiple Articles, list them and step through how they combine.
+- When SC has an amendment that overrides the base NEC, lead with that.
+- ALWAYS end with: "Verify with the AHJ before relying on this for inspection." This is non-negotiable — Key works under inspectors and the inspector's interpretation is what counts on the day.
+
+Process:
+1. Identify what's actually being asked. If ambiguous, name the most likely interpretation and answer that — don't ask Key to clarify (he's in the field, hands probably full).
+2. Pull the relevant NEC sections from /memories/nec/ if they exist (use the memory tool).
+3. Walk through the analysis, citing sections.
+4. State the conclusion plainly.
+5. End with the AHJ verification reminder.
+
+Forbidden behavior:
+- Don't say "consult your local code" as the entire answer. That's useless. Give Key your best read AND the AHJ caveat.
+- Don't pretend to have access to the full NEC PDF if you don't — say "based on what I have, X. The full Article 702 may have additional sub-sections; pull NEC 2023 Article 702 for the complete text."
+
+Tone: precise, technical, no fluff. Think "experienced inspector explaining to a competent electrician" — not "tech support reading from a script".`
+
 const MODE_CHAT = `MODE: CHAT — Key's action-forward CRM partner.
 
 When Key asks about a contact: use lookup_contact or get_contact_history FIRST, then answer with real data. Never say "I don't know" when you can look it up.
@@ -229,6 +253,7 @@ CRM CONTROL — you can drive the UI directly. Call these tools when Key's inten
 - "what's stuck" / "stale quotes" / "who hasn't signed" → find_overdue_proposals, then summarize and ideally apply_left_filter on the contact_ids so Key can see them.
 - "how much did I make this week / month / YTD" / "what's my revenue" → get_revenue_by_period.
 - "who am I waiting on" / "unread" / "who's pinging me" → find_unread_threads, surface top 3-5 by hours_waiting + offer to apply_left_filter.
+- ANY electrical-code question — "is X to code", "what does NEC say about Y", "do I need a permit for Z", "max amperage for", "conduit fill for", "voltage drop", "GFCI required", "service disconnect", etc. → ask_nec_code. The tool runs three independent agent passes + an arbiter, so the answer is significantly more reliable than what you could produce single-shot. After it returns, present the arbiter answer cleanly. If divergence==='split' or 'mostly_aligned', explicitly mention that the analysts disagreed and the AHJ check matters more than usual. NEVER answer code questions yourself without the tool — accuracy on code is non-negotiable.
 NEVER call delete/archive/DNC tools — those don't exist by design. If Key asks to delete something, tell him "I can't delete data — open the row and do it manually." (We chose this for safety; never override.)
 
 NEVER report a problem without executing the solution:
@@ -749,6 +774,18 @@ const ALL_TOOLS: any[] = [
       properties: {
         limit: { type: 'integer', description: 'Max results (default 20, max 50).', default: 20, minimum: 1, maximum: 50 },
       },
+    },
+  },
+  {
+    name: 'ask_nec_code',
+    description: 'Authoritative NEC + SC code answer. Use for ANY electrical-code question Key asks: amperage, conduit fill, voltage drop, generator inlet rules, GFCI/AFCI requirements, panel labeling, working clearance, service disconnect, bonding, etc. Runs THREE independent agent passes in parallel and an arbiter to reconcile if they diverge — significantly more reliable than a single-shot answer for multi-section questions. Always ends with "Verify with the AHJ before relying on this for inspection." NEVER cites forum posts or blog opinions. Reads /memories/nec/ for cached SC-specific amendments.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        question:    { type: 'string', description: 'The full code question, as Key asked it. Don\'t over-summarize — let the analysts see the original phrasing.' },
+        jurisdiction: { type: 'string', description: 'Optional jurisdiction hint (e.g. "City of Greer", "Greenville County"). When known, the AHJ\'s amendments override base NEC.' },
+      },
+      required: ['question'],
     },
   },
 ]
@@ -1502,6 +1539,151 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         }
       }
 
+      case 'ask_nec_code': {
+        const question = String(input?.question || '').trim()
+        if (!question) return { error: 'question required' }
+        const jurisdiction = String(input?.jurisdiction || '').trim()
+        const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+        if (!apiKey) return { error: 'ANTHROPIC_API_KEY not configured' }
+
+        // Stage 1: pull SC + AHJ amendments from /memories/nec/ if any.
+        // We use the shared memory tool path so writes from prior sessions
+        // become available reads here.
+        let amendmentsContext = ''
+        try {
+          const mem = await sharedHandleMemoryTool(supabase, { command: 'view', path: '/memories/nec' }, 'sparky')
+          if (mem && typeof mem === 'object' && mem.result && typeof mem.result.text === 'string') {
+            amendmentsContext = mem.result.text.slice(0, 4000)
+          }
+        } catch (_) { /* no memory yet — fall back to base NEC */ }
+
+        const baseSystem = `You are an authoritative NEC + South Carolina electrical-code analyst. Answer the user's code question with precision.
+
+Hard rules:
+- Cite specific NEC section numbers AND edition where you can (default to NEC 2023 in SC unless told otherwise).
+- For multi-step calculations, show the math: load, ampacity de-rating per Table 310.16 / 310.17, voltage drop per Article 215, conduit fill per Annex C, etc. Walk through it.
+- If multiple Articles combine to produce the answer, list them and step through.
+- If SC has an amendment that overrides the base NEC, lead with the SC amendment.
+- NEVER cite forum posts, blog opinions, or other AI explanations. Only NFPA 70 / NEC text, NFPA 70 Handbook commentary, SC LLR Reg 19-700, and the AHJ's published amendments.
+- If you genuinely don't know or the question is ambiguous, SAY SO. Don't fabricate a section number.
+- ALWAYS end your answer with: "Verify with the AHJ before relying on this for inspection."
+
+You are one of THREE independent analysts. Your answer will be compared with two others. Don't hedge to match anyone — just be correct. If the answer is "it depends on X", say what X is.`
+
+        const sharedContext = [
+          jurisdiction ? `Jurisdiction context: ${jurisdiction}` : '',
+          amendmentsContext ? `Cached SC + AHJ amendments (from /memories/nec/):\n${amendmentsContext}` : '',
+          `Question: ${question}`,
+        ].filter(Boolean).join('\n\n')
+
+        async function analystPass(label: string, temperature: number): Promise<string> {
+          try {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'claude-sonnet-4-5',
+                max_tokens: 1200,
+                temperature,
+                system: baseSystem,
+                messages: [{ role: 'user', content: sharedContext }],
+              }),
+            })
+            if (!res.ok) {
+              const t = await res.text()
+              return `[${label} failed: ${res.status} ${t.slice(0, 200)}]`
+            }
+            const json = await res.json()
+            const txt = (json.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
+            return txt
+          } catch (e) {
+            return `[${label} threw: ${String(e).slice(0, 200)}]`
+          }
+        }
+
+        // Stage 2: 3 parallel analysts, low/mid/high temperature for diversity
+        const [a1, a2, a3] = await Promise.all([
+          analystPass('Analyst 1 (literal/conservative)', 0.0),
+          analystPass('Analyst 2 (working interpretation)', 0.3),
+          analystPass('Analyst 3 (alternative reading)',   0.6),
+        ])
+
+        // Stage 3: arbiter reconciles. Always run — even when all 3 agree,
+        // the arbiter produces a single coherent answer with citations
+        // rather than 3 separate drafts.
+        const arbiterSystem = `You are the arbiter. Three NEC analysts independently answered the same code question. Read all three, identify where they agree and where they disagree, and produce a SINGLE consolidated answer for an electrician working in the field.
+
+Rules:
+- If all three agree on the conclusion, present that conclusion confidently with the strongest citations from any of them.
+- If two agree and one disagrees, present the majority view as the answer AND briefly note the dissent ("Analyst 3 read this differently — sees Article XYZ as overriding; if your AHJ leans that way, this changes").
+- If all three disagree, surface the disagreement clearly. Tell Key the three plausible reads, name which seems most defensible AND why, and recommend asking the AHJ before relying.
+- Strip filler. Lead with the answer. Show the math/sections as supporting evidence.
+- ALWAYS end with: "Verify with the AHJ before relying on this for inspection."
+- Never make up section numbers. If the analysts cite the same section, you can cite it. If they all cite different sections, surface that.`
+
+        const arbiterUser = [
+          `Question: ${question}`,
+          jurisdiction ? `Jurisdiction: ${jurisdiction}` : '',
+          ``,
+          `=== Analyst 1 (literal) ===\n${a1}`,
+          `=== Analyst 2 (working interpretation) ===\n${a2}`,
+          `=== Analyst 3 (alternative) ===\n${a3}`,
+        ].filter(Boolean).join('\n\n')
+
+        let arbiterAnswer = ''
+        try {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-5',
+              max_tokens: 1500,
+              temperature: 0.0,
+              system: arbiterSystem,
+              messages: [{ role: 'user', content: arbiterUser }],
+            }),
+          })
+          if (res.ok) {
+            const json = await res.json()
+            arbiterAnswer = (json.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
+          } else {
+            // Fall back to analyst 2 (the middle one) if arbiter call fails
+            arbiterAnswer = a2 + '\n\n[arbiter call failed; surfaced Analyst 2 directly]'
+          }
+        } catch (e) {
+          arbiterAnswer = a2 + `\n\n[arbiter threw: ${String(e).slice(0, 200)}; surfaced Analyst 2 directly]`
+        }
+
+        // Cheap divergence heuristic — caller can see whether the analysts
+        // were aligned or split. Helps Sparky decide how confidently to
+        // present the final answer.
+        function shortHash(s: string): string {
+          let h = 0
+          for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
+          return String(h)
+        }
+        const sigs = [a1, a2, a3].map(t => shortHash(t.toLowerCase().replace(/\s+/g, ' ').slice(0, 400)))
+        const allSame = sigs[0] === sigs[1] && sigs[1] === sigs[2]
+        const allDiff = sigs[0] !== sigs[1] && sigs[1] !== sigs[2] && sigs[0] !== sigs[2]
+        const divergence = allSame ? 'aligned' : allDiff ? 'split' : 'mostly_aligned'
+
+        return {
+          question,
+          jurisdiction: jurisdiction || null,
+          answer: arbiterAnswer,
+          divergence,
+          analysts: { a1, a2, a3 },
+        }
+      }
+
       case 'find_unread_threads': {
         const limit = Math.max(1, Math.min(50, Number(input?.limit) || 20))
         // Pull recent inbound messages, group by contact, latest per contact
@@ -1825,6 +2007,7 @@ Deno.serve(async (req: Request) => {
     briefing: MODE_BRIEFING,
     contact_insight: MODE_CONTACT_INSIGHT,
     draft_followup: MODE_DRAFT_FOLLOWUP,
+    nec_consult: MODE_NEC_CONSULT,
   }
 
   const modeInstructions = modeMap[mode]
