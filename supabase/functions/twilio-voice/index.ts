@@ -134,7 +134,14 @@ Deno.serve(async (req) => {
     const duration     = params.get('RecordingDuration') || ''
 
     if (callSid && recordingSid && TWILIO_ACCOUNT_SID) {
-      const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Recordings/${recordingSid}.mp3`
+      // Apr 27 audit: store the get-recording proxy URL, NOT the bare
+      // Twilio URL. Twilio recording URLs require Basic auth and Twilio's
+      // public-read window is short — direct embeds eventually 401. The
+      // proxy uses the SR key server-side and re-streams the audio with
+      // proper auth, so playback survives indefinitely. Just stores the
+      // SID at the end so we can rebuild the URL if the proxy domain
+      // changes later.
+      const recordingUrl = `${Deno.env.get('SUPABASE_URL') || 'https://reowtzedjflwmlptupbk.supabase.co'}/functions/v1/get-recording?sid=${recordingSid}`
       try {
         await supabase
           .from('messages')
@@ -160,7 +167,14 @@ Deno.serve(async (req) => {
     const transStatus     = params.get('TranscriptionStatus') || ''
 
     if (callSid && recordingSid && TWILIO_ACCOUNT_SID) {
-      const recordingUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Recordings/${recordingSid}.mp3`
+      // Apr 27 audit: store the get-recording proxy URL, NOT the bare
+      // Twilio URL. Twilio recording URLs require Basic auth and Twilio's
+      // public-read window is short — direct embeds eventually 401. The
+      // proxy uses the SR key server-side and re-streams the audio with
+      // proper auth, so playback survives indefinitely. Just stores the
+      // SID at the end so we can rebuild the URL if the proxy domain
+      // changes later.
+      const recordingUrl = `${Deno.env.get('SUPABASE_URL') || 'https://reowtzedjflwmlptupbk.supabase.co'}/functions/v1/get-recording?sid=${recordingSid}`
 
       // Find the call to get contact name for the body label
       const { data: msg } = await supabase

@@ -67,7 +67,15 @@ Deno.serve(async (req) => {
   const body       = params.get('Body') || ''
   const messageSid = params.get('MessageSid') || ''
   const numMedia   = parseInt(params.get('NumMedia') || '0', 10)
-  const mediaUrl0  = numMedia > 0 ? (params.get('MediaUrl0') || '') : ''
+  // Apr 27 audit: prior code only kept MediaUrl0. If a customer sent 4
+  // panel photos in one MMS, 3 were silently lost. Now we collect every
+  // MediaUrlN and join with newlines so they all render in the thread.
+  const mediaUrls: string[] = []
+  for (let i = 0; i < numMedia; i++) {
+    const u = params.get(`MediaUrl${i}`)
+    if (u) mediaUrls.push(u)
+  }
+  const mediaUrl0  = mediaUrls[0] || ''
 
   console.log(`[twilio-webhook] from=${from} sid=${messageSid} media=${numMedia}`)
 
@@ -104,8 +112,9 @@ Deno.serve(async (req) => {
   ) ?? null
 
   // Build the stored body — MMS gets [media:URL] prefix for inline rendering
-  const msgBody = mediaUrl0
-    ? `[media:${mediaUrl0}]${body ? ' ' + body : ''}`
+  // Build body with all media tags so multi-photo MMS doesn't lose attachments.
+  const msgBody = mediaUrls.length > 0
+    ? mediaUrls.map(u => `[media:${u}]`).join(' ') + (body ? ' ' + body : '')
     : (body || '[Empty message]')
 
   if (!contact) {

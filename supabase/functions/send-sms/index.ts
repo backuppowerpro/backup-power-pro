@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     return json(500, { success: false, error: 'twilio not configured' })
   }
 
-  let payload: { contactId?: string; body?: string; mediaUrl?: string }
+  let payload: { contactId?: string; body?: string; mediaUrl?: string; idempotencyKey?: string }
   try {
     payload = await req.json()
   } catch {
@@ -80,6 +80,18 @@ Deno.serve(async (req) => {
   const contactId = (payload.contactId || '').trim()
   const body      = (payload.body || '').trim()
   const mediaUrl  = (payload.mediaUrl || '').trim()
+  const idemKey   = (payload.idempotencyKey || '').trim()
+
+  // Apr 27 audit: prevent double-click duplicates. If client passes the
+  // same idempotencyKey within 30s, return the prior result instead of
+  // firing a second Twilio API call. Per-IP allowRate already caps abuse;
+  // this just protects accidental double-clicks where the spinner UI was
+  // too slow to register the first click.
+  if (idemKey) {
+    if (!allowRate(`send-sms:idem:${idemKey}`, 1)) {
+      return json(409, { success: false, error: 'duplicate request — same idempotencyKey already in flight' })
+    }
+  }
 
   if (!contactId)           return json(400, { success: false, error: 'contactId required' })
   if (!body && !mediaUrl)   return json(400, { success: false, error: 'body or mediaUrl required' })
@@ -155,11 +167,28 @@ Deno.serve(async (req) => {
       console.error('[send-sms] Twilio error:', res.status, errBody)
       try {
         const errJson = JSON.parse(errBody)
-        // Error 21610 = recipient has opted out (texted STOP)
-        if (errJson.code === 21610) {
-          sendError = 'Contact has opted out — they texted STOP. Cannot send.'
+        // Apr 27 audit: pass through Twilio's real reason. The prior
+        // generic "Twilio 400" left Key guessing whether it was a bad
+        // number, A2P unregistered, quota issue, etc. Twilio's `message`
+        // field is human-readable. Most useful Twilio codes:
+        //   21610 → recipient opted out (texted STOP)
+        //   30007/30034 → A2P 10DLC carrier filter (unregistered brand)
+        //   21408 → permission to send to that region not enabled
+        //   21614 → To number is not a valid mobile number
+        const code = String(errJson.code ?? '')
+        const msg = String(errJson.message || '').slice(0, 200)
+        if (code === '21610') {
+          sendError = 'Contact has opted out (replied STOP). Unflag in CRM if intentional.'
+        } else if (code === '30007' || code === '30034') {
+          sendError = `Carrier blocked (A2P 10DLC unregistered). Register the BPP brand + campaign in Twilio Console → Messaging → Regulatory Compliance, then retry. (code ${code})`
+        } else if (code === '21614') {
+          sendError = `Twilio rejected — phone number is not a valid mobile number. Check the contact's phone field.`
+        } else if (code === '21408') {
+          sendError = `Twilio rejected — permission to send to that region not enabled in Geo Permissions.`
+        } else if (msg) {
+          sendError = `${msg}${code ? ` (code ${code})` : ''}`
         } else {
-          sendError = errJson.message || `Twilio ${res.status}`
+          sendError = `Twilio ${res.status}`
         }
       } catch {
         sendError = `Twilio ${res.status}`
