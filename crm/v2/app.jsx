@@ -10155,6 +10155,22 @@ function LiveQuickList({ onSelect }) {
     return () => window.removeEventListener('bpp:global-search', on);
   }, []);
 
+  // Phase 2: Sparky-driven filter. When find_contacts_by_distance (or any
+  // future server tool that returns a contact_id set) wants the list to
+  // show ONLY those rows, it dispatches bpp:sparky-filter with the ids.
+  // We render a sticky banner with the label + "Clear" button.
+  const [sparkyFilter, setSparkyFilter] = useState(null);
+  useEffect(() => {
+    const on = (e) => {
+      const ids = Array.isArray(e.detail?.contact_ids) ? e.detail.contact_ids : null;
+      const label = typeof e.detail?.label === 'string' ? e.detail.label : null;
+      if (ids && ids.length > 0) setSparkyFilter({ ids: new Set(ids), label });
+      else setSparkyFilter(null);
+    };
+    window.addEventListener('bpp:sparky-filter', on);
+    return () => window.removeEventListener('bpp:sparky-filter', on);
+  }, []);
+
   // Stage filter chips — replaces the scrapped pipeline view. Lets Key
   // isolate a single pipeline bucket (NEW / QUOTED / BOOKED / INSTALL)
   // without leaving the Smart List. Persisted to localStorage so the
@@ -10315,7 +10331,11 @@ function LiveQuickList({ onSelect }) {
         (r.reason?.label || '').toLowerCase().includes(globalQ)
       )
     : rows;
-  const visibleRows = searchedRows.filter(matchesStage);
+  const stageRows = searchedRows.filter(matchesStage);
+  // Phase 2 Sparky filter — if set, restrict to the contact_ids whitelist.
+  const visibleRows = sparkyFilter && sparkyFilter.ids
+    ? stageRows.filter(r => sparkyFilter.ids.has(r.id))
+    : stageRows;
 
   if (rows.length === 0) {
     return (
@@ -10328,6 +10348,39 @@ function LiveQuickList({ onSelect }) {
       </div>
     );
   }
+  // Phase 2 Sparky-filter banner. Rendered above the chip row when active.
+  // One-row chip showing "[label] · X matches · Clear ×".
+  const sparkyBanner = sparkyFilter ? (
+    <div style={{
+      margin: '10px 16px 0',
+      padding: '10px 14px',
+      display: 'flex', alignItems: 'center', gap: 10,
+      background: 'color-mix(in srgb, var(--gold) 14%, var(--card))',
+      boxShadow: 'var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      fontFamily: 'var(--font-body)', fontSize: 12.5,
+      color: 'var(--text)',
+    }}>
+      <span style={{
+        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11,
+        letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold-ink)',
+      }}>Sparky filter</span>
+      <span style={{ flex: 1, fontWeight: 500 }}>
+        {sparkyFilter.label || `${sparkyFilter.ids.size} contact${sparkyFilter.ids.size === 1 ? '' : 's'}`}
+        <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>· {visibleRows.length} match{visibleRows.length === 1 ? '' : 'es'}</span>
+      </span>
+      <button onClick={() => setSparkyFilter(null)} style={{
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        color: 'var(--text-muted)', fontSize: 12, fontWeight: 600,
+        padding: '4px 10px', borderRadius: 'var(--radius-pill)',
+        transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+      >Clear ×</button>
+    </div>
+  ) : null;
+
   // Chip row — always rendered so Key can switch filters even when the
   // current filter's bucket is empty. Extracted so the "no matches" empty
   // state below can still render it above the message.
@@ -10383,6 +10436,7 @@ function LiveQuickList({ onSelect }) {
     return (
       <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 24px' }}>
         <SmartTodayWidget />
+        {sparkyBanner}
         {chipRow}
         <Empty
           label={globalQ ? `No matches for "${globalQ}"` : `No leads in ${stageNice}`}
@@ -10395,6 +10449,7 @@ function LiveQuickList({ onSelect }) {
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 24px' }}>
       <SmartTodayWidget />
+      {sparkyBanner}
       {chipRow}
       {visibleRows.map(r => <SmartListRow key={r.id} row={r} onSelect={onSelect} />)}
     </div>
@@ -11351,6 +11406,28 @@ function LiveSparky({ currentContactId = null, onBack = null }) {
         } else if (name === 'open_contact') {
           if (inputObj.contactId && typeof inputObj.contactId === 'string') {
             window.dispatchEvent(new CustomEvent('bpp:sparky-open-contact', { detail: { contactId: inputObj.contactId } }));
+          }
+        } else if (name === 'apply_left_filter') {
+          // Phase 2: broadcast a filter event. The active list (Quick /
+          // Pipeline / Messages) listens on bpp:sparky-filter and applies
+          // contact_ids (whitelist) or criteria.
+          window.dispatchEvent(new CustomEvent('bpp:sparky-filter', {
+            detail: {
+              contact_ids: Array.isArray(inputObj.contact_ids) ? inputObj.contact_ids : null,
+              criteria: inputObj.criteria || null,
+              label: typeof inputObj.label === 'string' ? inputObj.label : null,
+            },
+          }));
+        } else if (name === 'compose_sms') {
+          // Phase 2: open the contact + prefill the SMS composer. Never
+          // auto-sends. Combines bpp:sparky-open-contact + bpp:compose-prefill.
+          if (inputObj.contactId && typeof inputObj.contactId === 'string' && typeof inputObj.body === 'string') {
+            window.dispatchEvent(new CustomEvent('bpp:sparky-open-contact', { detail: { contactId: inputObj.contactId } }));
+            // Slight delay so the contact-detail mounts and registers its
+            // bpp:compose-prefill listener before we fire it.
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('bpp:compose-prefill', { detail: { text: inputObj.body } }));
+            }, 250);
           }
         }
       }

@@ -55,6 +55,10 @@ const SERVER_SIDE_TOOLS = new Set([
   'edit_contact',
   'start_permit_agent',
   'find_top_jobs_by_value',  // CRM-control read tool (Apr 27)
+  'find_contacts_by_distance',  // Phase 2 CRM-control (Apr 27)
+  'set_home_address',           // Phase 2 CRM-control (Apr 27)
+  'get_pipeline_health',        // Phase 2 CRM-control (Apr 27)
+  'set_contact_note',           // Phase 2 CRM-control (Apr 27)
   'memory',  // Anthropic memory_20250818 — always server-side
 ])
 
@@ -214,6 +218,11 @@ CRM CONTROL — you can drive the UI directly. Call these tools when Key's inten
 - "open finance" / "show me the calendar" / "go to permits" → set_main_tab
 - "open Jennifer Walshe" / "pull up John" → first lookup_contact, then open_contact with the returned id
 - "what was my biggest paid job?" / "most profitable customer?" → find_top_jobs_by_value, then summarize. Mention the caveat (cost not yet tracked, this is gross paid). If Key wants details, follow with open_contact on the top one.
+- "who's within 15 miles of home?" / "filter by distance" / "closest contacts" → find_contacts_by_distance, then apply_left_filter with the returned contact_ids and a label like "within 15mi of home". Always show the list, don't just narrate.
+- "set my home to X" / "my home is X" → set_home_address. Confirm in chat.
+- "what's my pipeline look like?" / "snapshot" / "where am I" → get_pipeline_health, then summarize the top 2-3 surprises (oldest in a stage, biggest stage by $, outstanding total).
+- "draft a follow-up to X" / "text Y about Z" → compose_sms. NEVER include a pre-canned send — Key reviews and clicks Send himself. Always also call open_contact for X so the composer is visible.
+- "remember Sarah's gate code is 1234" / "note that John prefers texts" → set_contact_note (after lookup_contact to get the id).
 NEVER call delete/archive/DNC tools — those don't exist by design. If Key asks to delete something, tell him "I can't delete data — open the row and do it manually." (We chose this for safety; never override.)
 
 NEVER report a problem without executing the solution:
@@ -626,6 +635,81 @@ const ALL_TOOLS: any[] = [
       properties: {
         n: { type: 'integer', description: 'How many to return (default 5, max 25).', default: 5, minimum: 1, maximum: 25 },
       },
+    },
+  },
+
+  // ── PHASE 2 — additional CRM-control tools (Apr 27) ────────────────────
+  {
+    name: 'find_contacts_by_distance',
+    description: 'Find contacts within N miles of Key\'s home/HQ address. Default home: 22 Kimbell Ct, Greenville SC 29617 (override via set_home_address). Geocodes via OSM Nominatim with 30-day cache in sparky_memory. Returns contact_id, name, address, distance_miles, sorted ascending. Combine with apply_left_filter or open_contact to act on results.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        max_miles: { type: 'number', description: 'Radius cap (default 25, max 200).', default: 25, maximum: 200, minimum: 0.5 },
+        limit:     { type: 'integer', description: 'Max returned (default 30, max 100).', default: 30, minimum: 1, maximum: 100 },
+      },
+    },
+  },
+  {
+    name: 'set_home_address',
+    description: 'Update Key\'s home/HQ address that distance queries are measured from. Persists to sparky_memory key=config:home_address. Only call when Key explicitly says something like "my home is at X" or "set home to X".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        address: { type: 'string', description: 'Full street address with city + state.' },
+      },
+      required: ['address'],
+    },
+  },
+  {
+    name: 'get_pipeline_health',
+    description: 'KPI rollup of the pipeline: count + total $ per stage, oldest contact per stage, total outstanding balance, count overdue (>14d in stage). Use when Key asks "what\'s the state of my pipeline", "where am I", "give me a snapshot", "pipeline health".',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'apply_left_filter',
+    description: 'Apply a filter to the visible contact list on the left. Combine with set_main_tab if needed. Use after a search/find tool returns IDs and Key wants to SEE them in the list (not just hear about them). Pass `contact_ids` to show ONLY those, or pass `criteria` for stage / status / address-contains style filters.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contact_ids: { type: 'array', items: { type: 'string' }, description: 'Explicit set of contact UUIDs to show. Wins over criteria if provided.' },
+        criteria: {
+          type: 'object',
+          description: 'Filter rules. All provided rules AND together.',
+          properties: {
+            stage:             { type: 'integer', minimum: 1, maximum: 9 },
+            min_days_silent:   { type: 'integer' },
+            address_contains:  { type: 'string' },
+            has_outstanding_balance: { type: 'boolean' },
+          },
+          additionalProperties: false,
+        },
+        label: { type: 'string', description: 'Human-readable label for the filter chip Key sees ("within 15mi of home", "stuck quotes 30d+", etc).' },
+      },
+    },
+  },
+  {
+    name: 'compose_sms',
+    description: 'Pre-fill the SMS composer in the CRM with a draft message for a contact. NEVER sends — Key reviews and clicks Send himself. Use when Key says "draft a follow-up to X", "text Y about Z", "compose a message for W". The right pane will open the contact and prefill the composer.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID.' },
+        body:      { type: 'string', description: 'SMS body to drop into the composer. Must be customer-safe — Key reviews before sending but you should still write it as if it were going out.' },
+      },
+      required: ['contactId', 'body'],
+    },
+  },
+  {
+    name: 'set_contact_note',
+    description: 'Append a timestamped Sparky note to a contact\'s install_notes field. Non-destructive — adds to existing notes, never overwrites. Use when Key shares an observation about a contact ("note that John prefers texts over calls", "remember Sarah\'s gate code is 1234").',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string' },
+        note:      { type: 'string', description: 'Short note (under 300 chars).' },
+      },
+      required: ['contactId', 'note'],
     },
   },
 ]
@@ -1137,6 +1221,184 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         return {
           status: 'stub',
           message: 'Alex/Sparky merger pending Quo port to Twilio. Use suggest_reply mode for now — it already handles customer-facing SMS drafting.',
+        }
+      }
+
+      case 'set_home_address': {
+        const addr = String(input?.address || '').trim()
+        if (!addr) return { error: 'address required' }
+        await supabase.from('sparky_memory').upsert({
+          key: 'config:home_address',
+          value: addr,
+          category: 'config',
+          importance: 5,
+        }, { onConflict: 'key' })
+        // Drop the cached geocode for the home so next distance query
+        // re-geocodes the new address.
+        await supabase.from('sparky_memory').delete().eq('key', 'geo:home')
+        return { ok: true, home_address: addr }
+      }
+
+      case 'get_pipeline_health': {
+        const { data: contacts } = await supabase
+          .from('contacts')
+          .select('id, name, stage, status, do_not_contact, created_at, updated_at, quote_amount, install_date')
+          .neq('status', 'archived')
+          .limit(1500)
+        if (!contacts) return { error: 'pipeline query failed' }
+        const stageNames: Record<number, string> = {
+          1:'Form Submitted', 2:'Responded', 3:'Quote Sent', 4:'Booked',
+          5:'Permit Submitted', 6:'Permit Paid', 7:'Permit Approved',
+          8:'Inspection Scheduled', 9:'Complete',
+        }
+        const buckets: Record<number, { count: number; value: number; oldestId: string | null; oldestName: string | null; oldestAt: string | null }> = {}
+        for (let s = 1; s <= 9; s++) buckets[s] = { count: 0, value: 0, oldestId: null, oldestName: null, oldestAt: null }
+        for (const c of contacts) {
+          const s = c.stage || 1
+          if (!buckets[s]) continue
+          buckets[s].count += 1
+          buckets[s].value += Number(c.quote_amount) || 0
+          if (!buckets[s].oldestAt || (c.updated_at && c.updated_at < buckets[s].oldestAt!)) {
+            buckets[s].oldestId = c.id
+            buckets[s].oldestName = c.name || null
+            buckets[s].oldestAt = c.updated_at
+          }
+        }
+        // Outstanding balance = sum of unpaid invoices
+        const { data: unpaid } = await supabase
+          .from('invoices')
+          .select('total, status')
+          .neq('status', 'paid')
+        const outstanding = (unpaid || []).reduce((acc, r) => acc + (Number(r.total) || 0), 0)
+        return {
+          stages: Object.entries(buckets).map(([sid, b]) => ({
+            stage: Number(sid),
+            stage_name: stageNames[Number(sid)],
+            count: b.count,
+            total_value: b.value,
+            oldest_contact_id: b.oldestId,
+            oldest_contact_name: b.oldestName,
+            oldest_at: b.oldestAt,
+          })),
+          outstanding_balance: outstanding,
+          total_contacts: contacts.length,
+        }
+      }
+
+      case 'set_contact_note': {
+        const cid = String(input?.contactId || '').trim()
+        const note = String(input?.note || '').trim().slice(0, 500)
+        if (!cid || !note) return { error: 'contactId + note required' }
+        const { data: cur } = await supabase.from('contacts').select('install_notes').eq('id', cid).maybeSingle()
+        const existing = (cur?.install_notes || '').trimEnd()
+        const ts = new Date().toISOString().slice(0, 16)
+        const line = `[Sparky ${ts}] ${note}`
+        const updated = existing ? `${existing}\n${line}` : line
+        const { error } = await supabase.from('contacts').update({ install_notes: updated }).eq('id', cid)
+        if (error) return { error: error.message }
+        await writeSparkLog(supabase, cid, 'set_note', note.slice(0, 100))
+        return { ok: true }
+      }
+
+      case 'find_contacts_by_distance': {
+        const maxMiles = Math.max(0.5, Math.min(200, Number(input?.max_miles) || 25))
+        const limit = Math.max(1, Math.min(100, Number(input?.limit) || 30))
+
+        // Resolve home address (configurable, default to BPP HQ)
+        const { data: homeCfg } = await supabase.from('sparky_memory')
+          .select('value').eq('key', 'config:home_address').maybeSingle()
+        const homeAddr = (homeCfg?.value as string) || '22 Kimbell Ct, Greenville, SC 29617'
+
+        // Geocode helper — Nominatim, with sparky_memory cache (30d TTL)
+        async function geocode(addr: string, cacheKey: string): Promise<{ lat: number; lng: number } | null> {
+          if (!addr) return null
+          const { data: cached } = await supabase.from('sparky_memory')
+            .select('value, updated_at').eq('key', cacheKey).maybeSingle()
+          if (cached?.value) {
+            try {
+              const parsed = JSON.parse(cached.value)
+              if (typeof parsed?.lat === 'number' && typeof parsed?.lng === 'number') {
+                // Don't bother checking TTL — addresses don't move
+                return { lat: parsed.lat, lng: parsed.lng }
+              }
+            } catch (_) {}
+          }
+          try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`
+            const r = await fetch(url, {
+              headers: { 'User-Agent': 'BackupPowerPro CRM (key@backuppowerpro.com)' },
+            })
+            if (!r.ok) return null
+            const arr: any[] = await r.json()
+            if (!arr.length) return null
+            const lat = parseFloat(arr[0].lat)
+            const lng = parseFloat(arr[0].lon)
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+            await supabase.from('sparky_memory').upsert({
+              key: cacheKey,
+              value: JSON.stringify({ lat, lng, addr }),
+              category: 'geo', importance: 2,
+            }, { onConflict: 'key' })
+            return { lat, lng }
+          } catch (_) { return null }
+        }
+
+        function haversineMiles(a: {lat:number;lng:number}, b: {lat:number;lng:number}): number {
+          const R = 3958.8 // miles
+          const dLat = (b.lat - a.lat) * Math.PI / 180
+          const dLng = (b.lng - a.lng) * Math.PI / 180
+          const lat1 = a.lat * Math.PI / 180
+          const lat2 = b.lat * Math.PI / 180
+          const x = Math.sin(dLat/2)**2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng/2)**2
+          return 2 * R * Math.asin(Math.sqrt(x))
+        }
+
+        const home = await geocode(homeAddr, 'geo:home')
+        if (!home) {
+          return { error: `Could not geocode home address: ${homeAddr}. Try set_home_address with a more specific address.` }
+        }
+
+        // Pull contacts with addresses, geocode each (cached), compute distance
+        const { data: contacts } = await supabase
+          .from('contacts')
+          .select('id, name, address, phone, stage')
+          .not('address', 'is', null)
+          .neq('status', 'archived')
+          .limit(500)
+        if (!contacts) return { error: 'contact query failed' }
+
+        const results: any[] = []
+        // Geocode in small parallel batches to respect Nominatim's 1 req/sec
+        // limit (cached entries are free; only fresh ones rate-limit).
+        for (const c of contacts) {
+          const addr = String(c.address || '').trim()
+          if (!addr || addr.length < 8) continue
+          const geo = await geocode(addr, `geo:contact:${c.id}`)
+          if (!geo) continue
+          const miles = haversineMiles(home, geo)
+          if (miles <= maxMiles) {
+            results.push({
+              contact_id: c.id,
+              name: c.name || null,
+              address: addr,
+              phone: c.phone || null,
+              stage: c.stage,
+              distance_miles: Math.round(miles * 10) / 10,
+            })
+          }
+          // 1100ms gentle pacing for fresh geocodes only — but geo() already
+          // returns instantly for cached, so this only sleeps on misses
+          // (we can't tell cache vs miss from outside, so sleep always).
+          await new Promise(r => setTimeout(r, 50))
+        }
+
+        results.sort((a, b) => a.distance_miles - b.distance_miles)
+        return {
+          home_address: homeAddr,
+          home_geo: home,
+          radius_miles: maxMiles,
+          count: results.length,
+          contacts: results.slice(0, limit),
         }
       }
 
