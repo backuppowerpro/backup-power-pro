@@ -119,13 +119,16 @@ Deno.serve(async (req) => {
 
   if (!contact) {
     // Unknown number — still save the message with no contact_id
-    // so Key can see it in the inbox and match it manually
+    // so Key can see it in the inbox and match it manually. Apr 27:
+    // also populate sender_phone so the orphan-inbox UI can group by
+    // who sent it. Prior code lost the sender phone entirely.
     console.log(`[twilio-webhook] unknown sender ${from} — saving as orphan`)
     await supabase.from('messages').insert({
       contact_id:     null,
       direction:      'inbound',
       body:           msgBody,
       sender:         'lead',
+      sender_phone:   from,
       quo_message_id: messageSid,
       status:         'received',
     })
@@ -133,11 +136,15 @@ Deno.serve(async (req) => {
   }
 
   // ── SAVE INBOUND MESSAGE ───────────────────────────────────────────────────
+  // sender_phone is populated for known contacts too — useful for audit
+  // queries (was this from the canonical phone or an alt?) and for the
+  // smart-extract path below.
   const { error: insertErr } = await supabase.from('messages').insert({
     contact_id:     contact.id,
     direction:      'inbound',
     body:           msgBody,
     sender:         'lead',
+    sender_phone:   from,
     quo_message_id: messageSid,
     status:         'received',
   })

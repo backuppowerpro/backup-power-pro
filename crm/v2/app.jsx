@@ -6787,7 +6787,7 @@ async function exportContactsCsv() {
 }
 
 // ── New Lead Modal (action triggered by "+" button) ────────────────────────
-function NewLeadModal({ open, onClose, onCreated }) {
+function NewLeadModal({ open, onClose, onCreated, prefillPhone = null }) {
   const rootRef = useRef(null);
   useFocusTrap(rootRef, open);
   const [name, setName] = useState('');
@@ -6796,6 +6796,11 @@ function NewLeadModal({ open, onClose, onCreated }) {
   const [address, setAddress] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+
+  // Prefill phone when modal opens with a phone (orphan-thread triage).
+  useEffect(() => {
+    if (open && prefillPhone) setPhone(prefillPhone);
+  }, [open, prefillPhone]);
   // Duplicate-phone check. When the phone reaches 10 digits we query to see
   // if a contact already owns that number; if so, show an inline link so
   // Key can jump to the existing record instead of creating a duplicate.
@@ -9743,9 +9748,11 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
   const fetchThreads = useCallback(async () => {
     // Latest 300 messages; we group client-side.
     // Include `status` so the inbox row can flag failed outbound delivery.
+    // Apr 27: also pull sender_phone so orphan inbound (contact_id=null)
+    // can be grouped by from-phone and surfaced as Unknown threads.
     const { data: msgs } = await db
       .from('messages')
-      .select('id, contact_id, direction, body, sender, status, created_at')
+      .select('id, contact_id, direction, body, sender, status, sender_phone, created_at')
       .order('created_at', { ascending: false })
       .limit(300);
     if (!msgs) { setThreads([]); return; }
@@ -9755,8 +9762,16 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
     // .in() below yields a PostgREST "invalid uuid" error that silently
     // drops ALL rows from the lookup and empties the inbox.
     const byContact = {};
+    const byOrphanPhone = {}; // sender_phone → { latest, count }
     for (const m of msgs) {
-      if (!m.contact_id) continue;
+      if (!m.contact_id) {
+        // Orphan inbound — group by sender_phone so Key still sees it.
+        if (m.direction !== 'inbound' || !m.sender_phone) continue;
+        const k = m.sender_phone;
+        if (!byOrphanPhone[k]) byOrphanPhone[k] = { latest: m, count: 0 };
+        byOrphanPhone[k].count++;
+        continue;
+      }
       if (!byContact[m.contact_id]) byContact[m.contact_id] = { latest: m, count: 0 };
       if (m.direction === 'inbound') byContact[m.contact_id].count++;
     }
@@ -9802,6 +9817,27 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
         };
       })
       .filter(Boolean);
+    // Apr 27: append orphan-phone threads at the front of the inbox.
+    // These represent inbound from numbers Key hasn't matched to a
+    // contact yet — without surfacing them, cold inbounds vanished.
+    // Marked with `orphan: true` + a virtual contactId of `orphan:<phone>`
+    // so the row click can route to a "Match contact" flow later.
+    const orphanThreads = Object.entries(byOrphanPhone).map(([phone, { latest, count }]) => ({
+      contactId: `orphan:${phone}`,
+      orphan: true,
+      orphanPhone: phone,
+      name: `Unknown · ${phone}`,
+      i: '?',
+      tint: 'gold',
+      dir: 'in',
+      prev: (latest.body || '').slice(0, 120),
+      ts: relTimestamp(latest.created_at),
+      waiting: true, // Always waiting — Key needs to triage
+      unread: count,
+      alex: false,
+      failed: false,
+    }));
+
     // Sort: waiting-on-Key threads first, then by latest message time (desc).
     // Rank uses inserted order of byContact which is already newest-first.
     const order = Object.fromEntries(ids.map((id, i) => [id, i]));
@@ -9811,7 +9847,9 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
       if (a.waiting !== b.waiting) return a.waiting ? -1 : 1;
       return (order[a.contactId] ?? 0) - (order[b.contactId] ?? 0);
     });
-    setThreads(out);
+    // Orphan threads ride at the very top — they're the most actionable
+    // (totally new lead, totally cold, Key needs eyes on it).
+    setThreads([...orphanThreads, ...out]);
   }, []);
 
   useEffect(() => {
@@ -9846,7 +9884,19 @@ function LiveMessages({ onSelect, activeId, compact = false }) {
     : threads;
 
   const MessagesInbox = window.MessagesInbox;
-  return <MessagesInbox threads={filteredThreads} onSelect={t => onSelect(t.contactId)} activeId={activeId} compact={compact} />;
+  // Orphan rows have contactId="orphan:<phone>" — intercept the click so we
+  // route to a "Create lead from this phone" flow instead of trying to load
+  // a contact-detail panel for a non-UUID id.
+  return <MessagesInbox threads={filteredThreads} onSelect={t => {
+    if (typeof t.contactId === 'string' && t.contactId.startsWith('orphan:')) {
+      const phone = t.contactId.slice('orphan:'.length);
+      window.dispatchEvent(new CustomEvent('bpp:open-orphan-triage', {
+        detail: { phone, preview: t.prev },
+      }));
+      return;
+    }
+    onSelect(t.contactId);
+  }} activeId={activeId} compact={compact} />;
 }
 
 // ── Smart Calls — callback priority on top of a flat call log ───────────────
@@ -12824,6 +12874,21 @@ function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
+  // Orphan-thread triage: when an Unknown sender row is clicked in the
+  // inbox, open NewLead modal with the phone prefilled. Apr 27 phone+SMS
+  // audit P0 #6 — orphan inbound was vanishing entirely.
+  const [orphanPrefillPhone, setOrphanPrefillPhone] = useState(null);
+  useEffect(() => {
+    const on = (e) => {
+      const phone = e.detail?.phone;
+      if (typeof phone === 'string' && phone.length > 0) {
+        setOrphanPrefillPhone(phone);
+        setNewLeadOpen(true);
+      }
+    };
+    window.addEventListener('bpp:open-orphan-triage', on);
+    return () => window.removeEventListener('bpp:open-orphan-triage', on);
+  }, []);
   const [helpOpen, setHelpOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('bpp_v2_theme') === 'dark');
 
@@ -13743,8 +13808,19 @@ function App() {
       /> : null}
       <NewLeadModal
         open={newLeadOpen}
-        onClose={() => setNewLeadOpen(false)}
+        prefillPhone={orphanPrefillPhone}
+        onClose={() => { setNewLeadOpen(false); setOrphanPrefillPhone(null); }}
         onCreated={c => {
+          // Backfill orphan messages with this contact_id once the contact
+          // exists — so the new contact's thread shows the prior orphan
+          // texts. Cheap one-row update keyed on sender_phone.
+          if (orphanPrefillPhone) {
+            db.from('messages')
+              .update({ contact_id: c.id })
+              .eq('sender_phone', orphanPrefillPhone)
+              .is('contact_id', null)
+              .then(() => { setOrphanPrefillPhone(null); });
+          }
           setSelectedContact(c.id);
           setTab('quick');
         }}
