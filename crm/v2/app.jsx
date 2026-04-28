@@ -3316,19 +3316,62 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab, onAs
                   JWT-disable fix on twilio-status-callback, this column was
                   permanently stuck at 'sent' — Key had no visibility when a
                   text failed. Now failed shows red so he sees it at a glance. */}
-              {isOut && (m.status === 'failed' || m.status === 'undelivered') ? (
+              {isOut && (m.status === 'failed' || m.status === 'undelivered' || m.status === 'blocked') ? (
                 <div style={{
-                  fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
-                  marginTop: 4, letterSpacing: '0.08em', textTransform: 'uppercase',
-                  color: '#ff8a8a',
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  marginTop: 4,
+                  display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
                 }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                  Not delivered
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    color: 'var(--red)',
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                  }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    {m.status === 'blocked' ? 'Blocked by safety gate' : 'Not delivered'}
+                  </span>
+                  {/* Apr 27: resend button on failed messages. Was a P0 from
+                      the phone+SMS audit — Key had no way to retry. Idempotency
+                      key = original message id so a double-click doesn't
+                      duplicate. Skip for `blocked` status (safety gate
+                      stopped it for a reason; Key reviews + redrafts). */}
+                  {m.status !== 'blocked' && m.contact_id && m.body ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const cleanBody = String(m.body).replace(/^\[media:[^\]]+\]\s*/, '');
+                          const { data, error } = await invokeFn('send-sms', {
+                            body: {
+                              contactId: m.contact_id,
+                              body: cleanBody,
+                              idempotencyKey: `resend-${m.id}`,
+                            },
+                          });
+                          if (error) throw error;
+                          if (data?.success === false) throw new Error(data.error || 'resend failed');
+                          window.__bpp_toast && window.__bpp_toast('Resent — check delivery status in a few seconds', 'success');
+                        } catch (err) {
+                          window.__bpp_toast && window.__bpp_toast(`Resend failed: ${err.message || err}`, 'error');
+                        }
+                      }}
+                      style={{
+                        padding: '3px 10px', height: 22,
+                        background: 'transparent',
+                        border: '1px solid color-mix(in srgb, var(--red) 60%, transparent)',
+                        color: 'var(--red)',
+                        fontFamily: 'var(--font-display)', fontWeight: 700,
+                        fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
+                        borderRadius: 'var(--radius-pill)', cursor: 'pointer',
+                        transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--red)'; }}
+                    >Resend</button>
+                  ) : null}
                 </div>
               ) : null}
               {isOut && m.status === 'delivered' ? (
@@ -7004,8 +7047,17 @@ function useVoiceDevice(user) {
           codecPreferences: ['opus', 'pcmu'],
           enableRingingState: true,
         });
-        dev.on('registered', () => { if (!cancelled) setReady(true); });
-        dev.on('error', e => { setErr(e?.message || String(e)); });
+        dev.on('registered', () => { if (!cancelled) { setReady(true); setErr(null); } });
+        dev.on('error', e => {
+          const msg = e?.message || String(e);
+          setErr(msg);
+          // Apr 27 audit (P0 #5): voice-device errors were caught into
+          // local err state but nothing rendered it. Surface to Key via
+          // toast so he knows why the Call button does nothing.
+          if (typeof window !== 'undefined' && window.__bpp_toast) {
+            window.__bpp_toast(`Voice error: ${msg}`, 'error');
+          }
+        });
         dev.on('incoming', call => {
           setIncoming(call);
           setStatus('ringing');
@@ -7021,7 +7073,15 @@ function useVoiceDevice(user) {
         await dev.register();
         if (!cancelled) setDevice(dev);
       } catch (e) {
-        if (!cancelled) setErr(e?.message || String(e));
+        if (!cancelled) {
+          const msg = e?.message || String(e);
+          setErr(msg);
+          // Surface boot failures (SDK CDN block, token 401, mic perm
+          // denied) so Key isn't staring at silent Call buttons.
+          if (typeof window !== 'undefined' && window.__bpp_toast) {
+            window.__bpp_toast(`Voice unavailable: ${msg}. Calls won't work until this is resolved.`, 'error');
+          }
+        }
       }
     }
     boot();

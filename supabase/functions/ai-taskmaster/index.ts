@@ -59,6 +59,9 @@ const SERVER_SIDE_TOOLS = new Set([
   'set_home_address',           // Phase 2 CRM-control (Apr 27)
   'get_pipeline_health',        // Phase 2 CRM-control (Apr 27)
   'set_contact_note',           // Phase 2 CRM-control (Apr 27)
+  'find_overdue_proposals',     // Phase 3 analytics (Apr 27)
+  'get_revenue_by_period',      // Phase 3 analytics (Apr 27)
+  'find_unread_threads',        // Phase 3 analytics (Apr 27)
   'memory',  // Anthropic memory_20250818 — always server-side
 ])
 
@@ -223,6 +226,9 @@ CRM CONTROL — you can drive the UI directly. Call these tools when Key's inten
 - "what's my pipeline look like?" / "snapshot" / "where am I" → get_pipeline_health, then summarize the top 2-3 surprises (oldest in a stage, biggest stage by $, outstanding total).
 - "draft a follow-up to X" / "text Y about Z" → compose_sms. NEVER include a pre-canned send — Key reviews and clicks Send himself. Always also call open_contact for X so the composer is visible.
 - "remember Sarah's gate code is 1234" / "note that John prefers texts" → set_contact_note (after lookup_contact to get the id).
+- "what's stuck" / "stale quotes" / "who hasn't signed" → find_overdue_proposals, then summarize and ideally apply_left_filter on the contact_ids so Key can see them.
+- "how much did I make this week / month / YTD" / "what's my revenue" → get_revenue_by_period.
+- "who am I waiting on" / "unread" / "who's pinging me" → find_unread_threads, surface top 3-5 by hours_waiting + offer to apply_left_filter.
 NEVER call delete/archive/DNC tools — those don't exist by design. If Key asks to delete something, tell him "I can't delete data — open the row and do it manually." (We chose this for safety; never override.)
 
 NEVER report a problem without executing the solution:
@@ -710,6 +716,39 @@ const ALL_TOOLS: any[] = [
         note:      { type: 'string', description: 'Short note (under 300 chars).' },
       },
       required: ['contactId', 'note'],
+    },
+  },
+
+  // ── PHASE 3 — analytics + workflow helpers (Apr 27) ────────────────────
+  {
+    name: 'find_overdue_proposals',
+    description: 'Find proposals stuck without movement: not signed, not superseded, status in Sent/Viewed/Created/Copied, created at least N days ago. Use when Key asks "what\'s stuck", "any stale quotes", "who hasn\'t signed yet". Combine with apply_left_filter or open_contact for action.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        min_days: { type: 'integer', description: 'Minimum age in days (default 7).', default: 7, minimum: 1, maximum: 90 },
+        limit:    { type: 'integer', description: 'Max results (default 25, max 50).', default: 25, minimum: 1, maximum: 50 },
+      },
+    },
+  },
+  {
+    name: 'get_revenue_by_period',
+    description: 'Sum of paid invoices over a period. Use when Key asks "how much did I make this week / month / quarter / YTD", "what\'s my revenue", "what came in this week". Returns total + count + average + first/last paid_at.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        period: { type: 'string', enum: ['7d','30d','90d','ytd','all'], description: 'Window: 7d / 30d / 90d / ytd / all-time. Default 30d.' },
+      },
+    },
+  },
+  {
+    name: 'find_unread_threads',
+    description: 'Find threads where the latest message is inbound and Key hasn\'t replied. Use when Key asks "who am I waiting on", "unread", "who\'s pinging me", "any I missed". Returns contact_id + name + preview + how-long-waiting.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'integer', description: 'Max results (default 20, max 50).', default: 20, minimum: 1, maximum: 50 },
+      },
     },
   },
 ]
@@ -1400,6 +1439,112 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
           count: results.length,
           contacts: results.slice(0, limit),
         }
+      }
+
+      case 'find_overdue_proposals': {
+        const minDays = Math.max(1, Math.min(90, Number(input?.min_days) || 7))
+        const limit = Math.max(1, Math.min(50, Number(input?.limit) || 25))
+        const cutoff = new Date(Date.now() - minDays * 86400000).toISOString()
+        const { data: rows, error } = await supabase
+          .from('proposals')
+          .select('id, contact_id, contact_name, total, status, view_count, created_at, signed_at, superseded_by')
+          .lte('created_at', cutoff)
+          .is('signed_at', null)
+          .is('superseded_by', null)
+          .in('status', ['Sent', 'Viewed', 'Created', 'Copied'])
+          .order('created_at', { ascending: true })
+          .limit(limit)
+        if (error) return { error: error.message }
+        const now = Date.now()
+        return {
+          count: rows?.length || 0,
+          min_days: minDays,
+          proposals: (rows || []).map(p => ({
+            proposal_id: p.id,
+            contact_id: p.contact_id,
+            contact_name: p.contact_name,
+            total: p.total,
+            status: p.status,
+            view_count: p.view_count || 0,
+            days_old: Math.floor((now - new Date(p.created_at).getTime()) / 86400000),
+          })),
+        }
+      }
+
+      case 'get_revenue_by_period': {
+        const period = String(input?.period || '30d')
+        const now = new Date()
+        let since: Date
+        if (period === '7d')   since = new Date(now.getTime() - 7 * 86400000)
+        else if (period === '90d') since = new Date(now.getTime() - 90 * 86400000)
+        else if (period === 'ytd') since = new Date(now.getFullYear(), 0, 1)
+        else if (period === 'all') since = new Date(0)
+        else                   since = new Date(now.getTime() - 30 * 86400000) // 30d default
+        const { data: rows, error } = await supabase
+          .from('invoices')
+          .select('total, paid_at, status')
+          .eq('status', 'paid')
+          .gte('paid_at', since.toISOString())
+        if (error) return { error: error.message }
+        const totals = (rows || []).map(r => Number(r.total) || 0)
+        const sum = totals.reduce((a, b) => a + b, 0)
+        const count = totals.length
+        const avg = count ? Math.round(sum / count) : 0
+        const sortedByDate = (rows || []).slice().sort((a, b) => String(a.paid_at).localeCompare(String(b.paid_at)))
+        return {
+          period,
+          since: since.toISOString().slice(0, 10),
+          total_paid: sum,
+          invoice_count: count,
+          average: avg,
+          first_paid_at: sortedByDate[0]?.paid_at || null,
+          last_paid_at: sortedByDate[sortedByDate.length - 1]?.paid_at || null,
+        }
+      }
+
+      case 'find_unread_threads': {
+        const limit = Math.max(1, Math.min(50, Number(input?.limit) || 20))
+        // Pull recent inbound messages, group by contact, latest per contact
+        const { data: msgs, error } = await supabase
+          .from('messages')
+          .select('id, contact_id, direction, body, sender, status, created_at')
+          .order('created_at', { ascending: false })
+          .limit(400)
+        if (error) return { error: error.message }
+        const byContact: Record<string, any> = {}
+        for (const m of msgs || []) {
+          if (!m.contact_id) continue
+          if (byContact[m.contact_id]) continue // already saw the latest
+          byContact[m.contact_id] = m
+        }
+        // Filter to threads where latest message is inbound from a customer
+        const waiting = Object.values(byContact)
+          .filter((m: any) => m.direction === 'inbound' && m.sender !== 'ai')
+        const ids = waiting.map((m: any) => m.contact_id)
+        if (!ids.length) return { count: 0, threads: [] }
+        const { data: contacts } = await supabase
+          .from('contacts')
+          .select('id, name, stage, do_not_contact')
+          .in('id', ids)
+        const cMap = Object.fromEntries((contacts || []).map(c => [c.id, c]))
+        const now = Date.now()
+        const out = waiting
+          .map((m: any) => {
+            const c = cMap[m.contact_id]
+            if (!c || c.do_not_contact) return null
+            const hours = Math.round((now - new Date(m.created_at).getTime()) / 3600000)
+            return {
+              contact_id: m.contact_id,
+              contact_name: c.name || null,
+              stage: c.stage,
+              preview: String(m.body || '').slice(0, 120),
+              hours_waiting: hours,
+            }
+          })
+          .filter(Boolean)
+          .sort((a: any, b: any) => b!.hours_waiting - a!.hours_waiting)
+          .slice(0, limit)
+        return { count: out.length, threads: out }
       }
 
       case 'find_top_jobs_by_value': {
