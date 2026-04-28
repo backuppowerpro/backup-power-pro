@@ -5563,7 +5563,7 @@ function StagePickerModal({ currentStage, onPick, onClose, contact }) {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 14px',
-                  background: active ? 'var(--navy)' : 'transparent',
+                  background: active ? 'var(--tab-active-bg)' : 'transparent',
                   color: active ? '#fff' : 'var(--text)',
                   fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: active ? 700 : 600,
                   letterSpacing: '-0.005em',
@@ -7480,7 +7480,7 @@ function LivePermits() {
 
   const pillBtn = (active) => ({
     padding: '5px 12px', height: 26,
-    background: active ? 'var(--navy)' : 'var(--card)',
+    background: active ? 'var(--tab-active-bg)' : 'var(--card)',
     color: active ? '#fff' : 'var(--text-muted)',
     boxShadow: active ? 'none' : 'var(--ring)',
     cursor: 'pointer', border: 'none',
@@ -10596,7 +10596,7 @@ function LiveQuickList({ onSelect }) {
               // No inset ring on inactive (Key 2026-04-26: "ugly sliver
               // around a lot of buttons"). Active = navy + soft shadow,
               // inactive = transparent that tints on hover.
-              background: active ? 'var(--navy)' : 'transparent',
+              background: active ? 'var(--tab-active-bg)' : 'transparent',
               color: active ? '#fff' : 'var(--text-muted)',
               boxShadow: active ? 'var(--shadow-sm)' : 'none',
               border: 'none', cursor: 'pointer',
@@ -12928,10 +12928,14 @@ function App() {
   })();
   const [tab, setTab] = useState(initial.tab);
   const [selectedContact, setSelectedContact] = useState(initial.contact);
-  // When set, the right pane swaps from contact detail → Sparky scoped to
-  // that contact. The back button on Sparky clears this and we land back
-  // on the contact detail with the same tab still selected.
+  // Apr 28 hard rule (Key): "every screen should have ONE focus, no split
+  // attention within a section." Contact detail + Sparky are now FULL
+  // overlays, not a persistent right pane. sparkyForContact is set when
+  // Key taps the Sparky button on a contact's header (contact-scoped chat
+  // overlays the contact detail). sparkyOverlayOpen is the general Sparky
+  // entry (top-bar Sparky button) that overlays the active tab content.
   const [sparkyForContact, setSparkyForContact] = useState(null);
+  const [sparkyOverlayOpen, setSparkyOverlayOpen] = useState(false);
   // If the user closes the contact, also drop any Sparky-scope state so we
   // don't return to a stale contact-scoped Sparky next time.
   useEffect(() => { if (!selectedContact) setSparkyForContact(null); }, [selectedContact]);
@@ -13448,6 +13452,14 @@ function App() {
         return;
       }
       if (editable) return;
+      // Esc closes overlays in priority order: contact-scoped Sparky →
+      // contact detail → general Sparky overlay. Single-pane focus rule
+      // (Apr 28) means there's always at most one of these open.
+      if (e.key === 'Escape') {
+        if (sparkyForContact) { setSparkyForContact(null); return; }
+        if (selectedContact) { setSelectedContact(null); return; }
+        if (sparkyOverlayOpen) { setSparkyOverlayOpen(false); return; }
+      }
 
       // g-chord: g then a letter to jump to a tab. First-letter where
       // unambiguous; pipeline scrapped so p is now proposals.
@@ -13759,117 +13771,62 @@ function App() {
           Left = main-tab nav. Right = dynamic hotkey strip for the open
           right-panel surface (Sparky pinned; contact toolbar when one is
           selected). */}
-      {!isMobile ? (
-        <div style={{ display: 'flex' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {TabBar ? <TabBar active={tab} scrollable={false} onChange={setTab} badges={(() => {
-              const b = {};
-              if (unreadCount > 0) b.messages = unreadCount;
-              return b;
-            })()} /> : null}
-          </div>
-          <div style={{ flex: '0 0 480px', width: 480 }}>
-            <RightTabBar
-              selectedContact={selectedContact}
-              contactPhone={rightPanelContactPhone}
-              onCloseContact={() => setSelectedContact(null)}
-              onOpenBrief={() => window.dispatchEvent(new CustomEvent('bpp:open-install-brief'))}
-              compact={false}
-            />
-          </div>
-        </div>
-      ) : (
-        TabBar ? <TabBar active={tab} scrollable={true} onChange={setTab} badges={(() => {
-          const b = {};
-          if (unreadCount > 0) b.messages = unreadCount;
-          return b;
-        })()} /> : null
-      )}
-      {/* Desktop: two-column layout. Left = current tab content. Right = a
-          persistent 480px panel — Sparky by default, contact detail when a
-          contact is selected. Mobile keeps the old overlay behavior since
-          a phone viewport can't show both columns meaningfully. */}
+      {/* Apr 28 — single-pane layout. The persistent right Sparky/contact
+          rail is gone (Key: "this half screen thing is awful... every
+          screen should have ONE focus"). Tabs span the full width on both
+          desktop and mobile. Contact detail and Sparky overlay the active
+          tab when invoked, never alongside it. */}
+      {TabBar ? <TabBar active={tab} scrollable={isMobile} onChange={setTab} badges={(() => {
+        const b = {};
+        if (unreadCount > 0) b.messages = unreadCount;
+        return b;
+      })()} /> : null}
+      {/* Single full-width content area. Tab content fills it; overlays
+          mount on top when invoked. */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', position: 'relative' }} className="grid-bg">
         <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
           <ErrorBoundary label={tab.toUpperCase()}>
             {content}
           </ErrorBoundary>
         </div>
-        {!isMobile ? (
-          <div style={{
-            flex: '0 0 480px',
-            width: 480,
-            borderLeft: '1px solid var(--divider)',
-            display: 'flex', flexDirection: 'column',
-            background: 'var(--card)',
-          }}>
-            {sparkyForContact && selectedContact ? (
-              // Contact-scoped Sparky — clicked the spark button on a
-              // contact's detail header. Sparky knows which contact this
-              // is (currentContactId) so quick-prompts and references land
-              // pre-loaded. Back button returns to the contact detail.
-              <ErrorBoundary label="SPARKY (CONTACT-SCOPED)">
-                <LiveSparky
-                  currentContactId={selectedContact}
-                  onBack={() => setSparkyForContact(null)}
-                />
-              </ErrorBoundary>
-            ) : selectedContact ? (
-              <ErrorBoundary label="CONTACT DETAIL">
-                <LiveContactDetail
-                  contactId={selectedContact}
-                  onBack={() => setSelectedContact(null)}
-                  onAskSparky={() => setSparkyForContact(selectedContact)}
-                  mobile={false}
-                  defaultTab={(() => {
-                    // One-shot override wins (e.g. Quick List STUCK QUOTES
-                    // land on QUOTE directly so Key can review + draft F/U).
-                    if (nextDetailTab) {
-                      const t = nextDetailTab;
-                      // Clear on next tick so a follow-up contact click
-                      // reverts to the main-tab mapping below.
-                      queueMicrotask(() => setNextDetailTab(null));
-                      return t;
-                    }
-                    // Otherwise map the flat tab Key is currently viewing
-                    // to the detail tab that makes the most sense to open.
-                    if (tab === 'proposals' || tab === 'invoices' || tab === 'finance') return 'QUOTE';
-                    if (tab === 'calendar' || tab === 'permits' || tab === 'materials') return 'PERMITS';
-                    if (tab === 'messages' || tab === 'calls') return 'MESSAGES';
-                    return undefined; // QUICK / LIST / PIPELINE → stage-based smart default
-                  })()}
-                />
-              </ErrorBoundary>
-            ) : (
-              <ErrorBoundary label="SPARKY SIDEBAR">
-                <LiveSparky currentContactId={null} />
-              </ErrorBoundary>
-            )}
-          </div>
-        ) : selectedContact ? (
+        {/* Sparky general overlay — invoked from the top-bar Sparky button.
+            Full-screen so Key gives it his full attention; close returns
+            him to whatever tab he was on. */}
+        {sparkyOverlayOpen && !selectedContact ? (
           <div style={{
             position: 'absolute',
-            top: 0, right: 0, bottom: 0,
-            width: '100%',
-            zIndex: 20,
+            top: 0, right: 0, bottom: 0, left: 0,
+            zIndex: 'var(--z-overlay)',
             display: 'flex', flexDirection: 'column',
             background: 'var(--card)',
           }}>
-            {/* Mobile uses the same per-surface action bar as desktop. Key
-                2026-04-21: "mobile will work similar" — left screen by
-                default, click into a right surface, back button returns.
-                The RightTabBar here sits above the contact detail full-
-                width and renders the same sub-tab / CALL / BRIEF / × row. */}
+            <ErrorBoundary label="SPARKY OVERLAY">
+              <LiveSparky
+                currentContactId={null}
+                onBack={() => setSparkyOverlayOpen(false)}
+              />
+            </ErrorBoundary>
+          </div>
+        ) : null}
+        {/* Contact full-overlay (and contact-scoped Sparky stack) */}
+        {selectedContact ? (
+          <div style={{
+            position: 'absolute',
+            top: 0, right: 0, bottom: 0, left: 0,
+            zIndex: 'var(--z-overlay)',
+            display: 'flex', flexDirection: 'column',
+            background: 'var(--card)',
+          }}>
             <RightTabBar
               selectedContact={selectedContact}
               contactPhone={rightPanelContactPhone}
               onCloseContact={() => setSelectedContact(null)}
               onOpenBrief={() => window.dispatchEvent(new CustomEvent('bpp:open-install-brief'))}
-              compact={true}
+              compact={isMobile}
             />
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              {sparkyForContact && selectedContact ? (
-                <ErrorBoundary label="SPARKY (CONTACT-SCOPED, MOBILE)">
+              {sparkyForContact ? (
+                <ErrorBoundary label="SPARKY (CONTACT-SCOPED)">
                   <LiveSparky
                     currentContactId={selectedContact}
                     onBack={() => setSparkyForContact(null)}
@@ -13881,7 +13838,18 @@ function App() {
                     contactId={selectedContact}
                     onBack={() => setSelectedContact(null)}
                     onAskSparky={() => setSparkyForContact(selectedContact)}
-                    mobile={true}
+                    mobile={isMobile}
+                    defaultTab={(() => {
+                      if (nextDetailTab) {
+                        const t = nextDetailTab;
+                        queueMicrotask(() => setNextDetailTab(null));
+                        return t;
+                      }
+                      if (tab === 'proposals' || tab === 'invoices' || tab === 'finance') return 'QUOTE';
+                      if (tab === 'calendar' || tab === 'permits' || tab === 'materials') return 'PERMITS';
+                      if (tab === 'messages' || tab === 'calls') return 'MESSAGES';
+                      return undefined;
+                    })()}
                   />
                 </ErrorBoundary>
               )}
@@ -13889,6 +13857,36 @@ function App() {
           </div>
         ) : null}
       </div>
+      {/* Sparky FAB — single-pane access to general Sparky chat. Hidden
+          when an overlay is already open (no nested overlays). Bottom-right
+          on desktop + mobile, gold to match brand pop in dark mode. */}
+      {!sparkyOverlayOpen && !selectedContact ? (
+        <button
+          onClick={() => setSparkyOverlayOpen(true)}
+          aria-label="Ask Sparky"
+          title="Ask Sparky"
+          style={{
+            position: 'fixed',
+            bottom: 'calc(20px + env(safe-area-inset-bottom))',
+            right: 20,
+            width: 56, height: 56,
+            display: 'grid', placeItems: 'center',
+            background: 'var(--gold)', color: 'var(--navy)',
+            border: 0, cursor: 'pointer',
+            borderRadius: '50%',
+            boxShadow: 'var(--shadow-lg), var(--shadow-gold)',
+            zIndex: 'var(--z-overlay)',
+            transition: 'transform var(--dur) var(--ease), background var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)'; e.currentTarget.style.transform = 'scale(1.06)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)'; e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          {/* Spark glyph */}
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M13 2 L4 14 H11 L10 22 L20 9 H13 L13 2 Z"/>
+          </svg>
+        </button>
+      ) : null}
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
