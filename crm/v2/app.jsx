@@ -2632,8 +2632,12 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab, onAs
   // smart-default (e.g. stage 4 → PERMITS) leaves it off-screen with no
   // visible active indicator.
   useEffect(() => {
-    if (!detailTabsRef.current) return;
-    const btn = detailTabsRef.current.querySelector(`button[data-detail-tab-id="${detailTab}"]`);
+    // Apr 27 cohesion audit: this effect was previously scoped to
+    // detailTabsRef which never matched (the tab buttons live in the
+    // sibling RightTabBar subtree, not inside LiveContactDetail). Query
+    // globally — the data attribute is unique enough to grab the right
+    // button regardless of where in the tree it mounts.
+    const btn = document.querySelector(`button[data-detail-tab-id="${detailTab}"]`);
     if (btn && typeof btn.scrollIntoView === 'function') {
       btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
@@ -10470,10 +10474,20 @@ function SmartListRow({ row, onSelect }) {
     >
       <div style={{
         width: 36, height: 36, flex: '0 0 auto',
-        background: 'var(--navy)', clipPath: 'var(--avatar-clip)',
+        background: 'var(--navy)',
+        // Apr 27 cohesion audit: was clipPath polygon (legacy minesweeper)
+        // while header avatar was a clean circle. Unify on the circle.
+        borderRadius: '50%',
         display: 'grid', placeItems: 'center',
       }}>
-        <span style={{ fontFamily: 'var(--font-chrome)', fontWeight: 700, color: 'var(--gold)', fontSize: 12, letterSpacing: '.04em' }}>
+        <span style={{
+          // Apr 27 cohesion audit: was --font-chrome + gold initials. The
+          // header avatar uses --font-body + white. Unify on the header
+          // treatment so the same person renders the same way in both
+          // surfaces.
+          fontFamily: 'var(--font-body)', fontWeight: 600,
+          color: '#fff', fontSize: 12, letterSpacing: '0.01em',
+        }}>
           {initials(row.name)}
         </span>
       </div>
@@ -12450,8 +12464,10 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
     // pivots without leaving the panel. Buttons flex to fill the 480px
     // right panel width (Key 2026-04-22: "right side tabs don't take up
     // the full space").
+    // Title-Case all labels (Apr 27 cohesion audit). Prior 'SMS' was the
+    // only ALL-CAPS label among 16 tabs across both bars — pure noise.
     const sub = [
-      { id: 'MESSAGES', label: 'SMS' },
+      { id: 'MESSAGES', label: 'Messages' },
       { id: 'TIMELINE', label: 'Log' },
       { id: 'QUOTE',    label: 'Quote' },
       { id: 'PHOTOS',   label: 'Photos' },
@@ -12465,7 +12481,7 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
         {sub.map(t => {
           const on = activeDetail === t.id;
           return (
-            <button key={t.id} onClick={() => focusDetail(t.id)} style={{
+            <button key={t.id} onClick={() => focusDetail(t.id)} data-detail-tab-id={t.id} style={{
               height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
               background: 'transparent', border: 'none',
               // Active state: navy text + bold weight (no gold sliver — Key
