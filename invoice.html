@@ -306,18 +306,37 @@ window.addEventListener('DOMContentLoaded', async () => {
   // internally) so anon no longer needs direct SELECT on invoices /
   // proposals. View-tracking is also handled server-side in the same
   // call. Token is validated before any data returns.
+  // Apr 27 audit: hard 10s timeout so a hung edge fn / network blip can't
+  // leave the customer staring at "Loading..." forever.
   let data = null;
+  let errorReason = null;
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
     const res = await fetch(`${SUPABASE_URL}/functions/v1/invoice-view?token=${encodeURIComponent(token)}`, {
       headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      signal: ctrl.signal,
     });
+    clearTimeout(timer);
     if (res.ok) {
       const j = await res.json();
       data = j?.invoice || null;
       if (j?.proposal) LINKED_PROPOSAL = j.proposal;
+    } else if (res.status === 410) {
+      errorReason = 'This invoice was replaced by a newer one. Please use the latest link or contact (864) 400-5302.';
+    } else if (res.status === 404 || res.status === 400) {
+      errorReason = 'This link may be invalid or expired. Please contact (864) 400-5302 if you need help.';
+    } else {
+      errorReason = `Couldn\'t load this invoice right now (server returned ${res.status}). Please try again or contact (864) 400-5302.`;
     }
-  } catch(e) {}
-  if (!data) { showError('Invoice not found.', 'This link may be invalid or has been removed.'); return; }
+  } catch(e) {
+    if (e?.name === 'AbortError') {
+      errorReason = 'This is taking longer than expected. Please refresh, or contact (864) 400-5302 if it keeps failing.';
+    } else {
+      errorReason = 'Network issue loading this invoice. Please refresh, or contact (864) 400-5302.';
+    }
+  }
+  if (!data) { showError('Invoice not available.', errorReason || 'This link may be invalid or has been removed. Please contact (864) 400-5302.'); return; }
 
   INV = data;
 

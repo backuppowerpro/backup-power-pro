@@ -2230,7 +2230,13 @@ async function safetyGateOrLog(
   if (META_LEAK_RX.test(content)) return { ok: false, reason: 'meta_leak_regex' }
   if (META_TAG_RX.test(content))  return { ok: false, reason: 'meta_tag_regex', matched: (content.match(META_TAG_RX) || [])[0] }
   if (META_FACT_LIST_RX.test(content)) return { ok: false, reason: 'fact_list_regex', matched: (content.match(META_FACT_LIST_RX) || [])[0] }
-  // Layer 2: foreign-PII scan — block any other-contact phone/email/address
+  // Layer 2: foreign-PII scan — block any other-contact phone/email/address.
+  // Apr 27 verification (security agent): on DB exception, fail CLOSED. Three
+  // regex layers above already catch the most common leaks; this one is the
+  // belt for the rare bare-phone / address leak case. A bare phone in the
+  // body without other meta-leak signals is exactly the cross-customer
+  // contamination scenario the audit found in production. We MUST not let
+  // a Postgres blip be the difference between blocking and shipping it.
   try {
     const sb = db()
     const piiCheck = await containsForeignPII(sb, to, content)
@@ -2238,7 +2244,8 @@ async function safetyGateOrLog(
       return { ok: false, reason: 'cross_customer_pii', matched: `${piiCheck.matchedField}=${piiCheck.matchedValue}` }
     }
   } catch (e) {
-    console.error('[safety] foreign-PII check failed (allow-through):', e)
+    console.error('[safety] foreign-PII check failed — failing CLOSED for safety:', e)
+    return { ok: false, reason: 'foreign_pii_check_unavailable' }
   }
   return { ok: true }
 }

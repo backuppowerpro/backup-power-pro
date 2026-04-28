@@ -489,20 +489,30 @@ window.addEventListener('DOMContentLoaded', async () => {
   // needs direct SELECT on the proposals table. Closing anon direct
   // access was blocked on this migration — see the 2026-04-23 RLS
   // hardening migration for the full story.
+  // Apr 27: hard 10s timeout so a hung edge fn / network blip doesn't
+  // leave the customer on the spinner forever. AbortController fires
+  // showError with a customer-safe message + phone number to call.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
+  let _httpStatus = 200;
   const [proposalRes, ctxRes] = await Promise.all([
     // Pass through both ok payloads AND 410 Gone (superseded) so the page can
     // show a helpful "you have a newer quote" message instead of "not found".
     fetch(`${SUPABASE_URL}/functions/v1/proposal-view?token=${encodeURIComponent(token)}`, {
       headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      signal: ctrl.signal,
     }).then(async r => {
+      _httpStatus = r.status;
       if (r.ok) return r.json();
       if (r.status === 410) return { _superseded: true, ...(await r.json().catch(() => ({}))) };
       return { proposal: null };
-    }).catch(() => ({ proposal: null })),
+    }).catch((e) => ({ proposal: null, _aborted: e?.name === 'AbortError' })),
     fetch(`${SUPABASE_URL}/functions/v1/proposal-context?token=${encodeURIComponent(token)}`, {
       headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      signal: ctrl.signal,
     }).then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
+  clearTimeout(timer);
 
   // Superseded quote — newer one exists for this customer
   if (proposalRes?._superseded) {
@@ -523,7 +533,20 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   const data = proposalRes?.proposal || null;
-  if (!data) { showError('Proposal not found.', 'This link may be invalid or has been removed.'); return; }
+  if (!data) {
+    let msg;
+    if (proposalRes?._aborted) {
+      msg = 'This is taking longer than expected. Please refresh, or contact (864) 400-5302 if it keeps failing.';
+    } else if (_httpStatus === 404 || _httpStatus === 400) {
+      msg = 'This link may be invalid or expired. Please contact (864) 400-5302 if you need help.';
+    } else if (_httpStatus >= 500) {
+      msg = `Couldn't load this proposal right now (server returned ${_httpStatus}). Please try again or contact (864) 400-5302.`;
+    } else {
+      msg = 'This link may be invalid or has been removed. Please contact (864) 400-5302.';
+    }
+    showError('Proposal not available.', msg);
+    return;
+  }
   P = data;
   window.__bpp_ctx = ctxRes || {}; // exposed for downstream reads
   isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
