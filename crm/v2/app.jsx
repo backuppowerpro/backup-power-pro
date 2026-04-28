@@ -11701,9 +11701,10 @@ function LiveSparky({ currentContactId = null, onBack = null }) {
           <span style={{ fontWeight: 500 }}>Back to <span style={{ color: 'var(--text)', fontWeight: 700 }}>{currentContactName}</span></span>
         </button>
       ) : null}
-      {/* Agents inbox — Alex / permit-check / pipeline / brief notifications
-          that need Key's eyes. Hidden when empty so it doesn't waste space. */}
-      <AgentsInboxStrip />
+      {/* AgentsInboxStrip moved out of Sparky (Apr 28 — single-focus rule).
+          Sparky is now PURE CHAT. Notifications live in their own Inbox
+          overlay, accessible from the top bar bell icon. Each surface
+          gets one job. */}
       {/* No mode selector. Sparky infers the right ai-taskmaster mode from
           the question text (see detectMode above). The right-side action
           bar now hosts one-click pre-baked asks instead of mode toggles —
@@ -12936,6 +12937,25 @@ function App() {
   // entry (top-bar Sparky button) that overlays the active tab content.
   const [sparkyForContact, setSparkyForContact] = useState(null);
   const [sparkyOverlayOpen, setSparkyOverlayOpen] = useState(false);
+  // Apr 28: Agents Inbox now lives in its own overlay (was crammed into the
+  // Sparky chat which split attention). Bell icon in TopBar opens it; badge
+  // shows unactioned count + drives realtime via sparky_inbox subscription.
+  const [inboxOverlayOpen, setInboxOverlayOpen] = useState(false);
+  const [inboxCount, setInboxCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const refetch = async () => {
+      try {
+        const { count } = await db.from('sparky_inbox').select('id', { count: 'exact', head: true }).eq('actioned', false);
+        if (alive) setInboxCount(count || 0);
+      } catch {}
+    };
+    refetch();
+    const ch = db.channel('sparky-inbox-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sparky_inbox' }, refetch)
+      .subscribe();
+    return () => { alive = false; db.removeChannel(ch); };
+  }, []);
   // If the user closes the contact, also drop any Sparky-scope state so we
   // don't return to a stale contact-scoped Sparky next time.
   useEffect(() => { if (!selectedContact) setSparkyForContact(null); }, [selectedContact]);
@@ -13459,6 +13479,7 @@ function App() {
         if (sparkyForContact) { setSparkyForContact(null); return; }
         if (selectedContact) { setSelectedContact(null); return; }
         if (sparkyOverlayOpen) { setSparkyOverlayOpen(false); return; }
+        if (inboxOverlayOpen) { setInboxOverlayOpen(false); return; }
       }
 
       // g-chord: g then a letter to jump to a tab. First-letter where
@@ -13759,6 +13780,8 @@ function App() {
             onToggleDark={() => setIsDark(d => !d)}
             onNewLead={() => setNewLeadOpen(true)}
             onOpenSearch={() => setPaletteOpen(true)}
+            onOpenInbox={() => setInboxOverlayOpen(true)}
+            inboxCount={inboxCount}
           />
         ) : <div style={{ padding: 16 }}>BPP CRM</div>}
       </div>
@@ -13789,10 +13812,47 @@ function App() {
             {content}
           </ErrorBoundary>
         </div>
-        {/* Sparky general overlay — invoked from the top-bar Sparky button.
+        {/* Inbox overlay — Agents Inbox notifications. Apr 28: extracted
+            from inside Sparky chat per the single-focus rule. */}
+        {inboxOverlayOpen && !selectedContact ? (
+          <div style={{
+            position: 'absolute',
+            top: 0, right: 0, bottom: 0, left: 0,
+            zIndex: 'var(--z-overlay)',
+            display: 'flex', flexDirection: 'column',
+            background: 'var(--card)',
+          }}>
+            <button
+              onClick={() => setInboxOverlayOpen(false)}
+              aria-label="Back to list"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '12px 16px',
+                background: 'var(--card)',
+                border: 'none', borderBottom: '1px solid var(--divider-faint)',
+                cursor: 'pointer', textAlign: 'left',
+                fontFamily: 'var(--font-body)', fontSize: 12.5,
+                color: 'var(--text-muted)',
+                flexShrink: 0,
+              }}>
+              <span aria-hidden="true" style={{
+                display: 'inline-grid', placeItems: 'center',
+                width: 22, height: 22, background: 'var(--sunken)',
+                borderRadius: '50%', fontSize: 14, lineHeight: 1, fontWeight: 700,
+              }}>‹</span>
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>Inbox</span>
+            </button>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+              <ErrorBoundary label="INBOX OVERLAY">
+                <AgentsInboxStrip />
+              </ErrorBoundary>
+            </div>
+          </div>
+        ) : null}
+        {/* Sparky general overlay — invoked from the bottom-right FAB.
             Full-screen so Key gives it his full attention; close returns
             him to whatever tab he was on. */}
-        {sparkyOverlayOpen && !selectedContact ? (
+        {sparkyOverlayOpen && !selectedContact && !inboxOverlayOpen ? (
           <div style={{
             position: 'absolute',
             top: 0, right: 0, bottom: 0, left: 0,
@@ -13860,7 +13920,7 @@ function App() {
       {/* Sparky FAB — single-pane access to general Sparky chat. Hidden
           when an overlay is already open (no nested overlays). Bottom-right
           on desktop + mobile, gold to match brand pop in dark mode. */}
-      {!sparkyOverlayOpen && !selectedContact ? (
+      {!sparkyOverlayOpen && !selectedContact && !inboxOverlayOpen ? (
         <button
           onClick={() => setSparkyOverlayOpen(true)}
           aria-label="Ask Sparky"

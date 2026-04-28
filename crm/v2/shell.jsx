@@ -49,7 +49,7 @@ const TABS = [
 ];
 
 /* ────────── Top bar (desktop + mobile share layout) ────────── */
-function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark }) {
+function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, onOpenInbox, inboxCount = 0, isDark }) {
   const h = compact ? 52 : 60;
   return (
     <div style={{
@@ -90,6 +90,44 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark
           stuck," etc. The ⌘K keyboard shortcut still works for power users
           but no longer takes a slot in the top bar. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Notifications bell — opens the Agents Inbox overlay. Apr 28
+            single-focus refactor moved Agents Inbox out of Sparky chat
+            into its own surface. Badge dot only when there's something
+            unactioned. */}
+        {onOpenInbox ? (
+          <button onClick={onOpenInbox}
+            aria-label={inboxCount > 0 ? `Inbox (${inboxCount} unread)` : 'Inbox'}
+            title={inboxCount > 0 ? `${inboxCount} new` : 'Inbox'}
+            style={{
+              width: 34, height: 34, position: 'relative',
+              display: 'grid', placeItems: 'center',
+              color: 'var(--text-muted)', cursor: 'pointer',
+              borderRadius: 'var(--radius-pill)',
+              boxShadow: 'var(--ring)',
+              background: 'var(--card)',
+              transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {inboxCount > 0 ? (
+              <span aria-hidden="true" style={{
+                position: 'absolute', top: 4, right: 4,
+                minWidth: 14, height: 14, padding: inboxCount > 9 ? '0 4px' : 0,
+                background: 'var(--red)', color: '#fff',
+                fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+                display: 'grid', placeItems: 'center',
+                borderRadius: 'var(--radius-pill)',
+                boxShadow: '0 0 0 2px var(--card)',
+                lineHeight: 1,
+              }}>{inboxCount > 99 ? '99+' : inboxCount}</span>
+            ) : null}
+          </button>
+        ) : null}
         <button onClick={onToggleDark}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDark ? 'Light mode' : 'Dark mode'}
