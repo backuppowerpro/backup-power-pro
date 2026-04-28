@@ -1317,12 +1317,17 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
       }
 
       case 'get_pipeline_health': {
-        const { data: contacts } = await supabase
+        // Apr 27 adversarial test caught: contacts has no updated_at column,
+        // only created_at. "Oldest in stage" uses created_at — not perfect
+        // (a contact created last month + replied yesterday is fresh) but
+        // it's a usable proxy that doesn't crash the tool.
+        const { data: contacts, error: contactsErr } = await supabase
           .from('contacts')
-          .select('id, name, stage, status, do_not_contact, created_at, updated_at, quote_amount, install_date')
-          .neq('status', 'archived')
+          .select('id, name, stage, status, do_not_contact, created_at, quote_amount, install_date')
+          .or('status.is.null,status.neq.archived')
           .limit(1500)
-        if (!contacts) return { error: 'pipeline query failed' }
+        if (contactsErr) return { error: 'contacts query failed: ' + contactsErr.message }
+        if (!contacts) return { error: 'pipeline query failed (no rows)' }
         const stageNames: Record<number, string> = {
           1:'Form Submitted', 2:'Responded', 3:'Quote Sent', 4:'Booked',
           5:'Permit Submitted', 6:'Permit Paid', 7:'Permit Approved',
@@ -1335,10 +1340,10 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
           if (!buckets[s]) continue
           buckets[s].count += 1
           buckets[s].value += Number(c.quote_amount) || 0
-          if (!buckets[s].oldestAt || (c.updated_at && c.updated_at < buckets[s].oldestAt!)) {
+          if (!buckets[s].oldestAt || (c.created_at && c.created_at < buckets[s].oldestAt!)) {
             buckets[s].oldestId = c.id
             buckets[s].oldestName = c.name || null
-            buckets[s].oldestAt = c.updated_at
+            buckets[s].oldestAt = c.created_at
           }
         }
         // Outstanding balance = sum of unpaid invoices
@@ -1447,12 +1452,18 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         const results: any[] = []
         // Geocode in small parallel batches to respect Nominatim's 1 req/sec
         // limit (cached entries are free; only fresh ones rate-limit).
+        // Apr 27 adversarial test caught: Key's own contact (test row at
+        // 22 Kimbell Ct) was returning at 0.0mi as a noisy result. Skip
+        // any contact whose address geocodes to within 100ft of home —
+        // that's effectively the same address.
+        const SAME_ADDRESS_THRESHOLD_MILES = 0.02 // ~100ft
         for (const c of contacts) {
           const addr = String(c.address || '').trim()
           if (!addr || addr.length < 8) continue
           const geo = await geocode(addr, `geo:contact:${c.id}`)
           if (!geo) continue
           const miles = haversineMiles(home, geo)
+          if (miles < SAME_ADDRESS_THRESHOLD_MILES) continue // home address itself
           if (miles <= maxMiles) {
             results.push({
               contact_id: c.id,

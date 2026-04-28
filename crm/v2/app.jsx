@@ -12592,12 +12592,12 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
           const on = activeDetail === t.id;
           return (
             <button key={t.id} onClick={() => focusDetail(t.id)} data-detail-tab-id={t.id} style={{
-              height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
+              height: '100%', padding: compact ? '0 12px' : '0 6px', minWidth: 0,
               background: 'transparent', border: 'none',
               // Active state: navy text + 800 weight. Apr 27 cohesion audit:
               // unified weight (was 800/600) and font-size (was 12.5) with
               // the left main TabBar (now 800/500, 13/12.5).
-              color: on ? 'var(--navy)' : 'var(--text-muted)',
+              color: on ? 'var(--text)' : 'var(--text-muted)',
               fontFamily: 'var(--font-display)',
               fontWeight: on ? 800 : 500,
               fontSize: on ? 13 : 12.5,
@@ -12617,7 +12617,7 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
             onClick={() => window.__bpp_dial && window.__bpp_dial(contactPhone)}
             title="Call"
             style={{
-              height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
+              height: '100%', padding: compact ? '0 12px' : '0 6px', minWidth: 0,
               background: 'transparent', border: 'none',
               color: 'var(--green)',
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12.5,
@@ -12636,7 +12636,7 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
           onClick={onOpenBrief}
           title="Install brief"
           style={{
-            height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
+            height: '100%', padding: compact ? '0 12px' : '0 6px', minWidth: 0,
             background: 'transparent', border: 'none',
             color: 'var(--text-muted)',
             fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12.5,
@@ -12714,6 +12714,11 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
         borderLeft: '1px solid var(--divider-faint)',
         whiteSpace: 'nowrap',
         overflowX: compact ? 'auto' : 'visible',
+        // Apr 27 operator audit: mobile tab bar overflow had no scroll
+        // affordance — Call/Brief/× were unreachable. iOS momentum scroll
+        // + scrollbar-width: thin makes the scroll discoverable.
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'thin',
         position: 'relative', zIndex: 'var(--z-sticky)',
       }}>
       {buttons}

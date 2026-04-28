@@ -108,18 +108,26 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, isDark
           aria-label="Create new lead"
           title="New lead"
           style={{
-          height: 34, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 6,
+          // Apr 27 operator audit: "+ New lead" was wrapping to two lines
+          // on mobile and pushing the avatar offscreen. On compact (mobile)
+          // we now render as a circular icon-only button; desktop keeps
+          // the labeled pill. whiteSpace: nowrap belt-and-suspenders.
+          height: 34, padding: compact ? 0 : '0 16px',
+          width: compact ? 34 : 'auto',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           background: 'var(--gold)', color: 'var(--navy)',
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
           letterSpacing: '0.01em',
           borderRadius: 'var(--radius-pill)',
           boxShadow: 'var(--shadow-gold)',
           cursor: 'pointer',
+          flex: '0 0 auto',
+          whiteSpace: 'nowrap',
           transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
         }}
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--gold-hover)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold-hover)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold)' }}
-        >{Ico.plus}<span>New lead</span></button>
+        >{Ico.plus}{compact ? null : <span>New lead</span>}</button>
         <div style={{
           width: 36, height: 36, background: 'var(--navy)',
           borderRadius: '50%',
@@ -220,7 +228,7 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
                   height: '100%', padding: '0 16px',
                   display: 'flex', alignItems: 'center', gap: 8,
                   flex: '0 0 auto',
-                  color: isActive ? 'var(--navy)' : 'var(--text-muted)',
+                  color: isActive ? 'var(--text)' : 'var(--text-muted)',
                   fontFamily: 'var(--font-display)', fontWeight: isActive ? 800 : 600,
                   fontSize: 13.5, letterSpacing: '-0.005em',
                   background: 'transparent', border: 'none', outline: 'none',
@@ -270,7 +278,7 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
                     height: '100%', padding: '0 14px',
                     display: 'flex', alignItems: 'center', gap: 6,
                     flex: '0 0 auto',
-                    color: isActive ? 'var(--navy)' : 'var(--text-muted)',
+                    color: isActive ? 'var(--text)' : 'var(--text-muted)',
                     fontFamily: 'var(--font-display)', fontWeight: isActive ? 800 : 600,
                     fontSize: 12, letterSpacing: '-0.005em',
                     background: 'transparent', border: 'none', outline: 'none',
@@ -328,7 +336,7 @@ function TabBar({ active = 'quick', scrollable = false, onChange, badges = {} })
               height: '100%', padding: '0 6px', minWidth: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               flex: '1 1 0',
-              color: isActive ? 'var(--navy)' : 'var(--text-muted)',
+              color: isActive ? 'var(--text)' : 'var(--text-muted)',
               fontFamily: 'var(--font-display)',
               fontWeight: isActive ? 800 : 500,
               fontSize: isActive ? 13 : 12.5,
