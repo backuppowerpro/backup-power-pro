@@ -12594,13 +12594,14 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
             <button key={t.id} onClick={() => focusDetail(t.id)} data-detail-tab-id={t.id} style={{
               height: '100%', padding: compact ? '0 10px' : '0 6px', minWidth: 0,
               background: 'transparent', border: 'none',
-              // Active state: navy text + bold weight (no gold sliver — Key
-              // 2026-04-26: "i don't like the little sliver under the
-              // selected tabs"). The weight + color contrast carry the
-              // signal cleanly.
+              // Active state: navy text + 800 weight. Apr 27 cohesion audit:
+              // unified weight (was 800/600) and font-size (was 12.5) with
+              // the left main TabBar (now 800/500, 13/12.5).
               color: on ? 'var(--navy)' : 'var(--text-muted)',
-              fontFamily: 'var(--font-display)', fontWeight: on ? 800 : 600,
-              fontSize: 12.5, letterSpacing: '-0.005em',
+              fontFamily: 'var(--font-display)',
+              fontWeight: on ? 800 : 500,
+              fontSize: on ? 13 : 12.5,
+              letterSpacing: 0,
               cursor: 'pointer',
               flex: compact ? '0 0 auto' : '1 1 0',
               whiteSpace: 'nowrap',
@@ -12703,14 +12704,17 @@ function RightTabBar({ selectedContact, contactPhone, onCloseContact, onOpenBrie
   return (
     <div role="toolbar" aria-label={selectedContact ? 'Contact actions' : 'Sparky quick asks'}
       style={{
-        height: 44, display: 'flex', alignItems: 'stretch',
+        // Apr 27 cohesion audit: was 44px while the left main TabBar is
+        // 48px. Side-by-side they read as different visual languages.
+        // Now using the --ctrl-xl token so both bars share the same height.
+        height: 'var(--ctrl-xl)', display: 'flex', alignItems: 'stretch',
         padding: 0,
         background: 'var(--card)',
         borderBottom: '1px solid var(--divider-faint)',
         borderLeft: '1px solid var(--divider-faint)',
         whiteSpace: 'nowrap',
         overflowX: compact ? 'auto' : 'visible',
-        position: 'relative', zIndex: 2,
+        position: 'relative', zIndex: 'var(--z-sticky)',
       }}>
       {buttons}
     </div>

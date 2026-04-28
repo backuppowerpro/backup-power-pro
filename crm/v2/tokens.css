@@ -111,6 +111,44 @@
   --radius-xl:   28px;
   --radius-pill: 100px;
 
+  /* ---------- Control heights (Apr 27 cohesion audit) ----------
+     The audit found 11 distinct button heights inline (22, 28, 30, 32,
+     34, 36, 40, 42, 44, 48, 52). That's not a scale — it's inconsistency.
+     Six tokens cover every legitimate use:
+       xs (24)  → tiny chips inside dense panels (filter chips, badges)
+       sm (28)  → small buttons (snooze rows, in-card actions)
+       md (32)  → standard CRM buttons (most everything)
+       lg (40)  → primary CTAs in panels, segmented controls
+       xl (48)  → tab bars, top-bar buttons, tactile primary
+       2xl (56) → floating actions, install-day big buttons
+     Heights are also baked into `--space-*` so paddings line up. */
+  --ctrl-xs:     24px;
+  --ctrl-sm:     28px;
+  --ctrl-md:     32px;
+  --ctrl-lg:     40px;
+  --ctrl-xl:     48px;
+  --ctrl-2xl:    56px;
+
+  /* ---------- Scrim opacity stack (Apr 27 cohesion audit) ----------
+     Audit found 7 distinct backdrop alpha values (.35 .4 .45 .5 .55 .6 .7).
+     Three steps cover every modal/overlay context. Use `var(--scrim)` as
+     the default — light only for mobile sheets, heavy only for confirm
+     dialogs. The colors match the CRM dark palette so dark mode doesn't
+     suddenly invert. */
+  --scrim-light: rgba(11, 17, 28, 0.42);
+  --scrim:       rgba(11, 17, 28, 0.55);
+  --scrim-heavy: rgba(11, 17, 28, 0.72);
+
+  /* ---------- z-index stack (Apr 27 cohesion audit) ----------
+     Audit found 8 z-index layers with no documented order. Keep these in
+     decimal hundreds so future layers slot in without renumbering. */
+  --z-base:    1;
+  --z-sticky:  50;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+  --z-tooltip: 400;
+
   /* ---------- Typography ----------
      Outfit is the display font everywhere Key's customer deliverables
      use it (brand wordmark, section headings, eyebrow labels). Inter

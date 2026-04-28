@@ -10,7 +10,7 @@
 
 // Brand-alignment cache bump — invalidates the old Minesweeper/pixel
 // assets that Key's browser was still serving from SW cache.
-const CACHE_VERSION = 'bpp-v2-2026-04-27-orphan-inbox';
+const CACHE_VERSION = 'bpp-v2-2026-04-27-cohesion-tokens';
 const SHELL_FILES = [
   '/crm/v2/',
   '/crm/v2/index.html',
