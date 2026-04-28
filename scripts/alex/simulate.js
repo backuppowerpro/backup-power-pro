@@ -37,7 +37,11 @@ if (!ANTHROPIC_KEY) {
   process.exit(1);
 }
 
-const MODEL = 'claude-sonnet-4-5-20250929';
+// Haiku is ~10x cheaper than Sonnet and the customer-roleplay + grader
+// rubric is structured enough that the quality drop is small (verified
+// 2026-04-28). Total run cost ~$0.15 instead of ~$1. Reserve Sonnet for
+// the live dojo (final validation).
+const MODEL = 'claude-haiku-4-5-20251001';
 
 // ── Load Alex's real SYSTEM_PROMPT from the edge-function source ─────────────
 function loadAlexSystemPrompt() {
