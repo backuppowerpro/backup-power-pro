@@ -255,7 +255,11 @@ HARD RULES — never break these:
 - NEVER use bold, italic, or markdown formatting of any kind.
 - AVOID these corporate/scripted phrases (they sound robotic): Great question, Absolutely, Thank you for reaching out, Id be happy to, I appreciate, Fair enough, Awesome, Dont hesitate, Certainly, Of course, Sounds great, Checking in, Following up, Circling back, Hope this finds you, Just following up, Just reaching out, Just wanted to, Great choice. Find a more natural way to say it. ("I hear you" > "I understand"; "yeah no worries" > "No problem" is fine; "Perfect" is okay in genuine reactions.)
 - NEVER sound desperate, pushy, or salesy.
-- NEVER stack multiple questions in one message. One question at a time, always.
+- NEVER stack multiple questions in one message. One question at a time, always. This rule has a sneaky failure mode: tacking a SECOND question onto the end of a message that already had one. Examples of the violation:
+    "Is the panel on an exterior wall? And what's the install address?" — TWO questions, breaks the rule.
+    "Got it — does the breaker box have a main? Also, what's your zip?" — TWO questions, breaks the rule.
+    "Sounds good. Can you send a photo of the panel? And the outlet too?" — TWO questions, breaks the rule.
+  The right move is to ask ONE question now and save the next for the next turn. If you have several things to learn, pick the highest-value one for THIS turn and stop typing. The phrase "And ___?" or "Also ___?" appearing inside an already-question-bearing reply is the tell — when you see yourself about to type that, delete it.
 - NEVER send a stalling / filler-only reply. You are never "checking on something" or "looking into it" — you have no database to query, no senior tech to consult, no calendar to flip through. Forbidden phrases that imply an external lookup:
     "Let me check on that for you"   "Let me look into that"   "One moment"
     "Give me a second"   "Hold on"   "I'll get back to you"   "Let me see"
@@ -2785,19 +2789,93 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Build user message + capture photo URLs into memory
-  let userText = messageText
-  if (hasMedia) {
-    // Persist photo URLs SYNCHRONOUSLY before runAlex so notify_key can read them immediately.
-    // Cap at 5 photos per message to prevent storage abuse.
-    const mediaItems: any[] = (messageData.media || []).slice(0, 5)
-    const firstPhotoUrl: string | null = (() => {
-      for (const item of mediaItems) {
-        const u = item?.url || item?.mediaUrl
-        if (u && typeof u === 'string' && u.startsWith('http')) return u
+  // ── Burst-inbound combine (Apr 27 bug) ─────────────────────────────────────
+  // Customers fire 2-5 quick bubbles or photos in a 10-second burst (e.g.
+  // "exterior wall" → "22 Kimbell ct" → "Greenville", or 4 panel photos
+  // back-to-back). The 11-14s debounce kills earlier webhooks before they
+  // save anything to session state, so the winning webhook's payload only
+  // contains its OWN bubble + its OWN media. Alex then re-asks for what the
+  // customer already said and never sees photos #1-4.
+  //
+  // Fix: pull every inbound message from this contact since the last alex
+  // outbound. Combine the text bodies into one userText, and union the
+  // burst photo URLs with the current webhook's media so the vision +
+  // notify_key paths see the full set. The prior (debounced) webhooks
+  // already wrote their bodies to the messages table at the dedup boundary,
+  // so this captures their content even though saveMessages was never
+  // reached.
+  let prependedFromBubbles: string | null = null
+  const burstMediaUrls: string[] = []
+  try {
+    const { data: matchedContact } = await supabase
+      .from('contacts').select('id').eq('phone', normalizePhone(fromPhone)).limit(1).maybeSingle()
+    if (matchedContact?.id) {
+      const since = (session as any)?.lastOutboundAt || new Date(0).toISOString()
+      const { data: pendingInbound } = await supabase
+        .from('messages')
+        .select('body, created_at')
+        .eq('contact_id', matchedContact.id)
+        .eq('direction', 'inbound')
+        .gt('created_at', since)
+        .order('created_at', { ascending: true })
+        .limit(15)
+
+      if (pendingInbound && pendingInbound.length > 0) {
+        const cleaned: string[] = []
+        for (const m of pendingInbound) {
+          const raw = String(m.body || '')
+          // Extract [media:URL] occurrences (twilio-webhook saves them as
+          // "[media:URL] optional caption"). A single body may have multiple.
+          const mediaMatches = raw.match(/\[media:([^\]]+)\]/g) || []
+          for (const tag of mediaMatches) {
+            const url = tag.slice('[media:'.length, -1)
+            if (url.startsWith('http') && !burstMediaUrls.includes(url)) {
+              burstMediaUrls.push(url)
+            }
+          }
+          // Strip media tags, keep the human caption portion
+          const text = raw.replace(/\[media:[^\]]+\]\s*/g, '').trim()
+          if (text) cleaned.push(text)
+        }
+        if (cleaned.length > 1 && cleaned.some(b => b === messageText.trim())) {
+          prependedFromBubbles = cleaned.join('\n')
+          console.log('[alex] Multi-bubble combined:', cleaned.length, 'text bubbles')
+        }
+        if (burstMediaUrls.length > 0) {
+          console.log('[alex] Burst media collected:', burstMediaUrls.length, 'urls')
+        }
       }
-      return null
-    })()
+    }
+  } catch (e) {
+    console.error('[alex] burst-inbound combine non-fatal error:', e)
+  }
+
+  // Build user message + capture photo URLs into memory
+  let userText = prependedFromBubbles || messageText
+  // Treat as media-bearing if EITHER this webhook carries media OR the burst
+  // combine collected media URLs from earlier debounced webhooks.
+  const hasBurstMedia = burstMediaUrls.length > 0
+  if (hasMedia || hasBurstMedia) {
+    // Persist photo URLs SYNCHRONOUSLY before runAlex so notify_key can read them immediately.
+    // Union of (current webhook's media) + (burst photos from debounced
+    // webhooks) — capped at 5 photos total to prevent storage abuse.
+    const currentItems: any[] = (messageData.media || [])
+    const currentUrls: string[] = currentItems
+      .map(it => it?.url || it?.mediaUrl)
+      .filter(u => typeof u === 'string' && u.startsWith('http'))
+    const allUrls: string[] = []
+    for (const u of [...currentUrls, ...burstMediaUrls]) {
+      if (!allUrls.includes(u)) allUrls.push(u)
+      if (allUrls.length >= 5) break
+    }
+    const mediaItems: any[] = allUrls.map((url, idx) => {
+      const matchingCurrent = currentItems.find(it => (it?.url || it?.mediaUrl) === url)
+      return matchingCurrent || { url, type: 'image/jpeg' }
+    })
+    const firstPhotoUrl: string | null = allUrls[0] || null
+    if (hasBurstMedia) {
+      console.log('[alex] Photo burst handling:', allUrls.length, 'total photos (', currentUrls.length, 'current,', burstMediaUrls.length, 'from burst)')
+    }
     const photoSaves = mediaItems.map(async (item: any, idx: number) => {
       const url = item?.url || item?.mediaUrl
       if (url && typeof url === 'string' && url.startsWith('http')) {
@@ -2894,9 +2972,15 @@ Deno.serve(async (req) => {
     // Tell Alex the class via the user message — so the model picks the right
     // response path (proceed vs retake-ask) without needing a system-prompt
     // branch. Wrapped in [VISION CHECK] so Alex treats it as internal context.
+    // Photo-burst aware: if multiple photos arrived, Alex needs to know that
+    // so the reply doesn't say "got the photo" when 4 came in.
+    const photoCountLabel = allUrls.length > 1
+      ? `${allUrls.length} photos`
+      : 'a photo'
+    const visionLabel = `[VISION CHECK on first photo: appears to be a ${photoClass}${allUrls.length > 1 ? '. The other ' + (allUrls.length - 1) + ' were not classified — acknowledge the full count, do not pretend each one was inspected' : ''}]`
     userText = userText
-      ? `${userText}\n\n[Customer sent a photo]\n[VISION CHECK: appears to be a ${photoClass}]`
-      : `[Customer sent a photo]\n[VISION CHECK: appears to be a ${photoClass}]`
+      ? `${userText}\n\n[Customer sent ${photoCountLabel}]\n${visionLabel}`
+      : `[Customer sent ${photoCountLabel}]\n${visionLabel}`
   } else {
     userText = userText
   }
