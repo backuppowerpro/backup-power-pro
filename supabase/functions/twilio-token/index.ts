@@ -109,13 +109,21 @@ async function generateAccessToken(identity: string): Promise<{ token: string; e
   return { token: `${signingInput}.${sigB64}`, expires: exp }
 }
 
-import { requireAnonOrServiceRole } from '../_shared/auth.ts'
+import { requireAnonOrServiceRole, allowRate } from '../_shared/auth.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
   // Without this, any internet caller can mint a 1-hour Voice JWT and
   // place/receive PSTN calls on Key's Twilio account.
   const gate = requireAnonOrServiceRole(req); if (gate) return gate
+  // Apr 27 audit (HIGH-2): cap token mints at 5/min per IP. The CRM only
+  // mints one per session-start; legitimate use never hits this. Stops a
+  // leaked publishable-key holder from minting unlimited Voice JWTs (each
+  // can dial outbound + receive Key's incoming calls on the SDK side).
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!allowRate(`twilio-token:${ip}`, 5)) {
+    return json(429, { error: 'rate limited' })
+  }
 
   if (!TWILIO_ACCOUNT_SID || !TWILIO_API_KEY_SID || !TWILIO_API_KEY_SECRET || !TWILIO_TWIML_APP_SID) {
     console.error('[twilio-token] missing env vars')

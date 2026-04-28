@@ -34,7 +34,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { escapeIlike, requireAnonOrServiceRole } from '../_shared/auth.ts'
+import { escapeIlike, requireAnonOrServiceRole, allowRate } from '../_shared/auth.ts'
 import { handleMemoryTool as sharedHandleMemoryTool, MEMORY_TOOL_DEF } from '../_shared/memory.ts'
 
 const CORS = {
@@ -1375,6 +1375,18 @@ Deno.serve(async (req: Request) => {
   // Require a known BPP key — prevents drive-by Opus billing exhaustion
   // + cross-contact data exfiltration via tool calls from randos.
   const gate = requireAnonOrServiceRole(req); if (gate) return gate
+
+  // Apr 27 audit (CRITICAL-2): without a rate limit, the publishable-key
+  // path here is a cost-amplifier. One request = ~$0.30 in Anthropic spend
+  // (Sonnet 4.6 × ~50K cached + 3K output × up to 8 agentic loops). Per-IP
+  // 30/min is plenty for Key (Sparky chat is single-user) and caps an
+  // attacker's spend at ~$540/hr instead of unbounded. Per-IP per-day cap
+  // of MAX_AGENTIC_LOOPS exposure (~$30/hr) is layered separately by the
+  // existing MAX_AGENTIC_LOOPS=8 ceiling per-call.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!allowRate(`taskmaster:${ip}`, 30)) {
+    return jsonResp({ error: 'rate limited (30/min)' }, 429)
+  }
 
   let body: any = {}
   try { body = await req.json() } catch {

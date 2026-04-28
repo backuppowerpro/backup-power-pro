@@ -27,7 +27,7 @@
  * status='failed' so the CRM thread always reflects what was attempted.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { requireAnonOrServiceRole } from '../_shared/auth.ts'
+import { requireAnonOrServiceRole, allowRate } from '../_shared/auth.ts'
 
 // ── TWILIO CONFIG ──────────────────────────────────────────────────────────────
 const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
@@ -55,6 +55,16 @@ Deno.serve(async (req) => {
   // Without this, any internet caller can fire SMS on Key's Twilio bill.
   const gate = requireAnonOrServiceRole(req); if (gate) return gate
 
+  // Apr 27 audit (HIGH-1): rate limit the SMS path — without it a leaked
+  // publishable key could be weaponized to spam Key's customers (each
+  // request is a $0.008-0.02 Twilio bill). Per-IP 30/min, plus per-contact
+  // 5/min — the per-contact cap is the meaningful one because it limits
+  // how badly any one customer can be harassed before the gate trips.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!allowRate(`send-sms:${ip}`, 30)) {
+    return json(429, { success: false, error: 'rate limited (30/min)' })
+  }
+
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM) {
     console.error('[send-sms] missing Twilio env vars')
     return json(500, { success: false, error: 'twilio not configured' })
@@ -74,6 +84,13 @@ Deno.serve(async (req) => {
   if (!contactId)           return json(400, { success: false, error: 'contactId required' })
   if (!body && !mediaUrl)   return json(400, { success: false, error: 'body or mediaUrl required' })
   if (body.length > 1600)   return json(400, { success: false, error: 'body exceeds 1600 chars' })
+
+  // Per-contact cap (Apr 27): caps any one customer's harassability at
+  // 5 SMS/min, even if the IP cap was bypassed via a botnet. The IP cap
+  // limits the attacker; this cap protects each individual customer.
+  if (!allowRate(`send-sms:contact:${contactId}`, 5)) {
+    return json(429, { success: false, error: 'rate limited per contact (5/min)' })
+  }
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,

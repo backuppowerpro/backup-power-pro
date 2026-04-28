@@ -1882,9 +1882,76 @@ export function containsPricing(text: string): boolean {
 // Patterns are anchored to the START of the message OR to a paragraph break,
 // because these always appear at the top of a leaked reasoning paragraph
 // before the actual customer-facing reply.
-const META_LEAK_RX = /(^|\n\s*)(?:I\s+need\s+to\s+(?:see|evaluate|check|verify|look\s+at|set\s+a\s+reminder|recognize|think|consider|figure\s+out)|I\s+should\s+(?:send|set|think|recognize|note|acknowledge\s+that)|Actually,?\s+looking\s+at\s+(?:the|this)|Let\s+me\s+(?:check|see|verify|evaluate|look\s+at|think|pull\s+up|find\s+out|not\s+assume)|Looking\s+at\s+(?:the|this)\s+(?:conversation|history|briefing|context)|Based\s+on\s+(?:the|my)\s+(?:briefing|instructions|system\s+prompt|memory|context|conversation)|Per\s+the\s+(?:pitfalls|briefing|memory|playbook|rules|system\s+prompt|reading-the-room|time-awareness)|The\s+briefing\s+shows|My\s+system\s+prompt\s+says|My\s+instructions\s+(?:say|tell\s+me)|Noted,?\s+I\s+already\s+fell|As\s+the\s+pitfalls\s+file\s+notes|Ha,?\s+ignore\s+me,?\s+talking\s+to\s+myself|Could\s+you\s+(?:please\s+)?share\s+what\s+the\s+\[INTERNAL|The\s+right\s+move\s+here\s+is|However,?\s+I\s+should)/i
+// Apr 27 audit found real production leaks the prior regex didn't catch:
+//   "The briefing has 'X' as the name. That's suspicious…"
+//   "Hmm, the system says no panel photo received yet even though the memory shows…"
+//   "Now let me review the briefing carefully. This is a returning lead with quite a bit already collected: - Name:… - Email:… - Address:…"
+// Expanded with: "the briefing has", "the system says", "the memory shows",
+// "now let me review", "let me adjust my approach", "Hmm,", any colon-list
+// pattern with Name:/Email:/Address: keywords, "potential injection",
+// "test data", "skip using the first name", "no-name version", and any
+// occurrence of the words [INTERNAL BRIEFING] or [VISION CHECK in body.
+const META_LEAK_RX = /(^|\n\s*)(?:I\s+need\s+to\s+(?:see|evaluate|check|verify|look\s+at|set\s+a\s+reminder|recognize|think|consider|figure\s+out)|I\s+should\s+(?:send|set|think|recognize|note|acknowledge\s+that|skip|use)|Actually,?\s+looking\s+at\s+(?:the|this)|Let\s+me\s+(?:check|see|verify|evaluate|look\s+at|think|pull\s+up|find\s+out|not\s+assume|adjust|review|re-engage|figure)|Looking\s+at\s+(?:the|this)\s+(?:conversation|history|briefing|context)|Based\s+on\s+(?:the|my)\s+(?:briefing|instructions|system\s+prompt|memory|context|conversation)|Per\s+the\s+(?:pitfalls|briefing|memory|playbook|rules|system\s+prompt|reading-the-room|time-awareness)|The\s+briefing\s+(?:shows|has|says|references)|The\s+system\s+(?:says|shows|considers)|The\s+memory\s+(?:shows|references|has)|My\s+system\s+prompt\s+says|My\s+instructions\s+(?:say|tell\s+me)|Noted,?\s+I\s+already\s+fell|As\s+the\s+pitfalls\s+file\s+notes|Ha,?\s+ignore\s+me,?\s+talking\s+to\s+myself|Could\s+you\s+(?:please\s+)?share\s+what\s+the\s+\[INTERNAL|The\s+right\s+move\s+here\s+is|However,?\s+I\s+should|Hmm,?\s+(?:the|let|looking)|Now\s+let\s+me\s+(?:review|adjust|consider)|That's\s+suspicious|potential\s+injection|test\s+data|no-name\s+version|skip\s+using\s+the\s+first\s+name|on\s+file\)|Let\s+me\s+adjust\s+my\s+approach)/i
+
+// Bracket-tag leak: any [INTERNAL …], [VISION CHECK…], [briefing], etc.
+// in the body almost certainly means a system tag bled into the reply.
+const META_TAG_RX = /\[(?:INTERNAL\s+BRIEFING|VISION\s+CHECK|MEMORY|SYSTEM|BRIEF|CONTEXT|TOOL_USE|tool_use|RAW)/i
+
+// Colon-list of fact labels (Name: / Email: / Address: / Phone:) inside an
+// outbound — virtually always a briefing being read aloud, not a customer
+// reply. Real customers don't text "- Name: foo - Email: bar - Address: baz".
+const META_FACT_LIST_RX = /(?:^|\n)\s*[-•*]\s*(?:Name|Email|Address|Phone|Stage|Days?\s+in\s+system|Jurisdiction|Permit|Materials|Notes)\s*:/i
 export function containsMetaLeak(text: string): boolean {
-  return META_LEAK_RX.test(text)
+  if (!text) return false
+  return META_LEAK_RX.test(text) || META_TAG_RX.test(text) || META_FACT_LIST_RX.test(text)
+}
+
+// Cross-customer PII contamination (Apr 27 audit) — scan the proposed
+// reply for any phone, email, or address belonging to a contact OTHER
+// than the recipient. One real production leak read another customer's
+// full Name + Email + Home Address in a message to a different person.
+// We can't know all PII at parse time, so this pulls a quick fingerprint
+// from the contacts table and intersects.
+async function containsForeignPII(
+  supabase: any,
+  recipientPhone: string,
+  text: string,
+): Promise<{ leaked: boolean; matchedField?: string; matchedValue?: string }> {
+  if (!text) return { leaked: false }
+  // Fast fingerprints we can extract from the body
+  const body = text.toLowerCase()
+  const recipDigits = (recipientPhone || '').replace(/\D/g, '').slice(-10)
+  // Pull every contact's last-10 phone digits + email + first chunk of address
+  // Cap at 1000 contacts — beyond that this is too expensive to do per-send.
+  const { data: rows } = await supabase
+    .from('contacts')
+    .select('id, name, phone, email, address')
+    .limit(1000)
+  if (!rows) return { leaked: false }
+  for (const c of rows) {
+    const cDigits = (c.phone || '').replace(/\D/g, '').slice(-10)
+    if (cDigits && cDigits === recipDigits) continue // recipient themself — fine
+    if (cDigits && cDigits.length === 10) {
+      // Check for either bare 10-digit or formatted variants of this number
+      if (body.includes(cDigits)) return { leaked: true, matchedField: 'phone', matchedValue: cDigits }
+      const formatted = `(${cDigits.slice(0,3)}) ${cDigits.slice(3,6)}-${cDigits.slice(6)}`.toLowerCase()
+      if (body.includes(formatted)) return { leaked: true, matchedField: 'phone', matchedValue: formatted }
+    }
+    if (c.email && c.email.length > 4) {
+      const e = String(c.email).toLowerCase().trim()
+      if (body.includes(e)) return { leaked: true, matchedField: 'email', matchedValue: e }
+    }
+    if (c.address && String(c.address).length > 8) {
+      // Only flag on the street number + first word fragment to avoid false
+      // positives on common city names appearing organically in conversation.
+      const m = String(c.address).match(/^\s*(\d{1,6}\s+[A-Za-z][A-Za-z'.-]*)/)
+      if (m) {
+        const frag = m[1].toLowerCase()
+        if (body.includes(frag)) return { leaked: true, matchedField: 'address', matchedValue: frag }
+      }
+    }
+  }
+  return { leaked: false }
 }
 
 // When meta-commentary leaks, the safest move is NOT to send a partial reply
@@ -2132,11 +2199,91 @@ async function applyShadow(
   return draft
 }
 
+// ── UNIVERSAL OUTBOUND SAFETY GATE (Apr 27 audit, CRITICAL-3) ────────────
+// Every customer-facing send funnels through sendQuoMessage. This gate sits
+// at the top so opener / RETEST / main reply / follow-up / ghost / opt-out
+// confirmations ALL get checked the same way. If anything looks like leaked
+// internal monologue OR cross-customer PII, we BLOCK the send, log it,
+// alert Key via sparky_inbox, and persist a 'blocked' message in the
+// thread so Key sees the near-miss in his CRM.
+//
+// The two pre-existing layers (cleanSms + applyShadow) only ran on some
+// paths and depended on regex/mode. This gate is universal + adds:
+//   - Hard block on bracket-tags ([INTERNAL BRIEFING], [VISION CHECK]) and
+//     fact-list patterns ("- Name: x  - Email: y").
+//   - Foreign-PII scan: cross-checks the body against contacts.phone /
+//     email / street-fragment for ANY contact that isn't the recipient.
+//
+// Hardcoded TCPA/STOP confirmation strings start with "Backup Power Pro:"
+// — those are pre-cleared and skip the gate so we don't false-positive on
+// the literal "Backup Power Pro" brand name appearing in our own copy.
+async function safetyGateOrLog(
+  to: string,
+  content: string,
+): Promise<{ ok: true } | { ok: false; reason: string; matched?: string }> {
+  // Pre-cleared canonical strings — only the exact opt-out / help-request
+  // confirmations whitelist through.
+  if (/^Backup Power Pro: (Generator connection installs|You're unsubscribed)/.test(content)) {
+    return { ok: true }
+  }
+  // Layer 1: regex-based monologue / tag / fact-list detection
+  if (META_LEAK_RX.test(content)) return { ok: false, reason: 'meta_leak_regex' }
+  if (META_TAG_RX.test(content))  return { ok: false, reason: 'meta_tag_regex', matched: (content.match(META_TAG_RX) || [])[0] }
+  if (META_FACT_LIST_RX.test(content)) return { ok: false, reason: 'fact_list_regex', matched: (content.match(META_FACT_LIST_RX) || [])[0] }
+  // Layer 2: foreign-PII scan — block any other-contact phone/email/address
+  try {
+    const sb = db()
+    const piiCheck = await containsForeignPII(sb, to, content)
+    if (piiCheck.leaked) {
+      return { ok: false, reason: 'cross_customer_pii', matched: `${piiCheck.matchedField}=${piiCheck.matchedValue}` }
+    }
+  } catch (e) {
+    console.error('[safety] foreign-PII check failed (allow-through):', e)
+  }
+  return { ok: true }
+}
+
 // Persists the outbound row to the `messages` table after a successful send so
 // the CRM thread shows what Alex said. Prior versions of alex-agent only updated
 // alex_sessions.messages (its internal transcript), which left the CRM inbox
 // blank for the entire Alex conversation.
 async function sendQuoMessage(to: string, content: string): Promise<boolean> {
+  // ── SAFETY GATE ── universal — blocks meta-leaks + cross-customer PII
+  const gate = await safetyGateOrLog(to, content)
+  if (!gate.ok) {
+    console.error(`[alex] BLOCKED outbound — reason=${gate.reason} matched=${(gate as any).matched || ''} preview="${content.slice(0, 80)}"`)
+    try {
+      const sb = db()
+      // Log the blocked attempt to the contact's thread so Key sees it
+      // appeared in the CRM inbox even if the customer didn't get it.
+      const { data: matchedContact } = await sb
+        .from('contacts').select('id, name, phone').eq('phone', to).limit(1).maybeSingle()
+      if (matchedContact?.id) {
+        await sb.from('messages').insert({
+          contact_id: matchedContact.id,
+          direction: 'outbound',
+          body: `[BLOCKED — ${gate.reason}] ${content.slice(0, 200)}`,
+          sender: 'ai',
+          status: 'blocked',
+        })
+        // Sparky inbox notification — high-priority, Key needs to know an
+        // outbound got blocked so he can manually reply if needed.
+        await sb.from('sparky_inbox').insert({
+          contact_id: matchedContact.id,
+          source: 'alex',
+          target: 'key',
+          tag: 'safety_block',
+          priority: 'urgent',
+          summary: `Alex draft to ${matchedContact.name || to} was BLOCKED by safety gate (${gate.reason}). Customer received nothing — review and respond manually.`,
+          draft_reply: content.slice(0, 600),
+        })
+      }
+    } catch (e) {
+      console.error('[alex] failed to log/inbox the block:', e)
+    }
+    return false
+  }
+
   let quoMsgId: string | null = null
   // Dry-run path for smoke tests — skip the real Quo API call so no SMS
   // actually leaves the system, but still persist to messages table below

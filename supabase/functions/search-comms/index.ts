@@ -8,7 +8,7 @@
  * Auth: uses service role key — caller must be authenticated (CRM anon key validated via header)
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { requireAnonOrServiceRole, escapeIlike } from '../_shared/auth.ts'
+import { requireServiceRole, escapeIlike, allowRate } from '../_shared/auth.ts'
 
 function stripHtml(s: string): string {
   return (s || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -57,10 +57,24 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Validate — constant-time match of the publishable or service role key.
-  // The previous `.includes(ANON_KEY.slice(-20))` check accepted any
-  // string containing those last-20 chars, which wasn't really auth.
-  { const gate = requireAnonOrServiceRole(req); if (gate) return gate; }
+  // Apr 27 audit (CRITICAL-1): publishable-key auth is not meaningful here
+  // because the publishable key ships in every public landing page —
+  // anyone could pull it and harvest customer PII (name, phone, status,
+  // body) at scale. Promoting to requireServiceRole. The CRM v2 client
+  // already proxies search-comms through a session-bound flow when
+  // needed; if that breaks, the right fix is a CRM-server bridge, not
+  // re-opening this endpoint to anon.
+  { const gate = requireServiceRole(req); if (gate) return gate; }
+  // Per-IP rate limit — 30/min — defends against any future bridge that
+  // opens the door wider, plus stops a leaked SR token from being
+  // weaponized for a quick-grab.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!allowRate(`search-comms:${ip}`, 30)) {
+    return new Response(JSON.stringify({ error: 'rate limited' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    })
+  }
 
   const url   = new URL(req.url)
   const query = (url.searchParams.get('q') || '').trim()
