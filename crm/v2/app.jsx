@@ -2587,12 +2587,32 @@ function InstallBriefModal({ contact, onClose }) {
   );
 }
 
-function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
+function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab, onAskSparky }) {
   const [contact, setContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [outstandingBalance, setOutstandingBalance] = useState(0);
   const [alexSession, setAlexSession] = useState(null);
   const [duplicates, setDuplicates] = useState([]); // other contacts with same phone
+
+  // Sparky has-something-to-say signal for the header button highlight.
+  // Same conditions the retired SmartNextActionHint used: customer waiting,
+  // install in next 72h, permit in flight, inspection window, outstanding
+  // balance, DNC. If any is true → ring the button gold + add a dot.
+  const sparkyHighlight = React.useMemo(() => {
+    if (!contact) return false;
+    if (contact.do_not_contact) return true;
+    const stage = contact.stage || 1;
+    const latest = Array.isArray(messages) && messages.length ? messages[messages.length - 1] : null;
+    const customerWaiting = latest && latest.direction === 'inbound' && latest.sender !== 'ai';
+    if (customerWaiting) return true;
+    if (contact.install_date) {
+      const hours = (new Date(contact.install_date).getTime() - Date.now()) / 3600000;
+      if (hours >= 0 && hours <= 72) return true;
+    }
+    if (stage >= 4 && stage <= 8) return true;
+    if (Number(outstandingBalance) > 0) return true;
+    return false;
+  }, [contact, messages, outstandingBalance]);
   const [loading, setLoading] = useState(true);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
@@ -2969,11 +2989,52 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
             ) : null}
           </div>
         </div>
-        {/* Green Call button intentionally removed — RightTabBar above the
-            panel already has a green 'Call' tab. Same for the Brief gold
-            pill that used to live in the stage strip below. The header is
-            now just identity (avatar + name + phone/address) so a new hire
-            isn't staring at three places to start a call. */}
+        {/* Ask Sparky — circular button on the right edge, opposite the
+            avatar. Replaces the old in-line "smart hint" box that took up
+            ~80px of vertical space below the header (Apr 27 Key feedback:
+            "I don't want this big sparky box in the way"). Highlights with
+            a gold ring when there's an actionable signal on this contact
+            (customer waiting, install imminent, permit in flight, balance
+            due). Click swaps the right-pane content to a contact-scoped
+            Sparky chat — back button returns to the contact detail. */}
+        {onAskSparky ? (
+          <button
+            onClick={onAskSparky}
+            aria-label="Ask Sparky about this contact"
+            title="Ask Sparky about this contact"
+            style={{
+              width: 38, height: 38, flex: '0 0 auto',
+              display: 'grid', placeItems: 'center',
+              background: sparkyHighlight ? 'color-mix(in srgb, var(--gold) 18%, var(--card))' : 'var(--card)',
+              boxShadow: sparkyHighlight
+                ? '0 0 0 2px var(--gold), var(--ring)'
+                : 'var(--ring)',
+              border: 0, cursor: 'pointer',
+              borderRadius: '50%',
+              color: sparkyHighlight ? 'var(--gold)' : 'var(--text-muted)',
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+              transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease), color var(--dur) var(--ease)',
+              position: 'relative',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = sparkyHighlight ? 'color-mix(in srgb, var(--gold) 28%, var(--card))' : 'var(--sunken)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = sparkyHighlight ? 'color-mix(in srgb, var(--gold) 18%, var(--card))' : 'var(--card)'; }}
+          >
+            {/* Spark glyph — small lightning bolt */}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M13 2 L4 14 H11 L10 22 L20 9 H13 L13 2 Z"/>
+            </svg>
+            {sparkyHighlight ? (
+              <span aria-hidden="true" style={{
+                position: 'absolute',
+                top: 4, right: 4,
+                width: 8, height: 8,
+                background: 'var(--gold)',
+                borderRadius: '50%',
+                boxShadow: '0 0 0 2px var(--card)',
+              }} />
+            ) : null}
+          </button>
+        ) : null}
       </div>
 
       {/* One combined status row: Stage button + Tier pill + Snooze button.
@@ -3109,20 +3170,11 @@ function LiveContactDetail({ contactId, onBack, mobile = false, defaultTab }) {
           the pattern (Key 2026-04-21: mobile is the same serialized — left
           view by default, click into right view with a back button). */}
 
-      {/* Smart Contact Detail: next-best-action hint. One-line prompt at
-          the top of the panel that Sparky-style suggests the single most
-          useful action Key should take with this contact right now. Reads
-          the same signals the Smart List uses (waiting, stuck quote,
-          install imminent, etc.) + the Alex session state. */}
-      {!loading && contact ? (
-        <SmartNextActionHint
-          contact={contact}
-          messages={messages}
-          outstandingBalance={outstandingBalance}
-          onJumpTab={(t) => { setDetailTab(t); setManualTabContactId(contactId); window.dispatchEvent(new CustomEvent('bpp:detail-tab-changed', { detail: { tab: t } })); }}
-          onOpenQuickQuote={() => window.dispatchEvent(new CustomEvent('bpp:open-quick-quote'))}
-        />
-      ) : null}
+      {/* SmartNextActionHint retired Apr 27 — Key flagged the box as taking
+          up too much vertical space. Same signal now lives on the circular
+          Sparky button in the header (highlights gold + dot when there's
+          an actionable suggestion). Click swaps the right pane to a
+          contact-scoped Sparky chat for the full reasoning + quick asks. */}
 
       {/* Tab content */}
       {detailTab === 'MESSAGES' ? (
@@ -11182,7 +11234,7 @@ function AgentsInboxStrip() {
   );
 }
 
-function LiveSparky({ currentContactId = null }) {
+function LiveSparky({ currentContactId = null, onBack = null }) {
   const [messages, setMessages] = useState([
     { who: 'sparky', text: "Standing by. Ask anything about the pipeline, a lead, or tell me what to draft." },
   ]);
@@ -11292,6 +11344,37 @@ function LiveSparky({ currentContactId = null }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Back-to-contact strip — only visible when entered via the contact
+          detail's circular Sparky button. Mirrors the visual register of
+          other secondary nav: subtle row with a back chevron + the contact
+          name, click returns to the contact detail. */}
+      {onBack && currentContactName ? (
+        <button
+          onClick={onBack}
+          aria-label={`Back to ${currentContactName}`}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '12px 16px',
+            background: 'var(--card)',
+            border: 'none', borderBottom: '1px solid var(--divider-faint)',
+            cursor: 'pointer', textAlign: 'left',
+            fontFamily: 'var(--font-body)', fontSize: 12.5,
+            color: 'var(--text-muted)',
+            transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+        >
+          <span aria-hidden="true" style={{
+            display: 'inline-grid', placeItems: 'center',
+            width: 22, height: 22,
+            background: 'var(--sunken)',
+            borderRadius: '50%',
+            fontSize: 14, lineHeight: 1, fontWeight: 700,
+          }}>‹</span>
+          <span style={{ fontWeight: 500 }}>Back to <span style={{ color: 'var(--text)', fontWeight: 700 }}>{currentContactName}</span></span>
+        </button>
+      ) : null}
       {/* Agents inbox — Alex / permit-check / pipeline / brief notifications
           that need Key's eyes. Hidden when empty so it doesn't waste space. */}
       <AgentsInboxStrip />
@@ -12508,6 +12591,13 @@ function App() {
   })();
   const [tab, setTab] = useState(initial.tab);
   const [selectedContact, setSelectedContact] = useState(initial.contact);
+  // When set, the right pane swaps from contact detail → Sparky scoped to
+  // that contact. The back button on Sparky clears this and we land back
+  // on the contact detail with the same tab still selected.
+  const [sparkyForContact, setSparkyForContact] = useState(null);
+  // If the user closes the contact, also drop any Sparky-scope state so we
+  // don't return to a stale contact-scoped Sparky next time.
+  useEffect(() => { if (!selectedContact) setSparkyForContact(null); }, [selectedContact]);
   // Redirect desktop-only tabs → QUICK on mobile so stale deep links or
   // a user who resized down to phone width don't land on a mangled layout.
   useEffect(() => {
@@ -13298,11 +13388,23 @@ function App() {
             display: 'flex', flexDirection: 'column',
             background: 'var(--card)',
           }}>
-            {selectedContact ? (
+            {sparkyForContact && selectedContact ? (
+              // Contact-scoped Sparky — clicked the spark button on a
+              // contact's detail header. Sparky knows which contact this
+              // is (currentContactId) so quick-prompts and references land
+              // pre-loaded. Back button returns to the contact detail.
+              <ErrorBoundary label="SPARKY (CONTACT-SCOPED)">
+                <LiveSparky
+                  currentContactId={selectedContact}
+                  onBack={() => setSparkyForContact(null)}
+                />
+              </ErrorBoundary>
+            ) : selectedContact ? (
               <ErrorBoundary label="CONTACT DETAIL">
                 <LiveContactDetail
                   contactId={selectedContact}
                   onBack={() => setSelectedContact(null)}
+                  onAskSparky={() => setSparkyForContact(selectedContact)}
                   mobile={false}
                   defaultTab={(() => {
                     // One-shot override wins (e.g. Quick List STUCK QUOTES
@@ -13351,13 +13453,23 @@ function App() {
               compact={true}
             />
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              <ErrorBoundary label="CONTACT DETAIL">
-                <LiveContactDetail
-                  contactId={selectedContact}
-                  onBack={() => setSelectedContact(null)}
-                  mobile={true}
-                />
-              </ErrorBoundary>
+              {sparkyForContact && selectedContact ? (
+                <ErrorBoundary label="SPARKY (CONTACT-SCOPED, MOBILE)">
+                  <LiveSparky
+                    currentContactId={selectedContact}
+                    onBack={() => setSparkyForContact(null)}
+                  />
+                </ErrorBoundary>
+              ) : (
+                <ErrorBoundary label="CONTACT DETAIL">
+                  <LiveContactDetail
+                    contactId={selectedContact}
+                    onBack={() => setSelectedContact(null)}
+                    onAskSparky={() => setSparkyForContact(selectedContact)}
+                    mobile={true}
+                  />
+                </ErrorBoundary>
+              )}
             </div>
           </div>
         ) : null}
