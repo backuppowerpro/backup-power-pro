@@ -11325,6 +11325,35 @@ function LiveSparky({ currentContactId = null, onBack = null }) {
       if (error) throw error;
       const reply = (data?.answer || data?.response || data?.message || data?.text || JSON.stringify(data)).toString();
       setMessages(prev => [...prev, { who: 'sparky', text: reply }]);
+
+      // ── CRM-control tool dispatch (Apr 27 — Phase 1) ────────────────
+      // Sparky returns navigation/preference tool_calls in `data.tool_calls`.
+      // Dispatch each as a CustomEvent so the App-level state handlers
+      // (which already listen for bpp:* events) can react. Phase 1 tools:
+      // set_dark_mode, set_main_tab, open_contact. Per Key's safety rule
+      // (no deletes), this dispatcher will silently skip any tool name
+      // beginning with delete_, archive_, or mark_dnc.
+      const toolCalls = Array.isArray(data?.tool_calls) ? data.tool_calls : [];
+      for (const tc of toolCalls) {
+        const name = tc?.name || '';
+        const inputObj = tc?.input || {};
+        if (/^(delete_|archive_|mark_dnc)/.test(name)) {
+          console.warn('[sparky] refusing destructive tool:', name);
+          continue;
+        }
+        if (name === 'set_dark_mode') {
+          window.dispatchEvent(new CustomEvent('bpp:sparky-set-dark', { detail: { enabled: !!inputObj.enabled } }));
+        } else if (name === 'set_main_tab') {
+          const allowed = new Set(['quick','calendar','messages','calls','proposals','invoices','permits','materials','finance','playbook']);
+          if (allowed.has(String(inputObj.tab))) {
+            window.dispatchEvent(new CustomEvent('bpp:sparky-set-tab', { detail: { tab: inputObj.tab } }));
+          }
+        } else if (name === 'open_contact') {
+          if (inputObj.contactId && typeof inputObj.contactId === 'string') {
+            window.dispatchEvent(new CustomEvent('bpp:sparky-open-contact', { detail: { contactId: inputObj.contactId } }));
+          }
+        }
+      }
     } catch (e) {
       setMessages(prev => [...prev, { who: 'sparky', text: `Error: ${e.message || 'something went wrong'}` }]);
     } finally {
@@ -12650,6 +12679,29 @@ function App() {
     document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
     localStorage.setItem('bpp_v2_theme', isDark ? 'dark' : 'light');
   }, [isDark]);
+
+  // ── Sparky CRM-control event listeners (Apr 27 — Phase 1) ─────────────
+  // Sparky drives these by emitting bpp:sparky-* CustomEvents in its tool
+  // dispatcher. Each listener is bound at the App level so any Sparky chat
+  // (general or contact-scoped) can trigger UI changes without prop drill.
+  // Per Key's hard rule: NEVER react to a destructive event — the dispatcher
+  // already filters those, but if anything slips through, no listener acts.
+  useEffect(() => {
+    const onDark = (e) => { if (typeof e.detail?.enabled === 'boolean') setIsDark(e.detail.enabled); };
+    const onTab  = (e) => { if (e.detail?.tab) setTab(e.detail.tab); };
+    const onOpen = (e) => {
+      const id = e.detail?.contactId;
+      if (typeof id === 'string' && id.length >= 8) setSelectedContact(id);
+    };
+    window.addEventListener('bpp:sparky-set-dark', onDark);
+    window.addEventListener('bpp:sparky-set-tab', onTab);
+    window.addEventListener('bpp:sparky-open-contact', onOpen);
+    return () => {
+      window.removeEventListener('bpp:sparky-set-dark', onDark);
+      window.removeEventListener('bpp:sparky-set-tab', onTab);
+      window.removeEventListener('bpp:sparky-open-contact', onOpen);
+    };
+  }, []);
 
   // Keep URL hash in sync so reload preserves tab + selected contact.
   // QUICK is the default landing, so no ?tab= param means QUICK.

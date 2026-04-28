@@ -54,6 +54,7 @@ const SERVER_SIDE_TOOLS = new Set([
   'write_sparky_memory',
   'edit_contact',
   'start_permit_agent',
+  'find_top_jobs_by_value',  // CRM-control read tool (Apr 27)
   'memory',  // Anthropic memory_20250818 — always server-side
 ])
 
@@ -207,6 +208,13 @@ When Key asks about a contact: use lookup_contact or get_contact_history FIRST, 
 When Key asks "what needs attention?" / "who should I text?" / "what's urgent?": call search_all_contacts with min_days_quiet filter, identify top 2–3 most urgent, immediately draft SMS for each with send_sms_to_contact. Key confirms before each sends.
 When you learn Key's preferences: write_sparky_memory.
 When you start a substantive chat: call read_sparky_memory first to load Key's context.
+
+CRM CONTROL — you can drive the UI directly. Call these tools when Key's intent is naturally a UI action:
+- "turn dark mode on" / "lights off" / "go light" → set_dark_mode
+- "open finance" / "show me the calendar" / "go to permits" → set_main_tab
+- "open Jennifer Walshe" / "pull up John" → first lookup_contact, then open_contact with the returned id
+- "what was my biggest paid job?" / "most profitable customer?" → find_top_jobs_by_value, then summarize. Mention the caveat (cost not yet tracked, this is gross paid). If Key wants details, follow with open_contact on the top one.
+NEVER call delete/archive/DNC tools — those don't exist by design. If Key asks to delete something, tell him "I can't delete data — open the row and do it manually." (We chose this for safety; never override.)
 
 NEVER report a problem without executing the solution:
 - Stalled lead → draft the SMS with send_sms_to_contact. Key confirms.
@@ -564,6 +572,60 @@ const ALL_TOOLS: any[] = [
         goal: { type: 'string', description: 'What we want from this interaction (qualify, book, close, handle objection).', enum: ['qualify', 'book', 'close', 'handle_objection', 'confirm'] },
       },
       required: ['contactId', 'context'],
+    },
+  },
+
+  // ── CRM CONTROL: client-side UI tools (Apr 27) ─────────────────────────
+  // Sparky drives the UI directly. Client receives these in tool_calls and
+  // executes via the SparkyToolDispatcher in app.jsx. None of these mutate
+  // customer data — they're navigation + preference toggles.
+  {
+    name: 'set_dark_mode',
+    description: 'Toggle the CRM dark mode. Use when Key asks "turn night mode on", "switch to dark mode", "lights off", "go light", etc. Always call this directly — no confirmation needed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean', description: 'true → dark mode, false → light mode.' },
+      },
+      required: ['enabled'],
+    },
+  },
+  {
+    name: 'set_main_tab',
+    description: 'Switch the left-side main tab. Use when Key asks to "go to finance", "show me the calendar", "open permits", etc. Doesn\'t change the right pane (contact detail or Sparky stays as-is).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        tab: {
+          type: 'string',
+          description: 'Tab id.',
+          enum: ['quick','calendar','messages','calls','proposals','invoices','permits','materials','finance','playbook'],
+        },
+      },
+      required: ['tab'],
+    },
+  },
+  {
+    name: 'open_contact',
+    description: 'Open a contact in the right pane. Use after find_top_jobs_by_value, search_all_contacts, or lookup_contact when Key says "open them" / "show me that contact" / "pull up X". Never call this without first having the contact UUID from a search/lookup tool.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactId: { type: 'string', description: 'Contact UUID returned by a search/lookup tool.' },
+      },
+      required: ['contactId'],
+    },
+  },
+
+  // ── CRM CONTROL: server-side data tools (Apr 27) ───────────────────────
+  {
+    name: 'find_top_jobs_by_value',
+    description: 'Find the top N highest-paid invoices ("most profitable jobs"). Cost tracking is not yet wired, so this returns top by paid AMOUNT — caveat that to Key in the answer ("by paid amount, not net profit, since costs aren\'t tracked yet"). Returns contact name, paid amount, paid_at, install date, and contact_id (use with open_contact).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        n: { type: 'integer', description: 'How many to return (default 5, max 25).', default: 5, minimum: 1, maximum: 25 },
+      },
     },
   },
 ]
@@ -1075,6 +1137,53 @@ async function executeTool(name: string, input: any, supabase: any): Promise<any
         return {
           status: 'stub',
           message: 'Alex/Sparky merger pending Quo port to Twilio. Use suggest_reply mode for now — it already handles customer-facing SMS drafting.',
+        }
+      }
+
+      case 'find_top_jobs_by_value': {
+        const n = Math.max(1, Math.min(25, Number(input?.n) || 5))
+        // Sum paid invoices per contact. We don't yet track cost, so this
+        // ranks by gross paid amount — Sparky must caveat that in its answer.
+        const { data: rows, error } = await supabase
+          .from('invoices')
+          .select('contact_id, contact_name, total, paid_at, status')
+          .eq('status', 'paid')
+          .not('contact_id', 'is', null)
+        if (error) return { error: 'invoice query failed: ' + error.message }
+        // Aggregate by contact_id
+        const byContact: Record<string, { contact_id: string; contact_name: string | null; total_paid: number; first_paid_at: string | null; last_paid_at: string | null; invoice_count: number }> = {}
+        for (const r of rows || []) {
+          const id = r.contact_id as string
+          if (!id) continue
+          const tot = Number(r.total) || 0
+          if (!byContact[id]) {
+            byContact[id] = {
+              contact_id: id,
+              contact_name: r.contact_name || null,
+              total_paid: 0,
+              first_paid_at: null,
+              last_paid_at: null,
+              invoice_count: 0,
+            }
+          }
+          byContact[id].total_paid += tot
+          byContact[id].invoice_count += 1
+          if (r.paid_at) {
+            if (!byContact[id].first_paid_at || r.paid_at < byContact[id].first_paid_at) byContact[id].first_paid_at = r.paid_at
+            if (!byContact[id].last_paid_at || r.paid_at > byContact[id].last_paid_at) byContact[id].last_paid_at = r.paid_at
+          }
+        }
+        const sorted = Object.values(byContact).sort((a, b) => b.total_paid - a.total_paid).slice(0, n)
+        return {
+          jobs: sorted.map(j => ({
+            contact_id: j.contact_id,
+            contact_name: j.contact_name || '(unnamed)',
+            total_paid: j.total_paid,
+            invoice_count: j.invoice_count,
+            last_paid_at: j.last_paid_at,
+          })),
+          count: sorted.length,
+          caveat: 'Ranked by gross paid amount. Net profit unavailable — cost tracking not yet wired.',
         }
       }
 
