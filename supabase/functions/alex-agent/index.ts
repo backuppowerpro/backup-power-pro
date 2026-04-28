@@ -1947,13 +1947,20 @@ const META_LEAK_RX = /(^|\n\s*)(?:I\s+need\s+to\s+(?:see|evaluate|check|verify|l
 // in the body almost certainly means a system tag bled into the reply.
 const META_TAG_RX = /\[(?:INTERNAL\s+BRIEFING|VISION\s+CHECK|MEMORY|SYSTEM|BRIEF|CONTEXT|TOOL_USE|tool_use|RAW)/i
 
+// Lighthouse phrases — words that should NEVER appear in a customer-facing
+// reply because they're sales/training jargon. If any of these surface, it's
+// a meta-leak even if the rest of the sentence reads natural. Caught in the
+// 2026-04-28 dojo: Alex sent "Per pitfalls file, deflecting on direct
+// ballpark asks reads as bot-like, provide the range with proper anchoring."
+const META_LIGHTHOUSE_RX = /\b(?:pitfalls|briefing|anchoring|reads\s+as\s+bot-like|proper\s+anchoring|the\s+(?:next\s+)?ask\s+is|i\s+should\s+(?:provide|give|note|deflect|skip|continue|cover)|(?:he|she|they)'?s\s+a\s+(?:direct|cautious|skeptical|warm|emotional|chatty|terse|persistent|frustrated)\s+(?:buyer|customer|client|caller|lead|prospect)|deflecting\s+on\s+(?:direct|the)|ball\s?park\s+ask|panel.*\(likely|generator.*\(likely|pitfalls\s+file|playbook|the\s+collection\s+items?|the\s+four\s+items?)\b/i
+
 // Colon-list of fact labels (Name: / Email: / Address: / Phone:) inside an
 // outbound — virtually always a briefing being read aloud, not a customer
 // reply. Real customers don't text "- Name: foo - Email: bar - Address: baz".
 const META_FACT_LIST_RX = /(?:^|\n)\s*[-•*]\s*(?:Name|Email|Address|Phone|Stage|Days?\s+in\s+system|Jurisdiction|Permit|Materials|Notes)\s*:/i
 export function containsMetaLeak(text: string): boolean {
   if (!text) return false
-  return META_LEAK_RX.test(text) || META_TAG_RX.test(text) || META_FACT_LIST_RX.test(text)
+  return META_LEAK_RX.test(text) || META_TAG_RX.test(text) || META_FACT_LIST_RX.test(text) || META_LIGHTHOUSE_RX.test(text)
 }
 
 // Cross-customer PII contamination (Apr 27 audit) — scan the proposed
@@ -2147,14 +2154,27 @@ function cleanSms(text: string): string {
     .trim()
 
   // HARD SAFETY: if Alex generated a dollar figure despite the rule,
-  // replace the entire reply with a safe deflection. Log for audit.
-  // Variant chosen by leaked-text + minute-bucket seed so consecutive
-  // price-leak replies don't all collapse to the same string (caught by
-  // the dojo on 2026-04-28: customer ghosted after 3 identical replies).
+  // try a SURGICAL strip first — remove only the sentences containing the
+  // money word, keep the rest. Apr 28 dojo finding: when customer asked
+  // multi-topic ("permits AND cost"), full-reply replacement nuked the
+  // permit answer. Now we keep what we can. If the surgical strip leaves
+  // too little, fall back to the variant deflection.
   if (containsPricing(cleaned)) {
-    console.warn('[alex] BLOCKED price leak:', cleaned.slice(0, 200))
-    const seed = cleaned.slice(0, 40) + Date.now() + Math.random()
-    cleaned = pickPriceDeflection(seed)
+    console.warn('[alex] price-leak detected, attempting surgical strip:', cleaned.slice(0, 200))
+    // Split into sentences, drop ones with money words, recombine.
+    const sentences = cleaned.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || []
+    const kept = sentences.filter(s => !containsPricing(s))
+    const surgical = kept.join(' ').trim()
+    if (surgical.length >= 30 && !containsPricing(surgical)) {
+      // Surgical strip worked — keep the non-price sentences.
+      console.warn('[alex] surgical strip kept:', surgical.slice(0, 120))
+      cleaned = surgical
+    } else {
+      // Strip didn't leave enough — full-reply deflection.
+      const seed = cleaned.slice(0, 40) + Date.now() + Math.random()
+      cleaned = pickPriceDeflection(seed)
+      console.warn('[alex] surgical strip failed, using variant deflection')
+    }
   }
 
   // HARD SAFETY: meta-commentary / internal-monologue leak. Per the SMS-bot
@@ -2163,13 +2183,20 @@ function cleanSms(text: string): string {
   // varies per session to avoid the "same canned line 3 turns in a row"
   // failure caught in the dojo on 2026-04-28.
   if (containsMetaLeak(cleaned)) {
-    console.warn('[alex] BLOCKED meta-commentary leak:', cleaned.slice(0, 200))
-    // Seed includes Date.now() at full ms granularity so two filter
-    // deflections seconds apart still pick different variants. Apr 28
-    // dojo finding: minute-bucket was too coarse, two consecutive turns
-    // hashed to the same variant.
-    const seed = cleaned.slice(0, 40) + Date.now() + Math.random()
-    cleaned = pickDeflection(seed)
+    console.warn('[alex] meta-leak detected, attempting surgical strip:', cleaned.slice(0, 200))
+    // Same surgical-strip approach as price filter — try removing only
+    // the offending sentences first.
+    const sentences = cleaned.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || []
+    const kept = sentences.filter(s => !containsMetaLeak(s))
+    const surgical = kept.join(' ').trim()
+    if (surgical.length >= 30 && !containsMetaLeak(surgical)) {
+      console.warn('[alex] meta-leak surgical strip kept:', surgical.slice(0, 120))
+      cleaned = surgical
+    } else {
+      const seed = cleaned.slice(0, 40) + Date.now() + Math.random()
+      cleaned = pickDeflection(seed)
+      console.warn('[alex] meta-leak surgical strip failed, using variant deflection')
+    }
   }
 
   // Typographic cleanup — runs AFTER the pricing substitution so the
@@ -3633,7 +3660,13 @@ Deno.serve(async (req) => {
     }
 
     const endsWithQuestion = /\?\s*$/.test(response.trim())
-    const looksBareAck = response.trim().length < 30 || !endsWithQuestion
+    const hasAnyQuestion = /\?/.test(response)
+    // Apr 28 dojo finding: curt-mirror got "outlet 30-amp or 50-amp?" + extra
+    // ask appended because endsWithQuestion was false (question was mid-reply,
+    // not terminal). If Alex's reply has ANY question mark, it has an ask
+    // already — don't append more. Bare ack only when reply is short OR has
+    // no question at all.
+    const looksBareAck = response.trim().length < 30 || (!hasAnyQuestion && !endsWithQuestion)
     // Flag "internal-monologue" replies — anywhere Alex narrates its own
     // reasoning instead of writing the customer-facing message. Production
     // bug 2026-04-24: "Hmm, the system says no panel photo received yet
@@ -3717,14 +3750,68 @@ Deno.serve(async (req) => {
 
       let nextAsk: string | null = null
       let replaceResponse = false
-      if (!hasPhoto) {
-        nextAsk = ' Whenever you get a chance, a photo of your electrical panel with the door open is the next thing Key needs.'
-      } else if (!hasLocation) {
-        nextAsk = ' Which part of the house is that in — garage, basement, utility room, outside?'
-      } else if (!hasAddress) {
-        nextAsk = ' And the full install address — street and city?'
-      } else if (!hasOutlet) {
-        nextAsk = ' One more — is your generator\'s 240V outlet 30-amp or 50-amp? A quick pic of the outlet works too if you\'re not sure.'
+      // Variant pools — picked by hash so consecutive safety-net append
+      // events for the same lead don't drop the SAME boilerplate every
+      // time. Apr 28 dojo finding: photo-stall got "Whenever you get a
+      // chance, a photo of your electrical panel with the door open is
+      // the next thing Key needs" THREE turns in a row, even after the
+      // anti-repeat opener fix (because anti-repeat only checked the
+      // first 3 words).
+      const askSeed = fromPhone + Date.now() + Math.random()
+      let h = 0; for (let i = 0; i < askSeed.length; i++) h = ((h << 5) - h + askSeed.charCodeAt(i)) | 0
+      const pick = (arr: string[]) => arr[Math.abs(h) % arr.length]
+      // Skip the next-ask append entirely if Alex has already mentioned
+      // the same item in recent turns — otherwise nagging is guaranteed.
+      const recentAlexText = (() => {
+        let combined = ''
+        let count = 0
+        for (let i = messages.length - 1; i >= 0 && count < 3; i--) {
+          const m = messages[i]
+          if (m.role !== 'assistant') continue
+          const txt = typeof m.content === 'string' ? m.content
+            : Array.isArray(m.content) ? m.content.filter((b: any) => b?.type === 'text').map((b: any) => b?.text || '').join(' ') : ''
+          if (txt) { combined += ' ' + txt; count++ }
+        }
+        return combined.toLowerCase()
+      })()
+      const recentlyAskedPhoto    = /panel\s+(?:photo|pic|picture|image)|photo\s+of\s+(?:the\s+|your\s+)?(?:electrical\s+)?panel|snap\s+a\s+(?:pic|photo)|panel.*(?:door|breaker)/i.test(recentAlexText)
+      const recentlyAskedLocation = /panel\s+(?:in|inside|outside|garage|basement)|where\s+is\s+(?:the\s+)?panel|which\s+part\s+of\s+(?:the\s+)?house/i.test(recentAlexText)
+      const recentlyAskedAddress  = /install\s+address|full\s+address|street\s+and\s+city|address\s+for/i.test(recentAlexText)
+      const recentlyAskedOutlet   = /240v\s+outlet|30-amp\s+or\s+50-amp|outlet\s+on\s+(?:the\s+)?generator|amperage/i.test(recentAlexText)
+      if (!hasPhoto && !recentlyAskedPhoto) {
+        nextAsk = pick([
+          ' When you get a sec, snap a pic of your electrical panel with the door open and Key can put the quote together.',
+          ' All Key needs is a photo of your panel with the door open whenever you get a chance.',
+          ' If you can grab a quick pic of the panel with the door open, Key has what he needs to send the quote.',
+          ' Whenever you swing by the panel, a quick photo with the door open is the last piece for Key.',
+          ' One ask — a photo of the breaker panel with the door open and Key can lock in the quote.',
+        ])
+      } else if (!hasLocation && !recentlyAskedLocation) {
+        nextAsk = pick([
+          ' Where is the panel, garage, basement, utility room, outside?',
+          ' Quick one — what part of the house is the panel in?',
+          ' Where does the panel live, inside or outside?',
+          ' Which room is the panel in?',
+        ])
+      } else if (!hasAddress && !recentlyAskedAddress) {
+        nextAsk = pick([
+          ' And the full install address, street and city?',
+          ' What is the address for the install?',
+          ' Where is this going, full street and city?',
+          ' What address should Key plug into the schedule?',
+        ])
+      } else if (!hasOutlet && !recentlyAskedOutlet) {
+        nextAsk = pick([
+          ' Last thing — is your generator\'s 240V outlet 30-amp or 50-amp? A quick pic works too.',
+          ' Quick check — what amperage is the outlet on the generator, 30 or 50?',
+          ' Do you happen to know if the outlet on the generator is 30A or 50A? Photo of it works fine.',
+          ' One more — 30A or 50A on the generator outlet? Snapshot of it covers it.',
+        ])
+      } else if (!hasPhoto || !hasLocation || !hasAddress || !hasOutlet) {
+        // Missing items remain, but Alex already asked about each in recent
+        // turns. Skip the auto-append — better to leave Alex's bare ack than
+        // nag about something he just asked.
+        nextAsk = null
       } else {
         // Everything we need is already captured. The model should have
         // called mark_complete; it didn't. Replace the bare ack with a
@@ -3845,12 +3932,51 @@ Deno.serve(async (req) => {
     // roughly 50-60ms/char with jitter. Floor is raised to 1.5s because even
     // the shortest human reply ("ok") takes longer than 800ms once you count
     // the pause to read the incoming message.
-    const cleanedRaw = cleanSms(response)
+    let cleaned = cleanSms(response)
+    // FORCED AI DISCLOSURE: if the customer's most recent inbound contains
+    // a clear AI/bot question AND Alex hasn't disclosed yet, prepend the
+    // canonical disclosure. Conservative match — only triggers on direct
+    // questions ("are you a bot", "are you ai", "real person?", "bot?").
+    {
+      // Find LAST customer inbound (skip internal tags)
+      let lastUserText = ''
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i]
+        if (m.role !== 'user') continue
+        const t = typeof m.content === 'string' ? m.content
+          : Array.isArray(m.content) ? m.content.filter((b: any) => b?.type === 'text').map((b: any) => b?.text || '').join(' ') : ''
+        if (t && !t.startsWith('[INTERNAL') && !t.startsWith('[VISION')) { lastUserText = t; break }
+      }
+      // Tight regex — only fires on EXPLICIT AI questions, not stray "ai" letters.
+      const askedAI = (
+        /\bare\s+you\s+(?:a\s+|an\s+)?(?:real|actual|human|bot|robot|ai|automated)\b/i.test(lastUserText) ||
+        /\bis\s+this\s+(?:a\s+|an\s+)?(?:bot|robot|ai|automated)\b/i.test(lastUserText) ||
+        /\bam\s+i\s+(?:talking|texting|chatting)\s+(?:to|with)\s+(?:a\s+|an\s+)?(?:real|human|bot|ai)\b/i.test(lastUserText) ||
+        /\byou\s+(?:a\s+|an\s+)?(?:bot|robot|ai)\b/i.test(lastUserText) ||
+        /\b(?:bot|ai)\?\s*$/i.test(lastUserText.trim())
+      )
+      // Check whether Alex previously disclosed in this conversation
+      let alreadyDisclosed = false
+      for (const m of messages) {
+        if (m.role !== 'assistant') continue
+        const t = typeof m.content === 'string' ? m.content
+          : Array.isArray(m.content) ? m.content.filter((b: any) => b?.type === 'text').map((b: any) => b?.text || '').join(' ') : ''
+        if (/\bi'?m\s+(?:an?\s+)?(?:ai|automated|virtual)\b/i.test(t)) { alreadyDisclosed = true; break }
+      }
+      if (askedAI && !alreadyDisclosed) {
+        const alreadyInReply = /\bi'?m\s+(?:an?\s+)?(?:ai|automated|virtual)\b/i.test(cleaned.slice(0, 100))
+        if (!alreadyInReply) {
+          const disclosure = "Yeah, I'm an AI assistant for Backup Power Pro. Key Goodson is the electrician and takes over once I have what he needs. "
+          console.warn('[alex] FORCED AI disclosure (customer asked, Alex evaded). lastUser:', lastUserText.slice(0, 80))
+          cleaned = (disclosure + cleaned).trim().slice(0, MAX_SMS_CHARS)
+        }
+      }
+    }
     // Anti-repeat: if Alex's reply opens with the same words as his last
     // outbound, rotate the opener. Caught in the 2026-04-28 dojo run on
     // curt-mirror + bot-detector — Alex hit the same "Got it, thanks.
     // Whenever you get a chance, a photo of..." template 3 turns in a row.
-    let cleaned = avoidRepeatOpening(cleanedRaw, messages)
+    cleaned = avoidRepeatOpening(cleaned, messages)
 
     // Length mirror: if the last 1-2 customer inbounds were short (<25 chars
     // each), force Alex's reply to also be short (max 2 sentences, max ~120
