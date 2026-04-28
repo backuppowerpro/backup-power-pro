@@ -13279,9 +13279,49 @@ function App() {
     }
   }, [user]);
 
-  // Expose dial globally so the contact detail can call it via window.__bpp_dial
+  // Expose dial globally so the contact detail can call it via window.__bpp_dial.
+  // Apr 27 phone+SMS audit (P1 #11): the inline Call toolbar button + tel:
+  // fallback both bypassed the DNC gate that send-sms enforces. Wrapping
+  // every dial through this single shim that checks DNC before routing to
+  // voice.dial(). Looks the contact up by digit-normalized last-10 so any
+  // formatted phone string flows through cleanly.
   useEffect(() => {
-    window.__bpp_dial = (phone) => voice.dial(phone);
+    const shim = async (phoneOrContact) => {
+      const phone = typeof phoneOrContact === 'string' ? phoneOrContact : (phoneOrContact?.phone || '');
+      if (!phone) return;
+      const last10 = String(phone).replace(/\D/g, '').slice(-10);
+      try {
+        // Pull every contacts row once (cheap; capped 500); JS-side match
+        // because the column is stored formatted. Same pattern twilio-webhook
+        // uses for inbound contact lookup.
+        const { data: rows, error } = await db.from('contacts').select('id, name, phone, do_not_contact').limit(500);
+        if (error) {
+          // Fail-CLOSED on lookup error. False-positive block (one missed
+          // call to a legit contact) << false-negative miss (TCPA violation
+          // on an opted-out contact). Key can retry once the network blip
+          // resolves.
+          if (typeof window !== 'undefined' && window.__bpp_toast) {
+            window.__bpp_toast(`Couldn't verify DNC status — call blocked for safety. Retry in a moment.`, 'error');
+          }
+          return;
+        }
+        const match = (rows || []).find(c => (c.phone || '').replace(/\D/g, '').slice(-10) === last10);
+        if (match?.do_not_contact) {
+          if (typeof window !== 'undefined' && window.__bpp_toast) {
+            window.__bpp_toast(`${match.name || 'Contact'} is marked Do Not Contact — call blocked. Unflag in CRM if intentional.`, 'error');
+          }
+          return;
+        }
+      } catch (e) {
+        // Network exception — fail-closed for the same TCPA-safety reason.
+        if (typeof window !== 'undefined' && window.__bpp_toast) {
+          window.__bpp_toast(`Couldn't verify DNC status — call blocked for safety. Retry in a moment.`, 'error');
+        }
+        return;
+      }
+      voice.dial(phone);
+    };
+    window.__bpp_dial = shim;
   }, [voice]);
 
   // Morning briefing trigger — once per day on first load
