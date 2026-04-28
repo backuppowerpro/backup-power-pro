@@ -67,7 +67,10 @@ const args = Object.fromEntries(process.argv.slice(2)
   .map(kv => [kv[0], kv[1] ?? true]));
 const ONLY = args.profile;
 const TURNS = Number(args.turns) || 8;
-const CONC = Math.max(1, Math.min(8, Number(args.concurrency) || 1));
+// Default concurrency=4 — quo-ai-new-lead rate-limits to 10/min/IP, so 4
+// parallel profiles fits under that with headroom. Dojo phones bypass typing
+// delays so each turn lands in <5s, which makes parallel runs cheap.
+const CONC = Math.max(1, Math.min(8, Number(args.concurrency) || 4));
 const KEEP = !!args.keep;
 
 // ── HTTP helpers ─────────────────────────────────────────────────────────────
@@ -223,6 +226,12 @@ function checkAlexReply(text) {
   if (/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{27BF}]/u.test(text)) v.push('EMOJI');
   if (/\*\*[^*]+\*\*|__[^_]+__|`[^`]+`|^#+\s/m.test(text)) v.push('MARKDOWN');
   if (text.length > 320) v.push(`OVER_LENGTH_${text.length}`);
+  // The exact canned-template the 2026-04-28 dojo run caught: any reply
+  // that opens with "Got it, thanks" AND reverts to the panel-pic ask is
+  // dodging the customer's actual concern. Ban the pattern outright.
+  if (/got it,?\s*thanks?/i.test(text) && /(?:still good with the panel pic|good way for me to keep moving)/i.test(text)) {
+    v.push('CANNED_FALLBACK');
+  }
   return v;
 }
 
@@ -256,13 +265,13 @@ async function runProfile(profile, phone) {
     contactId = sb.contactId;
     if (!contactId) throw new Error(`no contactId returned: ${submitRes.body.slice(0, 150)}`);
 
-    // ── Wait for opener to land in messages (background opener fires after 18-30s typing delay) ──
+    // ── Wait for opener (dojo bypass strips typing delay → opener lands in 1-3s) ──
     log('waiting for opener…');
     const openerRow = await waitFor(async () => {
       const { messages } = await getMessages(phone);
       const ob = messages.filter(m => m.direction === 'outbound');
       return ob[0] || false;
-    }, { timeout: 50000, interval: 3000, label: 'opener' });
+    }, { timeout: 20000, interval: 1500, label: 'opener' });
 
     transcript.push({ who: 'alex', text: openerRow.body });
     log(`opener: "${(openerRow.body || '').slice(0, 80)}…"`);
@@ -305,7 +314,9 @@ async function runProfile(profile, phone) {
         throw new Error(`phone ${phone} not in ALEX_TEST_ALLOWLIST — gate blocked dojo run`);
       }
 
-      // Wait for new outbound row beyond what we've already seen
+      // Wait for new outbound row beyond what we've already seen.
+      // Dojo bypass strips Alex's typing delays so replies land in 3-15s
+      // (depending on tool-loop depth). 30s timeout has headroom.
       const expected = openerCount + (turn + 1); // opener + (turn+1) replies so far
       let alexReply = null;
       try {
@@ -313,10 +324,10 @@ async function runProfile(profile, phone) {
           const { messages } = await getMessages(phone);
           const ob = messages.filter(m => m.direction === 'outbound');
           return ob.length >= expected ? ob : false;
-        }, { timeout: 60000, interval: 3000, label: `alex reply turn ${turn}` });
+        }, { timeout: 30000, interval: 1500, label: `alex reply turn ${turn}` });
         alexReply = rows[expected - 1];
       } catch (e) {
-        log(`Alex did not reply within 60s on turn ${turn} — recording silence`);
+        log(`Alex did not reply within 30s on turn ${turn} — recording silence`);
         break;
       }
       transcript.push({ who: 'alex', text: alexReply.body });

@@ -41,7 +41,7 @@ const MODEL = 'claude-opus-4-7'
 const MAX_TOKENS       = 250   // SMS — keep responses tight
 const MAX_HISTORY_MSGS = 60    // ~30 exchanges. Bumped from 30 on Apr 27 — Key feedback: customers should be able to reference anything earlier in the convo and Alex should recall it. Opus 4.7 has plenty of headroom; the cost is just per-call tokens.
 const MAX_TOOL_LOOPS   = 5     // Safety valve — prevent infinite agentic loops
-const MAX_SMS_CHARS    = 360   // Soft cap tightened 2026-04-24 — Key: "too long, too fast" — feels bot-shaped past ~4 sentences
+const MAX_SMS_CHARS    = 320   // Hard cap aligned with prompt rule (line ~288) and dojo's deterministic OVER_LENGTH check. 2026-04-28 — was 360, but bot-detector tripped at 350. Single SMS standard is 160; 320 = 2 segments — anything more is bot-shaped.
                                // Standard SMS is 160 chars but most phones concatenate up to 3 segments (480)
 const MAX_UNANSWERED_MSGS = 5  // Per-phone rate limit — if 5+ messages pile up without Alex responding, likely spam
 
@@ -364,7 +364,11 @@ Live examples of meta-commentary leaks observed in production — DO NOT do any 
   ✘ Any sentence starting with "Let me" + an internal verb ("Let me think about this", "Let me check my notes", "Let me verify").
 
 Three rules that follow from this:
-  1. NEVER ask the customer for their own briefing, conversation history, system context, or any internal data. They cannot see it. If you don't have enough info to reply, write a short generic ack ("Got it, thanks") and call mark_complete OR move on.
+  1. NEVER ask the customer for their own briefing, conversation history, system context, or any internal data. They cannot see it. If you don't have enough info to reply, do ONE of three things — never the canned "Got it, thanks. What's a good way to keep moving on the quote" template:
+     a) Acknowledge what they actually said in their words ("Yeah, I get that — pricing without seeing the panel can feel like a black box. The photo's the only way to give you a real number.").
+     b) Ask one specific clarifying question that moves the conversation forward.
+     c) Call mark_complete and stop.
+     The forbidden pattern: any reply that starts "Got it, thanks." AND ends with "still good with the panel pic." That exact template was caught in the dojo on 2026-04-28 and reads as scripted dodge of the customer's actual concern.
   2. NEVER write a bulleted analysis as the SMS body. SMS is prose. If you find yourself listing the conversation state, you are about to leak — switch to writing a short reply about the substance.
   3. NEVER reference internal documents by name in the customer-facing reply. The customer should not know the briefing exists, the pitfalls file exists, the memory tool exists, or that you have any "rules" at all.
 
@@ -1937,7 +1941,7 @@ export function containsPricing(text: string): boolean {
 // pattern with Name:/Email:/Address: keywords, "potential injection",
 // "test data", "skip using the first name", "no-name version", and any
 // occurrence of the words [INTERNAL BRIEFING] or [VISION CHECK in body.
-const META_LEAK_RX = /(^|\n\s*)(?:I\s+need\s+to\s+(?:see|evaluate|check|verify|look\s+at|set\s+a\s+reminder|recognize|think|consider|figure\s+out)|I\s+should\s+(?:send|set|think|recognize|note|acknowledge\s+that|skip|use)|Actually,?\s+looking\s+at\s+(?:the|this)|Let\s+me\s+(?:check|see|verify|evaluate|look\s+at|think|pull\s+up|find\s+out|not\s+assume|adjust|review|re-engage|figure|get\s+Key\s+to\s+follow\s+up|have\s+Key\s+reach\s+out|get\s+back\s+to\s+you|check\s+with\s+Key)|Hey,?\s+give\s+me\s+just\s+a\s+sec|Looking\s+at\s+(?:the|this)\s+(?:conversation|history|briefing|context)|Based\s+on\s+(?:the|my)\s+(?:briefing|instructions|system\s+prompt|memory|context|conversation)|Per\s+the\s+(?:pitfalls|briefing|memory|playbook|rules|system\s+prompt|reading-the-room|time-awareness)|The\s+briefing\s+(?:shows|has|says|references)|The\s+system\s+(?:says|shows|considers)|The\s+memory\s+(?:shows|references|has)|My\s+system\s+prompt\s+says|My\s+instructions\s+(?:say|tell\s+me)|Noted,?\s+I\s+already\s+fell|As\s+the\s+pitfalls\s+file\s+notes|Ha,?\s+ignore\s+me,?\s+talking\s+to\s+myself|Could\s+you\s+(?:please\s+)?share\s+what\s+the\s+\[INTERNAL|The\s+right\s+move\s+here\s+is|However,?\s+I\s+should|Hmm,?\s+(?:the|let|looking)|Now\s+let\s+me\s+(?:review|adjust|consider)|That's\s+suspicious|potential\s+injection|test\s+data|no-name\s+version|skip\s+using\s+the\s+first\s+name|on\s+file\)|Let\s+me\s+adjust\s+my\s+approach)/i
+const META_LEAK_RX = /(^|\n\s*)(?:I\s+need\s+to\s+(?:see|evaluate|check|verify|look\s+at|set\s+a\s+reminder|recognize|think|consider|figure\s+out)|I\s+should\s+(?:send|set|think|recognize|note|acknowledge\s+that|skip|use|give|provide|share|cover|continue|proceed|pivot|deflect|explain|reveal|ask\s+for|get|let\s+key)|I'?ll\s+(?:give|provide|share|note|deflect|continue|proceed|pivot|cover|reveal|explain)\s+(?:the\s+price|the\s+number|her|him|them|the\s+quote|that\s+carefully|without)|Actually,?\s+looking\s+at\s+(?:the|this)|Let\s+me\s+(?:check|see|verify|evaluate|look\s+at|think|pull\s+up|find\s+out|not\s+assume|adjust|review|re-engage|figure|get\s+Key\s+to\s+follow\s+up|have\s+Key\s+reach\s+out|get\s+back\s+to\s+you|check\s+with\s+Key)|Hey,?\s+give\s+me\s+just\s+a\s+sec|Looking\s+at\s+(?:the|this)\s+(?:conversation|history|briefing|context)|Based\s+on\s+(?:the|my)\s+(?:briefing|instructions|system\s+prompt|memory|context|conversation)|Per\s+the\s+(?:pitfalls|briefing|memory|playbook|rules|system\s+prompt|reading-the-room|time-awareness)|The\s+briefing\s+(?:shows|has|says|references)|The\s+system\s+(?:says|shows|considers)|The\s+memory\s+(?:shows|references|has)|My\s+system\s+prompt\s+says|My\s+instructions\s+(?:say|tell\s+me)|Noted,?\s+I\s+already\s+fell|As\s+the\s+pitfalls\s+file\s+notes|Ha,?\s+ignore\s+me,?\s+talking\s+to\s+myself|Could\s+you\s+(?:please\s+)?share\s+what\s+the\s+\[INTERNAL|The\s+right\s+move\s+here\s+is|However,?\s+I\s+should|Hmm,?\s+(?:the|let|looking)|Now\s+let\s+me\s+(?:review|adjust|consider)|That's\s+suspicious|potential\s+injection|test\s+data|no-name\s+version|skip\s+using\s+the\s+first\s+name|on\s+file\)|Let\s+me\s+adjust\s+my\s+approach|[A-Z][a-z]+\s+(?:volunteered|gave\s+(?:me|us)|said|told\s+(?:me|us)|mentioned|shared|provided):\s|customer\s+(?:volunteered|said|gave|told|mentioned|shared)|without\s+giving\s+(?:electrical\s+)?advice|\(likely\s+\d+|\(probably\s+\d+|note\s+the\s+\w+\s+thing\s+carefully|^[A-Z][a-z]{2,}\s+(?:asked\s+(?:direct|for|about)|wants\s+(?:the|to|a)|needs\s+(?:the|to|a)|already\s+has|just\s+(?:said|gave|asked))\b)/i
 
 // Bracket-tag leak: any [INTERNAL …], [VISION CHECK…], [briefing], etc.
 // in the body almost certainly means a system tag bled into the reply.
@@ -2004,7 +2008,26 @@ async function containsForeignPII(
 // (the leaked sentence might be the whole message). Replace with a generic
 // warm acknowledgment + a single forward-motion question. Same pattern as
 // PRICE_DEFLECTION — better a clean redirect than a half-redacted leak.
-const META_LEAK_DEFLECTION = "Got it, thanks. What's a good way for me to keep moving on the quote, you still good with the panel pic when you get a sec?"
+//
+// Apr 28 — converted from a single hardcoded string to an array because the
+// dojo caught Alex sending the SAME canned line 3 turns in a row when the
+// meta-leak filter kept firing on a frustrated customer's pushback. Reads as
+// completely robotic. Pick a variant via session-id hash so the same lead
+// doesn't see the same deflection twice in one conversation.
+const META_LEAK_DEFLECTIONS = [
+  "Yeah, totally fair. What part of this is most useful for me to dig into next?",
+  "Hear you. What's the most important piece for you right now, the photo or the quote ballpark?",
+  "Got it. What would help most, more on how the install works or moving toward a quote?",
+  "Makes sense. Want me to pull together what Key needs, or is there a different question first?",
+  "Fair enough. Where would you like me to focus, the install details or getting things lined up for Key?",
+]
+function pickDeflection(seed: string): string {
+  // Stable per-session selection avoids the same variant landing twice for
+  // the same lead. Hash the seed (session_id + turn count) into the array.
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0
+  return META_LEAK_DEFLECTIONS[Math.abs(h) % META_LEAK_DEFLECTIONS.length]
+}
 
 // Replacement used when Alex generates a reply that mentions dollar amounts.
 // Rather than silently stripping and sending a mutilated sentence, swap the
@@ -2013,11 +2036,101 @@ const META_LEAK_DEFLECTION = "Got it, thanks. What's a good way for me to keep m
 // still drift under pressure. Emitting a clear deflection is better than
 // a half-redacted price that confuses the customer.
 //
-// CRITICAL: this string runs AFTER cleanSms's em-dash replacement, so any
+// Apr 28 — converted from a single hardcoded string to an array because the
+// dojo caught Alex sending the EXACT same price deflection 3 turns in a
+// row when a frustrated customer kept hammering for a number. The customer
+// ghosted at turn 4 explicitly because the bot was repeating itself.
+//
+// CRITICAL: these strings run AFTER cleanSms's em-dash replacement, so any
 // `—` here would be sent to the customer verbatim. Use commas/periods
 // instead. Same goes for any other ASCII-clean characters (no curly
 // quotes, no en-dashes, no ellipsis character).
-const PRICE_DEFLECTION = "Actually, Key handles all the pricing himself. He'll go over numbers when he reaches out. Anything else I can help you figure out in the meantime?"
+// Variants explicitly invite the customer to re-ask non-price questions in
+// the same message. Apr 28 dojo finding: a multi-topic question ("you pull
+// permits? what's the cost?") had the price filter wipe the whole reply,
+// dropping the permit answer. Variants now make it clear Alex is ONLY
+// deflecting price — anything else they asked, he can still cover.
+const PRICE_DEFLECTIONS = [
+  "On pricing, that's Key's call when he reaches out. If you asked anything else in there, hit me with it again and I'll cover it.",
+  "Pricing comes straight from Key. He'll lay it out when he gets in touch. Anything else you asked, send it again and I've got you.",
+  "Key handles the numbers himself, he'll walk you through when he reaches out. If there was something else in your message, fire it back and I'll dig in.",
+  "Numbers are Key's department — he'll cover that when he reaches out. Was there anything else you wanted to know?",
+  "I keep the dollar talk on Key's side, he'll go over it after he sees the panel. Anything else from your message I should hit?",
+]
+function pickPriceDeflection(seed: string): string {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0
+  return PRICE_DEFLECTIONS[Math.abs(h) % PRICE_DEFLECTIONS.length]
+}
+
+// Anti-repeat: if Alex's new reply opens with the same first 3+ words as
+// his previous reply, rotate the opening to a varied alternative. Caught
+// in the dojo on 2026-04-28: curt/bot-detector profiles got "Got it,
+// thanks. Whenever you get a chance, a photo of your electrical..." three
+// turns in a row from the LLM (not from the deflection system). Reads as
+// scripted within 2 messages.
+const ACK_VARIANTS = [
+  'Yeah,',
+  'Cool.',
+  'Right.',
+  'Got that.',
+  'Makes sense.',
+  'Gotcha.',
+  'Sounds good.',
+  'OK.',
+  'Roger.',
+  "Noted.",
+]
+function avoidRepeatOpening(cleaned: string, history: any[]): string {
+  // Find the last *previous* assistant turn in history (skip the current
+  // one being built — usually the last assistant entry; we want the one
+  // before that).
+  const assistantTurns: string[] = []
+  for (const m of history) {
+    if (m.role !== 'assistant') continue
+    let txt = ''
+    if (typeof m.content === 'string') txt = m.content
+    else if (Array.isArray(m.content)) {
+      txt = m.content.filter((b: any) => b?.type === 'text').map((b: any) => b?.text || '').join(' ').trim()
+    }
+    if (txt) assistantTurns.push(txt)
+  }
+  if (assistantTurns.length < 1) return cleaned
+
+  const firstWords = (s: string, n = 3): string =>
+    s.split(/\s+/).slice(0, n).join(' ').toLowerCase().replace(/[.,!?]+$/, '')
+
+  const cleanedHead = firstWords(cleaned, 3)
+  if (!cleanedHead) return cleaned
+
+  // Compare against the LAST assistant turn (most recent prior reply).
+  const prevHead = firstWords(assistantTurns[assistantTurns.length - 1], 3)
+  if (prevHead && prevHead === cleanedHead) {
+    // Pick a variant whose first word differs from the prior opener.
+    const seed = cleaned.slice(0, 30) + Date.now() + Math.random()
+    let h = 0
+    for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0
+    let pickIdx = Math.abs(h) % ACK_VARIANTS.length
+    // Avoid picking a variant whose first word matches prevHead's first
+    // word (e.g., don't re-pick "Got that." when previous was "Got it,").
+    const prevFirst = prevHead.split(/\s+/)[0]
+    for (let i = 0; i < ACK_VARIANTS.length; i++) {
+      const v = ACK_VARIANTS[(pickIdx + i) % ACK_VARIANTS.length]
+      const vFirst = v.split(/\s+/)[0].toLowerCase().replace(/[.,!?]+$/, '')
+      if (vFirst !== prevFirst) { pickIdx = (pickIdx + i) % ACK_VARIANTS.length; break }
+    }
+    const replacement = ACK_VARIANTS[pickIdx]
+    // Strip the duplicate opener (everything up to the first sentence end)
+    // and prepend the variant.
+    const remainder = cleaned.replace(/^[^.!?]*[.!?]\s*/, '').trim()
+    if (remainder.length >= 20) {
+      const rewritten = `${replacement} ${remainder}`
+      console.warn('[alex] anti-repeat: rotated opening from', JSON.stringify(cleaned.slice(0, 30)), 'to', JSON.stringify(rewritten.slice(0, 30)))
+      return rewritten
+    }
+  }
+  return cleaned
+}
 
 function cleanSms(text: string): string {
   // Strip any leaked internal briefing content (safety net — Claude should never echo this)
@@ -2035,20 +2148,28 @@ function cleanSms(text: string): string {
 
   // HARD SAFETY: if Alex generated a dollar figure despite the rule,
   // replace the entire reply with a safe deflection. Log for audit.
-  // Run BEFORE the typographic-character pass so PRICE_DEFLECTION's
-  // ASCII safety doesn't matter — but pass through it after anyway as
-  // defense-in-depth in case future edits introduce a stray dash.
+  // Variant chosen by leaked-text + minute-bucket seed so consecutive
+  // price-leak replies don't all collapse to the same string (caught by
+  // the dojo on 2026-04-28: customer ghosted after 3 identical replies).
   if (containsPricing(cleaned)) {
     console.warn('[alex] BLOCKED price leak:', cleaned.slice(0, 200))
-    cleaned = PRICE_DEFLECTION
+    const seed = cleaned.slice(0, 40) + Date.now() + Math.random()
+    cleaned = pickPriceDeflection(seed)
   }
 
   // HARD SAFETY: meta-commentary / internal-monologue leak. Per the SMS-bot
   // research postmortem, LLM critics miss this often enough that we need
-  // a regex net too. Replace the entire reply with a safe deflection.
+  // a regex net too. Replace the entire reply with a safe deflection that
+  // varies per session to avoid the "same canned line 3 turns in a row"
+  // failure caught in the dojo on 2026-04-28.
   if (containsMetaLeak(cleaned)) {
     console.warn('[alex] BLOCKED meta-commentary leak:', cleaned.slice(0, 200))
-    cleaned = META_LEAK_DEFLECTION
+    // Seed includes Date.now() at full ms granularity so two filter
+    // deflections seconds apart still pick different variants. Apr 28
+    // dojo finding: minute-bucket was too coarse, two consecutive turns
+    // hashed to the same variant.
+    const seed = cleaned.slice(0, 40) + Date.now() + Math.random()
+    cleaned = pickDeflection(seed)
   }
 
   // Typographic cleanup — runs AFTER the pricing substitution so the
@@ -2062,6 +2183,26 @@ function cleanSms(text: string): string {
     .replace(/\u201C|\u201D/g, '"')     // curly double quotes
     .replace(/\u2026/g, '...')          // ellipsis character
     .trim()
+
+  // HARD SAFETY: stacked questions. The prompt forbids stacking but the dojo
+  // catches it on most multi-info turns ("What city? Whenever you get a
+  // chance, a photo of your panel?"). When two question marks appear, drop
+  // everything after the FIRST one — that's the question Alex is actually
+  // committed to. Cleaner than truncating mid-thought. Apr 28 dojo finding.
+  const qMatches = cleaned.match(/\?/g) || []
+  if (qMatches.length >= 2) {
+    const firstQIdx = cleaned.indexOf('?')
+    if (firstQIdx > 0) {
+      const trimmed = cleaned.slice(0, firstQIdx + 1).trim()
+      // Only apply if the trimmed version still has substance (>30 chars)
+      if (trimmed.length >= 30) {
+        console.warn('[alex] STACKED questions, trimming to first:', cleaned.slice(0, 120))
+        cleaned = trimmed
+      }
+    }
+  }
+
+  // (anti-repeat lives at call site since it needs the full message history)
 
   // Hard truncation safety net — if Claude exceeds SMS limit despite prompt instructions
   if (cleaned.length > MAX_SMS_CHARS) {
@@ -2971,7 +3112,10 @@ Deno.serve(async (req) => {
     // Regular replies use shorter delays since you're already in the conversation.
     const openerCleaned = cleanSms(opener)
     const openerDelay = 25000 + Math.floor(Math.random() * 25000) // 25-50 seconds
-    await new Promise(r => setTimeout(r, openerDelay))
+    // Dojo bypass: +1800555 phones skip opener delay.
+    if (!fromPhone.startsWith('+1800555')) {
+      await new Promise(r => setTimeout(r, openerDelay))
+    }
     const openerSent = await sendQuoMessage(fromPhone, openerCleaned)
 
     if (!openerSent) {
@@ -3213,7 +3357,10 @@ Deno.serve(async (req) => {
   // for a realistic thumb-typing burst. Bumped to 11-14s jittered. Alex
   // still reads as responsive thanks to the length-scaled typing-delay that
   // fires AFTER generation, but he won't interrupt a customer mid-stream.
-  await new Promise(r => setTimeout(r, 11000 + Math.random() * 3000))
+  // Dojo bypass: +1800555 phones skip — see `scripts/alex/dojo.js`.
+  if (!fromPhone.startsWith('+1800555')) {
+    await new Promise(r => setTimeout(r, 11000 + Math.random() * 3000))
+  }
 
   // ── Debounce: skip if a newer message arrived during the delay ────────────
   // We set customer_last_msg_at = msgReceivedAt at the dedup boundary.
@@ -3698,7 +3845,45 @@ Deno.serve(async (req) => {
     // roughly 50-60ms/char with jitter. Floor is raised to 1.5s because even
     // the shortest human reply ("ok") takes longer than 800ms once you count
     // the pause to read the incoming message.
-    const cleaned = cleanSms(response)
+    const cleanedRaw = cleanSms(response)
+    // Anti-repeat: if Alex's reply opens with the same words as his last
+    // outbound, rotate the opener. Caught in the 2026-04-28 dojo run on
+    // curt-mirror + bot-detector — Alex hit the same "Got it, thanks.
+    // Whenever you get a chance, a photo of..." template 3 turns in a row.
+    let cleaned = avoidRepeatOpening(cleanedRaw, messages)
+
+    // Length mirror: if the last 1-2 customer inbounds were short (<25 chars
+    // each), force Alex's reply to also be short (max 2 sentences, max ~120
+    // chars). Apr 28 dojo: curt-mirror profile texted 1-3 words and Alex
+    // dumped 15-20-word replies — adaptability 2/10. The mirror enforces
+    // matched cadence without requiring the LLM to remember the rule.
+    {
+      // Find the last 2 user inbounds (skip empty / system tags)
+      const recentInbounds: string[] = []
+      for (let i = messages.length - 1; i >= 0 && recentInbounds.length < 2; i--) {
+        const m = messages[i]
+        if (m.role !== 'user') continue
+        const txt = typeof m.content === 'string' ? m.content
+          : Array.isArray(m.content) ? m.content.filter((b: any) => b?.type === 'text').map((b: any) => b?.text || '').join(' ').trim()
+          : ''
+        if (txt && !txt.startsWith('[INTERNAL') && !txt.startsWith('[VISION')) recentInbounds.push(txt)
+      }
+      const avgLen = recentInbounds.length > 0
+        ? recentInbounds.reduce((s, t) => s + t.length, 0) / recentInbounds.length
+        : 0
+      // Curt threshold — both recent inbounds under 30 chars on average
+      if (avgLen > 0 && avgLen < 30 && cleaned.length > 130) {
+        // Truncate at the FIRST sentence boundary, but only if the resulting
+        // first sentence has substance (>20 chars). Otherwise leave alone —
+        // chopping a 1-word "Yeah." would leave nothing.
+        const firstSentenceMatch = cleaned.match(/^[^.!?]+[.!?]/)
+        const firstSentence = firstSentenceMatch?.[0]?.trim() || ''
+        if (firstSentence.length >= 20 && firstSentence.length < cleaned.length) {
+          console.warn(`[alex] curt-mirror: trimming ${cleaned.length}→${firstSentence.length} chars to match customer cadence (${Math.round(avgLen)} avg)`)
+          cleaned = firstSentence
+        }
+      }
+    }
     // Shadow critic — pre-send review (Key 2026-04-26: "wake up and shadow Alex
     // every time he has to send a text, just temporary so you read the convo
     // and his text before he sends it and corrects him if its not optimal so
@@ -3734,7 +3919,11 @@ Deno.serve(async (req) => {
     const jitter  = (Math.random() - 0.3) * 1800           // -540ms to +1260ms
     const minFloor = snappy ? 900 : 1500
     const typingDelay = Math.max(minFloor, thinkMs + typeMs + jitter)
-    await new Promise(r => setTimeout(r, typingDelay))
+    // Dojo bypass: +1800555 phones skip the human typing pacing so the
+    // dojo runner can iterate fast. Production phones still get pacing.
+    if (!fromPhone.startsWith('+1800555')) {
+      await new Promise(r => setTimeout(r, typingDelay))
+    }
 
     const sent = await sendQuoMessage(fromPhone, reviewed)
     if (sent) {

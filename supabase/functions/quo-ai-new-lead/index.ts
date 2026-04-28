@@ -456,8 +456,13 @@ Deno.serve(async (req) => {
     }
 
     // Human typing delay before the opener fires — 18-30s.
-    const typingMs = 18000 + Math.floor(Math.random() * 12000)
-    await new Promise(r => setTimeout(r, typingMs))
+    // Dojo bypass: +1800555 NANP test range skips the delay entirely so
+    // `scripts/alex/dojo.js` can iterate fast (saves ~25 min per full run).
+    const isDojo = normalizedPhone.startsWith('+1800555')
+    if (!isDojo) {
+      const typingMs = 18000 + Math.floor(Math.random() * 12000)
+      await new Promise(r => setTimeout(r, typingMs))
+    }
 
     // Fire the opener via Quo
     let quoMsgId: string | null = null

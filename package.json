@@ -1,0 +1,14 @@
+{
+  "name": "bpp",
+  "private": true,
+  "description": "Backup Power Pro — root scripts (Alex Dojo, smoke tests, brain refresh)",
+  "scripts": {
+    "dojo": "node scripts/alex/dojo.js",
+    "dojo:fast": "node scripts/alex/dojo.js --turns=4 --concurrency=4",
+    "dojo:full": "node scripts/alex/dojo.js --turns=8 --concurrency=2",
+    "dojo:profile": "node scripts/alex/dojo.js --turns=8 --profile",
+    "dojo:keep": "node scripts/alex/dojo.js --keep",
+    "smoke": "node scripts/alex/smoke.js",
+    "simulate": "node scripts/alex/simulate.js"
+  }
+}
