@@ -121,34 +121,46 @@ async function waitFor(predicate, { timeout = 45000, interval = 2000, label = '?
 
 // ── Anthropic call (used for customer roleplay + grader) ─────────────────────
 async function callLlm(opts, attempt = 0) {
-  const MAX = 4;
+  const MAX = 5;
   try {
     return await new Promise((resolve, reject) => {
       const body = JSON.stringify({ model: MODEL, system: opts.system, messages: opts.messages, max_tokens: opts.maxTokens || 600, temperature: 0.8 });
       const req = https.request('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+        timeout: 60000,
       }, res => {
         let buf = '';
         res.on('data', c => (buf += c));
         res.on('end', () => {
-          try {
-            const data = JSON.parse(buf);
-            if (data?.error?.type === 'overloaded_error' || res.statusCode === 529 || res.statusCode === 503)
-              return reject(new Error('RETRYABLE'));
-            const text = data.content?.[0]?.text;
-            if (!text) return reject(new Error('no content: ' + buf.slice(0, 200)));
-            resolve(text);
-          } catch (e) { reject(e); }
+          // 5xx (overload, gateway timeout, upstream errors) — retryable.
+          // Bug 2026-04-28: a 504 returned plain-text "upstream connect timed
+          // out" which JSON.parse choked on, killing the whole battery before
+          // any grading could happen.
+          if (res.statusCode >= 500 || res.statusCode === 429) {
+            return reject(new Error('RETRYABLE: status ' + res.statusCode + ' body=' + buf.slice(0, 80)));
+          }
+          let data;
+          try { data = JSON.parse(buf) } catch (e) {
+            return reject(new Error('RETRYABLE: non-JSON response status=' + res.statusCode + ' body=' + buf.slice(0, 80)));
+          }
+          if (data?.error?.type === 'overloaded_error' || data?.error?.type === 'api_error') {
+            return reject(new Error('RETRYABLE: ' + (data.error.message || '?')));
+          }
+          const text = data.content?.[0]?.text;
+          if (!text) return reject(new Error('no content: ' + buf.slice(0, 200)));
+          resolve(text);
         });
       });
-      req.on('error', reject);
+      req.on('error', err => reject(new Error('RETRYABLE: ' + err.message)));
+      req.on('timeout', () => { req.destroy(); reject(new Error('RETRYABLE: socket timeout')); });
       req.write(body);
       req.end();
     });
   } catch (err) {
     if (String(err).includes('RETRYABLE') && attempt < MAX) {
-      const backoff = Math.pow(2, attempt) * 2000 + Math.random() * 1000;
+      const backoff = Math.pow(2, attempt) * 2000 + Math.random() * 1500;
+      console.log(`    (LLM retry ${attempt + 1}/${MAX} after ${Math.round(backoff)}ms — ${String(err).slice(0, 100)})`);
       await sleep(backoff);
       return callLlm(opts, attempt + 1);
     }
@@ -386,6 +398,9 @@ async function main() {
   }
 
   // Grade everything (sequential — grader pace is fine)
+  // Wrap each grade in try/catch so one upstream timeout doesn't kill the
+  // whole battery (Apr 28 bug: a 504 from Anthropic crashed JSON.parse and
+  // we lost 26 transcripts of work).
   console.log('\nGrading…');
   for (const r of results) {
     if (r.error || r.transcript.length < 2) {
@@ -393,7 +408,12 @@ async function main() {
       r.hardRules = [];
       continue;
     }
-    r.graded = await grade(r.profile, r.transcript);
+    try {
+      r.graded = await grade(r.profile, r.transcript);
+    } catch (e) {
+      console.error(`  grade failed for ${r.profile.id}: ${String(e).slice(0, 100)}`);
+      r.graded = { error: 'grade failed: ' + String(e).slice(0, 60) };
+    }
     // Deterministic checks across every Alex turn
     const violations = [];
     for (const t of r.transcript) {
