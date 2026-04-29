@@ -4211,7 +4211,44 @@ Deno.serve(async (req) => {
     // he learns from you and improves"). Toggleable via ALEX_SHADOW_MODE env
     // var. In "rewrite" mode, the corrected version ships; in "log" mode, only
     // the diff is logged so we can mine it. Adds ~1-2s latency to each send.
-    const reviewed = await applyShadow(supabase, session.id, fromPhone, messages, contactContext, cleaned)
+    let reviewed = await applyShadow(supabase, session.id, fromPhone, messages, contactContext, cleaned)
+
+    // Apr 28 — AI disclosure forcer AFTER shadow critic, applied last so it
+    // always wins. Shadow critic doesn't know about disclosure rule and was
+    // stripping the prepend on rewrite.
+    {
+      let lastUserText = ''
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i]
+        if (m.role !== 'user') continue
+        const t = typeof m.content === 'string' ? m.content
+          : Array.isArray(m.content) ? m.content.filter((b: any) => b?.type === 'text').map((b: any) => b?.text || '').join(' ') : ''
+        if (t && !t.startsWith('[INTERNAL') && !t.startsWith('[VISION')) { lastUserText = t; break }
+      }
+      // Broad regex — catches direct + indirect AI questions
+      const askedAI = (
+        /\bare\s+you\s+(?:a\s+|an\s+)?(?:real|actual|human|bot|robot|ai|automated|machine|computer|gpt|chatgpt|chat\s+bot)\b/i.test(lastUserText) ||
+        /\bis\s+this\s+(?:a\s+|an\s+)?(?:bot|robot|ai|automated|real|person|human)\b/i.test(lastUserText) ||
+        /\bam\s+i\s+(?:talking|texting|chatting|messaging)\s+(?:to|with)\s+(?:a\s+|an\s+)?(?:real|human|bot|ai|person|machine)\b/i.test(lastUserText) ||
+        /\byou\s+(?:a\s+|an\s+)?(?:bot|robot|ai)\b/i.test(lastUserText) ||
+        /\b(?:bot|ai)\??\s*$/i.test(lastUserText.trim()) ||
+        /\b(?:real\s+person|real\s+human|actual\s+human)\b/i.test(lastUserText) ||
+        /\byou'?re\s+(?:a\s+|an\s+)?(?:bot|robot|ai|automated)\b/i.test(lastUserText) ||
+        /\b(?:human|robot|ai|automated)\?\s*$/i.test(lastUserText.trim()) ||
+        /\bdidn'?t\s+answer\s+(?:my\s+)?question.*(?:bot|ai|real|person|automated)/i.test(lastUserText) ||
+        /\bjust\s+answer\s+(?:that|me|the\s+question)/i.test(lastUserText)
+      )
+      const alreadyInReply = /\bi'?m\s+(?:an?\s+)?(?:ai|automated|virtual|bot)\b/i.test(reviewed.slice(0, 200))
+      if (askedAI && !alreadyInReply) {
+        // Force-disclose any time customer asked, regardless of priors. The
+        // alreadyDisclosed gate was hitting false positives (probably matching
+        // briefing/system content embedded in messages array).
+        const disclosure = "Yeah, I'm an AI. He's the actual electrician and takes over once I have what he needs. "
+        console.warn('[alex] FORCED AI disclosure. lastUser:', lastUserText.slice(0, 80))
+        reviewed = (disclosure + reviewed).trim().slice(0, MAX_SMS_CHARS)
+      }
+      // DEBUG REMOVED — code path confirmed reached
+    }
     const charCount = reviewed.length
 
     // Match-the-cadence typing delay. If the customer's last inbound was
