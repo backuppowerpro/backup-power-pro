@@ -3701,7 +3701,19 @@ Deno.serve(async (req) => {
   const scopedHint = hints.length ? `\n[HINT: This turn matches a topic with dedicated notes. Before replying, ${hints.join(', then ')}. Apply what you find. Skip if you've already read it this session.]` : ''
 
   // ── Briefing + final context assembly ────────────────────────────────
-  const briefing = await loadBriefing(supabase)
+  // Apr 28 (final iteration): briefing INJECTION REMOVED. The briefing was
+  // injecting offer/tone/geography/pricing/pitfalls/openers as a literal
+  // text block in Alex's runtime context. Alex's Opus brain occasionally
+  // narrated that block back to the customer ("The hard rule says NEVER
+  // give dollar figures", "Per pitfalls file...", "I see, pricing IS in
+  // objections with concrete figures"). The system prompt ALREADY contains
+  // every essential rule inlined; the briefing was redundant duplication.
+  // Alex can still call the memory tool for topic-specific reads (objections.md
+  // when customer hesitates, generators.md when they name a brand, etc.) —
+  // those are explicit tool calls, not passive context that tempts narration.
+  // Toggle ALEX_INJECT_BRIEFING=true to restore the old behavior if needed.
+  const injectBriefing = (Deno.env.get('ALEX_INJECT_BRIEFING') || 'false').toLowerCase() === 'true'
+  const briefing = injectBriefing ? await loadBriefing(supabase) : ''
   const fullContext = (briefing ? briefing + '\n\n' : '') +
     (contactContext || '') + reEngageNote + timeNote + frustrationNote + outOfAreaNote + scopedHint
 
