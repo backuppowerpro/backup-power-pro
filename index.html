@@ -1316,6 +1316,33 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
   var varPhoneInput   = document.getElementById('varPhone');
   if(!varNameInput) return;
 
+  // lead_form_started — fires ONCE per session on the first interaction with
+  // ANY form field. Without this, captures/form_starts is uncomputable, so we
+  // can't measure form-completion rate per channel/variant. Apr 29 fix.
+  var formStartedFired = false;
+  function fireFormStarted(field){
+    if (formStartedFired) return;
+    formStartedFired = true;
+    try {
+      if (typeof posthog !== 'undefined') {
+        posthog.capture('lead_form_started', {
+          field: field,
+          channel: 'baseline', // homepage = baseline; /m/ /g/ override via posthog.register
+          form: 'inline'
+        });
+      }
+    } catch(_) {}
+  }
+  ['varName','varPhone','varGenCheck'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('focus', function(){ fireFormStarted(id); }, { once: false, passive: true });
+    el.addEventListener('input', function(){ fireFormStarted(id); }, { once: false, passive: true });
+  });
+  // Also catch checkbox change (focus on a checkbox doesn't always fire on mobile)
+  var gc = document.getElementById('varGenCheck');
+  if (gc) gc.addEventListener('change', function(){ fireFormStarted('varGenCheck'); });
+
   // Generator checkbox
   document.getElementById('varGenCheck').addEventListener('change', function(){
     var box=document.getElementById('varGenBox');
