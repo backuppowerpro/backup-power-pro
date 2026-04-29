@@ -376,17 +376,20 @@ fbq('track','ViewContent',{content_name:'generator-inlet-landing-page',content_c
     // the flag exists or while it's loading, control stays visible.
     posthog.onFeatureFlags(function() {
       var v = posthog.getFeatureFlag('meta-hero-v1');
-      if (!v || v === 'control') return; // default already visible
-      var el = document.getElementById('hero-' + v);
+      // Apr 29 fix: ALWAYS register hero_variant (including control) so
+      // posthog-stats variant comparison sees all 3 buckets. Previous code
+      // early-returned on control, which made downstream group-by queries
+      // miss 34% of the experiment data and skewed lift calculations.
+      var resolved = v || 'control';
+      posthog.register({ hero_variant: resolved });
+      posthog.capture('$feature_flag_called', { '$feature_flag': 'meta-hero-v1', '$feature_flag_response': resolved });
+      // Only swap DOM if non-control (control is the default already-rendered hero)
+      if (resolved === 'control') return;
+      var el = document.getElementById('hero-' + resolved);
       if (!el) return;
-      // Hide control, show the selected variant
       var ctrl = document.getElementById('hero-control');
       if (ctrl) ctrl.style.display = 'none';
       el.style.display = 'block';
-      // Track the experiment exposure so PostHog's Experiments tab can
-      // compute significance against lead_captured / lead_delivered.
-      posthog.capture('$feature_flag_called', { '$feature_flag': 'meta-hero-v1', '$feature_flag_response': v });
-      posthog.register({ hero_variant: v });
     });
   }
 </script>

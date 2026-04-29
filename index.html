@@ -1298,6 +1298,10 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
         delivered: delivered,
         latency_ms: Date.now() - submitStartMs,
       });
+      // Identify by phone — Apr 29 fix matching the variant-form path.
+      try {
+        posthog.identify(phone, { first_name: name, phone: phone, channel: 'baseline', landed_via: '/' });
+      } catch (_) {}
     }
 
     document.getElementById('qfFormWrap').style.display='none';
@@ -1342,6 +1346,23 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
   // Also catch checkbox change (focus on a checkbox doesn't always fire on mobile)
   var gc = document.getElementById('varGenCheck');
   if (gc) gc.addEventListener('change', function(){ fireFormStarted('varGenCheck'); });
+
+  // lead_scroll_depth — fires at 25/50/75/100% scroll milestones, each once.
+  // Without this, we can't see WHERE users bail on the homepage. /m/ and /g/
+  // had it; homepage (where 99% of traffic goes) didn't. Apr 29 fix.
+  var scrollMilestones = { 25: false, 50: false, 75: false, 100: false };
+  window.addEventListener('scroll', function() {
+    var h = document.documentElement;
+    var scrolled = (h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) * 100;
+    for (var mark of [25, 50, 75, 100]) {
+      if (!scrollMilestones[mark] && scrolled >= mark) {
+        scrollMilestones[mark] = true;
+        if (typeof posthog !== 'undefined') {
+          posthog.capture('lead_scroll_depth', { depth: mark, channel: 'baseline' });
+        }
+      }
+    }
+  }, { passive: true });
 
   // Generator checkbox
   document.getElementById('varGenCheck').addEventListener('change', function(){
@@ -1509,6 +1530,13 @@ document.querySelectorAll('a[href="#getStarted"]').forEach(function(btn){
         delivered: delivered,
         latency_ms: submitLatencyMs,
       });
+      // Identify the visitor by phone so future events from this person tie
+      // back to their CRM contact. Apr 29 fix — homepage was missing identify
+      // (only /m/ and /g/ had it). Without this, downstream funnel analysis
+      // (form-start to install) loses the chain at the lead_captured step.
+      try {
+        posthog.identify(rawPhone, { first_name: name, phone: rawPhone, channel: 'baseline', landed_via: '/' });
+      } catch (_) {}
     }
 
     // Swap Sending… → ✅ once POST has actually gone out.

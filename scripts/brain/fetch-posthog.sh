@@ -21,11 +21,20 @@ fi
 QUERY_URL="$POSTHOG_HOST/api/projects/$PROJECT_ID/query/"
 
 run_hogql() {
+  # Apr 29 fix: bash interpolation was double-quoting embedded single-quotes
+  # in HogQL string literals (e.g., 'baseline', 'lead_form_started'), causing
+  # the channel + scroll funnel queries to silently return validation errors.
+  # PostHog's parser rejected them; the script returned empty results; rendering
+  # said "(no channel data)" — making the experimentation funnel BLIND.
+  # Fix: build the JSON via Python so single quotes inside string literals are
+  # passed through cleanly. Slower (Python startup) but bullet-proof.
   local query="$1"
+  local payload
+  payload=$(python3 -c "import json,sys; print(json.dumps({'query':{'kind':'HogQLQuery','query':sys.argv[1]}}))" "$query")
   curl -s -X POST "$QUERY_URL" \
     -H "Authorization: Bearer $PH_KEY" \
     -H "Content-Type: application/json" \
-    -d "{\"query\":{\"kind\":\"HogQLQuery\",\"query\":\"$query\"}}"
+    -d "$payload"
 }
 
 # 1. Total pageviews last 7d
