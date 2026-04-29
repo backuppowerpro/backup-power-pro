@@ -472,11 +472,12 @@ function AuthGate({ onAuth }) {
               onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
               onBlur={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
               style={{
-                padding: '12px 14px', height: 44,
+                padding: '12px 14px', height: 48,
                 background: 'var(--sunken)',
                 boxShadow: 'var(--ring)',
                 borderRadius: 'var(--radius-sm)',
-                fontSize: 15, fontFamily: 'var(--font-body)',
+                // 16px font prevents iOS Safari auto-zoom on focus.
+                fontSize: 16, fontFamily: 'var(--font-body)',
                 color: 'var(--text)',
                 border: 'none', outline: 'none',
                 boxSizing: 'border-box',
@@ -498,11 +499,12 @@ function AuthGate({ onAuth }) {
               onFocus={e => { e.currentTarget.style.boxShadow = 'var(--ring-focus)' }}
               onBlur={e => { e.currentTarget.style.boxShadow = 'var(--ring)' }}
               style={{
-                padding: '12px 14px', height: 44,
+                padding: '12px 14px', height: 48,
                 background: 'var(--sunken)',
                 boxShadow: 'var(--ring)',
                 borderRadius: 'var(--radius-sm)',
-                fontSize: 15, fontFamily: 'var(--font-body)',
+                // 16px font prevents iOS Safari auto-zoom on focus.
+                fontSize: 16, fontFamily: 'var(--font-body)',
                 color: 'var(--text)',
                 border: 'none', outline: 'none',
                 boxSizing: 'border-box',
