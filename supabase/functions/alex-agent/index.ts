@@ -37,10 +37,10 @@ const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0
 const TEST_MODE = (Deno.env.get('ALEX_TEST_MODE') ?? 'true').toLowerCase() === 'true'
 console.log('[alex] Mode:', TEST_MODE ? 'TEST (KEY_PHONE only)' : 'PRODUCTION')
 
-const MODEL = 'claude-opus-4-7'
+const MODEL = 'claude-sonnet-4-5-20250929'  // Switched from opus-4-7 — Sonnet 4.5 has no adaptive-thinking conflicts with tool_choice forcing. Cheaper too. (Apr 28)
 const MAX_TOKENS       = 250   // SMS — keep responses tight
 const MAX_HISTORY_MSGS = 60    // ~30 exchanges. Bumped from 30 on Apr 27 — Key feedback: customers should be able to reference anything earlier in the convo and Alex should recall it. Opus 4.7 has plenty of headroom; the cost is just per-call tokens.
-const MAX_TOOL_LOOPS   = 5     // Safety valve — prevent infinite agentic loops
+const MAX_TOOL_LOOPS   = 10    // Apr 28 — bumped from 5 to 10. Claude with think+send_sms architecture sometimes thinks 3-4 times before sending. 5 was too tight.
 const MAX_SMS_CHARS    = 320   // Hard cap aligned with prompt rule (line ~288) and dojo's deterministic OVER_LENGTH check. 2026-04-28 — was 360, but bot-detector tripped at 350. Single SMS standard is 160; 320 = 2 segments — anything more is bot-shaped.
                                // Standard SMS is 160 chars but most phones concatenate up to 3 segments (480)
 const MAX_UNANSWERED_MSGS = 5  // Per-phone rate limit — if 5+ messages pile up without Alex responding, likely spam
@@ -1564,11 +1564,16 @@ async function callClaude(messages: any[], contactContext?: string): Promise<any
     thinking: { type: 'disabled' },
     messages: apiMessages,
   }
-  // ALWAYS force tool use — Claude must call SOME tool. With think + send_sms
-  // available, Claude naturally uses think for reasoning, send_sms to reply.
-  // This prevents text replies that bypass the structured-output safety.
-  // Compatible with thinking disabled (which we set above).
-  payloadObj.tool_choice = { type: 'any' }
+  // tool_choice strategy:
+  // - First call (no tool_results yet): tool_choice=any (Claude can think first)
+  // - Subsequent calls (already has tool_results): tool_choice=send_sms FORCED
+  //   This prevents Claude from calling think repeatedly and never sending.
+  //   He gets ONE chance to think, then must send.
+  if (hasToolResults) {
+    payloadObj.tool_choice = { type: 'tool', name: 'send_sms' }
+  } else {
+    payloadObj.tool_choice = { type: 'any' }
+  }
   const payload = JSON.stringify(payloadObj)
 
   // One retry on failure (network blip, 500, overloaded)
@@ -2107,10 +2112,24 @@ async function runAlex(
   while (true) {
     if (++loops > MAX_TOOL_LOOPS) {
       console.error('[alex] Hit max tool loop limit — breaking out')
-      // Previous fallback text ("Give me just a moment, let me get Key on this.")
-      // was on the forbidden-stalling list — it implied an external lookup.
-      // If the agentic loop runs long enough to hit this, escape via a warm
-      // ack that doesn't promise any action we won't take.
+      // Strip any orphan tool_use blocks from the last assistant message
+      // before saving. Otherwise the next turn fails with "tool_use ids
+      // were found without tool_result blocks". We need a clean history.
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i]
+        if (m.role !== 'assistant') continue
+        if (Array.isArray(m.content)) {
+          // Keep only text blocks; drop tool_use without matching tool_result
+          const textBlocks = m.content.filter((b: any) => b?.type === 'text')
+          if (textBlocks.length > 0) {
+            m.content = textBlocks
+          } else {
+            // No text either — replace with a safe ack
+            m.content = [{ type: 'text', text: 'Got it, thanks.' }]
+          }
+        }
+        break
+      }
       return { response: 'Got it, thanks.', updatedMessages: messages, complete, summary: completeSummary }
     }
     const data = await callClaude(messages, contactContext)
@@ -3948,7 +3967,14 @@ Deno.serve(async (req) => {
     summary = result.summary
   } catch (err) {
     console.error('[alex] Agent error:', err)
-    response = 'Hey, give me just a sec. Let me get Key to follow up with you on this.'
+    // Apr 28 — for dojo phones (+1800555), surface the error in the response
+    // so we can SEE what's failing instead of swallowing it. Production phones
+    // get the safe fallback.
+    if (fromPhone.startsWith('+1800555')) {
+      response = '[DBG_AGENT_ERROR] ' + String(err).slice(0, 250)
+    } else {
+      response = 'Hey, give me just a sec. Let me get Key to follow up with you on this.'
+    }
 
     // Notify Key that Alex failed so he can follow up manually
     const digits = fromPhone.replace(/\D/g, '').slice(-10)
@@ -4334,15 +4360,24 @@ Deno.serve(async (req) => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i]
       if (m.role !== 'assistant') continue
-      // Rebuild content as a single text block (keeps tool_use blocks if present earlier).
+      // Rebuild content. CRITICAL: do NOT append a text block to an
+      // assistant message that has tool_use blocks — Anthropic's API
+      // rejects mixed [tool_use, text] structure on subsequent turns
+      // ("tool_use ids were found without tool_result blocks immediately
+      // following"). When all tool_use are present (send_sms case), leave
+      // structure alone — the customer-facing message is already in the
+      // tool's customer_message field.
       if (Array.isArray(m.content)) {
-        // Replace text blocks with the final customer-facing message; keep tool_use blocks.
         const hasText = m.content.some((b: any) => b?.type === 'text')
+        const hasToolUse = m.content.some((b: any) => b?.type === 'tool_use')
         if (hasText) {
+          // Replace existing text block with final response; keep tool_use blocks.
           m.content = m.content.map((b: any) => b?.type === 'text' ? { type: 'text', text: response } : b)
-        } else {
+        } else if (!hasToolUse) {
+          // Pure-text-but-no-text-block (shouldn't happen, but safe).
           m.content = [...m.content, { type: 'text', text: response }]
         }
+        // else: tool_use only, no text — leave as-is. send_sms call carries the message.
       } else if (typeof m.content === 'string' && m.content !== response) {
         m.content = response
       }
