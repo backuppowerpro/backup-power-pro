@@ -70,6 +70,17 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
+  if (action === 'session') {
+    // Return alex_sessions.messages JSON (the LLM conversation history,
+    // NOT the CRM messages table). Useful for debugging tool_use/tool_result
+    // pairing issues.
+    const { data: sess } = await sb.from('alex_sessions').select('messages').eq('phone', phone).limit(1)
+    return new Response(JSON.stringify({
+      phone,
+      messages: sess?.[0]?.messages || [],
+    }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+
   if (action === 'messages') {
     // Resolve contact id by phone, then return all messages for it
     const { data: contacts } = await sb.from('contacts').select('id').eq('phone', phone).limit(1)

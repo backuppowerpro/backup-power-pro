@@ -2175,10 +2175,12 @@ async function runAlex(
             console.warn('[alex] send_sms called with empty customer_message; full input:', JSON.stringify(block.input))
           }
           // Append a synthetic tool_result so the message history is well-formed.
+          // Use array-of-content-blocks format (some Anthropic API paths
+          // are pickier than the string format).
           toolResults.push({
             type: 'tool_result',
             tool_use_id: block.id,
-            content: 'SMS sent. Turn complete.',
+            content: [{ type: 'text', text: 'SMS delivered to customer. Turn complete.' }],
           })
           continue
         }
@@ -2557,11 +2559,10 @@ function cleanSms(text: string): string {
     cleaned = cleaned.slice('TRUSTED'.length)
     console.log('[alex] TRUSTED prefix detected, skipping META + price + code filters')
   }
-  // Apr 28: META filter DISABLED globally. The send_sms structured output is
-  // the leak-proof guarantee. When Claude does generate text instead of
-  // send_sms (rare with tool_choice=any), let it through with basic cleaning
-  // only. The META filter was over-firing on legitimate replies.
-  if (false && !trustedSms && containsMetaLeak(cleaned)) {
+  // META filter: skipped when trustedSms (send_sms structured output is
+  // already leak-proof via schema). Active when response came from text
+  // fallback path — that's where leaks could happen.
+  if (!trustedSms && containsMetaLeak(cleaned)) {
     // Debug: which regex caught it?
     const metaLeakRxMatch = cleaned.match(META_LEAK_RX)
     const metaTagMatch = cleaned.match(META_TAG_RX)
