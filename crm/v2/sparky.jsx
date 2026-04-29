@@ -124,8 +124,8 @@ function ConfirmCard() {
           ))}
         </div>
         <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:4 }}>
-          <button className="btn-ghost" style={{ height: 36, padding: '0 18px', fontSize: 13 }}>Deny</button>
-          <button className="btn-gold"  style={{ height: 36, padding: '0 20px', fontSize: 13 }}>Execute</button>
+          <button className="btn-ghost" style={{ minHeight: 44, padding: '0 20px', fontSize: 14 }}>Deny</button>
+          <button className="btn-gold"  style={{ minHeight: 44, padding: '0 22px', fontSize: 14 }}>Execute</button>
         </div>
       </div>
     </div>

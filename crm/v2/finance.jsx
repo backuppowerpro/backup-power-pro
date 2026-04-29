@@ -116,7 +116,7 @@ function StatusPill({ s }) {
 function Bell({ n }) {
   return (
     <div style={{
-      width: 34, height: 34,
+      width: 44, height: 44,
       display: 'grid', placeItems: 'center',
       background: 'var(--card)',
       boxShadow: 'var(--ring)',
@@ -157,9 +157,9 @@ function ActionBtn({ label, tone = 'flat' }) {
     : (label || '').charAt(0) + (label || '').slice(1).toLowerCase();
   return (
     <button style={{
-      height: 30, padding: '0 14px',
+      minHeight: 44, padding: '0 18px',
       background: t.bg, color: t.fg,
-      fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+      fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13,
       letterSpacing: '0.01em',
       borderRadius: 'var(--radius-pill)',
       boxShadow: t.shadow,
@@ -445,7 +445,7 @@ function FinanceMobile({ view = 'prop' }) {
         })}
       </div>
       <SubTabs active={view} />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px calc(96px + env(safe-area-inset-bottom))' }}>
         {view === 'prop' && PROPOSALS.map((r, i) => (
           <div key={i} style={{
             background: 'var(--card)', boxShadow: 'var(--shadow-sm), var(--ring)',

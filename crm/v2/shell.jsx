@@ -99,7 +99,7 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, onOpen
             aria-label={inboxCount > 0 ? `Inbox (${inboxCount} unread)` : 'Inbox'}
             title={inboxCount > 0 ? `${inboxCount} new` : 'Inbox'}
             style={{
-              width: 34, height: 34, position: 'relative',
+              width: 44, height: 44, position: 'relative',
               display: 'grid', placeItems: 'center',
               color: 'var(--text-muted)', cursor: 'pointer',
               borderRadius: 'var(--radius-pill)',
@@ -132,7 +132,7 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, onOpen
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           title={isDark ? 'Light mode' : 'Dark mode'}
           style={{
-          width: 34, height: 34, display: 'grid', placeItems: 'center',
+          width: 44, height: 44, display: 'grid', placeItems: 'center',
           color: 'var(--text-muted)', cursor: 'pointer',
           borderRadius: 'var(--radius-pill)',
           boxShadow: 'var(--ring)',
@@ -150,8 +150,8 @@ function TopBar({ compact = false, onToggleDark, onNewLead, onOpenSearch, onOpen
           // on mobile and pushing the avatar offscreen. On compact (mobile)
           // we now render as a circular icon-only button; desktop keeps
           // the labeled pill. whiteSpace: nowrap belt-and-suspenders.
-          height: 34, padding: compact ? 0 : '0 16px',
-          width: compact ? 34 : 'auto',
+          height: 44, padding: compact ? 0 : '0 16px',
+          width: compact ? 44 : 'auto',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           background: 'var(--gold)', color: 'var(--navy)',
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,

@@ -174,7 +174,7 @@ function MsgChips({ active = 'all', onChange }) {
     { id:'call',  label:'Calls',   title: 'Threads containing voice calls' },
   ];
   return (
-    <div style={{ display: 'flex', gap: 8, padding: '12px 16px 10px', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 8, padding: '12px 16px 10px', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
       {chips.map(c => {
         const on = c.id === active;
         return (
@@ -183,7 +183,7 @@ function MsgChips({ active = 'all', onChange }) {
             title={c.title}
             aria-pressed={on}
             style={{
-              padding: '7px 14px', fontSize: 12,
+              minHeight: 44, padding: '0 16px', fontSize: 13,
               fontFamily: 'var(--font-display)', fontWeight: on ? 700 : 600,
               letterSpacing: '0.01em',
               color: on ? '#fff' : 'var(--text-muted)',
@@ -195,6 +195,7 @@ function MsgChips({ active = 'all', onChange }) {
               border: 'none', outline: 'none',
               borderRadius: 'var(--radius-pill)',
               cursor: 'pointer',
+              flex: '0 0 auto',
               transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
             }}
             onMouseEnter={e => { if (!on) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; } }}
@@ -229,16 +230,17 @@ function MessagesInbox({ compact = false, threads, onSelect, activeId }) {
           onChange={e => setQ(e.target.value)}
           placeholder="Search threads…"
           style={{
-            width: '100%', height: 36, padding: '0 12px',
-            fontFamily: 'var(--font-body)', fontSize: 14,
+            width: '100%', height: 44, padding: '0 14px',
+            fontFamily: 'var(--font-body)', fontSize: 16,
             background: 'var(--card)', boxShadow: 'var(--pressed-2)',
             border: 'none',
+            borderRadius: 'var(--radius-md)',
           }}
         />
       </div>
       <MsgChips active={filter} onChange={setFilter} />
       <div style={{
-        flex: 1, overflowY: 'auto', margin: '0 16px 88px',
+        flex: 1, overflowY: 'auto', margin: '0 16px calc(96px + env(safe-area-inset-bottom))',
         background: 'var(--card)',
       }}>
         {data.length === 0 ? (

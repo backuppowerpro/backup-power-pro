@@ -65,7 +65,7 @@ function DoneBtn({ label = 'Mark done' }) {
       aria-label={label}
       title={label}
       style={{
-        width: 30, height: 30,
+        width: 44, height: 44,
         background: 'var(--card)',
         color: 'var(--text-muted)',
         borderRadius: 'var(--radius-pill)',
@@ -108,9 +108,9 @@ function OrderBtn({ label }) {
       aria-label={aria}
       title={aria}
       style={{
-        height: 30, padding: '0 14px',
+        minHeight: 44, padding: '0 18px',
         background: 'var(--gold)', color: 'var(--navy)',
-        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
         letterSpacing: '0.06em', textTransform: 'uppercase',
         borderRadius: 'var(--radius-pill)',
         boxShadow: 'var(--shadow-gold)',
@@ -161,27 +161,27 @@ function MorningBriefing({ mobile = false }) {
             color: '#fff',
           }}>Good morning, Key.</span>
         </div>
-        {!mobile && (
-          <button
-            type="button"
-            aria-label="Close briefing"
-            title="Close briefing"
-            style={{
-              width: 34, height: 34,
-              background: 'rgba(255,255,255,0.08)', color: '#fff',
-              borderRadius: 'var(--radius-pill)',
-              display: 'grid', placeItems: 'center',
-              cursor: 'pointer', border: 'none',
-              transition: 'background var(--dur) var(--ease)',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-          >{BriefIcons.x}</button>
-        )}
+        <button
+          type="button"
+          aria-label="Close briefing"
+          title="Close briefing"
+          onClick={() => { try { window.dispatchEvent(new CustomEvent('briefing:close')); } catch (_) {} }}
+          style={{
+            width: 44, height: 44,
+            background: 'rgba(255,255,255,0.08)', color: '#fff',
+            borderRadius: 'var(--radius-pill)',
+            display: 'grid', placeItems: 'center',
+            cursor: 'pointer', border: 'none',
+            transition: 'background var(--dur) var(--ease)',
+            flex: '0 0 auto',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+        >{BriefIcons.x}</button>
       </div>
 
       <div style={{
-        flex: 1, overflowY: 'auto', padding: 16,
+        flex: 1, overflowY: 'auto', padding: '16px 16px calc(16px + env(safe-area-inset-bottom))',
         background: 'var(--bg)',
       }}>
         <BriefSection color="var(--red)" label="Overdue · 3">
@@ -244,11 +244,11 @@ function MorningBriefing({ mobile = false }) {
         background: 'var(--card)',
       }}>
         <button style={{
-          height: 40, padding: '0 16px',
+          minHeight: 44, padding: '0 18px',
           background: 'transparent', color: 'var(--text-muted)',
           fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14,
           borderRadius: 'var(--radius-pill)',
-          cursor: 'pointer',
+          cursor: 'pointer', border: 'none',
         }}>Dismiss</button>
         <button className="btn-gold" style={{ height: 44 }}>Open CRM →</button>
       </div>

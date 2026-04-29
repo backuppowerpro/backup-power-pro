@@ -355,36 +355,40 @@ function ListToolbar({ mobile }) {
       padding: mobile ? '12px 10px 8px' : '16px 16px 10px',
     }}>
       <div style={{
-        display: 'flex', height: 36,
+        display: 'flex', height: 48,
         background: 'var(--card)',
         boxShadow: 'var(--ring)',
         borderRadius: 'var(--radius-pill)',
-        padding: 3,
+        padding: 4,
         alignSelf: 'flex-start',
+        maxWidth: '100%',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {subs.map(s => (
           <button key={s.id} style={{
-            height: 30, padding: mobile ? '0 14px' : '0 16px',
+            minHeight: 40, padding: mobile ? '0 16px' : '0 18px',
             background: s.active ? 'var(--navy)' : 'transparent',
             color: s.active ? '#fff' : 'var(--text-muted)',
             fontFamily: 'var(--font-display)',
             fontWeight: s.active ? 700 : 500,
-            fontSize: 12, letterSpacing: '0.01em',
+            fontSize: 13, letterSpacing: '0.01em',
             borderRadius: 'var(--radius-pill)',
             border: 'none', cursor: 'pointer',
+            flex: '0 0 auto',
             transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
           }}>{s.label}</button>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', whiteSpace: 'nowrap' }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
         {filters.map(f => (
           <button key={f.id} style={{
             flex: '0 0 auto',
-            height: 30, padding: '0 14px',
+            minHeight: 44, padding: '0 16px',
             background: f.active ? 'var(--navy)' : 'var(--card)',
             color: f.active ? '#fff' : 'var(--text-muted)',
             fontFamily: 'var(--font-display)',
-            fontWeight: 600, fontSize: 12,
+            fontWeight: 600, fontSize: 13,
             letterSpacing: '0.01em',
             borderRadius: 'var(--radius-pill)',
             boxShadow: f.active ? 'var(--shadow-sm)' : 'var(--ring)',
@@ -424,7 +428,7 @@ function LeadsListMobile({ rows: rowsProp, onSelect, showToolbar = false, focuse
       {showToolbar ? <ListToolbar mobile /> : null}
       <div style={{
         flex: 1, overflowY: 'auto',
-        padding: '0 0 88px',
+        padding: '0 0 calc(96px + env(safe-area-inset-bottom))',
         boxShadow: 'var(--pressed-2)',
         margin: '0 8px',
       }}>

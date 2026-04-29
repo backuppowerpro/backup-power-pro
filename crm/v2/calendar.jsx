@@ -107,11 +107,12 @@ function CalHeader() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button aria-label="Previous week" style={{
-          width: 34, height: 34,
+          width: 44, height: 44,
           background: 'var(--card)', color: 'var(--text-muted)',
           borderRadius: 'var(--radius-pill)',
           boxShadow: 'var(--ring)',
           display: 'grid', placeItems: 'center', cursor: 'pointer',
+          border: 'none',
           transition: 'background var(--dur) var(--ease)',
         }}
         onMouseEnter={e => e.currentTarget.style.background = 'var(--sunken)'}
@@ -122,11 +123,12 @@ function CalHeader() {
           letterSpacing: '-0.01em', color: 'var(--text)',
         }}>Week of Apr 13, 2026</span>
         <button aria-label="Next week" style={{
-          width: 34, height: 34,
+          width: 44, height: 44,
           background: 'var(--card)', color: 'var(--text-muted)',
           borderRadius: 'var(--radius-pill)',
           boxShadow: 'var(--ring)',
           display: 'grid', placeItems: 'center', cursor: 'pointer',
+          border: 'none',
           transition: 'background var(--dur) var(--ease)',
         }}
         onMouseEnter={e => e.currentTarget.style.background = 'var(--sunken)'}
@@ -135,28 +137,28 @@ function CalHeader() {
       </div>
       <div style={{ display: 'flex', gap: 10 }}>
         <button style={{
-          height: 34, padding: '0 16px',
+          minHeight: 44, padding: '0 18px',
           background: 'var(--gold)', color: 'var(--navy)',
-          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
           borderRadius: 'var(--radius-pill)',
           boxShadow: 'var(--shadow-gold)',
           border: 'none', cursor: 'pointer',
         }}>Today</button>
         <div style={{
-          display: 'flex', height: 34,
+          display: 'flex', height: 44,
           background: 'var(--card)',
           borderRadius: 'var(--radius-pill)',
           boxShadow: 'var(--ring)',
-          padding: 3,
+          padding: 4,
         }}>
           {['Day','Week','Month'].map(v => {
             const on = v === 'Week';
             return (
               <button key={v} style={{
-                height: 28, padding: '0 14px',
+                minHeight: 36, padding: '0 16px',
                 background: on ? 'var(--navy)' : 'transparent',
                 color: on ? '#fff' : 'var(--text-muted)',
-                fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+                fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13,
                 borderRadius: 'var(--radius-pill)',
                 border: 'none', cursor: 'pointer',
                 transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
@@ -273,15 +275,15 @@ function CalendarMobile() {
           letterSpacing: '-0.01em', color: 'var(--text)',
         }}>Apr 13 – 19, 2026</span>
         <button style={{
-          height: 30, padding: '0 14px',
+          minHeight: 44, padding: '0 18px',
           background: 'var(--gold)', color: 'var(--navy)',
-          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
           borderRadius: 'var(--radius-pill)',
           boxShadow: 'var(--shadow-gold)',
           border: 'none', cursor: 'pointer',
         }}>Today</button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px 12px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px calc(96px + env(safe-area-inset-bottom))' }}>
         {byDay.map((d, i) => (
           <div key={i} style={{ marginBottom: 12 }}>
             <div style={{

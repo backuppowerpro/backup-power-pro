@@ -346,34 +346,39 @@ function LeadsToolbar() {
       padding: '16px 16px 10px', gap: 16, flexWrap: 'wrap',
     }}>
       <div style={{
-        display: 'flex', height: 34, padding: 3,
+        display: 'flex', height: 48, padding: 4,
         background: 'var(--card)',
         boxShadow: 'var(--ring)',
         borderRadius: 'var(--radius-pill)',
+        maxWidth: '100%',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {subs.map(s => (
           <button key={s.id} style={{
-            height: 28, padding: '0 14px',
+            minHeight: 40, padding: '0 18px',
             background: s.active ? 'var(--navy)' : 'transparent',
             color: s.active ? '#fff' : 'var(--text-muted)',
             borderRadius: 'var(--radius-pill)',
             border: 'none', cursor: 'pointer',
-            fontFamily: 'var(--font-display)', fontWeight: s.active ? 700 : 500, fontSize: 12,
+            fontFamily: 'var(--font-display)', fontWeight: s.active ? 700 : 500, fontSize: 13,
             letterSpacing: '-0.005em',
+            flex: '0 0 auto',
           }}>{s.label}</button>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
         {filters.map(f => (
           <button key={f.id} style={{
-            height: 28, padding: '0 14px',
+            minHeight: 44, padding: '0 16px',
             background: f.active ? 'var(--navy)' : 'var(--card)',
             color: f.active ? '#fff' : 'var(--text-muted)',
             borderRadius: 'var(--radius-pill)',
             border: 'none', cursor: 'pointer',
             boxShadow: f.active ? 'none' : 'var(--ring)',
-            fontFamily: 'var(--font-display)', fontWeight: f.active ? 700 : 500, fontSize: 12,
+            fontFamily: 'var(--font-display)', fontWeight: f.active ? 700 : 500, fontSize: 13,
             letterSpacing: '-0.005em',
+            flex: '0 0 auto',
           }}>{f.label}</button>
         ))}
       </div>

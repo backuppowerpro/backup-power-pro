@@ -206,8 +206,11 @@ function displayNameFor(c) {
   if (raw && !/^unknown$/i.test(raw) && !/^customer$/i.test(raw) && !/^lead$/i.test(raw) && !/^-+$|^—$/.test(raw)) {
     return formatName(raw);
   }
+  // Nameless contact — show last-4 of phone with # prefix so it scans as
+  // "this is a lead identifier" rather than ellipsis garbage. Avatar
+  // initialsFor() also resolves '#1234' to '#' so the avatar isn't blank.
   const last4 = String(c.phone || '').replace(/\D/g, '').slice(-4);
-  return last4 ? `···${last4}` : 'Lead';
+  return last4 ? `#${last4}` : 'New lead';
 }
 
 // ── Error Boundary ──────────────────────────────────────────────────────────
@@ -4158,11 +4161,14 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
     includePermit: true,
     notes: '',
   });
-  // Smart Pricing — tier defaults to the contact's current tier; variant is
-  // auto-assigned 50/50 A/B on mount so the A/B test runs without Key having
-  // to remember to flip it. Key can override the tier inline.
+  // Smart Pricing — tier defaults to the contact's current tier.
+  // Apr 29: variant-B A/B test removed. It was auto-applying a $300 uplift
+  // 50% of the time, bypassing the canonical $1,197-$1,497 price range and
+  // the CLAUDE.md decision-protocol rule that pricing changes need Key's
+  // approval. Force variant='A' so price = tier baseline + tier's own uplift
+  // (Standard=0, Premium=$300, Premium+=$600 only when Key explicitly picks).
   const [tier, setTier] = useState(contact?.pricing_tier || 'standard');
-  const [variant] = useState(() => Math.random() < 0.5 ? 'A' : 'B');
+  const [variant] = useState('A');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
@@ -4218,15 +4224,15 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
       display: 'grid', placeItems: 'center', padding: 16,
     }}>
       <div ref={rootRef} onClick={e => e.stopPropagation()} style={{
-        width: 380, maxWidth: '100%',
+        width: 'min(380px, calc(100vw - 32px))',
         padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 20,
         background: 'var(--card)', boxShadow: 'var(--raised-2)',
       }}>
         {/* Amp — two buttons, no label */}
-        <div style={{ display: 'flex', height: 36, boxShadow: 'var(--raised-2)' }}>
+        <div style={{ display: 'flex', height: 44, boxShadow: 'var(--raised-2)' }}>
           {['30', '50'].map(a => (
             <button key={a} onClick={() => setState(s => ({ ...s, amp: a }))} style={{
-              flex: 1, fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: 600,
+              flex: 1, fontSize: 14, fontFamily: 'var(--font-body)', fontWeight: 600,
               background: state.amp === a ? 'var(--navy)' : 'transparent',
               color: state.amp === a ? 'var(--gold)' : 'var(--text-muted)',
               boxShadow: state.amp === a ? 'var(--pressed-2)' : 'none',
@@ -4242,11 +4248,12 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
           <span className="mono" style={{ fontSize: 13, minWidth: 40, textAlign: 'right', color: 'var(--text-muted)' }}>{state.runFt}ft</span>
         </div>
 
-        {/* Includes — tiny chips, name only */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {/* Includes — chips, name only. 44px tap targets per Apple HIG. */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {chips.map(c => (
             <button key={c.key} onClick={() => toggle(c.key)} style={{
-              padding: '6px 12px', fontSize: 12, fontFamily: 'var(--font-body)',
+              padding: '12px 16px', fontSize: 13, fontFamily: 'var(--font-body)', fontWeight: 600,
+              minHeight: 44,
               background: state[c.key] ? 'var(--navy)' : 'transparent',
               color: state[c.key] ? 'var(--gold)' : 'var(--text-muted)',
               boxShadow: state[c.key] ? 'var(--pressed-2)' : 'var(--raised-2)',
@@ -4255,15 +4262,16 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
           ))}
         </div>
 
-        {/* Smart Pricing — tier selector + A/B variant label. Uplift is
-            added on top of the base price computed above. */}
+        {/* Smart Pricing — tier selector. Uplift is added on top of the
+            base price computed above. */}
         <div style={{ display: 'flex', gap: 6 }}>
           {TIER_IDS.map(id => {
             const m = TIER_META[id];
             const on = tier === id;
             return (
               <button key={id} onClick={() => setTier(id)} title={m.blurb} style={{
-                flex: 1, padding: '8px 6px', fontSize: 10, letterSpacing: '.06em', fontWeight: 700,
+                flex: 1, padding: '14px 6px', fontSize: 11.5, letterSpacing: '.05em', fontWeight: 700,
+                minHeight: 44,
                 fontFamily: 'var(--font-chrome)',
                 background: on ? 'var(--tab-active-bg)' : 'var(--card)',
                 color: on ? 'var(--gold)' : 'var(--text-muted)',
@@ -4281,11 +4289,11 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
           </div>
           {uplift > 0 ? (
             <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.04em', marginTop: 2 }}>
-              base ${primaryBase.total.toLocaleString()} + ${uplift} bundle uplift · variant {variant}
+              base ${primaryBase.total.toLocaleString()} + ${uplift} {TIER_META[tier]?.label || tier} bundle
             </div>
           ) : (
             <div className="mono" style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.04em', marginTop: 2 }}>
-              standard · variant {variant}
+              {TIER_META[tier]?.label || tier} install
             </div>
           )}
         </div>
@@ -4300,13 +4308,15 @@ function QuickQuoteModal({ contact, onClose, onCreated }) {
 
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onClose} style={{
-            flex: 1, height: 'var(--ctrl-lg)', boxShadow: 'var(--raised-2)', cursor: 'pointer',
-            background: 'var(--card)', color: 'var(--text-muted)', border: 'none', fontSize: 12,
+            flex: 1, minHeight: 48, height: 'var(--ctrl-lg)',
+            boxShadow: 'var(--ring)', cursor: 'pointer',
+            background: 'var(--card)', color: 'var(--text-muted)', border: 'none', fontSize: 14,
             fontFamily: 'var(--font-body)', letterSpacing: '.04em',
           }}>Cancel</button>
           <button onClick={submit} disabled={busy} style={{
-            flex: 2, height: 'var(--ctrl-lg)', background: busy ? 'var(--text-muted)' : 'var(--navy)', color: '#fff',
-            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
+            flex: 2, minHeight: 48, height: 'var(--ctrl-lg)',
+            background: busy ? 'var(--text-muted)' : 'var(--navy)', color: '#fff',
+            fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, letterSpacing: '.04em',
             boxShadow: busy ? 'var(--pressed-2)' : 'var(--shadow-sm)',
             cursor: busy ? 'wait' : 'pointer', border: 'none',
           }}>{busy ? 'Creating...' : 'Create & Copy SMS'}</button>
@@ -6955,8 +6965,8 @@ function NewLeadModal({ open, onClose, onCreated, prefillPhone = null }) {
   }
 
   const inputBase = {
-    padding: '10px 12px', height: 42,
-    fontFamily: 'var(--font-body)', fontSize: 14,
+    padding: '10px 12px', height: 44,
+    fontFamily: 'var(--font-body)', fontSize: 16, // 16px prevents iOS Safari auto-zoom on focus
     color: 'var(--text)',
     background: 'var(--sunken)',
     border: 'none', outline: 'none',
@@ -9742,8 +9752,9 @@ function CalendarEventModal({ defaults, onClose, onSaved }) {
       }}>
         {(() => {
           const inputStyle = {
-            padding: '10px 12px', height: 42,
-            fontFamily: 'var(--font-body)', fontSize: 14,
+            padding: '12px 14px', height: 48,
+            // 16px font prevents iOS Safari auto-zoom on focus.
+            fontFamily: 'var(--font-body)', fontSize: 16,
             color: 'var(--text)',
             background: 'var(--sunken)',
             border: 'none', outline: 'none',
@@ -9797,11 +9808,11 @@ function CalendarEventModal({ defaults, onClose, onSaved }) {
                 { id: 'other',   label: 'Other' },
               ].map(t => (
                 <button type="button" key={t.id} onClick={() => setEventType(t.id)} style={{
-                  flex: 1, padding: '6px 10px', height: 30,
+                  flex: 1, padding: '0 12px', minHeight: 44,
                   background: eventType === t.id ? 'var(--navy)' : 'transparent',
                   color: eventType === t.id ? '#fff' : 'var(--text-muted)',
                   cursor: 'pointer', border: 'none',
-                  fontFamily: 'var(--font-display)', fontWeight: eventType === t.id ? 700 : 500, fontSize: 12,
+                  fontFamily: 'var(--font-display)', fontWeight: eventType === t.id ? 700 : 500, fontSize: 13,
                   letterSpacing: '-0.005em',
                   borderRadius: 'var(--radius-pill)',
                   transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
@@ -10132,7 +10143,7 @@ function LiveCalls({ onSelect }) {
   }
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: '12px 16px 24px' }}>
+    <div style={{ height: '100%', overflowY: 'auto', padding: '12px 16px calc(96px + env(safe-area-inset-bottom))' }}>
       {visibleRows.map(r => {
         const mins = r.durationSec ? Math.floor(r.durationSec / 60) : 0;
         const secs = r.durationSec ? r.durationSec % 60 : 0;
@@ -10276,10 +10287,11 @@ function reasonChipFor({ contact, signals }) {
   if (contact.stage === 7 || contact.stage === 8) return { label: 'Awaiting inspection', tone: 'purple' };
   if (signals.stuckQuoteDays > 2) {
     const d = Math.round(signals.stuckQuoteDays);
-    // Sentence-clear labels — a new hire reading 'Exit · 18d silent' has
-    // no idea what to do. 'Send exit message · 18d silent' is the action.
-    // 'Follow up · 4d silent' tells them to reply.
-    const f = d >= 7 ? 'Send exit message' : 'Follow up';
+    // Reason chips are STATUS, not verbs — the chip is a passive indicator
+    // (the whole row is the tap target → opens contact). Verb labels lied:
+    // tapping "Send exit message" did NOT send anything. Use status form.
+    // Audit 2026-04-28: "verb without action" → renamed to status-only.
+    const f = d >= 7 ? 'Exit ready' : 'Follow up due';
     return { label: `${f} · ${d}d silent`, tone: 'red' };
   }
   if (contact.stage >= 4 && contact.stage <= 6) {
@@ -10635,7 +10647,9 @@ function LiveQuickList({ onSelect }) {
   const chipRow = (
     <div style={{
       padding: '12px 16px 8px',
-      display: 'flex', gap: 8, flexWrap: 'wrap',
+      display: 'flex', gap: 8, flexWrap: 'nowrap',
+      overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none', msOverflowStyle: 'none',
     }}>
       {stageChips.map(c => {
         const active = stageFilter === c.id;
@@ -10643,7 +10657,7 @@ function LiveQuickList({ onSelect }) {
           <button key={c.id}
             onClick={() => setStageFilter(c.id)}
             style={{
-              padding: '7px 13px', height: 30,
+              padding: '11px 14px', minHeight: 44, flex: '0 0 auto',
               // No inset ring on inactive (Key 2026-04-26: "ugly sliver
               // around a lot of buttons"). Active = navy + soft shadow,
               // inactive = transparent that tints on hover.
@@ -10682,7 +10696,7 @@ function LiveQuickList({ onSelect }) {
     // matches that exactly.
     const stageNice = stageFilter.charAt(0).toUpperCase() + stageFilter.slice(1);
     return (
-      <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 24px' }}>
+      <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 calc(96px + env(safe-area-inset-bottom))' }}>
         <SmartTodayWidget />
         {sparkyBanner}
         {chipRow}
@@ -10695,7 +10709,7 @@ function LiveQuickList({ onSelect }) {
   }
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 24px' }}>
+    <div style={{ height: '100%', overflowY: 'auto', padding: '12px 0 calc(96px + env(safe-area-inset-bottom))' }}>
       <SmartTodayWidget />
       {sparkyBanner}
       {chipRow}
@@ -12920,7 +12934,7 @@ function GlobalSearchBar({ tab, onOpenHelp }) {
           placeholder={placeholder}
           style={{
             flex: 1, background: 'transparent', border: 'none', outline: 'none',
-            fontFamily: 'var(--font-body)', fontSize: 13.5,
+            fontFamily: 'var(--font-body)', fontSize: 16, // 16px prevents iOS Safari auto-zoom on focus
             color: 'var(--text)',
           }}
         />

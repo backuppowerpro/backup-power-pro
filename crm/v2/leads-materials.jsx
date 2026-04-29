@@ -97,8 +97,8 @@ function OrderedPill({ status }) {
 
 function OrderButton({ status }) {
   const common = {
-    height: 30, padding: '0 14px',
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+    minHeight: 44, padding: '0 18px',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
     letterSpacing: '0.01em',
     borderRadius: 'var(--radius-pill)',
     border: 'none', cursor: 'pointer',
@@ -178,14 +178,15 @@ function MatToolbar() {
     { id: 'rec',  label: 'Received' },
   ];
   const pillStyle = (active) => ({
-    height: 30, padding: '0 14px',
+    minHeight: 44, padding: '0 16px',
     background: active ? 'var(--navy)' : 'var(--card)',
     color: active ? '#fff' : 'var(--text-muted)',
-    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13,
     letterSpacing: '0.01em',
     borderRadius: 'var(--radius-pill)',
     boxShadow: active ? 'var(--shadow-sm)' : 'var(--ring)',
     border: 'none', cursor: 'pointer',
+    flex: '0 0 auto',
     transition: 'background var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
   });
   return (
@@ -194,22 +195,23 @@ function MatToolbar() {
       padding: '16px 16px 10px',
     }}>
       <div style={{
-        display: 'flex', height: 36,
+        display: 'flex', height: 52,
         background: 'var(--card)', boxShadow: 'var(--ring)',
-        borderRadius: 'var(--radius-pill)', padding: 3,
+        borderRadius: 'var(--radius-pill)', padding: 4,
+        overflowX: 'auto', WebkitOverflowScrolling: 'touch',
       }}>
         {subs.map(s => (
           <button key={s.id} style={{
             ...pillStyle(s.active),
-            height: 30, boxShadow: s.active ? 'var(--shadow-sm)' : 'none',
+            minHeight: 44, boxShadow: s.active ? 'var(--shadow-sm)' : 'none',
             background: s.active ? 'var(--navy)' : 'transparent',
           }}>{s.label}</button>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
         {amps.map(a => (<button key={a.id} style={pillStyle(a.active)}>{a.label}</button>))}
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
         {sts.map(s => (<button key={s.id} style={pillStyle(s.active)}>{s.label}</button>))}
       </div>
     </div>
@@ -370,19 +372,22 @@ function MaterialsMobile() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <div style={{ padding: '14px 12px 6px' }}>
         <div style={{
-          display: 'inline-flex', height: 34,
+          display: 'flex', height: 48,
           background: 'var(--card)', boxShadow: 'var(--ring)',
-          borderRadius: 'var(--radius-pill)', padding: 3,
+          borderRadius: 'var(--radius-pill)', padding: 4,
+          maxWidth: '100%',
+          overflowX: 'auto', WebkitOverflowScrolling: 'touch',
         }}>
           {subs.map(s => (
             <button key={s.id} style={{
-              height: 28, padding: '0 12px',
+              minHeight: 40, padding: '0 16px',
               background: s.active ? 'var(--navy)' : 'transparent',
               color: s.active ? '#fff' : 'var(--text-muted)',
               fontFamily: 'var(--font-display)',
-              fontWeight: s.active ? 700 : 500, fontSize: 11,
+              fontWeight: s.active ? 700 : 500, fontSize: 13,
               borderRadius: 'var(--radius-pill)',
               border: 'none', cursor: 'pointer',
+              flex: '0 0 auto',
             }}>{s.label}</button>
           ))}
         </div>
@@ -392,7 +397,7 @@ function MaterialsMobile() {
         <span className="smart-chip smart-chip--gold">2 pending</span>
         <span className="smart-chip smart-chip--green">2 received</span>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px 12px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px calc(96px + env(safe-area-inset-bottom))' }}>
         {MAT_ROWS.map((r, i) => (
           <div key={i} style={{
             background: 'var(--card)',
