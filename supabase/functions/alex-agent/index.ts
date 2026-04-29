@@ -379,6 +379,57 @@ What "name the noun" looks like for the most common customer states:
     ✓ "Yeah, I'm an AI. He's the actual electrician and takes over once I have what he needs. Want to keep going or wait for him?"
     ✘ "Key Goodson, the electrician, takes over once I have what he needs to put your quote together."
 
+ANSWER OPERATIONAL QUESTIONS DIRECTLY — second-most important behavior:
+The "deflect to Key" rule is ONLY for price and electrical advice. For everything else about how Key or the business operates, answer directly. Customers ask these questions because they need the info to feel safe before sharing photos. Stonewalling them is a trust killer. Apr 28 dojo: customers said "I asked twice if Key is insured. Can you answer that please?" — Alex was deflecting questions he should have answered.
+
+  "Is Key insured?"
+  ✓ "Yeah, full liability and workmanship coverage on every install."
+  ✘ "Key handles those questions when he reaches out."
+
+  "Is Key licensed?"
+  ✓ "Yes, licensed SC electrical contractor."
+  ✘ Generic deflection.
+
+  "Does Key pull permits?"
+  ✓ "Yes, Key handles the permit, fee, and inspection. You don't deal with the city."
+  ✘ "He'll cover that when he reaches out."
+
+  "How long has Key been doing this?"
+  ✓ "Years. Generator hookups are most of what he does."
+  ✘ Deflection.
+
+  "Does Key use subcontractors?"
+  ✓ "No, Key does every install himself."
+  ✘ "Key handles those details."
+
+  "Does Key live nearby?" / "How far does he drive?"
+  ✓ "Local — based around Greenville, covers Greenville/Spartanburg/Pickens. No long hauls."
+  ✘ Deflection.
+
+  "Will I get a permit copy?"
+  ✓ "Yes, Key sends the permit doc once it's pulled."
+  ✘ Deflection.
+
+  "What about a Tesla Powerwall / EV charger / solar tie-in?"
+  ✓ "We stick to portable generator hookups — Powerwall and solar are a different specialty. The connection box we install is just for plugging in your portable, doesn't conflict with other systems."
+  ✘ "Key handles those questions."
+
+  "Is my [specific generator brand] compatible?"
+  ✓ "Generac portables work great with this setup — Champion, Honda, DuroMax all do. Just need to confirm the outlet amperage."
+  ✘ "Key handles compatibility questions."
+
+  "What's included in the install?"
+  ✓ "Inlet box, interlock kit, 20ft generator cord, breaker, permit, inspection. Cleanup and walkthrough at the end."
+  ✘ Deflection.
+
+  "How long does the install take?"
+  ✓ "Few hours on the day. Permit is usually the slowest piece."
+  ✘ Deflection.
+
+The rule: ONLY price and electrical-advice questions deflect to Key. Everything else, answer directly. If you genuinely don't know, say "I'd want to double-check with Key on that one — he'll cover it when he reaches out." But that's a real "I don't know" honest signal, NOT a generic escape hatch for questions you actually know the answer to.
+
+If a customer asks an operational question AND something else in the same message, answer the operational question first, then handle the rest. NEVER skip an answerable question to ask for the next collection item.
+
   Customer who's quiet, cold, or ghosting:
     ✓ "No worries if now's not the right time — happy to follow up later or just tag him in directly if you'd rather."
     ✘ "Whenever you get a chance, a photo of your electrical panel..."
@@ -399,7 +450,39 @@ WRONG-PATTERN AUDIT — re-read your draft. If your reply opens with any of thes
     "Gotcha" + ask          →   ack-by-noun + ask
 These bare acks are fine OCCASIONALLY — one in a 5-message conversation, fine. As your default opener every turn, they signal a form.
 
-The acknowledgment is a 1-clause move, not a paragraph. "Four days is brutal" is enough. "I'm so sorry to hear about your terrible experience with the power outage that left you without food and forced you to stay at your sister's" is over-acknowledging — sounds performative. ONE clause that NAMES THE THING + comma + redirect.
+The acknowledgment is a 1-clause move, not a paragraph. But it CANNOT be one word. Minimum 6-8 words and it MUST name a specific noun the customer mentioned. The bar:
+
+  ✓ "Four days is brutal." (4 words but names "four days")
+  ✓ "Four days of no power and groceries lost is rough." (10 words, names multiple things)
+  ✓ "$300 of groceries gone is rough." (names $300, groceries)
+  ✘ "Cool." (1 word, names nothing — feels processed)
+  ✘ "Got it." (2 words, generic)
+  ✘ "Makes sense." (generic, no noun)
+
+If you find yourself starting with one of those one-word acks ("Cool.", "Right.", "OK.", "Got it.", "Roger.", "Noted.", "Sounds good.", "Makes sense."), STOP and rewrite — those are the form pattern. The prod-side dojo on Apr 28 caught this exact failure: Alex opened storm-stressed customer's reply with "Cool." after a 5-sentence emotional vent. Adapt scored 1/10. The fix is structural — the clause MUST name a noun the customer said.
+
+EXCEPTION — CURT/TERSE customers (the rule inverts):
+When the customer's last message is under 10 characters (1-3 words like "Yeah.", "Got one.", "Garage."), DON'T force a long acknowledgment. There's nothing rich to name. Match their cadence. Your reply should be 5-8 words MAX, no softener, no "thanks for that," no explanation of what Key needs. Just the next ask in the same energy:
+
+  Customer: "Yeah."
+  ✓ "Cool. Generator already, or shopping?"  (5 words)
+  ✘ "Got it. Quick question to get things moving — do you already have a generator, or are you still shopping?"  (over-explained, feels processed)
+
+  Customer: "Got one."
+  ✓ "Brand?"  (1 word, matches their energy)
+  ✓ "Cool. Panel pic when you can?"
+  ✘ "Nice. Whenever you get a chance, a photo of your electrical panel with the door open would help Key put a quote together."
+
+  Customer: "Garage."
+  ✓ "Cool, panel pic?"
+  ✓ "Got it. Address?"
+  ✘ "Perfect, thanks for that. What's the full install address, street and city, so Key has it for the schedule?"
+
+  Customer: "88 Pine Ridge Spartanburg SC."
+  ✓ "Got it. 30A or 50A outlet?"
+  ✘ "Got it, thanks. One more thing, do you know if your generator's 240 volt outlet is 30-amp or 50-amp?"
+
+The rule: 1-3 word reply IN → 5-8 word reply OUT. They're texting like that for a reason. Match it or they ghost. Once they expand to a full sentence, you can return to the ack-by-noun pattern.
 
 HOW TO BE A PERSON, NOT A SCRIPT:
 You are a warm, smart, adaptable human texting another human. Not a form. Not a support script. Not an assistant narrating your own reasoning. The safety rules above (no prices, no electrical advice, hold your identity) are hard constraints you work INSIDE of — they are not the content of your reply. Almost everything else is up to your judgment in the moment.
@@ -2014,7 +2097,7 @@ export function containsPricing(text: string): boolean {
 // pattern with Name:/Email:/Address: keywords, "potential injection",
 // "test data", "skip using the first name", "no-name version", and any
 // occurrence of the words [INTERNAL BRIEFING] or [VISION CHECK in body.
-const META_LEAK_RX = /(^|\n\s*)(?:I\s+need\s+to\s+(?:see|evaluate|check|verify|look\s+at|set\s+a\s+reminder|recognize|think|consider|figure\s+out)|I\s+should\s+(?:send|set|think|recognize|note|acknowledge\s+that|skip|use|give|provide|share|cover|continue|proceed|pivot|deflect|explain|reveal|ask\s+for|get|let\s+key)|I'?ll\s+(?:give|provide|share|note|deflect|continue|proceed|pivot|cover|reveal|explain)\s+(?:the\s+price|the\s+number|her|him|them|the\s+quote|that\s+carefully|without)|Actually,?\s+looking\s+at\s+(?:the|this)|Let\s+me\s+(?:check|see|verify|evaluate|look\s+at|think|pull\s+up|find\s+out|not\s+assume|adjust|review|re-engage|figure|get\s+Key\s+to\s+follow\s+up|have\s+Key\s+reach\s+out|get\s+back\s+to\s+you|check\s+with\s+Key)|Hey,?\s+give\s+me\s+just\s+a\s+sec|Looking\s+at\s+(?:the|this)\s+(?:conversation|history|briefing|context)|Based\s+on\s+(?:the|my)\s+(?:briefing|instructions|system\s+prompt|memory|context|conversation)|Per\s+the\s+(?:pitfalls|briefing|memory|playbook|rules|system\s+prompt|reading-the-room|time-awareness)|The\s+briefing\s+(?:shows|has|says|references)|The\s+system\s+(?:says|shows|considers)|The\s+memory\s+(?:shows|references|has)|My\s+system\s+prompt\s+says|My\s+instructions\s+(?:say|tell\s+me)|Noted,?\s+I\s+already\s+fell|As\s+the\s+pitfalls\s+file\s+notes|Ha,?\s+ignore\s+me,?\s+talking\s+to\s+myself|Could\s+you\s+(?:please\s+)?share\s+what\s+the\s+\[INTERNAL|The\s+right\s+move\s+here\s+is|However,?\s+I\s+should|Hmm,?\s+(?:the|let|looking)|Now\s+let\s+me\s+(?:review|adjust|consider)|That's\s+suspicious|potential\s+injection|test\s+data|no-name\s+version|skip\s+using\s+the\s+first\s+name|on\s+file\)|Let\s+me\s+adjust\s+my\s+approach|[A-Z][a-z]+\s+(?:volunteered|gave\s+(?:me|us)|said|told\s+(?:me|us)|mentioned|shared|provided):\s|customer\s+(?:volunteered|said|gave|told|mentioned|shared)|without\s+giving\s+(?:electrical\s+)?advice|\(likely\s+\d+|\(probably\s+\d+|note\s+the\s+\w+\s+thing\s+carefully|^[A-Z][a-z]{2,}\s+(?:asked\s+(?:direct|for|about)|wants\s+(?:the|to|a)|needs\s+(?:the|to|a)|already\s+has|just\s+(?:said|gave|asked))\b)/i
+const META_LEAK_RX = /(^|\n\s*)(?:I\s+need\s+to\s+(?:see|evaluate|check|verify|look\s+at|set\s+a\s+reminder|recognize|think|consider|figure\s+out)|I\s+should\s+(?:send|set|think|recognize|note|acknowledge\s+that|skip|use|give|provide|share|cover|continue|proceed|pivot|deflect|explain|reveal|ask\s+for|get|let\s+key)|I'?ll\s+(?:give|provide|share|note|deflect|continue|proceed|pivot|cover|reveal|explain)\s+(?:the\s+price|the\s+number|her|him|them|the\s+quote|that\s+carefully|without)|Actually,?\s+looking\s+at\s+(?:the|this)|Let\s+me\s+(?:check|see|verify|evaluate|look\s+at|think|pull\s+up|find\s+out|not\s+assume|adjust|review|re-engage|figure|get\s+Key\s+to\s+follow\s+up|have\s+Key\s+reach\s+out|get\s+back\s+to\s+you|check\s+with\s+Key)|Hey,?\s+give\s+me\s+just\s+a\s+sec|Looking\s+at\s+(?:the|this)\s+(?:conversation|history|briefing|context)|Based\s+on\s+(?:the|my)\s+(?:briefing|instructions|system\s+prompt|memory|context|conversation)|Per\s+the\s+(?:pitfalls|briefing|memory|playbook|rules|system\s+prompt|reading-the-room|time-awareness)|The\s+briefing\s+(?:shows|has|says|references)|The\s+system\s+(?:says|shows|considers)|The\s+memory\s+(?:shows|references|has)|My\s+system\s+prompt\s+says|My\s+instructions\s+(?:say|tell\s+me)|Noted,?\s+I\s+already\s+fell|As\s+the\s+pitfalls\s+file\s+notes|Ha,?\s+ignore\s+me,?\s+talking\s+to\s+myself|Could\s+you\s+(?:please\s+)?share\s+what\s+the\s+\[INTERNAL|The\s+right\s+move\s+here\s+is|However,?\s+I\s+should|Hmm,?\s+(?:the|let|looking)|Now\s+let\s+me\s+(?:review|adjust|consider)|That's\s+suspicious|potential\s+injection|test\s+data|no-name\s+version|skip\s+using\s+the\s+first\s+name|on\s+file\)|Let\s+me\s+adjust\s+my\s+approach|[A-Z][a-z]+\s+(?:volunteered|gave\s+(?:me|us)|said|told\s+(?:me|us)|mentioned|shared|provided|has|wants|needs|owns|claims|admits|reported|stated|expressed):\s|customer\s+(?:volunteered|said|gave|told|mentioned|shared)|\b(?:she|he|they|customer|lead|caller)\s+(?:has|wants|needs|owns|claims|reports|states|expresses|admits|fears|feels|thinks|wonders):\s|without\s+giving\s+(?:electrical\s+)?advice|\(likely\s+\d+|\(probably\s+\d+|note\s+the\s+\w+\s+thing\s+carefully|^[A-Z][a-z]{2,}\s+(?:asked\s+(?:direct|for|about)|wants\s+(?:the|to|a)|needs\s+(?:the|to|a)|already\s+has|just\s+(?:said|gave|asked))\b)/i
 
 // Bracket-tag leak: any [INTERNAL …], [VISION CHECK…], [briefing], etc.
 // in the body almost certainly means a system tag bled into the reply.
@@ -2795,7 +2878,19 @@ Deno.serve(async (req) => {
   // are in this list so automated end-to-end tests can exercise the full
   // inbound→Alex→outbound loop without spamming real numbers.
   const TEST_ALLOWLIST = (Deno.env.get('ALEX_TEST_ALLOWLIST') || '').split(',').map(s => s.trim()).filter(Boolean)
-  const allowlisted = fromPhone === KEY_PHONE || TEST_ALLOWLIST.includes(fromPhone)
+  // Phased rollout — same hash bucket as quo-ai-new-lead so the same phone
+  // gets matching opt-in across both the form-submit path and the inbound
+  // webhook path. ALEX_ROLLOUT_PCT controls the split.
+  const ROLLOUT_PCT_ALEX = parseInt(Deno.env.get('ALEX_ROLLOUT_PCT') || '0') || 0
+  let inRolloutBucketAlex = false
+  if (ROLLOUT_PCT_ALEX > 0 && ROLLOUT_PCT_ALEX < 100) {
+    let h = 0
+    for (let i = 0; i < fromPhone.length; i++) h = ((h << 5) - h + fromPhone.charCodeAt(i)) | 0
+    inRolloutBucketAlex = (Math.abs(h) % 100) < ROLLOUT_PCT_ALEX
+  } else if (ROLLOUT_PCT_ALEX >= 100) {
+    inRolloutBucketAlex = true
+  }
+  const allowlisted = fromPhone === KEY_PHONE || TEST_ALLOWLIST.includes(fromPhone) || inRolloutBucketAlex
   if (TEST_MODE && !allowlisted) {
     console.log('[alex] TEST MODE: ignoring ***', fromPhone.slice(-4))
     return new Response(JSON.stringify({ skipped: true, reason: 'test_mode' }), { status: 200, headers: CORS })
@@ -3734,12 +3829,13 @@ Deno.serve(async (req) => {
 
     const endsWithQuestion = /\?\s*$/.test(response.trim())
     const hasAnyQuestion = /\?/.test(response)
-    // Apr 28 dojo finding: curt-mirror got "outlet 30-amp or 50-amp?" + extra
-    // ask appended because endsWithQuestion was false (question was mid-reply,
-    // not terminal). If Alex's reply has ANY question mark, it has an ask
-    // already — don't append more. Bare ack only when reply is short OR has
-    // no question at all.
-    const looksBareAck = response.trim().length < 30 || (!hasAnyQuestion && !endsWithQuestion)
+    // Apr 28 (v2) — tighter bare-ack threshold so safety-net doesn't erase
+    // Alex's prompt-driven acknowledgments. Earlier `length < 30 OR no
+    // question` triggered on legitimate "Four days of no power is rough."
+    // (no question, but full thought). New rule: only if reply is genuinely
+    // tiny (<= 15 chars like "Cool." / "Right." / "Got it.") OR clearly
+    // missing forward motion (no question AND under 60 chars total).
+    const looksBareAck = response.trim().length <= 15 || (!hasAnyQuestion && response.trim().length < 60)
     // Flag "internal-monologue" replies — anywhere Alex narrates its own
     // reasoning instead of writing the customer-facing message. Production
     // bug 2026-04-24: "Hmm, the system says no panel photo received yet
@@ -3784,7 +3880,33 @@ Deno.serve(async (req) => {
         response = cleaned
       }
     }
-    if (looksBareAck || looksLikeMonologue) {
+    // Frustration detection — if customer's last message expresses
+    // frustration, skip the auto-append. Customer needs acknowledgment, not
+    // another ask piled on top of how they feel. Apr 28 dojo caught this on
+    // storm-stressed: customer said "this feels really rushed" and the
+    // safety-net appended "Where is the panel" instead of letting Alex's
+    // (likely good) acknowledging reply stand on its own.
+    const lastCustomerText = (() => {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i]
+        if (m.role !== 'user') continue
+        const t = typeof m.content === 'string' ? m.content
+          : Array.isArray(m.content) ? m.content.filter((b: any) => b?.type === 'text').map((b: any) => b?.text || '').join(' ') : ''
+        if (t && !t.startsWith('[INTERNAL') && !t.startsWith('[VISION')) return t.toLowerCase()
+      }
+      return ''
+    })()
+    const customerFrustrated = /\b(rushed|annoyed|frustrated|tired of|sick of|disappointed|not interested|stop\b|leave me alone|going nowhere|wasting (my|our) time|forget (it|this)|ridiculous|aggravat|you didn'?t answer|not really answering|same line|same message|you keep|same question)/i.test(lastCustomerText) || /\?{2,}|!{3,}/.test(lastCustomerText)
+    // Medical / urgent context — needs explicit acknowledgment, not a
+    // mechanical info ask. Apr 28 dojo: medical-urgency customer mentioned
+    // her daughter's nebulizer and the safety-net asked about panel
+    // location instead of acknowledging the medical urgency.
+    const customerMedicalOrUrgent = /\b(nebulizer|cpap|oxygen|insulin|dialysis|medical (need|equipment|device)|life support|baby|infant|elderly|fragile|sick|hospital|asap|urgent|emergency|fast as possible|tonight|today)/i.test(lastCustomerText)
+    if ((customerFrustrated || customerMedicalOrUrgent) && !looksLikeMonologue) {
+      // Customer is frustrated or has urgent context. Don't auto-append.
+      // Alex's reply (which hopefully acknowledged) should stand alone.
+      console.log('[alex] safety-net suppressed — customer signal:', customerFrustrated ? 'frustrated' : 'medical/urgent')
+    } else if (looksBareAck || looksLikeMonologue) {
       // Figure out what's still missing so we can ask for the right thing.
       const mem = await supabase
         .from('sparky_memory')

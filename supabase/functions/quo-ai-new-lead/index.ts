@@ -366,7 +366,22 @@ Deno.serve(async (req) => {
   // holding text so they know their form went through and Key will
   // follow up — that's the baseline expectation of any web form.
   // Notify SMS to Key still fires above regardless.
-  const alexOptIn = !TEST_MODE || normalizedPhone === KEY_PHONE || TEST_ALLOWLIST.includes(normalizedPhone)
+  // Phased rollout: when ALEX_ROLLOUT_PCT > 0, a deterministic hash-bucket
+  // of the phone decides whether this lead gets full Alex or the static
+  // holding text. Same phone always gets the same experience (so a customer
+  // who texts back gets matched correctly downstream). 0 = no rollout
+  // (TEST_MODE controls everything), 100 = full rollout. Apr 28 — added so
+  // we can ramp Alex from 10% → 30% → 100% over a few days while watching.
+  const ROLLOUT_PCT = parseInt(Deno.env.get('ALEX_ROLLOUT_PCT') || '0') || 0
+  let inRolloutBucket = false
+  if (ROLLOUT_PCT > 0 && ROLLOUT_PCT < 100) {
+    let h = 0
+    for (let i = 0; i < normalizedPhone.length; i++) h = ((h << 5) - h + normalizedPhone.charCodeAt(i)) | 0
+    inRolloutBucket = (Math.abs(h) % 100) < ROLLOUT_PCT
+  } else if (ROLLOUT_PCT >= 100) {
+    inRolloutBucket = true
+  }
+  const alexOptIn = !TEST_MODE || normalizedPhone === KEY_PHONE || TEST_ALLOWLIST.includes(normalizedPhone) || inRolloutBucket
   if (!alexOptIn) {
     console.log('[new-lead] TEST_MODE — static holding SMS for non-allowlisted phone ***', normalizedPhone.slice(-4))
     // Static holding-message — identifies brand (CTIA 10DLC compliant),
