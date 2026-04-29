@@ -2339,7 +2339,17 @@ function cleanSms(text: string): string {
   // varies per session to avoid the "same canned line 3 turns in a row"
   // failure caught in the dojo on 2026-04-28.
   if (containsMetaLeak(cleaned)) {
-    console.warn('[alex] meta-leak detected, attempting surgical strip:', cleaned.slice(0, 200))
+    // Debug: which regex caught it?
+    const metaLeakRxMatch = cleaned.match(META_LEAK_RX)
+    const metaTagMatch = cleaned.match(META_TAG_RX)
+    const metaFactMatch = cleaned.match(META_FACT_LIST_RX)
+    const metaLighthouseMatch = cleaned.match(META_LIGHTHOUSE_RX)
+    console.warn('[alex] meta-leak detected, attempting surgical strip:', cleaned.slice(0, 200), 'matched_via:',
+      metaLeakRxMatch ? 'META_LEAK_RX[' + metaLeakRxMatch[0].slice(0, 60) + ']' :
+      metaTagMatch ? 'META_TAG[' + metaTagMatch[0].slice(0, 60) + ']' :
+      metaFactMatch ? 'META_FACT[' + metaFactMatch[0].slice(0, 60) + ']' :
+      metaLighthouseMatch ? 'META_LIGHTHOUSE[' + metaLighthouseMatch[0].slice(0, 60) + ']' :
+      'unknown')
     // Same surgical-strip approach as price filter — try removing only
     // the offending sentences first.
     const sentences = cleaned.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || []
@@ -3841,13 +3851,14 @@ Deno.serve(async (req) => {
 
     const endsWithQuestion = /\?\s*$/.test(response.trim())
     const hasAnyQuestion = /\?/.test(response)
-    // Apr 28 (v2) — tighter bare-ack threshold so safety-net doesn't erase
-    // Alex's prompt-driven acknowledgments. Earlier `length < 30 OR no
-    // question` triggered on legitimate "Four days of no power is rough."
-    // (no question, but full thought). New rule: only if reply is genuinely
-    // tiny (<= 15 chars like "Cool." / "Right." / "Got it.") OR clearly
-    // missing forward motion (no question AND under 60 chars total).
-    const looksBareAck = response.trim().length <= 15 || (!hasAnyQuestion && response.trim().length < 60)
+    // Apr 28 (v3) — TIGHTEST threshold. Only consider it a bare ack when
+    // the reply is genuinely tiny ("Cool.", "Right.", "Got it.", "Roger.").
+    // Anything longer than 15 chars has substance — trust Alex's prompt,
+    // don't override with a stock nextAsk. Earlier the `no question + <60`
+    // trigger was firing on legitimate short factual answers like "Yeah,
+    // you need a permit. Key handles it." (~45 chars, no question, but
+    // a complete substantive reply that the safety-net was wiping).
+    const looksBareAck = response.trim().length <= 15
     // Flag "internal-monologue" replies — anywhere Alex narrates its own
     // reasoning instead of writing the customer-facing message. Production
     // bug 2026-04-24: "Hmm, the system says no panel photo received yet
