@@ -871,11 +871,58 @@ function CallsList({ calls, contacts, onOpen, activeContactId }) {
   const callbackQueue = sorted.filter(c => c.direction === 'missed');
   const voicemails   = sorted.filter(c => c.voicemail_url);
 
+  const [filter, setFilter] = React.useState('all');
+  const [dial, setDial] = React.useState('');
+
+  const filterOpts = [
+    { value:'all',        label:'All',         count: sorted.length },
+    { value:'missed',     label:'Missed',      count: callbackQueue.length },
+    { value:'voicemails', label:'Voicemails',  count: voicemails.length },
+    { value:'today',      label:'Today',       count: todayCalls.length },
+  ];
+
+  const visible = filter === 'missed'     ? callbackQueue
+                : filter === 'voicemails' ? voicemails
+                : filter === 'today'      ? todayCalls
+                : sorted;
+
+  // Allow quick-dial: paste a number, tap to call. Uses tel: handoff
+  // through the iPhone dialer (not a Twilio browser-call).
+  const dialDigits = (dial || '').replace(/\D/g, '');
+  const dialValid = dialDigits.length >= 7;
+  const dialHref = dialValid ? `tel:${dial.startsWith('+') ? dial : '+' + dialDigits}` : undefined;
+
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
-      {/* Log Call removed — no manual-log flow yet. Calls land via Twilio
-          webhooks; manual log is for a future sprint. */}
       <PanelHeader title="Calls" right={<span style={{ fontSize:12, color:MUTED, fontWeight:500 }}>{todayCalls.length} today</span>} />
+
+      {/* Quick dial — paste a number from caller-ID and tap to call.
+          Uses the system dialer (no Twilio browser-call). */}
+      <div style={{ padding:'10px 18px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0, display:'flex', gap:8 }}>
+        <input
+          value={dial}
+          onChange={e => setDial(e.target.value)}
+          placeholder="Quick dial — paste a phone number"
+          type="tel"
+          inputMode="tel"
+          style={{ flex:1, height:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'0 12px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }}
+        />
+        <a
+          href={dialHref}
+          aria-disabled={!dialValid}
+          style={{
+            display:'flex', alignItems:'center', justifyContent:'center',
+            minWidth:64, height:40, borderRadius:8, padding:'0 14px',
+            background: dialValid ? GOLD : '#E5E7EB',
+            color: dialValid ? NAVY : MUTED,
+            fontSize:13, fontWeight:600, fontFamily:'inherit',
+            textDecoration:'none', whiteSpace:'nowrap',
+            pointerEvents: dialValid ? 'auto' : 'none',
+          }}
+        >Call</a>
+      </div>
+
+      <FilterChips options={filterOpts.map(o => ({ value:o.value, label: o.count > 0 ? `${o.label} (${o.count})` : o.label }))} value={filter} onChange={setFilter} />
       {callbackQueue.length > 0 && (
         <div style={{ background:'#FEF2F2', borderBottom:'1px solid #FEE2E2', padding:'8px 16px', flexShrink:0 }}>
           <div style={{ fontSize:11, fontWeight:700, color:'#991B1B', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.06em' }}>Callback Queue · {callbackQueue.length}</div>
@@ -913,26 +960,76 @@ function CallsList({ calls, contacts, onOpen, activeContactId }) {
           })}
         </>
       )}
-      <SectionHeader label="Recent Calls" />
-      {sorted.map(cl => {
-        const c = getContact(cl.contact_id);
-        const p = CALL_PALETTE[cl.direction] || CALL_PALETTE.out;
-        return (
-          <button key={cl.id} onClick={()=>onOpen(cl.contact_id,'calls')} style={{ width:'100%', background:'white', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:10, padding:'13px 18px', borderBottom:'1px solid #F5F5F3', textAlign:'left' }}>
-            <div style={{ width:40,height:40,borderRadius:'50%',background:p.bg,display:'flex',alignItems:'center',justifyContent:'center',color:p.color,flexShrink:0 }}>
-              <div style={{width:18,height:18}}>{Icons.calls}</div>
+      <div style={{ flex:1, overflowY:'auto', minHeight:0 }}>
+        <SectionHeader label={filter === 'all' ? 'Recent calls' : filterOpts.find(o => o.value===filter)?.label || ''} />
+        {visible.length === 0 && (
+          <div style={{ padding:'32px 24px', textAlign:'center', color:MUTED }}>
+            <div style={{ width:36, height:36, margin:'0 auto 10px', opacity:0.3 }}>{Icons.calls}</div>
+            <div style={{ fontSize:13, fontWeight:600, color:NAVY, marginBottom:4 }}>
+              {filter === 'all'        ? 'No call history yet'
+              : filter === 'missed'    ? 'No missed calls'
+              : filter === 'voicemails'? 'No voicemails'
+              : 'No calls today'}
             </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                <span style={{ fontWeight:600, fontSize:13, color:NAVY }}>{contactName(c)}</span>
-                <span style={{ fontSize:10, fontWeight:700, color:p.color, background:p.bg, padding:'1px 6px', borderRadius:20 }}>{p.label}</span>
+            <div style={{ fontSize:12, color:MUTED, lineHeight:1.5, maxWidth:280, margin:'0 auto' }}>
+              Customer calls to {formatPhone('8648637800')} land here automatically when the Twilio webhook is wired.
+            </div>
+          </div>
+        )}
+        {visible.map(cl => {
+          const c = getContact(cl.contact_id);
+          const p = CALL_PALETTE[cl.direction] || CALL_PALETTE.out;
+          const hasVm = !!cl.voicemail_url;
+          return (
+            <button key={cl.id} onClick={()=>onOpen(cl.contact_id,'calls')} style={{ width:'100%', background: activeContactId===cl.contact_id?'#FFFBEB':'white', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:10, padding:'13px 18px', borderBottom:'1px solid #F5F5F3', textAlign:'left' }}>
+              <div style={{ width:40,height:40,borderRadius:'50%',background: hasVm?'#EDE9FE':p.bg,display:'flex',alignItems:'center',justifyContent:'center',color: hasVm?'#7C3AED':p.color,flexShrink:0 }}>
+                <div style={{width:18,height:18}}>{hasVm ? Icons.voicemail : Icons.calls}</div>
               </div>
-              <div style={{ fontSize:11, color:MUTED, marginTop:1 }}>{formatPhone(c?.phone)} · {formatRelative(cl.started_at)}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                  <span style={{ fontWeight:600, fontSize:13, color:NAVY }}>{contactName(c)}</span>
+                  <span style={{ fontSize:10, fontWeight:700, color:p.color, background:p.bg, padding:'1px 6px', borderRadius:20 }}>{p.label}</span>
+                </div>
+                <div style={{ fontSize:11, color:MUTED, marginTop:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {hasVm ? `"${cl.voicemail_transcript || 'voicemail'}"` : `${formatPhone(c?.phone)} · ${formatRelative(cl.started_at)}`}
+                </div>
+              </div>
+              {cl.direction !== 'missed' && <div style={{ fontSize:12, color:MUTED, flexShrink:0 }}>{formatDuration(cl.duration_sec)}</div>}
+            </button>
+          );
+        })}
+
+        {/* Voicemail / number setup card — always visible at bottom of the
+            Calls tab. Honest copy: settings live in Twilio (we don't store
+            a custom greeting locally), so the button opens the Twilio
+            console for the BPP number. */}
+        <div style={{ padding:'18px 18px 24px', borderTop:'1px solid #EBEBEA', marginTop:8 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>Voicemail & numbers</div>
+          <div style={{ background:'white', border:'1px solid rgba(11,31,59,0.08)', borderRadius:8, padding:'14px 16px' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Main line</div>
+                <div style={{ fontSize:15, fontWeight:700, color:NAVY, fontFamily:"'DM Mono', monospace", marginTop:2 }}>(864) 863-7800</div>
+              </div>
+              <a href={`tel:+18648637800`} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', height:36, padding:'0 14px', borderRadius:8, background:GOLD, color:NAVY, fontSize:12, fontWeight:600, fontFamily:'inherit', textDecoration:'none' }}>Call</a>
             </div>
-            {cl.direction !== 'missed' && <div style={{ fontSize:12, color:MUTED, flexShrink:0 }}>{formatDuration(cl.duration_sec)}</div>}
-          </button>
-        );
-      })}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Auto-response (Quo)</div>
+                <div style={{ fontSize:15, fontWeight:700, color:NAVY, fontFamily:"'DM Mono', monospace", marginTop:2 }}>(864) 400-5302</div>
+              </div>
+              <span style={{ fontSize:11, fontWeight:600, color:MUTED }}>Porting to Twilio</span>
+            </div>
+            <a href="https://console.twilio.com/us1/develop/phone-numbers/manage/incoming" target="_blank" rel="noopener noreferrer"
+               style={{ display:'flex', alignItems:'center', justifyContent:'center', height:40, marginTop:6, borderRadius:8, background:'white', color:NAVY, border:'1px solid rgba(11,31,59,0.15)', fontSize:13, fontWeight:600, fontFamily:'inherit', textDecoration:'none', gap:6 }}>
+              Manage greeting + routing in Twilio ↗
+            </a>
+            <div style={{ fontSize:11, color:MUTED, marginTop:8, lineHeight:1.5 }}>
+              Greeting, business-hours routing, and the answering-machine detection live in the Twilio console. Edit there; missed calls + transcripts land back here automatically.
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
