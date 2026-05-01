@@ -707,6 +707,8 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
   const [name, setName] = React.useState(contact.name || '');
   const [phone, setPhone] = React.useState(contact.phone || '');
   const [address, setAddress] = React.useState(contact.address || '');
+  const [generatorModel, setGeneratorModel] = React.useState(contact.generator_model || '');
+  const [referralSource, setReferralSource] = React.useState(contact.referral_source || '');
   const [saving, setSaving] = React.useState(false);
   // Reset state AND exit edit mode whenever the contact changes — otherwise
   // a half-edited form for contact A leaks the typed name into contact B's
@@ -716,6 +718,8 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
     setName(contact.name || '');
     setPhone(contact.phone || '');
     setAddress(contact.address || '');
+    setGeneratorModel(contact.generator_model || '');
+    setReferralSource(contact.referral_source || '');
   }, [contact.id]);
 
   const save = async () => {
@@ -728,8 +732,17 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
       return;
     }
     setSaving(true);
-    const patch = { name: trimmedName || null, phone: trimmedPhone, address: trimmedAddress };
-    const { error } = await CRM.__db.from('contacts').update(patch).eq('id', contact.id);
+    // Try patch with the new optional fields. If the schema doesn't have
+    // generator_model / referral_source columns yet, retry with just the
+    // core fields so the save still goes through.
+    const corePatch = { name: trimmedName || null, phone: trimmedPhone, address: trimmedAddress };
+    const fullPatch = { ...corePatch, generator_model: generatorModel.trim() || null, referral_source: referralSource.trim() || null };
+    let { error } = await CRM.__db.from('contacts').update(fullPatch).eq('id', contact.id);
+    if (error && /column .* does not exist/i.test(error.message || '')) {
+      // Fall back to core fields only.
+      const fallback = await CRM.__db.from('contacts').update(corePatch).eq('id', contact.id);
+      error = fallback.error;
+    }
     if (error) { setSaving(false); window.showToast?.(`Save failed: ${error.message}`); return; }
 
     // Propagate to denormalized contact_* fields on proposals + invoices.
@@ -737,9 +750,9 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
     // View image from contact_address — without this, an address edit
     // never reaches the customer's open proposal link.
     const denormPatch = {
-      contact_name: patch.name || '',
-      contact_phone: patch.phone || '',
-      contact_address: patch.address || '',
+      contact_name: corePatch.name || '',
+      contact_phone: corePatch.phone || '',
+      contact_address: corePatch.address || '',
     };
     const propagate = await Promise.allSettled([
       CRM.__db.from('proposals').update(denormPatch).eq('contact_id', contact.id),
@@ -750,9 +763,11 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
       console.warn('[CRM] propagate to proposals/invoices partially failed:', failed);
     }
 
-    contact.name = patch.name;
-    contact.phone = patch.phone;
-    contact.address = patch.address;
+    contact.name = corePatch.name;
+    contact.phone = corePatch.phone;
+    contact.address = corePatch.address;
+    contact.generator_model = generatorModel.trim() || null;
+    contact.referral_source = referralSource.trim() || null;
     setSaving(false);
     setEditing(false);
     bumpData?.();
@@ -859,6 +874,23 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Address</div>
           <input value={address} onChange={e => setAddress(e.target.value)} placeholder="123 Main St, Spartanburg" style={inputStyle} />
+        </div>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Generator (optional)</div>
+          <input value={generatorModel} onChange={e => setGeneratorModel(e.target.value)} placeholder="Westinghouse WGen9500" style={inputStyle} />
+        </div>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Referral source (optional)</div>
+          <select value={referralSource} onChange={e => setReferralSource(e.target.value)} style={inputStyle}>
+            <option value="">— pick if known —</option>
+            <option value="meta">Meta ad</option>
+            <option value="google">Google search</option>
+            <option value="gbp">Google Business Profile</option>
+            <option value="referral">Customer referral</option>
+            <option value="word_of_mouth">Word of mouth</option>
+            <option value="walk_up">Walk-up</option>
+            <option value="other">Other</option>
+          </select>
         </div>
         <div style={{ display:'flex', gap:8, marginTop:6 }}>
           <button onClick={() => setEditing(false)} disabled={saving} style={{
