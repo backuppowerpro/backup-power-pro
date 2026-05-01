@@ -350,7 +350,7 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
       <PermitsCard permits={permits} contact={contact} bumpData={bumpData} />
       <InfoSection title="Notes" editAction={null}>
         <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Internal notes (auto-saves)…"
-          style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'8px 10px',fontSize:13,color:NAVY,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box' }} />
+          style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'10px 12px',fontSize:16,color:NAVY,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box' }} />
         <div style={{ marginTop:6, fontSize:11, color:'#999', minHeight:14 }}>
           {noteSaving ? 'Saving…' : noteSaved ? 'Saved' : ' '}
         </div>
@@ -2143,9 +2143,9 @@ function ContactMessages({ contact, thread, isDnc }) {
           <textarea value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}}
             placeholder="Message…"
             style={{
-              flex:1, minHeight:36, maxHeight:100,
+              flex:1, minHeight:40, maxHeight:120,
               borderRadius:8, border:'1px solid rgba(11,31,59,0.15)',
-              padding:'8px 12px', fontSize:13, fontFamily:'inherit', resize:'none', outline:'none',
+              padding:'10px 12px', fontSize:16, fontFamily:'inherit', resize:'none', outline:'none',
               color:NAVY, lineHeight:1.4, boxSizing:'border-box', background:'white',
             }}
           />
