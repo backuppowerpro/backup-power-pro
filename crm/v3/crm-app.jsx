@@ -204,7 +204,7 @@ function Root() {
         <div style={{ flex:1, display:'flex', overflow:'hidden', padding:20, gap:32, alignItems:'center', justifyContent:'center', maxWidth:'100vw' }}>
           <div style={{
             width:390, height:'calc(100vh - 40px)', maxHeight:844,
-            borderRadius:24, overflow:'hidden',
+            borderRadius:16, overflow:'hidden',
             border:'1px solid rgba(11,31,59,0.12)',
             display:'flex', flexDirection:'column', flexShrink:0,
             background:'white', position:'relative',

@@ -125,7 +125,7 @@ function ContactAvatarHoverPreview({ contact, unread, dncSet, onOpen }) {
           style={{
             position:'fixed', left:pos.left, top:pos.top, zIndex:9999,
             width:220, background:'white', border:'1px solid rgba(11,31,59,0.12)',
-            borderRadius:10, boxShadow:'0 8px 24px rgba(11,31,59,0.16)',
+            borderRadius:8, boxShadow:'0 8px 24px rgba(11,31,59,0.16)',
             overflow:'hidden',
             animation: 'bpp-fade-up 180ms cubic-bezier(0.2, 0.8, 0.3, 1) both',
           }}
@@ -236,7 +236,10 @@ const cityFromAddrShort = a => (a||'').split(',').slice(1,2).join('').trim();
 // ── Panel Header ──────────────────────────────────────────────────
 function PanelHeader({ title, action, onAction, count, right }) {
   return (
-    <div style={{ padding:'18px 20px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #EBEBEA', background:'white', flexShrink:0 }}>
+    // Fixed 60px height so the bottom border aligns with the right-pane
+    // ContactStrip's bottom border across the desktop panel divider.
+    // Vertical padding is 0 — content centers via alignItems:center.
+    <div style={{ height:60, padding:'0 18px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #EBEBEA', background:'white', flexShrink:0 }}>
       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
         <span style={{ fontSize:17, fontWeight:700, color: NAVY }}>{title}</span>
         {count != null && <span style={{ fontSize:12, color: MUTED }}>{count}</span>}
@@ -347,7 +350,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:14,height:14, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone…"
-            style={{ width:'100%', height:40, borderRadius:9, border:'1.5px solid #EBEBEA', padding:'0 12px 0 30px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
+            style={{ width:'100%', height:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'0 12px 0 30px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
       </div>
       <FilterChips options={stageOpts} value={stage} onChange={setStage} />
@@ -450,7 +453,7 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
         display:'flex', alignItems:'stretch', borderBottom:'1px solid #F5F5F3', textAlign:'left', padding:0,
         boxShadow: activeContactId===ev.contact_id?'inset 2px 0 0 '+GOLD:'none',
       }}>
-        <div style={{ width:3, background: conflict?'#E53E3E':col.accent, margin:'6px 10px 6px 14px', borderRadius:2, flexShrink:0 }} />
+        <div style={{ width:3, background: conflict?'#E53E3E':col.accent, margin:'6px 10px 6px 14px', borderRadius:4, flexShrink:0 }} />
         <div style={{ flex:1, padding:'13px 14px 13px 0', minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
             <span style={{ fontSize:12, fontWeight:700, color:NAVY }}>{formatTime(ev.start_at)}</span>
@@ -540,7 +543,7 @@ function FinanceList({ proposals, invoices, contacts, onOpen, activeContactId })
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
       <PanelHeader title="Money" right={
         <>
-          <button onClick={exportCSV} style={{ fontSize:12, fontWeight:600, color:MUTED, background:'none', border:'1px solid #EBEBEA', borderRadius:7, padding:'5px 10px', cursor:'pointer', fontFamily:'inherit' }}>Export CSV</button>
+          <button onClick={exportCSV} style={{ fontSize:12, fontWeight:600, color:MUTED, background:'none', border:'1px solid #EBEBEA', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontFamily:'inherit' }}>Export CSV</button>
           <button onClick={()=>setQuickQuoteOpen(true)} style={{
             background:'#ffba00', color:NAVY, border:'none', borderRadius:8,
             padding:'6px 12px', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
@@ -643,7 +646,7 @@ function QuickQuoteModal({ onClose }) {
   });
 
   const chipBtn = (active) => ({
-    height:28, padding:'0 12px', borderRadius:14,
+    height:28, padding:'0 12px', borderRadius:12,
     background: active ? '#ffba00' : 'white',
     color: NAVY,
     border: active ? 'none' : '1px solid rgba(27,43,75,0.15)',
@@ -808,13 +811,13 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
       <PanelHeader title="Inbox" count={totalUnread > 0 ? `${totalUnread} unread` : null}
-        right={<button onClick={markAllRead} style={{ fontSize:12, fontWeight:600, color:MUTED, background:'none', border:'1px solid #EBEBEA', borderRadius:7, padding:'5px 10px', cursor:'pointer', fontFamily:'inherit' }}>Mark all read</button>}
+        right={<button onClick={markAllRead} style={{ fontSize:12, fontWeight:600, color:MUTED, background:'none', border:'1px solid #EBEBEA', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontFamily:'inherit' }}>Mark all read</button>}
       />
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:13,height:13, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search messages…"
-            style={{ width:'100%', height:40, borderRadius:9, border:'1.5px solid #EBEBEA', padding:'0 12px 0 28px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
+            style={{ width:'100%', height:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'0 12px 0 28px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
       </div>
       <FilterChips options={filterOpts} value={filter} onChange={setFilter} />
@@ -840,7 +843,7 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
                 {last ? (last.direction === 'out' ? 'You: ' : '') + last.body : ''}
               </div>
             </div>
-            {unread > 0 && <div style={{ minWidth:20,height:20,borderRadius:10,padding:'0 5px',background:NAVY,color:'white',fontSize:10,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{unread}</div>}
+            {unread > 0 && <div style={{ minWidth:20,height:20,borderRadius:9999,padding:'0 5px',background:NAVY,color:'white',fontSize:10,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{unread}</div>}
           </button>
         ))}
       </div>

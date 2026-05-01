@@ -35,7 +35,7 @@ function RightPanel({ contactId, tab, dncSet = new Set(), toggleDnc = () => {}, 
 function ContactStrip({ contact, isDnc, toggleDnc, bumpData }) {
   const isPremium = contact.pricing_tier === 'premium' || contact.pricing_tier === 'premium_plus';
   return (
-    <div style={{ background:'white', borderBottom:'1px solid #EBEBEA', padding:'12px 18px', display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
+    <div style={{ height:60, background:'white', borderBottom:'1px solid #EBEBEA', padding:'0 18px', display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
       <ContactAvatar contact={contact} size={32} />
       <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', gap:8 }}>
         {isPremium && window.tweaksGlobal?.premiumDots !== false && <GoldDot />}
@@ -192,7 +192,7 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData }) {
         aria-label="More actions"
         style={{
           // 44×44 hit area meets iOS HIG; visual icon stays small.
-          width:44, height:44, borderRadius:7,
+          width:44, height:44, borderRadius:6,
           background: open ? '#F0F4FF' : 'transparent',
           border:'none',
           color:MUTED, cursor:'pointer',
@@ -489,7 +489,7 @@ function HouseHero({ contact }) {
       rel="noopener noreferrer"
       title="Open in Google Maps"
       style={{
-        display:'block', marginTop:12, borderRadius:10, overflow:'hidden',
+        display:'block', marginTop:12, borderRadius:8, overflow:'hidden',
         border:'1px solid rgba(11,31,59,0.08)', background:'#EBEBEA',
         aspectRatio:'8 / 3', position:'relative',
       }}
@@ -653,7 +653,7 @@ function PhotosSection({ contact }) {
               )}
               {p.source === 'sms' && (
                 <span title="From SMS" style={{
-                  position:'absolute', bottom:4, left:4, padding:'1px 5px', borderRadius:3,
+                  position:'absolute', bottom:4, left:4, padding:'1px 5px', borderRadius:4,
                   background:'rgba(11,31,59,0.7)', color:'white', fontSize:9, fontWeight:600,
                 }}>SMS</span>
               )}
@@ -738,7 +738,7 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
     };
 
     return (
-      <div style={{ background:'white', marginTop:12, border:'1px solid rgba(11,31,59,0.08)', borderRadius:10, overflow:'hidden' }}>
+      <div style={{ background:'white', marginTop:12, border:'1px solid rgba(11,31,59,0.08)', borderRadius:8, overflow:'hidden' }}>
         {heroUrl && (
           <div style={{ position:'relative', aspectRatio:'5 / 2', background:'#EBEBEA' }}>
             <img src={heroUrl} alt="" loading="lazy" decoding="async" style={{
@@ -1601,34 +1601,42 @@ function AddEventInline({ contact, bumpData, hasUpcoming }) {
   return (
     <div style={{ marginTop:12, padding:14, background:'white', border:'1px solid rgba(11,31,59,0.12)', borderRadius:8 }}>
       <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.06em', marginBottom:10 }}>NEW EVENT</div>
-      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-        <div style={{ flex:'1 1 100%' }}>
-          <select value={kind} onChange={e=>setKind(e.target.value)} style={inputStyle}>
-            {KIND_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
-          </select>
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        <select value={kind} onChange={e=>setKind(e.target.value)} style={inputStyle}>
+          {KIND_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
+        </select>
+        {/* Equal-width date + time. `flex:1 1 0; min-width:0` forces a true
+            50/50 split regardless of the date input's intrinsic width
+            (which is wider than time on Chrome because of mm/dd/yyyy + the
+            calendar picker icon). */}
+        <div style={{ display:'flex', gap:8 }}>
+          <input
+            type="date"
+            value={date}
+            min={(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()}
+            max="2099-12-31"
+            onChange={e=>setDate(e.target.value)}
+            style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }}
+          />
+          <input
+            type="time"
+            value={time}
+            onChange={e=>setTime(e.target.value)}
+            style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }}
+          />
         </div>
-        <div style={{ flex:'1 1 140px' }}>
-          {/* Year clamp — without min/max iOS Safari accepts any 4-digit year
-              including 9999, which silently corrupts events. Floor at today
-              (local TZ — UTC would block bookings after 8 PM EDT); ceiling
-              at 2099. */}
-          <input type="date" value={date} min={(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()} max="2099-12-31" onChange={e=>setDate(e.target.value)} style={inputStyle} />
-        </div>
-        <div style={{ flex:'1 1 100px' }}>
-          <input type="time" value={time} onChange={e=>setTime(e.target.value)} style={inputStyle} />
-        </div>
-        {/* Title row dropped — the kind picker already labels the event;
-            forcing a free-text title was just dead weight. The kind label
-            still gets used as the event title at save-time. */}
       </div>
+      {/* Equal-width Cancel + Schedule. Same `flex:1 1 0; min-width:0` trick
+          since "Saving…" can be wider than "Cancel" and would otherwise
+          push the buttons to unequal widths. */}
       <div style={{ display:'flex', gap:8, marginTop:10 }}>
         <button onClick={() => setOpen(false)} disabled={saving} style={{
-          flex:1, height:36, borderRadius:8, background:'white', color:NAVY,
-          border:'1px solid rgba(27,43,75,0.15)', fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+          flex:'1 1 0', minWidth:0, height:40, borderRadius:8, background:'white', color:NAVY,
+          border:'1px solid rgba(27,43,75,0.15)', fontSize:14, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
         }}>Cancel</button>
         <button onClick={save} disabled={saving} style={{
-          flex:1, height:36, borderRadius:8, background:'#ffba00', color:NAVY, border:'none',
-          fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer', opacity:saving?0.6:1,
+          flex:'1 1 0', minWidth:0, height:40, borderRadius:8, background:'#ffba00', color:NAVY, border:'none',
+          fontSize:14, fontWeight:600, fontFamily:'inherit', cursor:'pointer', opacity:saving?0.6:1,
         }}>{saving ? 'Saving…' : 'Schedule'}</button>
       </div>
     </div>
@@ -2083,8 +2091,8 @@ function ContactMessages({ contact, thread, isDnc }) {
                     border: isOut ? 'none' : '1px solid rgba(11,31,59,0.12)',
                   }}>
                     {m.attachments?.map((a,i) => a.type==='image'
-                      ? <img key={i} src={a.url} alt={a.name} style={{ width:'100%', maxWidth:200, borderRadius:9, display:'block', marginBottom: m.body?5:0 }}/>
-                      : <div key={i} style={{ background:'rgba(255,255,255,0.15)', borderRadius:7, padding:'5px 9px', fontSize:11, display:'flex', alignItems:'center', gap:5, marginBottom: m.body?5:0 }}>📎 {a.name} <span style={{opacity:0.6}}>{a.size}</span></div>
+                      ? <img key={i} src={a.url} alt={a.name} style={{ width:'100%', maxWidth:200, borderRadius:8, display:'block', marginBottom: m.body?5:0 }}/>
+                      : <div key={i} style={{ background:'rgba(255,255,255,0.15)', borderRadius:6, padding:'5px 9px', fontSize:11, display:'flex', alignItems:'center', gap:5, marginBottom: m.body?5:0 }}>📎 {a.name} <span style={{opacity:0.6}}>{a.size}</span></div>
                     )}
                     {m.body && <span style={{ padding: m.attachments?.length ? '0 5px' : 0 }}>{m.body}</span>}
                   </div>
@@ -2114,8 +2122,8 @@ function ContactMessages({ contact, thread, isDnc }) {
           {attachments.map((a,i) => (
             <div key={i} style={{ position:'relative' }}>
               {a.type==='image'
-                ? <img src={a.url} alt={a.name} style={{ width:52, height:52, borderRadius:7, objectFit:'cover' }}/>
-                : <div style={{ width:52, height:52, borderRadius:7, background:'white', border:'1px solid rgba(11,31,59,0.12)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📎</div>}
+                ? <img src={a.url} alt={a.name} style={{ width:52, height:52, borderRadius:6, objectFit:'cover' }}/>
+                : <div style={{ width:52, height:52, borderRadius:6, background:'white', border:'1px solid rgba(11,31,59,0.12)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📎</div>}
               <button onClick={()=>setAttachments(a => a.filter((_,j) => j !== i))} style={{ position:'absolute', top:-4, right:-4, width:16, height:16, borderRadius:'50%', background:'#E53E3E', border:'2px solid white', color:'white', fontSize:9, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'inherit', lineHeight:1 }}>✕</button>
             </div>
           ))}
@@ -2500,7 +2508,7 @@ function NewProposalModal({ contact, onClose }) {
             onClick={submit}
             disabled={busy || contact.do_not_contact}
             style={{
-              height:42, padding:'0 18px', borderRadius:9,
+              height:42, padding:'0 18px', borderRadius:8,
               background: busy || contact.do_not_contact ? '#E5E5E5' : '#ffba00',
               color: busy || contact.do_not_contact ? '#999' : NAVY,
               border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
@@ -2682,7 +2690,7 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose }) {
             onClick={submit}
             disabled={busy || contact.do_not_contact}
             style={{
-              height:42, padding:'0 18px', borderRadius:9,
+              height:42, padding:'0 18px', borderRadius:8,
               background: busy || contact.do_not_contact ? '#E5E5E5' : '#ffba00',
               color: busy || contact.do_not_contact ? '#999' : NAVY,
               border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',

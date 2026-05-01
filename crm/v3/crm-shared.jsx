@@ -3,6 +3,19 @@
 
 const NAVY = '#1B2B4B';
 const GOLD = '#C9A048';
+
+// Corner-radius scale — every rounded surface in the app picks from this
+// set so visual rhythm stays consistent. Anti-pattern: ad-hoc 5/7/9/14
+// values that creep in over time.
+const RADIUS = {
+  xs: 4,    // tiny chips, tooltip arrows, kbd
+  sm: 6,    // small ghost buttons, tag/kind chips
+  md: 8,    // primary cards, buttons, inputs (most common)
+  lg: 12,   // modals (desktop), hero cards
+  xl: 16,   // bottom-sheet modals (mobile)
+  pill: 20, // pills, status chips, FilterChips
+  full: 9999, // avatars, dots, circular buttons
+};
 const BG   = '#F8F8F6';
 const CARD = '#FFFFFF';
 const MUTED = '#8892A0';
@@ -21,23 +34,26 @@ const Icons = {
     </svg>
   ),
   calendar: (
-    // Body rect starts at y=5 and binding tabs end at y=5 — they touch but
-    // don't overlap, which kills the "lighter where lines intersect" artifact
-    // Key flagged. Linejoin:round produces a clean meeting at the seam.
+    // Binding tabs are FILLED rects (not strokes). They visibly extend into
+    // the body rect for the classic calendar look, but because filled
+    // rendering is solid pixels (no anti-aliased stroke overlap) the
+    // intersection prints clean — kills the "lighter where lines cross"
+    // artifact Key flagged.
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="5" width="18" height="17" rx="2"/>
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
       <path d="M3 10h18"/>
-      <path d="M8 2v3"/>
-      <path d="M16 2v3"/>
+      <rect x="7.25" y="2" width="1.5" height="4" rx="0.5" fill="currentColor" stroke="none"/>
+      <rect x="15.25" y="2" width="1.5" height="4" rx="0.5" fill="currentColor" stroke="none"/>
       <rect x="7" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
       <rect x="11" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
       <rect x="15" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
     </svg>
   ),
   finance: (
+    // Single combined path so the vertical $ stem and the S-curve render
+    // as one stroke pass — no anti-aliased intersection brightening.
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="1" x2="12" y2="23"/>
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
     </svg>
   ),
   messages: (
@@ -404,7 +420,7 @@ function ConfirmHost() {
   const close = (v) => { c.resolve(v); setC(null); };
   return (
     <div onClick={() => close(false)} style={{ position:'absolute', inset:0, background:'rgba(15,26,46,0.55)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', animation:'fadeIn 0.18s ease' }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'white', borderRadius:14, padding:'22px 22px 16px', maxWidth:300, width:'85%', boxShadow:'0 20px 60px rgba(0,0,0,0.4)', animation:'popIn 0.22s cubic-bezier(0.16,1,0.3,1)' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:'white', borderRadius:12, padding:'22px 22px 16px', maxWidth:300, width:'85%', boxShadow:'0 20px 60px rgba(0,0,0,0.4)', animation:'popIn 0.22s cubic-bezier(0.16,1,0.3,1)' }}>
         <div style={{ fontSize:16, fontWeight:700, color:NAVY, marginBottom:6 }}>{c.title}</div>
         <div style={{ fontSize:13, color:MUTED, lineHeight:1.5, marginBottom:16 }}>{c.body}</div>
         <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
@@ -422,7 +438,7 @@ function EmptyHero() {
   return (
     <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', background:BG, flexDirection:'column', gap:14, padding:24 }}>
       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-        <div style={{ width:36, height:36, borderRadius:9, background:NAVY, display:'flex', alignItems:'center', justifyContent:'center', color:GOLD, fontSize:14, fontWeight:800, letterSpacing:'-0.02em' }}>BPP</div>
+        <div style={{ width:36, height:36, borderRadius:8, background:NAVY, display:'flex', alignItems:'center', justifyContent:'center', color:GOLD, fontSize:14, fontWeight:800, letterSpacing:'-0.02em' }}>BPP</div>
         <div style={{ fontSize:18, fontWeight:700, color:NAVY, letterSpacing:'-0.01em' }}>Backup Power Pros</div>
       </div>
       <div style={{ fontSize:13, color:MUTED, textAlign:'center', maxWidth:240, lineHeight:1.5 }}>Select a contact to start, or pick a row from the list on the left.</div>
@@ -630,7 +646,7 @@ function quickQuoteCompute({ amp, cordIncluded, includeSurge, includePom, includ
 
 // Export everything
 Object.assign(window, {
-  NAVY, GOLD, BG, CARD, MUTED, NOW,
+  NAVY, GOLD, BG, CARD, MUTED, NOW, RADIUS,
   Icons, NavBar, ContactAvatar, GoldDot, StatusPill,
   SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero,
   capitalize, formatPhone, formatRelative, formatMoneyCents,
