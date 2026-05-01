@@ -1,0 +1,627 @@
+// crm-shared.jsx — primitives, icons, nav bar
+// Exports: NavBar, TabIcon, ContactAvatar, StatusPill, GoldDot, fmt
+
+const NAVY = '#1B2B4B';
+const GOLD = '#C9A048';
+const BG   = '#F8F8F6';
+const CARD = '#FFFFFF';
+const MUTED = '#8892A0';
+
+function fmt(obj) {
+  if (!obj) return {};
+  Object.assign(window, { NAVY, GOLD, BG, CARD, MUTED });
+  return obj;
+}
+
+// ── SVG Icons ────────────────────────────────────────────────────
+const Icons = {
+  contacts: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+    </svg>
+  ),
+  calendar: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+      <rect x="7" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
+      <rect x="11" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
+      <rect x="15" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
+    </svg>
+  ),
+  finance: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+  ),
+  messages: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  calls: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.04 12.04 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.272.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"/>
+    </svg>
+  ),
+  bell: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+  ),
+  search: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+  ),
+  back: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 12H5M12 5l-7 7 7 7"/>
+    </svg>
+  ),
+  sparky: (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+  ),
+  plus: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+  ),
+  more: (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+    </svg>
+  ),
+  send: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="m22 2-11 11"/>
+    </svg>
+  ),
+  voicemail: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="5.5" cy="11.5" r="4.5"/><circle cx="18.5" cy="11.5" r="4.5"/><path d="M5.5 16h13"/>
+    </svg>
+  ),
+  hash: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>
+    </svg>
+  ),
+  check: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6 9 17l-5-5"/>
+    </svg>
+  ),
+  zap: (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+  ),
+};
+
+// ── Top Nav Bar ───────────────────────────────────────────────────
+function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, contextLabel }) {
+  const tabs = ['contacts','calendar','finance','messages','calls'];
+  return (
+    <div style={{
+      background: NAVY,
+      display: 'flex',
+      alignItems: 'center',
+      // Add iOS safe-area top inset so the notch / Dynamic Island doesn't
+      // overlap tab buttons when standalone PWA + viewport-fit=cover.
+      // height stays 'auto' since paddingTop pushes the row down.
+      minHeight: compact ? 52 : 60,
+      padding: '0 4px',
+      paddingTop: 'env(safe-area-inset-top, 0px)',
+      flexShrink: 0,
+      gap: 0,
+      flexDirection: 'column',
+      justifyContent: 'flex-end',
+    }}>
+      {contextLabel && (
+        <div style={{
+          width: '100%',
+          textAlign: 'center',
+          fontSize: 11,
+          color: 'rgba(255,255,255,0.55)',
+          fontWeight: 600,
+          letterSpacing: '0.04em',
+          paddingBottom: 2,
+          paddingTop: 6,
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          padding: '4px 16px 0',
+        }}>{contextLabel}</div>
+      )}
+      <div style={{ display:'flex', alignItems:'center', width:'100%', height: 48 }}>
+        {showBack ? (
+          <button onClick={onBack} style={{
+            background: 'none', border: 'none', color: 'white',
+            width: 44, height: 44, display:'flex', alignItems:'center', justifyContent:'center',
+            cursor: 'pointer', flexShrink: 0, borderRadius: 8,
+          }}>{Icons.back}</button>
+        ) : (
+          <div style={{ width: 44, flexShrink: 0 }} />
+        )}
+
+        <div style={{ flex: 1, display:'flex', justifyContent:'center', alignItems:'center', gap: 0 }}>
+          {tabs.map(t => {
+            const active = tab === t;
+            const badge = badgeCounts[t] || 0;
+            return (
+              <button key={t} onClick={() => onTab(t)} style={{
+                background: active ? 'rgba(255,255,255,0.12)' : 'none',
+                border: 'none',
+                color: active ? 'white' : 'rgba(255,255,255,0.5)',
+                width: 44, height: 44,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                cursor:'pointer', borderRadius: 8, position:'relative',
+                flexShrink: 0,
+              }}>
+                <div style={{ width: 22, height: 22 }}>{Icons[t]}</div>
+                {badge > 0 && (
+                  <div style={{
+                    position:'absolute', top: 6, right: 6,
+                    background: '#E53E3E', color:'white',
+                    width: 16, height: 16, borderRadius: '50%',
+                    fontSize: 9, fontWeight: 700,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    border: `2px solid ${NAVY}`,
+                  }}>{badge}</div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ width: 44, flexShrink: 0 }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Contact Avatar ────────────────────────────────────────────────
+// Public-restricted Street View Static API key — same one used in v2,
+// proposal.html, invoice.html. Only mints image URLs; no geocoding/routing/
+// places/billing exposure. Safe to ship in client code.
+// Google Maps Street View Static API key — referrer-restricted in
+// Google Cloud Console to backuppowerpro.com / localhost. Designed for
+// public browser use; not a secret and not a CLAUDE.md "AIza" violation.
+// Audits that grep for AIza will re-flag this — leave the comment.
+const SV_KEY = 'AIzaSyB0xWm71ZDzS7ei5-vFx15rNP_lR1ZKbJs';
+
+// Returns a Street View Static URL only when the address looks like an
+// actual street — has a number AND a road word (drive/street/lane/etc).
+// Test contacts with junk addresses (e.g. just "(800) 555-0007 ·") would
+// otherwise fetch Google's "no imagery available" placeholder, which
+// renders as the watermark cropped inside the avatar circle. Better to
+// fall back to the initials avatar for those.
+const ROAD_RE = /\b(st|street|rd|road|ave|avenue|dr|drive|ln|lane|ct|court|blvd|boulevard|way|hwy|highway|pkwy|parkway|cir|circle|trl|trail|pl|place|pt|point|ter|terrace|loop|run|crossing|ridge|hill)\b\.?/i;
+function isAddressableStreet(address) {
+  if (!address || typeof address !== 'string') return false;
+  const a = address.trim();
+  if (a.length < 8) return false;
+  if (!/\d/.test(a)) return false; // need a number
+  return ROAD_RE.test(a);
+}
+function streetViewUrlFor(address, size = 80) {
+  if (!isAddressableStreet(address)) return null;
+  // Always request the API max (640x640 + scale=2 = ~1280px source). The
+  // browser scales down to the avatar's actual rendered size — that's
+  // sharper than letting Google return a smaller image and the browser
+  // upscale. CSS object-fit crops Google's bottom-left watermark.
+  return `https://maps.googleapis.com/maps/api/streetview?size=640x640` +
+         `&scale=2&location=${encodeURIComponent(address.trim())}` +
+         `&fov=80&pitch=5&source=outdoor&key=${SV_KEY}`;
+}
+
+function ContactAvatar({ contact, size = 40 }) {
+  // Defensive: contact can be null/undefined when a proposal/invoice references
+  // a contact that's been archived or wasn't returned in the 500-row contacts
+  // window. Show as anonymous in that case rather than crashing.
+  const isAnon = !contact || !contact.name;
+  // Street View thumbnail of the contact's address with a punchy filter so
+  // identical-looking suburbs feel distinct. Falls back to initials/hash if
+  // no address is set, or if the SV API returns no imagery (we can't detect
+  // that client-side, so we show the initials as a base layer underneath).
+  const svUrl = !isAnon && contact.address ? streetViewUrlFor(contact.address, size) : null;
+  const [imgFailed, setImgFailed] = React.useState(false);
+
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: isAnon ? '#E8EAF0' : NAVY,
+      color: isAnon ? MUTED : 'white',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      fontSize: size * 0.35, fontWeight: 600, flexShrink: 0,
+      position:'relative', overflow:'hidden',
+    }}>
+      {/* Initials/hash sits underneath as the base — visible if SV is missing */}
+      {isAnon ? <div style={{width: size*0.42, height: size*0.42}}>{Icons.hash}</div> : contact.avatar}
+      {svUrl && !imgFailed && (
+        <img
+          src={svUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgFailed(true)}
+          style={{
+            position:'absolute', inset:0, width:'100%', height:'100%',
+            // object-position pulls visible area to upper-right so Google's
+            // bottom-left watermark falls outside the circular crop.
+            objectFit:'cover', objectPosition:'70% 30%', display:'block',
+            // Enhancement filter: punchier saturation + slight contrast lift
+            // so the houses pop without looking instagram-fake.
+            filter: 'saturate(1.25) contrast(1.08) brightness(1.02)',
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Gold Dot (premium tier) ───────────────────────────────────────
+function GoldDot() {
+  return <span style={{ display:'inline-block', width:7, height:7, borderRadius:'50%', background: GOLD, marginRight: 5, flexShrink:0, marginTop:1 }} />;
+}
+
+// ── Status Pills ──────────────────────────────────────────────────
+// DB-shape lowercase enums: proposals (draft/sent/viewed/approved/expired/declined),
+// invoices (draft/sent/viewed/paid/overdue/refunded/voided), events (scheduled/done/cancelled),
+// event kinds (install/inspect/follow_up/pickup/meeting).
+const PILL_STYLES = {
+  // Proposal statuses
+  draft:      { bg:'#F3F4F6', color:'#374151' },
+  sent:       { bg:'#EFF6FF', color:'#1E40AF' },
+  viewed:     { bg:'#EEF2FF', color:'#3730A3' },
+  approved:   { bg:'#ECFDF5', color:'#065F46' },
+  expired:    { bg:'#F3F4F6', color:'#6B7280' },
+  declined:   { bg:'#FEF2F2', color:'#991B1B' },
+  // Invoice statuses (paid/overdue/sent shared with above)
+  paid:       { bg:'#ECFDF5', color:'#065F46' },
+  overdue:    { bg:'#FEF2F2', color:'#991B1B' },
+  refunded:   { bg:'#F3F4F6', color:'#6B7280' },
+  voided:     { bg:'#F3F4F6', color:'#6B7280' },
+  // Event statuses
+  scheduled:  { bg:'#EFF6FF', color:'#1E40AF' },
+  done:       { bg:'#ECFDF5', color:'#065F46' },
+  cancelled:  { bg:'#F3F4F6', color:'#6B7280' },
+  // Event kinds
+  install:    { bg:'#F0FDF4', color:'#166534' },
+  inspect:    { bg:'#F5F3FF', color:'#5B21B6' },
+  follow_up:  { bg:'#FFF7ED', color:'#C2410C' },
+  pickup:     { bg:'#F0FDF4', color:'#166534' },
+  meeting:    { bg:'#F5F3FF', color:'#5B21B6' },
+  // Misc
+  today:      { bg:'#FFFBEB', color:'#92400E' },
+};
+
+function StatusPill({ status, label }) {
+  const s = PILL_STYLES[status] || { bg:'#F3F4F6', color:'#374151' };
+  return (
+    <span style={{
+      background: s.bg, color: s.color,
+      fontSize: 11, fontWeight: 600,
+      padding: '2px 8px', borderRadius: 20,
+      whiteSpace: 'nowrap',
+    }}>{label || capitalize(status)}</span>
+  );
+}
+
+// ── Sparky FAB ────────────────────────────────────────────────────
+function SparkyFAB({ onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      position:'absolute', bottom: 20, right: 16,
+      width: 52, height: 52, borderRadius: '50%',
+      background: GOLD, border: 'none',
+      color: NAVY, cursor:'pointer',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      boxShadow: '0 4px 16px rgba(201,160,72,0.5)',
+      zIndex: 50,
+    }}>
+      <div style={{width:24,height:24}}>{Icons.sparky}</div>
+    </button>
+  );
+}
+
+// ── Sparky Pill (detail view) ─────────────────────────────────────
+function SparkyPill({ onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      position:'absolute', right: 0, top: '50%', transform:'translateY(-50%)',
+      background: GOLD, border: 'none', color: NAVY,
+      borderRadius: '20px 0 0 20px',
+      padding: '10px 8px 10px 10px',
+      cursor:'pointer', display:'flex', flexDirection:'column',
+      alignItems:'center', gap: 4,
+      boxShadow: '-2px 2px 12px rgba(201,160,72,0.4)',
+      zIndex: 50,
+      fontSize: 9, fontWeight: 700,
+    }}>
+      <div style={{width:16,height:16}}>{Icons.sparky}</div>
+      <span style={{writingMode:'vertical-rl', transform:'rotate(180deg)', letterSpacing:1}}>SPARKY</span>
+    </button>
+  );
+}
+
+// ── Toast system ──────────────────────────────────────────────────
+function ToastHost() {
+  const [toasts, setToasts] = React.useState([]);
+  React.useEffect(() => {
+    window.showToast = (msg, opts = {}) => {
+      const id = 't' + Date.now() + Math.random();
+      setToasts(t => [...t, { id, msg, kind: opts.kind || 'info', undo: opts.undo }]);
+      setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), opts.duration || 2600);
+    };
+  }, []);
+  return (
+    <div style={{ position:'absolute', top:60, left:'50%', transform:'translateX(-50%)', zIndex:100, display:'flex', flexDirection:'column', gap:6, pointerEvents:'none', alignItems:'center' }}>
+      {toasts.map(t => (
+        <div key={t.id} style={{
+          background: t.kind==='error'?'#991B1B':NAVY, color:'white',
+          fontSize:12, fontWeight:600, padding:'8px 14px', borderRadius:20,
+          boxShadow:'0 4px 16px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', gap:10,
+          pointerEvents:'auto', animation:'toastIn 0.24s cubic-bezier(0.16,1,0.3,1)',
+          maxWidth:280,
+        }}>
+          <span>{t.msg}</span>
+          {t.undo && <button onClick={() => { t.undo(); setToasts(ts=>ts.filter(x=>x.id!==t.id)); }} style={{ background:'none',border:'none',color:GOLD,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',padding:0 }}>Undo</button>}
+        </div>
+      ))}
+      <style>{`@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    </div>
+  );
+}
+
+// ── Confirm modal ─────────────────────────────────────────────────
+function ConfirmHost() {
+  const [c, setC] = React.useState(null);
+  React.useEffect(() => {
+    window.confirmAction = (opts) => new Promise(resolve => {
+      setC({ ...opts, resolve });
+    });
+  }, []);
+  if (!c) return null;
+  const close = (v) => { c.resolve(v); setC(null); };
+  return (
+    <div onClick={() => close(false)} style={{ position:'absolute', inset:0, background:'rgba(15,26,46,0.55)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', animation:'fadeIn 0.18s ease' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:'white', borderRadius:14, padding:'22px 22px 16px', maxWidth:300, width:'85%', boxShadow:'0 20px 60px rgba(0,0,0,0.4)', animation:'popIn 0.22s cubic-bezier(0.16,1,0.3,1)' }}>
+        <div style={{ fontSize:16, fontWeight:700, color:NAVY, marginBottom:6 }}>{c.title}</div>
+        <div style={{ fontSize:13, color:MUTED, lineHeight:1.5, marginBottom:16 }}>{c.body}</div>
+        <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+          <button onClick={()=>close(false)} style={{ height:34, padding:'0 14px', borderRadius:8, background:'none', border:'1.5px solid #EBEBEA', color:MUTED, fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>Cancel</button>
+          <button onClick={()=>close(true)} style={{ height:34, padding:'0 14px', borderRadius:8, background: c.destructive?'#991B1B':NAVY, border:'none', color:'white', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>{c.confirmLabel || 'Confirm'}</button>
+        </div>
+      </div>
+      <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes popIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}`}</style>
+    </div>
+  );
+}
+
+// ── Empty Hero (no contact selected) ──────────────────────────────
+function EmptyHero() {
+  return (
+    <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', background:BG, flexDirection:'column', gap:14, padding:24 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+        <div style={{ width:36, height:36, borderRadius:9, background:NAVY, display:'flex', alignItems:'center', justifyContent:'center', color:GOLD, fontSize:14, fontWeight:800, letterSpacing:'-0.02em' }}>BPP</div>
+        <div style={{ fontSize:18, fontWeight:700, color:NAVY, letterSpacing:'-0.01em' }}>Backup Power Pros</div>
+      </div>
+      <div style={{ fontSize:13, color:MUTED, textAlign:'center', maxWidth:240, lineHeight:1.5 }}>Select a contact to start, or pick a row from the list on the left.</div>
+      <div style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:20, background:'white', border:'1px solid #EBEBEA', fontSize:11, color:MUTED, fontWeight:600 }}>
+        <kbd style={{ background:BG, border:'1px solid #EBEBEA', borderRadius:4, padding:'1px 5px', fontSize:10, fontFamily:'inherit', color:NAVY }}>⌘K</kbd>
+        <span>to search</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Display helpers ───────────────────────────────────────────────
+// Re-evaluated on every module load — i.e. on every page refresh. For Key's
+// daily use on iPhone Safari + macOS Chrome this is fine; longer-running
+// sessions will see "1m ago" times slowly drift to "1h ago" without ticking,
+// which is the v1 behavior anyway.
+const NOW = new Date();
+
+// Capitalize a snake_case or lowercase enum: 'premium_plus' → 'Premium plus', 'sent' → 'Sent'
+function capitalize(s) {
+  if (!s) return '';
+  return String(s).replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+}
+
+// E.164 (+18645550192) → "(864) 555-0192"
+function formatPhone(e164) {
+  if (!e164) return '';
+  const d = String(e164).replace(/\D/g, '');
+  // Strip leading "1" for US numbers
+  const n = d.length === 11 && d[0] === '1' ? d.slice(1) : d;
+  if (n.length !== 10) return e164;
+  return `(${n.slice(0,3)}) ${n.slice(3,6)}-${n.slice(6)}`;
+}
+
+// ISO timestamp → "12m" / "2h" / "Yesterday" / "Apr 27"
+function formatRelative(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  // Re-evaluate "now" each call — earlier we had a constant that drifted
+  // during long sessions, making "12m ago" still say "12m ago" hours later.
+  const diff = Date.now() - d;
+  const mins = Math.floor(diff / 60000);
+  const hrs = Math.floor(mins / 60);
+  const days = Math.floor(hrs / 24);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m`;
+  if (hrs < 24) return `${hrs}h`;
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d`;
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+// cents → "$1,497"
+function formatMoneyCents(cents) {
+  if (cents == null) return '';
+  return (cents / 100).toLocaleString('en-US', { style:'currency', currency:'USD', maximumFractionDigits: 0 });
+}
+
+// ISO → "Apr 30" or "Sat, May 3"
+function formatDate(iso, opts = { weekday:'short', month:'short', day:'numeric' }) {
+  if (!iso) return '';
+  // Accept either "2026-05-03" or full ISO timestamps
+  const d = iso.length === 10 ? new Date(iso + 'T12:00:00Z') : new Date(iso);
+  return d.toLocaleDateString('en-US', opts);
+}
+
+// ISO → "9:00 AM"
+function formatTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+}
+
+// ISO → "9:00 AM" but compact for densely-packed calendar rows ("9:00")
+function formatTimeShort(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true })
+          .replace(/\s?(AM|PM)$/i,'');
+}
+
+// Duration sec → "1:23" or "—"
+function formatDuration(sec) {
+  if (!sec) return '—';
+  const m = Math.floor(sec / 60), r = sec % 60;
+  return m + ':' + String(r).padStart(2, '0');
+}
+
+// Date-only key for grouping (UTC date portion of ISO)
+function dayKey(iso) { return (iso || '').split('T')[0]; }
+
+// Backwards-compat aliases (keep old names working during migration)
+const relTime = formatRelative;
+const fmtTime = formatTime;
+const fmtDate = formatDate;
+
+// ── localStorage with quota fallback ──────────────────────────────────
+// Wraps setItem with eviction-on-quota. When localStorage hits its 5MB
+// limit (typical browser limit), we evict any bpp_v3_geocode: or
+// bpp_v3_drive: cache entries (which we can re-fetch) before retrying.
+// Pinned-contacts and the like persist because they live under different
+// prefixes the eviction sweep doesn't touch.
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    if (e && e.name === 'QuotaExceededError') {
+      try {
+        const evictPrefixes = ['bpp_v3_geocode:', 'bpp_v3_drive:', 'bpp_v3_job_photos:'];
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (!k) continue;
+          if (evictPrefixes.some(p => k.startsWith(p))) {
+            localStorage.removeItem(k);
+          }
+        }
+        localStorage.setItem(key, value);
+        return true;
+      } catch { return false; }
+    }
+    return false;
+  }
+}
+
+// ── BPP pricing engine (mirrors v1/v2 — keep in sync) ──────────────────
+// QB_C = your real costs. QB_S = what the customer sees. Both in dollars.
+// When v1 changes, mirror here.
+const QB_C = {
+  inlet30: 55, inlet50: 85, interlock: 25,
+  permitActual: 75, permitCustomer: 125, licenseAmortized: 25,
+  surgeProtector: 85, cord30Cost: 60, cord50Cost: 125,
+  adCost: 150, minProfit: 500,
+};
+const QB_S = {
+  base30: 1197, base50: 1497,
+  longRun30perFt: 12, longRun50perFt: 14,
+  surge: 375, pom: 447,
+  cordValue30: 129, cordValue50: 198,
+  permitCustomer: 125,
+};
+// Tier upgrades (additive, applied after base+addons). Standard is the floor.
+const TIER_META = {
+  standard:     { label: 'Standard',  uplift: 0,   tone: '#666' },
+  premium:      { label: 'Premium',   uplift: 300, tone: '#0b1f3b' },
+  premium_plus: { label: 'Premium+',  uplift: 600, tone: GOLD },
+};
+const TIER_IDS = ['standard', 'premium', 'premium_plus'];
+
+// Total dollars for a given amp + addon set + tier.
+function quickQuoteTotal({ amp, cordIncluded, includeSurge, includePom, includePermit, tier }) {
+  const is50 = String(amp) === '50';
+  const baseCordCost = is50 ? QB_C.cord50Cost : QB_C.cord30Cost;
+  const cordValue = is50 ? QB_S.cordValue50 : QB_S.cordValue30;
+  const yourSupplies =
+    (is50 ? QB_C.inlet50 : QB_C.inlet30) + QB_C.interlock + QB_C.permitActual + QB_C.licenseAmortized +
+    (cordIncluded ? baseCordCost : 0) +
+    (includeSurge ? QB_C.surgeProtector : 0);
+  const totalCost = yourSupplies + QB_C.adCost;
+  const cordDiscount = cordIncluded ? 0 : cordValue;
+  const addonSell =
+    (includeSurge ? QB_S.surge : 0) +
+    (includePom ? QB_S.pom : 0) +
+    (includePermit ? QB_S.permitCustomer : 0);
+  const standardSell = (is50 ? QB_S.base50 : QB_S.base30) + addonSell - cordDiscount;
+  let totalSell = Math.round(Math.max(standardSell, totalCost + QB_C.minProfit));
+  totalSell += (TIER_META[tier]?.uplift || 0);
+  if (totalSell % 2 === 0) totalSell += 1;
+  return totalSell;
+}
+
+// Build pricing_30 + pricing_50 line-item shapes that proposal.html consumes.
+// Mirrors v2 quickQuoteCompute output minus the tier uplift (uplift lives on
+// the top-level total field).
+function quickQuoteCompute({ amp, cordIncluded, includeSurge, includePom, includePermit }) {
+  const is50 = String(amp) === '50';
+  const baseCordCost = is50 ? QB_C.cord50Cost : QB_C.cord30Cost;
+  const cordValue = is50 ? QB_S.cordValue50 : QB_S.cordValue30;
+  const yourSupplies =
+    (is50 ? QB_C.inlet50 : QB_C.inlet30) + QB_C.interlock + QB_C.permitActual + QB_C.licenseAmortized +
+    (cordIncluded ? baseCordCost : 0) +
+    (includeSurge ? QB_C.surgeProtector : 0);
+  const totalCost = yourSupplies + QB_C.adCost;
+  const cordDiscount = cordIncluded ? 0 : cordValue;
+  const addonSell =
+    (includeSurge ? QB_S.surge : 0) +
+    (includePom ? QB_S.pom : 0) +
+    (includePermit ? QB_S.permitCustomer : 0);
+  const standardSell = (is50 ? QB_S.base50 : QB_S.base30) + addonSell - cordDiscount;
+  let totalSell = Math.round(Math.max(standardSell, totalCost + QB_C.minProfit));
+  if (totalSell % 2 === 0) totalSell += 1;
+  return {
+    total: totalSell,
+    base: is50 ? QB_S.base50 : QB_S.base30,
+    cord: cordIncluded ? 0 : cordValue,
+    cordIncluded: !!cordIncluded,
+    mainBreaker: 0, twinQuad: 0,
+    surge: includeSurge ? QB_S.surge : 0,
+    pom: includePom ? QB_S.pom : 0,
+    permit: includePermit ? QB_S.permitCustomer : 0,
+    longRun: 0, permitInspection: 0, extraFt: 0,
+    items: [],
+  };
+}
+
+// Export everything
+Object.assign(window, {
+  NAVY, GOLD, BG, CARD, MUTED, NOW,
+  Icons, NavBar, ContactAvatar, GoldDot, StatusPill,
+  SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero,
+  capitalize, formatPhone, formatRelative, formatMoneyCents,
+  formatDate, formatTime, formatTimeShort, formatDuration, dayKey,
+  relTime, fmtTime, fmtDate,
+  QB_C, QB_S, TIER_META, TIER_IDS, quickQuoteTotal, quickQuoteCompute,
+  safeSetItem,
+});

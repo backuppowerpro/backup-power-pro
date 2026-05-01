@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>BPP CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="crm-data.js?v=17"></script>
+<script type="text/babel" src="crm-shared.jsx?v=17"></script>
+<script type="text/babel" src="crm-left.jsx?v=17"></script>
+<script type="text/babel" src="crm-right.jsx?v=17"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=17"></script>
+<script type="text/babel" src="crm-app.jsx?v=17"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; overflow: hidden; }
+  body { height: 100%; overflow: hidden; font-family: 'DM Sans', sans-serif; background: #f4f6f9; }
+  #root { height: 100%; overflow: hidden; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .chip-row {
+    padding-inline: 16px !important;
+    scroll-padding-inline-start: 16px;
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
+  .mobile-panel *::-webkit-scrollbar { display: none; }
+  .mobile-panel * { scrollbar-width: none; }
+  button, textarea, input { font-family: 'DM Sans', sans-serif; }
+  /* Crisp icon rendering — geometricPrecision over speed (default).
+     Eliminates the "lighter at intersection" artifact when stroke paths
+     cross each other in icons like the calendar. */
+  svg { shape-rendering: geometricPrecision; }
+
+  /* ── Animations ─────────────────────────────────────────────────────
+     Quiet motion only — never decorative. Three principles:
+       1. Buttons confirm a press with a 60ms scale-down so taps feel real.
+       2. Cards fade-up 200ms when they first mount so a freshly opened
+          contact pane doesn't pop in.
+       3. Toasts slide from the bottom — they're news, not noise.
+     Honor `prefers-reduced-motion: reduce` for the user's accessibility
+     settings: all transforms collapse to instant, all transitions to none.
+  */
+  @keyframes bpp-fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bpp-slide-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bpp-pulse-soft {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.55; }
+  }
+  /* Card mount — every direct child of the right pane fades up. */
+  .mobile-panel > * > [data-card],
+  [data-card] {
+    animation: bpp-fade-up 220ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  /* Press feedback on every button — NOT links (they have native feedback). */
+  button:not(:disabled):active {
+    transform: scale(0.97);
+    transition: transform 70ms ease-out;
+  }
+  button { transition: background 120ms ease, color 120ms ease, border-color 120ms ease, opacity 120ms ease; }
+  /* Hover on rows + buttons (desktop only — :hover is no-op on touch). */
+  @media (hover: hover) {
+    button:hover:not(:disabled) { filter: brightness(1.04); }
+  }
+  /* Toasts — when a host wraps its toast container with [data-toast-host]. */
+  [data-toast-item] { animation: bpp-slide-up 200ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+  /* Soft pulse for "today" / live indicators — subtle, not nagging. */
+  @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.45 } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+</body>
+</html>
