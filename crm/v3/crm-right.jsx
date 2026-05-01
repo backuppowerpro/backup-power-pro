@@ -362,6 +362,7 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
         <NextJobCard contact={contact} event={nextEvent} permit={cPermit} materials={materials} onOpenTab={onOpenTab} />
       )}
       <PhotosSection contact={contact} />
+      <StageHistoryCard contact={contact} />
       <PermitsCard permits={permits} contact={contact} bumpData={bumpData} />
       <InfoSection title="Notes" editAction={null}>
         <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Internal notes (auto-saves)…"
@@ -2821,6 +2822,59 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose }) {
         </div>
       </div>
     </ModalShell>
+  );
+}
+
+// ── StageHistoryCard ──────────────────────────────────────────────────
+// Compact timeline: "New → Quoted (4d) → Booked (12d) → here for 3d".
+// Auditor: "Solo ops live or die by knowing why a deal stalled."
+function StageHistoryCard({ contact }) {
+  const all = window.CRM?.stageHistory || [];
+  const rows = all.filter(r => r.contact_id === contact.id);
+  if (rows.length === 0) return null;
+
+  // Build a chronological list of stages including the implicit "created"
+  // entry. Compute days-in-stage for each transition.
+  const sorted = [...rows].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+  const startTs = new Date(sorted[0].created_at).getTime();
+
+  const segments = [];
+  let prevTs = startTs;
+  let prevStage = sorted[0].from_stage;
+  // First segment: time spent at from_stage before first transition
+  if (prevStage != null) {
+    const days = Math.max(0, Math.floor((new Date(sorted[0].created_at).getTime() - prevTs) / 86400000));
+    segments.push({ stage: prevStage, days, transitionAt: sorted[0].created_at });
+  }
+  for (let i = 0; i < sorted.length; i++) {
+    const t = sorted[i];
+    const next = sorted[i + 1];
+    const ts = new Date(t.created_at).getTime();
+    const endTs = next ? new Date(next.created_at).getTime() : Date.now();
+    const days = Math.max(0, Math.floor((endTs - ts) / 86400000));
+    segments.push({ stage: t.to_stage, days, transitionAt: t.created_at, current: !next });
+  }
+
+  const labelFor = (n) => (window.CRM?.STAGE_LABELS?.[window.CRM?.STAGE_NUM_TO_STR?.[n]] || `Stage ${n}`);
+
+  return (
+    <InfoSection title="Pipeline" editAction={null}>
+      <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:6, fontSize:12, color:NAVY }}>
+        {segments.map((s, i) => (
+          <React.Fragment key={i}>
+            <span style={{
+              padding:'3px 8px', borderRadius:20, fontWeight:600,
+              background: s.current ? '#FFFBEB' : '#F0F4FF',
+              color: s.current ? '#92400E' : NAVY,
+              border: s.current ? '1px solid #FDE68A' : '1px solid rgba(11,31,59,0.08)',
+              fontSize:11,
+              whiteSpace:'nowrap',
+            }}>{labelFor(s.stage)}{s.days > 0 ? ` · ${s.days}d` : ''}{s.current ? ' (here)' : ''}</span>
+            {i < segments.length - 1 && <span style={{ color:MUTED, fontSize:11 }}>→</span>}
+          </React.Fragment>
+        ))}
+      </div>
+    </InfoSection>
   );
 }
 

@@ -341,6 +341,7 @@ window.CRM = {
   calls: [],
   permits: [],
   materials: [],
+  stageHistory: [],
   jurisdictions: [
     // Greenville/Spartanburg/Pickens counties. City of Greenville is inside
     // Greenville County but uses its own permit portal — kept separate so
@@ -394,7 +395,7 @@ async function loadLiveData() {
   const fetchTable = (queryBuilder, label) =>
     withTimeout(queryBuilder, 8000, label).catch(e => ({ data: null, error: e }));
 
-  const [contactsR, eventsR, proposalsR, invoicesR, messagesR] = await Promise.all([
+  const [contactsR, eventsR, proposalsR, invoicesR, messagesR, stageHistoryR] = await Promise.all([
     fetchTable(__db.from('contacts')
       .select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes')
       .order('created_at', { ascending: false })
@@ -421,13 +422,17 @@ async function loadLiveData() {
       .gte('sent_at', since)
       .order('sent_at', { ascending: false })
       .limit(2000), 'messages'),
+    fetchTable(__db.from('stage_history')
+      .select('id, contact_id, from_stage, to_stage, created_at')
+      .order('created_at', { ascending: true })
+      .limit(2000), 'stage_history'),
   ]);
 
   // Surface any per-table failure once, quietly, in the console — not as a
   // blocking toast. The user sees a working app with whatever loaded.
   const tableErrors = [
     ['contacts', contactsR], ['events', eventsR], ['proposals', proposalsR],
-    ['invoices', invoicesR], ['messages', messagesR],
+    ['invoices', invoicesR], ['messages', messagesR], ['stage_history', stageHistoryR],
   ].filter(([, r]) => r.error).map(([n, r]) => `${n}: ${r.error.message || r.error}`);
   if (tableErrors.length) console.warn('[CRM] partial load:', tableErrors);
 
@@ -436,10 +441,11 @@ async function loadLiveData() {
   window.CRM.proposals = (proposalsR.data || []).map(mapProposal);
   window.CRM.invoices  = (invoicesR.data  || []).map(mapInvoice);
   window.CRM.messages  = (messagesR.data  || []).map(mapMessage);
+  window.CRM.stageHistory = stageHistoryR.data || [];
   // calls / permits / materials: not yet wired (no DB tables) — leave empty
   window.CRM.loaded = true;
 
-  console.log(`[CRM] loaded ${CRM.contacts.length} contacts, ${CRM.events.length} events, ${CRM.proposals.length} proposals, ${CRM.invoices.length} invoices, ${CRM.messages.length} messages`);
+  console.log(`[CRM] loaded ${CRM.contacts.length} contacts, ${CRM.events.length} events, ${CRM.proposals.length} proposals, ${CRM.invoices.length} invoices, ${CRM.messages.length} messages, ${CRM.stageHistory.length} stage transitions`);
   window.dispatchEvent(new CustomEvent('crm-data-ready', { detail: { authed: true } }));
 
   // Realtime — re-fetch the whole table on any change. The lists are small
