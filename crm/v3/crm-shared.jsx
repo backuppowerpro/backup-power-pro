@@ -34,19 +34,13 @@ const Icons = {
     </svg>
   ),
   calendar: (
-    // Binding tabs are FILLED rects (not strokes). They visibly extend into
-    // the body rect for the classic calendar look, but because filled
-    // rendering is solid pixels (no anti-aliased stroke overlap) the
-    // intersection prints clean — kills the "lighter where lines cross"
-    // artifact Key flagged.
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2"/>
-      <path d="M3 10h18"/>
-      <rect x="7.25" y="2" width="1.5" height="4" rx="0.5" fill="currentColor" stroke="none"/>
-      <rect x="15.25" y="2" width="1.5" height="4" rx="0.5" fill="currentColor" stroke="none"/>
-      <rect x="7" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
-      <rect x="11" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
-      <rect x="15" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
+    // Heroicons solid calendar — a SINGLE filled path. No strokes, no
+    // intersections, no anti-aliased overlap brightening anywhere.
+    // Previous attempts with stroked outlines + filled tabs all had some
+    // version of the lighter-pixel artifact Key kept flagging. Going
+    // fully filled kills the entire class of bug.
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path fillRule="evenodd" clipRule="evenodd" d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3a.75.75 0 0 1 1.5 0v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z"/>
     </svg>
   ),
   finance: (
