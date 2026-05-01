@@ -188,6 +188,7 @@ function mapInvoice(r) {
     kind,
     status,
     sent_at: r.sent_at || r.created_at,
+    viewed_at: r.viewed_at || null,
     paid_at: r.paid_at || null,
   };
 }
@@ -378,7 +379,11 @@ async function loadLiveData() {
       .order('created_at', { ascending: false })
       .limit(500), 'proposals'),
     fetchTable(__db.from('invoices')
-      .select('id, token, contact_id, proposal_id, total, status, created_at, paid_at')
+      .select(// Schema notes (verified empirically 2026-05-01): the invoices table has
+// NO `kind` / `sent_at` / `viewed_at` columns. mapInvoice derives them:
+// kind from a $-amount heuristic, sent_at from created_at, viewed_at = null.
+// If those columns ever get added, expand the SELECT and the mapper.
+'id, token, contact_id, proposal_id, total, status, created_at, paid_at')
       .order('created_at', { ascending: false })
       .limit(500), 'invoices'),
     fetchTable(__db.from('messages')
@@ -444,7 +449,11 @@ async function loadLiveData() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, async () => {
       try {
         const { data, error } = await __db.from('invoices')
-          .select('id, token, contact_id, proposal_id, total, status, created_at, paid_at')
+          .select(// Schema notes (verified empirically 2026-05-01): the invoices table has
+// NO `kind` / `sent_at` / `viewed_at` columns. mapInvoice derives them:
+// kind from a $-amount heuristic, sent_at from created_at, viewed_at = null.
+// If those columns ever get added, expand the SELECT and the mapper.
+'id, token, contact_id, proposal_id, total, status, created_at, paid_at')
           .order('created_at', { ascending: false }).limit(500);
         if (error) { console.warn('[CRM] realtime invoices refetch failed:', error.message); return; }
         window.CRM.invoices = (data || []).map(mapInvoice);
@@ -479,7 +488,11 @@ async function refetchAll() {
       __db.from('contacts').select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes').order('created_at', { ascending: false }).limit(500),
       __db.from('calendar_events').select('id, contact_id, kind, start_at, end_at, title, status').gte('start_at', since).order('start_at', { ascending: true }).limit(500),
       __db.from('proposals').select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at').order('created_at', { ascending: false }).limit(500),
-      __db.from('invoices').select('id, token, contact_id, proposal_id, total, status, created_at, paid_at').order('created_at', { ascending: false }).limit(500),
+      __db.from('invoices').select(// Schema notes (verified empirically 2026-05-01): the invoices table has
+// NO `kind` / `sent_at` / `viewed_at` columns. mapInvoice derives them:
+// kind from a $-amount heuristic, sent_at from created_at, viewed_at = null.
+// If those columns ever get added, expand the SELECT and the mapper.
+'id, token, contact_id, proposal_id, total, status, created_at, paid_at').order('created_at', { ascending: false }).limit(500),
       __db.from('messages').select('id, contact_id, direction, sender_role, body, sent_at, read_at').gte('sent_at', since).order('sent_at', { ascending: false }).limit(2000),
     ]);
     if (c.data) window.CRM.contacts = c.data.map(mapContact).filter(x => !x.archived);
