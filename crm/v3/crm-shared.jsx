@@ -538,6 +538,22 @@ const relTime = formatRelative;
 const fmtTime = formatTime;
 const fmtDate = formatDate;
 
+// ── Has-installed helper ──────────────────────────────────────────────
+// Per Key's billing rule: customers don't owe anything until after the
+// install. An invoice for a contact with no past install + stage < install
+// is pre-billing (queued / pending), NOT outstanding.
+function contactHasInstalled(contact, events = []) {
+  if (!contact) return false;
+  if (contact.stage === 'install' || contact.stage === 'done') return true;
+  const now = Date.now();
+  return events.some(e =>
+    e.contact_id === contact.id &&
+    e.kind === 'install' &&
+    e.start_at &&
+    new Date(e.start_at).getTime() < now
+  );
+}
+
 // ── localStorage with quota fallback ──────────────────────────────────
 // Wraps setItem with eviction-on-quota. When localStorage hits its 5MB
 // limit (typical browser limit), we evict any bpp_v3_geocode: or
@@ -649,7 +665,7 @@ function quickQuoteCompute({ amp, cordIncluded, includeSurge, includePom, includ
 
 // Export everything
 Object.assign(window, {
-  NAVY, GOLD, BG, CARD, MUTED, NOW, RADIUS,
+  NAVY, GOLD, BG, CARD, MUTED, NOW, RADIUS, contactHasInstalled,
   Icons, NavBar, ContactAvatar, GoldDot, StatusPill,
   SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero,
   capitalize, formatPhone, formatRelative, formatMoneyCents,

@@ -300,26 +300,32 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
   // RIGHT NOW? Surfaces unpaid invoices and signed-but-unsent proposals so
   // payment-chase moments aren't buried one tab away. The single most
   // valuable line of data on a Booked-or-later contact.
+  // Key's billing rule: customers don't owe anything until after the
+  // install. Pre-install sent invoices are "Pending install" (blue,
+  // quiet); post-install sent invoices are "Awaiting payment" (amber).
+  // Overdue stays red regardless.
+  const installed = contactHasInstalled(contact, events);
   const unpaidInvoices = invoices.filter(i => i.status === 'sent');
   const overdueInvoices = invoices.filter(i => i.status === 'overdue');
   const moneyOwed = [...overdueInvoices, ...unpaidInvoices].reduce((s,i) => s + (i.amount_cents || 0), 0);
   const hasOverdue = overdueInvoices.length > 0;
-  const moneyStatus = moneyOwed > 0 ? {
-    cents: moneyOwed,
-    label: hasOverdue ? 'Owed (overdue)' : 'Awaiting payment',
-    color: hasOverdue ? '#991B1B' : '#92400E',
-    bg: hasOverdue ? '#FEF2F2' : '#FFFBEB',
-    border: hasOverdue ? '#FECACA' : '#FDE68A',
-  } : null;
-
-  // Lifetime value = paid + outstanding (everything billed except voided/
-  // refunded/draft). When a customer calls in cold, Key sees their LTV
-  // immediately and prioritizes accordingly. Per the right-pane feature
-  // audit: "one number on the contact = correct prioritization on inbound."
-  const ltvCents = invoices
-    .filter(i => !['voided','refunded','draft','declined'].includes(i.status))
-    .reduce((s,i) => s + (i.amount_cents || 0), 0);
-  const paidCents = invoices.filter(i => i.status === 'paid').reduce((s,i) => s + (i.amount_cents || 0), 0);
+  const moneyStatus = moneyOwed > 0 ? (
+    installed
+      ? {
+          cents: moneyOwed,
+          label: hasOverdue ? 'Owed (overdue)' : 'Awaiting payment',
+          color: hasOverdue ? '#991B1B' : '#92400E',
+          bg:    hasOverdue ? '#FEF2F2' : '#FFFBEB',
+          border:hasOverdue ? '#FECACA' : '#FDE68A',
+        }
+      : {
+          cents: moneyOwed,
+          label: 'Pending install',
+          color: '#1E40AF',
+          bg: '#EFF6FF',
+          border: '#BFDBFE',
+        }
+  ) : null;
 
   return (
     <div style={{ flex:1, overflowY:'auto', minHeight:0, padding:'0 16px 16px' }}>
@@ -350,7 +356,7 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
           <span style={{ fontSize:11, color: moneyStatus.color, fontWeight:600 }}>View →</span>
         </button>
       )}
-      <ContactInfoSection contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} ltvCents={ltvCents} paidCents={paidCents} />
+      <ContactInfoSection contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} />
       <InstallSpecCard ampSpec={ampSpec} contact={contact} materials={materials} bumpData={bumpData} />
       {nextEvent && (
         <NextJobCard contact={contact} event={nextEvent} permit={cPermit} materials={materials} onOpenTab={onOpenTab} />
@@ -689,7 +695,7 @@ function PhotosSection({ contact }) {
 
 // Wraps ContactInfoRows with a real edit form. Click "Edit" → inline form
 // with name + phone + address fields. Submit → updates contacts table.
-function ContactInfoSection({ contact, bumpData, onOpenTab, ltvCents = 0, paidCents = 0 }) {
+function ContactInfoSection({ contact, bumpData, onOpenTab }) {
   const [editing, setEditing] = React.useState(false);
   // Listen for the overflow menu's "Edit contact" action.
   React.useEffect(() => {
@@ -768,12 +774,6 @@ function ContactInfoSection({ contact, bumpData, onOpenTab, ltvCents = 0, paidCe
                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:4 }}>
                   {stageLabel && <span style={{ fontSize:10, fontWeight:700, color:'white', background:'rgba(255,255,255,0.18)', backdropFilter:'blur(6px)', padding:'2px 8px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.06em' }}>{stageLabel}</span>}
                   {isPremium && <span style={{ fontSize:10, fontWeight:700, color:NAVY, background:GOLD, padding:'2px 8px', borderRadius:20, letterSpacing:'0.05em' }}>{contact.pricing_tier === 'premium_plus' ? 'PREMIUM+' : 'PREMIUM'}</span>}
-                  {ltvCents > 0 && (
-                    <span title={`Lifetime billed: ${formatMoneyCents(ltvCents)} · Paid: ${formatMoneyCents(paidCents)}`}
-                      style={{ fontSize:10, fontWeight:700, color:'white', background:'rgba(34,197,94,0.5)', backdropFilter:'blur(6px)', padding:'2px 8px', borderRadius:20, letterSpacing:'0.05em', fontFamily:"'DM Mono', monospace" }}>
-                      LTV {formatMoneyCents(ltvCents)}
-                    </span>
-                  )}
                 </div>
                 <div style={{
                   fontSize:24, fontWeight:700, color:'white', lineHeight:1.1,

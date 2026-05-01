@@ -16,7 +16,7 @@ function LeftPanel({ tab, onOpen, dncSet = new Set(), activeContactId }) {
     <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background: BG, minHeight:0 }}>
       {tab === 'contacts' && <ContactsList contacts={contacts} messages={messages} calls={calls} onOpen={onOpen} dncSet={dncSet} activeContactId={activeContactId} />}
       {tab === 'calendar' && <CalendarList events={events} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
-      {tab === 'finance'  && <FinanceList proposals={proposals} invoices={invoices} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
+      {tab === 'finance'  && <FinanceList proposals={proposals} invoices={invoices} contacts={contacts} events={events} onOpen={onOpen} activeContactId={activeContactId} />}
       {tab === 'messages' && <MessagesList messages={messages} calls={calls} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
       {tab === 'calls'    && <CallsList calls={calls} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
     </div>
@@ -500,24 +500,31 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
 
 // ── Finance List ──────────────────────────────────────────────────
 // Mixed list of proposals + invoices, sorted by sent_at desc.
-function FinanceList({ proposals, invoices, contacts, onOpen, activeContactId }) {
+function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activeContactId }) {
   const [view, setView] = React.useState('all'); // 'all' | 'invoices' | 'proposals'
   const getContact = id => contacts.find(c=>c.id===id);
 
-  // KPI cards (invoices only — money flow)
-  const sumByStatus = (arr, statuses) => arr
-    .filter(i => statuses.includes(i.status))
+  // Per Key's billing rule: don't count an invoice as Outstanding/Overdue
+  // until the contact has actually had their install. Pre-install sent
+  // invoices are "Pending install" and shown separately.
+  const installedSet = new Set(
+    contacts.filter(c => contactHasInstalled(c, events)).map(c => c.id)
+  );
+
+  // KPI cards — split by post-install status.
+  const sumByStatus = (arr, statuses, filter = () => true) => arr
+    .filter(i => statuses.includes(i.status) && filter(i))
     .reduce((s,i) => s + i.amount_cents, 0);
 
-  const outstanding = sumByStatus(invoices, ['sent','viewed']);
-  const overdue     = sumByStatus(invoices, ['overdue']);
-  const paidWeek    = sumByStatus(invoices, ['paid']);
+  const outstanding   = sumByStatus(invoices, ['sent','viewed'], i => installedSet.has(i.contact_id));
+  const overdue       = sumByStatus(invoices, ['overdue'],       i => installedSet.has(i.contact_id));
+  const paidWeek      = sumByStatus(invoices, ['paid']);
+  const pendingInstall = sumByStatus(invoices, ['sent','viewed'], i => !installedSet.has(i.contact_id));
 
-  // Top owed — rank contacts by what they owe (sent + overdue invoices)
-  // so Key knows who to chase first. One $8K customer matters more than
-  // ten $200 invoices. Per the Money feature audit.
+  // Top owed — only contacts past install. Pre-install contacts go in
+  // the "Pending install" pile, not Top Owed.
   const owedByContact = invoices
-    .filter(i => i.status === 'sent' || i.status === 'overdue')
+    .filter(i => (i.status === 'sent' || i.status === 'overdue') && installedSet.has(i.contact_id))
     .reduce((m, i) => {
       m.set(i.contact_id, (m.get(i.contact_id) || 0) + (i.amount_cents || 0));
       return m;
@@ -573,16 +580,19 @@ function FinanceList({ proposals, invoices, contacts, onOpen, activeContactId })
           }}>Quick quote</button>
         </>
       } />
-      {/* KPI Cards */}
+      {/* KPI Cards — Pending install replaces a regular metric since pre-
+          install sent invoices aren't "owed" yet per Key's billing rule. */}
       <div style={{ display:'flex', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         {[
-          { label:'Outstanding', val:outstanding, color:'#1E40AF' },
-          { label:'Overdue',     val:overdue,     color:'#991B1B' },
-          { label:'Paid',        val:paidWeek,    color:'#065F46' },
+          { label:'Outstanding', val:outstanding,    color:'#1E40AF', sub:'after install' },
+          { label:'Overdue',     val:overdue,        color:'#991B1B' },
+          { label:'Pending',     val:pendingInstall, color:'#0F766E', sub:'pre-install' },
+          { label:'Paid',        val:paidWeek,       color:'#065F46' },
         ].map((k,i)=>(
-          <div key={k.label} style={{ flex:1, padding:'10px 12px', borderRight:i<2?'1px solid #F0F0EE':'none' }}>
+          <div key={k.label} style={{ flex:1, padding:'10px 12px', borderRight:i<3?'1px solid #F0F0EE':'none' }}>
             <div style={{ fontSize:10, color:MUTED, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:3 }}>{k.label}</div>
-            <div style={{ fontSize:17, fontWeight:700, color:k.color, letterSpacing:'-0.5px' }}>{formatMoneyCents(k.val)}</div>
+            <div style={{ fontSize:16, fontWeight:700, color:k.color, letterSpacing:'-0.5px' }}>{formatMoneyCents(k.val)}</div>
+            {k.sub && <div style={{ fontSize:9, color:MUTED, marginTop:1, fontWeight:500 }}>{k.sub}</div>}
           </div>
         ))}
       </div>
