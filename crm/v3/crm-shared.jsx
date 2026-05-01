@@ -345,7 +345,7 @@ function StatusPill({ status, label }) {
 // ── Sparky FAB ────────────────────────────────────────────────────
 function SparkyFAB({ onClick }) {
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-label="Open assistant" style={{
       position:'absolute', bottom: 20, right: 16,
       width: 52, height: 52, borderRadius: '50%',
       background: GOLD, border: 'none',
@@ -362,7 +362,7 @@ function SparkyFAB({ onClick }) {
 // ── Sparky Pill (detail view) ─────────────────────────────────────
 function SparkyPill({ onClick }) {
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-label="Open assistant" style={{
       position:'absolute', right: 0, top: '50%', transform:'translateY(-50%)',
       background: GOLD, border: 'none', color: NAVY,
       borderRadius: '20px 0 0 20px',
@@ -527,8 +527,17 @@ function formatDuration(sec) {
   return m + ':' + String(r).padStart(2, '0');
 }
 
-// Date-only key for grouping (UTC date portion of ISO)
-function dayKey(iso) { return (iso || '').split('T')[0]; }
+// Date-only key for grouping in LOCAL time. Splitting an ISO timestamp
+// on 'T' returns the UTC date portion — comparing that against TODAY
+// (built from local-TZ Date components) goes off-by-one any time the
+// UTC date is different from local. After ~8 PM EDT the UTC date is
+// already tomorrow → tonight's installs grouped under the wrong day.
+function dayKey(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
 // Backwards-compat aliases (keep old names working during migration)
 const relTime = formatRelative;

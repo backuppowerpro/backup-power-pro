@@ -345,7 +345,10 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
 
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
-      <PanelHeader title="Contacts" action="Add Lead" right={<PermitPortalsButton />} />
+      {/* Add Lead removed — there's no New-Contact flow yet, and a button
+          that does nothing is worse than no button. Re-add when the flow
+          ships. */}
+      <PanelHeader title="Contacts" right={<PermitPortalsButton />} />
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:14,height:14, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
@@ -469,7 +472,9 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
-      <PanelHeader title="Calendar" action="Add Event" />
+      {/* Add Event removed from header — same reason. Per-contact
+          AddEventInline form on Schedule tab is the real entry point. */}
+      <PanelHeader title="Calendar" />
       {/* Today strip */}
       <div style={{ background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ padding:'8px 16px 4px', fontSize:11, fontWeight:700, color:GOLD, textTransform:'uppercase', letterSpacing:'0.07em' }}>Today — {formatDate(TODAY, { month:'short', day:'numeric' })}</div>
@@ -868,7 +873,9 @@ function CallsList({ calls, contacts, onOpen, activeContactId }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
-      <PanelHeader title="Calls" right={<span style={{ fontSize:12, color:MUTED, fontWeight:500 }}>{todayCalls.length} today</span>} action="Log Call" />
+      {/* Log Call removed — no manual-log flow yet. Calls land via Twilio
+          webhooks; manual log is for a future sprint. */}
+      <PanelHeader title="Calls" right={<span style={{ fontSize:12, color:MUTED, fontWeight:500 }}>{todayCalls.length} today</span>} />
       {callbackQueue.length > 0 && (
         <div style={{ background:'#FEF2F2', borderBottom:'1px solid #FEE2E2', padding:'8px 16px', flexShrink:0 }}>
           <div style={{ fontSize:11, fontWeight:700, color:'#991B1B', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.06em' }}>Callback Queue · {callbackQueue.length}</div>

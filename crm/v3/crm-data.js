@@ -188,9 +188,27 @@ function mapInvoice(r) {
     rawStatus === 'unpaid' || rawStatus === 'open' ? 'sent' :
     rawStatus;
   const cents = readCents(r);
-  // Kind picker: explicit `kind` column wins; otherwise heuristic by amount.
-  // Deposits run smaller than finals — legacy rows have no `kind`.
-  const kind = r.kind || (cents > 0 && cents < 100000 ? 'deposit' : 'final');
+  // Kind picker: explicit `kind` column wins. Heuristic fallback was
+  // mislabeling any $1000+ deposit as 'final'. Better: if a proposal_id
+  // exists we treat the invoice as 'final' only when it covers ≥ 90% of
+  // the proposal total — anything smaller is a 'deposit'. With no
+  // proposal_id we keep a permissive cutoff at $1500 (most BPP deposits
+  // fall well below this).
+  let kind = r.kind;
+  if (!kind) {
+    if (r.proposal_id) {
+      // Cross-ref via the global once it's loaded; on first map pass
+      // CRM.proposals may not be populated yet — fall back to size cutoff.
+      const prop = (window.CRM?.proposals || []).find(p => p.id === r.proposal_id);
+      if (prop && prop.amount_cents > 0) {
+        kind = (cents / prop.amount_cents >= 0.9) ? 'final' : 'deposit';
+      } else {
+        kind = cents >= 150000 ? 'final' : 'deposit';
+      }
+    } else {
+      kind = cents >= 150000 ? 'final' : 'deposit';
+    }
+  }
   return {
     id: r.id,
     token: r.token || null,

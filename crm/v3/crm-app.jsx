@@ -113,7 +113,7 @@ function Root() {
   // Loading splash — shown until crm-data.js fires the ready event.
   if (!loaded) {
     return (
-      <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f4f6f9', color:'#666', fontFamily:'DM Sans', fontSize:14 }}>
+      <div style={{ height:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f4f6f9', color:'#666', fontFamily:'DM Sans', fontSize:14 }}>
         Loading…
       </div>
     );
@@ -122,7 +122,7 @@ function Root() {
   // Sign-in prompt — surfaced when no Supabase session is active.
   if (!authed) {
     return (
-      <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f4f6f9', fontFamily:'DM Sans', gap:16, padding:24, textAlign:'center' }}>
+      <div style={{ height:'100dvh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f4f6f9', fontFamily:'DM Sans', gap:16, padding:24, textAlign:'center' }}>
         <div style={{ fontSize:24, fontWeight:600, color:'#0b1f3b' }}>BPP CRM</div>
         <div style={{ fontSize:14, color:'#666', maxWidth:360 }}>
           Sign in on the existing CRM at /crm/v2/ first, then come back here. v3 reuses the same Supabase session cookie.
@@ -200,10 +200,10 @@ function Root() {
     // Side-by-side preview canvas (for design iteration only). Wrapped in
     // device-frame chrome to make the comparison feel intentional.
     return (
-      <div style={{ height:'100vh', display:'flex', flexDirection:'column', background:'#f4f6f9', overflow:'hidden', maxWidth:'100vw' }}>
+      <div style={{ height:'100dvh', display:'flex', flexDirection:'column', background:'#f4f6f9', overflow:'hidden', maxWidth:'100vw' }}>
         <div style={{ flex:1, display:'flex', overflow:'hidden', padding:20, gap:32, alignItems:'center', justifyContent:'center', maxWidth:'100vw' }}>
           <div style={{
-            width:390, height:'calc(100vh - 40px)', maxHeight:844,
+            width:390, height:'calc(100dvh - 40px)', maxHeight:844,
             borderRadius:16, overflow:'hidden',
             border:'1px solid rgba(11,31,59,0.12)',
             display:'flex', flexDirection:'column', flexShrink:0,
@@ -220,7 +220,7 @@ function Root() {
             {mobileApp}
           </div>
           <div style={{
-            flex:1, height:'calc(100vh - 40px)', maxHeight:844, maxWidth:900, minWidth:0,
+            flex:1, height:'calc(100dvh - 40px)', maxHeight:844, maxWidth:900, minWidth:0,
             borderRadius:12, overflow:'hidden',
             border:'1px solid rgba(11,31,59,0.12)',
             display:'flex',

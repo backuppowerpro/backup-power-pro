@@ -393,7 +393,9 @@ function GoldActionBtn({ onClick, href, target, children }) {
     cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6,
     textDecoration:'none', whiteSpace:'nowrap',
   };
-  if (href) return <a href={href} target={target} style={style}>{children}</a>;
+  // target=_blank without rel=noopener leaks window.opener to the new tab.
+  // Always pair them defensively — even though current callers are tel: links.
+  if (href) return <a href={href} target={target} rel={target ? 'noopener noreferrer' : undefined} style={style}>{children}</a>;
   return <button onClick={onClick} style={style}>{children}</button>;
 }
 
@@ -817,7 +819,7 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Phone</div>
-          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(864) 555-0192" style={inputStyle} />
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(864) 555-0192" type="tel" inputMode="tel" autoComplete="tel" style={inputStyle} />
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Address</div>
@@ -1334,7 +1336,9 @@ function NextJobCard({ contact, event, permit, materials = [], onOpenTab }) {
   const totalForReadiness = Math.max(total, 2);
   const readinessFull = totalForReadiness > 0 && ready === totalForReadiness;
 
-  const firstName = (contact.name || 'them').split(' ')[0];
+  // Trim before split-or-default so a name of "  " doesn't render
+  // "Hey , here's your quote" — guards against whitespace-only DB rows.
+  const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
 
   const PinIcon = (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1369,7 +1373,9 @@ function NextJobCard({ contact, event, permit, materials = [], onOpenTab }) {
 
   const openMaps = () => window.open(`https://maps.google.com/?q=${encodeURIComponent(contact.address)}`, '_blank', 'noopener');
   const textCustomer = () => onOpenTab?.('messages');
-  const reschedule = () => window.showToast?.('Reschedule — coming soon');
+  // Jump to Schedule tab — the AddEventInline form there is the closest
+  // we have to a reschedule UI today (until a per-event edit modal ships).
+  const reschedule = () => onOpenTab?.('calendar');
 
   return (
     <div style={{ background:'white', marginTop:12, padding:'14px 16px', border:'1px solid rgba(11,31,59,0.08)', borderRadius:8 }}>
@@ -1582,12 +1588,9 @@ function AddEventInline({ contact, bumpData, hasUpcoming }) {
   if (!open) {
     return (
       <div style={{ display:'flex', gap:8, marginTop:12 }}>
-        {hasUpcoming && (
-          <button onClick={() => window.showToast?.('Tap an event to reschedule it (modal coming May 7)')} style={{
-            flex:1, height:36, borderRadius:8, background:'white', color:NAVY,
-            border:'1px solid rgba(27,43,75,0.15)', fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
-          }}>Reschedule</button>
-        )}
+        {/* Reschedule button removed — it only toasted "coming soon" and
+            misled Key into expecting it works. Re-add when the per-event
+            edit modal ships. */}
         <button onClick={() => setOpen(true)} style={{
           flex:1, height:36, borderRadius:8, background:'#ffba00', color:NAVY, border:'none',
           fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
@@ -1731,7 +1734,9 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   );
 
   const fmtShort = iso => iso ? formatDate(iso, { month:'short', day:'numeric' }) : null;
-  const firstName = (contact.name || 'them').split(' ')[0];
+  // Trim before split-or-default so a name of "  " doesn't render
+  // "Hey , here's your quote" — guards against whitespace-only DB rows.
+  const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
 
   // Both proposal.html and invoice.html parse `?token=<uuid>` from the query
   // string — verified against proposal.html:403 and invoice.html:189.
@@ -2200,14 +2205,33 @@ function ContactCalls({ contact, calls, isDnc }) {
 
   return (
     <div style={{ flex:1, overflowY:'auto', minHeight:0, padding:'12px 16px 16px' }}>
-      <button onClick={() => window.showToast?.(isDnc ? 'DNC is on' : 'Starting call…')} disabled={isDnc} style={{
-        width:'100%', height:42, borderRadius:8,
-        background: isDnc ? '#E5E7EB' : '#ffba00',
-        color: isDnc ? MUTED : NAVY,
-        border:'none', cursor: isDnc ? 'not-allowed' : 'pointer',
-        fontSize:14, fontWeight:600, fontFamily:'inherit',
-        marginBottom:12, padding:'12px 16px',
-      }}>{isDnc ? 'DNC — calls disabled' : 'Start call'}</button>
+      {/* Real tel: handoff — opens the system dialer. No fake "Starting
+          call…" toast that doesn't actually do anything. Twilio Voice SDK
+          dial-from-browser is a future feature; today this routes through
+          the iPhone's native phone app (which is what Key wants anyway). */}
+      {isDnc ? (
+        <button disabled style={{
+          width:'100%', height:44, borderRadius:8,
+          background:'#E5E7EB', color:MUTED,
+          border:'none', cursor:'not-allowed',
+          fontSize:14, fontWeight:600, fontFamily:'inherit',
+          marginBottom:12, padding:'12px 16px',
+        }}>DNC — calls disabled</button>
+      ) : (
+        <a href={contact?.phone ? `tel:${contact.phone}` : undefined}
+           aria-disabled={!contact?.phone}
+           style={{
+            display:'flex', alignItems:'center', justifyContent:'center',
+            width:'100%', height:44, borderRadius:8,
+            background: contact?.phone ? '#ffba00' : '#E5E7EB',
+            color: contact?.phone ? NAVY : MUTED,
+            border:'none', textDecoration:'none',
+            cursor: contact?.phone ? 'pointer' : 'not-allowed',
+            fontSize:14, fontWeight:600, fontFamily:'inherit',
+            marginBottom:12,
+            pointerEvents: contact?.phone ? 'auto' : 'none',
+          }}>{contact?.phone ? `Call ${formatPhone(contact.phone)}` : 'No phone on file'}</a>
+      )}
 
       {sorted.map(cl => {
         const s = STYLES[cl.direction] || STYLES.out;
@@ -2365,7 +2389,9 @@ function ModalShell({ open, onClose, title, footer, children }) {
 // Mirrors the v1/v2 pricing engine exactly so proposal.html renders
 // the same totals.
 function NewProposalModal({ contact, onClose }) {
-  const firstName = (contact.name || 'them').split(' ')[0];
+  // Trim before split-or-default so a name of "  " doesn't render
+  // "Hey , here's your quote" — guards against whitespace-only DB rows.
+  const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
   const [amp,        setAmp]        = React.useState(contact.amp_type || '30');
   const [tier,       setTier]       = React.useState(contact.pricing_tier || 'standard');
   const [cordIncluded,  setCord]    = React.useState(true);
@@ -2564,7 +2590,9 @@ function NewProposalModal({ contact, onClose }) {
 // Deposit auto-fills 50% of approved-proposal total; Final fills remainder
 // after summing deposit invoices; Balance is custom (Key types it).
 function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose }) {
-  const firstName = (contact.name || 'them').split(' ')[0];
+  // Trim before split-or-default so a name of "  " doesn't render
+  // "Hey , here's your quote" — guards against whitespace-only DB rows.
+  const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
 
   const proposalTotal = (latestSignedProposal?.amount_cents || 0) / 100;
   // "Already-billed" — any invoice that's a live obligation reduces the
