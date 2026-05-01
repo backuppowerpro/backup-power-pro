@@ -153,7 +153,7 @@ function ContactAvatarHoverPreview({ contact, unread, dncSet, onOpen }) {
             )}
             <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:6 }}>
               {isPremium && <span style={{ fontSize:9, fontWeight:700, color:NAVY, background:GOLD, padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>{contact.pricing_tier === 'premium_plus' ? 'PREMIUM+' : 'PREMIUM'}</span>}
-              <span style={{ fontSize:9, fontWeight:700, color:'#5B21B6', background:'#F5F3FF', padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>{(CRM.STAGE_LABELS[contact.stage]||'').toUpperCase()}</span>
+              <span style={{ fontSize:9, fontWeight:700, color:'#5B21B6', background:'#F5F3FF', padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>{(window.CRM?.STAGE_LABELS?.[contact.stage] || '').toUpperCase()}</span>
               {dncSet.has(contact.id) && <span style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 6px', borderRadius:20 }}>DNC</span>}
             </div>
             {heroAddress && (
@@ -163,28 +163,37 @@ function ContactAvatarHoverPreview({ contact, unread, dncSet, onOpen }) {
               <DriveTimeBadgeFromList address={heroAddress} contactId={contact.id} />
             </div>
             <div style={{ display:'flex', gap:5 }}>
-              <a
-                href={contact.phone ? `tel:${contact.phone}` : undefined}
-                onClick={(e)=>{ e.stopPropagation(); cancelOpen(); }}
-                style={{
-                  flex:1, height:28, borderRadius:6, background: contact.phone ? GOLD : '#EBEBEA',
-                  color:NAVY, textDecoration:'none', fontSize:11, fontWeight:600,
-                  display:'inline-flex', alignItems:'center', justifyContent:'center',
-                  pointerEvents: contact.phone ? 'auto' : 'none', opacity: contact.phone ? 1 : 0.5,
-                }}
-              >Call</a>
+              {contact.phone ? (
+                <a
+                  href={`tel:${contact.phone}`}
+                  onClick={(e)=>{ e.stopPropagation(); cancelOpen(); }}
+                  style={{
+                    flex:1, minHeight:36, borderRadius:6, background: GOLD,
+                    color:NAVY, textDecoration:'none', fontSize:12, fontWeight:600,
+                    display:'inline-flex', alignItems:'center', justifyContent:'center',
+                  }}
+                >Call</a>
+              ) : (
+                // Disabled <button> not <a href={undefined}> — proper a11y
+                // (no keyboard focus, no aria-confusing element).
+                <button disabled aria-label="No phone number on file" style={{
+                  flex:1, minHeight:36, borderRadius:6, background:'#EBEBEA',
+                  color:NAVY, opacity:0.5, fontSize:12, fontWeight:600,
+                  border:'none', cursor:'not-allowed', fontFamily:'inherit',
+                }}>Call</button>
+              )}
               <button
                 onClick={handleOpenContact('messages')}
                 style={{
-                  flex:1, height:28, borderRadius:6, background:'white', color:NAVY,
-                  border:'1px solid rgba(11,31,59,0.15)', fontSize:11, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+                  flex:1, minHeight:36, borderRadius:6, background:'white', color:NAVY,
+                  border:'1px solid rgba(11,31,59,0.15)', fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
                 }}
               >Text</button>
               <button
                 onClick={handleOpenContact('contacts')}
                 style={{
-                  flex:1, height:28, borderRadius:6, background:'white', color:NAVY,
-                  border:'1px solid rgba(11,31,59,0.15)', fontSize:11, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+                  flex:1, minHeight:36, borderRadius:6, background:'white', color:NAVY,
+                  border:'1px solid rgba(11,31,59,0.15)', fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
                 }}
               >Open</button>
             </div>
@@ -338,7 +347,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:14,height:14, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone…"
-            style={{ width:'100%', height:36, borderRadius:9, border:'1.5px solid #EBEBEA', padding:'0 12px 0 30px', fontSize:13, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
+            style={{ width:'100%', height:40, borderRadius:9, border:'1.5px solid #EBEBEA', padding:'0 12px 0 30px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
       </div>
       <FilterChips options={stageOpts} value={stage} onChange={setStage} />
@@ -805,7 +814,7 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:13,height:13, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search messages…"
-            style={{ width:'100%', height:34, borderRadius:9, border:'1.5px solid #EBEBEA', padding:'0 12px 0 28px', fontSize:13, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
+            style={{ width:'100%', height:40, borderRadius:9, border:'1.5px solid #EBEBEA', padding:'0 12px 0 28px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
       </div>
       <FilterChips options={filterOpts} value={filter} onChange={setFilter} />

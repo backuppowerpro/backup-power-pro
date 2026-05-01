@@ -106,11 +106,15 @@ function mapContact(r) {
     do_not_contact: !!r.do_not_contact,
     archived: r.status === 'Archived',
     pinned: false,
-    generator_model: null,
-    panel_amps: null,
+    // Pass through if the DB has them — UI components fall back gracefully
+    // when null. Hardcoding null silently dropped real values.
+    generator_model: r.generator_model || null,
+    panel_amps: r.panel_amps != null ? Number(r.panel_amps) : null,
     notes: r.notes || '',
     avatar: avatarFromName(r.name),
-    ref_id: r.name ? null : (r.id || '').slice(0, 4).toUpperCase(),
+    // Always derive a short ref_id from the UUID so any view/log line that
+    // wants a human-readable handle has one even for named contacts.
+    ref_id: (r.id || '').slice(0, 4).toUpperCase() || null,
   };
 }
 
@@ -133,15 +137,18 @@ function mapEvent(r) {
 // Schema-tolerant amount reader. The DB has shifted: legacy rows store `total`
 // in dollars; current rows store `amount` in cents. Read whichever is present
 // and normalize to cents so the rest of the app sees a single shape.
+// `| 0` truncates anything > 2^31 - 1 cents (~$21.4M) to garbage. Use Number()
+// so a single ridiculously-large invoice doesn't silently corrupt. We keep
+// floor semantics since cents are integral.
 function readCents(r) {
-  if (r.amount_cents != null) return r.amount_cents | 0;
-  if (r.amount != null) return r.amount | 0;
-  return Math.round((r.total || 0) * 100);
+  if (r.amount_cents != null) return Math.floor(Number(r.amount_cents) || 0);
+  if (r.amount != null) return Math.floor(Number(r.amount) || 0);
+  return Math.round((Number(r.total) || 0) * 100);
 }
 function readDollars(r) {
-  if (r.amount_cents != null) return r.amount_cents / 100;
-  if (r.amount != null) return r.amount / 100;
-  return r.total || 0;
+  if (r.amount_cents != null) return (Number(r.amount_cents) || 0) / 100;
+  if (r.amount != null) return (Number(r.amount) || 0) / 100;
+  return Number(r.total) || 0;
 }
 
 function mapProposal(r) {
@@ -158,7 +165,12 @@ function mapProposal(r) {
     contact_id: r.contact_id,
     tier: r.pricing_tier || (dollars >= 1497 ? 'premium_plus' : dollars >= 1297 ? 'premium' : 'standard'),
     amount_cents: readCents(r),
-    amp_spec: r.amp_type ? r.amp_type + 'A' : (r.selected_amp ? r.selected_amp + 'A' : null),
+    // Normalize: trim + reject empty/whitespace strings so we never render
+    // "undefinedA" or " A" when amp_type is the empty string.
+    amp_spec: (() => {
+      const a = (r.amp_type || r.selected_amp || '').toString().trim();
+      return a ? a + 'A' : null;
+    })(),
     status,
     sent_at: r.copied_at || r.created_at,
     viewed_at: r.viewed_at || null,

@@ -341,7 +341,7 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
           <span style={{ fontSize:11, color: moneyStatus.color, fontWeight:600 }}>View →</span>
         </button>
       )}
-      <ContactInfoSection contact={contact} bumpData={bumpData} />
+      <ContactInfoSection contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} />
       <InstallSpecCard ampSpec={ampSpec} contact={contact} materials={materials} bumpData={bumpData} />
       {nextEvent && (
         <NextJobCard contact={contact} event={nextEvent} permit={cPermit} materials={materials} onOpenTab={onOpenTab} />
@@ -678,7 +678,7 @@ function PhotosSection({ contact }) {
 
 // Wraps ContactInfoRows with a real edit form. Click "Edit" → inline form
 // with name + phone + address fields. Submit → updates contacts table.
-function ContactInfoSection({ contact, bumpData }) {
+function ContactInfoSection({ contact, bumpData, onOpenTab }) {
   const [editing, setEditing] = React.useState(false);
   // Listen for the overflow menu's "Edit contact" action.
   React.useEffect(() => {
@@ -800,7 +800,7 @@ function ContactInfoSection({ contact, bumpData }) {
             <span style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.06em' }}>Contact info</span>
             <button onClick={() => setEditing(true)} style={{ background:'none', border:'none', color:'#666', fontSize:12, cursor:'pointer', padding:0, fontFamily:'inherit' }}>Edit</button>
           </div>
-          <ContactInfoRows contact={contact} bumpData={bumpData} />
+          <ContactInfoRows contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} />
         </div>
       </div>
     );
@@ -852,7 +852,7 @@ function stageActionVerbFor(stage) {
   }[stage] || 'Move forward';
 }
 
-function ContactInfoRows({ contact, bumpData }) {
+function ContactInfoRows({ contact, bumpData, onOpenTab }) {
   const phoneFmt = formatPhone(contact.phone);
   const street = (contact.address || '').split(',')[0].trim();
   const jurisdiction = contact.jurisdiction || '';
@@ -889,6 +889,30 @@ function ContactInfoRows({ contact, bumpData }) {
     }
   };
 
+  // Some stage verbs are an actual feature, not just a stage flip:
+  // - "Send quote" should open the New Proposal modal (and the modal will
+  //   bump stage 1→2 on insert anyway, so don't double-bump here).
+  // - "Schedule install" should jump to Schedule tab + open Add Event.
+  // - "Pull permit" jumps to Permits affordance.
+  // Anything else (Mark booked / waiting / approved / done) is a pure stage
+  // bump and goes through advanceStage as before.
+  const handleStageAction = () => {
+    if (contact.stage === 'new') {
+      onOpenTab?.('finance');
+      // The destination tab needs to mount before its useEffect listener
+      // registers. 50ms wasn't enough on slow machines / cold mounts;
+      // 300ms is safe and still feels instant.
+      setTimeout(() => window.dispatchEvent(new CustomEvent('crm-open-new-proposal', { detail: { contactId: contact.id } })), 300);
+      return;
+    }
+    if (contact.stage === 'permit_approved') {
+      onOpenTab?.('calendar');
+      setTimeout(() => window.dispatchEvent(new CustomEvent('crm-open-add-event', { detail: { contactId: contact.id } })), 300);
+      return;
+    }
+    advanceStage();
+  };
+
   const tier = contact.pricing_tier;
   const tierLabel = tier === 'premium_plus' ? '★ Premium+' : tier === 'premium' ? '★ Premium' : 'Standard';
   const tierColor = tier !== 'standard' ? GOLD : NAVY;
@@ -919,7 +943,7 @@ function ContactInfoRows({ contact, bumpData }) {
       <InfoLineRow
         label="Stage"
         value={CRM.STAGE_LABELS[contact.stage]}
-        actions={nextStageLabel ? <GoldActionBtn onClick={advanceStage}>{stageActionVerbFor(contact.stage)}</GoldActionBtn> : null}
+        actions={nextStageLabel ? <GoldActionBtn onClick={handleStageAction}>{stageActionVerbFor(contact.stage)}</GoldActionBtn> : null}
       />
       {/* Tier row dropped — the Premium / Premium+ pill already sits in the
           hero overlay, so a duplicate row here is redundant. */}
@@ -1496,6 +1520,16 @@ function ContactCalendar({ contact, events, highlightId, bumpData }) {
 function AddEventInline({ contact, bumpData, hasUpcoming }) {
   const [open, setOpen] = React.useState(false);
   const [kind, setKind] = React.useState('install');
+  // Cross-tab trigger: Contact tab's "Schedule install" gold button on
+  // stage=permit_approved dispatches `crm-open-add-event` to expand this
+  // form without forcing Key to manually tap "+ Add event".
+  React.useEffect(() => {
+    const onOpen = (e) => {
+      if (e.detail?.contactId === contact.id) setOpen(true);
+    };
+    window.addEventListener('crm-open-add-event', onOpen);
+    return () => window.removeEventListener('crm-open-add-event', onOpen);
+  }, [contact.id]);
   // Default to tomorrow in LOCAL time. toISOString() returns UTC which
   // ticks to the day-after-tomorrow after 8 PM EDT.
   const [date, setDate] = React.useState(() => {
@@ -1613,6 +1647,17 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   // modals stay open across re-renders from realtime updates.
   const [proposalModalOpen, setProposalModalOpen] = React.useState(false);
   const [invoiceModalOpen,  setInvoiceModalOpen]  = React.useState(false);
+
+  // Cross-tab triggers — Contact tab's "Send quote" gold button on stage=NEW
+  // dispatches `crm-open-new-proposal` to skip the user manually navigating
+  // to Finance + tapping "+ New proposal".
+  React.useEffect(() => {
+    const onOpen = (e) => {
+      if (e.detail?.contactId === contact.id) setProposalModalOpen(true);
+    };
+    window.addEventListener('crm-open-new-proposal', onOpen);
+    return () => window.removeEventListener('crm-open-new-proposal', onOpen);
+  }, [contact.id]);
 
   // Mark paid — manual override for cash/check payments. Optimistic; rolls
   // back if the DB update fails.

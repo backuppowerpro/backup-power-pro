@@ -21,8 +21,14 @@ const Icons = {
     </svg>
   ),
   calendar: (
+    // Body rect starts at y=5 and binding tabs end at y=5 — they touch but
+    // don't overlap, which kills the "lighter where lines intersect" artifact
+    // Key flagged. Linejoin:round produces a clean meeting at the seam.
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+      <rect x="3" y="5" width="18" height="17" rx="2"/>
+      <path d="M3 10h18"/>
+      <path d="M8 2v3"/>
+      <path d="M16 2v3"/>
       <rect x="7" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
       <rect x="11" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
       <rect x="15" y="14" width="2" height="2" rx="0.5" fill="currentColor" stroke="none"/>
@@ -65,8 +71,11 @@ const Icons = {
     </svg>
   ),
   plus: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <path d="M12 5v14M5 12h14"/>
+    // Filled rects so the center crossing is a solid pixel, not a lighter
+    // anti-aliased overlap.
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <rect x="11" y="5" width="2" height="14" rx="1"/>
+      <rect x="5" y="11" width="14" height="2" rx="1"/>
     </svg>
   ),
   more: (
@@ -85,8 +94,13 @@ const Icons = {
     </svg>
   ),
   hash: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>
+    // Filled rects (not strokes) so the four bar intersections render solid
+    // pixels instead of lighter anti-aliased overlaps.
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <rect x="9" y="3" width="2" height="18" rx="0.5"/>
+      <rect x="14" y="3" width="2" height="18" rx="0.5"/>
+      <rect x="3" y="9" width="18" height="2" rx="0.5"/>
+      <rect x="3" y="14" width="18" height="2" rx="0.5"/>
     </svg>
   ),
   check: (
