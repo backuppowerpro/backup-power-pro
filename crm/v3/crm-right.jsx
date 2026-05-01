@@ -730,6 +730,25 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
     const patch = { name: trimmedName || null, phone: trimmedPhone, address: trimmedAddress };
     const { error } = await CRM.__db.from('contacts').update(patch).eq('id', contact.id);
     if (error) { setSaving(false); window.showToast?.(`Save failed: ${error.message}`); return; }
+
+    // Propagate to denormalized contact_* fields on proposals + invoices.
+    // proposal.html and invoice.html render the customer-facing Street
+    // View image from contact_address — without this, an address edit
+    // never reaches the customer's open proposal link.
+    const denormPatch = {
+      contact_name: patch.name || '',
+      contact_phone: patch.phone || '',
+      contact_address: patch.address || '',
+    };
+    const propagate = await Promise.allSettled([
+      CRM.__db.from('proposals').update(denormPatch).eq('contact_id', contact.id),
+      CRM.__db.from('invoices').update(denormPatch).eq('contact_id', contact.id),
+    ]);
+    const failed = propagate.filter(r => r.status === 'rejected' || r.value?.error);
+    if (failed.length) {
+      console.warn('[CRM] propagate to proposals/invoices partially failed:', failed);
+    }
+
     contact.name = patch.name;
     contact.phone = patch.phone;
     contact.address = patch.address;

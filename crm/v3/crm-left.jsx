@@ -316,8 +316,38 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   // Counts for filter chips — every stage in the canonical order (excludes archived)
   const visibleContacts = contacts.filter(c => !c.archived);
   const stageCounts = CRM.STAGE_ORDER.reduce((acc,s) => ({ ...acc, [s]: visibleContacts.filter(c=>c.stage===s).length }), {});
+
+  // "Needs reply" filter: an inbound message older than the most recent
+  // outbound (or no outbound at all). One-glance answer to "who's
+  // waiting on me?" — the highest-leverage filter for a solo pipeline.
+  const needsReplySet = React.useMemo(() => {
+    const set = new Set();
+    const byContact = new Map();
+    for (const m of messages) {
+      if (!byContact.has(m.contact_id)) byContact.set(m.contact_id, []);
+      byContact.get(m.contact_id).push(m);
+    }
+    for (const [cid, msgs] of byContact.entries()) {
+      msgs.sort((a,b) => (a.sent_at||'').localeCompare(b.sent_at||''));
+      const last = msgs[msgs.length - 1];
+      if (last && last.direction === 'in') set.add(cid);
+    }
+    return set;
+  }, [messages]);
+
+  // Recently-called: any call started in the last 24h (in/out/missed)
+  const recentCallSet = React.useMemo(() => {
+    const set = new Set();
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    for (const c of calls) {
+      if (c.started_at && new Date(c.started_at).getTime() > cutoff) set.add(c.contact_id);
+    }
+    return set;
+  }, [calls]);
+
   const stageOpts = [
-    { value:'all', label:'All', count: visibleContacts.length },
+    { value:'all',        label:'All',          count: visibleContacts.length },
+    { value:'needs_reply', label:'Needs reply', count: needsReplySet.size },
     ...CRM.STAGE_ORDER.map(s => ({ value:s, label: STAGE_COLORS[s].label, count: stageCounts[s] }))
   ];
 
@@ -328,7 +358,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
 
   const filtered = contacts
     .filter(c => !c.archived)
-    .filter(c => stage === 'all' || c.stage === stage)
+    .filter(c => stage === 'all' ? true : stage === 'needs_reply' ? needsReplySet.has(c.id) : c.stage === stage)
     .filter(c => !search || contactName(c).toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search))
     .sort((a,b) => (pinned.has(b.id)?1:0) - (pinned.has(a.id)?1:0));
 
@@ -391,6 +421,8 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                   {isPremium && window.tweaksGlobal?.premiumDots !== false && <GoldDot />}
                   <span style={{ fontWeight:600, fontSize:14, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</span>
                   {dncSet.has(c.id) && <span style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>DNC</span>}
+                  {needsReplySet.has(c.id) && <span style={{ fontSize:9, fontWeight:700, color:'#92400E', background:'#FEF3C7', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>NEEDS REPLY</span>}
+                  {recentCallSet.has(c.id) && <span title="Called within 24h" style={{ fontSize:9, fontWeight:700, color:'#065F46', background:'#D1FAE5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>📞 24h</span>}
                   {sc && <span style={{ fontSize:10, fontWeight:700, color:sc.color, background:sc.bg, padding:'1px 6px', borderRadius:20, flexShrink:0 }}>{sc.label}</span>}
                 </div>
                 <div style={{ fontSize:12, color:MUTED, marginTop:1 }}>{formatPhone(c.phone)} · {cityFromAddrShort(c.address)}</div>
@@ -533,6 +565,19 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
+  // Aged receivables — bucket outstanding (post-install) invoices by
+  // age in days. 90+ day items signal write-off risk.
+  const aged = invoices
+    .filter(i => (i.status === 'sent' || i.status === 'overdue') && installedSet.has(i.contact_id))
+    .reduce((acc, i) => {
+      const t = i.sent_at || i.created_at;
+      if (!t) return acc;
+      const days = Math.max(0, Math.floor((Date.now() - new Date(t).getTime()) / 86400000));
+      const bucket = days <= 30 ? '0_30' : days <= 60 ? '31_60' : days <= 90 ? '61_90' : '90p';
+      acc[bucket] = (acc[bucket] || 0) + (i.amount_cents || 0);
+      return acc;
+    }, {});
+
   // Counts for sub-tab pills
   const invCounts = invoices.reduce((acc,i)=>({...acc,[i.status]:(acc[i.status]||0)+1}),{});
   const proCounts = proposals.reduce((acc,p)=>({...acc,[p.status]:(acc[p.status]||0)+1}),{});
@@ -596,6 +641,27 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
           </div>
         ))}
       </div>
+      {/* Aged receivables — only renders when there's any outstanding
+          (post-install) balance. Helps Key prioritize: 90+ days = call
+          today, 60-90 = remind, 30-60 = monitor. */}
+      {(aged['0_30'] || aged['31_60'] || aged['61_90'] || aged['90p']) && (
+        <div style={{ background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0, padding:'10px 18px' }}>
+          <div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Aged receivables</div>
+          <div style={{ display:'flex', gap:6 }}>
+            {[
+              { label:'0-30',  val: aged['0_30']  || 0, color:'#0F766E' },
+              { label:'31-60', val: aged['31_60'] || 0, color:'#92400E' },
+              { label:'61-90', val: aged['61_90'] || 0, color:'#B45309' },
+              { label:'90+',   val: aged['90p']   || 0, color:'#991B1B' },
+            ].map(b => (
+              <div key={b.label} style={{ flex:1, padding:'6px 8px', background: b.val>0 ? `${b.color}10` : '#F5F5F3', borderRadius:6, textAlign:'center' }}>
+                <div style={{ fontSize:9, fontWeight:700, color:b.val>0?b.color:MUTED, letterSpacing:'0.05em' }}>{b.label}d</div>
+                <div style={{ fontSize:13, fontWeight:700, color:b.val>0?b.color:MUTED, fontFamily:"'DM Mono', monospace", marginTop:2 }}>{formatMoneyCents(b.val)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {/* Top owed — only renders when ≥1 contact has unpaid balance.
           Tap a row to jump to that contact's Finance tab to chase. */}
       {topOwed.length > 0 && (
