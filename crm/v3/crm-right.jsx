@@ -2790,4 +2790,100 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose }) {
   );
 }
 
-Object.assign(window, { RightPanel, NewProposalModal, NewInvoiceModal, ModalShell });
+// ── New Contact Modal ─────────────────────────────────────────────────
+// Walk-ins, referrals, inbound callers — Key needs to capture a lead
+// in <10s. Minimum viable: name + phone + address. Stage defaults to
+// 'new' (1). Insert is direct — Contacts realtime channel will pick it
+// up and ContactsList will re-render with the row at top.
+function NewContactModal({ onClose, onCreated }) {
+  const [name, setName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [address, setAddress] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+
+  const submit = async () => {
+    if (busy) return;
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+    if (!trimmedName && !trimmedPhone) {
+      window.showToast?.('Need at least a name or phone');
+      return;
+    }
+    if (trimmedPhone && !/^\+?[\d\s().\-]{7,}$/.test(trimmedPhone)) {
+      window.showToast?.('Phone looks invalid');
+      return;
+    }
+    if (!CRM.__db) {
+      window.showToast?.('Supabase not loaded');
+      return;
+    }
+    setBusy(true);
+    try {
+      const payload = {
+        name: trimmedName || null,
+        phone: trimmedPhone || '',
+        address: address.trim() || null,
+        stage: 1,           // new lead
+        status: 'Active',
+        do_not_contact: false,
+      };
+      const { data, error } = await CRM.__db.from('contacts').insert([payload]).select().single();
+      if (error || !data) {
+        window.showToast?.(`Save failed: ${error?.message || 'unknown'}`);
+        setBusy(false);
+        return;
+      }
+      window.showToast?.(`${trimmedName || 'Contact'} added`);
+      onCreated?.(data.id);
+      onClose();
+    } catch (e) {
+      window.showToast?.(`Failed: ${e.message || e}`);
+      setBusy(false);
+    }
+  };
+
+  // fontSize 16 prevents iOS Safari auto-zoom on focus.
+  const inputStyle = { width:'100%', height:40, padding:'0 12px', fontSize:16, fontFamily:'inherit', border:'1px solid rgba(11,31,59,0.15)', borderRadius:8, background:'white', color:NAVY, outline:'none', boxSizing:'border-box' };
+
+  return (
+    <ModalShell
+      open={true}
+      onClose={onClose}
+      title="Add contact"
+      footer={(
+        <div style={{ display:'flex', gap:8 }}>
+          <button onClick={onClose} disabled={busy} style={{
+            flex:'1 1 0', minWidth:0, height:42, borderRadius:8, background:'white', color:NAVY,
+            border:'1px solid rgba(27,43,75,0.15)', fontSize:14, fontWeight:600, fontFamily:'inherit', cursor: busy?'not-allowed':'pointer',
+          }}>Cancel</button>
+          <button onClick={submit} disabled={busy} style={{
+            flex:'1 1 0', minWidth:0, height:42, borderRadius:8,
+            background: busy ? '#E5E5E5' : '#ffba00', color: busy ? '#999' : NAVY,
+            border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
+            cursor: busy ? 'not-allowed' : 'pointer',
+          }}>{busy ? 'Saving…' : 'Save'}</button>
+        </div>
+      )}
+    >
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Name</div>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" autoComplete="name" autoFocus style={inputStyle} />
+        </div>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Phone</div>
+          <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="(864) 555-0192" type="tel" inputMode="tel" autoComplete="tel" style={inputStyle} />
+        </div>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Address (optional)</div>
+          <input value={address} onChange={e=>setAddress(e.target.value)} placeholder="123 Main St, Spartanburg" autoComplete="street-address" style={inputStyle} />
+        </div>
+        <div style={{ fontSize:11, color:MUTED, lineHeight:1.5 }}>
+          New leads land at stage 1 (New). You can advance the stage from the contact's overview after creating.
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+Object.assign(window, { RightPanel, NewProposalModal, NewInvoiceModal, NewContactModal, ModalShell });

@@ -302,6 +302,7 @@ const STAGE_COLORS = {
 function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), activeContactId }) {
   const [search, setSearch] = React.useState('');
   const [stage, setStage] = React.useState('all');
+  const [newContactOpen, setNewContactOpen] = React.useState(false);
   // Pinned contacts persist in localStorage (per-browser, single-user app).
   // The contacts table has no pinned column, so this is the right place.
   const PIN_KEY = 'bpp_v3_pinned_contacts';
@@ -345,10 +346,13 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
 
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
-      {/* Add Lead removed — there's no New-Contact flow yet, and a button
-          that does nothing is worse than no button. Re-add when the flow
-          ships. */}
-      <PanelHeader title="Contacts" right={<PermitPortalsButton />} />
+      <PanelHeader title="Contacts" action="Add" onAction={() => setNewContactOpen(true)} right={<PermitPortalsButton />} />
+      {newContactOpen && (
+        <NewContactModal
+          onClose={() => setNewContactOpen(false)}
+          onCreated={(id) => { setNewContactOpen(false); onOpen(id, 'contacts'); }}
+        />
+      )}
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:14,height:14, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
