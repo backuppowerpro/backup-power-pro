@@ -312,6 +312,15 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
     border: hasOverdue ? '#FECACA' : '#FDE68A',
   } : null;
 
+  // Lifetime value = paid + outstanding (everything billed except voided/
+  // refunded/draft). When a customer calls in cold, Key sees their LTV
+  // immediately and prioritizes accordingly. Per the right-pane feature
+  // audit: "one number on the contact = correct prioritization on inbound."
+  const ltvCents = invoices
+    .filter(i => !['voided','refunded','draft','declined'].includes(i.status))
+    .reduce((s,i) => s + (i.amount_cents || 0), 0);
+  const paidCents = invoices.filter(i => i.status === 'paid').reduce((s,i) => s + (i.amount_cents || 0), 0);
+
   return (
     <div style={{ flex:1, overflowY:'auto', minHeight:0, padding:'0 16px 16px' }}>
       {/* Today banner */}
@@ -341,7 +350,7 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
           <span style={{ fontSize:11, color: moneyStatus.color, fontWeight:600 }}>View →</span>
         </button>
       )}
-      <ContactInfoSection contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} />
+      <ContactInfoSection contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} ltvCents={ltvCents} paidCents={paidCents} />
       <InstallSpecCard ampSpec={ampSpec} contact={contact} materials={materials} bumpData={bumpData} />
       {nextEvent && (
         <NextJobCard contact={contact} event={nextEvent} permit={cPermit} materials={materials} onOpenTab={onOpenTab} />
@@ -680,7 +689,7 @@ function PhotosSection({ contact }) {
 
 // Wraps ContactInfoRows with a real edit form. Click "Edit" → inline form
 // with name + phone + address fields. Submit → updates contacts table.
-function ContactInfoSection({ contact, bumpData, onOpenTab }) {
+function ContactInfoSection({ contact, bumpData, onOpenTab, ltvCents = 0, paidCents = 0 }) {
   const [editing, setEditing] = React.useState(false);
   // Listen for the overflow menu's "Edit contact" action.
   React.useEffect(() => {
@@ -759,6 +768,12 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:4 }}>
                   {stageLabel && <span style={{ fontSize:10, fontWeight:700, color:'white', background:'rgba(255,255,255,0.18)', backdropFilter:'blur(6px)', padding:'2px 8px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.06em' }}>{stageLabel}</span>}
                   {isPremium && <span style={{ fontSize:10, fontWeight:700, color:NAVY, background:GOLD, padding:'2px 8px', borderRadius:20, letterSpacing:'0.05em' }}>{contact.pricing_tier === 'premium_plus' ? 'PREMIUM+' : 'PREMIUM'}</span>}
+                  {ltvCents > 0 && (
+                    <span title={`Lifetime billed: ${formatMoneyCents(ltvCents)} · Paid: ${formatMoneyCents(paidCents)}`}
+                      style={{ fontSize:10, fontWeight:700, color:'white', background:'rgba(34,197,94,0.5)', backdropFilter:'blur(6px)', padding:'2px 8px', borderRadius:20, letterSpacing:'0.05em', fontFamily:"'DM Mono', monospace" }}>
+                      LTV {formatMoneyCents(ltvCents)}
+                    </span>
+                  )}
                 </div>
                 <div style={{
                   fontSize:24, fontWeight:700, color:'white', lineHeight:1.1,

@@ -513,6 +513,19 @@ function FinanceList({ proposals, invoices, contacts, onOpen, activeContactId })
   const overdue     = sumByStatus(invoices, ['overdue']);
   const paidWeek    = sumByStatus(invoices, ['paid']);
 
+  // Top owed — rank contacts by what they owe (sent + overdue invoices)
+  // so Key knows who to chase first. One $8K customer matters more than
+  // ten $200 invoices. Per the Money feature audit.
+  const owedByContact = invoices
+    .filter(i => i.status === 'sent' || i.status === 'overdue')
+    .reduce((m, i) => {
+      m.set(i.contact_id, (m.get(i.contact_id) || 0) + (i.amount_cents || 0));
+      return m;
+    }, new Map());
+  const topOwed = [...owedByContact.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
   // Counts for sub-tab pills
   const invCounts = invoices.reduce((acc,i)=>({...acc,[i.status]:(acc[i.status]||0)+1}),{});
   const proCounts = proposals.reduce((acc,p)=>({...acc,[p.status]:(acc[p.status]||0)+1}),{});
@@ -573,6 +586,28 @@ function FinanceList({ proposals, invoices, contacts, onOpen, activeContactId })
           </div>
         ))}
       </div>
+      {/* Top owed — only renders when ≥1 contact has unpaid balance.
+          Tap a row to jump to that contact's Finance tab to chase. */}
+      {topOwed.length > 0 && (
+        <div style={{ background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
+          <div style={{ padding:'10px 18px 6px', fontSize:10, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.08em' }}>Top owed</div>
+          {topOwed.map(([contactId, cents]) => {
+            const c = getContact(contactId);
+            const isOver = invoices.some(i => i.contact_id === contactId && i.status === 'overdue');
+            return (
+              <button key={contactId} onClick={() => onOpen(contactId, 'finance')} style={{
+                width:'100%', display:'flex', alignItems:'center', gap:10,
+                padding:'8px 18px', borderTop:'1px solid #F5F5F3',
+                background:'white', border:'none', cursor:'pointer', fontFamily:'inherit', textAlign:'left',
+              }}>
+                <span style={{ flex:1, minWidth:0, fontSize:13, fontWeight:600, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</span>
+                {isOver && <span style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>OVERDUE</span>}
+                <span style={{ fontSize:13, fontWeight:700, color: isOver ? '#991B1B' : NAVY, fontFamily:"'DM Mono', monospace", flexShrink:0 }}>{formatMoneyCents(cents)}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       {/* Sub-tabs */}
       <div style={{ display:'flex', padding:'11px 18px 8px', gap:6, background:BG, borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         {[
