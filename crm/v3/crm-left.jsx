@@ -102,10 +102,20 @@ function ContactAvatarHoverPreview({ contact, unread, dncSet, onOpen }) {
   }, [open]);
 
   const heroAddress = contact.address;
-  // Only show the hero image when we have a real street — fake test contacts
-  // would otherwise pull a generic Google "no imagery" placeholder that
-  // doesn't match the contact at all. Falls back to a name/info card.
-  const heroUrl = isAddressableStreet(heroAddress)
+  // Pre-flight SV metadata once the popup opens so we never render
+  // Google's "Sorry, we have no imagery here" placeholder. Same cache
+  // pattern as ContactAvatar / HouseHero.
+  const [heroOk, setHeroOk] = React.useState(false);
+  React.useEffect(() => {
+    if (!open) return;
+    if (!heroAddress || !isAddressableStreet(heroAddress) || typeof window.checkSvImagery !== 'function') return;
+    let cancelled = false;
+    window.checkSvImagery(heroAddress).then(result => {
+      if (!cancelled) setHeroOk(result === 'ok');
+    });
+    return () => { cancelled = true; };
+  }, [open, heroAddress]);
+  const heroUrl = (heroOk && isAddressableStreet(heroAddress))
     ? `https://maps.googleapis.com/maps/api/streetview?size=640x640&scale=2&location=${encodeURIComponent(heroAddress.trim())}&fov=80&pitch=2&source=outdoor&key=${SV_KEY}`
     : null;
 

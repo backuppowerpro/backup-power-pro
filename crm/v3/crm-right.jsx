@@ -575,13 +575,37 @@ function DriveTimeBadge({ contact, dark }) {
 
 function HouseHero({ contact }) {
   const [failed, setFailed] = React.useState(false);
-  React.useEffect(() => { setFailed(false); }, [contact.id]);
+  // Pre-flight check via the free Places metadata API. Without this,
+  // Google returns a "Sorry, we have no imagery here" placeholder image
+  // (HTTP 200, so onError doesn't fire) and the hero displays a giant
+  // ugly gray rectangle on every contact whose address has no panorama.
+  // Same cache pattern as ContactAvatar.
+  const [hasImagery, setHasImagery] = React.useState(false);
+  const [verified, setVerified] = React.useState(false);
   const address = contact.address;
+  React.useEffect(() => {
+    setFailed(false);
+    setVerified(false);
+    setHasImagery(false);
+    if (!address || !isAddressableStreet(address) || typeof window.checkSvImagery !== 'function') {
+      setVerified(true);
+      return;
+    }
+    let cancelled = false;
+    window.checkSvImagery(address).then(result => {
+      if (cancelled) return;
+      setHasImagery(result === 'ok');
+      setVerified(true);
+    });
+    return () => { cancelled = true; };
+  }, [contact.id, address]);
+
   if (!address || failed) return null;
-  // Hero: wide rectangular Street View. Larger dim + scale=2 = sharp.
-  // Use a wider FOV to capture more of the front of the house.
-  // Reuses streetViewUrlFor's address validity check via early return.
   if (!isAddressableStreet(address)) return null;
+  // While verifying, render nothing (avoid flicker). Once verified
+  // without imagery, also render nothing — the colored ContactStrip
+  // avatar above plus the contact name carry the identity.
+  if (!verified || !hasImagery) return null;
   const url = `https://maps.googleapis.com/maps/api/streetview?size=640x240&scale=2` +
               `&location=${encodeURIComponent(address.trim())}` +
               `&fov=90&pitch=2&source=outdoor&key=${SV_KEY}`;
@@ -859,10 +883,31 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
     window.showToast?.('Contact updated');
   };
 
+  // Pre-flight Street View metadata so the hero never renders Google's
+  // gray "Sorry, we have no imagery here" placeholder. Same cache as
+  // ContactAvatar — checked once per address.
+  const [heroVerified, setHeroVerified] = React.useState(false);
+  const [heroHasImagery, setHeroHasImagery] = React.useState(false);
+  React.useEffect(() => {
+    setHeroVerified(false);
+    setHeroHasImagery(false);
+    if (!contact.address || !isAddressableStreet(contact.address)) {
+      setHeroVerified(true);
+      return;
+    }
+    let cancelled = false;
+    window.checkSvImagery(contact.address).then(result => {
+      if (cancelled) return;
+      setHeroHasImagery(result === 'ok');
+      setHeroVerified(true);
+    });
+    return () => { cancelled = true; };
+  }, [contact.id, contact.address]);
+
   if (!editing) {
     // Combined hero + contact info card. Image at top with name overlay
     // (large + bold) + Copy button. Below: phone/address/stage/tier rows.
-    const hasHero = isAddressableStreet(contact.address);
+    const hasHero = isAddressableStreet(contact.address) && heroHasImagery;
     const heroUrl = hasHero
       ? `https://maps.googleapis.com/maps/api/streetview?size=640x200&scale=2&location=${encodeURIComponent(contact.address.trim())}&fov=90&pitch=2&source=outdoor&key=${SV_KEY}`
       : null;

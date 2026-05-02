@@ -967,5 +967,5 @@ Object.assign(window, {
   formatDate, formatTime, formatTimeShort, formatDuration, dayKey,
   relTime, fmtTime, fmtDate,
   QB_C, QB_S, TIER_META, TIER_IDS, quickQuoteTotal, quickQuoteCompute,
-  safeSetItem,
+  safeSetItem, checkSvImagery, isAddressableStreet,
 });
