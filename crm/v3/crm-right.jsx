@@ -2574,8 +2574,12 @@ function NewProposalModal({ contact, onClose }) {
   };
 
   const Chip = ({ on, onClick, children }) => (
+    // 2-up basis (~50% width) so "Peace of Mind" doesn't get squeezed
+    // below its intrinsic width on a 390px viewport (4-up = 83px each;
+    // Peace of Mind needs ~95px). flex-wrap drops the row to two when
+    // there's not enough space for all 4 inline.
     <button onClick={onClick} style={{
-      flex:1, minWidth:0, height:36, borderRadius:8,
+      flex:'1 1 calc(50% - 4px)', minWidth:0, height:36, borderRadius:8,
       background: on ? NAVY : 'white',
       color: on ? 'white' : NAVY,
       border: on ? 'none' : '1px solid rgba(11,31,59,0.15)',
