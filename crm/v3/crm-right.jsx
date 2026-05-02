@@ -2214,6 +2214,49 @@ function ContactMessages({ contact, thread, isDnc }) {
   const [attachments, setAttachments] = React.useState([]);
   const [templates, setTemplates] = React.useState(loadTemplates);
   const [editingTemplates, setEditingTemplates] = React.useState(false);
+  // Auto-reply suggestions — Claude reads thread + Key's last 20 outbound
+  // replies + starred examples → 3 short replies in his voice. Tap to
+  // drop into compose. Star (⭐) the ones you actually send to weight
+  // them as gold-standard for future calls.
+  const [suggestions, setSuggestions] = React.useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = React.useState(false);
+  const [suggestionsErr, setSuggestionsErr] = React.useState('');
+  const fetchSuggestions = async () => {
+    if (suggestionsLoading) return;
+    setSuggestionsLoading(true);
+    setSuggestionsErr('');
+    try {
+      const { data, error } = await CRM.__invokeFn('suggest-reply', { body: { contactId: contact.id } });
+      if (error || !data) {
+        setSuggestionsErr(`Failed: ${error?.message || 'unknown'}`);
+        setSuggestions([]);
+      } else if (data.error) {
+        setSuggestionsErr(data.error);
+        setSuggestions([]);
+      } else {
+        setSuggestions(data.suggestions || []);
+      }
+    } catch (e) {
+      setSuggestionsErr(e.message || String(e));
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+  // Star a suggestion — saves it to reply_suggestion_stars so future
+  // suggest-reply calls weight it heavily.
+  const starSuggestion = async (body) => {
+    try {
+      await CRM.__db?.from('reply_suggestion_stars').insert({ body, contact_id: contact.id });
+      window.showToast?.('Saved as example');
+    } catch (e) {
+      window.showToast?.(`Star failed: ${e.message || e}`);
+    }
+  };
+  // Reset suggestions when contact changes — they're per-thread.
+  React.useEffect(() => {
+    setSuggestions([]);
+    setSuggestionsErr('');
+  }, [contact.id]);
   const containerRef = React.useRef(null);
   const imgRef = React.useRef(null);
   const fileRef = React.useRef(null);
@@ -2417,9 +2460,46 @@ function ContactMessages({ contact, thread, isDnc }) {
         ))}
       </div>
 
+      {/* AI suggestions row — appears above templates when Key taps
+          "Suggest". Each chip = one Claude-generated reply in Key's
+          voice. Tap to drop into compose; ⭐ to save as a starred
+          example for future calls (the prompt weights starred replies
+          highest). */}
+      {(suggestions.length > 0 || suggestionsLoading || suggestionsErr) && (
+        <div className="hide-scrollbar" style={{ padding:'4px 12px 0', display:'flex', gap:8, overflowX:'auto', flexShrink:0, alignItems:'center' }}>
+          <span style={{ fontSize:9, fontWeight:700, color:'#5B21B6', alignSelf:'center', whiteSpace:'nowrap', letterSpacing:'0.05em' }}>SUGGESTED</span>
+          {suggestionsLoading && <span style={{ fontSize:11, color:MUTED, fontStyle:'italic' }}>Thinking…</span>}
+          {suggestionsErr && <span style={{ fontSize:11, color:'#991B1B', fontStyle:'italic' }}>{suggestionsErr}</span>}
+          {suggestions.map((s, i) => (
+            <div key={i} style={{ display:'inline-flex', alignItems:'center', flexShrink:0 }}>
+              <button onClick={() => setMsg(s)} style={{
+                height:30, padding:'0 10px 0 12px', borderRadius:'6px 0 0 6px',
+                border:'1px solid #DDD6FE', borderRight:'none',
+                background:'#F5F3FF', color:'#5B21B6',
+                fontSize:12, fontWeight:500, cursor:'pointer', whiteSpace:'nowrap',
+                fontFamily:'inherit', maxWidth:240, overflow:'hidden', textOverflow:'ellipsis',
+              }}>{s.length > 36 ? s.slice(0, 36) + '…' : s}</button>
+              <button onClick={() => starSuggestion(s)} aria-label="Star this suggestion" title="Star — use as future example" style={{
+                height:30, padding:'0 8px', borderRadius:'0 6px 6px 0',
+                border:'1px solid #DDD6FE', background:'#F5F3FF', color:'#5B21B6',
+                cursor:'pointer', fontFamily:'inherit', fontSize:11,
+              }}>⭐</button>
+            </div>
+          ))}
+        </div>
+      )}
       {/* Saved templates — editable list. Tap to insert (with
           {firstName} expansion); pencil opens the editor modal. */}
       <div className="hide-scrollbar" style={{ padding:'4px 12px 0', display:'flex', gap:8, overflowX:'auto', flexShrink:0, alignItems:'center' }}>
+        <button onClick={fetchSuggestions} disabled={suggestionsLoading} aria-label="Suggest replies" title="AI reply suggestions in your voice" style={{
+          height:30, padding:'0 10px', borderRadius:6,
+          border:'1px solid #DDD6FE', background:'#F5F3FF', color:'#5B21B6',
+          cursor: suggestionsLoading ? 'wait' : 'pointer', fontFamily:'inherit', flexShrink:0,
+          fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4,
+        }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>
+          {suggestionsLoading ? '...' : 'Suggest'}
+        </button>
         <button onClick={() => setEditingTemplates(true)} aria-label="Edit templates" title="Edit templates" style={{
           width:30, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)', background:'white',
           color:MUTED, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
