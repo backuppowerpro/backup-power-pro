@@ -1073,7 +1073,10 @@ function ContactInfoRows({ contact, bumpData, onOpenTab }) {
       <InfoLineRow
         label="Stage"
         value={CRM.STAGE_LABELS[contact.stage]}
-        actions={nextStageLabel ? <GoldActionBtn onClick={handleStageAction}>{stageActionVerbFor(contact.stage)}</GoldActionBtn> : null}
+        // Hide the Stage CTA for "Pull permit" — the Permits card below
+        // has its own "Start permit" button which is the canonical place
+        // to start one. Two buttons that do the same thing was confusing.
+        actions={(nextStageLabel && contact.stage !== 'booked') ? <GoldActionBtn onClick={handleStageAction}>{stageActionVerbFor(contact.stage)}</GoldActionBtn> : null}
       />
       <TagsRow contactId={contact.id} />
       {/* Tier row dropped — the Premium / Premium+ pill already sits in the
@@ -1315,7 +1318,7 @@ function PermitStatusActions({ permit, bumpData }) {
 function PermitsCard({ permits, contact, bumpData }) {
   const fmtDay = iso => iso ? formatDate(iso, { month:'short', day:'numeric' }) : null;
 
-  const addPermit = () => {
+  const addPermit = async () => {
     if (!contact) return;
     const j = contact.jurisdiction
       ? BPP_JURISDICTIONS.find(n => n.toLowerCase().includes(contact.jurisdiction.toLowerCase())) || BPP_JURISDICTIONS[0]
@@ -1331,8 +1334,32 @@ function PermitsCard({ permits, contact, bumpData }) {
       cost_cents: 0,
       blocker_note: null,
     });
+    // Advance the contact stage from "Booked" → "Permit submit" since
+    // starting a permit IS that transition. The Stage row CTA used to
+    // do this; now the Permits card handles it directly.
+    if (contact.stage === 'booked' && CRM.STAGE_STR_TO_NUM?.permit_submit != null) {
+      const previous = contact.stage;
+      contact.stage = 'permit_submit';
+      bumpData?.();
+      try {
+        if (CRM.__db) {
+          const { error } = await CRM.__db.from('contacts')
+            .update({ stage: CRM.STAGE_STR_TO_NUM.permit_submit })
+            .eq('id', contact.id);
+          if (error) {
+            contact.stage = previous;
+            bumpData?.();
+            window.showToast?.(`Permit added — stage save failed: ${error.message}`);
+            return;
+          }
+        }
+      } catch (e) {
+        contact.stage = previous;
+        bumpData?.();
+      }
+    }
     bumpData?.();
-    window.showToast?.('Permit added');
+    window.showToast?.('Permit started');
   };
 
   return (
