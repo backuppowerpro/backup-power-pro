@@ -94,6 +94,16 @@ function Root() {
     setActiveContact(contactId);
     if (openTab) setRightTab(openTab);
     setMobileView('right');
+    // Recently-viewed: keep the last 6 in localStorage, most-recent first.
+    // ContactsList renders a pill row from this so Key can re-open a
+    // contact he just had open without re-searching.
+    try {
+      const KEY = 'bpp_v3_recent_contacts';
+      const prev = JSON.parse(localStorage.getItem(KEY) || '[]').filter(id => id !== contactId);
+      const next = [contactId, ...prev].slice(0, 6);
+      window.safeSetItem?.(KEY, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('crm-recent-changed'));
+    } catch {}
     if (targetId) {
       setHighlightId(targetId);
       setTimeout(() => {

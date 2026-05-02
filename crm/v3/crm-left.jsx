@@ -303,6 +303,25 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const [search, setSearch] = React.useState('');
   const [stage, setStage] = React.useState('all');
   const [newContactOpen, setNewContactOpen] = React.useState(false);
+  // Recently-viewed contacts (max 5 chips). Stored by handleOpen in
+  // crm-app.jsx — re-render when that fires crm-recent-changed.
+  const RECENT_KEY = 'bpp_v3_recent_contacts';
+  const [recentIds, setRecentIds] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
+    catch { return []; }
+  });
+  React.useEffect(() => {
+    const refresh = () => {
+      try { setRecentIds(JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')); }
+      catch {}
+    };
+    window.addEventListener('crm-recent-changed', refresh);
+    return () => window.removeEventListener('crm-recent-changed', refresh);
+  }, []);
+  const recentContacts = recentIds
+    .map(id => contacts.find(c => c.id === id && !c.archived))
+    .filter(Boolean)
+    .slice(0, 5);
   // Pinned contacts persist in localStorage (per-browser, single-user app).
   // The contacts table has no pinned column, so this is the right place.
   const PIN_KEY = 'bpp_v3_pinned_contacts';
@@ -359,7 +378,13 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const filtered = contacts
     .filter(c => !c.archived)
     .filter(c => stage === 'all' ? true : stage === 'needs_reply' ? needsReplySet.has(c.id) : c.stage === stage)
-    .filter(c => !search || contactName(c).toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search))
+    .filter(c => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return contactName(c).toLowerCase().includes(q)
+        || (c.phone || '').includes(search)
+        || (c.address || '').toLowerCase().includes(q);
+    })
     .sort((a,b) => (pinned.has(b.id)?1:0) - (pinned.has(a.id)?1:0));
 
   const togglePin = (e, id) => {
@@ -388,11 +413,42 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:14,height:14, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone…"
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone, address…"
             style={{ width:'100%', height:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'0 12px 0 30px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
+        {/* Recently-viewed chip row — last 5 opened contacts. Daily
+            "I just had them open, where'd they go" loop for a one-man shop
+            juggling 3 active jobs. Hidden when a search is active or no
+            history yet. */}
+        {!search && recentContacts.length > 0 && (
+          <div className="hide-scrollbar" style={{ display:'flex', gap:6, overflowX:'auto', marginTop:8, paddingBottom:2 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:MUTED, alignSelf:'center', whiteSpace:'nowrap', letterSpacing:'0.05em' }}>RECENT</div>
+            {recentContacts.map(c => (
+              <button key={c.id} onClick={() => onOpen(c.id, 'contacts')} style={{
+                height:26, padding:'0 10px', borderRadius:13, fontFamily:'inherit',
+                background: activeContactId === c.id ? NAVY : '#F3F4F6', color: activeContactId === c.id ? 'white' : NAVY,
+                border:'none', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
+              }}>{contactName(c).split(' ')[0] || formatPhone(c.phone)}</button>
+            ))}
+          </div>
+        )}
       </div>
       <FilterChips options={stageOpts} value={stage} onChange={setStage} />
+      {/* Clear-filters affordance — easy to leave a stage filter on, miss
+          new leads landing in 'new'. Only renders when a non-default
+          filter is active. */}
+      {stage !== 'all' && (
+        <div style={{ padding:'6px 18px 0', flexShrink:0 }}>
+          <button onClick={() => setStage('all')} style={{
+            height:24, padding:'0 10px', borderRadius:12, background:'#FEF3C7', color:'#92400E',
+            border:'none', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+            display:'inline-flex', alignItems:'center', gap:5,
+          }}>
+            <span>Clear filter</span>
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+          </button>
+        </div>
+      )}
       <div style={{ flex:1, overflowY:'auto', minHeight:0 }}>
         {filtered.length === 0 && <EmptyState icon="contacts" text="No contacts match" />}
         {filtered.map(c => {

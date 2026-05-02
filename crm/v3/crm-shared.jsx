@@ -467,6 +467,68 @@ function formatPhone(e164) {
   return `(${n.slice(0,3)}) ${n.slice(3,6)}-${n.slice(6)}`;
 }
 
+// Live phone-input mask — "8648637" → "(864) 863-7", grows with input.
+// Caller wires it onto the input's onChange so Key sees a properly
+// formatted number while typing instead of bare digits. Strips non-digits;
+// the underlying state stays digits-only so save() still hits an E.164
+// converter.
+function formatPhoneInput(raw) {
+  const d = String(raw || '').replace(/\D/g, '').slice(0, 10);
+  if (d.length === 0) return '';
+  if (d.length <= 3) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0,3)}) ${d.slice(3)}`;
+  return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+}
+
+// Linkify a message body — phone numbers (tel:), URLs (target=_blank),
+// and addressable street references (Apple Maps deeplink). Returns an
+// array of React nodes; pass into a span/div as children. The light
+// regex set is tuned for SMS bodies, not arbitrary text.
+function linkify(body) {
+  if (!body || typeof body !== 'string') return body;
+  // Combined pattern — order matters: URLs first (greedy), then phones,
+  // then street-pattern addresses.
+  const URL_RE = /\bhttps?:\/\/[^\s]+/g;
+  const PHONE_RE = /\b(?:\+?1[-.\s]?)?\(?(\d{3})\)?[-.\s]?(\d{3})[-.\s]?(\d{4})\b/g;
+  const ADDR_RE = /\b(\d{2,5}\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){0,3}\s+(?:St|Street|Rd|Road|Ave|Avenue|Dr|Drive|Ln|Lane|Ct|Court|Blvd|Boulevard|Way|Hwy|Highway|Pkwy|Parkway|Cir|Circle|Trl|Trail|Pl|Place|Ter|Terrace|Loop)\b\.?(?:,?\s+[A-Z][A-Za-z]+){0,2}(?:,?\s+SC)?(?:\s+\d{5})?)/g;
+
+  // Build a list of {start, end, kind, match} matches, sort by start,
+  // then walk and emit text/link fragments. Overlap handling: take the
+  // earliest start; if two start at the same offset, longest wins.
+  const matches = [];
+  let m;
+  URL_RE.lastIndex = 0;
+  while ((m = URL_RE.exec(body)) !== null) matches.push({ start: m.index, end: m.index + m[0].length, kind: 'url', text: m[0] });
+  PHONE_RE.lastIndex = 0;
+  while ((m = PHONE_RE.exec(body)) !== null) matches.push({ start: m.index, end: m.index + m[0].length, kind: 'phone', text: m[0], digits: m[1]+m[2]+m[3] });
+  ADDR_RE.lastIndex = 0;
+  while ((m = ADDR_RE.exec(body)) !== null) matches.push({ start: m.index, end: m.index + m[0].length, kind: 'address', text: m[0] });
+  matches.sort((a,b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+
+  // Drop overlaps (keep the earlier-and-longer one).
+  const clean = [];
+  let lastEnd = 0;
+  for (const x of matches) { if (x.start >= lastEnd) { clean.push(x); lastEnd = x.end; } }
+
+  const out = [];
+  let cursor = 0;
+  clean.forEach((x, i) => {
+    if (x.start > cursor) out.push(body.slice(cursor, x.start));
+    const linkStyle = { color:'inherit', textDecoration:'underline', fontWeight:600 };
+    if (x.kind === 'url') {
+      out.push(<a key={'l'+i} href={x.text} target="_blank" rel="noopener noreferrer" style={linkStyle} onClick={e=>e.stopPropagation()}>{x.text}</a>);
+    } else if (x.kind === 'phone') {
+      out.push(<a key={'l'+i} href={`tel:${x.digits}`} style={linkStyle} onClick={e=>e.stopPropagation()}>{x.text}</a>);
+    } else {
+      const q = encodeURIComponent(x.text);
+      out.push(<a key={'l'+i} href={`https://maps.apple.com/?q=${q}`} target="_blank" rel="noopener noreferrer" style={linkStyle} onClick={e=>e.stopPropagation()}>{x.text}</a>);
+    }
+    cursor = x.end;
+  });
+  if (cursor < body.length) out.push(body.slice(cursor));
+  return out;
+}
+
 // ISO timestamp → "12m" / "2h" / "Yesterday" / "Apr 27"
 function formatRelative(iso) {
   if (!iso) return '';
@@ -668,7 +730,7 @@ Object.assign(window, {
   NAVY, GOLD, BG, CARD, MUTED, NOW, RADIUS, contactHasInstalled,
   Icons, NavBar, ContactAvatar, GoldDot, StatusPill,
   SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero,
-  capitalize, formatPhone, formatRelative, formatMoneyCents,
+  capitalize, formatPhone, formatPhoneInput, linkify, formatRelative, formatMoneyCents,
   formatDate, formatTime, formatTimeShort, formatDuration, dayKey,
   relTime, fmtTime, fmtDate,
   QB_C, QB_S, TIER_META, TIER_IDS, quickQuoteTotal, quickQuoteCompute,

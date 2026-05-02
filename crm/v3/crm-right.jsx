@@ -893,11 +893,15 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Name</div>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Full name" style={inputStyle} />
+          <input value={name} onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save(); } }}
+            placeholder="Full name" autoCapitalize="words" style={inputStyle} />
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Phone</div>
-          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(864) 555-0192" type="tel" inputMode="tel" autoComplete="tel" style={inputStyle} />
+          <input value={phone} onChange={e => setPhone(formatPhoneInput(e.target.value))}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save(); } }}
+            placeholder="(864) 555-0192" type="tel" inputMode="tel" autoComplete="tel" style={inputStyle} />
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Address</div>
@@ -1686,6 +1690,9 @@ function AddEventInline({ contact, bumpData, hasUpcoming }) {
         <select value={kind} onChange={e=>setKind(e.target.value)} style={inputStyle}>
           {KIND_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
         </select>
+        {/* Quick-pick date chips above the picker. 80% of installs are
+            scheduled <14 days out, so these absorb the common case. */}
+        <DatePresetRow value={date} onChange={setDate} />
         {/* Equal-width date + time. `flex:1 1 0; min-width:0` forces a true
             50/50 split regardless of the date input's intrinsic width
             (which is wider than time on Chrome because of mm/dd/yyyy + the
@@ -1702,6 +1709,7 @@ function AddEventInline({ contact, bumpData, hasUpcoming }) {
           <input
             type="time"
             value={time}
+            step="900"
             onChange={e=>setTime(e.target.value)}
             style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }}
           />
@@ -2022,7 +2030,72 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
 }
 
 // ── Contact Messages ──────────────────────────────────────────────
-const SUGGESTIONS = ['Confirm install time', 'Send install reminder', 'Ask for review'];
+// Editable templates library. Persists in localStorage so Key can edit
+// his own canned replies without touching code. Seeded with the most
+// common solo-electrician scenarios. {firstName} expands at insert time.
+const TEMPLATES_KEY = 'bpp_v3_message_templates';
+const DEFAULT_TEMPLATES = [
+  'Hey {firstName}! Confirming the install for tomorrow.',
+  'Running about 15 min late — be there shortly.',
+  'On my way!',
+  'Reminder: install is set for tomorrow morning, 9am.',
+  'Wrapped up — looks great. Mind dropping a quick Google review when you have a sec? Thanks!',
+  'Permit just landed. Scheduling install now.',
+  'Got a question on the panel — quick photo when you can?',
+];
+function loadTemplates() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(TEMPLATES_KEY) || 'null');
+    if (Array.isArray(stored) && stored.length > 0) return stored;
+  } catch {}
+  return DEFAULT_TEMPLATES;
+}
+
+function TemplateEditModal({ onClose }) {
+  const [list, setList] = React.useState(loadTemplates);
+  const [draft, setDraft] = React.useState('');
+  const save = () => {
+    window.safeSetItem?.(TEMPLATES_KEY, JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('crm-templates-changed'));
+    window.showToast?.('Templates saved');
+    onClose();
+  };
+  return (
+    <ModalShell open={true} onClose={onClose} title="Saved templates" footer={
+      <>
+        <button onClick={onClose} style={{ flex:1, height:42, borderRadius:8, background:'white', border:'1px solid rgba(11,31,59,0.15)', color:NAVY, fontWeight:600, cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>Cancel</button>
+        <button onClick={save} style={{ flex:1, height:42, borderRadius:8, background:GOLD, border:'none', color:NAVY, fontWeight:700, cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>Save</button>
+      </>
+    }>
+      <div style={{ fontSize:11, color:MUTED, lineHeight:1.5, marginBottom:10 }}>
+        Tap a chip in the messages tab to drop the template into compose. Use <code style={{ background:'#F5F5F3', padding:'1px 4px', borderRadius:3, fontSize:10 }}>{'{firstName}'}</code> and it'll expand.
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:12 }}>
+        {list.map((t, i) => (
+          <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start' }}>
+            <textarea value={t} onChange={e => setList(l => l.map((x,j) => j===i ? e.target.value : x))} rows={2} style={{
+              flex:1, padding:'8px 10px', border:'1px solid rgba(11,31,59,0.15)', borderRadius:6, fontSize:13, color:NAVY, fontFamily:'inherit', resize:'vertical',
+            }} />
+            <button onClick={() => setList(l => l.filter((_,j) => j !== i))} aria-label="Delete template" style={{
+              width:32, height:32, borderRadius:6, background:'#FEE2E2', color:'#991B1B', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700, flexShrink:0,
+            }}>✕</button>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'flex', gap:6, marginBottom:8 }}>
+        <input value={draft} onChange={e => setDraft(e.target.value)} placeholder="New template…" style={{
+          flex:1, height:36, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)', padding:'0 10px', fontSize:14, color:NAVY, fontFamily:'inherit',
+        }} />
+        <button onClick={() => { if (draft.trim()) { setList(l => [...l, draft.trim()]); setDraft(''); } }} style={{
+          height:36, padding:'0 14px', borderRadius:6, background:NAVY, color:'white', border:'none', fontWeight:600, cursor:'pointer', fontFamily:'inherit', fontSize:13,
+        }}>Add</button>
+      </div>
+      <button onClick={() => { setList(DEFAULT_TEMPLATES); window.showToast?.('Reset to defaults'); }} style={{
+        background:'none', border:'none', color:MUTED, fontSize:11, cursor:'pointer', fontFamily:'inherit', textDecoration:'underline',
+      }}>Reset to defaults</button>
+    </ModalShell>
+  );
+}
 
 function ContactMessages({ contact, thread, isDnc }) {
   const draftKey = 'draft:' + contact.id;
@@ -2035,9 +2108,25 @@ function ContactMessages({ contact, thread, isDnc }) {
   const [msg, setMsg] = React.useState(() => sessionStorage.getItem(draftKey) || '');
   const [localMsgs, setLocalMsgs] = React.useState([]); // optimistic-sent messages
   const [attachments, setAttachments] = React.useState([]);
+  const [templates, setTemplates] = React.useState(loadTemplates);
+  const [editingTemplates, setEditingTemplates] = React.useState(false);
   const containerRef = React.useRef(null);
   const imgRef = React.useRef(null);
   const fileRef = React.useRef(null);
+
+  // Live-refresh templates when the editor saves them.
+  React.useEffect(() => {
+    const refresh = () => setTemplates(loadTemplates());
+    window.addEventListener('crm-templates-changed', refresh);
+    return () => window.removeEventListener('crm-templates-changed', refresh);
+  }, []);
+
+  // {firstName} expansion at insert time so Key can save one template
+  // and have it personalize per contact.
+  const expandTemplate = (t) => {
+    const first = (contact.name || '').trim().split(/\s+/)[0] || '';
+    return t.replace(/\{firstName\}/g, first);
+  };
 
   // Track every blob URL we mint so we can revoke on cleanup. Without this,
   // each photo attachment leaks its blob until the page unloads — and Key
@@ -2177,7 +2266,7 @@ function ContactMessages({ contact, thread, isDnc }) {
                       ? <img key={i} src={a.url} alt={a.name} style={{ width:'100%', maxWidth:200, borderRadius:8, display:'block', marginBottom: m.body?5:0 }}/>
                       : <div key={i} style={{ background:'rgba(255,255,255,0.15)', borderRadius:6, padding:'5px 9px', fontSize:11, display:'flex', alignItems:'center', gap:5, marginBottom: m.body?5:0 }}>📎 {a.name} <span style={{opacity:0.6}}>{a.size}</span></div>
                     )}
-                    {m.body && <span style={{ padding: m.attachments?.length ? '0 5px' : 0 }}>{m.body}</span>}
+                    {m.body && <span style={{ padding: m.attachments?.length ? '0 5px' : 0, whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{linkify(m.body)}</span>}
                   </div>
                   <div style={{ fontSize:11, color:'#999', fontFamily:"'DM Mono', monospace", marginTop:3 }}>{formatTime(m.sent_at)}</div>
                 </div>
@@ -2187,17 +2276,27 @@ function ContactMessages({ contact, thread, isDnc }) {
         ))}
       </div>
 
-      {/* Reply suggestions */}
-      <div className="hide-scrollbar" style={{ padding:'4px 12px 0', display:'flex', gap:8, overflowX:'auto', flexShrink:0 }}>
-        {SUGGESTIONS.map(s => (
-          <button key={s} onClick={()=>setMsg(s)} style={{
+      {/* Saved templates — editable list. Tap to insert (with
+          {firstName} expansion); pencil opens the editor modal. */}
+      <div className="hide-scrollbar" style={{ padding:'4px 12px 0', display:'flex', gap:8, overflowX:'auto', flexShrink:0, alignItems:'center' }}>
+        <button onClick={() => setEditingTemplates(true)} aria-label="Edit templates" title="Edit templates" style={{
+          width:30, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)', background:'white',
+          color:MUTED, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+        {templates.map((t, i) => (
+          <button key={i} onClick={() => setMsg(expandTemplate(t))} style={{
             height:30, padding:'0 12px', borderRadius:6,
             border:'1px solid rgba(11,31,59,0.15)', background:'white', color:NAVY,
             fontSize:12, fontWeight:500, cursor:'pointer', whiteSpace:'nowrap',
             fontFamily:'inherit', flexShrink:0,
-          }}>{s}</button>
+            maxWidth:180, overflow:'hidden', textOverflow:'ellipsis',
+          }}>{t.length > 28 ? t.slice(0, 28) + '…' : t}</button>
         ))}
       </div>
+      {editingTemplates && <TemplateEditModal onClose={() => setEditingTemplates(false)} />}
 
       {/* Attachment preview */}
       {attachments.length > 0 && (
@@ -2963,18 +3062,49 @@ function AddressAutocomplete({ value, onChange, placeholder, style }) {
     return () => debounceRef.current && clearTimeout(debounceRef.current);
   }, [value]);
 
-  // Close on outside click
-  const wrapRef = React.useRef(null);
+  // The dropdown is portaled to document.body with position:fixed so it
+  // can extend beyond a modal's scroll boundary (parent has overflow:auto).
+  // Recompute coordinates on scroll (capture phase catches modal scroll
+  // too) + resize. Outside-click closes when the click is neither on the
+  // input nor the dropdown itself.
+  const inputRef = React.useRef(null);
+  const dropdownRef = React.useRef(null);
+  const [rect, setRect] = React.useState(null);
+
+  const updateRect = React.useCallback(() => {
+    if (!inputRef.current) return;
+    const r = inputRef.current.getBoundingClientRect();
+    setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+  }, []);
+
   React.useEffect(() => {
     if (!open) return;
-    const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    updateRect();
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, [open, updateRect]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => {
+      if (
+        (inputRef.current && inputRef.current.contains(e.target)) ||
+        (dropdownRef.current && dropdownRef.current.contains(e.target))
+      ) return;
+      setOpen(false);
+    };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
   return (
-    <div ref={wrapRef} style={{ position:'relative' }}>
+    <div style={{ position:'relative' }}>
       <input
+        ref={inputRef}
         value={value}
         onChange={e => onChange(e.target.value)}
         onFocus={() => hits.length > 0 && setOpen(true)}
@@ -2985,15 +3115,16 @@ function AddressAutocomplete({ value, onChange, placeholder, style }) {
       {searching && (
         <div style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', fontSize:11, color:MUTED }}>…</div>
       )}
-      {open && hits.length > 0 && (
-        <div style={{
-          position:'absolute', top:'calc(100% + 4px)', left:0, right:0, zIndex:100,
+      {open && hits.length > 0 && rect && ReactDOM.createPortal(
+        <div ref={dropdownRef} style={{
+          position:'fixed', top:rect.top, left:rect.left, width:rect.width, zIndex:10000,
           background:'white', border:'1px solid rgba(11,31,59,0.15)', borderRadius:8,
           boxShadow:'0 8px 24px rgba(11,31,59,0.16)', maxHeight:240, overflowY:'auto',
         }}>
           {hits.map((h, i) => (
             <button
               key={i}
+              onMouseDown={e => e.preventDefault()}
               onClick={() => { onChange(h.full); setOpen(false); }}
               style={{
                 width:'100%', padding:'10px 12px', textAlign:'left', background:'white', border:'none',
@@ -3002,7 +3133,8 @@ function AddressAutocomplete({ value, onChange, placeholder, style }) {
               }}
             >{h.full}</button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -3019,8 +3151,14 @@ function NewContactModal({ onClose, onCreated }) {
   const [address, setAddress] = React.useState('');
   const [busy, setBusy] = React.useState(false);
 
+  // Save is enabled once minimum-viable contact info is present —
+  // either a name or a complete US phone (10 digits). Keeps Key from
+  // saving rows with just "Bob" that he can't actually call.
+  const phoneDigits = phone.replace(/\D/g, '');
+  const canSave = !!name.trim() || phoneDigits.length === 10;
+
   const submit = async () => {
-    if (busy) return;
+    if (busy || !canSave) return;
     const trimmedName = name.trim();
     const trimmedPhone = phone.trim();
     if (!trimmedName && !trimmedPhone) {
@@ -3074,11 +3212,11 @@ function NewContactModal({ onClose, onCreated }) {
             flex:'1 1 0', minWidth:0, height:42, borderRadius:8, background:'white', color:NAVY,
             border:'1px solid rgba(27,43,75,0.15)', fontSize:14, fontWeight:600, fontFamily:'inherit', cursor: busy?'not-allowed':'pointer',
           }}>Cancel</button>
-          <button onClick={submit} disabled={busy} style={{
+          <button onClick={submit} disabled={busy || !canSave} style={{
             flex:'1 1 0', minWidth:0, height:42, borderRadius:8,
-            background: busy ? '#E5E5E5' : '#ffba00', color: busy ? '#999' : NAVY,
+            background: (busy || !canSave) ? '#E5E5E5' : '#ffba00', color: (busy || !canSave) ? '#999' : NAVY,
             border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
-            cursor: busy ? 'not-allowed' : 'pointer',
+            cursor: (busy || !canSave) ? 'not-allowed' : 'pointer',
           }}>{busy ? 'Saving…' : 'Save'}</button>
         </div>
       )}
@@ -3086,11 +3224,15 @@ function NewContactModal({ onClose, onCreated }) {
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Name</div>
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" autoComplete="name" autoFocus style={inputStyle} />
+          <input value={name} onChange={e=>setName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && canSave) { e.preventDefault(); submit(); } }}
+            placeholder="Full name" autoComplete="name" autoCapitalize="words" autoFocus style={inputStyle} />
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Phone</div>
-          <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="(864) 555-0192" type="tel" inputMode="tel" autoComplete="tel" style={inputStyle} />
+          <input value={phone} onChange={e=>setPhone(formatPhoneInput(e.target.value))}
+            onKeyDown={e => { if (e.key === 'Enter' && canSave) { e.preventDefault(); submit(); } }}
+            placeholder="(864) 555-0192" type="tel" inputMode="tel" autoComplete="tel" style={inputStyle} />
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Address (optional)</div>
@@ -3198,13 +3340,49 @@ function NewEventModal({ contacts = [], onClose }) {
             {KIND_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
           </select>
         </div>
+        <DatePresetRow value={date} onChange={setDate} />
         <div style={{ display:'flex', gap:8 }}>
           <input type="date" value={date} min={todayMin} max="2099-12-31" onChange={e => setDate(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
-          <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
+          <input type="time" value={time} step="900" onChange={e => setTime(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
         </div>
       </div>
     </ModalShell>
   );
 }
 
-Object.assign(window, { RightPanel, NewProposalModal, NewInvoiceModal, NewContactModal, NewEventModal, ModalShell });
+// Date quick-pick chips. Today / Tomorrow / Friday / Next week. Tapping
+// a chip writes the YYYY-MM-DD into the date input. The active chip
+// highlights gold so Key knows what's currently selected.
+function DatePresetRow({ value, onChange }) {
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const friday = new Date(today);
+  // 0=Sun, 5=Fri. If today is Friday, jump to next Friday.
+  const daysToFri = ((5 - today.getDay() + 7) % 7) || 7;
+  friday.setDate(today.getDate() + daysToFri);
+  const nextWeek = new Date(today); nextWeek.setDate(today.getDate() + 7);
+  const presets = [
+    { label:'Today',    iso: fmt(today) },
+    { label:'Tomorrow', iso: fmt(tomorrow) },
+    { label:'Friday',   iso: fmt(friday) },
+    { label:'Next week', iso: fmt(nextWeek) },
+  ];
+  return (
+    <div className="hide-scrollbar" style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:2 }}>
+      {presets.map(p => {
+        const active = value === p.iso;
+        return (
+          <button key={p.label} onClick={() => onChange(p.iso)} style={{
+            height:28, padding:'0 12px', borderRadius:14, fontFamily:'inherit', fontSize:11, fontWeight:600,
+            background: active ? GOLD : 'white', color: NAVY,
+            border: active ? 'none' : '1px solid rgba(11,31,59,0.15)',
+            cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
+          }}>{p.label}</button>
+        );
+      })}
+    </div>
+  );
+}
+
+Object.assign(window, { RightPanel, NewProposalModal, NewInvoiceModal, NewContactModal, NewEventModal, ModalShell, DatePresetRow });
