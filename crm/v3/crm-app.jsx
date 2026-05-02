@@ -149,6 +149,8 @@ function Root() {
           tab={rightTab}
           onTab={t => { if (t === rightTab) setMobileView('left'); else setRightTab(t); }}
           badgeCounts={badgeCounts}
+          showBack
+          onBack={() => setMobileView('left')}
         />
       )}
       <div style={{ flex:1, overflow:'hidden', position:'relative' }} className="mobile-panel"

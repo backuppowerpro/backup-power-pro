@@ -473,19 +473,16 @@ function CopyBtn({ onClick }) {
 }
 
 function InfoLineRow({ label, value, valueColor, actions }) {
+  // On desktop (≥640px) all three pieces sit on one line. On mobile the
+  // actions wrap below — `marginLeft:auto` on actions keeps them
+  // right-aligned in either layout. flex-wrap handles the line break
+  // automatically when there's not enough horizontal room.
   return (
-    // Two-row layout that holds at every viewport: row 1 is "label · value"
-    // (value left-aligned next to its label so they read as one phrase),
-    // row 2 is the action buttons RIGHT-aligned underneath. No flex-wrap
-    // ambiguity — explicit grid keeps the right edge consistent on
-    // mobile (390px) and desktop alike.
-    <div style={{ marginBottom:14 }}>
-      <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:6 }}>
-        <span style={{ width:64, flexShrink:0, fontSize:12, fontWeight:500, color:'#999' }}>{label}</span>
-        <span style={{ flex:1, minWidth:0, fontSize:14, fontWeight:500, color: valueColor || NAVY, lineHeight:1.35, wordBreak:'break-word' }}>{value}</span>
-      </div>
+    <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14, flexWrap:'wrap' }}>
+      <span style={{ width:64, flexShrink:0, fontSize:12, fontWeight:500, color:'#999' }}>{label}</span>
+      <span style={{ flex:1, minWidth:120, fontSize:14, fontWeight:500, color: valueColor || NAVY, lineHeight:1.35, wordBreak:'break-word' }}>{value}</span>
       {actions && (
-        <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingLeft:74 }}>
+        <div style={{ display:'flex', gap:8, flexShrink:0, marginLeft:'auto' }}>
           {actions}
         </div>
       )}
