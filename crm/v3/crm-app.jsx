@@ -220,8 +220,12 @@ function Root() {
         onTouchStart={e => { window._swipeX = e.touches[0].clientX; }}
         onTouchEnd={e => {
           const dx = e.changedTouches[0].clientX - window._swipeX;
-          if (dx > 60 && mobileView === 'right') setMobileView('left');
-          if (dx < -60 && mobileView === 'left') setMobileView('right');
+          // Swipe-right on the RIGHT pane goes back to the contact list
+          // (matches iOS Mail's natural back gesture). The LEFT pane is
+          // intentionally swipe-disabled — Key found left-pane swipes
+          // misfired during list scroll on iPhone, switching panes when
+          // he was just trying to scroll the contacts list.
+          if (mobileView === 'right' && dx > 60) setMobileView('left');
         }}
       >
         <div style={{
