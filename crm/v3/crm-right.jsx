@@ -2486,28 +2486,44 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     );
   };
 
-  return (
-    <div style={{ flex:1, overflowY:'auto', minHeight:0, padding:'12px 16px 16px' }}>
-      {/* Create buttons at TOP — most-likely action when opening Finance
-          tab is "make a new thing", not "review existing things." */}
-      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
-        <button onClick={() => setProposalModalOpen(true)} style={{
-          flex:1, height:40, borderRadius:8,
-          background:GOLD, color:NAVY, border:'none',
-          fontSize:13, fontWeight:700, fontFamily:'inherit', cursor:'pointer',
-          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-        }}>+ New proposal</button>
-        <button onClick={() => setInvoiceModalOpen(true)} style={{
-          flex:1, height:40, borderRadius:8,
-          background:'white', color:NAVY, border:'1px solid rgba(11,31,59,0.15)',
-          fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
-          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-        }}>+ New invoice</button>
-      </div>
+  // Group every proposal with its invoices into one DealCard. Invoices
+  // that don't reference a proposal (legacy / standalone billing) get
+  // their own card so they stay visible. The deal-lifecycle box evolves:
+  //   compose → sent → viewed → approved → invoiced → paid
+  // ...all inside the SAME card. No popups, no context-switch.
+  const sortedProposals = [...proposals].sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+  const dealCards = sortedProposals.map(p => ({
+    key: 'p-' + p.id,
+    proposal: p,
+    invoices: sortedInvoices.filter(i => i.proposal_id === p.id),
+  }));
+  const orphanInvoices = sortedInvoices.filter(i => !i.proposal_id);
+  for (const i of orphanInvoices) {
+    dealCards.push({ key: 'i-' + i.id, proposal: null, invoices: [i] });
+  }
 
-      {proposal && (
-        <>
-          <Eyebrow>Proposal</Eyebrow>
+  // Per-DealCard "compose invoice" toggle (key = proposal.id). Lives at
+  // the parent so realtime updates don't reset the open/closed state.
+  const [composeInvoiceFor, setComposeInvoiceFor] = React.useState(null);
+
+  const DealCard = ({ proposal, invoices }) => {
+    const showInvoiceComposer = proposal && composeInvoiceFor === proposal.id;
+    // Approved proposal with no invoice yet → surface "Generate invoice"
+    // CTA right inside the card. Approved proposal that already has
+    // invoices but isn't fully invoiced → smaller secondary trigger.
+    const billedSum = invoices
+      .filter(i => !['voided', 'refunded', 'draft', 'declined'].includes(i.status))
+      .reduce((s,i) => s + (i.amount_cents || 0), 0);
+    const propTotal = proposal?.amount_cents || 0;
+    const fullyBilled = propTotal > 0 && billedSum >= propTotal;
+    const canGenerateInvoice = proposal?.status === 'approved' && !fullyBilled;
+
+    return (
+      <div data-card style={{
+        background:'white', border:'1px solid rgba(11,31,59,0.10)', borderRadius:10,
+        marginBottom:14, overflow:'hidden',
+      }}>
+        {proposal && (
           <FinanceRow
             left={tierLabel(proposal.tier)}
             money={formatMoneyCents(proposal.amount_cents)}
@@ -2516,36 +2532,107 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
             linkUrl={proposalUrl(proposal)}
             onCancel={proposal.status === 'sent' || proposal.status === 'viewed' ? () => cancelProposal(proposal) : null}
           />
-        </>
-      )}
+        )}
 
-      {sortedInvoices.length > 0 && (
-        <>
-          <Eyebrow>Invoices</Eyebrow>
-          {sortedInvoices.map(inv => (
-            <FinanceRow
-              key={inv.id}
-              left={capitalize(inv.kind)}
-              money={formatMoneyCents(inv.amount_cents)}
-              status={inv.status}
-              activity={invActivity(inv)}
-              linkUrl={invoiceUrl(inv)}
-              onMarkPaid={['sent','viewed','overdue'].includes(inv.status) ? () => markPaid(inv) : null}
-              onVoid={['sent','viewed','overdue'].includes(inv.status) ? () => voidInvoice(inv) : null}
+        {/* Approved → CTA to start the invoice composer right inside
+            this card. Once clicked, the composer slides in below. */}
+        {canGenerateInvoice && !showInvoiceComposer && (
+          <div style={{ padding:'0 14px 12px' }}>
+            <button
+              onClick={() => setComposeInvoiceFor(proposal.id)}
+              style={{
+                width:'100%', height:40, borderRadius:8,
+                background:GOLD, color:NAVY, border:'none',
+                fontSize:13, fontWeight:700, fontFamily:'inherit', cursor:'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+              }}
+            >
+              {invoices.length === 0 ? '+ Generate deposit invoice' : '+ Generate next invoice'}
+            </button>
+          </div>
+        )}
+
+        {/* Inline invoice composer — renders inside the same card so the
+            user stays in context. Once sent, the composer collapses and
+            the new invoice row materialises below via realtime. */}
+        {showInvoiceComposer && (
+          <div style={{ padding:'0 14px 12px' }}>
+            <NewInvoiceModal
+              contact={contact}
+              latestSignedProposal={proposal}
+              invoices={invoices}
+              onClose={() => setComposeInvoiceFor(null)}
+              inline
             />
-          ))}
-        </>
+          </div>
+        )}
+
+        {invoices.length > 0 && (
+          <div style={{ padding:'0 14px 12px' }}>
+            {invoices.map(inv => (
+              <FinanceRow
+                key={inv.id}
+                left={capitalize(inv.kind)}
+                money={formatMoneyCents(inv.amount_cents)}
+                status={inv.status}
+                activity={invActivity(inv)}
+                linkUrl={invoiceUrl(inv)}
+                onMarkPaid={['sent','viewed','overdue'].includes(inv.status) ? () => markPaid(inv) : null}
+                onVoid={['sent','viewed','overdue'].includes(inv.status) ? () => voidInvoice(inv) : null}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:'auto', minHeight:0, padding:'12px 16px 16px' }}>
+      {/* Top create buttons. Either creates a new inline composer at the
+          top of the list — no modal overlay. + New invoice falls back to
+          standalone invoice (no proposal link) if no approved proposal
+          is in scope; if there IS one, the per-card "Generate invoice"
+          button inside that DealCard is the better path. */}
+      {!proposalModalOpen && !invoiceModalOpen && (
+        <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+          <button onClick={() => { setInvoiceModalOpen(false); setProposalModalOpen(true); }} style={{
+            flex:1, height:40, borderRadius:8,
+            background:GOLD, color:NAVY, border:'none',
+            fontSize:13, fontWeight:700, fontFamily:'inherit', cursor:'pointer',
+            display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+          }}>+ New proposal</button>
+          <button onClick={() => { setProposalModalOpen(false); setInvoiceModalOpen(true); }} style={{
+            flex:1, height:40, borderRadius:8,
+            background:'white', color:NAVY, border:'1px solid rgba(11,31,59,0.15)',
+            fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+            display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+          }}>+ New invoice</button>
+        </div>
       )}
 
-      {!proposal && sortedInvoices.length === 0 && (
-        <div style={{ padding:'48px 24px', textAlign:'center', color:MUTED, fontSize:13 }}>Use the buttons above to send a proposal or invoice.</div>
-      )}
-
+      {/* Inline proposal composer — sits at the top of the deal list. */}
       {proposalModalOpen && (
-        <NewProposalModal contact={contact} onClose={() => setProposalModalOpen(false)} />
+        <NewProposalModal contact={contact} onClose={() => setProposalModalOpen(false)} inline />
       )}
+
+      {/* Inline standalone-invoice composer — for billing without a
+          proposal on file. If there IS an approved proposal, the
+          per-card Generate invoice button is the primary path. */}
       {invoiceModalOpen && (
-        <NewInvoiceModal contact={contact} latestSignedProposal={proposals.find(p => p.status === 'approved')} invoices={invoices} onClose={() => setInvoiceModalOpen(false)} />
+        <NewInvoiceModal
+          contact={contact}
+          latestSignedProposal={proposals.find(p => p.status === 'approved')}
+          invoices={invoices}
+          onClose={() => setInvoiceModalOpen(false)}
+          inline
+        />
+      )}
+
+      {dealCards.map(d => <DealCard key={d.key} proposal={d.proposal} invoices={d.invoices} />)}
+
+      {dealCards.length === 0 && !proposalModalOpen && !invoiceModalOpen && (
+        <div style={{ padding:'48px 24px', textAlign:'center', color:MUTED, fontSize:13 }}>Use the buttons above to send a proposal or invoice.</div>
       )}
     </div>
   );
@@ -3229,12 +3316,17 @@ function ModalShell({ open, onClose, title, footer, children }) {
   return ReactDOM.createPortal(overlay, document.body);
 }
 
-// ── New Proposal Modal ────────────────────────────────────────────────
+// ── New Proposal Modal / Inline Composer ──────────────────────────────
 // Quick-quote — amp toggle, tier selector, add-on chips, auto-total,
 // "Send to customer" inserts proposal + fires send-sms in one move.
 // Mirrors the v1/v2 pricing engine exactly so proposal.html renders
 // the same totals.
-function NewProposalModal({ contact, onClose }) {
+//
+// When `inline` is true, renders as a plain card (no overlay). The
+// Finance pane uses inline mode so the composer feels like part of the
+// page, evolving into the proposal row once sent. Modal mode is kept
+// for any cross-tab dispatch path that still wants an overlay.
+function NewProposalModal({ contact, onClose, inline = false }) {
   // Trim before split-or-default so a name of "  " doesn't render
   // "Hey , here's your quote" — guards against whitespace-only DB rows.
   const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
@@ -3371,63 +3463,93 @@ function NewProposalModal({ contact, onClose }) {
     </button>
   );
 
+  // Form body — extracted so we can render it in either a ModalShell
+  // or an inline card without duplicating all the chip/seg markup.
+  const formBody = (
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      {/* Amp toggle */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Amperage</div>
+        <div style={{ display:'flex', gap:8 }}>
+          <Chip on={amp === '30'} onClick={() => setAmp('30')}>30A</Chip>
+          <Chip on={amp === '50'} onClick={() => setAmp('50')}>50A</Chip>
+        </div>
+      </div>
+      {/* Tier 3-segment */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Tier</div>
+        <div style={{ display:'flex', gap:8 }}>
+          <Seg on={tier === 'standard'}     onClick={() => setTier('standard')}     label="Standard" sub="Base" />
+          <Seg on={tier === 'premium'}      onClick={() => setTier('premium')}      label="Premium"  sub="+$300" />
+          <Seg on={tier === 'premium_plus'} onClick={() => setTier('premium_plus')} label="Premium+" sub="+$600" />
+        </div>
+      </div>
+      {/* Add-ons */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Add-ons</div>
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          <Chip on={cordIncluded}  onClick={() => setCord(c => !c)}>Cord</Chip>
+          <Chip on={includeSurge}  onClick={() => setSurge(s => !s)}>Surge</Chip>
+          <Chip on={includePom}    onClick={() => setPom(p => !p)}>Peace of Mind</Chip>
+          <Chip on={includePermit} onClick={() => setPermit(p => !p)}>Permit</Chip>
+        </div>
+      </div>
+    </div>
+  );
+
+  const footerRow = (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Total</div>
+        <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono', 'DM Mono', monospace" }}>${total.toLocaleString()}</div>
+      </div>
+      <button
+        onClick={submit}
+        disabled={busy || contact.do_not_contact}
+        style={{
+          height:42, padding:'0 18px', borderRadius:8,
+          background: busy || contact.do_not_contact ? '#E5E5E5' : '#ffba00',
+          color: busy || contact.do_not_contact ? '#999' : NAVY,
+          border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
+          cursor: busy || contact.do_not_contact ? 'not-allowed' : 'pointer',
+          display:'flex', alignItems:'center', gap:7,
+        }}
+      >
+        {busy ? 'Sending…' : 'Send to customer'}
+      </button>
+    </div>
+  );
+
+  if (inline) {
+    return (
+      <div data-card style={{
+        background:'white', border:'1px solid rgba(11,31,59,0.12)', borderRadius:8,
+        marginBottom:12,
+      }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 10px', borderBottom:'1px solid rgba(11,31,59,0.06)' }}>
+          <div style={{ fontSize:13, fontWeight:600, color:NAVY }}>New proposal</div>
+          <button onClick={onClose} aria-label="Cancel" style={{
+            width:32, height:32, borderRadius:6, border:'none', background:'transparent',
+            color:'#666', fontSize:22, lineHeight:1, cursor:'pointer', fontFamily:'inherit',
+            display:'flex', alignItems:'center', justifyContent:'center',
+          }}>×</button>
+        </div>
+        <div style={{ padding:'14px' }}>{formBody}</div>
+        <div style={{ padding:'10px 14px 12px', borderTop:'1px solid rgba(11,31,59,0.06)' }}>
+          {footerRow}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ModalShell
       open={true}
       onClose={onClose}
       title={`New proposal — ${contact.name || formatPhone(contact.phone)}`}
-      footer={(
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-          <div>
-            <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Total</div>
-            <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono', 'DM Mono', monospace" }}>${total.toLocaleString()}</div>
-          </div>
-          <button
-            onClick={submit}
-            disabled={busy || contact.do_not_contact}
-            style={{
-              height:42, padding:'0 18px', borderRadius:8,
-              background: busy || contact.do_not_contact ? '#E5E5E5' : '#ffba00',
-              color: busy || contact.do_not_contact ? '#999' : NAVY,
-              border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
-              cursor: busy || contact.do_not_contact ? 'not-allowed' : 'pointer',
-              display:'flex', alignItems:'center', gap:7,
-            }}
-          >
-            {busy ? 'Sending…' : 'Send to customer'}
-          </button>
-        </div>
-      )}
+      footer={footerRow}
     >
-      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        {/* Amp toggle */}
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Amperage</div>
-          <div style={{ display:'flex', gap:8 }}>
-            <Chip on={amp === '30'} onClick={() => setAmp('30')}>30A</Chip>
-            <Chip on={amp === '50'} onClick={() => setAmp('50')}>50A</Chip>
-          </div>
-        </div>
-        {/* Tier 3-segment */}
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Tier</div>
-          <div style={{ display:'flex', gap:8 }}>
-            <Seg on={tier === 'standard'}     onClick={() => setTier('standard')}     label="Standard" sub="Base" />
-            <Seg on={tier === 'premium'}      onClick={() => setTier('premium')}      label="Premium"  sub="+$300" />
-            <Seg on={tier === 'premium_plus'} onClick={() => setTier('premium_plus')} label="Premium+" sub="+$600" />
-          </div>
-        </div>
-        {/* Add-ons */}
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Add-ons</div>
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            <Chip on={cordIncluded}  onClick={() => setCord(c => !c)}>Cord</Chip>
-            <Chip on={includeSurge}  onClick={() => setSurge(s => !s)}>Surge</Chip>
-            <Chip on={includePom}    onClick={() => setPom(p => !p)}>Peace of Mind</Chip>
-            <Chip on={includePermit} onClick={() => setPermit(p => !p)}>Permit</Chip>
-          </div>
-        </div>
-      </div>
+      {formBody}
     </ModalShell>
   );
 }
@@ -3436,7 +3558,7 @@ function NewProposalModal({ contact, onClose }) {
 // Type picker (Deposit/Final/Balance), amount input, optional description.
 // Deposit auto-fills 50% of approved-proposal total; Final fills remainder
 // after summing deposit invoices; Balance is custom (Key types it).
-function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose }) {
+function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inline = false }) {
   // Trim before split-or-default so a name of "  " doesn't render
   // "Hey , here's your quote" — guards against whitespace-only DB rows.
   const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
@@ -3550,89 +3672,119 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose }) {
     </button>
   );
 
+  const formBody = (
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      {/* Reference proposal */}
+      {latestSignedProposal ? (
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', background:BG, borderRadius:8 }}>
+          <span style={{ fontSize:12, color:'#666' }}>Linked to approved proposal</span>
+          <span style={{ fontSize:12, fontWeight:600, color:NAVY, fontFamily:"'DM Mono', monospace" }}>${proposalTotal.toLocaleString()}</span>
+        </div>
+      ) : (
+        <div style={{ padding:'8px 12px', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:8, fontSize:12, color:'#92400E' }}>
+          No approved proposal — Final/Deposit auto-fill won't work. Use Balance for custom amount.
+        </div>
+      )}
+      {/* Final = $0 warning — proposal already invoiced in full. */}
+      {kind === 'final' && latestSignedProposal && remaining === 0 && (
+        <div style={{ padding:'8px 12px', background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, fontSize:12, color:'#991B1B' }}>
+          This proposal has already been invoiced in full. Switch to <strong>Balance</strong> to send a custom amount, or close.
+        </div>
+      )}
+      {/* Type picker */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Type</div>
+        <div style={{ display:'flex', gap:8 }}>
+          <Seg on={kind === 'deposit'} onClick={() => onKindChange('deposit')} label="Deposit" sub="50%" />
+          <Seg on={kind === 'final'}   onClick={() => onKindChange('final')}   label="Final"   sub="Remainder" />
+          <Seg on={kind === 'balance'} onClick={() => onKindChange('balance')} label="Balance" sub="Custom" />
+        </div>
+      </div>
+      {/* Amount */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Amount (USD)</div>
+        <div style={{ display:'flex', alignItems:'center', gap:6, border:'1.5px solid #EBEBEA', borderRadius:8, padding:'2px 10px', background:'white' }}>
+          <span style={{ fontSize:15, color:'#666', fontWeight:600 }}>$</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="1"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={{ flex:1, height:40, border:'none', outline:'none', fontSize:16, fontWeight:600, color:NAVY, fontFamily:"'DM Mono', monospace", background:'transparent' }}
+          />
+        </div>
+      </div>
+      {/* Description */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Description (optional)</div>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={lineLabel}
+          style={{ width:'100%', height:40, border:'1.5px solid #EBEBEA', borderRadius:8, padding:'0 10px', fontSize:16, color:NAVY, outline:'none', fontFamily:'inherit', background:'white', boxSizing:'border-box' }}
+        />
+      </div>
+    </div>
+  );
+
+  const footerRow = (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Amount</div>
+        <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono', 'DM Mono', monospace" }}>${(Number(amount) || 0).toLocaleString()}</div>
+      </div>
+      <button
+        onClick={submit}
+        disabled={busy || contact.do_not_contact}
+        style={{
+          height:42, padding:'0 18px', borderRadius:8,
+          background: busy || contact.do_not_contact ? '#E5E5E5' : '#ffba00',
+          color: busy || contact.do_not_contact ? '#999' : NAVY,
+          border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
+          cursor: busy || contact.do_not_contact ? 'not-allowed' : 'pointer',
+          display:'flex', alignItems:'center', gap:7,
+        }}
+      >
+        {busy ? 'Sending…' : 'Send to customer'}
+      </button>
+    </div>
+  );
+
+  if (inline) {
+    return (
+      <div data-card style={{
+        background:'white', border:'1px solid rgba(11,31,59,0.12)', borderRadius:8,
+        marginBottom:12,
+      }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 10px', borderBottom:'1px solid rgba(11,31,59,0.06)' }}>
+          <div style={{ fontSize:13, fontWeight:600, color:NAVY }}>
+            {latestSignedProposal ? 'Generate invoice' : 'New invoice'}
+          </div>
+          <button onClick={onClose} aria-label="Cancel" style={{
+            width:32, height:32, borderRadius:6, border:'none', background:'transparent',
+            color:'#666', fontSize:22, lineHeight:1, cursor:'pointer', fontFamily:'inherit',
+            display:'flex', alignItems:'center', justifyContent:'center',
+          }}>×</button>
+        </div>
+        <div style={{ padding:'14px' }}>{formBody}</div>
+        <div style={{ padding:'10px 14px 12px', borderTop:'1px solid rgba(11,31,59,0.06)' }}>
+          {footerRow}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ModalShell
       open={true}
       onClose={onClose}
       title={`New invoice — ${contact.name || formatPhone(contact.phone)}`}
-      footer={(
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-          <div>
-            <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Amount</div>
-            <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono', 'DM Mono', monospace" }}>${(Number(amount) || 0).toLocaleString()}</div>
-          </div>
-          <button
-            onClick={submit}
-            disabled={busy || contact.do_not_contact}
-            style={{
-              height:42, padding:'0 18px', borderRadius:8,
-              background: busy || contact.do_not_contact ? '#E5E5E5' : '#ffba00',
-              color: busy || contact.do_not_contact ? '#999' : NAVY,
-              border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
-              cursor: busy || contact.do_not_contact ? 'not-allowed' : 'pointer',
-              display:'flex', alignItems:'center', gap:7,
-            }}
-          >
-            {busy ? 'Sending…' : 'Send to customer'}
-          </button>
-        </div>
-      )}
+      footer={footerRow}
     >
-      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        {/* Reference proposal */}
-        {latestSignedProposal ? (
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', background:BG, borderRadius:8 }}>
-            <span style={{ fontSize:12, color:'#666' }}>Linked to approved proposal</span>
-            <span style={{ fontSize:12, fontWeight:600, color:NAVY, fontFamily:"'DM Mono', monospace" }}>${proposalTotal.toLocaleString()}</span>
-          </div>
-        ) : (
-          <div style={{ padding:'8px 12px', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:8, fontSize:12, color:'#92400E' }}>
-            No approved proposal — Final/Deposit auto-fill won't work. Use Balance for custom amount.
-          </div>
-        )}
-        {/* Final = $0 warning — proposal already invoiced in full. */}
-        {kind === 'final' && latestSignedProposal && remaining === 0 && (
-          <div style={{ padding:'8px 12px', background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, fontSize:12, color:'#991B1B' }}>
-            This proposal has already been invoiced in full. Switch to <strong>Balance</strong> to send a custom amount, or close.
-          </div>
-        )}
-        {/* Type picker */}
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Type</div>
-          <div style={{ display:'flex', gap:8 }}>
-            <Seg on={kind === 'deposit'} onClick={() => onKindChange('deposit')} label="Deposit" sub="50%" />
-            <Seg on={kind === 'final'}   onClick={() => onKindChange('final')}   label="Final"   sub="Remainder" />
-            <Seg on={kind === 'balance'} onClick={() => onKindChange('balance')} label="Balance" sub="Custom" />
-          </div>
-        </div>
-        {/* Amount */}
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Amount (USD)</div>
-          <div style={{ display:'flex', alignItems:'center', gap:6, border:'1.5px solid #EBEBEA', borderRadius:8, padding:'2px 10px', background:'white' }}>
-            <span style={{ fontSize:15, color:'#666', fontWeight:600 }}>$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              style={{ flex:1, height:40, border:'none', outline:'none', fontSize:16, fontWeight:600, color:NAVY, fontFamily:"'DM Mono', monospace", background:'transparent' }}
-            />
-          </div>
-        </div>
-        {/* Description */}
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Description (optional)</div>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={lineLabel}
-            style={{ width:'100%', height:40, border:'1.5px solid #EBEBEA', borderRadius:8, padding:'0 10px', fontSize:16, color:NAVY, outline:'none', fontFamily:'inherit', background:'white', boxSizing:'border-box' }}
-          />
-        </div>
-      </div>
+      {formBody}
     </ModalShell>
   );
 }
