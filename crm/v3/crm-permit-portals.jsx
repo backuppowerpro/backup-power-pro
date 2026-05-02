@@ -41,9 +41,11 @@ function PermitPortalsButton() {
     <div ref={wrapRef} style={{ position:'relative' }}>
       <button
         onClick={() => setOpen(o => !o)}
+        aria-label="Permit portals"
         title="Permit portals"
         style={{
-          width:32, height:32, borderRadius:8,
+          // Bumped 32→36 to match IconActionBtn touch target.
+          width:36, height:36, borderRadius:8,
           background: open ? '#F0F4FF' : 'white',
           border:'1px solid rgba(11,31,59,0.12)',
           cursor:'pointer',

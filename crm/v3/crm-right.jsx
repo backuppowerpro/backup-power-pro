@@ -197,6 +197,25 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
     }
   };
 
+  // Symmetric "allow contact again" — without this, removing the DNC flag
+  // required Supabase Studio access. Confirm-gated so it's a deliberate
+  // action; TCPA-sensitive enough to make Key pause.
+  const unmarkDnc = async () => {
+    close();
+    if (!isDnc) return;
+    const ok = await window.confirmAction?.({
+      title: 'Allow ' + contactName(contact) + ' to be contacted again?',
+      body: 'Make sure they\'ve actually agreed to receive messages again. Removes the DNC flag.',
+      confirmLabel: 'Allow again',
+    });
+    if (ok) {
+      contact.do_not_contact = false;
+      toggleDnc?.(contact.id);
+      if (CRM.__db) CRM.__db.from('contacts').update({ do_not_contact: false }).eq('id', contact.id);
+      window.showToast?.(contactName(contact) + ' can be contacted again');
+    }
+  };
+
   const deleteContact = async () => {
     close();
     const ok = await window.confirmAction?.({
@@ -227,7 +246,9 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
     { kind:'item', icon:OFI.pencil, label:'Edit contact', onClick: editContact },
     { kind:'divider' },
     { kind:'item', icon:OFI.archive, label:'Archive job', sub:'Move out of active list', onClick: archiveJob },
-    { kind:'item', icon:OFI.ban,    label:'Mark do not contact', danger:true, onClick: markDnc, disabled: isDnc },
+    isDnc
+      ? { kind:'item', icon:OFI.ban, label:'Allow contact again', onClick: unmarkDnc }
+      : { kind:'item', icon:OFI.ban, label:'Mark do not contact', danger:true, onClick: markDnc },
     { kind:'divider' },
     { kind:'item', icon:OFI.trash,  label:'Delete contact', sub:'Hides from the list. Restore from Supabase.', danger:true, onClick: deleteContact },
   ];
@@ -455,7 +476,16 @@ function InfoSection({ title, editAction, children }) {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
         <span style={{ fontSize:11,fontWeight:600,color:'#666',textTransform:'uppercase',letterSpacing:'0.06em' }}>{title}</span>
         {editAction && (
-          <button onClick={editAction} style={{ fontSize:12,color:'#666',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:'2px 4px' }}>Edit</button>
+          <button
+            aria-label="Edit"
+            onClick={editAction}
+            style={{
+              fontSize:12, color:'#666', background:'none', border:'none',
+              cursor:'pointer', fontFamily:'inherit',
+              // 32-tall hit zone — visual size unchanged but touch is reachable.
+              minHeight:32, padding:'8px 10px', margin:'-8px -10px',
+            }}
+          >Edit</button>
         )}
       </div>
       {children}
@@ -515,7 +545,10 @@ const ICON_CHAT = (
 function IconActionBtn({ icon, onClick, href, target, ariaLabel, variant = 'outline' }) {
   const filled = variant === 'gold';
   const style = {
-    width:32, height:32, borderRadius:'50%',
+    // 36×36 — sits above Apple's 32px lower bound for icon-only touch
+    // targets and stays visually compact in 4-up rows on a 390px screen
+    // (4×36 + 3×8 gap = 168px, comfortably fits beside row label/value).
+    width:36, height:36, borderRadius:'50%',
     background: filled ? GOLD : 'white',
     color: NAVY,
     border: filled ? 'none' : '1px solid rgba(11,31,59,0.15)',
@@ -1003,7 +1036,16 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
           )}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
             <span style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.06em' }}>Contact info</span>
-            <button onClick={() => setEditing(true)} style={{ background:'none', border:'none', color:'#666', fontSize:12, cursor:'pointer', padding:0, fontFamily:'inherit' }}>Edit</button>
+            <button
+              aria-label="Edit contact"
+              onClick={() => setEditing(true)}
+              style={{
+                background:'none', border:'none', color:'#666', fontSize:12,
+                cursor:'pointer', fontFamily:'inherit',
+                // 32-tall hit zone — same visual size, reachable on touch.
+                minHeight:32, padding:'8px 10px', margin:'-8px -10px',
+              }}
+            >Edit</button>
           </div>
           <ContactInfoRows contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} />
         </div>
@@ -2197,14 +2239,20 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   };
 
   const FIN_PILL = {
-    paid:     { bg:'#16a34a', color:'white', label:'Paid' },
-    sent:     { bg:'#2563eb', color:'white', label:'Sent' },
-    viewed:   { bg:'#2563eb', color:'white', label:'Viewed' },
-    overdue:  { bg:'#dc2626', color:'white', label:'Overdue' },
-    approved: { bg:'#16a34a', color:'white', label:'Approved' },
-    declined: { bg:'#dc2626', color:'white', label:'Cancelled' },
-    voided:   { bg:'#999',    color:'white', label:'Voided' },
-    draft:    { bg:'#999',    color:'white', label:'Draft' },
+    paid:      { bg:'#16a34a', color:'white', label:'Paid' },
+    sent:      { bg:'#2563eb', color:'white', label:'Sent' },
+    viewed:    { bg:'#2563eb', color:'white', label:'Viewed' },
+    overdue:   { bg:'#dc2626', color:'white', label:'Overdue' },
+    approved:  { bg:'#16a34a', color:'white', label:'Approved' },
+    declined:  { bg:'#dc2626', color:'white', label:'Cancelled' },
+    // Some legacy v1/v2 rows write `cancelled` instead of `declined`
+    // (proposals) or `voided` (invoices). Treat them as the same surface
+    // so 11 production records stop rendering as gray "Draft".
+    cancelled: { bg:'#dc2626', color:'white', label:'Cancelled' },
+    voided:    { bg:'#999',    color:'white', label:'Voided' },
+    refunded:  { bg:'#999',    color:'white', label:'Refunded' },
+    expired:   { bg:'#999',    color:'white', label:'Expired' },
+    draft:     { bg:'#999',    color:'white', label:'Draft' },
   };
   const Pill = ({ status }) => {
     const p = FIN_PILL[status] || FIN_PILL.draft;
@@ -2322,9 +2370,13 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   };
 
   const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid, onCancel, onVoid }) => {
+    // 40px on touch (Apple HIG = 44; 40 keeps the row visually compact
+    // while staying above the "frustration threshold" Material flags at
+    // 48px). Cursor-driven desktop is fine at 32 — but the inline style
+    // doesn't have a media query, so we pick a single accommodating size.
     const sharedBtn = {
-      height:32, padding:'0 12px', borderRadius:8,
-      fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+      height:40, padding:'0 12px', borderRadius:8,
+      fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
       display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6,
       whiteSpace:'nowrap', flex:1, minWidth:0,
     };
@@ -2473,8 +2525,8 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
               status={inv.status}
               activity={invActivity(inv)}
               linkUrl={invoiceUrl(inv)}
-              onMarkPaid={inv.status === 'sent' || inv.status === 'overdue' ? () => markPaid(inv) : null}
-              onVoid={inv.status === 'sent' || inv.status === 'overdue' || inv.status === 'viewed' ? () => voidInvoice(inv) : null}
+              onMarkPaid={['sent','viewed','overdue'].includes(inv.status) ? () => markPaid(inv) : null}
+              onVoid={['sent','viewed','overdue'].includes(inv.status) ? () => voidInvoice(inv) : null}
             />
           ))}
         </>
@@ -3181,10 +3233,11 @@ function NewProposalModal({ contact, onClose }) {
   // Trim before split-or-default so a name of "  " doesn't render
   // "Hey , here's your quote" — guards against whitespace-only DB rows.
   const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
-  // Coerce to one of the two valid amps. Legacy contacts may have
-  // arbitrary amp_type strings ("30A", "thirty", null) — guard the
-  // initial state so the modal can never submit a non-30/50 value.
-  const [amp,        setAmp]        = React.useState(['30','50'].includes(String(contact.amp_type)) ? String(contact.amp_type) : '30');
+  // Default amp from the contact's actual install spec. mapContact
+  // selects `panel_amps` (canonical column) — `amp_type` was never
+  // mapped, so reading it always fell back to '30' even for a 50A
+  // panel. Coerce to '30'/'50' or fall back when unset/legacy.
+  const [amp,        setAmp]        = React.useState(['30','50'].includes(String(contact.panel_amps)) ? String(contact.panel_amps) : '30');
   const [tier,       setTier]       = React.useState(contact.pricing_tier || 'standard');
   const [cordIncluded,  setCord]    = React.useState(true);
   const [includeSurge,  setSurge]   = React.useState(false);

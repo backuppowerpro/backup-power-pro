@@ -21,7 +21,11 @@ const RADIUS = {
 };
 const BG   = '#F8F8F6';
 const CARD = '#FFFFFF';
-const MUTED = '#8892A0';
+// Gray-500 — 4.69:1 on white, passes WCAG AA for body text (was #8892A0
+// at 3.15:1 which failed). Used pervasively for timestamps, eyebrow
+// labels, address subtitles, FilterChip counts, etc — all communicate
+// real info, so AA matters even for "muted" text.
+const MUTED = '#6B7280';
 
 function fmt(obj) {
   if (!obj) return {};
@@ -421,8 +425,13 @@ const PILL_STYLES = {
 // for the same status.
 const STATUS_LABELS = {
   declined: 'Cancelled',
+  // Legacy v1/v2 paths write `cancelled` instead of `declined`/`voided`.
+  // Render them as Cancelled so the operator sees "what they did" not
+  // the underlying schema sprawl.
+  cancelled: 'Cancelled',
   voided: 'Voided',
   refunded: 'Refunded',
+  expired: 'Expired',
   permit_submit: 'Submitted',
   permit_waiting: 'Waiting',
   permit_approved: 'Approved',

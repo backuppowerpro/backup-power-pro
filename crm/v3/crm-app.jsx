@@ -53,11 +53,19 @@ function Root() {
     }
   }, [loaded, authed, activeContact]);
   // Validate the URL-provided contact id once data has loaded — if the
-  // contact was archived or deleted, fall back to the first contact.
+  // contact was archived or deleted, fall back to the first contact and
+  // surface a toast so a stale shared link doesn't silently switch the
+  // operator to a different contact mid-conversation.
   React.useEffect(() => {
     if (!loaded || !activeContact) return;
     const exists = CRM.contacts.some(c => c.id === activeContact);
     if (!exists) {
+      // Only toast when the URL was hydrated from query string (vs the
+      // auto-pick-first effect above writing to it) — avoid noise on
+      // first load when the contact list briefly empty-states.
+      if (initialQuery.c === activeContact) {
+        window.showToast?.('Contact not found — opened first instead');
+      }
       setActiveContact(CRM.contacts[0]?.id || null);
     }
   }, [loaded, activeContact]);
