@@ -127,8 +127,8 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
   const copyPhone = async () => {
     close();
     try {
-      await navigator.clipboard.writeText(contact.phone);
-      window.showToast?.('Phone copied');
+      const ok = await window.copyText(contact.phone);
+      window.showToast?.(ok ? 'Phone copied' : 'Copy failed');
     } catch {
       window.showToast?.('Copy failed');
     }
@@ -426,11 +426,8 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
       {nextEvent && (
         <NextJobCard contact={contact} event={nextEvent} permit={cPermit} materials={materials} onOpenTab={onOpenTab} />
       )}
-      <PhotosSection contact={contact} />
-      <StageHistoryCard contact={contact} />
-      {latestSigned && (
-        <PermitsCard permits={permits} contact={contact} bumpData={bumpData} />
-      )}
+      {/* Notes before Photos — Key references notes more often than
+          photos when re-opening a contact. */}
       <InfoSection title="Notes" editAction={null}>
         <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Internal notes (auto-saves)…"
           style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'10px 12px',fontSize:16,color:NAVY,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box' }} />
@@ -438,6 +435,11 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
           {noteSaving ? 'Saving…' : noteSaved ? 'Saved' : ' '}
         </div>
       </InfoSection>
+      <PhotosSection contact={contact} />
+      <StageHistoryCard contact={contact} />
+      {latestSigned && (
+        <PermitsCard permits={permits} contact={contact} bumpData={bumpData} />
+      )}
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
     </div>
   );
@@ -929,8 +931,8 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
     const stageLabel = CRM.STAGE_LABELS[contact.stage] || '';
 
     const copyName = async () => {
-      try { await navigator.clipboard.writeText(contactName(contact)); window.showToast?.('Name copied'); }
-      catch { window.showToast?.('Copy failed'); }
+      const ok = await window.copyText(contactName(contact));
+      window.showToast?.(ok ? 'Name copied' : 'Copy failed');
     };
 
     return (
@@ -1127,8 +1129,8 @@ function ContactInfoRows({ contact, bumpData, onOpenTab }) {
   const tierColor = tier !== 'standard' ? GOLD : NAVY;
 
   const copy = async (text, label) => {
-    try { await navigator.clipboard.writeText(text); window.showToast?.(label + ' copied'); }
-    catch { window.showToast?.('Copy failed'); }
+    const ok = await window.copyText(text);
+    window.showToast?.(ok ? label + ' copied' : 'Copy failed');
   };
 
   return (
@@ -1574,11 +1576,47 @@ function MaterialRow({ mat, contact, bumpData, isPlaceholder }) {
     window.showToast?.(`${MAT_KIND_LABEL(mat.kind)}: ${next.label.toLowerCase()}`);
   };
 
+  // Reset back to "Not ordered" — the only escape hatch from an
+  // accidental "Mark installed". Wipes the date stamps.
+  const reset = () => {
+    if (isPlaceholder) return; // already at default
+    mat.status = 'not_ordered';
+    mat.ordered_at = null;
+    mat.received_at = null;
+    mat.installed_at = null;
+    bumpData?.();
+    window.showToast?.(`${MAT_KIND_LABEL(mat.kind)}: reset`);
+  };
+
+  // Delete an ad-hoc extra (not the 3 permanent kinds: inlet,
+  // interlock, cord — those always render as part of the install).
+  const PERMANENT = new Set(['inlet','interlock','cord']);
+  const canDelete = !isPlaceholder && !PERMANENT.has(mat.kind);
+  const remove = () => {
+    if (!canDelete) return;
+    const i = (CRM.materials || []).findIndex(m => m.id === mat.id);
+    if (i >= 0) CRM.materials.splice(i, 1);
+    bumpData?.();
+    window.showToast?.(`${MAT_KIND_LABEL(mat.kind)} removed`);
+  };
+
   return (
     <div style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 0' }}>
       <span style={{ width:16, fontSize:14, color:st.color, flexShrink:0, textAlign:'center', lineHeight:1, fontWeight:700 }}>{st.icon}</span>
       <span style={{ flex:1, fontSize:14, color:NAVY }}>{MAT_KIND_LABEL(mat.kind)}</span>
       <span style={{ fontSize:12, color:'#666', whiteSpace:'nowrap' }}>{statusText}</span>
+      {/* Status === installed → show a Reset button instead of nothing.
+          Without an undo it was easy to accidentally tap "Mark installed"
+          and have no way to walk it back. */}
+      {!next && mat.status === 'installed' && !isPlaceholder && (
+        <button onClick={reset} aria-label="Reset to not ordered" title="Reset" style={{
+          height:32, padding:'0 12px', borderRadius:8,
+          background:'transparent', color:'#666',
+          border:'1px solid rgba(27,43,75,0.15)',
+          fontSize:12, fontWeight:600, fontFamily:'inherit',
+          cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
+        }}>Reset</button>
+      )}
       {next && (
         <button onClick={advance} style={{
           height:32, padding:'0 12px', borderRadius:8,
@@ -1588,6 +1626,18 @@ function MaterialRow({ mat, contact, bumpData, isPlaceholder }) {
           fontSize:12, fontWeight:600, fontFamily:'inherit',
           cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
         }}>{next.label}</button>
+      )}
+      {/* Delete affordance — only on extras (Surge, Whip, Breaker,
+          Other), never on the 3 permanent rows. Small × so it doesn't
+          compete with the primary action. */}
+      {canDelete && (
+        <button onClick={remove} aria-label={`Remove ${MAT_KIND_LABEL(mat.kind)}`} title="Remove" style={{
+          width:28, height:32, borderRadius:8,
+          background:'transparent', color:'#991B1B',
+          border:'none',
+          fontSize:14, fontWeight:600, fontFamily:'inherit',
+          cursor:'pointer', flexShrink:0,
+        }}>✕</button>
       )}
     </div>
   );
@@ -2256,8 +2306,8 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   };
   const copyLink = async (linkUrl) => {
     if (!linkUrl) { window.showToast?.('No link yet — save the draft first'); return; }
-    try { await navigator.clipboard.writeText(linkUrl); window.showToast?.('Link copied'); }
-    catch { window.showToast?.('Copy failed'); }
+    const ok = await window.copyText(linkUrl);
+    window.showToast?.(ok ? 'Link copied' : 'Copy failed');
   };
   const viewAsCustomer = (linkUrl) => {
     if (!linkUrl) { window.showToast?.('No link yet — save the draft first'); return; }

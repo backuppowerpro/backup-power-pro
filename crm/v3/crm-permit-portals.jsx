@@ -19,8 +19,8 @@ function PermitPortalsButton() {
 
   const copy = async (text, label) => {
     try {
-      await navigator.clipboard.writeText(text);
-      window.showToast?.(label + ' copied');
+      const ok = await window.copyText(text);
+      window.showToast?.(ok ? label + ' copied' : 'Copy failed');
     } catch {
       window.showToast?.('Copy failed');
     }

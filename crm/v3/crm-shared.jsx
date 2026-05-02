@@ -572,6 +572,31 @@ function formatPhone(e164) {
   return `(${n.slice(0,3)}) ${n.slice(3,6)}-${n.slice(6)}`;
 }
 
+// Robust clipboard write with execCommand fallback. The bare
+// navigator.clipboard API requires a secure context AND document
+// focus; in iframes or some Safari edges it silently rejects.
+// Fallback to the legacy textarea-select approach when that happens
+// so the Copy buttons actually copy instead of always toasting failure.
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = String(text || '');
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 // Live phone-input mask — "8648637" → "(864) 863-7", grows with input.
 // US-format. Detects E.164 / international input (leading + or 11+
 // digits with leading 1) and either strips the country prefix or
@@ -967,5 +992,5 @@ Object.assign(window, {
   formatDate, formatTime, formatTimeShort, formatDuration, dayKey,
   relTime, fmtTime, fmtDate,
   QB_C, QB_S, TIER_META, TIER_IDS, quickQuoteTotal, quickQuoteCompute,
-  safeSetItem, checkSvImagery, isAddressableStreet,
+  safeSetItem, checkSvImagery, isAddressableStreet, copyText,
 });
