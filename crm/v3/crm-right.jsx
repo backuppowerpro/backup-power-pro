@@ -1114,11 +1114,16 @@ function stageActionVerbFor(stage) {
 
 function ContactInfoRows({ contact, bumpData, onOpenTab }) {
   const phoneFmt = formatPhone(contact.phone);
-  const street = (contact.address || '').split(',')[0].trim();
-  const jurisdiction = contact.jurisdiction || '';
-  const addressDisplay = jurisdiction ? `${street} · ${jurisdiction}` : street;
+  // Show the full address as it was entered. The previous "Street · Jurisdiction"
+  // form (e.g. "109 Suzanna Drive · Spartanburg") truncated City/State/ZIP — and
+  // worse, it conflated jurisdiction (county for permitting) with city, so a
+  // contact in Inman, SC inside Spartanburg County rendered as "Spartanburg".
+  // Fall back to a cleaned-up street if the full address is missing.
+  const fullAddress = (contact.address || '').trim();
+  const street = fullAddress.split(',')[0].trim();
+  const addressDisplay = fullAddress || street;
   const addressForCopy = addressDisplay;
-  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(contact.address || addressDisplay)}`;
+  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(addressDisplay)}`;
 
   // Stage advance
   const stageIdx = CRM.STAGE_ORDER.indexOf(contact.stage);
