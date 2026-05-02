@@ -343,14 +343,15 @@ window.CRM = {
   materials: [],
   stageHistory: [],
   jurisdictions: [
-    // Real portals + login methods sourced from credentials.md. Spartanburg
-    // and Pickens counties run on EnerGov (Tyler) and use Google SSO with
-    // Key's keyelectricupstate@gmail.com, so the username row notes "Google
-    // SSO" instead of an empty user field.
-    { id: 'j-1', name: 'Spartanburg County', portal_url: 'https://civicaccess.spartanburgcounty.gov/energov_prod/selfservice#/home',                                  username: 'Google SSO · keyelectricupstate@gmail.com', sso: true },
-    { id: 'j-2', name: 'Greenville County',  portal_url: 'https://aca.greenvillecounty.org/ACA/',                                                                     username: 'AEC001822' },
-    { id: 'j-3', name: 'Pickens County',     portal_url: 'https://energovweb.pickenscountysc.us/energov_prod/selfservice#/home',                                       username: 'Google SSO · keyelectricupstate@gmail.com', sso: true },
-    { id: 'j-4', name: 'City of Spartanburg', portal_url: 'https://www.cityofspartanburg.org/FormCenter/Building-Inspections-9/Application-for-Electrical-Permit-81',  username: 'keyelectricupstate@gmail.com' },
+    // The 4 BPP service-area jurisdictions, matching BPP_JURISDICTIONS in
+    // crm-right.jsx (single source of truth). Spartanburg + Pickens counties
+    // run on EnerGov (Tyler) via Google SSO with keyelectricupstate@gmail.com.
+    // Greenville County uses Accela (eTRAKiT) with username AEC001822.
+    // City of Greenville sits inside Greenville County but has its own portal.
+    { id: 'j-1', name: 'Spartanburg County', portal_url: 'https://civicaccess.spartanburgcounty.gov/energov_prod/selfservice#/home', username: 'Google SSO · keyelectricupstate@gmail.com', sso: true },
+    { id: 'j-2', name: 'Greenville County',  portal_url: 'https://aca.greenvillecounty.org/ACA/',                                    username: 'AEC001822' },
+    { id: 'j-3', name: 'Pickens County',     portal_url: 'https://energovweb.pickenscountysc.us/energov_prod/selfservice#/home',     username: 'Google SSO · keyelectricupstate@gmail.com', sso: true },
+    { id: 'j-4', name: 'City of Greenville', portal_url: 'https://www.greenvillesc.gov/164/Building-Safety',                        username: 'keyelectricupstate@gmail.com' },
   ],
   STAGE_LABELS,
   STAGE_ORDER,

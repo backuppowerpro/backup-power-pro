@@ -69,7 +69,7 @@ function ContactStrip({ contact, isDnc, toggleDnc, bumpData, onOpenTab }) {
       <ContactAvatar contact={contact} size={32} />
       <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', gap:8 }}>
         {isPremium && window.tweaksGlobal?.premiumDots !== false && <GoldDot />}
-        <span style={{ fontSize:14, fontWeight:700, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(contact)}</span>
+        <span style={{ fontSize:14, fontWeight:700, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', minWidth:0, flex:1 }}>{contactName(contact)}</span>
         <button onClick={togglePin}
           aria-label={isPinned ? 'Unpin contact' : 'Pin contact to top'}
           title={isPinned ? 'Unpin' : 'Pin to top'}
@@ -309,16 +309,27 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
   const [note, setNote] = React.useState(contact.notes || '');
   const [noteSaving, setNoteSaving] = React.useState(false);
   const [noteSaved, setNoteSaved] = React.useState(false);
-  // Reset local state when the active contact changes.
+  // Track which contact our `note` state was loaded for — guards the
+  // auto-save against a 1-frame race where a contact switch reseeds
+  // `note` from the new contact but the auto-save effect still has the
+  // OLD contact's text in its closure. Without this, switching contacts
+  // mid-typing could overwrite the new contact's notes with the prior
+  // contact's text.
+  const loadedForContactId = React.useRef(contact.id);
   React.useEffect(() => {
     setNote(contact.notes || '');
     setNoteSaved(false);
+    loadedForContactId.current = contact.id;
   }, [contact.id]);
   // Debounced auto-save: 800ms after the last keystroke, persist to contacts.notes.
   React.useEffect(() => {
+    if (loadedForContactId.current !== contact.id) return; // race guard
     if (note === (contact.notes || '')) return;
     const timer = setTimeout(async () => {
       if (!CRM.__db) return;
+      // Re-check at fire time — a contact switch could have happened
+      // during the 800ms debounce.
+      if (loadedForContactId.current !== contact.id) return;
       setNoteSaving(true);
       const { error } = await CRM.__db.from('contacts').update({ notes: note }).eq('id', contact.id);
       setNoteSaving(false);
@@ -399,7 +410,7 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
           <span style={{ fontSize:18 }}>💰</span>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:11, fontWeight:600, color: moneyStatus.color, letterSpacing:'0.04em', textTransform:'uppercase' }}>{moneyStatus.label}</div>
-            <div style={{ fontSize:15, fontWeight:700, color: moneyStatus.color, fontFamily:"'JetBrains Mono', 'DM Mono', monospace" }}>{formatMoneyCents(moneyStatus.cents)}</div>
+            <div style={{ fontSize:18, fontWeight:700, color: moneyStatus.color, letterSpacing:'-0.02em', fontVariantNumeric:'tabular-nums' }}>{formatMoneyCents(moneyStatus.cents)}</div>
           </div>
           <span style={{ fontSize:11, color: moneyStatus.color, fontWeight:600 }}>View →</span>
         </button>
@@ -1986,6 +1997,8 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   // markPaid so realtime can't fight us.
   const cancelProposal = async (prop) => {
     if (!CRM.__db) return;
+    if (markingRef.current.has('cancel:' + prop.id)) return;
+    markingRef.current.add('cancel:' + prop.id);
     const live = (CRM.proposals || []).find(x => x.id === prop.id) || prop;
     const prev = live.status;
     live.status = 'declined';
@@ -2013,6 +2026,8 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   // with the FIN_PILL palette below.
   const voidInvoice = async (inv) => {
     if (!CRM.__db) return;
+    if (markingRef.current.has('void:' + inv.id)) return;
+    markingRef.current.add('void:' + inv.id);
     const live = (CRM.invoices || []).find(x => x.id === inv.id) || inv;
     const prev = live.status;
     live.status = 'voided';
@@ -2158,6 +2173,22 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
       display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6,
       whiteSpace:'nowrap', flex:1, minWidth:0,
     };
+    // Status-aware button gating. Send/Copy must NEVER appear once the
+    // doc is finalized (paid invoice, approved proposal, voided/declined
+    // anything) — re-sending an approved Premium+ proposal looks
+    // unprofessional and confuses the customer. View link still shows
+    // for everything except voided/refunded so Key can re-open the
+    // customer's view.
+    const FINAL_PROPOSAL = ['approved', 'declined', 'expired'];
+    const FINAL_INVOICE = ['paid', 'voided', 'refunded'];
+    const isProposal = !FIN_PILL[status] || ['draft','sent','viewed','approved','declined','expired'].includes(status);
+    // Loose heuristic: presence of `kind` field would indicate invoice,
+    // but we only have status — use the strict invoice-only set check.
+    const isFinalInvoice = FINAL_INVOICE.includes(status);
+    const isFinalProposal = FINAL_PROPOSAL.includes(status);
+    const showSend = !isFinalInvoice && !isFinalProposal;
+    const showCopy = !['voided','refunded'].includes(status);
+    const showView = !['voided','refunded'].includes(status);
     return (
       <div style={{
         background:'white', border:'1px solid rgba(11,31,59,0.08)', borderRadius:8,
@@ -2173,22 +2204,25 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
         {activity && (
           <div style={{ fontFamily:"'DM Mono', monospace", fontSize:12, color:'#666', marginTop:6 }}>{activity}</div>
         )}
-        {/* Compact 3-button row that fits a 358px-content mobile viewport.
-            Long labels ("Send to customer") were clipping past the 106px
-            button width — switched to icon + short verb so each button
-            stays inside its bounds. Aria-label keeps the screenreader
-            context. */}
-        <div style={{ display:'flex', gap:6, marginTop:10 }}>
-          <button onClick={()=>sendLink(linkUrl)} aria-label="Send to customer" style={{ ...sharedBtn, background:'#ffba00', color:NAVY, border:'none' }}>
-            {SendIcon}<span>Send</span>
-          </button>
-          <button onClick={()=>copyLink(linkUrl)} aria-label="Copy link" style={{ ...sharedBtn, background:'white', color:NAVY, border:'1px solid rgba(27,43,75,0.15)' }}>
-            {CopyIcon}<span>Copy</span>
-          </button>
-          <button onClick={()=>viewAsCustomer(linkUrl)} aria-label="View as customer" style={{ ...sharedBtn, background:'white', color:NAVY, border:'1px solid rgba(27,43,75,0.15)' }}>
-            {EyeIcon}<span>View</span>
-          </button>
-        </div>
+        {(showSend || showCopy || showView) && (
+          <div style={{ display:'flex', gap:6, marginTop:10 }}>
+            {showSend && (
+              <button onClick={()=>sendLink(linkUrl)} aria-label="Send to customer" style={{ ...sharedBtn, background:GOLD, color:NAVY, border:'none' }}>
+                {SendIcon}<span>Send</span>
+              </button>
+            )}
+            {showCopy && (
+              <button onClick={()=>copyLink(linkUrl)} aria-label="Copy link" style={{ ...sharedBtn, background:'white', color:NAVY, border:'1px solid rgba(27,43,75,0.15)' }}>
+                {CopyIcon}<span>Copy</span>
+              </button>
+            )}
+            {showView && (
+              <button onClick={()=>viewAsCustomer(linkUrl)} aria-label="View as customer" style={{ ...sharedBtn, background:'white', color:NAVY, border:'1px solid rgba(27,43,75,0.15)' }}>
+                {EyeIcon}<span>View</span>
+              </button>
+            )}
+          </div>
+        )}
         {/* Secondary actions row — Mark paid (manual override for cash
             payments) + Cancel/Void destructive actions. Ghost styling
             so they don't compete with the gold Send CTA. */}

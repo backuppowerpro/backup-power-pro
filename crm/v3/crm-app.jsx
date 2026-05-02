@@ -189,7 +189,7 @@ function Root() {
   const mobileApp = (
     <div style={{ height:'100%', flex:1, display:'flex', flexDirection:'column', background:'#f4f6f9', overflow:'hidden', minHeight:0 }}>
       {mobileView === 'left' ? (
-        <NavBar tab={leftTab} onTab={setLeftTab} badgeCounts={badgeCounts} />
+        <NavBar tab={leftTab} onTab={(t) => { setLeftTab(t); setRightTab(t); }} badgeCounts={badgeCounts} />
       ) : (
         <NavBar
           tab={rightTab}
@@ -232,7 +232,7 @@ function Root() {
   const desktopApp = (
     <div style={{ height:'100%', flex:1, display:'flex', flexDirection:'row', background:'#f4f6f9', overflow:'hidden', minHeight:0 }}>
       <div style={{ width:480, borderRight:'1px solid rgba(11,31,59,0.12)', display:'flex', flexDirection:'column', overflow:'hidden', flexShrink:0, background:'#F8F8F6' }}>
-        <NavBar tab={leftTab} onTab={setLeftTab} badgeCounts={badgeCounts} compact />
+        <NavBar tab={leftTab} onTab={(t) => { setLeftTab(t); setRightTab(t); }} badgeCounts={badgeCounts} compact />
         <LeftPanel tab={leftTab} onOpen={handleOpen} dncSet={dncSet} activeContactId={activeContact} />
       </div>
       <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minWidth:0, background:'#F8F8F6' }}>

@@ -462,7 +462,17 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                 height:26, padding:'0 10px', borderRadius:13, fontFamily:'inherit',
                 background: activeContactId === c.id ? NAVY : '#F3F4F6', color: activeContactId === c.id ? 'white' : NAVY,
                 border:'none', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
-              }}>{contactName(c).split(' ')[0] || formatPhone(c.phone)}</button>
+              }}>{(() => {
+                // If two recents share a first name, append last initial
+                // so Key can tell "Aaron R" from "Aaron".
+                const full = contactName(c);
+                const first = full.split(' ')[0];
+                if (!first) return formatPhone(c.phone);
+                const dup = recentContacts.some(o => o.id !== c.id && contactName(o).split(' ')[0] === first);
+                if (!dup) return first;
+                const last = full.split(' ').slice(-1)[0];
+                return last && last !== first ? `${first} ${last[0]}` : first;
+              })()}</button>
             ))}
           </div>
         )}
@@ -613,7 +623,7 @@ function PullToRefreshList({ children, onRefresh, style }) {
     if (!armed.current) return;
     armed.current = false;
     startY.current = null;
-    if (pull >= 50 && !refreshing) {
+    if (pull >= 80 && !refreshing) {
       setRefreshing(true);
       try { await onRefresh?.(); } catch {}
       // Brief settle so the spinner is perceptible before snap-back.
@@ -635,7 +645,7 @@ function PullToRefreshList({ children, onRefresh, style }) {
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" style={{ animation: 'pulse 1s ease-in-out infinite' }}><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>
             Refreshing…
           </span>
-        ) : pull >= 50 ? 'Release to refresh' : pull > 0 ? 'Pull to refresh' : ''}
+        ) : pull >= 80 ? 'Release to refresh' : pull > 0 ? 'Pull to refresh' : ''}
       </div>
       {children}
     </div>
@@ -1043,19 +1053,20 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
 }
 
 // ── Quick Quote Modal (ephemeral price calculator — no save/send/DB) ────
-const QQ_BASE = {
-  '30A': { standard: 119700, premium: 129700, premium_plus: 139700 },
-  '50A': { standard: 129700, premium: 139700, premium_plus: 149700 },
-};
-const QQ_ADDONS = [
-  { id:'cord',          label:'Generator cord',  price:9900  },
-  { id:'surge',         label:'Surge protector', price:7900  },
-  { id:'peace_of_mind', label:'Peace of mind',   price:0     },
-  { id:'permit',        label:'Permit',          price:14500 },
+// Single source of truth: window.quickQuoteTotal() from crm-shared.jsx.
+// The previous QQ_BASE/QQ_ADDONS literal-table approach diverged from
+// the real engine — Peace of Mind silently priced at $0 — and would
+// keep drifting whenever pricing changes. Now this modal computes the
+// same total NewProposalModal does.
+const QQ_ADDON_DEFS = [
+  { id:'cord',  label:'Generator cord',  cents: 12900 }, // QB_S.cordValue30 / 50
+  { id:'surge', label:'Surge protector', cents: 37500 }, // QB_S.surge
+  { id:'pom',   label:'Peace of mind',   cents: 44700 }, // QB_S.pom
+  { id:'permit',label:'Permit',          cents: 12500 }, // QB_S.permitCustomer
 ];
 
 function QuickQuoteModal({ onClose }) {
-  const [amp, setAmp] = React.useState('30A');
+  const [amp, setAmp] = React.useState('30');
   const [tier, setTier] = React.useState('standard');
   const [addons, setAddons] = React.useState({});
 
@@ -1065,9 +1076,19 @@ function QuickQuoteModal({ onClose }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const reset = () => { setAmp('30A'); setTier('standard'); setAddons({}); };
+  const reset = () => { setAmp('30'); setTier('standard'); setAddons({}); };
 
-  const total = QQ_BASE[amp][tier] + QQ_ADDONS.reduce((s,a) => s + (addons[a.id] ? a.price : 0), 0);
+  // Defer to the real engine. Cord defaults to bundled (cordIncluded=true)
+  // when the user hasn't toggled it; matches NewProposalModal behavior.
+  const totalDollars = window.quickQuoteTotal({
+    amp,
+    cordIncluded: !!addons.cord,
+    includeSurge: !!addons.surge,
+    includePom: !!addons.pom,
+    includePermit: !!addons.permit,
+    tier,
+  }) || 0;
+  const total = totalDollars * 100;
 
   const Eyebrow = ({ children }) => (
     <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>{children}</div>
@@ -1113,8 +1134,8 @@ function QuickQuoteModal({ onClose }) {
 
         <Eyebrow>Amp</Eyebrow>
         <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-          {['30A','50A'].map(a => (
-            <button key={a} onClick={()=>setAmp(a)} style={segBtn(amp===a)}>{a}</button>
+          {['30','50'].map(a => (
+            <button key={a} onClick={()=>setAmp(a)} style={segBtn(amp===a)}>{a}A</button>
           ))}
         </div>
 
@@ -1131,12 +1152,12 @@ function QuickQuoteModal({ onClose }) {
 
         <Eyebrow>Add-ons</Eyebrow>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:18 }}>
-          {QQ_ADDONS.map(a => {
+          {QQ_ADDON_DEFS.map(a => {
             const on = !!addons[a.id];
             return (
               <button key={a.id} onClick={()=>setAddons(s => ({...s, [a.id]: !s[a.id]}))} style={chipBtn(on)}>
                 <span>{a.label}</span>
-                <span style={{ color: on ? NAVY : '#666', fontSize:11, fontFamily:"'DM Mono', monospace" }}>+{formatMoneyCents(a.price)}</span>
+                <span style={{ color: on ? NAVY : '#666', fontSize:11, fontFamily:"'DM Mono', monospace" }}>+{formatMoneyCents(a.cents)}</span>
               </button>
             );
           })}
@@ -1248,7 +1269,7 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
       <PanelHeader title="Inbox" count={totalUnread > 0 ? `${totalUnread} unread` : null}
-        right={<button onClick={markAllRead} style={{ fontSize:12, fontWeight:600, color:NAVY, background:'white', border:'1px solid rgba(11,31,59,0.15)', borderRadius:6, padding:'8px 12px', cursor:'pointer', fontFamily:'inherit' }}>Mark all read</button>}
+        right={totalUnread > 0 ? <button onClick={markAllRead} style={{ fontSize:12, fontWeight:600, color:NAVY, background:'white', border:'1px solid rgba(11,31,59,0.15)', borderRadius:6, padding:'8px 12px', cursor:'pointer', fontFamily:'inherit' }}>Mark all read</button> : null}
       />
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
@@ -1321,8 +1342,11 @@ function CallsList({ calls, contacts, onOpen, activeContactId }) {
   // Allow quick-dial: paste a number, tap to call. Uses tel: handoff
   // through the iPhone dialer (not a Twilio browser-call).
   const dialDigits = (dial || '').replace(/\D/g, '');
-  const dialValid = dialDigits.length >= 7;
-  const dialHref = dialValid ? `tel:${dial.startsWith('+') ? dial : '+' + dialDigits}` : undefined;
+  // 10-digit US (or 11 with leading 1). 7 was too permissive — would
+  // open `tel:` to a partial number that goes nowhere useful.
+  const dialValid = dialDigits.length === 10 || (dialDigits.length === 11 && dialDigits.startsWith('1'));
+  const dialE164 = dialDigits.length === 10 ? '+1' + dialDigits : '+' + dialDigits;
+  const dialHref = dialValid ? `tel:${dialE164}` : undefined;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>

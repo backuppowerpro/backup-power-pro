@@ -393,10 +393,11 @@ const PILL_STYLES = {
   overdue:    { bg:'#FEF2F2', color:'#991B1B' },
   refunded:   { bg:'#F3F4F6', color:'#6B7280' },
   voided:     { bg:'#F3F4F6', color:'#6B7280' },
+  declined:   { bg:'#FEF2F2', color:'#991B1B' }, // proposal "Cancelled" surface
   // Event statuses
   scheduled:  { bg:'#EFF6FF', color:'#1E40AF' },
   done:       { bg:'#ECFDF5', color:'#065F46' },
-  cancelled:  { bg:'#F3F4F6', color:'#6B7280' },
+  cancelled:  { bg:'#FEF2F2', color:'#991B1B' },
   // Event kinds
   install:    { bg:'#F0FDF4', color:'#166534' },
   inspect:    { bg:'#F5F3FF', color:'#5B21B6' },
@@ -407,6 +408,22 @@ const PILL_STYLES = {
   today:      { bg:'#FFFBEB', color:'#92400E' },
 };
 
+// Status → human label override map. Some DB statuses don't read well
+// when capitalized verbatim ("Declined" sounds like a customer rejection,
+// but in practice Key uses it to cancel a pending proposal — so we
+// surface it as "Cancelled"). Used by both StatusPill (left pane) and
+// the right-pane FIN_PILL so the two pane views show the SAME label
+// for the same status.
+const STATUS_LABELS = {
+  declined: 'Cancelled',
+  voided: 'Voided',
+  refunded: 'Refunded',
+  permit_submit: 'Submitted',
+  permit_waiting: 'Waiting',
+  permit_approved: 'Approved',
+  follow_up: 'Follow-up',
+};
+
 function StatusPill({ status, label }) {
   const s = PILL_STYLES[status] || { bg:'#F3F4F6', color:'#374151' };
   return (
@@ -415,7 +432,7 @@ function StatusPill({ status, label }) {
       fontSize: 11, fontWeight: 600,
       padding: '2px 8px', borderRadius: 20,
       whiteSpace: 'nowrap',
-    }}>{label || capitalize(status)}</span>
+    }}>{label || STATUS_LABELS[status] || capitalize(status)}</span>
   );
 }
 
