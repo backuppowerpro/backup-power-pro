@@ -1,5 +1,103 @@
 // crm-app.jsx — Root component + mount
 
+// SignInGate — direct email/password sign-in into the same Supabase
+// project. Replaces the prior "go sign in on v2 first" splash since v2
+// is being retired. After a successful sign-in the page reloads so the
+// data loader runs from scratch with the new session.
+function SignInGate() {
+  const [email, setEmail] = React.useState('');
+  const [pw, setPw] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState('');
+
+  const submit = async (e) => {
+    e?.preventDefault?.();
+    if (busy) return;
+    setErr('');
+    if (!email.trim() || !pw) { setErr('Email and password required'); return; }
+    if (!window.CRM?.__db) { setErr('Supabase not loaded — refresh and try again'); return; }
+    setBusy(true);
+    try {
+      const { error } = await window.CRM.__db.auth.signInWithPassword({
+        email: email.trim(),
+        password: pw,
+      });
+      if (error) {
+        setErr(error.message || 'Sign in failed');
+        setBusy(false);
+        return;
+      }
+      // Fresh page so the data loader picks up the new session cleanly.
+      window.location.reload();
+    } catch (e2) {
+      setErr(String(e2?.message || e2));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ height:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f4f6f9', fontFamily:'DM Sans', padding:24 }}>
+      <form onSubmit={submit} style={{
+        background:'white', border:'1px solid rgba(11,31,59,0.10)', borderRadius:12,
+        padding:'28px 24px', maxWidth:360, width:'100%',
+        boxShadow:'0 8px 24px rgba(11,31,59,0.06)',
+        display:'flex', flexDirection:'column', gap:14,
+      }}>
+        <div style={{ textAlign:'center', fontSize:22, fontWeight:700, color:'#0b1f3b', marginBottom:4 }}>
+          BPP CRM
+        </div>
+        <div style={{ textAlign:'center', fontSize:13, color:'#6B7280', marginBottom:6 }}>
+          Sign in to continue
+        </div>
+        <label style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          <span style={{ fontSize:11, fontWeight:600, color:'#6B7280', textTransform:'uppercase', letterSpacing:'0.05em' }}>Email</span>
+          <input
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={busy}
+            style={{ height:44, padding:'0 12px', border:'1.5px solid #EBEBEA', borderRadius:8, fontSize:16, color:'#0b1f3b', outline:'none', fontFamily:'inherit', background:'white' }}
+          />
+        </label>
+        <label style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          <span style={{ fontSize:11, fontWeight:600, color:'#6B7280', textTransform:'uppercase', letterSpacing:'0.05em' }}>Password</span>
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            disabled={busy}
+            style={{ height:44, padding:'0 12px', border:'1.5px solid #EBEBEA', borderRadius:8, fontSize:16, color:'#0b1f3b', outline:'none', fontFamily:'inherit', background:'white' }}
+          />
+        </label>
+        {err && (
+          <div style={{ background:'#FEF2F2', border:'1px solid #FECACA', color:'#991B1B', padding:'8px 12px', borderRadius:8, fontSize:12 }}>
+            {err}
+          </div>
+        )}
+        <button
+          type="submit"
+          disabled={busy}
+          style={{
+            height:46, marginTop:6, borderRadius:8,
+            background: busy ? '#E5E5E5' : '#ffba00',
+            color: busy ? '#999' : '#0b1f3b',
+            border:'none', fontSize:15, fontWeight:700, fontFamily:'inherit',
+            cursor: busy ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {busy ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function Root() {
   // Live-data load state — flips true after crm-data.js dispatches 'crm-data-ready'.
   const [loaded, setLoaded] = React.useState(window.CRM?.loaded === true);
@@ -182,19 +280,9 @@ function Root() {
     );
   }
 
-  // Sign-in prompt — surfaced when no Supabase session is active.
+  // Sign-in form — surfaced when no Supabase session is active.
   if (!authed) {
-    return (
-      <div style={{ height:'100dvh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f4f6f9', fontFamily:'DM Sans', gap:16, padding:24, textAlign:'center' }}>
-        <div style={{ fontSize:24, fontWeight:600, color:'#0b1f3b' }}>BPP CRM</div>
-        <div style={{ fontSize:14, color:'#666', maxWidth:360 }}>
-          Sign in on the existing CRM at /crm/v2/ first, then come back here. v3 reuses the same Supabase session cookie.
-        </div>
-        <a href="/crm/v2/" style={{ background:'#ffba00', color:'#0b1f3b', padding:'10px 18px', borderRadius:8, textDecoration:'none', fontWeight:600, fontSize:14 }}>
-          Go to /crm/v2/
-        </a>
-      </div>
-    );
+    return <SignInGate />;
   }
 
   // ?canvas=1 forces the side-by-side mobile+desktop preview (useful when
