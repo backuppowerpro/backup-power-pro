@@ -3071,10 +3071,26 @@ function AddressAutocomplete({ value, onChange, placeholder, style }) {
   const dropdownRef = React.useRef(null);
   const [rect, setRect] = React.useState(null);
 
+  // Smart placement: prefer below the input, but flip above when there's
+  // not enough room (e.g. mobile bottom-sheet modal where the input sits
+  // near the viewport floor). Always cap maxHeight to whatever fits in
+  // the chosen direction so the dropdown is never clipped by the
+  // viewport edge.
   const updateRect = React.useCallback(() => {
     if (!inputRef.current) return;
     const r = inputRef.current.getBoundingClientRect();
-    setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    const vh = window.innerHeight;
+    const spaceBelow = vh - r.bottom - 12;
+    const spaceAbove = r.top - 12;
+    const desired = 240;
+    if (spaceBelow >= 140 || spaceBelow >= spaceAbove) {
+      // Below.
+      setRect({ top: r.bottom + 4, left: r.left, width: r.width, maxHeight: Math.min(desired, Math.max(120, spaceBelow)) });
+    } else {
+      // Flip above. `bottom` anchors so the dropdown grows upward as it
+      // gets taller, instead of clipping at top:0.
+      setRect({ bottom: vh - r.top + 4, left: r.left, width: r.width, maxHeight: Math.min(desired, Math.max(120, spaceAbove)) });
+    }
   }, []);
 
   React.useEffect(() => {
@@ -3117,9 +3133,12 @@ function AddressAutocomplete({ value, onChange, placeholder, style }) {
       )}
       {open && hits.length > 0 && rect && ReactDOM.createPortal(
         <div ref={dropdownRef} style={{
-          position:'fixed', top:rect.top, left:rect.left, width:rect.width, zIndex:10000,
+          position:'fixed',
+          ...(rect.top != null ? { top: rect.top } : { bottom: rect.bottom }),
+          left: rect.left, width: rect.width, zIndex:10000,
           background:'white', border:'1px solid rgba(11,31,59,0.15)', borderRadius:8,
-          boxShadow:'0 8px 24px rgba(11,31,59,0.16)', maxHeight:240, overflowY:'auto',
+          boxShadow:'0 8px 24px rgba(11,31,59,0.16)',
+          maxHeight: rect.maxHeight || 240, overflowY:'auto',
         }}>
           {hits.map((h, i) => (
             <button
