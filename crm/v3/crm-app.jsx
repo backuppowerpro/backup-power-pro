@@ -21,15 +21,51 @@ function Root() {
 
   // Left panel has its own tab state
   const [leftTab, setLeftTab] = React.useState('contacts');
+  // URL state: hydrate active contact + right-tab from query string on
+  // first load. Pull-to-refresh on iOS Safari, accidental tab close, or
+  // a shared link can then restore the prior context. Format:
+  //   ?c=<contactId>&t=<rightTab>&lt=<leftTab>
+  const initialQuery = React.useMemo(() => {
+    if (typeof window === 'undefined') return {};
+    const p = new URLSearchParams(window.location.search);
+    return { c: p.get('c'), t: p.get('t'), lt: p.get('lt') };
+  }, []);
   // Right panel has its own tab state, independent
-  const [rightTab, setRightTab] = React.useState('contacts');
-  const [activeContact, setActiveContact] = React.useState(null);
-  // Auto-pick the first contact once data lands.
+  const [rightTab, setRightTab] = React.useState(() => initialQuery.t || 'contacts');
+  const [activeContact, setActiveContact] = React.useState(() => initialQuery.c || null);
+  React.useEffect(() => {
+    if (initialQuery.lt) setLeftTab(initialQuery.lt);
+  }, []);
+  // Auto-pick the first contact once data lands. Skip if a contact is
+  // already chosen via URL state.
   React.useEffect(() => {
     if (loaded && authed && !activeContact && CRM.contacts.length > 0) {
       setActiveContact(CRM.contacts[0].id);
     }
   }, [loaded, authed, activeContact]);
+  // Validate the URL-provided contact id once data has loaded — if the
+  // contact was archived or deleted, fall back to the first contact.
+  React.useEffect(() => {
+    if (!loaded || !activeContact) return;
+    const exists = CRM.contacts.some(c => c.id === activeContact);
+    if (!exists) {
+      setActiveContact(CRM.contacts[0]?.id || null);
+    }
+  }, [loaded, activeContact]);
+  // Sync URL on every state change. Use replaceState to avoid clogging
+  // history (back-button still navigates the underlying domain).
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const p = new URLSearchParams(window.location.search);
+    if (activeContact) p.set('c', activeContact); else p.delete('c');
+    if (rightTab && rightTab !== 'contacts') p.set('t', rightTab); else p.delete('t');
+    if (leftTab && leftTab !== 'contacts') p.set('lt', leftTab); else p.delete('lt');
+    const qs = p.toString();
+    const next = `${window.location.pathname}${qs ? '?' + qs : ''}`;
+    if (next !== window.location.pathname + window.location.search) {
+      window.history.replaceState({}, '', next);
+    }
+  }, [activeContact, rightTab, leftTab]);
   const [highlightId, setHighlightId] = React.useState(null);
   // Force re-render after in-place CRM mutations (archive / DNC / delete)
   const [, setBump] = React.useState(0);

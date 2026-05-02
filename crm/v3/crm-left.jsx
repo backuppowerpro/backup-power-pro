@@ -318,6 +318,13 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     window.addEventListener('crm-recent-changed', refresh);
     return () => window.removeEventListener('crm-recent-changed', refresh);
   }, []);
+  // Invalidate the tag-map cache when tags change so the search filter
+  // re-reads localStorage on the next keystroke.
+  React.useEffect(() => {
+    const onTags = () => { window.__tagMapCache = null; };
+    window.addEventListener('crm-tags-changed', onTags);
+    return () => window.removeEventListener('crm-tags-changed', onTags);
+  }, []);
   const recentContacts = recentIds
     .map(id => contacts.find(c => c.id === id && !c.archived))
     .filter(Boolean)
@@ -381,9 +388,15 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     .filter(c => {
       if (!search) return true;
       const q = search.toLowerCase();
+      // Tag match — `bpp_v3_tags` is the source of truth for custom
+      // labels. Read once per filter loop via lazy memoization on the
+      // window so we don't parse JSON 112 times per keystroke.
+      if (!window.__tagMapCache) window.__tagMapCache = (function(){ try { return JSON.parse(localStorage.getItem('bpp_v3_tags')||'{}'); } catch { return {}; } })();
+      const tags = window.__tagMapCache[c.id] || [];
       return contactName(c).toLowerCase().includes(q)
         || (c.phone || '').includes(search)
-        || (c.address || '').toLowerCase().includes(q);
+        || (c.address || '').toLowerCase().includes(q)
+        || tags.some(t => t.toLowerCase().includes(q));
     })
     .sort((a,b) => (pinned.has(b.id)?1:0) - (pinned.has(a.id)?1:0));
 
@@ -449,7 +462,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
           </button>
         </div>
       )}
-      <div style={{ flex:1, overflowY:'auto', minHeight:0 }}>
+      <PullToRefreshList style={{ flex:1, overflowY:'auto', minHeight:0 }} onRefresh={() => window.CRM?.__refetch?.()}>
         {filtered.length === 0 && <EmptyState icon="contacts" text="No contacts match" />}
         {filtered.map(c => {
           const sc = STAGE_COLORS[c.stage];
@@ -500,7 +513,69 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
             </div>
           );
         })}
+      </PullToRefreshList>
+    </div>
+  );
+}
+
+// Pull-to-refresh wrapper. Detects a downward drag from scroll-top and,
+// past a 60px threshold, fires onRefresh and shows a quick spinner banner.
+// Only the scroll container is gesture-handled — inner content renders
+// untouched. iOS Safari already has overscroll bounce; this layers the
+// refresh on top without fighting the native gesture.
+function PullToRefreshList({ children, onRefresh, style }) {
+  const ref = React.useRef(null);
+  const [pull, setPull] = React.useState(0);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const startY = React.useRef(null);
+  const armed = React.useRef(false);
+
+  const onTouchStart = (e) => {
+    if (!ref.current) return;
+    if (ref.current.scrollTop <= 0) {
+      startY.current = e.touches[0].clientY;
+      armed.current = true;
+    } else {
+      armed.current = false;
+    }
+  };
+  const onTouchMove = (e) => {
+    if (!armed.current || startY.current == null) return;
+    const dy = e.touches[0].clientY - startY.current;
+    if (dy > 0) {
+      setPull(Math.min(80, dy * 0.5));
+      // Don't preventDefault — that breaks normal scroll on a slight drag.
+    }
+  };
+  const onTouchEnd = async () => {
+    if (!armed.current) return;
+    armed.current = false;
+    startY.current = null;
+    if (pull >= 50 && !refreshing) {
+      setRefreshing(true);
+      try { await onRefresh?.(); } catch {}
+      // Brief settle so the spinner is perceptible before snap-back.
+      setTimeout(() => { setRefreshing(false); setPull(0); }, 600);
+    } else {
+      setPull(0);
+    }
+  };
+
+  return (
+    <div ref={ref} style={style} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+      <div style={{
+        height: refreshing ? 36 : pull, transition: refreshing ? 'none' : 'height 180ms ease-out',
+        display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden',
+        color: MUTED, fontSize:11, fontWeight:600, fontFamily:'inherit',
+      }}>
+        {refreshing ? (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" style={{ animation: 'pulse 1s ease-in-out infinite' }}><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 10 15 10"/></svg>
+            Refreshing…
+          </span>
+        ) : pull >= 50 ? 'Release to refresh' : pull > 0 ? 'Pull to refresh' : ''}
       </div>
+      {children}
     </div>
   );
 }
@@ -529,19 +604,44 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
   const upcoming    = scheduled.filter(e => dayKey(e.start_at) >  TODAY);
   const allEvents   = scheduled;
 
-  // Conflict = another event same day (simple heuristic)
-  const hasConflict = (ev, all) => all.some(o => dayKey(o.start_at) === dayKey(ev.start_at) && o.id !== ev.id);
-
-  // Group upcoming by day
-  const byDate = upcoming.reduce((acc,e) => { const k = dayKey(e.start_at); (acc[k] = acc[k] || []).push(e); return acc; }, {});
-
   // 60-min default when end_at is null (most install events have no end_at
-   // set yet) so the row never renders "NaNmin".
-  const durationMin = ev => {
+  // set yet) so the row never renders "NaNmin".
+  const durMin = ev => {
     if (!ev.end_at || !ev.start_at) return 60;
     const m = Math.round((new Date(ev.end_at) - new Date(ev.start_at)) / 60000);
     return Number.isFinite(m) && m > 0 ? m : 60;
   };
+
+  // Real conflict = time overlap with another event on the same day.
+  // A.end > B.start && B.end > A.start. Useful in practice; the prior
+  // "any event same day" heuristic flagged every install of a busy day
+  // as a conflict, which is noise.
+  const hasConflict = (ev, all) => {
+    const aStart = new Date(ev.start_at).getTime();
+    const aEnd = aStart + durMin(ev) * 60000;
+    return all.some(o => {
+      if (o.id === ev.id || dayKey(o.start_at) !== dayKey(ev.start_at)) return false;
+      const bStart = new Date(o.start_at).getTime();
+      const bEnd = bStart + durMin(o) * 60000;
+      return aEnd > bStart && bEnd > aStart;
+    });
+  };
+
+  // Group upcoming by day
+  const byDate = upcoming.reduce((acc,e) => { const k = dayKey(e.start_at); (acc[k] = acc[k] || []).push(e); return acc; }, {});
+
+  const durationMin = durMin;
+
+  // Today's route — for the "Plan in Maps" button. Builds a Google Maps
+  // multi-waypoint URL from the addresses of today's events in time order.
+  // Google Maps' /dir/ URL works on iOS (opens Apple Maps via universal
+  // link), Android, and desktop. Skips events without addresses.
+  const todayWithAddr = todayEvents
+    .map(ev => ({ ev, contact: getContact(ev.contact_id) }))
+    .filter(({ contact }) => contact && (contact.address || '').trim().length > 5);
+  const planRouteUrl = todayWithAddr.length > 0
+    ? `https://www.google.com/maps/dir/${todayWithAddr.map(({ contact }) => encodeURIComponent(contact.address)).join('/')}`
+    : null;
 
   const EventCard = ({ ev, highlight }) => {
     const c = getContact(ev.contact_id);
@@ -586,6 +686,32 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
         <window.NewEventModal contacts={contacts} onClose={() => setAddOpen(false)} />
       )}
       <FilterChips options={filterOpts} value={view} onChange={setView} />
+      {/* Today's route banner — only on the Today view, only when at least
+          one event has an address. Tapping "Plan route" opens Google Maps
+          (which iOS deeplinks to Apple Maps) with all stops in time order. */}
+      {view === 'today' && todayEvents.length > 0 && (
+        <div style={{ padding:'8px 18px', background:'#FFFBEB', borderBottom:'1px solid #FDE68A', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexShrink:0 }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:'#92400E', letterSpacing:'0.05em', textTransform:'uppercase' }}>Today's route</div>
+            <div style={{ fontSize:12, color:NAVY, marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              {todayEvents.length} stop{todayEvents.length === 1 ? '' : 's'}
+              {todayWithAddr.length < todayEvents.length && <span style={{ color:MUTED, fontWeight:500 }}> · {todayEvents.length - todayWithAddr.length} no address</span>}
+            </div>
+          </div>
+          {planRouteUrl ? (
+            <a href={planRouteUrl} target="_blank" rel="noopener noreferrer" style={{
+              flexShrink:0, height:32, padding:'0 12px', borderRadius:8,
+              background:GOLD, color:NAVY, fontWeight:700, fontSize:12, fontFamily:'inherit',
+              textDecoration:'none', display:'inline-flex', alignItems:'center', gap:5,
+            }}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Plan in Maps
+            </a>
+          ) : (
+            <span style={{ fontSize:11, color:MUTED, flexShrink:0 }}>No addresses yet</span>
+          )}
+        </div>
+      )}
       <div style={{ flex:1, overflowY:'auto', minHeight:0 }}>
         {visible.length === 0 && (
           <EmptyState icon="calendar" text={

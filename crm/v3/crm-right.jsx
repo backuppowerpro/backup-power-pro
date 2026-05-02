@@ -690,7 +690,7 @@ function PhotosSection({ contact }) {
 
   return (
     <InfoSection title="Photos" editAction={null}>
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={onFileChange} style={{ display:'none' }} />
+      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={onFileChange} style={{ display:'none' }} />
       {allPhotos.length === 0 ? (
         <div style={{ fontSize:13, color:MUTED, padding:'4px 0', marginBottom:8 }}>
           Add job photos (private — only you see them) or send/receive photos in the SMS thread.
@@ -1029,9 +1029,91 @@ function ContactInfoRows({ contact, bumpData, onOpenTab }) {
         value={CRM.STAGE_LABELS[contact.stage]}
         actions={nextStageLabel ? <GoldActionBtn onClick={handleStageAction}>{stageActionVerbFor(contact.stage)}</GoldActionBtn> : null}
       />
+      <TagsRow contactId={contact.id} />
       {/* Tier row dropped — the Premium / Premium+ pill already sits in the
           hero overlay, so a duplicate row here is redundant. */}
     </div>
+  );
+}
+
+// ── Tags ────────────────────────────────────────────────────────────
+// Custom labels per-contact. Stored in localStorage (no DB column —
+// schema-mid-session is the bug pattern that bit this app before).
+// Filtering by tag is wired in ContactsList: search box matches tags.
+const TAGS_KEY = 'bpp_v3_tags';
+function loadTagMap() {
+  try { return JSON.parse(localStorage.getItem(TAGS_KEY) || '{}') || {}; }
+  catch { return {}; }
+}
+function saveTagMap(map) {
+  window.safeSetItem?.(TAGS_KEY, JSON.stringify(map));
+  window.dispatchEvent(new CustomEvent('crm-tags-changed'));
+}
+function tagsFor(contactId) {
+  const m = loadTagMap();
+  return Array.isArray(m[contactId]) ? m[contactId] : [];
+}
+
+function TagsRow({ contactId }) {
+  const [tags, setTags] = React.useState(() => tagsFor(contactId));
+  const [adding, setAdding] = React.useState(false);
+  const [draft, setDraft] = React.useState('');
+
+  React.useEffect(() => { setTags(tagsFor(contactId)); }, [contactId]);
+  React.useEffect(() => {
+    const refresh = () => setTags(tagsFor(contactId));
+    window.addEventListener('crm-tags-changed', refresh);
+    return () => window.removeEventListener('crm-tags-changed', refresh);
+  }, [contactId]);
+
+  const commit = (next) => {
+    const map = loadTagMap();
+    if (next.length === 0) delete map[contactId];
+    else map[contactId] = next;
+    saveTagMap(map);
+    setTags(next);
+  };
+  const removeTag = (t) => commit(tags.filter(x => x !== t));
+  const addTag = () => {
+    const v = draft.trim().slice(0, 24);
+    if (!v) { setAdding(false); return; }
+    if (tags.includes(v)) { setDraft(''); setAdding(false); return; }
+    commit([...tags, v]);
+    setDraft('');
+    setAdding(false);
+  };
+
+  return (
+    <InfoLineRow
+      label="Tags"
+      value={
+        <div style={{ display:'flex', flexWrap:'wrap', gap:5, alignItems:'center' }}>
+          {tags.map(t => (
+            <button key={t} onClick={() => removeTag(t)} title="Remove tag" style={{
+              height:22, padding:'0 8px', borderRadius:11, border:'none', cursor:'pointer',
+              background:'#EEF2FF', color:'#3730A3', fontSize:11, fontWeight:600, fontFamily:'inherit',
+              display:'inline-flex', alignItems:'center', gap:4,
+            }}>{t}<span style={{ opacity:0.5, fontSize:10 }}>✕</span></button>
+          ))}
+          {adding ? (
+            <input value={draft} onChange={e => setDraft(e.target.value)}
+              onBlur={addTag}
+              onKeyDown={e => { if (e.key === 'Enter') addTag(); if (e.key === 'Escape') { setAdding(false); setDraft(''); } }}
+              autoFocus placeholder="VIP, Refer, Slow…"
+              style={{ height:22, padding:'0 8px', borderRadius:11, border:'1px solid rgba(11,31,59,0.2)', background:'white', fontSize:11, fontFamily:'inherit', color:NAVY, outline:'none', width:120 }}
+            />
+          ) : (
+            <button onClick={() => setAdding(true)} aria-label="Add tag" style={{
+              height:22, padding:'0 8px', borderRadius:11, border:'1px dashed rgba(11,31,59,0.25)', background:'white',
+              color:MUTED, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'inherit',
+            }}>+ tag</button>
+          )}
+          {tags.length === 0 && !adding && (
+            <span style={{ fontSize:11, color:MUTED }}>None</span>
+          )}
+        </div>
+      }
+    />
   );
 }
 
@@ -2235,15 +2317,52 @@ function ContactMessages({ contact, thread, isDnc }) {
     e.target.value = '';
   };
 
-  // Group by day for the date dividers
-  const grouped = allMsgs.reduce((acc, m) => {
+  // In-thread search — finds the gate code / panel photo / permit number
+  // a customer texted weeks ago without scrolling 60 messages of install
+  // chatter. Hidden behind a magnifier toggle so it doesn't claim header
+  // real estate every session.
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [threadQuery, setThreadQuery] = React.useState('');
+  const matchesQuery = (m) => {
+    if (!threadQuery.trim()) return true;
+    return (m.body || '').toLowerCase().includes(threadQuery.toLowerCase());
+  };
+
+  // Group by day for the date dividers; respects active search.
+  const grouped = allMsgs.filter(matchesQuery).reduce((acc, m) => {
     const d = dayKey(m.sent_at);
     (acc[d] = acc[d] || []).push(m);
     return acc;
   }, {});
+  const matchCount = threadQuery.trim() ? Object.values(grouped).reduce((s, a) => s + a.length, 0) : 0;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0, position:'relative', background:'#F8F8F6' }}>
+      {/* Search toggle row — top-right magnifier expands an inline input.
+          Live count of matches; clearing collapses back to the icon. */}
+      <div style={{ padding:'6px 12px 0', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+        {!searchOpen ? (
+          <button onClick={() => setSearchOpen(true)} aria-label="Search this thread" style={{
+            marginLeft:'auto', width:30, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.12)', background:'white',
+            color:MUTED, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'inherit',
+          }}>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/></svg>
+          </button>
+        ) : (
+          <>
+            <input value={threadQuery} onChange={e => setThreadQuery(e.target.value)} autoFocus
+              placeholder="Search this thread…" style={{
+                flex:1, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)',
+                padding:'0 10px', fontSize:14, fontFamily:'inherit', color:NAVY, background:'white', outline:'none',
+              }} />
+            <span style={{ fontSize:11, color:MUTED, whiteSpace:'nowrap' }}>{threadQuery.trim() ? `${matchCount} hit${matchCount === 1 ? '' : 's'}` : ''}</span>
+            <button onClick={() => { setSearchOpen(false); setThreadQuery(''); }} aria-label="Close search" style={{
+              width:30, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.12)', background:'white', color:MUTED,
+              cursor:'pointer', fontFamily:'inherit',
+            }}>✕</button>
+          </>
+        )}
+      </div>
       <div ref={containerRef} style={{ flex:1, overflowY:'auto', minHeight:0, padding:'12px 16px', display:'flex', flexDirection:'column' }}>
         {Object.entries(grouped).map(([day, dayMsgs]) => (
           <div key={day}>

@@ -557,6 +557,8 @@ const _reconcile = async () => {
     _reconcileInflight = false;
   }
 };
+// Expose for pull-to-refresh and any other manual sync gesture.
+window.CRM.__refetch = _reconcile;
 window.addEventListener('online', _reconcile);
 // 'focus' fires too aggressively (every alt-tab); use 'visibilitychange' +
 // only refetch if it's been more than 30s since the last successful load.
