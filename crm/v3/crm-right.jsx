@@ -2482,13 +2482,6 @@ function NewProposalModal({ contact, onClose }) {
     amp, cordIncluded, includeSurge, includePom, includePermit, tier,
   }), [amp, cordIncluded, includeSurge, includePom, includePermit, tier]);
 
-  // Pre-fill jurisdiction badge — purely informational. Uses the
-  // contact's mapped jurisdiction (county for permit-allowlist matches like
-  // Inman→Spartanburg, falling back to city). Don't recompute via raw
-  // cityFromAddress because that returns the city ("Inman"), not the
-  // permit-relevant county ("Spartanburg").
-  const jurisdiction = contact.jurisdiction || '—';
-
   const submit = async () => {
     if (busy) return;
     if (contact.do_not_contact) {
@@ -2630,11 +2623,6 @@ function NewProposalModal({ contact, onClose }) {
       )}
     >
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        {/* Jurisdiction (read-only, informational) */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', background:BG, borderRadius:8 }}>
-          <span style={{ fontSize:12, color:'#666' }}>Jurisdiction</span>
-          <span style={{ fontSize:12, fontWeight:600, color:NAVY }}>{jurisdiction}</span>
-        </div>
         {/* Amp toggle */}
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Amperage</div>
