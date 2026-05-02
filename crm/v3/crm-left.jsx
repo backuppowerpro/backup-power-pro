@@ -369,6 +369,8 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
       const n = new Set(p);
       n.has(id) ? n.delete(id) : n.add(id);
       window.safeSetItem?.(PIN_KEY, JSON.stringify([...n]));
+      // Notify ContactStrip (right pane) so its pin star re-syncs.
+      window.dispatchEvent(new CustomEvent('crm-pin-changed'));
       return n;
     });
     window.showToast?.(wasOn ? 'Unpinned' : 'Pinned to top');
@@ -459,6 +461,8 @@ const KIND_COLORS = {
 
 function CalendarList({ events, contacts, onOpen, activeContactId }) {
   const getContact = id => contacts.find(c=>c.id===id);
+  const [view, setView] = React.useState('today');
+  const [addOpen, setAddOpen] = React.useState(false);
 
   // Filter to scheduled (canonical: status === 'scheduled'), then sort by start_at.
   const scheduled = events
@@ -467,6 +471,7 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
 
   const todayEvents = scheduled.filter(e => dayKey(e.start_at) === TODAY);
   const upcoming    = scheduled.filter(e => dayKey(e.start_at) >  TODAY);
+  const allEvents   = scheduled;
 
   // Conflict = another event same day (simple heuristic)
   const hasConflict = (ev, all) => all.some(o => dayKey(o.start_at) === dayKey(ev.start_at) && o.id !== ev.id);
@@ -506,25 +511,39 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
     );
   };
 
+  // Filter view options + counts.
+  const filterOpts = [
+    { value:'today',    label: `Today (${todayEvents.length})` },
+    { value:'upcoming', label: `Upcoming (${upcoming.length})` },
+    { value:'all',      label: `All (${allEvents.length})` },
+  ];
+
+  const visible = view === 'today' ? todayEvents
+                : view === 'upcoming' ? upcoming
+                : allEvents;
+  const visibleByDate = visible.reduce((acc,e) => { const k = dayKey(e.start_at); (acc[k] = acc[k] || []).push(e); return acc; }, {});
+
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
-      {/* Add Event removed from header — same reason. Per-contact
-          AddEventInline form on Schedule tab is the real entry point. */}
-      <PanelHeader title="Calendar" />
-      {/* Today strip */}
-      <div style={{ background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
-        <div style={{ padding:'8px 16px 4px', fontSize:11, fontWeight:700, color:GOLD, textTransform:'uppercase', letterSpacing:'0.07em' }}>Today — {formatDate(TODAY, { month:'short', day:'numeric' })}</div>
-        {todayEvents.length===0 && <div style={{ padding:'6px 16px 10px', fontSize:13, color:MUTED }}>No installs today — open day</div>}
-        {todayEvents.map(e => <EventCard key={e.id} ev={e} highlight />)}
-      </div>
+      <PanelHeader title="Calendar" action="Add" onAction={() => setAddOpen(true)} />
+      {addOpen && window.NewEventModal && (
+        <window.NewEventModal contacts={contacts} onClose={() => setAddOpen(false)} />
+      )}
+      <FilterChips options={filterOpts} value={view} onChange={setView} />
       <div style={{ flex:1, overflowY:'auto', minHeight:0 }}>
-        {Object.entries(byDate).map(([date, dayEvents]) => (
+        {visible.length === 0 && (
+          <EmptyState icon="calendar" text={
+            view === 'today' ? 'No installs today — open day'
+            : view === 'upcoming' ? 'Nothing else scheduled'
+            : 'No events on the calendar'
+          } />
+        )}
+        {Object.entries(visibleByDate).map(([date, dayEvents]) => (
           <div key={date}>
-            <SectionHeader label={formatDate(date)} />
+            <SectionHeader label={date === TODAY ? `Today — ${formatDate(date, { month:'short', day:'numeric' })}` : formatDate(date)} />
             {dayEvents.map(e => <EventCard key={e.id} ev={e} />)}
           </div>
         ))}
-        {upcoming.length === 0 && <EmptyState icon="calendar" text="Nothing else scheduled" />}
       </div>
     </div>
   );

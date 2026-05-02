@@ -34,12 +34,54 @@ function RightPanel({ contactId, tab, dncSet = new Set(), toggleDnc = () => {}, 
 // overlay, status pill) lives inside ContactInfoSection on the Contact tab.
 function ContactStrip({ contact, isDnc, toggleDnc, bumpData }) {
   const isPremium = contact.pricing_tier === 'premium' || contact.pricing_tier === 'premium_plus';
+
+  // Pin state mirrors the ContactsList pin star — same localStorage key.
+  // Listening for the custom event keeps both components in sync without
+  // a shared parent.
+  const PIN_KEY = 'bpp_v3_pinned_contacts';
+  const readPinned = () => {
+    try { return new Set(JSON.parse(localStorage.getItem(PIN_KEY) || '[]')); }
+    catch { return new Set(); }
+  };
+  const [pinned, setPinned] = React.useState(readPinned);
+  React.useEffect(() => {
+    const onChanged = () => setPinned(readPinned());
+    window.addEventListener('crm-pin-changed', onChanged);
+    window.addEventListener('storage', onChanged);
+    return () => {
+      window.removeEventListener('crm-pin-changed', onChanged);
+      window.removeEventListener('storage', onChanged);
+    };
+  }, []);
+  const isPinned = pinned.has(contact.id);
+  const togglePin = () => {
+    const next = new Set(pinned);
+    if (next.has(contact.id)) next.delete(contact.id);
+    else next.add(contact.id);
+    setPinned(next);
+    window.safeSetItem?.(PIN_KEY, JSON.stringify([...next]));
+    window.dispatchEvent(new CustomEvent('crm-pin-changed'));
+    window.showToast?.(isPinned ? 'Unpinned' : 'Pinned to top');
+  };
+
   return (
     <div style={{ height:60, background:'white', borderBottom:'1px solid #EBEBEA', padding:'0 18px', display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
       <ContactAvatar contact={contact} size={32} />
       <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', gap:8 }}>
         {isPremium && window.tweaksGlobal?.premiumDots !== false && <GoldDot />}
         <span style={{ fontSize:14, fontWeight:700, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(contact)}</span>
+        <button onClick={togglePin}
+          aria-label={isPinned ? 'Unpin contact' : 'Pin contact to top'}
+          title={isPinned ? 'Unpin' : 'Pin to top'}
+          style={{
+            background:'none', border:'none', cursor:'pointer', flexShrink:0,
+            width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center',
+            color: isPinned ? GOLD : '#D1D5DB', padding:0,
+          }}>
+          <svg viewBox="0 0 24 24" fill={isPinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="16" height="16">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </button>
         {isDnc && <span style={{ fontSize:9,fontWeight:700,color:'#991B1B',background:'#FEF2F2',padding:'1px 6px',borderRadius:20, flexShrink:0 }}>DO NOT CONTACT</span>}
       </div>
       <ContactOverflowMenu contact={contact} isDnc={isDnc} toggleDnc={toggleDnc} bumpData={bumpData} />
@@ -2978,4 +3020,107 @@ function NewContactModal({ onClose, onCreated }) {
   );
 }
 
-Object.assign(window, { RightPanel, NewProposalModal, NewInvoiceModal, NewContactModal, ModalShell });
+// ── New Event Modal ──────────────────────────────────────────────────
+// Global "Add event" — pick a contact, kind, date, time, save. Mirrors
+// AddEventInline (per-contact) but with a contact picker on top.
+function NewEventModal({ contacts = [], onClose }) {
+  const [contactId, setContactId] = React.useState('');
+  const [kind, setKind] = React.useState('install');
+  const [date, setDate] = React.useState(() => {
+    const d = new Date(Date.now() + 24*3600*1000);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  });
+  const [time, setTime] = React.useState('09:00');
+  const [busy, setBusy] = React.useState(false);
+
+  // Sort contacts alphabetically for the picker. Filter out archived.
+  const pickable = (contacts || []).filter(c => !c.archived).sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+  const KIND_OPTIONS = [
+    { v:'install',   label:'Install' },
+    { v:'inspect',   label:'Inspection' },
+    { v:'follow_up', label:'Follow-up call' },
+    { v:'pickup',    label:'Pickup' },
+    { v:'meeting',   label:'Meeting' },
+  ];
+
+  const submit = async () => {
+    if (busy) return;
+    if (!contactId) { window.showToast?.('Pick a contact'); return; }
+    if (!date || !time) { window.showToast?.('Pick a date and time'); return; }
+    if (!CRM.__db) { window.showToast?.('Supabase not loaded'); return; }
+    setBusy(true);
+    const startIso = new Date(`${date}T${time}:00`).toISOString();
+    const durMin = kind === 'install' ? 180 : kind === 'inspect' ? 30 : 60;
+    const endIso = new Date(new Date(startIso).getTime() + durMin*60*1000).toISOString();
+    const titleFor = ({ install:'Install', inspect:'Inspection', follow_up:'Follow-up call', pickup:'Pickup', meeting:'Meeting' })[kind] || 'Event';
+    const row = {
+      contact_id: contactId,
+      kind,
+      title: titleFor,
+      start_at: startIso,
+      end_at: endIso,
+      status: 'scheduled',
+    };
+    const { data, error } = await CRM.__db.from('calendar_events').insert(row).select().single();
+    if (error || !data) {
+      setBusy(false);
+      window.showToast?.(`Save failed: ${error?.message || 'unknown'}`);
+      return;
+    }
+    CRM.events.push({
+      id: data.id, contact_id: data.contact_id, kind: data.kind,
+      start_at: data.start_at, end_at: data.end_at, title: data.title, status: data.status || 'scheduled',
+    });
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    window.showToast?.(`${titleFor} scheduled`);
+    onClose();
+  };
+
+  const inputStyle = { width:'100%', height:40, padding:'0 12px', fontSize:16, fontFamily:'inherit', border:'1px solid rgba(11,31,59,0.15)', borderRadius:8, background:'white', color:NAVY, outline:'none', boxSizing:'border-box' };
+  const todayMin = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+
+  return (
+    <ModalShell
+      open={true}
+      onClose={onClose}
+      title="Add event"
+      footer={(
+        <div style={{ display:'flex', gap:8 }}>
+          <button onClick={onClose} disabled={busy} style={{
+            flex:'1 1 0', minWidth:0, height:42, borderRadius:8, background:'white', color:NAVY,
+            border:'1px solid rgba(27,43,75,0.15)', fontSize:14, fontWeight:600, fontFamily:'inherit', cursor: busy?'not-allowed':'pointer',
+          }}>Cancel</button>
+          <button onClick={submit} disabled={busy} style={{
+            flex:'1 1 0', minWidth:0, height:42, borderRadius:8,
+            background: busy ? '#E5E5E5' : '#ffba00', color: busy ? '#999' : NAVY,
+            border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
+            cursor: busy ? 'not-allowed' : 'pointer',
+          }}>{busy ? 'Saving…' : 'Schedule'}</button>
+        </div>
+      )}
+    >
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Contact</div>
+          <select value={contactId} onChange={e => setContactId(e.target.value)} style={inputStyle}>
+            <option value="">— pick a contact —</option>
+            {pickable.map(c => <option key={c.id} value={c.id}>{c.name || formatPhone(c.phone) || c.id.slice(0,4)}</option>)}
+          </select>
+        </div>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Kind</div>
+          <select value={kind} onChange={e => setKind(e.target.value)} style={inputStyle}>
+            {KIND_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
+          </select>
+        </div>
+        <div style={{ display:'flex', gap:8 }}>
+          <input type="date" value={date} min={todayMin} max="2099-12-31" onChange={e => setDate(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
+          <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+Object.assign(window, { RightPanel, NewProposalModal, NewInvoiceModal, NewContactModal, NewEventModal, ModalShell });
