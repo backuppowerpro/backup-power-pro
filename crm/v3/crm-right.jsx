@@ -432,16 +432,20 @@ function CopyBtn({ onClick }) {
 
 function InfoLineRow({ label, value, valueColor, actions }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:14, flexWrap:'wrap' }}>
-      <span style={{ width:80, flexShrink:0, fontSize:12, fontWeight:500, color:'#999' }}>{label}</span>
-      <span style={{ flex:1, minWidth:120, fontSize:14, fontWeight:500, color: valueColor || NAVY, lineHeight:1.35, wordBreak:'break-word' }}>{value}</span>
-      {/* Fixed-width action column: every row's right edge aligns at the same x.
-          The Stage row's single "Advance to ..." button fills this column;
-          the Phone/Address rows split it 50/50 between [Action] and [Copy]. */}
+    // Two-row layout that holds at every viewport: row 1 is "label · value"
+    // (value left-aligned next to its label so they read as one phrase),
+    // row 2 is the action buttons RIGHT-aligned underneath. No flex-wrap
+    // ambiguity — explicit grid keeps the right edge consistent on
+    // mobile (390px) and desktop alike.
+    <div style={{ marginBottom:14 }}>
+      <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:6 }}>
+        <span style={{ width:64, flexShrink:0, fontSize:12, fontWeight:500, color:'#999' }}>{label}</span>
+        <span style={{ flex:1, minWidth:0, fontSize:14, fontWeight:500, color: valueColor || NAVY, lineHeight:1.35, wordBreak:'break-word' }}>{value}</span>
+      </div>
       {actions && (
-        <span style={{ display:'flex', gap:8, flexShrink:0, width:200, justifyContent:'flex-end' }}>
+        <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingLeft:74 }}>
           {actions}
-        </span>
+        </div>
       )}
     </div>
   );
@@ -1683,9 +1687,6 @@ function AddEventInline({ contact, bumpData, hasUpcoming }) {
 
 // ── Contact Finance ───────────────────────────────────────────────
 function ContactFinance({ contact, proposals, invoices, highlightId }) {
-  // LTV = total billed (sum of all invoice amounts for this contact)
-  const ltv = invoices.reduce((s,i) => s + i.amount_cents, 0);
-
   const proposal = [...proposals].sort((a,b) => (b.sent_at||'').localeCompare(a.sent_at||''))[0];
   const sortedInvoices = [...invoices].sort((a,b) => (a.sent_at||'').localeCompare(b.sent_at||''));
 
@@ -1887,15 +1888,20 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
         {activity && (
           <div style={{ fontFamily:"'DM Mono', monospace", fontSize:12, color:'#666', marginTop:6 }}>{activity}</div>
         )}
-        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
-          <button onClick={()=>sendLink(linkUrl)} style={{ ...sharedBtn, background:'#ffba00', color:NAVY, border:'none' }}>
-            {SendIcon}<span>Send to customer</span>
+        {/* Compact 3-button row that fits a 358px-content mobile viewport.
+            Long labels ("Send to customer") were clipping past the 106px
+            button width — switched to icon + short verb so each button
+            stays inside its bounds. Aria-label keeps the screenreader
+            context. */}
+        <div style={{ display:'flex', gap:6, marginTop:10 }}>
+          <button onClick={()=>sendLink(linkUrl)} aria-label="Send to customer" style={{ ...sharedBtn, background:'#ffba00', color:NAVY, border:'none' }}>
+            {SendIcon}<span>Send</span>
           </button>
-          <button onClick={()=>copyLink(linkUrl)} style={{ ...sharedBtn, background:'white', color:NAVY, border:'1px solid rgba(27,43,75,0.15)' }}>
-            {CopyIcon}<span>Copy link</span>
+          <button onClick={()=>copyLink(linkUrl)} aria-label="Copy link" style={{ ...sharedBtn, background:'white', color:NAVY, border:'1px solid rgba(27,43,75,0.15)' }}>
+            {CopyIcon}<span>Copy</span>
           </button>
-          <button onClick={()=>viewAsCustomer(linkUrl)} style={{ ...sharedBtn, background:'white', color:NAVY, border:'1px solid rgba(27,43,75,0.15)' }}>
-            {EyeIcon}<span>View as customer</span>
+          <button onClick={()=>viewAsCustomer(linkUrl)} aria-label="View as customer" style={{ ...sharedBtn, background:'white', color:NAVY, border:'1px solid rgba(27,43,75,0.15)' }}>
+            {EyeIcon}<span>View</span>
           </button>
         </div>
         {/* Mark paid — only on sent (unpaid) invoices. Manual override
@@ -1919,10 +1925,8 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
 
   return (
     <div style={{ flex:1, overflowY:'auto', minHeight:0, padding:'12px 16px 16px' }}>
-      <div style={{ display:'flex', justifyContent:'flex-end', fontSize:12, fontWeight:500, color:'#999', marginBottom:4 }}>
-        LTV {formatMoneyCents(ltv)}
-      </div>
-
+      {/* LTV display removed per Key's directive — not load-bearing
+          without a repeat-client business model. */}
       {proposal && (
         <>
           <Eyebrow>Proposal</Eyebrow>
