@@ -1016,14 +1016,34 @@ function ContactInfoRows({ contact, bumpData, onOpenTab }) {
           <CopyBtn onClick={() => copy(contact.phone, 'Phone')} />
         </>}
       />
-      <InfoLineRow
-        label="Address"
-        value={addressDisplay}
-        actions={<>
-          <GoldActionBtn onClick={() => window.open(mapsUrl, '_blank', 'noopener')}>Map</GoldActionBtn>
-          <CopyBtn onClick={() => copy(addressForCopy, 'Address')} />
-        </>}
-      />
+      {contact.address ? (
+        <InfoLineRow
+          label="Address"
+          value={addressDisplay}
+          actions={<>
+            <GoldActionBtn onClick={() => window.open(mapsUrl, '_blank', 'noopener')}>Map</GoldActionBtn>
+            <CopyBtn onClick={() => copy(addressForCopy, 'Address')} />
+          </>}
+        />
+      ) : (
+        // No address yet — surface a single ghost "+ Add address" link
+        // instead of an empty row with floating Map/Copy buttons. Hits
+        // the contact's edit form via the existing crm-edit-contact
+        // event (same path as the overflow-menu "Edit").
+        <InfoLineRow
+          label="Address"
+          value={
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('crm-edit-contact', { detail: { contactId: contact.id } }))}
+              style={{
+                background:'none', border:'1px dashed rgba(11,31,59,0.2)', borderRadius:6,
+                padding:'4px 10px', fontSize:12, fontWeight:600, color:MUTED,
+                cursor:'pointer', fontFamily:'inherit',
+              }}
+            >+ Add address</button>
+          }
+        />
+      )}
       <InfoLineRow
         label="Stage"
         value={CRM.STAGE_LABELS[contact.stage]}
@@ -2507,15 +2527,21 @@ function ContactMessages({ contact, thread, isDnc }) {
         }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
         </button>
-        {templates.map((t, i) => (
-          <button key={i} onClick={() => setMsg(expandTemplate(t))} style={{
-            height:30, padding:'0 12px', borderRadius:6,
-            border:'1px solid rgba(11,31,59,0.15)', background:'white', color:NAVY,
-            fontSize:12, fontWeight:500, cursor:'pointer', whiteSpace:'nowrap',
-            fontFamily:'inherit', flexShrink:0,
-            maxWidth:180, overflow:'hidden', textOverflow:'ellipsis',
-          }}>{t.length > 28 ? t.slice(0, 28) + '…' : t}</button>
-        ))}
+        {templates.map((t, i) => {
+          // Expand {firstName} for both the chip preview AND the value
+          // dropped into compose. Showing the raw `{firstName}` token
+          // makes the chip read like a code variable, not a real text.
+          const expanded = expandTemplate(t);
+          return (
+            <button key={i} onClick={() => setMsg(expanded)} style={{
+              height:30, padding:'0 12px', borderRadius:6,
+              border:'1px solid rgba(11,31,59,0.15)', background:'white', color:NAVY,
+              fontSize:12, fontWeight:500, cursor:'pointer', whiteSpace:'nowrap',
+              fontFamily:'inherit', flexShrink:0,
+              maxWidth:180, overflow:'hidden', textOverflow:'ellipsis',
+            }}>{expanded.length > 28 ? expanded.slice(0, 28) + '…' : expanded}</button>
+          );
+        })}
       </div>
       {editingTemplates && <TemplateEditModal onClose={() => setEditingTemplates(false)} />}
 

@@ -274,7 +274,7 @@ function FilterChips({ options, value, onChange }) {
         const active = value === (o.value||o);
         return (
           <button key={o.value||o} onClick={e => handleClick(o.value||o, e.currentTarget)} style={{
-            height:36, padding:'0 14px', borderRadius:8, border: active ? 'none' : '1px solid rgba(11,31,59,0.15)',
+            height:40, padding:'0 14px', borderRadius:8, border: active ? 'none' : '1px solid rgba(11,31,59,0.15)',
             background: active ? NAVY : 'white', color: active ? 'white' : '#666',
             fontSize:13, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap', fontFamily:'inherit', flexShrink:0,
             scrollSnapAlign:'start',
@@ -1248,7 +1248,7 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
       <PanelHeader title="Inbox" count={totalUnread > 0 ? `${totalUnread} unread` : null}
-        right={<button onClick={markAllRead} style={{ fontSize:12, fontWeight:600, color:MUTED, background:'none', border:'1px solid #EBEBEA', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontFamily:'inherit' }}>Mark all read</button>}
+        right={<button onClick={markAllRead} style={{ fontSize:12, fontWeight:600, color:NAVY, background:'white', border:'1px solid rgba(11,31,59,0.15)', borderRadius:6, padding:'8px 12px', cursor:'pointer', fontFamily:'inherit' }}>Mark all read</button>}
       />
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>

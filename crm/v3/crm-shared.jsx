@@ -2,7 +2,10 @@
 // Exports: NavBar, TabIcon, ContactAvatar, StatusPill, GoldDot, fmt
 
 const NAVY = '#1B2B4B';
-const GOLD = '#C9A048';
+// Brand gold per CLAUDE.md — same #ffba00 used on backuppowerpro.com.
+// Was '#C9A048' (muted olive) which read sickly next to other yellow
+// buttons that hardcoded the brand value.
+const GOLD = '#ffba00';
 
 // Corner-radius scale — every rounded surface in the app picks from this
 // set so visual rhythm stays consistent. Anti-pattern: ad-hoc 5/7/9/14
@@ -66,8 +69,12 @@ const Icons = {
     </svg>
   ),
   search: (
+    // Geometrically balanced — circle at (10.5, 10.5) and handle to
+    // (19, 19) so the visual center of mass falls at (12, 12), the
+    // exact midpoint of the 24×24 viewBox. Asymmetric original (cx=11,
+    // handle to 21,21) rendered visibly above-left of the input baseline.
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      <circle cx="10.5" cy="10.5" r="7"/><path d="m19 19-4.35-4.35"/>
     </svg>
   ),
   back: (
@@ -167,7 +174,7 @@ function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, conte
             background: 'none', border: 'none', color: 'white',
             width: 44, height: 44, display:'flex', alignItems:'center', justifyContent:'center',
             cursor: 'pointer', flexShrink: 0, borderRadius: 8,
-          }}>{Icons.back}</button>
+          }}><div style={{ width: 22, height: 22 }}>{Icons.back}</div></button>
         ) : (
           <div style={{ width: 44, flexShrink: 0 }} />
         )}
@@ -243,16 +250,61 @@ function streetViewUrlFor(address, size = 80) {
          `&fov=80&pitch=5&source=outdoor&key=${SV_KEY}`;
 }
 
-// Deterministic pleasant color from a string. Hash → 360 hue, fixed sat
-// + lightness keeps every contact distinguishable but in the same
-// visual family (no neon, no muddy). Same name always returns the same
-// color so the avatar stays stable across renders / sessions.
+// Curated avatar palette — Gmail/Material-style. Hand-picked rich
+// 600-shade colors that all read cleanly with bold white text and avoid
+// muddy or sickly tones. Hash → index keeps the same name on the same
+// color across renders/sessions.
+const AVATAR_PALETTE = [
+  '#DC2626', // red
+  '#EA580C', // orange
+  '#D97706', // amber
+  '#059669', // emerald
+  '#0D9488', // teal
+  '#0891B2', // cyan
+  '#2563EB', // blue
+  '#4F46E5', // indigo
+  '#7C3AED', // violet
+  '#9333EA', // purple
+  '#DB2777', // pink
+  '#E11D48', // rose
+];
 function colorFromString(s) {
   const str = String(s || '');
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
-  const hue = ((h % 360) + 360) % 360;
-  return `hsl(${hue}, 58%, 46%)`;
+  return AVATAR_PALETTE[((h % AVATAR_PALETTE.length) + AVATAR_PALETTE.length) % AVATAR_PALETTE.length];
+}
+
+// Street View imagery presence cache. The Places metadata API is free
+// and returns instantly with `status: "OK"` if a panorama exists at the
+// address, or "ZERO_RESULTS" if not. We cache the result per-address so
+// we don't re-check on every render. Without this check, Google returns
+// HTTP 200 with a gray placeholder for no-imagery addresses, and our
+// onError handler never fires — leaving an empty-looking avatar.
+const __svImageryCache = new Map(); // address → 'ok' | 'none' | Promise
+async function checkSvImagery(address) {
+  if (!address) return 'none';
+  if (__svImageryCache.has(address)) {
+    const v = __svImageryCache.get(address);
+    if (typeof v === 'string') return v;
+    return v; // pending promise
+  }
+  const promise = (async () => {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(address)}&source=outdoor&key=${SV_KEY}`;
+      const r = await fetch(url);
+      if (!r.ok) return 'none';
+      const j = await r.json();
+      return j?.status === 'OK' ? 'ok' : 'none';
+    } catch {
+      return 'none';
+    }
+  })().then(result => {
+    __svImageryCache.set(address, result);
+    return result;
+  });
+  __svImageryCache.set(address, promise);
+  return promise;
 }
 
 function ContactAvatar({ contact, size = 40 }) {
@@ -260,10 +312,32 @@ function ContactAvatar({ contact, size = 40 }) {
   // a contact that's been archived or wasn't returned in the 500-row contacts
   // window. Show as anonymous in that case rather than crashing.
   const isAnon = !contact || !contact.name;
-  // Bold colored initials. The Street View hero is rendered separately at
-  // full size; avatars stay readable + reliable instead of falling back to
-  // Google's gray "no imagery" placeholder when SV doesn't have a panorama.
   const bg = isAnon ? '#E8EAF0' : colorFromString(contact.name || contact.id || 'X');
+  // Street View URL: built only when the address looks addressable
+  // (number + road word). Real imagery is verified async via metadata
+  // — until then, we show colored initials. This avoids rendering
+  // Google's gray "no imagery" placeholder for un-mapped addresses.
+  const addr = !isAnon ? contact.address : null;
+  const addressable = addr && isAddressableStreet(addr);
+  const svUrl = addressable ? streetViewUrlFor(addr, size) : null;
+  const cached = addressable ? __svImageryCache.get(addr) : null;
+  const initialReady = cached === 'ok';
+  const initialNone = cached === 'none';
+  const [hasImagery, setHasImagery] = React.useState(initialReady);
+  const [verified, setVerified] = React.useState(initialReady || initialNone);
+
+  React.useEffect(() => {
+    if (!addressable) return;
+    let cancelled = false;
+    (async () => {
+      const result = await checkSvImagery(addr);
+      if (cancelled) return;
+      setHasImagery(result === 'ok');
+      setVerified(true);
+    })();
+    return () => { cancelled = true; };
+  }, [addr, addressable]);
+
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%',
@@ -273,10 +347,26 @@ function ContactAvatar({ contact, size = 40 }) {
       fontSize: size * 0.38, fontWeight: 700, flexShrink: 0,
       letterSpacing: '0.02em',
       position:'relative', overflow:'hidden',
-      // Subtle inner shadow grounds the circle on white backgrounds.
       boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.05)',
     }}>
+      {/* Colored initials sit underneath as the base — visible while SV
+          metadata is verifying, and the only thing visible if SV has no
+          imagery for this address. */}
       {isAnon ? <div style={{width: size*0.42, height: size*0.42}}>{Icons.hash}</div> : contact.avatar}
+      {svUrl && hasImagery && (
+        <img
+          src={svUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setHasImagery(false)}
+          style={{
+            position:'absolute', inset:0, width:'100%', height:'100%',
+            objectFit:'cover', objectPosition:'70% 30%', display:'block',
+            filter: 'saturate(1.25) contrast(1.08) brightness(1.02)',
+          }}
+        />
+      )}
     </div>
   );
 }
