@@ -31,6 +31,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { allowRate } from '../_shared/auth.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -58,9 +59,16 @@ Deno.serve(async (req: Request) => {
   let body: any
   try { body = await req.json() } catch { return jsonResp({ error: 'bad json' }, 400) }
 
+  // Rate-limit per IP to defeat token-grinding / DoS. 60/min is generous
+  // for a real customer (track_view + save_selections + sign × 3 retries).
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip') || 'unknown'
+  if (!allowRate(`proposal-mutate:${ip}`, 60)) return jsonResp({ error: 'rate limited' }, 429)
+
   const token = (body?.token || '').toString()
   const action = (body?.action || '').toString()
-  if (!token || token.length < 8) return jsonResp({ error: 'missing token' }, 400)
+  // Tokens are UUIDs — hex + dashes only. Reject anything else before DB.
+  if (!/^[a-zA-Z0-9-]{8,64}$/.test(token)) return jsonResp({ error: 'missing token' }, 400)
   if (!['track_view', 'save_selections', 'sign'].includes(action)) {
     return jsonResp({ error: 'unknown action' }, 400)
   }

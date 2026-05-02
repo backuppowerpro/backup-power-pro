@@ -18,6 +18,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { allowRate } from '../_shared/auth.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -28,9 +29,15 @@ const CORS = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
 
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip') || 'unknown'
+  if (!allowRate(`proposal-context:${ip}`, 60)) {
+    return new Response(JSON.stringify({ error: 'rate limited' }), { status: 429, headers: CORS })
+  }
+
   const url = new URL(req.url)
   const token = url.searchParams.get('token') || ''
-  if (!token) {
+  if (!/^[a-zA-Z0-9-]{8,64}$/.test(token)) {
     return new Response(JSON.stringify({ error: 'missing token' }), { status: 400, headers: CORS })
   }
 

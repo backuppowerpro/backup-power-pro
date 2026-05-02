@@ -14,6 +14,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { allowRate } from '../_shared/auth.ts'
 
 const REDIRECT_URL = 'https://backuppowerpro.com'
 
@@ -34,6 +35,24 @@ Deno.serve(async (req) => {
   if (!scanId) {
     // No ID — still redirect, just don't log
     return Response.redirect(REDIRECT_URL, 302)
+  }
+
+  // Reject malformed scan IDs before touching the DB. Postcards generate
+  // base64-url style IDs; cap length and charset to defeat injection
+  // attempts that would otherwise hit `.eq('scan_id', …)` with garbage.
+  if (!/^[A-Za-z0-9_-]{4,64}$/.test(scanId)) {
+    return Response.redirect(REDIRECT_URL, 302)
+  }
+
+  // Two-tier rate limit: per IP (a single attacker) and per scan_id
+  // (one card hammered from a botnet). Either trip skips the DB write
+  // but still serves the redirect — postcard UX is preserved.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip') || 'unknown'
+  const ipOk = allowRate(`track-card:ip:${ip}`, 60)
+  const idOk = allowRate(`track-card:id:${scanId}`, 5)
+  if (!ipOk || !idOk) {
+    return Response.redirect(REDIRECT_URL + '?ref=postcard', 302)
   }
 
   // Update in background (don't block the redirect)
