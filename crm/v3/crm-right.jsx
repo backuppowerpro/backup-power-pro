@@ -1907,19 +1907,20 @@ function AddEventInline({ contact, bumpData, hasUpcoming }) {
     // Default 1-hour duration; install runs 3 hours.
     const durMin = kind === 'install' ? 180 : kind === 'inspect' ? 30 : 60;
     const endIso = new Date(new Date(startIso).getTime() + durMin*60*1000).toISOString();
+    // DB has `event_type`, not `kind`; no `status` column. Don't insert
+    // those — the prior INSERT silently 422'd because of the schema gap.
     const row = {
       contact_id: contact.id,
-      kind,
+      event_type: kind,
       title: defaultTitleFor(kind),
       start_at: startIso,
       end_at: endIso,
-      status: 'scheduled',
     };
     const { data, error } = await CRM.__db.from('calendar_events').insert(row).select().single();
     if (error) { setSaving(false); window.showToast?.(`Save failed: ${error.message}`); return; }
     CRM.events.push({
-      id: data.id, contact_id: data.contact_id, kind: data.kind,
-      start_at: data.start_at, end_at: data.end_at, title: data.title, status: data.status || 'scheduled',
+      id: data.id, contact_id: data.contact_id, kind: data.event_type || kind,
+      start_at: data.start_at, end_at: data.end_at, title: data.title, status: 'scheduled',
     });
     setSaving(false);
     setOpen(false);
@@ -3842,13 +3843,14 @@ function NewEventModal({ contacts = [], onClose }) {
     const durMin = kind === 'install' ? 180 : kind === 'inspect' ? 30 : 60;
     const endIso = new Date(new Date(startIso).getTime() + durMin*60*1000).toISOString();
     const titleFor = ({ install:'Install', inspect:'Inspection', follow_up:'Follow-up call', pickup:'Pickup', meeting:'Meeting' })[kind] || 'Event';
+    // DB column is `event_type`; no `status` column. Insert via the
+    // real schema, alias back to `kind` in our in-memory row.
     const row = {
       contact_id: contactId,
-      kind,
+      event_type: kind,
       title: titleFor,
       start_at: startIso,
       end_at: endIso,
-      status: 'scheduled',
     };
     const { data, error } = await CRM.__db.from('calendar_events').insert(row).select().single();
     if (error || !data) {
@@ -3857,8 +3859,8 @@ function NewEventModal({ contacts = [], onClose }) {
       return;
     }
     CRM.events.push({
-      id: data.id, contact_id: data.contact_id, kind: data.kind,
-      start_at: data.start_at, end_at: data.end_at, title: data.title, status: data.status || 'scheduled',
+      id: data.id, contact_id: data.contact_id, kind: data.event_type || kind,
+      start_at: data.start_at, end_at: data.end_at, title: data.title, status: 'scheduled',
     });
     window.dispatchEvent(new CustomEvent('crm-data-changed'));
     window.showToast?.(`${titleFor} scheduled`);
