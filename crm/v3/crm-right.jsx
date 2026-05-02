@@ -18,7 +18,7 @@ function RightPanel({ contactId, tab, dncSet = new Set(), toggleDnc = () => {}, 
 
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:BG, minHeight:0 }}>
-      <ContactStrip contact={contact} isDnc={dncSet.has(contactId)} toggleDnc={() => toggleDnc(contactId)} bumpData={bumpData} />
+      <ContactStrip contact={contact} isDnc={dncSet.has(contactId)} toggleDnc={() => toggleDnc(contactId)} bumpData={bumpData} onOpenTab={onOpenTab} />
       {tab==='contacts' && <ContactOverview contact={contact} events={cEvents} permits={cPermits} proposals={cProposals} invoices={cInvoices} materials={cMaterials} bumpData={bumpData} onOpenTab={onOpenTab} />}
       {tab==='calendar' && <ContactCalendar contact={contact} events={cEvents} highlightId={highlightId} bumpData={bumpData} />}
       {tab==='finance'  && <ContactFinance  contact={contact} proposals={cProposals} invoices={cInvoices} highlightId={highlightId} />}
@@ -32,7 +32,7 @@ function RightPanel({ contactId, tab, dncSet = new Set(), toggleDnc = () => {}, 
 // Compact strip — keeps the navigation context (name + ••• menu) sticky at
 // the top of the right pane. The richer hero (with house image, big name
 // overlay, status pill) lives inside ContactInfoSection on the Contact tab.
-function ContactStrip({ contact, isDnc, toggleDnc, bumpData }) {
+function ContactStrip({ contact, isDnc, toggleDnc, bumpData, onOpenTab }) {
   const isPremium = contact.pricing_tier === 'premium' || contact.pricing_tier === 'premium_plus';
 
   // Pin state mirrors the ContactsList pin star — same localStorage key.
@@ -84,13 +84,13 @@ function ContactStrip({ contact, isDnc, toggleDnc, bumpData }) {
         </button>
         {isDnc && <span style={{ fontSize:9,fontWeight:700,color:'#991B1B',background:'#FEF2F2',padding:'1px 6px',borderRadius:20, flexShrink:0 }}>DO NOT CONTACT</span>}
       </div>
-      <ContactOverflowMenu contact={contact} isDnc={isDnc} toggleDnc={toggleDnc} bumpData={bumpData} />
+      <ContactOverflowMenu contact={contact} isDnc={isDnc} toggleDnc={toggleDnc} bumpData={bumpData} onOpenTab={onOpenTab} />
     </div>
   );
 }
 
 // ── Overflow Menu (right-aligned dropdown anchored to the 3-dots button) ─
-function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData }) {
+function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab }) {
   const [open, setOpen] = React.useState(false);
   const wrapRef = React.useRef(null);
 
@@ -110,7 +110,13 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData }) {
 
   const editContact = () => {
     close();
-    window.dispatchEvent(new CustomEvent('crm-edit-contact', { detail: { contactId: contact.id } }));
+    // Make sure the contacts tab is active before dispatching — otherwise
+    // the listener (in ContactInfoSection on the contacts tab) isn't
+    // mounted and the event falls into the void.
+    onOpenTab?.('contacts');
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('crm-edit-contact', { detail: { contactId: contact.id } }));
+    }, 60);
   };
 
   const openInMaps = () => {
@@ -1975,13 +1981,68 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
 
   const tierLabel = t => t === 'premium_plus' ? 'Premium+' : t === 'premium' ? 'Premium' : 'Standard';
 
+  // Cancel a sent proposal — flips status to declined with a 5-second
+  // undo window. Uses the same optimistic-then-rollback pattern as
+  // markPaid so realtime can't fight us.
+  const cancelProposal = async (prop) => {
+    if (!CRM.__db) return;
+    const live = (CRM.proposals || []).find(x => x.id === prop.id) || prop;
+    const prev = live.status;
+    live.status = 'declined';
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    const { error } = await CRM.__db.from('proposals').update({ status: 'declined' }).eq('id', prop.id);
+    if (error) {
+      live.status = prev;
+      window.dispatchEvent(new CustomEvent('crm-data-changed'));
+      window.showToast?.(`Cancel failed: ${error.message}`);
+      return;
+    }
+    window.showToast?.('Proposal cancelled', {
+      undo: async () => {
+        const liveNow = (CRM.proposals || []).find(x => x.id === prop.id) || live;
+        liveNow.status = prev;
+        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        if (CRM.__db) await CRM.__db.from('proposals').update({ status: prev }).eq('id', prop.id);
+      },
+      duration: 5000,
+    });
+  };
+
+  // Void an invoice — same pattern as cancelProposal. Flips to "voided"
+  // (or "cancelled" if your schema uses that). Uses 'voided' to align
+  // with the FIN_PILL palette below.
+  const voidInvoice = async (inv) => {
+    if (!CRM.__db) return;
+    const live = (CRM.invoices || []).find(x => x.id === inv.id) || inv;
+    const prev = live.status;
+    live.status = 'voided';
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    const { error } = await CRM.__db.from('invoices').update({ status: 'voided' }).eq('id', inv.id);
+    if (error) {
+      live.status = prev;
+      window.dispatchEvent(new CustomEvent('crm-data-changed'));
+      window.showToast?.(`Void failed: ${error.message}`);
+      return;
+    }
+    window.showToast?.('Invoice voided', {
+      undo: async () => {
+        const liveNow = (CRM.invoices || []).find(x => x.id === inv.id) || live;
+        liveNow.status = prev;
+        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        if (CRM.__db) await CRM.__db.from('invoices').update({ status: prev }).eq('id', inv.id);
+      },
+      duration: 5000,
+    });
+  };
+
   const FIN_PILL = {
     paid:     { bg:'#16a34a', color:'white', label:'Paid' },
     sent:     { bg:'#2563eb', color:'white', label:'Sent' },
     viewed:   { bg:'#2563eb', color:'white', label:'Viewed' },
     overdue:  { bg:'#dc2626', color:'white', label:'Overdue' },
     approved: { bg:'#16a34a', color:'white', label:'Approved' },
-    declined: { bg:'#dc2626', color:'white', label:'Declined' },
+    declined: { bg:'#dc2626', color:'white', label:'Cancelled' },
+    voided:   { bg:'#999',    color:'white', label:'Voided' },
     draft:    { bg:'#999',    color:'white', label:'Draft' },
   };
   const Pill = ({ status }) => {
@@ -2090,7 +2151,7 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     window.open(linkUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid }) => {
+  const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid, onCancel, onVoid }) => {
     const sharedBtn = {
       height:32, padding:'0 12px', borderRadius:8,
       fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
@@ -2128,19 +2189,51 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
             {EyeIcon}<span>View</span>
           </button>
         </div>
-        {/* Mark paid — only on sent (unpaid) invoices. Manual override
-            for cash/check payments. Ghost styling so it doesn't compete
-            with the gold "Send to customer" CTA. */}
-        {onMarkPaid && (
-          <div style={{ display:'flex', marginTop:6 }}>
-            <button onClick={onMarkPaid} style={{
-              // 40px hits the iOS HIG floor; visually still secondary
-              // because of the ghost styling vs the gold Send CTA.
-              minHeight:40, padding:'0 14px', borderRadius:8,
-              background:'transparent', color:'#16a34a',
-              border:'1px solid rgba(22,163,74,0.35)',
-              fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
-            }}>Mark paid</button>
+        {/* Secondary actions row — Mark paid (manual override for cash
+            payments) + Cancel/Void destructive actions. Ghost styling
+            so they don't compete with the gold Send CTA. */}
+        {(onMarkPaid || onCancel || onVoid) && (
+          <div style={{ display:'flex', gap:6, marginTop:6, flexWrap:'wrap' }}>
+            {onMarkPaid && (
+              <button onClick={onMarkPaid} style={{
+                minHeight:40, padding:'0 14px', borderRadius:8,
+                background:'transparent', color:'#16a34a',
+                border:'1px solid rgba(22,163,74,0.35)',
+                fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+              }}>Mark paid</button>
+            )}
+            {onCancel && (
+              <button onClick={async () => {
+                const ok = await window.confirmAction?.({
+                  title: 'Cancel this proposal?',
+                  body: 'The customer\'s link will show "Cancelled". You can undo within 5 seconds.',
+                  confirmLabel: 'Cancel proposal',
+                  destructive: true,
+                });
+                if (ok) onCancel();
+              }} style={{
+                minHeight:40, padding:'0 14px', borderRadius:8,
+                background:'transparent', color:'#991B1B',
+                border:'1px solid rgba(153,27,27,0.35)',
+                fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+              }}>Cancel</button>
+            )}
+            {onVoid && (
+              <button onClick={async () => {
+                const ok = await window.confirmAction?.({
+                  title: 'Void this invoice?',
+                  body: 'The customer\'s link will show "Voided". You can undo within 5 seconds.',
+                  confirmLabel: 'Void invoice',
+                  destructive: true,
+                });
+                if (ok) onVoid();
+              }} style={{
+                minHeight:40, padding:'0 14px', borderRadius:8,
+                background:'transparent', color:'#991B1B',
+                border:'1px solid rgba(153,27,27,0.35)',
+                fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+              }}>Void</button>
+            )}
           </div>
         )}
       </div>
@@ -2149,12 +2242,34 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
 
   return (
     <div style={{ flex:1, overflowY:'auto', minHeight:0, padding:'12px 16px 16px' }}>
-      {/* LTV display removed per Key's directive — not load-bearing
-          without a repeat-client business model. */}
+      {/* Create buttons at TOP — most-likely action when opening Finance
+          tab is "make a new thing", not "review existing things." */}
+      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+        <button onClick={() => setProposalModalOpen(true)} style={{
+          flex:1, height:40, borderRadius:8,
+          background:GOLD, color:NAVY, border:'none',
+          fontSize:13, fontWeight:700, fontFamily:'inherit', cursor:'pointer',
+          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+        }}>+ New proposal</button>
+        <button onClick={() => setInvoiceModalOpen(true)} style={{
+          flex:1, height:40, borderRadius:8,
+          background:'white', color:NAVY, border:'1px solid rgba(11,31,59,0.15)',
+          fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+        }}>+ New invoice</button>
+      </div>
+
       {proposal && (
         <>
           <Eyebrow>Proposal</Eyebrow>
-          <FinanceRow left={tierLabel(proposal.tier)} money={formatMoneyCents(proposal.amount_cents)} status={proposal.status} activity={propActivity(proposal)} linkUrl={proposalUrl(proposal)} />
+          <FinanceRow
+            left={tierLabel(proposal.tier)}
+            money={formatMoneyCents(proposal.amount_cents)}
+            status={proposal.status}
+            activity={propActivity(proposal)}
+            linkUrl={proposalUrl(proposal)}
+            onCancel={proposal.status === 'sent' || proposal.status === 'viewed' ? () => cancelProposal(proposal) : null}
+          />
         </>
       )}
 
@@ -2170,30 +2285,14 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
               activity={invActivity(inv)}
               linkUrl={invoiceUrl(inv)}
               onMarkPaid={inv.status === 'sent' || inv.status === 'overdue' ? () => markPaid(inv) : null}
+              onVoid={inv.status === 'sent' || inv.status === 'overdue' || inv.status === 'viewed' ? () => voidInvoice(inv) : null}
             />
           ))}
         </>
       )}
 
-      {/* P1 builder modals — open in-place. v1 quote builder is no longer
-          the fallback; v3 owns proposal + invoice creation now. */}
-      <div style={{ display:'flex', gap:8, marginTop:12 }}>
-        <button onClick={() => setProposalModalOpen(true)} style={{
-          flex:1, height:36, borderRadius:8,
-          background:'white', color:NAVY, border:'1px solid rgba(11,31,59,0.15)',
-          fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
-          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-        }}>+ New proposal</button>
-        <button onClick={() => setInvoiceModalOpen(true)} style={{
-          flex:1, height:36, borderRadius:8,
-          background:'white', color:NAVY, border:'1px solid rgba(11,31,59,0.15)',
-          fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
-          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-        }}>+ New invoice</button>
-      </div>
-
       {!proposal && sortedInvoices.length === 0 && (
-        <div style={{ padding:'48px 24px', textAlign:'center', color:MUTED, fontSize:13 }}>No proposals yet</div>
+        <div style={{ padding:'48px 24px', textAlign:'center', color:MUTED, fontSize:13 }}>Use the buttons above to send a proposal or invoice.</div>
       )}
 
       {proposalModalOpen && (
