@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Legacy CRM is retired — bounces to v3 unless ?legacy=1 escape hatch
+     is present (kept so the original URL stays accessible for any
+     diagnostic comparison). Fires before any of the legacy bundle
+     loads so cached dock shortcuts pointing here land on v3. -->
+<script>
+  (function(){
+    if (new URLSearchParams(location.search).get('legacy') === '1') return;
+    location.replace('/crm/v3/');
+  })();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
