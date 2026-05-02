@@ -24,7 +24,14 @@ function LeftPanel({ tab, onOpen, dncSet = new Set(), activeContactId }) {
 }
 
 // ── Contact name resolver ────────────────────────────────────────
-const contactName = c => c?.name || (c?.ref_id ? '#'+c.ref_id : '—');
+const contactName = c => {
+  // Trim — a whitespace-only name (`'   '`) is truthy but renders blank.
+  // Fall back to phone, then ref_id, then em-dash.
+  const n = (c?.name || '').trim();
+  if (n) return n;
+  if (c?.phone) return c.phone;
+  return c?.ref_id ? '#' + c.ref_id : '—';
+};
 
 // Hover preview — desktop-only peek card. Compact (200px), positioned to
 // the right of the contact ROW (not the avatar), connected by a small
@@ -247,7 +254,7 @@ function PanelHeader({ title, action, onAction, count, right }) {
       <div style={{ display:'flex', alignItems:'center', gap:6 }}>
         {right}
         {action && (
-          <button onClick={onAction} style={{ background: NAVY, color:'white', border:'none', borderRadius:8, padding:'6px 12px', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
+          <button onClick={onAction} style={{ minHeight:36, background: NAVY, color:'white', border:'none', borderRadius:8, padding:'8px 14px', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', gap:5 }}>
             <div style={{width:13,height:13}}>{Icons.plus}</div>{action}
           </button>
         )}

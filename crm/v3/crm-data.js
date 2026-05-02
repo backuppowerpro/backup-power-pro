@@ -74,8 +74,11 @@ function cityFromAddress(addr) {
 }
 
 function avatarFromName(name) {
-  if (!name) return null;
-  const parts = String(name).trim().split(/\s+/);
+  // Trim — a name of `'   '` was truthy and produced an empty initials
+  // string, leaving the avatar circle blank.
+  const n = (name || '').trim();
+  if (!n) return null;
+  const parts = n.split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
   return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
 }

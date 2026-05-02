@@ -25,10 +25,19 @@ function Root() {
   // first load. Pull-to-refresh on iOS Safari, accidental tab close, or
   // a shared link can then restore the prior context. Format:
   //   ?c=<contactId>&t=<rightTab>&lt=<leftTab>
+  const VALID_TABS = ['contacts','calendar','finance','messages','calls'];
   const initialQuery = React.useMemo(() => {
     if (typeof window === 'undefined') return {};
     const p = new URLSearchParams(window.location.search);
-    return { c: p.get('c'), t: p.get('t'), lt: p.get('lt') };
+    // Reject unknown tab values from URL — `?t=garbage` would render
+    // a blank right pane otherwise.
+    const t = p.get('t');
+    const lt = p.get('lt');
+    return {
+      c: p.get('c'),
+      t: VALID_TABS.includes(t) ? t : null,
+      lt: VALID_TABS.includes(lt) ? lt : null,
+    };
   }, []);
   // Right panel has its own tab state, independent
   const [rightTab, setRightTab] = React.useState(() => initialQuery.t || 'contacts');

@@ -965,7 +965,16 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
           <AddressAutocomplete value={address} onChange={setAddress} placeholder="123 Main St, Spartanburg" style={inputStyle} />
         </div>
         <div style={{ display:'flex', gap:8, marginTop:6 }}>
-          <button onClick={() => setEditing(false)} disabled={saving} style={{
+          <button onClick={() => {
+            // Reset form state to the current contact's persisted values
+            // before closing — without this, typing "JUNK" then Cancel
+            // leaves the dirty value behind and the next time Edit
+            // opens, "JUNK" is still there.
+            setName(contact.name || '');
+            setPhone(contact.phone || '');
+            setAddress(contact.address || '');
+            setEditing(false);
+          }} disabled={saving} style={{
             flex:1, height:36, borderRadius:8, background:'white', color:NAVY,
             border:'1px solid rgba(27,43,75,0.15)', fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
           }}>Cancel</button>
@@ -2395,10 +2404,10 @@ function TemplateEditModal({ onClose }) {
   };
   return (
     <ModalShell open={true} onClose={onClose} title="Saved templates" footer={
-      <>
-        <button onClick={onClose} style={{ flex:1, height:42, borderRadius:8, background:'white', border:'1px solid rgba(11,31,59,0.15)', color:NAVY, fontWeight:600, cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>Cancel</button>
-        <button onClick={save} style={{ flex:1, height:42, borderRadius:8, background:GOLD, border:'none', color:NAVY, fontWeight:700, cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>Save</button>
-      </>
+      <div style={{ display:'flex', gap:8 }}>
+        <button onClick={onClose} style={{ flex:'1 1 0', minWidth:0, height:42, borderRadius:8, background:'white', border:'1px solid rgba(11,31,59,0.15)', color:NAVY, fontWeight:600, cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>Cancel</button>
+        <button onClick={save} style={{ flex:'1 1 0', minWidth:0, height:42, borderRadius:8, background:GOLD, border:'none', color:NAVY, fontWeight:700, cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>Save</button>
+      </div>
     }>
       <div style={{ fontSize:11, color:MUTED, lineHeight:1.5, marginBottom:10 }}>
         Tap a chip in the messages tab to drop the template into compose. Use <code style={{ background:'#F5F5F3', padding:'1px 4px', borderRadius:3, fontSize:10 }}>{'{firstName}'}</code> and it'll expand.
@@ -3024,7 +3033,12 @@ function ModalShell({ open, onClose, title, footer, children }) {
           {children}
         </div>
         {footer && (
-          <div style={{ padding:'12px 18px 14px', borderTop:'1px solid rgba(11,31,59,0.08)', flexShrink:0 }}>
+          // safe-area-inset-bottom keeps the action buttons clear of the
+          // iPhone home indicator on the bottom-sheet variant.
+          <div style={{
+            padding:'12px 18px calc(14px + env(safe-area-inset-bottom, 0px))',
+            borderTop:'1px solid rgba(11,31,59,0.08)', flexShrink:0,
+          }}>
             {footer}
           </div>
         )}
