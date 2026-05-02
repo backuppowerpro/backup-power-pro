@@ -1,83 +1,30 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="theme-color" content="#f4f4f2" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="BPP" />
-<title>BPP CRM v2</title>
-<link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="/assets/images/logo-main.png" />
-<link rel="icon" href="/assets/images/logo-main.png" />
-<link rel="stylesheet" href="tokens.css" />
-<style>
-  html, body { height: 100%; background: var(--bg); }
-  body { overscroll-behavior-y: none; }
-  #app { min-height: 100vh; }
-</style>
-</head>
-<body>
-
-<a href="#main" class="skip-link">Skip to content</a>
-<div id="app"></div>
-
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0;url=/crm/v3/">
+<link rel="canonical" href="https://backuppowerpro.com/crm/v3/">
+<title>BPP CRM</title>
 <script>
-  // Suppress Babel-standalone's "code generator deoptimised" perf notice.
-  // It fires at error level whenever a JSX file is over 500KB, but it is
-  // NOT a runtime error — the code still runs fine. The notice was flooding
-  // the dev console with what looked like real errors (Key, 2026-04-25).
-  // We also filter the matching "in-browser Babel transformer" warning since
-  // we're knowingly running Babel in the browser for now.
-  (function() {
-    const origError = console.error;
-    const origWarn  = console.warn;
-    console.error = function(...args) {
-      const first = args[0];
-      if (typeof first === 'string' && /\[BABEL\] Note: The code generator has deoptimised/.test(first)) return;
-      return origError.apply(console, args);
-    };
-    console.warn = function(...args) {
-      const first = args[0];
-      if (typeof first === 'string' && /You are using the in-browser Babel transformer/.test(first)) return;
-      return origWarn.apply(console, args);
-    };
+  // v2 is retired. Bounce to v3, but FIRST unregister the v2 service
+  // worker + clear all SW caches so cached shells stop ghosting the
+  // user. Without this, dock shortcuts that ever touched /crm/v2/
+  // keep serving the cached v2 page even after this file is updated.
+  (function(){
+    const go = function(){ location.replace('/crm/v3/'); };
+    if (!('serviceWorker' in navigator)) return go();
+    Promise.all([
+      navigator.serviceWorker.getRegistrations()
+        .then(rs => Promise.all(rs.map(r => r.unregister().catch(() => null))))
+        .catch(() => null),
+      ('caches' in self)
+        ? caches.keys().then(ns => Promise.all(ns.map(n => caches.delete(n).catch(() => null))))
+        : Promise.resolve(),
+    ]).then(go, go);
+    // Hard fallback if the cleanup hangs for any reason.
+    setTimeout(go, 1500);
   })();
-
-  // Register service worker (crm/v2/sw.js) for offline shell + faster reloads.
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/crm/v2/sw.js', { scope: '/crm/v2/' }).catch(() => {});
-    });
-  }
 </script>
-
-<!-- React 18 + Babel standalone (matches Claude Design's export runtime) -->
-<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-
-<!-- Supabase v2 JS client -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-
-<!-- Design system components (order matters — shell first, then data-specific) -->
-<script type="text/babel" src="shell.jsx"></script>
-<script type="text/babel" src="leads-list.jsx"></script>
-<script type="text/babel" src="leads-pipeline.jsx"></script>
-<script type="text/babel" src="contact-detail.jsx"></script>
-<script type="text/babel" src="messages-inbox.jsx"></script>
-<script type="text/babel" src="calendar.jsx"></script>
-<script type="text/babel" src="finance.jsx"></script>
-<script type="text/babel" src="leads-permits.jsx"></script>
-<script type="text/babel" src="leads-materials.jsx"></script>
-<script type="text/babel" src="sparky.jsx"></script>
-<script type="text/babel" src="briefing.jsx"></script>
-<script type="text/babel" src="command-palette.jsx"></script>
-<script type="text/babel" src="voice-call.jsx"></script>
-
-<!-- Live app orchestrator — queries Supabase, wires auth, routes tabs, handles morphing bar -->
-<script type="text/babel" src="app.jsx"></script>
-
-</body>
+</head>
+<body></body>
 </html>

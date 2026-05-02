@@ -4,6 +4,24 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>BPP CRM</title>
+<!-- Defensive cleanup: v2 had a service worker that aggressively cached
+     its shell. If a user ever loaded /crm/v2/ they may still have a
+     v2 SW registered which can ghost the v3 page on subsequent visits.
+     Unregister any registrations we own + clear caches on every v3
+     load. Cheap (no-op if there's nothing to clean), and idempotent. -->
+<script>
+  (function(){
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(r){ try { r.unregister(); } catch(e) {} });
+    }).catch(function(){});
+    if ('caches' in self) {
+      caches.keys().then(function(ns){
+        ns.forEach(function(n){ try { caches.delete(n); } catch(e) {} });
+      }).catch(function(){});
+    }
+  })();
+</script>
 <!-- Tab favicon (browser bookmark, history, dock when minimized). -->
 <link rel="icon" href="/favicon.png" type="image/png" />
 <!-- iOS "Add to Home Screen" + macOS Safari Dock icon. -->
@@ -24,12 +42,12 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-<script src="crm-data.js?v=84"></script>
-<script type="text/babel" src="crm-shared.jsx?v=84"></script>
-<script type="text/babel" src="crm-left.jsx?v=84"></script>
-<script type="text/babel" src="crm-right.jsx?v=84"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=84"></script>
-<script type="text/babel" src="crm-app.jsx?v=84"></script>
+<script src="crm-data.js?v=85"></script>
+<script type="text/babel" src="crm-shared.jsx?v=85"></script>
+<script type="text/babel" src="crm-left.jsx?v=85"></script>
+<script type="text/babel" src="crm-right.jsx?v=85"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=85"></script>
+<script type="text/babel" src="crm-app.jsx?v=85"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { height: 100%; overflow: hidden; }
