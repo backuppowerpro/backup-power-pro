@@ -187,16 +187,36 @@ function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, conte
           {tabs.map(t => {
             const active = tab === t;
             const badge = badgeCounts[t] || 0;
+            // Re-tapping the active tab triggers a manual refetch — same
+            // gesture as pull-to-refresh on mobile, but reachable on
+            // desktop where there's no pull gesture. Throttled inside
+            // crm-data.js by _reconcileInflight, so spam clicks are safe.
+            const handleClick = async () => {
+              if (!active) { onTab(t); return; }
+              if (typeof window.CRM?.__refetch !== 'function') { onTab(t); return; }
+              try {
+                await window.CRM.__refetch();
+                window.showToast?.('Refreshed');
+              } catch (e) {
+                window.showToast?.('Refresh failed');
+              }
+            };
             return (
-              <button key={t} onClick={() => onTab(t)} style={{
-                background: active ? 'rgba(255,255,255,0.12)' : 'none',
-                border: 'none',
-                color: active ? 'white' : 'rgba(255,255,255,0.5)',
-                width: 44, height: 44,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                cursor:'pointer', borderRadius: 8, position:'relative',
-                flexShrink: 0,
-              }}>
+              <button
+                key={t}
+                onClick={handleClick}
+                aria-label={active ? `${t} (tap to refresh)` : t}
+                title={active ? 'Refresh' : null}
+                style={{
+                  background: active ? 'rgba(255,255,255,0.12)' : 'none',
+                  border: 'none',
+                  color: active ? 'white' : 'rgba(255,255,255,0.5)',
+                  width: 44, height: 44,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  cursor:'pointer', borderRadius: 8, position:'relative',
+                  flexShrink: 0,
+                }}
+              >
                 <div style={{ width: 22, height: 22 }}>{Icons[t]}</div>
                 {badge > 0 && (
                   <div style={{
