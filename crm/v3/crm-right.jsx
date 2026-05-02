@@ -412,7 +412,7 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
             <div style={{ fontSize:11, fontWeight:600, color: moneyStatus.color, letterSpacing:'0.04em', textTransform:'uppercase' }}>{moneyStatus.label}</div>
             <div style={{ fontSize:18, fontWeight:700, color: moneyStatus.color, letterSpacing:'-0.02em', fontVariantNumeric:'tabular-nums' }}>{formatMoneyCents(moneyStatus.cents)}</div>
           </div>
-          <span style={{ fontSize:11, color: moneyStatus.color, fontWeight:600 }}>View →</span>
+          <span style={{ fontSize:13, color: moneyStatus.color, fontWeight:700, padding:'4px 0', flexShrink:0 }}>View →</span>
         </button>
       )}
       <ContactInfoSection contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} />
@@ -713,7 +713,9 @@ function PhotosSection({ contact }) {
       const { data: pub } = CRM.__db.storage.from('message-media').getPublicUrl(path);
       const url = pub?.publicUrl;
       if (!url) throw new Error('No public URL returned');
-      const next = [...jobPhotos, { id: 'job-' + Date.now(), url, uploaded_at: new Date().toISOString() }];
+      // Persist storage path on the photo record so removeJobPhoto
+      // can delete the underlying blob, not just the localStorage row.
+      const next = [...jobPhotos, { id: 'job-' + Date.now(), url, path, uploaded_at: new Date().toISOString() }];
       setJobPhotos(next);
       window.safeSetItem?.(STORAGE_KEY, JSON.stringify(next));
       window.showToast?.('Photo added');
@@ -724,10 +726,22 @@ function PhotosSection({ contact }) {
     }
   };
 
-  const removeJobPhoto = (id) => {
+  const removeJobPhoto = async (id) => {
+    const removed = jobPhotos.find(p => p.id === id);
     const next = jobPhotos.filter(p => p.id !== id);
     setJobPhotos(next);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    // Also delete the underlying blob from Supabase storage so we don't
+    // leak storage cost on every removed job photo. Best-effort —
+    // failure is non-fatal but logged.
+    if (removed?.path && CRM.__db?.storage) {
+      try {
+        const { error } = await CRM.__db.storage.from('message-media').remove([removed.path]);
+        if (error) console.warn('[CRM] photo blob delete failed:', error.message);
+      } catch (e) {
+        console.warn('[CRM] photo blob delete threw:', e?.message);
+      }
+    }
     window.showToast?.('Photo removed');
   };
 
@@ -3021,7 +3035,10 @@ function NewProposalModal({ contact, onClose }) {
   // Trim before split-or-default so a name of "  " doesn't render
   // "Hey , here's your quote" — guards against whitespace-only DB rows.
   const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
-  const [amp,        setAmp]        = React.useState(contact.amp_type || '30');
+  // Coerce to one of the two valid amps. Legacy contacts may have
+  // arbitrary amp_type strings ("30A", "thirty", null) — guard the
+  // initial state so the modal can never submit a non-30/50 value.
+  const [amp,        setAmp]        = React.useState(['30','50'].includes(String(contact.amp_type)) ? String(contact.amp_type) : '30');
   const [tier,       setTier]       = React.useState(contact.pricing_tier || 'standard');
   const [cordIncluded,  setCord]    = React.useState(true);
   const [includeSurge,  setSurge]   = React.useState(false);
