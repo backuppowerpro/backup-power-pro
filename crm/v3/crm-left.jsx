@@ -50,39 +50,34 @@ function ContactAvatarHoverPreview({ contact, unread, dncSet, onOpen }) {
     if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
     if (openTimerRef.current) clearTimeout(openTimerRef.current);
     openTimerRef.current = setTimeout(() => {
-      // Anchor to the parent row so the popup peeks out to the right of
-      // the row rather than out of the tiny avatar. The row was a
-      // <button> originally; Round 4 swapped it to <div role="button">
-      // to fix a button-in-button warning, so we look for either.
-      const row = wrapRef.current?.closest('[role="button"]') || wrapRef.current?.closest('button');
-      const rect = (row || wrapRef.current)?.getBoundingClientRect();
+      // Anchor to the AVATAR, not the row. Anchoring to the row put
+      // the popup on the far side of the list pane — the cursor had
+      // to cross 200+ px of empty space and the close timer fired
+      // before reaching it. Avatar-anchor keeps the popup ~12px from
+      // the cursor's last position.
+      const rect = wrapRef.current?.getBoundingClientRect();
       if (!rect) return;
       const popupW = 220;
       const popupH = 220;
       const margin = 12;
       const overflowsRight = rect.right + popupW + margin > window.innerWidth - 8;
       const left = overflowsRight ? rect.left - popupW - margin : rect.right + margin;
-      // Default: align popup TOP with the row's top so the popup sits next
-      // to the contact you're actually hovering. Clamp into the viewport
-      // only when near the very top or bottom edges.
       const safePadding = 8;
-      const wantTop = rect.top - 4; // small upward offset for visual balance
+      const wantTop = rect.top - 4;
       const maxTop = window.innerHeight - popupH - safePadding;
       const top = Math.max(safePadding, Math.min(maxTop, wantTop));
-      // Track where the row's vertical center is relative to the popup, so
-      // the connector arrow points back at the actual hovered avatar even
-      // when the popup got clamped near the viewport edge.
       const arrowTop = Math.max(12, Math.min(popupH - 12, (rect.top + rect.height/2) - top));
       setPos({ left, top, arrowSide: overflowsRight ? 'right' : 'left', arrowTop });
       setOpen(true);
     }, 450);
   };
-  // Don't close instantly — give the cursor 120ms to bridge from the avatar
-  // to the popup so the user can interact with it without it disappearing.
+  // 280ms close grace — was 120ms but with avatar-anchored popup the
+  // cursor still needs comfortable bridging time to enter without it
+  // disappearing mid-traversal.
   const cancelOpen = () => {
     if (openTimerRef.current) { clearTimeout(openTimerRef.current); openTimerRef.current = null; }
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = setTimeout(() => setOpen(false), 120);
+    closeTimerRef.current = setTimeout(() => setOpen(false), 280);
   };
   const keepOpen = () => {
     if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
@@ -241,7 +236,7 @@ function DriveTimeBadgeFromList({ address, contactId }) {
     return () => { alive = false; };
   }, [contactId, address]);
   if (loading || !info) return null;
-  const txt = info.minutes < 60 ? `≈${info.minutes} min` : `≈${Math.floor(info.minutes/60)}h ${info.minutes%60}m`;
+  const txt = info.minutes < 60 ? `≈ ${info.minutes} min` : `≈ ${Math.floor(info.minutes/60)}h ${info.minutes%60}m`;
   return <span style={{ fontSize:11, fontWeight:600, color:'#666' }}>🚗 {txt} · {info.miles.toFixed(1)} mi</span>;
 }
 // Local short-form variant — returns the second comma-segment unparsed
@@ -571,7 +566,10 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                     <span title="Customer viewed your proposal recently" style={{ fontSize:9, fontWeight:700, color:'#1E40AF', background:'#DBEAFE', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>VIEWED</span>
                   )}
                   {recentCallSet.has(c.id) && <span title="Called within 24h" style={{ fontSize:9, fontWeight:700, color:'#065F46', background:'#D1FAE5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>📞 24h</span>}
-                  {sc && <span style={{ fontSize:10, fontWeight:700, color:sc.color, background:sc.bg, padding:'1px 6px', borderRadius:20, flexShrink:0 }}>{sc.label}</span>}
+                  {/* "New" hidden — it's the default for ~80% of the
+                      list and adds visual noise. Surface only the
+                      stages where the deal has actually moved. */}
+                  {sc && c.stage !== 'new' && <span style={{ fontSize:10, fontWeight:700, color:sc.color, background:sc.bg, padding:'1px 6px', borderRadius:20, flexShrink:0 }}>{sc.label}</span>}
                 </div>
                 <div style={{ fontSize:12, color:MUTED, marginTop:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                   {formatPhone(c.phone)}{c.address ? ` · ${cityFromAddrShort(c.address)}` : ''}

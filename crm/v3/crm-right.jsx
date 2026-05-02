@@ -416,13 +416,21 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
         </button>
       )}
       <ContactInfoSection contact={contact} bumpData={bumpData} onOpenTab={onOpenTab} />
-      <InstallSpecCard ampSpec={ampSpec} contact={contact} materials={materials} bumpData={bumpData} />
+      {/* Install spec + Permits cards only render once a proposal is
+          signed. Before that, the contact view stays clean — Inlet/
+          Interlock + permit workflow are noise until there's a real
+          deal to install. Same gate Key uses mentally. */}
+      {latestSigned && (
+        <InstallSpecCard ampSpec={ampSpec} contact={contact} materials={materials} bumpData={bumpData} />
+      )}
       {nextEvent && (
         <NextJobCard contact={contact} event={nextEvent} permit={cPermit} materials={materials} onOpenTab={onOpenTab} />
       )}
       <PhotosSection contact={contact} />
       <StageHistoryCard contact={contact} />
-      <PermitsCard permits={permits} contact={contact} bumpData={bumpData} />
+      {latestSigned && (
+        <PermitsCard permits={permits} contact={contact} bumpData={bumpData} />
+      )}
       <InfoSection title="Notes" editAction={null}>
         <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Internal notes (auto-saves)…"
           style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'10px 12px',fontSize:16,color:NAVY,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box' }} />
@@ -496,6 +504,11 @@ const ICON_COPY = (
     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
   </svg>
 );
+const ICON_CHAT = (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
 
 function IconActionBtn({ icon, onClick, href, target, ariaLabel, variant = 'outline' }) {
   const filled = variant === 'gold';
@@ -512,6 +525,7 @@ function IconActionBtn({ icon, onClick, href, target, ariaLabel, variant = 'outl
 }
 
 const CallIconBtn = ({ href, onClick }) => <IconActionBtn icon={ICON_PHONE} href={href} onClick={onClick} ariaLabel="Call" variant="gold" />;
+const TextIconBtn = ({ onClick }) => <IconActionBtn icon={ICON_CHAT} onClick={onClick} ariaLabel="Text" variant="gold" />;
 const MapIconBtn = ({ onClick }) => <IconActionBtn icon={ICON_PIN} onClick={onClick} ariaLabel="Open in maps" variant="gold" />;
 const CopyBtn = ({ onClick }) => <IconActionBtn icon={ICON_COPY} onClick={onClick} ariaLabel="Copy" />;
 
@@ -558,8 +572,8 @@ function DriveTimeBadge({ contact, dark }) {
   if (loading) return null;
   if (!info) return null;
   const txt = info.minutes < 60
-    ? `≈${info.minutes} min from home`
-    : `≈${Math.floor(info.minutes/60)} hr ${info.minutes%60} min from home`;
+    ? `≈ ${info.minutes} min from home`
+    : `≈ ${Math.floor(info.minutes/60)} hr ${info.minutes%60} min from home`;
   return (
     <span style={{
       display:'inline-flex', alignItems:'center', gap:5,
@@ -1124,6 +1138,7 @@ function ContactInfoRows({ contact, bumpData, onOpenTab }) {
         value={phoneFmt}
         actions={<>
           <CallIconBtn href={`tel:${contact.phone}`} />
+          <TextIconBtn onClick={() => onOpenTab?.('messages')} />
           <CopyBtn onClick={() => copy(contact.phone, 'Phone')} />
         </>}
       />
@@ -1163,7 +1178,9 @@ function ContactInfoRows({ contact, bumpData, onOpenTab }) {
         // to start one. Two buttons that do the same thing was confusing.
         actions={(nextStageLabel && contact.stage !== 'booked') ? <GoldActionBtn onClick={handleStageAction}>{stageActionVerbFor(contact.stage)}</GoldActionBtn> : null}
       />
-      <TagsRow contactId={contact.id} />
+      {/* Tags row removed per user — not needed today. The TagsRow
+          component + localStorage persistence is left in place so
+          re-enabling later is a one-line revert. */}
       {/* Tier row dropped — the Premium / Premium+ pill already sits in the
           hero overlay, so a duplicate row here is redundant. */}
     </div>
@@ -1581,14 +1598,17 @@ function InstallSpecCard({ ampSpec, contact, materials = [], bumpData }) {
   const big = hasSpec ? ampSpec : '—';
   const sub = hasSpec ? `${ampSpec.replace(/A$/,'').toLowerCase()} amp installation` : 'Awaiting signed proposal';
 
-  // Ordering rows: inlet + interlock always (placeholders if missing) + extras after
+  // Ordering rows: inlet + interlock + cord always (placeholders if missing).
+  // Cord is bundled by default — included on every install — so we
+  // surface it as a permanent line alongside Inlet and Interlock.
   const inletMat = materials.find(m => m.kind === 'inlet') || { kind:'inlet', status:'not_ordered', contact_id:contact.id, _placeholder:true };
   const interlockMat = materials.find(m => m.kind === 'interlock') || { kind:'interlock', status:'not_ordered', contact_id:contact.id, _placeholder:true };
-  const extras = materials.filter(m => m.kind !== 'inlet' && m.kind !== 'interlock');
-  const rows = [inletMat, interlockMat, ...extras];
+  const cordMat = materials.find(m => m.kind === 'cord') || { kind:'cord', status:'not_ordered', contact_id:contact.id, _placeholder:true };
+  const extras = materials.filter(m => !['inlet','interlock','cord'].includes(m.kind));
+  const rows = [inletMat, interlockMat, cordMat, ...extras];
 
   const [showAddPicker, setShowAddPicker] = React.useState(false);
-  const EXTRA_KINDS = ['breaker','cord','whip','surge','other'];
+  const EXTRA_KINDS = ['breaker','whip','surge','other'];
 
   const addExtra = (kind) => {
     setShowAddPicker(false);
@@ -3579,15 +3599,42 @@ function AddressAutocomplete({ value, onChange, placeholder, style }) {
       setSearching(true);
       lastQueriedRef.current = q;
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=us&addressdetails=1&q=${encodeURIComponent(q)}`;
+        // SC bounding box biases Nominatim toward our service area.
+        // viewbox=west,south,east,north (BPP services Greenville,
+        // Spartanburg, Pickens — approx -83.4..-78.5, 32.0..35.2).
+        // bounded=0 keeps the bias soft so out-of-state matches still
+        // appear if Key types a long-distance address.
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=8&countrycodes=us&addressdetails=1&viewbox=-83.4,35.2,-78.5,32.0&bounded=0&q=${encodeURIComponent(q)}`;
         const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
         if (!r.ok) { setHits([]); setSearching(false); return; }
         const data = await r.json();
-        const suggestions = (data || []).map(row => {
-          // Build a clean "{number} {street}, {city}" label.
+        // City extraction. For Greenville County addresses where
+        // Nominatim returns a CDP/neighborhood (e.g. "Sans Souci",
+        // "Wade Hampton") we prefer "Greenville" because that's the
+        // postal city Key uses. Same for Spartanburg County.
+        const cityFor = (a) => {
+          if (a.city) return a.city;
+          if (a.town) return a.town;
+          // CDP override: ANY address in our 4-jurisdiction area maps
+          // to the canonical city when Nominatim picks a less-known
+          // village/CDP/suburb.
+          const county = (a.county || '').toLowerCase();
+          if (county.includes('greenville')) return 'Greenville';
+          if (county.includes('spartanburg')) return 'Spartanburg';
+          if (county.includes('pickens')) return 'Pickens';
+          return a.village || a.hamlet || a.suburb || a.county || '';
+        };
+        // Bias SC results to top — sort with SC matches first, then
+        // by Nominatim's importance (display order). Keep cap at 5.
+        const ranked = (data || [])
+          .map((row, i) => ({ row, i, isSC: (row.address?.state || '').toLowerCase() === 'south carolina' }))
+          .sort((a, b) => (b.isSC - a.isSC) || (a.i - b.i))
+          .slice(0, 5)
+          .map(({ row }) => row);
+        const suggestions = ranked.map(row => {
           const a = row.address || {};
           const street = [a.house_number, a.road].filter(Boolean).join(' ');
-          const city = a.city || a.town || a.village || a.hamlet || a.county || '';
+          const city = cityFor(a);
           const stateAbbr = a.state ? (a['ISO3166-2-lvl4'] || '').replace('US-', '') : '';
           const short = [street, city].filter(Boolean).join(', ');
           return {
