@@ -750,7 +750,7 @@ function PhotosSection({ contact }) {
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={onFileChange} style={{ display:'none' }} />
       {allPhotos.length === 0 ? (
         <div style={{ fontSize:13, color:MUTED, padding:'4px 0', marginBottom:8 }}>
-          Add job photos (private — only you see them) or send/receive photos in the SMS thread.
+          Add job photos here, or send/receive photos in the SMS thread. Note: anyone with the photo URL can view it — don't include sensitive info in filenames.
         </div>
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(84px, 1fr))', gap:8, marginBottom:10 }}>
@@ -1464,7 +1464,7 @@ const MAT_STATUS = {
   installed:   { icon: '✓', color: '#16a34a', label: 'Installed' },
 };
 const MAT_NEXT = {
-  not_ordered: { next:'ordered',   label:'Order',          gold:true,  stamp:'ordered_at' },
+  not_ordered: { next:'ordered',   label:'Mark ordered',   gold:true,  stamp:'ordered_at' },
   ordered:     { next:'received',  label:'Mark received',  gold:false, stamp:'received_at' },
   received:    { next:'installed', label:'Mark installed', gold:false, stamp:'installed_at' },
   installed:   null,
@@ -2718,7 +2718,7 @@ function ContactMessages({ contact, thread, isDnc }) {
           fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4,
         }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>
-          {suggestionsLoading ? '...' : 'Suggest'}
+          {suggestionsLoading ? 'Thinking…' : 'Suggest'}
         </button>
         <button onClick={() => setEditingTemplates(true)} aria-label="Edit templates" title="Edit templates" style={{
           width:30, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)', background:'white',

@@ -801,11 +801,19 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
       )}
       <div style={{ flex:1, overflowY:'auto', minHeight:0 }}>
         {visible.length === 0 && (
-          <EmptyState icon="calendar" text={
-            view === 'today' ? 'No installs today — open day'
-            : view === 'upcoming' ? 'Nothing else scheduled'
-            : 'No events on the calendar'
-          } />
+          <div style={{ padding:'48px 24px', textAlign:'center', color:MUTED }}>
+            <div style={{ width:32, height:32, margin:'0 auto 12px', opacity:0.3 }}>{Icons.calendar}</div>
+            <div style={{ fontSize:13, marginBottom:14 }}>{
+              view === 'today' ? 'No installs today — open day'
+              : view === 'upcoming' ? 'Nothing else scheduled'
+              : 'No events on the calendar'
+            }</div>
+            <button onClick={() => setAddOpen(true)} style={{
+              fontSize:12, fontWeight:600, color:NAVY, background:'white',
+              border:'1px solid rgba(11,31,59,0.15)', borderRadius:6,
+              padding:'8px 14px', cursor:'pointer', fontFamily:'inherit',
+            }}>+ Add event</button>
+          </div>
         )}
         {Object.entries(visibleByDate).map(([date, dayEvents]) => (
           <div key={date}>
@@ -918,7 +926,9 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
       if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
       return '"' + s.replace(/"/g, '""') + '"';
     };
-    const csv = rows.map(r => r.map(escapeCell).join(',')).join('\n');
+    // UTF-8 BOM (﻿) so Excel + Numbers don't render accented
+    // characters as garbage. Decoders auto-detect from the BOM.
+    const csv = '﻿' + rows.map(r => r.map(escapeCell).join(',')).join('\n');
     const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download = 'key-finance.csv'; a.click();
   };
 
@@ -1274,7 +1284,7 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:13,height:13, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search messages…"
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by contact name…"
             style={{ width:'100%', height:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'0 12px 0 28px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
       </div>

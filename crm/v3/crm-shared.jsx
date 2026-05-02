@@ -269,10 +269,15 @@ const AVATAR_PALETTE = [
   '#E11D48', // rose
 ];
 function colorFromString(s) {
+  // FNV-1a — better distribution than `h*31+c` for short strings,
+  // which clustered short first-name-only contacts on the same hue.
   const str = String(s || '');
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
-  return AVATAR_PALETTE[((h % AVATAR_PALETTE.length) + AVATAR_PALETTE.length) % AVATAR_PALETTE.length];
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return AVATAR_PALETTE[h % AVATAR_PALETTE.length];
 }
 
 // Street View imagery presence cache. The Places metadata API is free
@@ -634,9 +639,16 @@ function formatRelative(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
-  // Re-evaluate "now" each call — earlier we had a constant that drifted
-  // during long sessions, making "12m ago" still say "12m ago" hours later.
   const diff = Date.now() - d;
+  // Future dates: render as absolute (a scheduled event tomorrow
+  // shouldn't say "now"). Renders as month/day if >7d out, "Tomorrow"
+  // for ~24h ahead, otherwise the absolute time.
+  if (diff < 0) {
+    const futureDays = Math.floor(-diff / 86400000);
+    if (futureDays === 0) return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    if (futureDays === 1) return 'Tomorrow';
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  }
   const mins = Math.floor(diff / 60000);
   const hrs = Math.floor(mins / 60);
   const days = Math.floor(hrs / 24);
