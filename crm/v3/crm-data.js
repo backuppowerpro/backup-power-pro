@@ -81,11 +81,13 @@ function avatarFromName(name) {
 }
 
 // "{street}, {city}, SC {zip}" → "{street}, {city}". Drops state/zip everywhere.
+// shortAddress is for DISPLAY only — never persist its output back to
+// the DB. Strips state/zip so the row reads clean. The full address is
+// kept on contact.address; the display helper runs at render time.
 function shortAddress(addr) {
   if (!addr) return '';
   const parts = addr.split(',').map(s => s.trim());
   if (parts.length >= 2) {
-    // First two segments are usually [street, city]; drop the rest (state, zip).
     return `${parts[0]}, ${parts[1].replace(/\b(SC|South Carolina)\b\s*\d*$/i, '').trim()}`;
   }
   return addr;
@@ -99,7 +101,13 @@ function mapContact(r) {
     name: r.name || null,
     phone: r.phone || '',
     email: r.email || '',
-    address: shortAddress(r.address),
+    // Keep the FULL address on the in-memory contact so the edit form
+    // round-trips losslessly. Display sites that want a clean street+city
+    // view should call shortAddress(contact.address) at render time.
+    // Previously this stored the truncated form and saving the edit form
+    // wrote that back, silently destroying state/zip on every edit.
+    address: r.address || '',
+    address_short: shortAddress(r.address),
     jurisdiction,
     pricing_tier: r.pricing_tier || 'standard',
     stage: STAGE_NUM_TO_STR[r.stage] || 'new',
@@ -119,10 +127,13 @@ function mapContact(r) {
 }
 
 function mapEvent(r) {
+  // Real DB column is `event_type`, not `kind`. Status column doesn't
+  // exist either — we default to 'scheduled' for everything since
+  // there's nothing to mark them otherwise today.
   return {
     id: r.id,
     contact_id: r.contact_id,
-    kind: r.kind || 'follow_up',
+    kind: r.kind || r.event_type || 'follow_up',
     start_at: r.start_at,
     end_at: r.end_at || null,
     title: r.title || 'Event',
@@ -224,13 +235,17 @@ function mapInvoice(r) {
 }
 
 function mapMessage(r) {
+  // Real DB columns: id, contact_id, direction, body, created_at.
+  // sent_at and read_at don't exist; sent_at falls back to created_at,
+  // read_at stays null (every message renders as "read" — until the
+  // column is added the unread-badge feature is a no-op).
   return {
     id: r.id,
     contact_id: r.contact_id,
     direction: r.direction || 'in',
     sender_role: r.sender_role || (r.direction === 'out' ? 'key' : 'customer'),
     body: r.body || '',
-    sent_at: r.sent_at,
+    sent_at: r.sent_at || r.created_at,
     read_at: r.read_at || null,
   };
 }
@@ -403,7 +418,11 @@ async function loadLiveData() {
       .order('created_at', { ascending: false })
       .limit(500), 'contacts'),
     fetchTable(__db.from('calendar_events')
-      .select('id, contact_id, kind, start_at, end_at, title, status')
+      // Real DB columns: id, contact_id, start_at, end_at, title,
+      // event_type, created_at. NO `kind` and NO `status`. mapEvent
+      // aliases event_type → kind and defaults status to 'scheduled'
+      // (since there's nothing else to mark them with today).
+      .select('id, contact_id, start_at, end_at, title, event_type, created_at')
       .gte('start_at', since)
       .order('start_at', { ascending: true })
       .limit(500), 'calendar_events'),
@@ -420,13 +439,19 @@ async function loadLiveData() {
       .order('created_at', { ascending: false })
       .limit(500), 'invoices'),
     fetchTable(__db.from('messages')
-      .select('id, contact_id, direction, sender_role, body, sent_at, read_at')
-      .gte('sent_at', since)
-      .order('sent_at', { ascending: false })
+      // Real DB columns: id, contact_id, direction, body, created_at.
+      // No `sender_role`, `sent_at`, or `read_at`. mapMessage aliases
+      // created_at → sent_at and defaults the rest.
+      .select('id, contact_id, direction, body, created_at')
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
       .limit(2000), 'messages'),
     fetchTable(__db.from('stage_history')
-      .select('id, contact_id, from_stage, to_stage, created_at')
-      .order('created_at', { ascending: true })
+      // Column is `changed_at`, NOT `created_at` — the wrong column name
+      // killed every stage_history fetch and left the Pipeline card
+      // empty for every contact even though 20 transitions exist.
+      .select('id, contact_id, from_stage, to_stage, changed_at')
+      .order('changed_at', { ascending: true })
       .limit(2000), 'stage_history'),
   ]);
 
@@ -471,8 +496,8 @@ async function loadLiveData() {
       try {
         const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
         const { data, error } = await __db.from('messages')
-          .select('id, contact_id, direction, sender_role, body, sent_at, read_at')
-          .gte('sent_at', since).order('sent_at', { ascending: false }).limit(2000);
+          .select('id, contact_id, direction, body, created_at')
+          .gte('created_at', since).order('created_at', { ascending: false }).limit(2000);
         if (error) { console.warn('[CRM] realtime messages refetch failed:', error.message); return; }
         window.CRM.messages = (data || []).map(mapMessage);
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'messages' } }));
@@ -524,14 +549,14 @@ async function refetchAll() {
   try {
     const [c, e, p, i, m] = await Promise.all([
       __db.from('contacts').select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes').order('created_at', { ascending: false }).limit(500),
-      __db.from('calendar_events').select('id, contact_id, kind, start_at, end_at, title, status').gte('start_at', since).order('start_at', { ascending: true }).limit(500),
+      __db.from('calendar_events').select('id, contact_id, start_at, end_at, title, event_type, created_at').gte('start_at', since).order('start_at', { ascending: true }).limit(500),
       __db.from('proposals').select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at').order('created_at', { ascending: false }).limit(500),
       __db.from('invoices').select(// Schema notes (verified empirically 2026-05-01): the invoices table has
 // NO `kind` / `sent_at` / `viewed_at` columns. mapInvoice derives them:
 // kind from a $-amount heuristic, sent_at from created_at, viewed_at = null.
 // If those columns ever get added, expand the SELECT and the mapper.
 'id, token, contact_id, proposal_id, total, status, created_at, paid_at').order('created_at', { ascending: false }).limit(500),
-      __db.from('messages').select('id, contact_id, direction, sender_role, body, sent_at, read_at').gte('sent_at', since).order('sent_at', { ascending: false }).limit(2000),
+      __db.from('messages').select('id, contact_id, direction, body, created_at').gte('created_at', since).order('created_at', { ascending: false }).limit(2000),
     ]);
     if (c.data) window.CRM.contacts = c.data.map(mapContact).filter(x => !x.archived);
     if (e.data) window.CRM.events = e.data.map(mapEvent);

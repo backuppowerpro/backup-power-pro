@@ -844,8 +844,21 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
     .filter(i => statuses.includes(i.status) && filter(i))
     .reduce((s,i) => s + i.amount_cents, 0);
 
-  const outstanding   = sumByStatus(invoices, ['sent','viewed'], i => installedSet.has(i.contact_id));
-  const overdue       = sumByStatus(invoices, ['overdue'],       i => installedSet.has(i.contact_id));
+  // Overdue is derived: a sent/viewed invoice with installed=true and
+  // age >14 days. The DB never flips invoice.status to 'overdue' on
+  // its own, so the prior sumByStatus(['overdue']) was always $0 for
+  // every account on the planet. Here we age it ourselves.
+  const OVERDUE_AGE_MS = 14 * 86400000;
+  const isOverdue = inv => {
+    if (inv.status === 'overdue') return true;
+    if (inv.status !== 'sent' && inv.status !== 'viewed') return false;
+    if (!installedSet.has(inv.contact_id)) return false;
+    const t = inv.sent_at || inv.created_at;
+    if (!t) return false;
+    return (Date.now() - new Date(t).getTime()) > OVERDUE_AGE_MS;
+  };
+  const outstanding   = invoices.filter(i => (i.status === 'sent' || i.status === 'viewed') && installedSet.has(i.contact_id) && !isOverdue(i)).reduce((s,i)=>s+(i.amount_cents||0),0);
+  const overdue       = invoices.filter(isOverdue).reduce((s,i)=>s+(i.amount_cents||0),0);
   const paidWeek      = sumByStatus(invoices, ['paid']);
   const pendingInstall = sumByStatus(invoices, ['sent','viewed'], i => !installedSet.has(i.contact_id));
 
@@ -1068,8 +1081,10 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
 // the real engine — Peace of Mind silently priced at $0 — and would
 // keep drifting whenever pricing changes. Now this modal computes the
 // same total NewProposalModal does.
-const QQ_ADDON_DEFS = [
-  { id:'cord',  label:'Generator cord',  cents: 12900 }, // QB_S.cordValue30 / 50
+// Cord cents depends on amp (30A=$129, 50A=$198) — looked up at render
+// time so the chip label matches what the engine actually applies.
+const QQ_ADDON_DEFS = (amp) => [
+  { id:'cord',  label:'Generator cord',  cents: amp === '50' ? 19800 : 12900 }, // QB_S.cordValue30/50
   { id:'surge', label:'Surge protector', cents: 37500 }, // QB_S.surge
   { id:'pom',   label:'Peace of mind',   cents: 44700 }, // QB_S.pom
   { id:'permit',label:'Permit',          cents: 12500 }, // QB_S.permitCustomer
@@ -1078,7 +1093,11 @@ const QQ_ADDON_DEFS = [
 function QuickQuoteModal({ onClose }) {
   const [amp, setAmp] = React.useState('30');
   const [tier, setTier] = React.useState('standard');
-  const [addons, setAddons] = React.useState({});
+  // Cord defaults bundled (true) to match NewProposalModal — without
+  // this Quick Quote landed on a different total than the real proposal
+  // builder for identical inputs because cordIncluded was inverted
+  // between the two surfaces.
+  const [addons, setAddons] = React.useState({ cord: true });
 
   React.useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose(); };
@@ -1086,7 +1105,7 @@ function QuickQuoteModal({ onClose }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const reset = () => { setAmp('30'); setTier('standard'); setAddons({}); };
+  const reset = () => { setAmp('30'); setTier('standard'); setAddons({ cord: true }); };
 
   // Defer to the real engine. Cord defaults to bundled (cordIncluded=true)
   // when the user hasn't toggled it; matches NewProposalModal behavior.
@@ -1162,7 +1181,7 @@ function QuickQuoteModal({ onClose }) {
 
         <Eyebrow>Add-ons</Eyebrow>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:18 }}>
-          {QQ_ADDON_DEFS.map(a => {
+          {QQ_ADDON_DEFS(amp).map(a => {
             const on = !!addons[a.id];
             return (
               <button key={a.id} onClick={()=>setAddons(s => ({...s, [a.id]: !s[a.id]}))} style={chipBtn(on)}>

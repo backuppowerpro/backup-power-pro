@@ -573,12 +573,27 @@ function formatPhone(e164) {
 }
 
 // Live phone-input mask — "8648637" → "(864) 863-7", grows with input.
-// Caller wires it onto the input's onChange so Key sees a properly
-// formatted number while typing instead of bare digits. Strips non-digits;
-// the underlying state stays digits-only so save() still hits an E.164
-// converter.
+// US-format. Detects E.164 / international input (leading + or 11+
+// digits with leading 1) and either strips the country prefix or
+// passes the raw value through to avoid mangling international numbers
+// into the wrong area code. Pasting "+18648637800" no longer yields
+// "(186) 486-3780".
 function formatPhoneInput(raw) {
-  const d = String(raw || '').replace(/\D/g, '').slice(0, 10);
+  const s = String(raw || '');
+  // Pass through international (anything with `+` that isn't +1<10 US
+  // digits>). Strip non-digits otherwise, strip leading `1` if 11
+  // digits, and format US-style.
+  if (s.startsWith('+')) {
+    const noPlus = s.slice(1).replace(/\D/g, '');
+    if (noPlus.startsWith('1') && noPlus.length === 11) {
+      const us = noPlus.slice(1);
+      return `(${us.slice(0,3)}) ${us.slice(3,6)}-${us.slice(6)}`;
+    }
+    return s; // genuinely international, leave alone
+  }
+  let d = s.replace(/\D/g, '');
+  if (d.length === 11 && d.startsWith('1')) d = d.slice(1);
+  d = d.slice(0, 10);
   if (d.length === 0) return '';
   if (d.length <= 3) return `(${d}`;
   if (d.length <= 6) return `(${d.slice(0,3)}) ${d.slice(3)}`;
@@ -594,7 +609,12 @@ function linkify(body) {
   // Combined pattern — order matters: URLs first (greedy), then phones,
   // then street-pattern addresses.
   const URL_RE = /\bhttps?:\/\/[^\s]+/g;
-  const PHONE_RE = /\b(?:\+?1[-.\s]?)?\(?(\d{3})\)?[-.\s]?(\d{3})[-.\s]?(\d{4})\b/g;
+  // Phone match — the regex used to start with `\b` and the optional
+  // `(` after the boundary. That left the opening paren outside the
+  // match while the closing paren stayed inside, so "(864) 555-1234"
+  // rendered as "( " + linkified "864) 555-1234". Drop the `\b`, allow
+  // optional country code + paren wrappers symmetrically.
+  const PHONE_RE = /(?:\+?1[-.\s]?)?\(?(\d{3})\)?[-.\s]?(\d{3})[-.\s]?(\d{4})/g;
   const ADDR_RE = /\b(\d{2,5}\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){0,3}\s+(?:St|Street|Rd|Road|Ave|Avenue|Dr|Drive|Ln|Lane|Ct|Court|Blvd|Boulevard|Way|Hwy|Highway|Pkwy|Parkway|Cir|Circle|Trl|Trail|Pl|Place|Ter|Terrace|Loop)\b\.?(?:,?\s+[A-Z][A-Za-z]+){0,2}(?:,?\s+SC)?(?:\s+\d{5})?)/g;
 
   // Build a list of {start, end, kind, match} matches, sort by start,

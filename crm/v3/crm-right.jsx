@@ -2134,6 +2134,13 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   // accidentally suppressing the other's send.
   const sendingRef = React.useRef(new Set());
   const sendLink = async (linkUrl) => {
+    // Guard: a draft proposal or invoice that hasn't been issued a token
+    // yet has linkUrl=null. Sending "null" as a URL would deliver the
+    // literal word to the customer. Refuse + tell Key why.
+    if (!linkUrl) {
+      window.showToast?.('No link yet — save the draft first');
+      return;
+    }
     const lockKey = `${contact.id}::${linkUrl}`;
     if (contact.do_not_contact) {
       window.showToast?.('Marked do not contact — cannot send');
@@ -2173,10 +2180,12 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     }
   };
   const copyLink = async (linkUrl) => {
+    if (!linkUrl) { window.showToast?.('No link yet — save the draft first'); return; }
     try { await navigator.clipboard.writeText(linkUrl); window.showToast?.('Link copied'); }
     catch { window.showToast?.('Copy failed'); }
   };
   const viewAsCustomer = (linkUrl) => {
+    if (!linkUrl) { window.showToast?.('No link yet — save the draft first'); return; }
     window.open(linkUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -3102,9 +3111,14 @@ function NewProposalModal({ contact, onClose }) {
         setBusy(false);
         return;
       }
-      // Bump contact stage 1 → 2 (NEW → QUOTED) so the chip rail counts match.
-      if ((contact.stage || 1) === 1) {
-        CRM.__db.from('contacts').update({ stage: 2 }).eq('id', contact.id).eq('stage', 1).then(() => {}, () => {});
+      // Bump contact stage NEW → QUOTED. contact.stage is the v3 STRING
+      // form ('new'); the prior `=== 1` compared string vs number and
+      // never matched. Translate to numeric for the DB write.
+      if (contact.stage === 'new') {
+        const numQuoted = CRM.STAGE_STR_TO_NUM?.quoted ?? 2;
+        contact.stage = 'quoted';
+        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        CRM.__db.from('contacts').update({ stage: numQuoted }).eq('id', contact.id).then(() => {}, () => {});
       }
       // Persist tier choice back to the contact if Key tweaked it.
       if (tier !== (contact.pricing_tier || 'standard')) {
@@ -3437,25 +3451,26 @@ function StageHistoryCard({ contact }) {
   if (rows.length === 0) return null;
 
   // Build a chronological list of stages including the implicit "created"
-  // entry. Compute days-in-stage for each transition.
-  const sorted = [...rows].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-  const startTs = new Date(sorted[0].created_at).getTime();
+  // entry. Compute days-in-stage for each transition. The DB column is
+  // `changed_at` not `created_at` — wrong field name silently produced
+  // NaN on every transition and the card rendered with empty pills.
+  const sorted = [...rows].sort((a,b) => new Date(a.changed_at) - new Date(b.changed_at));
+  const startTs = new Date(sorted[0].changed_at).getTime();
 
   const segments = [];
   let prevTs = startTs;
   let prevStage = sorted[0].from_stage;
-  // First segment: time spent at from_stage before first transition
   if (prevStage != null) {
-    const days = Math.max(0, Math.floor((new Date(sorted[0].created_at).getTime() - prevTs) / 86400000));
-    segments.push({ stage: prevStage, days, transitionAt: sorted[0].created_at });
+    const days = Math.max(0, Math.floor((new Date(sorted[0].changed_at).getTime() - prevTs) / 86400000));
+    segments.push({ stage: prevStage, days, transitionAt: sorted[0].changed_at });
   }
   for (let i = 0; i < sorted.length; i++) {
     const t = sorted[i];
     const next = sorted[i + 1];
-    const ts = new Date(t.created_at).getTime();
-    const endTs = next ? new Date(next.created_at).getTime() : Date.now();
+    const ts = new Date(t.changed_at).getTime();
+    const endTs = next ? new Date(next.changed_at).getTime() : Date.now();
     const days = Math.max(0, Math.floor((endTs - ts) / 86400000));
-    segments.push({ stage: t.to_stage, days, transitionAt: t.created_at, current: !next });
+    segments.push({ stage: t.to_stage, days, transitionAt: t.changed_at, current: !next });
   }
 
   const labelFor = (n) => (window.CRM?.STAGE_LABELS?.[window.CRM?.STAGE_NUM_TO_STR?.[n]] || `Stage ${n}`);
