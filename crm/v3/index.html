@@ -10,8 +10,9 @@
 <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.jpg" />
 <!-- High-DPI hint so Android / Chrome desktop pick the 192px asset. -->
 <link rel="icon" href="/assets/images/icon-192.png" sizes="192x192" type="image/png" />
-<!-- PWA manifest — controls home-screen name, splash bg, theme. -->
-<link rel="manifest" href="/site.webmanifest" />
+<!-- PWA manifest — CRM-scoped so "Add to Dock" / "Add to Home Screen"
+     opens /crm/v3/ on launch, not the public landing page. -->
+<link rel="manifest" href="/crm/v3/site.webmanifest" />
 <meta name="theme-color" content="#0b1f3b" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -23,12 +24,12 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-<script src="crm-data.js?v=80"></script>
-<script type="text/babel" src="crm-shared.jsx?v=80"></script>
-<script type="text/babel" src="crm-left.jsx?v=80"></script>
-<script type="text/babel" src="crm-right.jsx?v=80"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=80"></script>
-<script type="text/babel" src="crm-app.jsx?v=80"></script>
+<script src="crm-data.js?v=81"></script>
+<script type="text/babel" src="crm-shared.jsx?v=81"></script>
+<script type="text/babel" src="crm-left.jsx?v=81"></script>
+<script type="text/babel" src="crm-right.jsx?v=81"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=81"></script>
+<script type="text/babel" src="crm-app.jsx?v=81"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { height: 100%; overflow: hidden; }
