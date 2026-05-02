@@ -243,47 +243,40 @@ function streetViewUrlFor(address, size = 80) {
          `&fov=80&pitch=5&source=outdoor&key=${SV_KEY}`;
 }
 
+// Deterministic pleasant color from a string. Hash → 360 hue, fixed sat
+// + lightness keeps every contact distinguishable but in the same
+// visual family (no neon, no muddy). Same name always returns the same
+// color so the avatar stays stable across renders / sessions.
+function colorFromString(s) {
+  const str = String(s || '');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  const hue = ((h % 360) + 360) % 360;
+  return `hsl(${hue}, 58%, 46%)`;
+}
+
 function ContactAvatar({ contact, size = 40 }) {
   // Defensive: contact can be null/undefined when a proposal/invoice references
   // a contact that's been archived or wasn't returned in the 500-row contacts
   // window. Show as anonymous in that case rather than crashing.
   const isAnon = !contact || !contact.name;
-  // Street View thumbnail of the contact's address with a punchy filter so
-  // identical-looking suburbs feel distinct. Falls back to initials/hash if
-  // no address is set, or if the SV API returns no imagery (we can't detect
-  // that client-side, so we show the initials as a base layer underneath).
-  const svUrl = !isAnon && contact.address ? streetViewUrlFor(contact.address, size) : null;
-  const [imgFailed, setImgFailed] = React.useState(false);
-
+  // Bold colored initials. The Street View hero is rendered separately at
+  // full size; avatars stay readable + reliable instead of falling back to
+  // Google's gray "no imagery" placeholder when SV doesn't have a panorama.
+  const bg = isAnon ? '#E8EAF0' : colorFromString(contact.name || contact.id || 'X');
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%',
-      background: isAnon ? '#E8EAF0' : NAVY,
+      background: bg,
       color: isAnon ? MUTED : 'white',
       display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize: size * 0.35, fontWeight: 600, flexShrink: 0,
+      fontSize: size * 0.38, fontWeight: 700, flexShrink: 0,
+      letterSpacing: '0.02em',
       position:'relative', overflow:'hidden',
+      // Subtle inner shadow grounds the circle on white backgrounds.
+      boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.05)',
     }}>
-      {/* Initials/hash sits underneath as the base — visible if SV is missing */}
       {isAnon ? <div style={{width: size*0.42, height: size*0.42}}>{Icons.hash}</div> : contact.avatar}
-      {svUrl && !imgFailed && (
-        <img
-          src={svUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onError={() => setImgFailed(true)}
-          style={{
-            position:'absolute', inset:0, width:'100%', height:'100%',
-            // object-position pulls visible area to upper-right so Google's
-            // bottom-left watermark falls outside the circular crop.
-            objectFit:'cover', objectPosition:'70% 30%', display:'block',
-            // Enhancement filter: punchier saturation + slight contrast lift
-            // so the houses pop without looking instagram-fake.
-            filter: 'saturate(1.25) contrast(1.08) brightness(1.02)',
-          }}
-        />
-      )}
     </div>
   );
 }
