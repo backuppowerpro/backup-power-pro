@@ -901,7 +901,7 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Address</div>
-          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="123 Main St, Spartanburg" style={inputStyle} />
+          <AddressAutocomplete value={address} onChange={setAddress} placeholder="123 Main St, Spartanburg" style={inputStyle} />
         </div>
         <div style={{ display:'flex', gap:8, marginTop:6 }}>
           <button onClick={() => setEditing(false)} disabled={saving} style={{
@@ -2913,6 +2913,101 @@ function StageHistoryCard({ contact }) {
   );
 }
 
+// ── AddressAutocomplete ─────────────────────────────────────────────
+// Search-as-you-type using Nominatim (the same OpenStreetMap geocoder
+// we already use for drive-time). Free, no key. Suggestions appear in
+// a dropdown beneath the input — tap to fill. 600ms debounce respects
+// Nominatim's 1 req/sec fair-use policy. SC bias keeps results local.
+function AddressAutocomplete({ value, onChange, placeholder, style }) {
+  const [open, setOpen] = React.useState(false);
+  const [hits, setHits] = React.useState([]);
+  const [searching, setSearching] = React.useState(false);
+  const debounceRef = React.useRef(null);
+  const lastQueriedRef = React.useRef('');
+
+  React.useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = (value || '').trim();
+    if (q.length < 4 || q === lastQueriedRef.current) {
+      setHits([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      lastQueriedRef.current = q;
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=us&addressdetails=1&q=${encodeURIComponent(q)}`;
+        const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!r.ok) { setHits([]); setSearching(false); return; }
+        const data = await r.json();
+        const suggestions = (data || []).map(row => {
+          // Build a clean "{number} {street}, {city}" label.
+          const a = row.address || {};
+          const street = [a.house_number, a.road].filter(Boolean).join(' ');
+          const city = a.city || a.town || a.village || a.hamlet || a.county || '';
+          const stateAbbr = a.state ? (a['ISO3166-2-lvl4'] || '').replace('US-', '') : '';
+          const short = [street, city].filter(Boolean).join(', ');
+          return {
+            label: short || row.display_name.split(',').slice(0, 3).join(','),
+            full: short ? `${short}${stateAbbr ? ' ' + stateAbbr : ''}${a.postcode ? ' ' + a.postcode : ''}` : row.display_name,
+          };
+        }).filter(s => s.label);
+        setHits(suggestions);
+        setOpen(suggestions.length > 0);
+      } catch {
+        setHits([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 600);
+    return () => debounceRef.current && clearTimeout(debounceRef.current);
+  }, [value]);
+
+  // Close on outside click
+  const wrapRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  return (
+    <div ref={wrapRef} style={{ position:'relative' }}>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => hits.length > 0 && setOpen(true)}
+        placeholder={placeholder}
+        autoComplete="street-address"
+        style={style}
+      />
+      {searching && (
+        <div style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', fontSize:11, color:MUTED }}>…</div>
+      )}
+      {open && hits.length > 0 && (
+        <div style={{
+          position:'absolute', top:'calc(100% + 4px)', left:0, right:0, zIndex:100,
+          background:'white', border:'1px solid rgba(11,31,59,0.15)', borderRadius:8,
+          boxShadow:'0 8px 24px rgba(11,31,59,0.16)', maxHeight:240, overflowY:'auto',
+        }}>
+          {hits.map((h, i) => (
+            <button
+              key={i}
+              onClick={() => { onChange(h.full); setOpen(false); }}
+              style={{
+                width:'100%', padding:'10px 12px', textAlign:'left', background:'white', border:'none',
+                borderBottom: i < hits.length - 1 ? '1px solid #F5F5F3' : 'none',
+                cursor:'pointer', fontFamily:'inherit', fontSize:14, color:NAVY,
+              }}
+            >{h.full}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── New Contact Modal ─────────────────────────────────────────────────
 // Walk-ins, referrals, inbound callers — Key needs to capture a lead
 // in <10s. Minimum viable: name + phone + address. Stage defaults to
@@ -2999,7 +3094,7 @@ function NewContactModal({ onClose, onCreated }) {
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Address (optional)</div>
-          <input value={address} onChange={e=>setAddress(e.target.value)} placeholder="123 Main St, Spartanburg" autoComplete="street-address" style={inputStyle} />
+          <AddressAutocomplete value={address} onChange={setAddress} placeholder="123 Main St, Spartanburg" style={inputStyle} />
         </div>
         <div style={{ fontSize:11, color:MUTED, lineHeight:1.5 }}>
           New leads land at stage 1 (New). You can advance the stage from the contact's overview after creating.
