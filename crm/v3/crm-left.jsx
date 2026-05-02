@@ -14,7 +14,7 @@ function LeftPanel({ tab, onOpen, dncSet = new Set(), activeContactId }) {
   const { contacts, events, proposals, invoices, messages, calls } = CRM;
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background: BG, minHeight:0 }}>
-      {tab === 'contacts' && <ContactsList contacts={contacts} messages={messages} calls={calls} onOpen={onOpen} dncSet={dncSet} activeContactId={activeContactId} />}
+      {tab === 'contacts' && <ContactsList contacts={contacts} messages={messages} calls={calls} proposals={proposals} invoices={invoices} events={events} onOpen={onOpen} dncSet={dncSet} activeContactId={activeContactId} />}
       {tab === 'calendar' && <CalendarList events={events} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
       {tab === 'finance'  && <FinanceList proposals={proposals} invoices={invoices} contacts={contacts} events={events} onOpen={onOpen} activeContactId={activeContactId} />}
       {tab === 'messages' && <MessagesList messages={messages} calls={calls} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
@@ -299,7 +299,7 @@ const STAGE_COLORS = {
   done:             { color:'#374151', bg:'#F3F4F6', label:'Done' },
 };
 
-function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), activeContactId }) {
+function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), activeContactId, proposals = [], invoices = [], events = [] }) {
   const [search, setSearch] = React.useState('');
   const [stage, setStage] = React.useState('all');
   const [newContactOpen, setNewContactOpen] = React.useState(false);
@@ -371,8 +371,29 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     return set;
   }, [calls]);
 
+  // Per-contact rot signals (stale quote, $owed, days-since-touch, etc.)
+  const signalMap = React.useMemo(
+    () => buildContactSignals({ contacts, messages, calls, proposals, invoices, events }),
+    [contacts, messages, calls, proposals, invoices, events]
+  );
+
+  // "Rotting" — anything Key should chase: stale quote, $owed, or
+  // 7+ days since last touch with an active stage.
+  const rottingSet = React.useMemo(() => {
+    const s = new Set();
+    for (const [id, sig] of signalMap.entries()) {
+      const c = contacts.find(x => x.id === id);
+      if (!c || c.archived) continue;
+      const isActiveStage = c.stage !== 'archived' && c.stage !== 'paid';
+      const hasRot = sig.stale || sig.outstandingCents > 0 || (isActiveStage && sig.daysSinceTouch != null && sig.daysSinceTouch >= 7);
+      if (hasRot) s.add(id);
+    }
+    return s;
+  }, [signalMap, contacts]);
+
   const stageOpts = [
     { value:'all',        label:'All',          count: visibleContacts.length },
+    { value:'rotting',    label:'Rotting',     count: rottingSet.size },
     { value:'needs_reply', label:'Needs reply', count: needsReplySet.size },
     ...CRM.STAGE_ORDER.map(s => ({ value:s, label: STAGE_COLORS[s].label, count: stageCounts[s] }))
   ];
@@ -384,7 +405,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
 
   const filtered = contacts
     .filter(c => !c.archived)
-    .filter(c => stage === 'all' ? true : stage === 'needs_reply' ? needsReplySet.has(c.id) : c.stage === stage)
+    .filter(c => stage === 'all' ? true : stage === 'needs_reply' ? needsReplySet.has(c.id) : stage === 'rotting' ? rottingSet.has(c.id) : c.stage === stage)
     .filter(c => {
       if (!search) return true;
       const q = search.toLowerCase();
@@ -469,6 +490,14 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
           const unread = hasUnread(c.id) || hasMissedCall(c.id);
           const isPinned = pinned.has(c.id);
           const isPremium = c.pricing_tier === 'premium' || c.pricing_tier === 'premium_plus';
+          const sig = signalMap.get(c.id) || {};
+          // Last-message preview: prefer most recent inbound, else outbound.
+          // Truncated; relative time. Hidden when DNC pill or other signals
+          // would already overflow the row.
+          const last = sig.lastMsg;
+          const lastPreview = last && last.body
+            ? `${last.direction === 'out' ? 'You: ' : ''}${last.body.slice(0, 48)}${last.body.length > 48 ? '…' : ''}`
+            : null;
           return (
             // div role=button (not <button>) — the hover preview portals
             // action buttons (Call/Text/Open), and React's validateDOMNesting
@@ -488,15 +517,48 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
             }}>
               <ContactAvatarHoverPreview contact={c} unread={unread} dncSet={dncSet} onOpen={onOpen} />
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
                   {isPremium && window.tweaksGlobal?.premiumDots !== false && <GoldDot />}
-                  <span style={{ fontWeight:600, fontSize:14, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</span>
+                  <span style={{ fontWeight:600, fontSize:14, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', minWidth:0 }}>{contactName(c)}</span>
                   {dncSet.has(c.id) && <span style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>DNC</span>}
-                  {needsReplySet.has(c.id) && <span style={{ fontSize:9, fontWeight:700, color:'#92400E', background:'#FEF3C7', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>NEEDS REPLY</span>}
+                  {/* Rot pills — at most one renders so the row doesn't bloat.
+                      Priority: $owed > stale-quote > needs-reply. Each comes
+                      from buildContactSignals so the source of truth is
+                      shared with Money + filter logic. */}
+                  {sig.outstandingCents > 0 ? (
+                    <span title={`Owed${sig.outstandingOldestDays != null ? ` · ${sig.outstandingOldestDays}d` : ''}`} style={{ fontSize:9, fontWeight:700, color:'#9A3412', background:'#FFEDD5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                      {formatMoneyCents(sig.outstandingCents)} OWED
+                    </span>
+                  ) : sig.veryStale ? (
+                    <span title={`Quote sent ${sig.proposalAgeDays}d ago, no response`} style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEE2E2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                      QUOTE {sig.proposalAgeDays}d
+                    </span>
+                  ) : sig.stale ? (
+                    <span title={`Quote sent ${sig.proposalAgeDays}d ago`} style={{ fontSize:9, fontWeight:700, color:'#92400E', background:'#FEF3C7', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                      QUOTE {sig.proposalAgeDays}d
+                    </span>
+                  ) : needsReplySet.has(c.id) ? (
+                    <span style={{ fontSize:9, fontWeight:700, color:'#92400E', background:'#FEF3C7', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>NEEDS REPLY</span>
+                  ) : null}
+                  {sig.recentlyViewedProposal && !sig.outstandingCents && (
+                    <span title="Customer viewed your proposal recently" style={{ fontSize:9, fontWeight:700, color:'#1E40AF', background:'#DBEAFE', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>VIEWED</span>
+                  )}
                   {recentCallSet.has(c.id) && <span title="Called within 24h" style={{ fontSize:9, fontWeight:700, color:'#065F46', background:'#D1FAE5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>📞 24h</span>}
                   {sc && <span style={{ fontSize:10, fontWeight:700, color:sc.color, background:sc.bg, padding:'1px 6px', borderRadius:20, flexShrink:0 }}>{sc.label}</span>}
                 </div>
-                <div style={{ fontSize:12, color:MUTED, marginTop:1 }}>{formatPhone(c.phone)} · {cityFromAddrShort(c.address)}</div>
+                <div style={{ fontSize:12, color:MUTED, marginTop:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {formatPhone(c.phone)}{c.address ? ` · ${cityFromAddrShort(c.address)}` : ''}
+                  {sig.daysSinceTouch != null && sig.daysSinceTouch >= 7 && (
+                    <span title={`Last contact ${sig.daysSinceTouch}d ago`} style={{ marginLeft:6, color: sig.daysSinceTouch >= 14 ? '#DC2626' : '#92400E', fontWeight:600 }}>
+                      · {sig.daysSinceTouch}d ago
+                    </span>
+                  )}
+                </div>
+                {lastPreview && (
+                  <div style={{ fontSize:11, color:'#999', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontStyle:'italic' }}>
+                    {lastPreview}
+                  </div>
+                )}
               </div>
               <div onClick={e=>togglePin(e,c.id)} role="button" tabIndex={0}
                 aria-label={isPinned ? 'Unpin contact' : 'Pin contact'}
@@ -594,6 +656,15 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
   const getContact = id => contacts.find(c=>c.id===id);
   const [view, setView] = React.useState('today');
   const [addOpen, setAddOpen] = React.useState(false);
+  // Per-event "needs invoice" flag — derived from the global signal map
+  // so the rule matches what shows on contact rows + Money tab.
+  const invoices = window.CRM?.invoices || [];
+  const installNeedsInvoiceContactIds = React.useMemo(() => {
+    const s = new Set();
+    const sig = buildContactSignals({ contacts, messages: [], calls: [], proposals: [], invoices, events });
+    for (const [id, signal] of sig.entries()) if (signal.installNeedsInvoice) s.add(id);
+    return s;
+  }, [events, invoices, contacts]);
 
   // Filter to scheduled (canonical: status === 'scheduled'), then sort by start_at.
   const scheduled = events
@@ -647,6 +718,11 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
     const c = getContact(ev.contact_id);
     const col = KIND_COLORS[ev.kind] || KIND_COLORS.meeting;
     const conflict = hasConflict(ev, scheduled);
+    // "Needs invoice" — install event is past start_at and no invoice
+    // exists for that contact dated after the install. Drives the
+    // end-of-day "did you bill them?" prompt.
+    const isPastInstall = ev.kind === 'install' && new Date(ev.start_at).getTime() < Date.now();
+    const needsInvoice = isPastInstall && installNeedsInvoiceContactIds.has(ev.contact_id);
     return (
       <button onClick={()=>onOpen(ev.contact_id,'calendar',ev.id)} style={{
         width:'100%', background: highlight?'#FFFBEB':(activeContactId===ev.contact_id?'#FFFBEB':'white'), border:'none', cursor:'pointer',
@@ -655,10 +731,11 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
       }}>
         <div style={{ width:3, background: conflict?'#E53E3E':col.accent, margin:'6px 10px 6px 14px', borderRadius:4, flexShrink:0 }} />
         <div style={{ flex:1, padding:'13px 14px 13px 0', minWidth:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2, flexWrap:'wrap' }}>
             <span style={{ fontSize:12, fontWeight:700, color:NAVY }}>{formatTime(ev.start_at)}</span>
             <span style={{ fontSize:10, fontWeight:700, color:col.accent, background:col.bg, padding:'1px 6px', borderRadius:20 }}>{col.label}</span>
             {conflict && <span style={{ fontSize:10, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 6px', borderRadius:20 }}>⚠ Conflict</span>}
+            {needsInvoice && <span title="No invoice yet — bill before this slips" style={{ fontSize:10, fontWeight:700, color:'#9A3412', background:'#FFEDD5', padding:'1px 6px', borderRadius:20 }}>Needs invoice</span>}
           </div>
           <div style={{ fontSize:14, fontWeight:600, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</div>
           <div style={{ fontSize:11, color:MUTED, marginTop:1 }}>{ev.title} · {durationMin(ev)}min</div>
@@ -783,6 +860,29 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
   const invCounts = invoices.reduce((acc,i)=>({...acc,[i.status]:(acc[i.status]||0)+1}),{});
   const proCounts = proposals.reduce((acc,p)=>({...acc,[p.status]:(acc[p.status]||0)+1}),{});
 
+  // This-month revenue pulse — total of paid invoices this calendar
+  // month vs the prior month. Single number; the trend arrow is the
+  // signal Key is looking for ("am I trending up?").
+  const monthRevenue = React.useMemo(() => {
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthKey = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
+    let curr = 0, last = 0;
+    for (const inv of invoices) {
+      if (inv.status !== 'paid') continue;
+      const t = inv.paid_at || inv.sent_at || inv.created_at;
+      if (!t) continue;
+      const k = t.slice(0, 7);
+      if (k === thisMonthKey) curr += inv.amount_cents || 0;
+      else if (k === prevMonthKey) last += inv.amount_cents || 0;
+    }
+    const pct = last > 0 ? Math.round(((curr - last) / last) * 100) : (curr > 0 ? null : 0);
+    const monthLabel = now.toLocaleDateString('en-US', { month:'long' });
+    const prevLabel = prev.toLocaleDateString('en-US', { month:'short' });
+    return { curr, last, pct, monthLabel, prevLabel };
+  }, [invoices]);
+
   // Build mixed display list
   const tagged = [
     ...proposals.map(p => ({ ...p, _kind:'proposal' })),
@@ -826,6 +926,22 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
           }}>Quick quote</button>
         </>
       } />
+      {/* This-month revenue pulse — single number with trend arrow vs
+          last month. Hidden when both months are $0 (fresh account). */}
+      {(monthRevenue.curr > 0 || monthRevenue.last > 0) && (
+        <div style={{ background:'#F0FDF4', borderBottom:'1px solid #BBF7D0', padding:'10px 18px', flexShrink:0, display:'flex', alignItems:'baseline', gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'#065F46', letterSpacing:'0.05em', textTransform:'uppercase' }}>{monthRevenue.monthLabel}</span>
+          <span style={{ fontSize:18, fontWeight:700, color:NAVY, letterSpacing:'-0.5px' }}>{formatMoneyCents(monthRevenue.curr)}</span>
+          {monthRevenue.pct != null && monthRevenue.last > 0 && (
+            <span style={{ fontSize:11, fontWeight:600, color: monthRevenue.pct >= 0 ? '#15803D' : '#991B1B' }}>
+              {monthRevenue.pct >= 0 ? '↑' : '↓'} {Math.abs(monthRevenue.pct)}% vs {monthRevenue.prevLabel}
+            </span>
+          )}
+          {monthRevenue.pct == null && monthRevenue.last === 0 && (
+            <span style={{ fontSize:11, color:MUTED }}>· first month with sales</span>
+          )}
+        </div>
+      )}
       {/* KPI Cards — Pending install replaces a regular metric since pre-
           install sent invoices aren't "owed" yet per Key's billing rule. */}
       <div style={{ display:'flex', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>

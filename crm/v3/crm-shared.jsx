@@ -554,6 +554,107 @@ function formatMoneyCents(cents) {
   return (cents / 100).toLocaleString('en-US', { style:'currency', currency:'USD', maximumFractionDigits: 0 });
 }
 
+// ── Rot detection signals ───────────────────────────────────────────
+// One pure function, called once per ContactsList render with the full
+// data set, returns a Map<contactId, signals> the row renderer pulls from.
+// Centralized here so the Money tab and Calendar can reuse the same
+// definitions (no two-source-of-truth drift on what counts as "stale").
+function buildContactSignals({ contacts, messages, calls, proposals, invoices, events, now = Date.now() }) {
+  const out = new Map();
+  // Index for O(1) lookups instead of O(N*M) per contact.
+  const msgsByC = new Map();
+  const callsByC = new Map();
+  const propsByC = new Map();
+  const invsByC = new Map();
+  const eventsByC = new Map();
+  for (const m of messages || [])  (msgsByC.get(m.contact_id) || msgsByC.set(m.contact_id, []).get(m.contact_id)).push(m);
+  for (const c of calls || [])     (callsByC.get(c.contact_id) || callsByC.set(c.contact_id, []).get(c.contact_id)).push(c);
+  for (const p of proposals || []) (propsByC.get(p.contact_id) || propsByC.set(p.contact_id, []).get(p.contact_id)).push(p);
+  for (const i of invoices || [])  (invsByC.get(i.contact_id) || invsByC.set(i.contact_id, []).get(i.contact_id)).push(i);
+  for (const e of events || [])    (eventsByC.get(e.contact_id) || eventsByC.set(e.contact_id, []).get(e.contact_id)).push(e);
+
+  for (const c of contacts || []) {
+    if (c.archived) continue;
+    const cMsgs = msgsByC.get(c.id) || [];
+    const cCalls = callsByC.get(c.id) || [];
+    const cProps = propsByC.get(c.id) || [];
+    const cInvs = invsByC.get(c.id) || [];
+    const cEvents = eventsByC.get(c.id) || [];
+
+    // Last touch — most recent outbound activity from us.
+    const lastOutMsg = cMsgs.filter(m => m.direction === 'out' || m.sender_role === 'key')
+      .sort((a, b) => (b.sent_at || '').localeCompare(a.sent_at || ''))[0];
+    const lastOutCall = cCalls.filter(c => c.direction === 'out')
+      .sort((a, b) => (b.started_at || '').localeCompare(a.started_at || ''))[0];
+    const lastTouchAt = [lastOutMsg?.sent_at, lastOutCall?.started_at].filter(Boolean)
+      .sort().pop() || null;
+    const daysSinceTouch = lastTouchAt
+      ? Math.floor((now - new Date(lastTouchAt).getTime()) / 86400000)
+      : null;
+
+    // Last inbound message (for last-message preview on row).
+    const sortedMsgs = [...cMsgs].sort((a, b) => (b.sent_at || '').localeCompare(a.sent_at || ''));
+    const lastMsg = sortedMsgs[0] || null;
+
+    // Aging quote — proposal sent, not yet booked, not yet viewed (or
+    // viewed >4d ago without acceptance). The "stale" age is calibrated
+    // to the silent-prospect-followup framework (memory).
+    const sentProposals = cProps
+      .filter(p => p.status === 'sent' && p.sent_at)
+      .sort((a, b) => (a.sent_at || '').localeCompare(b.sent_at || ''));
+    const freshestStale = sentProposals[sentProposals.length - 1] || null;
+    const proposalAgeDays = freshestStale
+      ? Math.floor((now - new Date(freshestStale.sent_at).getTime()) / 86400000)
+      : null;
+    const stale = freshestStale && proposalAgeDays >= 3;
+    const veryStale = freshestStale && proposalAgeDays >= 7;
+    // Recently-viewed proposal — surface as a positive nudge.
+    const recentlyViewedProposal = cProps
+      .filter(p => p.viewed_at && (now - new Date(p.viewed_at).getTime()) < 24 * 3600 * 1000)
+      .sort((a, b) => (b.viewed_at || '').localeCompare(a.viewed_at || ''))[0] || null;
+
+    // Outstanding $ — the post-install rule. Sum totals on sent/overdue
+    // invoices for contacts whose latest install event is in the past.
+    const installed = contactHasInstalled
+      ? contactHasInstalled(c, cEvents)
+      : cEvents.some(e => e.kind === 'install' && e.status === 'scheduled' && new Date(e.start_at) < new Date(now));
+    let outstandingCents = 0;
+    let outstandingOldestDays = null;
+    for (const inv of cInvs) {
+      if ((inv.status === 'sent' || inv.status === 'overdue') && installed) {
+        outstandingCents += inv.total || 0;
+        const age = Math.floor((now - new Date(inv.sent_at || inv.created_at).getTime()) / 86400000);
+        if (outstandingOldestDays == null || age > outstandingOldestDays) outstandingOldestDays = age;
+      }
+    }
+
+    // Install-done-but-not-invoiced — past install event, no invoice
+    // since that install. Surface on Today/Calendar so Key invoices
+    // before he forgets.
+    const pastInstalls = cEvents
+      .filter(e => e.kind === 'install' && e.status === 'scheduled' && new Date(e.start_at).getTime() < now);
+    let installNeedsInvoice = false;
+    if (pastInstalls.length > 0) {
+      const latestInstall = pastInstalls.sort((a, b) => (b.start_at || '').localeCompare(a.start_at || ''))[0];
+      const installTs = new Date(latestInstall.start_at).getTime();
+      const invoiceAfterInstall = cInvs.some(inv => {
+        const sentTs = new Date(inv.sent_at || inv.created_at || 0).getTime();
+        return sentTs >= installTs;
+      });
+      installNeedsInvoice = !invoiceAfterInstall;
+    }
+
+    out.set(c.id, {
+      lastTouchAt, daysSinceTouch, lastMsg,
+      stale, veryStale, proposalAgeDays, freshestStale,
+      recentlyViewedProposal,
+      outstandingCents, outstandingOldestDays,
+      installNeedsInvoice,
+    });
+  }
+  return out;
+}
+
 // ISO → "Apr 30" or "Sat, May 3"
 function formatDate(iso, opts = { weekday:'short', month:'short', day:'numeric' }) {
   if (!iso) return '';
@@ -730,7 +831,7 @@ Object.assign(window, {
   NAVY, GOLD, BG, CARD, MUTED, NOW, RADIUS, contactHasInstalled,
   Icons, NavBar, ContactAvatar, GoldDot, StatusPill,
   SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero,
-  capitalize, formatPhone, formatPhoneInput, linkify, formatRelative, formatMoneyCents,
+  capitalize, formatPhone, formatPhoneInput, linkify, formatRelative, formatMoneyCents, buildContactSignals,
   formatDate, formatTime, formatTimeShort, formatDuration, dayKey,
   relTime, fmtTime, fmtDate,
   QB_C, QB_S, TIER_META, TIER_IDS, quickQuoteTotal, quickQuoteCompute,

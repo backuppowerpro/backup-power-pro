@@ -1311,6 +1311,7 @@ function PermitsCard({ permits, contact, bumpData }) {
               <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:10 }}>
                 <span style={{ fontFamily:'DM Mono, monospace', fontSize:12, color:'#666' }}>{p.permit_number}</span>
                 {timeline && <span style={{ fontSize:12, color:'#666' }}>· {timeline}</span>}
+                <PermitAgeChip permit={p} />
               </div>
               <PermitStatusActions permit={p} bumpData={bumpData} />
             </div>
@@ -1330,6 +1331,26 @@ function PermitsCard({ permits, contact, bumpData }) {
 
 // Renamed inline alias to avoid colliding with old PermitPill (still used elsewhere if any)
 const PermitStatusPill = PermitPill;
+
+// Permit aging chip — typical SC city turnaround is ~14 days. Gold once
+// past 7d submitted, red once past the 14d SLA. Hidden if approved or
+// not yet submitted.
+function PermitAgeChip({ permit }) {
+  if (!permit?.submitted_at || permit.status === 'approved') return null;
+  const days = Math.floor((Date.now() - new Date(permit.submitted_at).getTime()) / 86400000);
+  const SLA = 14;
+  const overdue = days > SLA;
+  const aging = days >= 7;
+  const bg = overdue ? '#FEE2E2' : aging ? '#FEF3C7' : '#F0F4FF';
+  const color = overdue ? '#991B1B' : aging ? '#92400E' : '#1E40AF';
+  const label = overdue ? `Day ${days} · over SLA` : `Day ${days} of ${SLA}`;
+  return (
+    <span title={overdue ? 'Past typical SLA — call the city.' : 'Day-count since submission.'} style={{
+      fontSize:10, fontWeight:700, color, background:bg,
+      padding:'2px 7px', borderRadius:20, fontFamily:'DM Mono, monospace',
+    }}>{label}</span>
+  );
+}
 
 // ── Install Spec Card ─────────────────────────────────────────────
 const MAT_STATUS = {
@@ -1796,6 +1817,7 @@ function AddEventInline({ contact, bumpData, hasUpcoming }) {
             style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }}
           />
         </div>
+        <ScheduleConflictHint date={date} time={time} durationMin={60} contactId={contact.id} />
       </div>
       {/* Equal-width Cancel + Schedule. Same `flex:1 1 0; min-width:0` trick
           since "Saving…" can be wider than "Cancel" and would otherwise
@@ -2532,22 +2554,41 @@ function ContactCalls({ contact, calls, isDnc }) {
       {sorted.map(cl => {
         const s = STYLES[cl.direction] || STYLES.out;
         const dur = cl.direction === 'missed' ? '—' : formatDuration(cl.duration_sec);
+        const transcript = cl.voicemail_transcript || cl.voicemail_transcription || '';
         return (
           <div key={cl.id} style={{
             background:'white', border:'1px solid rgba(11,31,59,0.08)', borderRadius:8,
             padding:'12px 14px', marginBottom:8,
-            display:'flex', alignItems:'center', gap:12,
           }}>
-            <div style={{
-              width:32, height:32, borderRadius:'50%',
-              background:s.bg, color:s.color,
-              display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
-            }}>{s.icon}</div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:14, fontWeight:600, color:NAVY }}>{s.label}</div>
-              <div style={{ fontSize:12, color:'#666', marginTop:2, fontFamily:"'DM Mono', monospace" }}>{fmtRow(cl.started_at)}</div>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{
+                width:32, height:32, borderRadius:'50%',
+                background: cl.voicemail_url ? '#EDE9FE' : s.bg, color: cl.voicemail_url ? '#7C3AED' : s.color,
+                display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
+              }}>{cl.voicemail_url ? <div style={{ width:14, height:14 }}>{Icons.voicemail}</div> : s.icon}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:14, fontWeight:600, color:NAVY }}>
+                  {cl.voicemail_url ? 'Voicemail' : s.label}
+                </div>
+                <div style={{ fontSize:12, color:'#666', marginTop:2, fontFamily:"'DM Mono', monospace" }}>{fmtRow(cl.started_at)}</div>
+              </div>
+              <div style={{ fontSize:13, fontWeight:600, color:NAVY, fontFamily:"'DM Mono', monospace", flexShrink:0 }}>{dur}</div>
             </div>
-            <div style={{ fontSize:13, fontWeight:600, color:NAVY, fontFamily:"'DM Mono', monospace", flexShrink:0 }}>{dur}</div>
+            {/* Voicemail playback + transcription. Twilio's transcribe
+                hands us the text; we render it below the row so Key
+                doesn't need to listen while driving. */}
+            {cl.voicemail_url && (
+              <div style={{ marginTop:10, paddingTop:10, borderTop:'1px solid rgba(11,31,59,0.06)' }}>
+                {transcript ? (
+                  <div style={{ fontSize:13, color:NAVY, lineHeight:1.5, fontStyle:'italic', marginBottom:8 }}>
+                    "{transcript}"
+                  </div>
+                ) : (
+                  <div style={{ fontSize:11, color:MUTED, marginBottom:8 }}>Transcription pending…</div>
+                )}
+                <audio controls preload="none" src={cl.voicemail_url} style={{ width:'100%', height:32 }}></audio>
+              </div>
+            )}
           </div>
         );
       })}
@@ -3483,8 +3524,81 @@ function NewEventModal({ contacts = [], onClose }) {
           <input type="date" value={date} min={todayMin} max="2099-12-31" onChange={e => setDate(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
           <input type="time" value={time} step="900" onChange={e => setTime(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
         </div>
+        {contactId && <ScheduleConflictHint date={date} time={time} durationMin={60} contactId={contactId} />}
       </div>
     </ModalShell>
+  );
+}
+
+// Schedule-conflict hint. Validates a proposed slot against existing
+// events for the same day. Flags time overlap and back-to-back same-day
+// events with insufficient drive-time buffer. Drive-time is a heuristic
+// (same city = 5min, different = 25min, unknown = 15min) — solid enough
+// for the truck-dispatch-fitness check without a routing API call.
+function ScheduleConflictHint({ date, time, durationMin = 60, contactId }) {
+  if (!date || !time) return null;
+  const events = window.CRM?.events || [];
+  const contacts = window.CRM?.contacts || [];
+  const contact = contacts.find(c => c.id === contactId);
+  // Build the slot start/end Date objects in local TZ.
+  const [yy, mm, dd] = date.split('-').map(Number);
+  const [hh, mn] = time.split(':').map(Number);
+  const start = new Date(yy, mm - 1, dd, hh, mn);
+  const end = new Date(start.getTime() + durationMin * 60000);
+
+  const myCity = (contact?.address || '').split(',').slice(1, 2).join('').trim().toLowerCase();
+  const sameDay = events.filter(e => {
+    if (!e.start_at || e.status !== 'scheduled') return false;
+    const d = new Date(e.start_at);
+    return d.getFullYear() === yy && d.getMonth() === mm - 1 && d.getDate() === dd;
+  });
+
+  let issue = null;
+  for (const e of sameDay) {
+    const eStart = new Date(e.start_at);
+    const eEnd = e.end_at ? new Date(e.end_at) : new Date(eStart.getTime() + 60 * 60000);
+    // Overlap?
+    if (eStart < end && eEnd > start) {
+      issue = { kind: 'overlap', other: e };
+      break;
+    }
+    // Back-to-back tightness — gap between earlier-end and later-start.
+    const otherC = contacts.find(c => c.id === e.contact_id);
+    const otherCity = (otherC?.address || '').split(',').slice(1, 2).join('').trim().toLowerCase();
+    const driveMin = !myCity || !otherCity ? 15 : (myCity === otherCity ? 5 : 25);
+    if (eEnd <= start) {
+      const gapMin = (start - eEnd) / 60000;
+      if (gapMin < driveMin) {
+        issue = { kind: 'tight', other: e, gapMin: Math.round(gapMin), driveMin };
+        break;
+      }
+    } else if (start <= eStart) {
+      const gapMin = (eStart - end) / 60000;
+      if (gapMin < driveMin) {
+        issue = { kind: 'tight', other: e, gapMin: Math.round(gapMin), driveMin };
+        break;
+      }
+    }
+  }
+
+  if (!issue) return null;
+  const otherName = contacts.find(c => c.id === issue.other.contact_id)?.name || 'Another event';
+  return (
+    <div style={{
+      background: issue.kind === 'overlap' ? '#FEE2E2' : '#FEF3C7',
+      border: `1px solid ${issue.kind === 'overlap' ? '#FECACA' : '#FDE68A'}`,
+      borderRadius:8, padding:'8px 10px', marginTop:6,
+      fontSize:11, color: issue.kind === 'overlap' ? '#991B1B' : '#92400E', lineHeight:1.4,
+    }}>
+      <div style={{ fontWeight:700, marginBottom:2 }}>
+        {issue.kind === 'overlap' ? '⚠ Overlaps with another event' : '⚠ Tight schedule'}
+      </div>
+      {issue.kind === 'overlap' ? (
+        <span>{otherName} is already booked at {formatTime(issue.other.start_at)}.</span>
+      ) : (
+        <span>Only {issue.gapMin} min between this and {otherName} ({formatTime(issue.other.start_at)}). Drive estimate: {issue.driveMin} min.</span>
+      )}
+    </div>
   );
 }
 
