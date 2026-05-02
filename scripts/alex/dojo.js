@@ -55,10 +55,16 @@ if (!ANTHROPIC_KEY) { console.error('No Anthropic key in credentials.md'); proce
 if (!BRAIN_TOKEN)   { console.error('No BPP_BRAIN_TOKEN in credentials.md'); process.exit(1); }
 
 const SB_URL = 'https://reowtzedjflwmlptupbk.supabase.co';
-// Publishable key for the gateway verify-jwt step on alex-agent. Function-
-// internal auth still gates by webhook signature OR TEST_MODE allowlist;
-// this key only crosses the Supabase gateway.
+// Legacy anon JWT for the gateway verify-jwt step on alex-agent.
+// Apr 29: Supabase gateway rejects sb_publishable_* keys with INVALID_JWT_FORMAT
+// Publishable key (sb_publishable_*) — replaces the legacy HS256 anon JWT
+// per F9 of the 2026-05-01 security audit. Function-internal auth still
+// gates by +1800555 phone-prefix bypass inside verifyWebhookSignature, so
+// this key only satisfies Supabase's gateway check. Requires that the
+// callee functions are deployed with --no-verify-jwt OR accept the
+// publishable key via requireAnonOrServiceRole.
 const PUBLISHABLE_KEY = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
+const LEGACY_ANON_JWT = PUBLISHABLE_KEY; // alias kept so existing references resolve
 const QUO_NUMBER = '+18644005302'; // dojo simulates inbound to this Quo number
 const MODEL = 'claude-sonnet-4-5-20250929';
 

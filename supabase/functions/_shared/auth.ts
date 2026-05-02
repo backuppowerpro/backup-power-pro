@@ -186,6 +186,30 @@ export function escapeIlike(input: string): string {
   return String(input).replace(/([\\%_])/g, '\\$1')
 }
 
+// Strip prompt-injection patterns from strings that will be persisted
+// into sparky_inbox.metadata / sparky_memory.value, where future Claude
+// wake-ups read them as authoritative business state. The risk is that
+// an attacker-controlled API response body (Meta error, PostHog 5xx,
+// Google review text) lands in `String(e).slice(0, N)` and then gets
+// surfaced verbatim to the LLM on the next session.
+//
+// Mirrors the patterns `quo-ai-new-lead` already uses on form input.
+// Trims to `maxLen` after sanitisation.
+export function sanitizeForLog(input: unknown, maxLen = 500): string {
+  let s = String(input ?? '').slice(0, maxLen * 2)
+  // Strip XML-style instruction tags Claude treats as boundaries
+  s = s.replace(/\[(END|INTERNAL|\/|SYSTEM|ASSISTANT|USER)/gi, '[REDACTED-')
+  s = s.replace(/<\/?(system|assistant|user|instructions?)>/gi, '')
+  // Strip "ignore previous instructions" attack patterns
+  s = s.replace(/ignore\s+(all\s+)?previous\s+(instructions?|directions?)/gi, '[REDACTED]')
+  s = s.replace(/disregard\s+(all\s+)?previous/gi, '[REDACTED]')
+  s = s.replace(/forget\s+(all\s+)?(previous|prior|earlier)/gi, '[REDACTED]')
+  // Collapse whitespace so a malicious newline-burst can't visually
+  // separate injected instructions from surrounding error text.
+  s = s.replace(/\s+/g, ' ').trim()
+  return s.slice(0, maxLen)
+}
+
 // Cheap in-memory token bucket per key (IP, phone, etc). Not distributed
 // — each edge-function instance has its own counter — but good enough to
 // throttle the pathological single-attacker case. Returns true when the

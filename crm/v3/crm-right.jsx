@@ -738,6 +738,13 @@ function PhotosSection({ contact }) {
 
   const onPick = () => fileInputRef.current?.click();
   const onFileChange = async (e) => {
+    // ⚠️ KNOWN SURFACE — message-media bucket is fully public (per
+    // F12 of 2026-05-01 security audit). Anyone with the URL can view
+    // forever. Mitigation today: contact-id-scoped paths are UUID-
+    // unguessable, but the URL leaks via Twilio MMS carrier logs and
+    // ends up in message_body for the lifetime of the thread. See
+    // wiki/Operations/Message Media Bucket.md for the migration plan
+    // (private bucket + signed URLs at render time).
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;

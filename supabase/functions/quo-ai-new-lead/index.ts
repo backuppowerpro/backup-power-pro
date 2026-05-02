@@ -387,20 +387,29 @@ Deno.serve(async (req) => {
     // Static holding-message — identifies brand (CTIA 10DLC compliant),
     // confirms receipt, sets expectation, includes STOP opt-out.
     const holdingMsg = `Hi ${firstName || 'there'}, thanks for reaching out to Backup Power Pro. Key, our licensed electrician, got your message and will follow up as soon as possible. Reply STOP to opt out.`
+    const isDojoHolding = normalizedPhone.startsWith('+1800555')
     const holdingPromise = (async () => {
       // Small typing delay so it feels like a real response, not an instant auto-reply.
       await new Promise(r => setTimeout(r, 6000 + Math.floor(Math.random() * 6000)))
       let quoMsgId: string | null = null
-      try {
-        const quoRes = await fetch('https://api.openphone.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
-          body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: holdingMsg }),
-        })
-        const quoData = await quoRes.json()
-        quoMsgId = quoData.data?.id || null
-      } catch (err) {
-        console.error('[bg] holding SMS send failed:', err)
+      // Apr 29: skip OpenPhone send for dojo test phones (+1800555). They
+      // don't exist in real telecom and failed sends count against BPP's
+      // OpenPhone account.
+      if (isDojoHolding) {
+        console.log('[bg] DRY RUN — skipping holding SMS to dojo phone', normalizedPhone)
+        quoMsgId = `dojo-dry-holding-${Date.now()}`
+      } else {
+        try {
+          const quoRes = await fetch('https://api.openphone.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+            body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: holdingMsg }),
+          })
+          const quoData = await quoRes.json()
+          quoMsgId = quoData.data?.id || null
+        } catch (err) {
+          console.error('[bg] holding SMS send failed:', err)
+        }
       }
       await supabase.from('messages').insert({
         contact_id: contact.id,
@@ -479,18 +488,26 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, typingMs))
     }
 
-    // Fire the opener via Quo
+    // Fire the opener via Quo (skip for dojo test phones — they don't exist
+    // in real telecom, OpenPhone counts every failed send against the account
+    // and triggers spam-flag reviews. Apr 29 — caught after Key got an
+    // OpenPhone warning about excessive failed sends from earlier dojo runs).
     let quoMsgId: string | null = null
-    try {
-      const quoRes = await fetch('https://api.openphone.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
-        body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: openerText }),
-      })
-      const quoData = await quoRes.json()
-      quoMsgId = quoData.data?.id || null
-    } catch (err) {
-      console.error('[bg] QUO opener send failed:', err)
+    if (isDojo) {
+      console.log('[bg] DRY RUN — skipping OpenPhone send for dojo phone', normalizedPhone)
+      quoMsgId = `dojo-dry-${Date.now()}`
+    } else {
+      try {
+        const quoRes = await fetch('https://api.openphone.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+          body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: openerText }),
+        })
+        const quoData = await quoRes.json()
+        quoMsgId = quoData.data?.id || null
+      } catch (err) {
+        console.error('[bg] QUO opener send failed:', err)
+      }
     }
 
     // Mirror opener into messages table

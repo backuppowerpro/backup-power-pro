@@ -11,6 +11,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { allowRate } from '../_shared/auth.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +21,13 @@ const CORS = {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
+  if (!allowRate('ceo-brief:' + ip, 5)) {
+    return new Response(JSON.stringify({ error: 'rate_limited' }), {
+      status: 429, headers: { ...CORS, 'Content-Type': 'application/json' },
+    })
+  }
 
   const url = Deno.env.get('SUPABASE_URL')!
   const sr  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

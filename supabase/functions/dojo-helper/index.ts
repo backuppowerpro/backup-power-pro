@@ -28,8 +28,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { timingSafeEqual, allowRate } from '../_shared/auth.ts'
 
+// Internal-only — brain-token-gated, +1800555 prefix hard-gate, tightened per F15.
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://backuppowerpro.com',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, x-bpp-brain-token',
 }

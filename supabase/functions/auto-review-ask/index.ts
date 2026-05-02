@@ -71,18 +71,42 @@ Deno.serve(async (req) => {
     })
   }
 
-  const { data: contacts } = await supabase
-    .from('contacts')
-    .select('id, name, phone, do_not_contact, notes')
-    .in('id', candidateIds)
+  // F7 — auto-cron sends should respect every AI-disable signal, not just
+  // do_not_contact. ai_enabled=false (Key explicitly silenced AI for this
+  // contact) and ai_paused_until (debug-session pause) both block sends.
+  // Schema-tolerant: if those columns don't exist yet, fall back to the
+  // older select and treat them as not-set.
+  let contacts: any[] | null = null
+  {
+    const tryFull = await supabase
+      .from('contacts')
+      .select('id, name, phone, do_not_contact, ai_enabled, ai_paused_until, notes')
+      .in('id', candidateIds)
+    if (!tryFull.error) {
+      contacts = tryFull.data || []
+    } else if (/Could not find/i.test(tryFull.error.message || '')) {
+      const fallback = await supabase
+        .from('contacts')
+        .select('id, name, phone, do_not_contact, notes')
+        .in('id', candidateIds)
+      contacts = fallback.data || []
+    } else {
+      return new Response(JSON.stringify({ error: tryFull.error.message }), { status: 500, headers: CORS })
+    }
+  }
 
   let sent = 0
   let skipped = 0
   const results: any[] = []
+  const nowMs = Date.now()
 
-  for (const c of (contacts || [])) {
+  for (const c of contacts) {
     // Skip DNC + anyone we've already asked (notes contains __review_asked:)
     if (c.do_not_contact) { skipped++; results.push({ id: c.id, skip: 'dnc' }); continue }
+    if (c.ai_enabled === false) { skipped++; results.push({ id: c.id, skip: 'ai_disabled' }); continue }
+    if (c.ai_paused_until && new Date(c.ai_paused_until).getTime() > nowMs) {
+      skipped++; results.push({ id: c.id, skip: 'ai_paused' }); continue
+    }
     if ((c.notes || '').includes('__review_asked:')) { skipped++; results.push({ id: c.id, skip: 'already_asked' }); continue }
     if (!c.phone) { skipped++; results.push({ id: c.id, skip: 'no_phone' }); continue }
 

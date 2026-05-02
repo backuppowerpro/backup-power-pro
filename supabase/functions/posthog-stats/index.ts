@@ -22,8 +22,9 @@
 
 import { timingSafeEqual } from '../_shared/auth.ts'
 
+// Internal-only — brain-token-gated server-to-server, tightened per F15.
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://backuppowerpro.com',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-bpp-brain-token',
 }

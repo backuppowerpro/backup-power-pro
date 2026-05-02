@@ -137,14 +137,24 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── SMS alert per new review ────────────────────────────────────
-  // Same-day responses get rank lift on Google. The text includes the
-  // rating, author, and a snippet so Key can decide whether to reply
-  // immediately.
+  // F8 — author_name + text are attacker-controlled (anyone can leave a
+  // Google review). Sanitise both before they:
+  //   1. Get interpolated into the SMS body (carrier-side delivery)
+  //   2. Become part of the idempotency key (could break send-sms's
+  //      rate-limit / dedup keying with colon-laden inputs)
+  //   3. Get rendered in the CRM's gbp_reviews view (XSS surface, even
+  //      though the renderer escapes today)
   const smsRequests: Promise<unknown>[] = []
   for (const r of fresh) {
     const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating)
-    const snippet = (r.text || '').slice(0, 120).replace(/\s+/g, ' ').trim()
-    const body = `${stars} review from ${r.author_name}${snippet ? `: "${snippet}${r.text && r.text.length > 120 ? '…' : ''}"` : ''} — reply on GBP for rank lift.`
+    const safeAuthor = (r.author_name || 'Reviewer').replace(/[^A-Za-z0-9 .'-]/g, '').slice(0, 40).trim() || 'Reviewer'
+    const safeText = (r.text || '').replace(/[^\w\s.,!?'"\-—]/g, '').replace(/\s+/g, ' ').trim().slice(0, 120)
+    const truncated = (r.text || '').length > 120
+    const body = `${stars} review from ${safeAuthor}${safeText ? `: "${safeText}${truncated ? '…' : ''}"` : ''} — reply on GBP for rank lift.`
+    // Idempotency key uses time (unique per second) + sanitised author —
+    // colons / special chars stripped so they can't poison the rate-limit
+    // hash key inside send-sms.
+    const idemAuthor = safeAuthor.replace(/\s+/g, '_')
     smsRequests.push(
       fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
         method: 'POST',
@@ -155,7 +165,7 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           to: ALERT_NUMBER,
           body,
-          idempotencyKey: `gbp-review-${r.author_name}-${r.time}`,
+          idempotencyKey: `gbp-review-${r.time}-${idemAuthor}`,
           internal: true,
         }),
       }).catch(() => null)
