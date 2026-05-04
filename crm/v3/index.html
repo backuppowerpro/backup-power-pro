@@ -59,7 +59,7 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '100';
+  window.BPP_VERSION = '101';
   // v10.1.21: iOS standalone-PWA keyboard handling.
   //
   // Two pieces:
@@ -81,9 +81,23 @@
     window.addEventListener('focusin', function(){ setTimeout(snap, 0); });
     window.addEventListener('focusout', function(){ setTimeout(snap, 0); });
 
+    // Only constrain layout to visualViewport when the KEYBOARD IS OPEN.
+    // visualViewport.height in standalone PWA can return a value ~150px
+    // shorter than innerHeight even with no keyboard (iOS reserves space
+    // for the home indicator). If we used that always, the React tree
+    // would be 150px short and a big white empty zone would appear below
+    // the contact list — exactly the "chin" Key reported on v=100.
     var setH = function(){
-      var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-      document.documentElement.style.setProperty('--app-height', h + 'px');
+      var iH = window.innerHeight;
+      var vH = (window.visualViewport && window.visualViewport.height) || iH;
+      var keyboardOpen = (iH - vH) > 60;
+      // Keyboard open → shrink layout so compose bar lands above keyboard.
+      // Keyboard closed → unset the var so CSS fallback (100dvh) wins.
+      if (keyboardOpen) {
+        document.documentElement.style.setProperty('--app-height', vH + 'px');
+      } else {
+        document.documentElement.style.removeProperty('--app-height');
+      }
       snap();
     };
     setH();
@@ -95,13 +109,13 @@
     window.addEventListener('orientationchange', setH);
   })();
 </script>
-<script src="crm-data.js?v=100"></script>
-<script type="text/babel" src="crm-shared.jsx?v=100"></script>
-<script type="text/babel" src="crm-left.jsx?v=100"></script>
-<script type="text/babel" src="crm-right.jsx?v=100"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=100"></script>
-<script type="text/babel" src="crm-todos.jsx?v=100"></script>
-<script type="text/babel" src="crm-app.jsx?v=100"></script>
+<script src="crm-data.js?v=101"></script>
+<script type="text/babel" src="crm-shared.jsx?v=101"></script>
+<script type="text/babel" src="crm-left.jsx?v=101"></script>
+<script type="text/babel" src="crm-right.jsx?v=101"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=101"></script>
+<script type="text/babel" src="crm-todos.jsx?v=101"></script>
+<script type="text/babel" src="crm-app.jsx?v=101"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
