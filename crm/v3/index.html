@@ -52,23 +52,25 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-<script src="crm-data.js?v=92"></script>
-<script type="text/babel" src="crm-shared.jsx?v=92"></script>
-<script type="text/babel" src="crm-left.jsx?v=92"></script>
-<script type="text/babel" src="crm-right.jsx?v=92"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=92"></script>
-<script type="text/babel" src="crm-todos.jsx?v=92"></script>
-<script type="text/babel" src="crm-app.jsx?v=92"></script>
+<script src="crm-data.js?v=93"></script>
+<script type="text/babel" src="crm-shared.jsx?v=93"></script>
+<script type="text/babel" src="crm-left.jsx?v=93"></script>
+<script type="text/babel" src="crm-right.jsx?v=93"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=93"></script>
+<script type="text/babel" src="crm-todos.jsx?v=93"></script>
+<script type="text/babel" src="crm-app.jsx?v=93"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { height: 100%; overflow: hidden; }
-  /* v10.1.16 (Key feedback 2026-05-04): the bottom "chin" — iPhone home
-     indicator zone — should be TRANSPARENT, not painted with the CRM's
-     light-gray bg. Body bg transparent + #root height clipped to
-     viewport-minus-safe-area means scroll/content end above the chin and
-     iOS Safari's natural chrome shows through. */
-  body { height: 100%; overflow: hidden; font-family: 'DM Sans', sans-serif; background: transparent; }
-  #root { height: calc(100% - env(safe-area-inset-bottom, 0px)); overflow: hidden; }
+  /* v10.1.17: revert v10.1.16 chin-transparency — it caused full-page
+     scroll + keyboard sticking on iOS. Going back to a single solid bg
+     painted edge-to-edge (including the chin); fixed components below
+     get padding-bottom: env(safe-area-inset-bottom) so nothing lands
+     under the home indicator. We can revisit "transparent chin" later
+     with a non-breaking technique (probably 100dvh + viewport-fit
+     interplay, or a separate pseudo-element). */
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { font-family: 'DM Sans', sans-serif; background: #f4f6f9; }
+  #root { height: 100%; overflow: hidden; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
