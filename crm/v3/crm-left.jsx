@@ -449,7 +449,12 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
 
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
-      <PanelHeader title="Contacts" action="Add" onAction={() => setNewContactOpen(true)} right={<PermitPortalsButton />} />
+      <PanelHeader title="Contacts" action="Add" onAction={() => setNewContactOpen(true)} right={
+        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+          <TodosButton />
+          <PermitPortalsButton />
+        </div>
+      } />
       {newContactOpen && (
         <NewContactModal
           onClose={() => setNewContactOpen(false)}

@@ -14,6 +14,11 @@ const __db = window.supabase
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
+// Expose the Supabase client globally so widgets like TodosButton (in
+// crm-todos.jsx) can read/write their own tables without re-instantiating
+// the client. Same publishable-key, same RLS scope. Safe.
+window.db = __db;
+
 // Edge-function invoker. Forces the publishable anon key as Authorization
 // because the user's session JWT (ES256) is rejected by edge functions
 // configured for the legacy HS256 anon key. Same pattern as crm/v2/app.jsx.

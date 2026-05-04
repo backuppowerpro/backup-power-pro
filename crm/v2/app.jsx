@@ -7384,6 +7384,159 @@ function CallCard({ title, color, name, children }) {
   );
 }
 
+// ── LiveTodos — UNUSED in v2; kept for reference. The active CRM is v3
+// and the TodosButton lives in crm/v3/crm-todos.jsx, placed in the
+// PanelHeader right slot alongside PermitPortalsButton.
+function _UNUSED_LiveTodos_v2() {
+  const [todos, setTodos] = useState([]);
+  const [draft, setDraft] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [tick, setTick] = useState(0);
+
+  // Realtime subscribe — AI cron, manual adds, completion toggles
+  useEffect(() => {
+    const ch = db.channel('bpp_todos-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bpp_todos' }, () => setTick(n => n + 1))
+      .subscribe();
+    return () => { db.removeChannel(ch); };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await db.from('bpp_todos')
+        .select('id, title, notes, source, priority, related_contact_id, completed, completed_at, created_at')
+        .order('completed', { ascending: true })
+        .order('priority', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (!alive) return;
+      setTodos(data || []);
+    })();
+    return () => { alive = false; };
+  }, [tick]);
+
+  const addTodo = async () => {
+    const title = draft.trim();
+    if (!title || adding) return;
+    setAdding(true);
+    const { error } = await db.from('bpp_todos').insert({ title, source: 'manual' });
+    if (!error) setDraft('');
+    setAdding(false);
+  };
+
+  const toggle = async (t) => {
+    if (t.completed) {
+      await db.from('bpp_todos').update({ completed: false, completed_at: null }).eq('id', t.id);
+    } else {
+      await db.from('bpp_todos').update({ completed: true, completed_at: new Date().toISOString() }).eq('id', t.id);
+    }
+  };
+
+  const remove = async (t) => {
+    await db.from('bpp_todos').delete().eq('id', t.id);
+  };
+
+  // Hide completed items older than 6 hours so the list stays clean
+  const sixHrsAgo = Date.now() - 6 * 3600 * 1000;
+  const visible = todos.filter(t => !t.completed || (t.completed_at && new Date(t.completed_at).getTime() > sixHrsAgo));
+  const openCount = visible.filter(t => !t.completed).length;
+
+  return (
+    <div style={{
+      padding: 12,
+      background: 'var(--card)',
+      boxShadow: 'var(--shadow-sm), var(--ring)',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: 14,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span className="eyebrow">Todos {openCount > 0 ? `(${openCount})` : ''}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+          AI refresh 5am ET
+        </span>
+      </div>
+
+      {/* Quick add */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: visible.length > 0 ? 10 : 0 }}>
+        <input
+          type="text"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') addTodo(); }}
+          placeholder="Add a todo and press Enter…"
+          style={{
+            flex: 1,
+            padding: '8px 10px',
+            background: 'var(--sunken)',
+            color: 'var(--text)',
+            border: 'none',
+            borderRadius: 'var(--radius-sm)',
+            fontFamily: 'var(--font-body)', fontSize: 13,
+            outline: 'none',
+            boxShadow: 'var(--ring-inset)',
+          }}
+        />
+        <button
+          onClick={addTodo}
+          disabled={!draft.trim() || adding}
+          className="btn-navy"
+          style={{ padding: '6px 14px', opacity: draft.trim() && !adding ? 1 : 0.5 }}
+        >Add</button>
+      </div>
+
+      {/* List */}
+      {visible.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {visible.map(t => (
+            <div key={t.id} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+              padding: '6px 8px',
+              background: t.completed ? 'transparent' : 'var(--sunken)',
+              borderRadius: 'var(--radius-sm)',
+              opacity: t.completed ? 0.55 : 1,
+            }}>
+              <input
+                type="checkbox"
+                checked={t.completed}
+                onChange={() => toggle(t)}
+                style={{ marginTop: 2, cursor: 'pointer' }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontFamily: 'var(--font-body)', fontSize: 13,
+                  color: 'var(--text)',
+                  textDecoration: t.completed ? 'line-through' : 'none',
+                  wordBreak: 'break-word',
+                }}>
+                  {t.source === 'ai' ? <span title="AI-generated" style={{ marginRight: 6 }}>🤖</span> : null}
+                  {t.title}
+                </div>
+                {t.notes ? (
+                  <div style={{
+                    fontFamily: 'var(--font-body)', fontSize: 11,
+                    color: 'var(--text-muted)', marginTop: 2,
+                    wordBreak: 'break-word',
+                  }}>{t.notes}</div>
+                ) : null}
+              </div>
+              <button
+                onClick={() => remove(t)}
+                title="Delete"
+                style={{
+                  padding: '2px 6px', background: 'transparent',
+                  border: 'none', cursor: 'pointer',
+                  color: 'var(--text-muted)', fontSize: 14, lineHeight: 1,
+                }}
+              >×</button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 // ── Live Permits sub-view (7-step tiled board) ─────────────────────────────
 // Step index: 0=SUBMIT 1=PAY 2=PAID 3=PRINT 4=PRINTED 5=INSPECT 6=PASS
 // Stage → completed-step count:
@@ -10647,9 +10800,14 @@ function LiveQuickList({ onSelect }) {
   // current filter's bucket is empty. Extracted so the "no matches" empty
   // state below can still render it above the message.
   const chipRow = (
+    // Apr 29 visual refresh — Claude Design comp validated this pattern:
+    // ACTIVE = solid navy pill with white text + count badge.
+    // INACTIVE = bare ghost — text + count, no background, no ring.
+    // Strong asymmetry makes the active state unmistakable, inactives
+    // recede so the eye lands on whichever stage is selected.
     <div style={{
-      padding: '12px 16px 8px',
-      display: 'flex', gap: 8, flexWrap: 'nowrap',
+      padding: '14px 16px 10px',
+      display: 'flex', gap: 4, flexWrap: 'nowrap',
       overflowX: 'auto', WebkitOverflowScrolling: 'touch',
       scrollbarWidth: 'none', msOverflowStyle: 'none',
     }}>
@@ -10659,31 +10817,27 @@ function LiveQuickList({ onSelect }) {
           <button key={c.id}
             onClick={() => setStageFilter(c.id)}
             style={{
-              padding: '11px 14px', minHeight: 44, flex: '0 0 auto',
-              // No inset ring on inactive (Key 2026-04-26: "ugly sliver
-              // around a lot of buttons"). Active = navy + soft shadow,
-              // inactive = transparent that tints on hover.
+              padding: active ? '11px 18px' : '11px 14px',
+              minHeight: 44, flex: '0 0 auto',
               background: active ? 'var(--tab-active-bg)' : 'transparent',
               color: active ? '#fff' : 'var(--text-muted)',
-              boxShadow: active ? 'var(--shadow-sm)' : 'none',
+              boxShadow: 'none',
               border: 'none', cursor: 'pointer',
               borderRadius: 'var(--radius-pill)',
-              fontFamily: 'var(--font-display)', fontWeight: active ? 700 : 600,
-              fontSize: 12, letterSpacing: '-0.005em',
-              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontFamily: 'var(--font-body)',
+              fontWeight: active ? 700 : 600,
+              fontSize: 16, letterSpacing: '-0.01em',
+              display: 'inline-flex', alignItems: 'center', gap: 8,
               transition: 'background var(--dur) var(--ease), color var(--dur) var(--ease)',
             }}
-            onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--sunken)'; e.currentTarget.style.color = 'var(--text)'; } }}
-            onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
+            onMouseEnter={e => { if (!active) { e.currentTarget.style.color = 'var(--text)'; } }}
+            onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'var(--text-muted)'; } }}
             >
             <span>{c.label}</span>
             <span style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10,
-              padding: '1px 6px',
-              background: active ? 'rgba(255,255,255,0.16)' : 'var(--sunken)',
-              borderRadius: 'var(--radius-pill)',
+              fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600,
               fontVariantNumeric: 'tabular-nums',
-              color: active ? 'rgba(255,255,255,0.85)' : 'var(--text-muted)',
+              color: active ? 'rgba(255,255,255,0.78)' : 'var(--text-faint)',
             }}>{c.count}</span>
           </button>
         );
@@ -10721,67 +10875,72 @@ function LiveQuickList({ onSelect }) {
 }
 
 function SmartListRow({ row, onSelect }) {
+  // Apr 29 visual refresh — Claude Design comp validated this direction.
+  // Elevated cards: --radius-md + --shadow-sm only (no inset ring — the
+  // shadow does enough separation against --bg). 18px Inter 700 name for
+  // confident hierarchy. 14px preview. 44px navy avatar with 16px white
+  // initials. Hover lift. Generous internal padding so cards breathe.
   return (
     <button
       onClick={() => row.id && onSelect && onSelect(row.id)}
-      className="tactile-flat"
       style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 16px',
-        borderBottom: '1px solid var(--divider-faint)',
-        background: 'var(--card)', border: 'none', textAlign: 'left', cursor: 'pointer',
+        width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+        padding: '16px 18px',
+        background: 'var(--card)',
+        boxShadow: 'var(--shadow-sm)',
+        borderRadius: 'var(--radius-md)',
+        border: 'none', textAlign: 'left', cursor: 'pointer',
+        transition: 'transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
       }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'translateY(0)' }}
     >
       <div style={{
-        width: 36, height: 36, flex: '0 0 auto',
+        width: 44, height: 44, flex: '0 0 auto',
         background: 'var(--navy)',
-        // Apr 27 cohesion audit: was clipPath polygon (legacy minesweeper)
-        // while header avatar was a clean circle. Unify on the circle.
         borderRadius: '50%',
         display: 'grid', placeItems: 'center',
       }}>
         <span style={{
-          // Apr 27 cohesion audit: was --font-chrome + gold initials. The
-          // header avatar uses --font-body + white. Unify on the header
-          // treatment so the same person renders the same way in both
-          // surfaces.
           fontFamily: 'var(--font-body)', fontWeight: 600,
-          color: '#fff', fontSize: 12, letterSpacing: '0.01em',
+          color: '#fff', fontSize: 16, letterSpacing: '0.01em',
         }}>
           {initials(row.name)}
         </span>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
+          fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 700,
           color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden',
           textOverflow: 'ellipsis',
+          letterSpacing: '-0.005em',
           display: 'flex', alignItems: 'center', gap: 6,
+          marginBottom: 3,
         }}>
           {/* Smart Pricing tier dot — gold = premium+, navy = premium,
-              nothing rendered for standard so the baseline stays quiet. */}
+              nothing for standard so the baseline stays quiet. */}
           {row.tier === 'premium_plus' ? (
             <span title="Premium+ tier" style={{
-              width: 6, height: 6, background: 'var(--gold)', flex: '0 0 auto',
+              width: 7, height: 7, background: 'var(--gold)', flex: '0 0 auto', borderRadius: '50%',
             }} />
           ) : row.tier === 'premium' ? (
             <span title="Premium tier" style={{
-              width: 6, height: 6, background: 'var(--navy)', flex: '0 0 auto',
+              width: 7, height: 7, background: 'var(--navy)', flex: '0 0 auto', borderRadius: '50%',
             }} />
           ) : null}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.name}</span>
         </div>
         {row.preview ? (
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            "{row.preview}{row.preview.length >= 60 ? '…' : ''}"
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {row.preview}{row.preview.length >= 60 ? '…' : ''}
           </div>
         ) : (
-          <div className="mono" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+          <div className="mono" style={{ fontSize: 14, color: 'var(--text-faint)' }}>
             {row.phone ? formatPhone(row.phone) : ''}
           </div>
         )}
       </div>
-      <span className={`smart-chip smart-chip--${row.reason.tone}`}>{row.reason.label}</span>
+      <span className={`smart-chip smart-chip--${row.reason.tone}`} style={{ flex: '0 0 auto' }}>{row.reason.label}</span>
     </button>
   );
 }
