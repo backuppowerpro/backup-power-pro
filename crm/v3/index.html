@@ -58,13 +58,13 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-<script src="crm-data.js?v=96"></script>
-<script type="text/babel" src="crm-shared.jsx?v=96"></script>
-<script type="text/babel" src="crm-left.jsx?v=96"></script>
-<script type="text/babel" src="crm-right.jsx?v=96"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=96"></script>
-<script type="text/babel" src="crm-todos.jsx?v=96"></script>
-<script type="text/babel" src="crm-app.jsx?v=96"></script>
+<script src="crm-data.js?v=97"></script>
+<script type="text/babel" src="crm-shared.jsx?v=97"></script>
+<script type="text/babel" src="crm-left.jsx?v=97"></script>
+<script type="text/babel" src="crm-right.jsx?v=97"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=97"></script>
+<script type="text/babel" src="crm-todos.jsx?v=97"></script>
+<script type="text/babel" src="crm-app.jsx?v=97"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
@@ -89,7 +89,14 @@
     z-index: -1;
     pointer-events: none;
   }
-  #root { height: 100%; overflow: hidden; }
+  /* v10.1.19: clip #root to viewport-minus-chin so the React tree (which
+     paints white headers, panel bg, list rows) doesn't extend into the
+     home-indicator zone. Combined with body::before painting #f4f6f9 only
+     above the chin and body bg transparent below, the chin zone now shows
+     the OS layer (whatever iOS draws behind the PWA). v=92 had this clip
+     too but caused keyboard scroll problems — those are now resolved by
+     interactive-widget=resizes-content on the viewport meta. */
+  #root { height: calc(100% - env(safe-area-inset-bottom, 0px)); overflow: hidden; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
