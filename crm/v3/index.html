@@ -59,63 +59,21 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '102';
-  // v10.1.21: iOS standalone-PWA keyboard handling.
-  //
-  // Two pieces:
-  // 1. Pin document scroll to (0,0). iOS PWAs ignore
-  //    interactive-widget=resizes-content, so on keyboard open they auto-
-  //    scroll the document up to keep focused inputs visible. We don't
-  //    want that — header would disappear and layout would shift.
-  // 2. Track visualViewport.height into a CSS var --app-height. The layout
-  //    viewport stays full-size when the keyboard opens, but the VISUAL
-  //    viewport shrinks. By sizing the app to visualViewport.height, the
-  //    compose bar (at bottom of the app) lands ABOVE the keyboard, not
-  //    behind it.
-  //
-  // Result: header pinned, compose bar visible, no document scroll.
-  (function(){
-    if (typeof window === 'undefined') return;
-    var snap = function(){ window.scrollTo(0, 0); };
-    window.addEventListener('scroll', snap, { passive: true });
-    window.addEventListener('focusin', function(){ setTimeout(snap, 0); });
-    window.addEventListener('focusout', function(){ setTimeout(snap, 0); });
-
-    // Only constrain layout to visualViewport when the KEYBOARD IS OPEN.
-    // visualViewport.height in standalone PWA can return a value ~150px
-    // shorter than innerHeight even with no keyboard (iOS reserves space
-    // for the home indicator). If we used that always, the React tree
-    // would be 150px short and a big white empty zone would appear below
-    // the contact list — exactly the "chin" Key reported on v=100.
-    var setH = function(){
-      var iH = window.innerHeight;
-      var vH = (window.visualViewport && window.visualViewport.height) || iH;
-      var keyboardOpen = (iH - vH) > 60;
-      // Keyboard open → shrink layout so compose bar lands above keyboard.
-      // Keyboard closed → unset the var so CSS fallback (100dvh) wins.
-      if (keyboardOpen) {
-        document.documentElement.style.setProperty('--app-height', vH + 'px');
-      } else {
-        document.documentElement.style.removeProperty('--app-height');
-      }
-      snap();
-    };
-    setH();
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setH);
-      window.visualViewport.addEventListener('scroll', setH);
-    }
-    window.addEventListener('resize', setH);
-    window.addEventListener('orientationchange', setH);
-  })();
+  window.BPP_VERSION = '103';
+  // v10.1.22: stripped all keyboard-handling JS. Every iteration of fancy
+  // visualViewport / scroll-pinning logic introduced new bugs (compose
+  // behind keyboard, then floating with white gap, then whole screen
+  // shifting when scrolling messages). Letting iOS handle keyboard
+  // natively is uglier (header may shift up briefly when keyboard opens)
+  // but doesn't break anything else. Trading 1 known minor for 5 broken.
 </script>
-<script src="crm-data.js?v=102"></script>
-<script type="text/babel" src="crm-shared.jsx?v=102"></script>
-<script type="text/babel" src="crm-left.jsx?v=102"></script>
-<script type="text/babel" src="crm-right.jsx?v=102"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=102"></script>
-<script type="text/babel" src="crm-todos.jsx?v=102"></script>
-<script type="text/babel" src="crm-app.jsx?v=102"></script>
+<script src="crm-data.js?v=103"></script>
+<script type="text/babel" src="crm-shared.jsx?v=103"></script>
+<script type="text/babel" src="crm-left.jsx?v=103"></script>
+<script type="text/babel" src="crm-right.jsx?v=103"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=103"></script>
+<script type="text/babel" src="crm-todos.jsx?v=103"></script>
+<script type="text/babel" src="crm-app.jsx?v=103"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
@@ -137,7 +95,7 @@
      --app-height (set by JS when keyboard opens) shrinks the layout so
      the compose bar lands above the keyboard. When keyboard is closed
      the var is unset and 100dvh fills the screen normally. */
-  html, body { height: var(--app-height, 100dvh); overflow: hidden; overscroll-behavior: none; }
+  html, body { height: 100%; height: 100dvh; overflow: hidden; overscroll-behavior: none; }
   body { font-family: 'DM Sans', sans-serif; background: #f4f6f9; }
   #root { height: 100%; overflow: hidden; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
