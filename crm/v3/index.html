@@ -3,6 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- v10.1.16: Cache-control headers from GitHub Pages set max-age=600 on
+     this HTML, which means iOS Safari won't even ask for a fresh copy for
+     10 minutes after a deploy — pull-to-refresh is a no-op. These meta
+     equivs override that on the page level so subsequent loads always
+     check for a new version. Doesn't help the FIRST load after this
+     deploys (already cached at the edge), but prevents the problem
+     compounding on every future deploy. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <title>BPP CRM</title>
 <!-- Defensive cleanup: v2 had a service worker that aggressively cached
      its shell. If a user ever loaded /crm/v2/ they may still have a
@@ -42,13 +52,13 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-<script src="crm-data.js?v=91"></script>
-<script type="text/babel" src="crm-shared.jsx?v=91"></script>
-<script type="text/babel" src="crm-left.jsx?v=91"></script>
-<script type="text/babel" src="crm-right.jsx?v=91"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=91"></script>
-<script type="text/babel" src="crm-todos.jsx?v=91"></script>
-<script type="text/babel" src="crm-app.jsx?v=91"></script>
+<script src="crm-data.js?v=92"></script>
+<script type="text/babel" src="crm-shared.jsx?v=92"></script>
+<script type="text/babel" src="crm-left.jsx?v=92"></script>
+<script type="text/babel" src="crm-right.jsx?v=92"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=92"></script>
+<script type="text/babel" src="crm-todos.jsx?v=92"></script>
+<script type="text/babel" src="crm-app.jsx?v=92"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { height: 100%; overflow: hidden; }
