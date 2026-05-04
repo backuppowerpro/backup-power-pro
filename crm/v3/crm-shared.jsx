@@ -528,7 +528,7 @@ function ToastHost() {
     };
   }, []);
   return (
-    <div style={{ position:'absolute', top:60, left:'50%', transform:'translateX(-50%)', zIndex:100, display:'flex', flexDirection:'column', gap:6, pointerEvents:'none', alignItems:'center' }}>
+    <div style={{ position:'fixed', bottom:'calc(20px + var(--kb-h, 0px) + var(--vvs, env(safe-area-inset-bottom, 0px)))', left:'50%', transform:'translateX(-50%)', zIndex:1000, display:'flex', flexDirection:'column', gap:6, pointerEvents:'none', alignItems:'center' }}>
       {toasts.map(t => (
         <div key={t.id} style={{
           background: t.kind==='error'?'#991B1B':NAVY, color:'white',
