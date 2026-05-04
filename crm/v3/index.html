@@ -59,7 +59,7 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '107';
+  window.BPP_VERSION = '108';
   // v10.1.25: explicit pixel sizing via JS. Every CSS unit (100%, 100dvh,
   // 100vh, position:fixed inset:0) has been giving us a chin/gray bar at
   // the bottom. Bypass all CSS unit quirks by setting --vh-px directly to
@@ -101,13 +101,13 @@
     });
   })();
 </script>
-<script src="crm-data.js?v=107"></script>
-<script type="text/babel" src="crm-shared.jsx?v=107"></script>
-<script type="text/babel" src="crm-left.jsx?v=107"></script>
-<script type="text/babel" src="crm-right.jsx?v=107"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=107"></script>
-<script type="text/babel" src="crm-todos.jsx?v=107"></script>
-<script type="text/babel" src="crm-app.jsx?v=107"></script>
+<script src="crm-data.js?v=108"></script>
+<script type="text/babel" src="crm-shared.jsx?v=108"></script>
+<script type="text/babel" src="crm-left.jsx?v=108"></script>
+<script type="text/babel" src="crm-right.jsx?v=108"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=108"></script>
+<script type="text/babel" src="crm-todos.jsx?v=108"></script>
+<script type="text/babel" src="crm-app.jsx?v=108"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
@@ -140,6 +140,13 @@
     height: var(--vh-px, 100%);
     overflow: hidden; overscroll-behavior: none;
     font-family: 'DM Sans', sans-serif; background: #f4f6f9;
+  }
+  /* v10.1.26: iOS standalone PWA strips momentum-scroll from overflow:auto
+     containers unless -webkit-overflow-scrolling: touch is set. Target every
+     scroll container inside the React tree. Without this, the message
+     thread / contact list / any inner scroll is unresponsive on iPhone PWA. */
+  [style*="overflowY"], [style*="overflow-y"], [style*="overflow:auto"], [style*="overflow:scroll"] {
+    -webkit-overflow-scrolling: touch;
   }
   /* mobile-panel shrinks by keyboard height so compose bar stays above
      the keyboard. NavBar is OUTSIDE this panel and stays pinned at top. */
