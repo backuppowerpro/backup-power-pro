@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- viewport-fit=cover: extend layout into safe areas (notch + chin).
+     interactive-widget=resizes-content (iOS 16+): when the keyboard opens,
+     SHRINK the layout viewport instead of scrolling the document up. With
+     this, html height: 100% becomes "viewport-minus-keyboard" automatically
+     so the page doesn't shift. Without it, iOS scrolls the entire document
+     up to keep focused inputs visible. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 <!-- v10.1.16: Cache-control headers from GitHub Pages set max-age=600 on
      this HTML, which means iOS Safari won't even ask for a fresh copy for
      10 minutes after a deploy — pull-to-refresh is a no-op. These meta
@@ -52,13 +58,13 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-<script src="crm-data.js?v=95"></script>
-<script type="text/babel" src="crm-shared.jsx?v=95"></script>
-<script type="text/babel" src="crm-left.jsx?v=95"></script>
-<script type="text/babel" src="crm-right.jsx?v=95"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=95"></script>
-<script type="text/babel" src="crm-todos.jsx?v=95"></script>
-<script type="text/babel" src="crm-app.jsx?v=95"></script>
+<script src="crm-data.js?v=96"></script>
+<script type="text/babel" src="crm-shared.jsx?v=96"></script>
+<script type="text/babel" src="crm-left.jsx?v=96"></script>
+<script type="text/babel" src="crm-right.jsx?v=96"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=96"></script>
+<script type="text/babel" src="crm-todos.jsx?v=96"></script>
+<script type="text/babel" src="crm-app.jsx?v=96"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
@@ -68,7 +74,11 @@
      ABOVE the home indicator. Below that, body bg is transparent so iOS
      chrome shows through. Compose bar + bottom buttons already pad with
      env(safe-area-inset-bottom) so content never lives on the chin. */
-  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  /* height: 100dvh = dynamic viewport height — adapts to keyboard open
+     on iOS 15.4+. Combined with interactive-widget=resizes-content above,
+     the layout viewport shrinks WITH the keyboard so the page never has
+     to scroll its document. Fallback to 100% for old browsers. */
+  html, body { height: 100%; height: 100dvh; overflow: hidden; overscroll-behavior: none; }
   body { font-family: 'DM Sans', sans-serif; background: transparent; }
   body::before {
     content: '';

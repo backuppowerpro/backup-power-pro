@@ -310,8 +310,11 @@ function Root() {
   const isMobile = vw < 900;
 
   // ── Mobile production layout (full viewport, no device chrome) ──
+  // v10.1.18: bg transparent so body::before pseudo-element shows through.
+  // The pseudo paints #f4f6f9 above the home indicator, leaving the chin
+  // zone transparent. If we paint the bg here, it covers the chin.
   const mobileApp = (
-    <div style={{ height:'100%', flex:1, display:'flex', flexDirection:'column', background:'#f4f6f9', overflow:'hidden', minHeight:0 }}>
+    <div style={{ height:'100%', flex:1, display:'flex', flexDirection:'column', background:'transparent', overflow:'hidden', minHeight:0 }}>
       {mobileView === 'left' ? (
         <NavBar tab={leftTab} onTab={(t) => { setLeftTab(t); setRightTab(t); }} badgeCounts={badgeCounts} />
       ) : (
