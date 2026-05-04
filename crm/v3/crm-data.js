@@ -24,13 +24,13 @@ window.db = __db;
 // configured for the legacy HS256 anon key. Same pattern as crm/v2/app.jsx.
 function __invokeFn(name, opts = {}) {
   if (!__db) return Promise.resolve({ error: { message: 'supabase-js not loaded' } });
-  return __db.functions.invoke(name, {
-    ...opts,
-    headers: {
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      ...(opts.headers || {}),
-    },
-  });
+  // v10.1.30 fix: do NOT force Authorization: Bearer with the publishable
+  // key. After Key disabled legacy JWT API keys (2026-04-23), Supabase's
+  // gateway rejects any Authorization header that isn't a real JWT, with
+  // UNAUTHORIZED_INVALID_JWT_FORMAT. The publishable key must travel via
+  // the apikey header only — supabase-js sets that automatically when we
+  // call functions.invoke. We were stomping on the working setup.
+  return __db.functions.invoke(name, opts);
 }
 
 // ── Stage mapping (v2 numeric ↔ v3 string) ───────────────────────────────
