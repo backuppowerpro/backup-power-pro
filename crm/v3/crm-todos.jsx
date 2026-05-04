@@ -106,6 +106,11 @@ function TodosButton() {
     </svg>
   );
 
+  // v10.1.16 mobile fix: phone width detection so the popover can clamp to
+  // viewport. Was overflowing left edge on iPhone (340px popover, ~390pt
+  // viewport, anchored right:0 of button positioned mid-screen).
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 480;
+
   return (
     <div ref={wrapRef} style={{ position:'relative' }}>
       <button
@@ -136,7 +141,33 @@ function TodosButton() {
       </button>
 
       {open && (
-        <div style={{
+        <>
+          {/* v10.1.16 backdrop — prevents tap-through to the contact list
+              underneath. Mobile users were tapping outside the popover to
+              dismiss and accidentally opening contacts. */}
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position:'fixed', top:0, left:0, right:0, bottom:0,
+              zIndex:49,
+              background: isMobile ? 'rgba(11,31,59,0.18)' : 'transparent',
+            }}
+          />
+        <div style={isMobile ? {
+          // Mobile: full-screen-width drawer pinned below the panel header,
+          // safe-area aware so the home indicator doesn't eat content.
+          position:'fixed',
+          top:'calc(env(safe-area-inset-top) + 96px)',
+          left:8, right:8,
+          background:'white',
+          border:'1px solid rgba(27,43,75,0.12)',
+          borderRadius:12,
+          boxShadow:'0 12px 32px rgba(27,43,75,0.22)',
+          padding:14, zIndex:50,
+          maxHeight:'calc(100vh - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px)',
+          display:'flex', flexDirection:'column',
+        } : {
+          // Desktop: original anchored popover
           position:'absolute', right:0, top:'calc(100% + 6px)',
           width:340,
           background:'white',
@@ -249,6 +280,7 @@ function TodosButton() {
             </div>
           )}
         </div>
+        </>
       )}
     </div>
   );
