@@ -464,11 +464,8 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:14,height:14, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
-          <div contentEditable suppressContentEditableWarning data-placeholder="Search name, phone, address…"
-            ref={el => { if (el && el.innerText !== search) el.innerText = search || ''; }}
-            onInput={e => setSearch(e.currentTarget.innerText)}
-            onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
-            style={{ width:'100%', minHeight:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'10px 12px 10px 30px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box', whiteSpace:'nowrap', overflow:'hidden' }} />
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone, address…"
+            style={{ width:'100%', height:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'0 12px 0 30px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
         {/* Recently-viewed chip row — last 5 opened contacts. Daily
             "I just had them open, where'd they go" loop for a one-man shop
@@ -1314,11 +1311,8 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:13,height:13, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
-          <div contentEditable suppressContentEditableWarning data-placeholder="Search by contact name…"
-            ref={el => { if (el && el.innerText !== search) el.innerText = search || ''; }}
-            onInput={e => setSearch(e.currentTarget.innerText)}
-            onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
-            style={{ width:'100%', minHeight:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'10px 12px 10px 28px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box', whiteSpace:'nowrap', overflow:'hidden' }} />
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by contact name…"
+            style={{ width:'100%', height:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'0 12px 0 28px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
       </div>
       <FilterChips options={filterOpts} value={filter} onChange={setFilter} />
