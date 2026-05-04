@@ -233,7 +233,17 @@ function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, conte
           })}
         </div>
 
-        <div style={{ width: 44, flexShrink: 0 }} />
+        {/* v10.1.19: tiny version badge in the right slot so Key can
+            confirm at a glance which build the PWA actually loaded.
+            Reads BPP_VERSION from window (set by index.html). */}
+        <div style={{ width: 44, flexShrink: 0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <span style={{
+            fontSize: 9, fontWeight: 600,
+            color: 'rgba(255,255,255,0.45)',
+            fontFamily: 'DM Mono, monospace',
+            letterSpacing: '0.04em',
+          }}>v{window.BPP_VERSION || '?'}</span>
+        </div>
       </div>
     </div>
   );
