@@ -52,24 +52,33 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
-<script src="crm-data.js?v=94"></script>
-<script type="text/babel" src="crm-shared.jsx?v=94"></script>
-<script type="text/babel" src="crm-left.jsx?v=94"></script>
-<script type="text/babel" src="crm-right.jsx?v=94"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=94"></script>
-<script type="text/babel" src="crm-todos.jsx?v=94"></script>
-<script type="text/babel" src="crm-app.jsx?v=94"></script>
+<script src="crm-data.js?v=95"></script>
+<script type="text/babel" src="crm-shared.jsx?v=95"></script>
+<script type="text/babel" src="crm-left.jsx?v=95"></script>
+<script type="text/babel" src="crm-right.jsx?v=95"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=95"></script>
+<script type="text/babel" src="crm-todos.jsx?v=95"></script>
+<script type="text/babel" src="crm-app.jsx?v=95"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  /* v10.1.17: revert v10.1.16 chin-transparency — it caused full-page
-     scroll + keyboard sticking on iOS. Going back to a single solid bg
-     painted edge-to-edge (including the chin); fixed components below
-     get padding-bottom: env(safe-area-inset-bottom) so nothing lands
-     under the home indicator. We can revisit "transparent chin" later
-     with a non-breaking technique (probably 100dvh + viewport-fit
-     interplay, or a separate pseudo-element). */
+  /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
+     (v10.1.16) clipped #root height which broke iOS keyboard handling.
+     This keeps #root at full viewport height (no layout regression) and
+     uses a fixed::before behind the React tree to paint #f4f6f9 only
+     ABOVE the home indicator. Below that, body bg is transparent so iOS
+     chrome shows through. Compose bar + bottom buttons already pad with
+     env(safe-area-inset-bottom) so content never lives on the chin. */
   html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
-  body { font-family: 'DM Sans', sans-serif; background: #f4f6f9; }
+  body { font-family: 'DM Sans', sans-serif; background: transparent; }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    bottom: env(safe-area-inset-bottom, 0px);
+    background: #f4f6f9;
+    z-index: -1;
+    pointer-events: none;
+  }
   #root { height: 100%; overflow: hidden; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }

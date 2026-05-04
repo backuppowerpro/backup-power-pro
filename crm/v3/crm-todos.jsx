@@ -156,9 +156,15 @@ function TodosButton() {
         <div style={isMobile ? {
           // Mobile: full-screen-width drawer pinned below the panel header,
           // safe-area aware so the home indicator doesn't eat content.
+          // CRITICAL: the mobile-panel ancestor has `transform` which makes
+          // it the containing block for position:fixed (CSS spec). So we
+          // can't use right:N — that anchors to the 200%-wide swiping
+          // parent, not the viewport. Use vw for width + left for position
+          // so the popover stays viewport-locked.
           position:'fixed',
           top:'calc(env(safe-area-inset-top) + 96px)',
-          left:8, right:8,
+          left:8,
+          width:'calc(100vw - 16px)',
           background:'white',
           border:'1px solid rgba(27,43,75,0.12)',
           borderRadius:12,
