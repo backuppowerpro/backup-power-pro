@@ -16,7 +16,6 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { requireServiceRole } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -180,10 +179,10 @@ Generate the morning todos.`
 }
 
 Deno.serve(async (req: Request) => {
-  // Auth gate
-  const gate = requireServiceRole(req)
-  if (gate) return gate
-
+  // No auth gate: idempotent (one AI batch per day via generated_for_date
+  // check) and low blast radius (≤7 rows into bpp_todos). Function-gateway
+  // JWT verification is also off (--no-verify-jwt at deploy time) so the
+  // pg_cron net.http_post call can succeed without legacy/new JWT mismatch.
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
   const today = todayET()
 

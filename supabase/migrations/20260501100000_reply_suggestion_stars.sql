@@ -19,17 +19,24 @@ alter table public.reply_suggestion_stars enable row level security;
 
 -- Service role full access; anon read-only because the suggest-reply
 -- function can run with the publishable key + the body text is non-PII.
-create policy if not exists reply_suggestion_stars_service_all
+-- Note: Postgres doesn't support CREATE POLICY IF NOT EXISTS (this
+-- migration was originally written with that invalid syntax and blocked
+-- supabase db push for 3 days). DROP POLICY IF EXISTS + CREATE is the
+-- idempotent equivalent.
+drop policy if exists reply_suggestion_stars_service_all on public.reply_suggestion_stars;
+create policy reply_suggestion_stars_service_all
   on public.reply_suggestion_stars
   for all to service_role
   using (true) with check (true);
 
-create policy if not exists reply_suggestion_stars_authenticated_read
+drop policy if exists reply_suggestion_stars_authenticated_read on public.reply_suggestion_stars;
+create policy reply_suggestion_stars_authenticated_read
   on public.reply_suggestion_stars
   for select to authenticated
   using (true);
 
-create policy if not exists reply_suggestion_stars_authenticated_insert
+drop policy if exists reply_suggestion_stars_authenticated_insert on public.reply_suggestion_stars;
+create policy reply_suggestion_stars_authenticated_insert
   on public.reply_suggestion_stars
   for insert to authenticated
   with check (true);

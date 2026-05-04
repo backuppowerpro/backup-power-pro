@@ -24,12 +24,14 @@ create index if not exists gbp_reviews_review_time_idx
 
 alter table public.gbp_reviews enable row level security;
 
-create policy if not exists gbp_reviews_service_all
+drop policy if exists gbp_reviews_service_all on public.gbp_reviews;
+create policy gbp_reviews_service_all
   on public.gbp_reviews
   for all to service_role
   using (true) with check (true);
 
-create policy if not exists gbp_reviews_authenticated_read
+drop policy if exists gbp_reviews_authenticated_read on public.gbp_reviews;
+create policy gbp_reviews_authenticated_read
   on public.gbp_reviews
   for select to authenticated
   using (true);
