@@ -59,18 +59,14 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '109';
-  // v10.1.27: gold-standard pattern from mattpilott/ios-chat (research at
-  // /tmp/ios-pwa-chat-research.md). Two CSS variables, one event listener,
-  // and `touch-action: none` on body — that's the complete fix.
+  window.BPP_VERSION = '110';
+  // v10.1.28: gold-standard pattern + iOS programmatic-scroll defense.
   //
-  //   --vvh = visualViewport.height          → page sizes to the visible area
-  //   --vvs = safe-area-inset-bottom OR 0    → chin disappears when keyboard
-  //                                            is open (vv.height < 600)
-  //
-  // body { touch-action: none } stops iOS from scrolling the document on
-  // input focus. Specific scroll containers re-enable touch via
-  // touch-action: pan-y (CSS rule below).
+  // Real iPhone test on v=109 showed iOS still scrolls window on input
+  // focus despite touch-action:none on body. Adding a hard scrollTo(0,0)
+  // pin via scroll listener — iOS scrolls, we snap back. Also pin via
+  // requestAnimationFrame loop while an input is focused, since iOS
+  // sometimes scrolls between scroll events.
   (function(){
     if (typeof window === 'undefined') return;
     var vv = window.visualViewport;
@@ -85,15 +81,44 @@
     if (vv) vv.addEventListener('resize', setVVH);
     window.addEventListener('resize', setVVH);
     window.addEventListener('orientationchange', setVVH);
+
+    // Hard pin window scroll to (0,0). Fires on every iOS auto-scroll attempt.
+    var snap = function(){
+      if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
+      // Also pin documentElement.scrollTop — iOS sometimes scrolls that
+      // instead of the window in standalone PWA.
+      if (document.documentElement.scrollTop) document.documentElement.scrollTop = 0;
+      if (document.body.scrollTop) document.body.scrollTop = 0;
+    };
+    window.addEventListener('scroll', snap, { passive: true, capture: true });
+    document.addEventListener('scroll', snap, { passive: true, capture: true });
+
+    // While any input is focused, run a snap loop via rAF — iOS scrolls
+    // between events, so we need to be aggressive.
+    var rafId = null;
+    var loop = function(){ snap(); rafId = requestAnimationFrame(loop); };
+    window.addEventListener('focusin', function(e){
+      var t = e.target;
+      if (!t || (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA')) return;
+      snap();
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(loop);
+    });
+    window.addEventListener('focusout', function(){
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      // One last snap on blur in case iOS scrolled during the close anim.
+      setTimeout(snap, 50);
+      setTimeout(snap, 250);
+    });
   })();
 </script>
-<script src="crm-data.js?v=109"></script>
-<script type="text/babel" src="crm-shared.jsx?v=109"></script>
-<script type="text/babel" src="crm-left.jsx?v=109"></script>
-<script type="text/babel" src="crm-right.jsx?v=109"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=109"></script>
-<script type="text/babel" src="crm-todos.jsx?v=109"></script>
-<script type="text/babel" src="crm-app.jsx?v=109"></script>
+<script src="crm-data.js?v=110"></script>
+<script type="text/babel" src="crm-shared.jsx?v=110"></script>
+<script type="text/babel" src="crm-left.jsx?v=110"></script>
+<script type="text/babel" src="crm-right.jsx?v=110"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=110"></script>
+<script type="text/babel" src="crm-todos.jsx?v=110"></script>
+<script type="text/babel" src="crm-app.jsx?v=110"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
