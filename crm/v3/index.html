@@ -59,44 +59,51 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '105';
-  // v10.1.23: targeted iOS PWA fixes.
-  // 1. Track keyboard height via visualViewport. When keyboard opens,
-  //    visualViewport.height shrinks by keyboardHeight + sometimes also
-  //    the input-accessory toolbar. We expose the delta as --kb-h so the
-  //    mobile panel can shrink by that exact amount, keeping compose bar
-  //    visually above the keyboard.
-  // 2. Pin window.scrollTo(0,0) — iOS PWAs ignore the viewport meta hints
-  //    and try to scroll the document up. We block that.
+  window.BPP_VERSION = '106';
+  // v10.1.24: only set --kb-h while a text input is focused. Previously we
+  // updated it on every visualViewport.resize/scroll which fired at PWA
+  // load with a smaller height (iOS reports visualViewport.height < inner-
+  // Height during PWA chrome animation) — leaving a 100-150px gray strip
+  // below the contact list. Now the var stays 0 unless we explicitly
+  // detect a focused input.
   (function(){
     if (typeof window === 'undefined') return;
-    var snap = function(){ window.scrollTo(0, 0); };
-    var setKb = function(){
+    var setKb = function(force){
+      // Only apply if a text input is currently focused. Otherwise reset.
+      var ae = document.activeElement;
+      var isInput = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
+      if (!isInput && !force) {
+        document.documentElement.style.removeProperty('--kb-h');
+        return;
+      }
       var iH = window.innerHeight;
       var vH = (window.visualViewport && window.visualViewport.height) || iH;
       var kb = Math.max(0, iH - vH);
       document.documentElement.style.setProperty('--kb-h', kb + 'px');
-      snap();
     };
-    setKb();
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setKb);
-      window.visualViewport.addEventListener('scroll', setKb);
+      window.visualViewport.addEventListener('resize', function(){ setKb(false); });
     }
-    window.addEventListener('resize', setKb);
-    window.addEventListener('orientationchange', setKb);
-    window.addEventListener('scroll', snap, { passive: true });
-    window.addEventListener('focusin', function(){ setTimeout(setKb, 50); });
-    window.addEventListener('focusout', function(){ setTimeout(setKb, 50); });
+    window.addEventListener('focusin', function(e){
+      // Wait a beat for the keyboard to actually open before measuring.
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) {
+        setTimeout(function(){ setKb(true); }, 250);
+      }
+    });
+    window.addEventListener('focusout', function(){
+      // Reset immediately on blur so the layout snaps back to full size.
+      document.documentElement.style.removeProperty('--kb-h');
+    });
   })();
 </script>
-<script src="crm-data.js?v=105"></script>
-<script type="text/babel" src="crm-shared.jsx?v=105"></script>
-<script type="text/babel" src="crm-left.jsx?v=105"></script>
-<script type="text/babel" src="crm-right.jsx?v=105"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=105"></script>
-<script type="text/babel" src="crm-todos.jsx?v=105"></script>
-<script type="text/babel" src="crm-app.jsx?v=105"></script>
+<script src="crm-data.js?v=106"></script>
+<script type="text/babel" src="crm-shared.jsx?v=106"></script>
+<script type="text/babel" src="crm-left.jsx?v=106"></script>
+<script type="text/babel" src="crm-right.jsx?v=106"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=106"></script>
+<script type="text/babel" src="crm-todos.jsx?v=106"></script>
+<script type="text/babel" src="crm-app.jsx?v=106"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
