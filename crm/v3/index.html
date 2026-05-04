@@ -62,7 +62,7 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '112';
+  window.BPP_VERSION = '111';
   // v10.1.28: gold-standard pattern + iOS programmatic-scroll defense.
   //
   // Real iPhone test on v=109 showed iOS still scrolls window on input
@@ -102,9 +102,7 @@
     var loop = function(){ snap(); rafId = requestAnimationFrame(loop); };
     window.addEventListener('focusin', function(e){
       var t = e.target;
-      if (!t) return;
-      var isEditable = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable;
-      if (!isEditable) return;
+      if (!t || (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA')) return;
       snap();
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(loop);
@@ -117,13 +115,13 @@
     });
   })();
 </script>
-<script src="crm-data.js?v=112"></script>
-<script type="text/babel" src="crm-shared.jsx?v=112"></script>
-<script type="text/babel" src="crm-left.jsx?v=112"></script>
-<script type="text/babel" src="crm-right.jsx?v=112"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=112"></script>
-<script type="text/babel" src="crm-todos.jsx?v=112"></script>
-<script type="text/babel" src="crm-app.jsx?v=112"></script>
+<script src="crm-data.js?v=111"></script>
+<script type="text/babel" src="crm-shared.jsx?v=111"></script>
+<script type="text/babel" src="crm-left.jsx?v=111"></script>
+<script type="text/babel" src="crm-right.jsx?v=111"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=111"></script>
+<script type="text/babel" src="crm-todos.jsx?v=111"></script>
+<script type="text/babel" src="crm-app.jsx?v=111"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
@@ -187,13 +185,6 @@
   .mobile-panel *::-webkit-scrollbar { display: none; }
   .mobile-panel * { scrollbar-width: none; }
   button, textarea, input { font-family: 'DM Sans', sans-serif; }
-  /* contentEditable placeholder support (no native :placeholder for divs).
-     The compose div uses data-placeholder; we render that via :empty:before. */
-  [contenteditable][data-placeholder]:empty:before {
-    content: attr(data-placeholder);
-    color: #9CA3AF;
-    pointer-events: none;
-  }
   /* Crisp icon rendering — geometricPrecision over speed (default).
      Eliminates the "lighter at intersection" artifact when stroke paths
      cross each other in icons like the calendar. */

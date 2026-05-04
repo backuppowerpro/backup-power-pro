@@ -3036,29 +3036,34 @@ function ContactMessages({ contact, thread, isDnc }) {
           the chin gap below compose when keyboard is up. */}
       {!isDnc && (
         <div style={{ padding:'10px 16px calc(14px + var(--vvs, env(safe-area-inset-bottom, 0px)))', display:'flex', gap:8, alignItems:'flex-end', flexShrink:0 }}>
-          {/* v10.1.30: contentEditable div instead of textarea. iOS shows
-              the up/down/checkmark accessory bar above the keyboard for
-              ANY form field (input/textarea), but NOT for contentEditable
-              elements. This kills the bar.
-              Caveats: keep .innerText in sync with React state, handle
-              placeholder via :empty pseudo, manually clear on send. */}
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            data-placeholder="Message…"
-            ref={el => { if (el && el.innerText !== msg) el.innerText = msg || ''; }}
-            onInput={e => setMsg(e.currentTarget.innerText)}
+          {/* v10.1.29: 1-line default, auto-grow to 3 lines, then scroll.
+              Sets row=1 + measures scrollHeight on every input to expand. */}
+          <textarea value={msg}
+            rows={1}
+            onChange={e => {
+              setMsg(e.target.value);
+              const ta = e.target;
+              ta.style.height = 'auto';
+              ta.style.height = Math.min(ta.scrollHeight, 92) + 'px';
+            }}
             onKeyDown={e=>{
+              // Desktop: Enter sends, Shift+Enter newline. Mobile: Return
+              // ALWAYS newlines (iOS-native textarea behavior). Send button
+              // is the only way to send on mobile.
               const isMobile = window.innerWidth < 768;
               if (e.key==='Enter' && !e.shiftKey && !isMobile) { e.preventDefault(); send(); }
             }}
+            placeholder="Message…"
+            enterKeyHint="send"
+            autoCorrect="on"
+            autoCapitalize="sentences"
+            spellCheck={true}
             style={{
               flex:1, minHeight:36, maxHeight:92,
               borderRadius:8, border:'1px solid rgba(11,31,59,0.15)',
-              padding:'8px 12px', fontSize:16, fontFamily:'inherit', outline:'none',
+              padding:'8px 12px', fontSize:16, fontFamily:'inherit', resize:'none', outline:'none',
               color:NAVY, lineHeight:1.35, boxSizing:'border-box', background:'white',
-              overflowY:'auto', whiteSpace:'pre-wrap', wordBreak:'break-word',
-              WebkitUserModify: 'read-write-plaintext-only',
+              overflowY:'auto',
             }}
           />
           <button onClick={send} aria-label="Send" style={{
