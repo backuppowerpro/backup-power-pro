@@ -59,17 +59,23 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '106';
-  // v10.1.24: only set --kb-h while a text input is focused. Previously we
-  // updated it on every visualViewport.resize/scroll which fired at PWA
-  // load with a smaller height (iOS reports visualViewport.height < inner-
-  // Height during PWA chrome animation) — leaving a 100-150px gray strip
-  // below the contact list. Now the var stays 0 unless we explicitly
-  // detect a focused input.
+  window.BPP_VERSION = '107';
+  // v10.1.25: explicit pixel sizing via JS. Every CSS unit (100%, 100dvh,
+  // 100vh, position:fixed inset:0) has been giving us a chin/gray bar at
+  // the bottom. Bypass all CSS unit quirks by setting --vh-px directly to
+  // window.innerHeight in pixels. html height = var(--vh-px). On orientation
+  // change or resize, recompute. Keyboard handling unchanged: --kb-h still
+  // tracks visualViewport delta when input is focused.
   (function(){
     if (typeof window === 'undefined') return;
+    var setVH = function(){
+      document.documentElement.style.setProperty('--vh-px', window.innerHeight + 'px');
+    };
+    setVH();
+    window.addEventListener('resize', setVH);
+    window.addEventListener('orientationchange', setVH);
+
     var setKb = function(force){
-      // Only apply if a text input is currently focused. Otherwise reset.
       var ae = document.activeElement;
       var isInput = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
       if (!isInput && !force) {
@@ -85,25 +91,23 @@
       window.visualViewport.addEventListener('resize', function(){ setKb(false); });
     }
     window.addEventListener('focusin', function(e){
-      // Wait a beat for the keyboard to actually open before measuring.
       var t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) {
         setTimeout(function(){ setKb(true); }, 250);
       }
     });
     window.addEventListener('focusout', function(){
-      // Reset immediately on blur so the layout snaps back to full size.
       document.documentElement.style.removeProperty('--kb-h');
     });
   })();
 </script>
-<script src="crm-data.js?v=106"></script>
-<script type="text/babel" src="crm-shared.jsx?v=106"></script>
-<script type="text/babel" src="crm-left.jsx?v=106"></script>
-<script type="text/babel" src="crm-right.jsx?v=106"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=106"></script>
-<script type="text/babel" src="crm-todos.jsx?v=106"></script>
-<script type="text/babel" src="crm-app.jsx?v=106"></script>
+<script src="crm-data.js?v=107"></script>
+<script type="text/babel" src="crm-shared.jsx?v=107"></script>
+<script type="text/babel" src="crm-left.jsx?v=107"></script>
+<script type="text/babel" src="crm-right.jsx?v=107"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=107"></script>
+<script type="text/babel" src="crm-todos.jsx?v=107"></script>
+<script type="text/babel" src="crm-app.jsx?v=107"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
@@ -129,9 +133,11 @@
      viewport including the home-indicator zone. 100dvh in iOS standalone
      PWA can return shorter than the screen, leaving a visible "chin" that
      iOS paints white below the page. position:fixed doesn't suffer this. */
-  html { height: 100%; overflow: hidden; }
+  /* Explicit pixel height from JS — eliminates dvh/vh/100% quirks that
+     were leaving gray bars at the bottom in iOS standalone PWA. */
+  html { height: var(--vh-px, 100%); overflow: hidden; }
   body {
-    position: fixed; inset: 0;
+    height: var(--vh-px, 100%);
     overflow: hidden; overscroll-behavior: none;
     font-family: 'DM Sans', sans-serif; background: #f4f6f9;
   }
