@@ -495,21 +495,9 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
         )}
       </div>
       <FilterChips options={stageOpts} value={stage} onChange={setStage} />
-      {/* Clear-filters affordance — easy to leave a stage filter on, miss
-          new leads landing in 'new'. Only renders when a non-default
-          filter is active. */}
-      {stage !== 'all' && (
-        <div style={{ padding:'6px 18px 0', flexShrink:0 }}>
-          <button onClick={() => setStage('all')} style={{
-            height:24, padding:'0 10px', borderRadius:12, background:'#FEF3C7', color:'#92400E',
-            border:'none', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
-            display:'inline-flex', alignItems:'center', gap:5,
-          }}>
-            <span>Clear filter</span>
-            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-          </button>
-        </div>
-      )}
+      {/* v10.1.16 (Key feedback 2026-05-04): "Clear filter" pill removed.
+          Tapping the "All" chip already clears the filter; the extra pill
+          was redundant and visually noisy on both desktop and mobile. */}
       <PullToRefreshList style={{ flex:1, overflowY:'auto', minHeight:0 }} onRefresh={() => window.CRM?.__refetch?.()}>
         {filtered.length === 0 && <EmptyState icon="contacts" text="No contacts match" />}
         {filtered.map(c => {

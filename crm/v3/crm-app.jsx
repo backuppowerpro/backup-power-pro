@@ -119,6 +119,17 @@ function Root() {
 
   // Left panel has its own tab state
   const [leftTab, setLeftTab] = React.useState('contacts');
+
+  // v10.1.16 mobile fix: when the user navigates between tabs, blur any
+  // active text input so the iOS keyboard dismisses. Without this, leaving
+  // Messages while a textarea has focus leaves the keyboard floating over
+  // the next tab. Affects keyboard, autoFocus, AND helps when accessibility
+  // services have stuck focus.
+  React.useEffect(() => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [leftTab]);
   // URL state: hydrate active contact + right-tab from query string on
   // first load. Pull-to-refresh on iOS Safari, accidental tab close, or
   // a shared link can then restore the prior context. Format:

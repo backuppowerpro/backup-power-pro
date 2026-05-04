@@ -3054,7 +3054,14 @@ function ContactMessages({ contact, thread, isDnc }) {
       {/* Compose */}
       {!isDnc && (
         <div style={{ padding:'10px 16px calc(14px + env(safe-area-inset-bottom, 0px))', display:'flex', gap:8, alignItems:'flex-end', flexShrink:0 }}>
-          <textarea value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}}
+          <textarea value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>{
+            // Desktop: Enter sends, Shift+Enter newline. Mobile: Return
+            // ALWAYS newlines (iOS-native textarea behavior). Send button
+            // is the only way to send on mobile. Prevents accidental sends
+            // when the user just wants to format their message.
+            const isMobile = window.innerWidth < 768;
+            if (e.key==='Enter' && !e.shiftKey && !isMobile) { e.preventDefault(); send(); }
+          }}
             placeholder="Message…"
             style={{
               flex:1, minHeight:40, maxHeight:120,
