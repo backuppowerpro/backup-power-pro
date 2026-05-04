@@ -3051,9 +3051,12 @@ function ContactMessages({ contact, thread, isDnc }) {
         </div>
       )}
 
-      {/* Compose */}
+      {/* Compose. v10.1.27: padding-bottom uses --vvs which collapses to 0
+          when the keyboard is open (visualViewport.height < 600), restoring
+          to env(safe-area-inset-bottom) when keyboard closed. Eliminates
+          the chin gap below compose when keyboard is up. */}
       {!isDnc && (
-        <div style={{ padding:'10px 16px calc(14px + env(safe-area-inset-bottom, 0px))', display:'flex', gap:8, alignItems:'flex-end', flexShrink:0 }}>
+        <div style={{ padding:'10px 16px calc(14px + var(--vvs, env(safe-area-inset-bottom, 0px)))', display:'flex', gap:8, alignItems:'flex-end', flexShrink:0 }}>
           <textarea value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>{
             // Desktop: Enter sends, Shift+Enter newline. Mobile: Return
             // ALWAYS newlines (iOS-native textarea behavior). Send button

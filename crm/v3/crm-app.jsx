@@ -310,13 +310,12 @@ function Root() {
   const isMobile = vw < 900;
 
   // ── Mobile production layout (full viewport, no device chrome) ──
-  // v10.1.23: height shrinks by --kb-h (keyboard height set by index.html
-  // JS via visualViewport). Inner swiping container is position:absolute
-  // inset:0 so it ignores padding — only height-shrink propagates. When
-  // keyboard opens, the whole app shrinks, NavBar stays pinned at top,
-  // compose bar (panel bottom) lands above keyboard.
+  // v10.1.27: height: 100% rides on body which is sized to --vvh
+  // (visualViewport.height) by index.html JS. When keyboard opens, body
+  // shrinks → mobileApp shrinks → compose bar at panel bottom lands above
+  // the keyboard automatically.
   const mobileApp = (
-    <div style={{ height:'calc(100% - var(--kb-h, 0px))', flex:'none', display:'flex', flexDirection:'column', background:'transparent', overflow:'hidden', minHeight:0 }}>
+    <div style={{ height:'100%', flex:1, display:'flex', flexDirection:'column', background:'transparent', overflow:'hidden', minHeight:0 }}>
       {mobileView === 'left' ? (
         <NavBar tab={leftTab} onTab={(t) => { setLeftTab(t); setRightTab(t); }} badgeCounts={badgeCounts} />
       ) : (
