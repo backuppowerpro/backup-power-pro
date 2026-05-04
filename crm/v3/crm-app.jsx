@@ -125,11 +125,10 @@ function Root() {
   // Messages while a textarea has focus leaves the keyboard floating over
   // the next tab. Affects keyboard, autoFocus, AND helps when accessibility
   // services have stuck focus.
-  React.useEffect(() => {
-    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-  }, [leftTab]);
+  // v10.1.17: blur on mobileView change too, not just leftTab. The keyboard
+  // was sticking when swiping from Messages (right pane) back to Contacts
+  // (left pane) because the textarea retained focus across the pane swap.
+
   // URL state: hydrate active contact + right-tab from query string on
   // first load. Pull-to-refresh on iOS Safari, accidental tab close, or
   // a shared link can then restore the prior context. Format:
@@ -198,6 +197,15 @@ function Root() {
   const bumpData = React.useCallback(() => setBump(n => n + 1), []);
   // Mobile: 'left' or 'right'
   const [mobileView, setMobileView] = React.useState('left');
+  // v10.1.17 mobile fix: blur the focused input whenever the user changes
+  // tab OR swaps panes, so the iOS keyboard dismisses. Without this, leaving
+  // Messages while the textarea has focus leaves the keyboard floating over
+  // the Contacts list (Key feedback 2026-05-04).
+  React.useEffect(() => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [leftTab, mobileView]);
   const [dncSet, setDncSet] = React.useState(new Set());
   // Seed dncSet from the DB-flagged contacts so the UI's compose-bar lock,
   // DNC pill, and call-button gate match reality. Refresh on every realtime
