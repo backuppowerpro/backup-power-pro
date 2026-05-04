@@ -450,8 +450,10 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
       {/* Notes before Photos — Key references notes more often than
           photos when re-opening a contact. */}
       <InfoSection title="Notes" editAction={null}>
-        <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Internal notes (auto-saves)…"
-          style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'10px 12px',fontSize:16,color:NAVY,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box' }} />
+        <div contentEditable suppressContentEditableWarning data-placeholder="Internal notes (auto-saves)…"
+          ref={el => { if (el && el.innerText !== note) el.innerText = note || ''; }}
+          onInput={e => setNote(e.currentTarget.innerText)}
+          style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'10px 12px',fontSize:16,color:NAVY,outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box',whiteSpace:'pre-wrap',wordBreak:'break-word' }} />
         <div style={{ marginTop:6, fontSize:11, color:'#999', minHeight:14 }}>
           {noteSaving ? 'Saving…' : noteSaved ? 'Saved' : ' '}
         </div>
@@ -1060,9 +1062,11 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Name</div>
-          <input value={name} onChange={e => setName(e.target.value)}
+          <div contentEditable suppressContentEditableWarning data-placeholder="Full name"
+            ref={el => { if (el && el.innerText !== name) el.innerText = name || ''; }}
+            onInput={e => setName(e.currentTarget.innerText)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save(); } }}
-            placeholder="Full name" autoCapitalize="words" style={inputStyle} />
+            style={{ ...inputStyle, minHeight:40, padding:'10px 12px', whiteSpace:'nowrap', overflow:'hidden' }} />
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Phone</div>
@@ -2682,9 +2686,12 @@ function TemplateEditModal({ onClose }) {
       <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:12 }}>
         {list.map((t, i) => (
           <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start' }}>
-            <textarea value={t} onChange={e => setList(l => l.map((x,j) => j===i ? e.target.value : x))} rows={2} style={{
-              flex:1, padding:'8px 10px', border:'1px solid rgba(11,31,59,0.15)', borderRadius:6, fontSize:13, color:NAVY, fontFamily:'inherit', resize:'vertical',
-            }} />
+            <div contentEditable suppressContentEditableWarning
+              ref={el => { if (el && el.innerText !== t) el.innerText = t || ''; }}
+              onInput={e => { const val = e.currentTarget.innerText; setList(l => l.map((x,j) => j===i ? val : x)); }}
+              style={{
+                flex:1, padding:'8px 10px', border:'1px solid rgba(11,31,59,0.15)', borderRadius:6, fontSize:13, color:NAVY, fontFamily:'inherit', minHeight:40, whiteSpace:'pre-wrap', wordBreak:'break-word', outline:'none',
+              }} />
             <button onClick={() => setList(l => l.filter((_,j) => j !== i))} aria-label="Delete template" style={{
               width:32, height:32, borderRadius:6, background:'#FEE2E2', color:'#991B1B', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700, flexShrink:0,
             }}>✕</button>
@@ -2692,9 +2699,13 @@ function TemplateEditModal({ onClose }) {
         ))}
       </div>
       <div style={{ display:'flex', gap:6, marginBottom:8 }}>
-        <input value={draft} onChange={e => setDraft(e.target.value)} placeholder="New template…" style={{
-          flex:1, height:36, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)', padding:'0 10px', fontSize:14, color:NAVY, fontFamily:'inherit',
-        }} />
+        <div contentEditable suppressContentEditableWarning data-placeholder="New template…"
+          ref={el => { if (el && el.innerText !== draft) el.innerText = draft || ''; }}
+          onInput={e => setDraft(e.currentTarget.innerText)}
+          onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+          style={{
+            flex:1, minHeight:36, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)', padding:'8px 10px', fontSize:14, color:NAVY, fontFamily:'inherit', outline:'none', whiteSpace:'nowrap', overflow:'hidden',
+          }} />
         <button onClick={() => { if (draft.trim()) { setList(l => [...l, draft.trim()]); setDraft(''); } }} style={{
           height:36, padding:'0 14px', borderRadius:6, background:NAVY, color:'white', border:'none', fontWeight:600, cursor:'pointer', fontFamily:'inherit', fontSize:13,
         }}>Add</button>
@@ -3717,12 +3728,11 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
       {/* Description */}
       <div>
         <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Description (optional)</div>
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder={lineLabel}
-          style={{ width:'100%', height:40, border:'1.5px solid #EBEBEA', borderRadius:8, padding:'0 10px', fontSize:16, color:NAVY, outline:'none', fontFamily:'inherit', background:'white', boxSizing:'border-box' }}
+        <div contentEditable suppressContentEditableWarning data-placeholder={lineLabel}
+          ref={el => { if (el && el.innerText !== description) el.innerText = description || ''; }}
+          onInput={e => setDescription(e.currentTarget.innerText)}
+          onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+          style={{ width:'100%', minHeight:40, border:'1.5px solid #EBEBEA', borderRadius:8, padding:'10px', fontSize:16, color:NAVY, outline:'none', fontFamily:'inherit', background:'white', boxSizing:'border-box', whiteSpace:'nowrap', overflow:'hidden' }}
         />
       </div>
     </div>
@@ -3975,14 +3985,18 @@ function AddressAutocomplete({ value, onChange, placeholder, style }) {
 
   return (
     <div style={{ position:'relative' }}>
-      <input
-        ref={inputRef}
-        value={value}
-        onChange={e => onChange(e.target.value)}
+      <div
+        ref={el => {
+          inputRef.current = el;
+          if (el && el.innerText !== value) el.innerText = value || '';
+        }}
+        contentEditable
+        suppressContentEditableWarning
+        data-placeholder={placeholder}
+        onInput={e => onChange(e.currentTarget.innerText)}
         onFocus={() => hits.length > 0 && setOpen(true)}
-        placeholder={placeholder}
-        autoComplete="street-address"
-        style={style}
+        onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+        style={{ ...style, minHeight: (style && style.height) || 40, height: 'auto', padding:'10px 12px', whiteSpace:'nowrap', overflow:'hidden' }}
       />
       {searching && (
         <div style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', fontSize:11, color:MUTED }}>…</div>
@@ -4099,9 +4113,11 @@ function NewContactModal({ onClose, onCreated }) {
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Name</div>
-          <input value={name} onChange={e=>setName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && canSave) { e.preventDefault(); submit(); } }}
-            placeholder="Full name" autoComplete="name" autoCapitalize="words" autoFocus style={inputStyle} />
+          <div contentEditable suppressContentEditableWarning data-placeholder="Full name"
+            ref={el => { if (el) { if (el.innerText !== name) el.innerText = name || ''; if (!name) setTimeout(() => el.focus(), 0); } }}
+            onInput={e => setName(e.currentTarget.innerText)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (canSave) submit(); } }}
+            style={{ ...inputStyle, minHeight:40, padding:'10px 12px', whiteSpace:'nowrap', overflow:'hidden' }} />
         </div>
         <div>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Phone</div>
