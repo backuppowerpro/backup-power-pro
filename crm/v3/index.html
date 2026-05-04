@@ -59,7 +59,7 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '101';
+  window.BPP_VERSION = '102';
   // v10.1.21: iOS standalone-PWA keyboard handling.
   //
   // Two pieces:
@@ -109,13 +109,13 @@
     window.addEventListener('orientationchange', setH);
   })();
 </script>
-<script src="crm-data.js?v=101"></script>
-<script type="text/babel" src="crm-shared.jsx?v=101"></script>
-<script type="text/babel" src="crm-left.jsx?v=101"></script>
-<script type="text/babel" src="crm-right.jsx?v=101"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=101"></script>
-<script type="text/babel" src="crm-todos.jsx?v=101"></script>
-<script type="text/babel" src="crm-app.jsx?v=101"></script>
+<script src="crm-data.js?v=102"></script>
+<script type="text/babel" src="crm-shared.jsx?v=102"></script>
+<script type="text/babel" src="crm-left.jsx?v=102"></script>
+<script type="text/babel" src="crm-right.jsx?v=102"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=102"></script>
+<script type="text/babel" src="crm-todos.jsx?v=102"></script>
+<script type="text/babel" src="crm-app.jsx?v=102"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
@@ -129,32 +129,17 @@
      on iOS 15.4+. Combined with interactive-widget=resizes-content above,
      the layout viewport shrinks WITH the keyboard so the page never has
      to scroll its document. Fallback to 100% for old browsers. */
-  /* --app-height tracks visualViewport.height (set by JS above). When the
-     keyboard opens, this shrinks WITH the visible viewport so the layout
-     itself shrinks — the compose bar lands above the keyboard, not behind. */
+  /* v10.1.22: chin transparency REVERTED — too many regressions for too
+     little visual upside. In standalone PWA mode there's no Safari chrome
+     to show through anyway; iOS just paints default white below the page.
+     Painting bg #f4f6f9 edge-to-edge looks identical to the rest of the
+     page and avoids the empty-space + clip-shifts problems.
+     --app-height (set by JS when keyboard opens) shrinks the layout so
+     the compose bar lands above the keyboard. When keyboard is closed
+     the var is unset and 100dvh fills the screen normally. */
   html, body { height: var(--app-height, 100dvh); overflow: hidden; overscroll-behavior: none; }
-  body { font-family: 'DM Sans', sans-serif; background: transparent; }
-  /* v10.1.20: floor the chin reserve at 34px. Standalone PWA mode on iOS
-     can return 0 for env(safe-area-inset-bottom) even on devices that
-     have a home indicator. max() gives us the right value: real env on
-     newer Safari, 34px floor for stubborn standalone PWAs. */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    bottom: max(env(safe-area-inset-bottom, 0px), 34px);
-    background: #f4f6f9;
-    z-index: -1;
-    pointer-events: none;
-  }
-  /* v10.1.19: clip #root to viewport-minus-chin so the React tree (which
-     paints white headers, panel bg, list rows) doesn't extend into the
-     home-indicator zone. Combined with body::before painting #f4f6f9 only
-     above the chin and body bg transparent below, the chin zone now shows
-     the OS layer (whatever iOS draws behind the PWA). v=92 had this clip
-     too but caused keyboard scroll problems — those are now resolved by
-     interactive-widget=resizes-content on the viewport meta. */
-  #root { height: calc(100% - max(env(safe-area-inset-bottom, 0px), 34px)); overflow: hidden; }
+  body { font-family: 'DM Sans', sans-serif; background: #f4f6f9; }
+  #root { height: 100%; overflow: hidden; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
