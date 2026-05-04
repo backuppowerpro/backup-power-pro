@@ -2908,31 +2908,10 @@ function ContactMessages({ contact, thread, isDnc }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0, position:'relative', background:'#F8F8F6' }}>
-      {/* Search toggle row — top-right magnifier expands an inline input.
-          Live count of matches; clearing collapses back to the icon. */}
-      <div style={{ padding:'6px 12px 0', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-        {!searchOpen ? (
-          <button onClick={() => setSearchOpen(true)} aria-label="Search this thread" style={{
-            marginLeft:'auto', width:30, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.12)', background:'white',
-            color:MUTED, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'inherit',
-          }}>
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/></svg>
-          </button>
-        ) : (
-          <>
-            <input value={threadQuery} onChange={e => setThreadQuery(e.target.value)} autoFocus
-              placeholder="Search this thread…" style={{
-                flex:1, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)',
-                padding:'0 10px', fontSize:14, fontFamily:'inherit', color:NAVY, background:'white', outline:'none',
-              }} />
-            <span style={{ fontSize:11, color:MUTED, whiteSpace:'nowrap' }}>{threadQuery.trim() ? `${matchCount} hit${matchCount === 1 ? '' : 's'}` : ''}</span>
-            <button onClick={() => { setSearchOpen(false); setThreadQuery(''); }} aria-label="Close search" style={{
-              width:30, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.12)', background:'white', color:MUTED,
-              cursor:'pointer', fontFamily:'inherit',
-            }}>✕</button>
-          </>
-        )}
-      </div>
+      {/* v10.1.29: dedicated search row removed (Key feedback 2026-05-04) —
+          the gray bar took valuable mobile vertical space for a feature
+          rarely used. When search is active (toggled from contact-header
+          magnifier), the compose input swaps to a search input below. */}
       <div ref={containerRef} style={{ flex:1, overflowY:'auto', minHeight:0, padding:'12px 16px', display:'flex', flexDirection:'column' }}>
         {Object.entries(grouped).map(([day, dayMsgs]) => (
           <div key={day}>
@@ -3057,20 +3036,34 @@ function ContactMessages({ contact, thread, isDnc }) {
           the chin gap below compose when keyboard is up. */}
       {!isDnc && (
         <div style={{ padding:'10px 16px calc(14px + var(--vvs, env(safe-area-inset-bottom, 0px)))', display:'flex', gap:8, alignItems:'flex-end', flexShrink:0 }}>
-          <textarea value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>{
-            // Desktop: Enter sends, Shift+Enter newline. Mobile: Return
-            // ALWAYS newlines (iOS-native textarea behavior). Send button
-            // is the only way to send on mobile. Prevents accidental sends
-            // when the user just wants to format their message.
-            const isMobile = window.innerWidth < 768;
-            if (e.key==='Enter' && !e.shiftKey && !isMobile) { e.preventDefault(); send(); }
-          }}
+          {/* v10.1.29: 1-line default, auto-grow to 3 lines, then scroll.
+              Sets row=1 + measures scrollHeight on every input to expand. */}
+          <textarea value={msg}
+            rows={1}
+            onChange={e => {
+              setMsg(e.target.value);
+              const ta = e.target;
+              ta.style.height = 'auto';
+              ta.style.height = Math.min(ta.scrollHeight, 92) + 'px';
+            }}
+            onKeyDown={e=>{
+              // Desktop: Enter sends, Shift+Enter newline. Mobile: Return
+              // ALWAYS newlines (iOS-native textarea behavior). Send button
+              // is the only way to send on mobile.
+              const isMobile = window.innerWidth < 768;
+              if (e.key==='Enter' && !e.shiftKey && !isMobile) { e.preventDefault(); send(); }
+            }}
             placeholder="Message…"
+            enterKeyHint="send"
+            autoCorrect="on"
+            autoCapitalize="sentences"
+            spellCheck={true}
             style={{
-              flex:1, minHeight:40, maxHeight:120,
+              flex:1, minHeight:36, maxHeight:92,
               borderRadius:8, border:'1px solid rgba(11,31,59,0.15)',
-              padding:'10px 12px', fontSize:16, fontFamily:'inherit', resize:'none', outline:'none',
-              color:NAVY, lineHeight:1.4, boxSizing:'border-box', background:'white',
+              padding:'8px 12px', fontSize:16, fontFamily:'inherit', resize:'none', outline:'none',
+              color:NAVY, lineHeight:1.35, boxSizing:'border-box', background:'white',
+              overflowY:'auto',
             }}
           />
           <button onClick={send} aria-label="Send" style={{

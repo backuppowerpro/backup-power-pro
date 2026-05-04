@@ -8,7 +8,10 @@
      this, html height: 100% becomes "viewport-minus-keyboard" automatically
      so the page doesn't shift. Without it, iOS scrolls the entire document
      up to keep focused inputs visible. -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+<!-- maximum-scale=1, user-scalable=no: prevent iOS zoom-on-focus when
+     tapping inputs. iOS auto-zooms if input font-size < 16px or if user
+     pinches; we want neither in this app. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
 <!-- v10.1.16: Cache-control headers from GitHub Pages set max-age=600 on
      this HTML, which means iOS Safari won't even ask for a fresh copy for
      10 minutes after a deploy — pull-to-refresh is a no-op. These meta
@@ -59,7 +62,7 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '110';
+  window.BPP_VERSION = '111';
   // v10.1.28: gold-standard pattern + iOS programmatic-scroll defense.
   //
   // Real iPhone test on v=109 showed iOS still scrolls window on input
@@ -112,13 +115,13 @@
     });
   })();
 </script>
-<script src="crm-data.js?v=110"></script>
-<script type="text/babel" src="crm-shared.jsx?v=110"></script>
-<script type="text/babel" src="crm-left.jsx?v=110"></script>
-<script type="text/babel" src="crm-right.jsx?v=110"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=110"></script>
-<script type="text/babel" src="crm-todos.jsx?v=110"></script>
-<script type="text/babel" src="crm-app.jsx?v=110"></script>
+<script src="crm-data.js?v=111"></script>
+<script type="text/babel" src="crm-shared.jsx?v=111"></script>
+<script type="text/babel" src="crm-left.jsx?v=111"></script>
+<script type="text/babel" src="crm-right.jsx?v=111"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=111"></script>
+<script type="text/babel" src="crm-todos.jsx?v=111"></script>
+<script type="text/babel" src="crm-app.jsx?v=111"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
