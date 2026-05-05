@@ -202,69 +202,115 @@ Deno.serve(async (req) => {
   const fname = (contact.name ? String(contact.name).split(/\s+/)[0] : 'Unknown')
   const lname = ''
 
+  // v10.1.32 — richer multi-line handoff format. Newlines instead of period
+  // joins so Key's eye can scan it on his iPhone in 2 seconds. Goal: every
+  // field Key needs to draft the quote should be in this one SMS.
+  const qd: any = contact.qualification_data || {}
+  const phoneFmt = formatPhone(contact.phone)
+  const fullName = (contact.name || '').trim() || 'Unknown name'
+
   let smsBody: string
   if (input.terminal_state === 'COMPLETE') {
     const { score, scoreLabel } = scoreLead(contact)
-    const parts = [`New qualified lead: ${fname}${lname} [${scoreLabel}]`]
-    if (contact.install_address) parts.push(`Address: ${contact.install_address}`)
-    if (contact.outlet_amps) parts.push(`${contact.outlet_amps}A 240V`)
-    const qd: any = contact.qualification_data || {}
-    if (qd.voltage_deferred) parts.push(`Voltage UNCONFIRMED — verify ${contact.gen_brand_model || 'model'} specs`)
-    else if (qd.voltage_pending) parts.push(`Voltage selector check needed (${contact.gen_brand_model})`)
+    const lines: string[] = []
+    // Header — score first so Key sees urgency at a glance
+    const scoreEmoji = score >= 4.5 ? '🟢' : score >= 3.5 ? '🟡' : '🟠'
+    lines.push(`${scoreEmoji} NEW LEAD — ${scoreLabel}`)
+    lines.push('')
+    // Contact block
+    lines.push(`${fullName}`)
+    lines.push(`${phoneFmt}`)
+    if (contact.email) lines.push(`${contact.email}`)
+    if (contact.install_address) lines.push(`${contact.install_address}`)
+    lines.push('')
+    // Setup block
+    const setupParts: string[] = []
+    if (contact.outlet_amps) setupParts.push(`${contact.outlet_amps}A 240V`)
+    else if (contact.gen_240v === true) setupParts.push('240V (amps unconfirmed)')
+    if (contact.gen_brand_model) setupParts.push(contact.gen_brand_model)
+    if (setupParts.length) lines.push(`Generator: ${setupParts.join(' · ')}`)
+    const panelLoc = qd.panel_location || qd.install_path
+    if (contact.panel_brand && panelLoc) lines.push(`Panel: ${contact.panel_brand}, ${panelLoc}`)
+    else if (contact.panel_brand) lines.push(`Panel: ${contact.panel_brand}`)
+    else if (panelLoc) lines.push(`Panel location: ${panelLoc}`)
+    // Photos
+    const photos: string[] = []
+    if (contact.primary_panel_photo_path) photos.push('panel')
+    if (contact.primary_outlet_photo_path) photos.push('outlet')
+    if (Array.isArray(contact.extra_photos) && contact.extra_photos.length) photos.push(`+${contact.extra_photos.length} more`)
+    if (photos.length) lines.push(`Photos: ${photos.join(', ')} (in CRM)`)
+    // Flags / asks
+    const flags: string[] = []
+    if (qd.voltage_deferred) flags.push(`⚠️ Voltage UNCONFIRMED — verify ${contact.gen_brand_model || 'model'} specs`)
+    else if (qd.voltage_pending) flags.push(`⚠️ Voltage selector check needed`)
+    if (qd.hazardous_panel_brand) flags.push(`⚠️ HAZARDOUS PANEL: ${qd.hazardous_panel_brand}`)
+    if (qd.surge_protector_question) flags.push('• Asked about surge protector')
+    if (qd.mentions_hoa) flags.push('• HOA approval needed')
+    if (qd.prefers_email_channel) flags.push('• Prefers email channel')
+    if (qd.handoff_recommendation_question) flags.push('• Wants generator recommendation')
+    if (Array.isArray(qd.load_mentions) && qd.load_mentions.length) flags.push(`• Loads: ${qd.load_mentions.join(', ')}`)
     if (qd.county) {
       const permit = qd.permit_authority
-      parts.push(permit ? `${qd.county} County (permit: ${permit})` : `${qd.county} County`)
+      flags.push(permit ? `• ${qd.county} County (permit: ${permit})` : `• ${qd.county} County`)
     }
-    const loads = qd.load_mentions
-    if (Array.isArray(loads) && loads.length) {
-      parts.push(`Loads: ${loads.join(', ')}`)
-    }
-    if (qd.surge_protector_question) parts.push('Asked about surge protector')
-    if (qd.mentions_hoa) parts.push('HOA approval needed')
-    if (qd.prefers_email_channel) parts.push('Prefers email')
-    if (qd.hazardous_panel_brand) parts.push(`HAZARDOUS PANEL: ${qd.hazardous_panel_brand}`)
     if (qd.defer_coverage_to_key && qd.coverage_excerpt) {
-      parts.push(`Coverage Q: "${String(qd.coverage_excerpt).slice(0, 120)}"`)
+      flags.push(`• Coverage Q: "${String(qd.coverage_excerpt).slice(0, 100)}"`)
     }
-    if (qd.handoff_recommendation_question) parts.push('Asked recommendation on a generator')
-    if (contact.gen_brand_model) parts.push(`Gen: ${contact.gen_brand_model}`)
-    if (contact.panel_brand) parts.push(`Panel: ${contact.panel_brand}`)
-    if (contact.email) parts.push(`Email: ${contact.email}`)
-    if (contact.bot_referral_source) parts.push(`Referral: ${contact.bot_referral_source}`)
-    parts.push('Photos in CRM. Quote due tomorrow morning.')
-    smsBody = parts.join('. ')
+    if (contact.bot_referral_source) flags.push(`• Referral: ${contact.bot_referral_source}`)
+    if (flags.length) {
+      lines.push('')
+      lines.push(...flags)
+    }
+    lines.push('')
+    lines.push('Quote due by tomorrow morning.')
+    smsBody = lines.join('\n')
     await sb.from('contacts').update({ lead_quality_score: score }).eq('id', input.contact_id)
   } else {
-    // NEEDS_CALLBACK
-    const qd: any = contact.qualification_data || {}
-    const parts = [`Callback needed: ${fname}${lname} (${formatPhone(contact.phone)})`]
-    if (qd.non_english_lead) parts.push('Non-English inbound (English-only support)')
-    if (qd.scope_mismatch_ats) parts.push('Wants ATS / whole-home setup (scope clarification)')
-    if (qd.hazardous_panel_brand) parts.push(`HAZARDOUS PANEL: ${qd.hazardous_panel_brand}`)
+    // NEEDS_CALLBACK — same multi-line format
+    const lines: string[] = []
+    lines.push(`📞 CALLBACK NEEDED`)
+    lines.push('')
+    lines.push(`${fullName}`)
+    lines.push(`${phoneFmt}`)
+    if (contact.email) lines.push(`${contact.email}`)
+    if (contact.install_address) lines.push(`${contact.install_address}`)
+    lines.push('')
+    // What we know so far
+    const known: string[] = []
+    if (contact.outlet_amps) known.push(`${contact.outlet_amps}A 240V`)
+    else if (contact.gen_240v === true) known.push('240V')
+    if (contact.gen_brand_model) known.push(contact.gen_brand_model)
+    if (known.length) lines.push(`Setup: ${known.join(' · ')}`)
+    // Why callback
+    const reasons: string[] = []
+    if (qd.non_english_lead) reasons.push('• Non-English inbound (English-only support)')
+    if (qd.scope_mismatch_ats) reasons.push('• Wants ATS / whole-home (out of scope)')
+    if (qd.hazardous_panel_brand) reasons.push(`• ⚠️ HAZARDOUS PANEL: ${qd.hazardous_panel_brand}`)
+    if (qd.priority === 'urgent') reasons.push('• 🚨 URGENT — customer demanded immediate callback')
+    if (qd.handoff_recommendation_question) reasons.push('• Wants generator recommendation')
+    if (qd.surge_protector_question) reasons.push('• Asked about surge protector')
+    if (qd.prefers_email_channel) reasons.push('• Prefers email channel')
+    if (qd.mentions_hoa) reasons.push('• HOA approval needed')
+    if (qd.off_topic_clarifying) reasons.push('• Asked off-topic technical question')
     if (qd.defer_coverage_to_key && qd.coverage_excerpt) {
-      parts.push(`Coverage Q: "${String(qd.coverage_excerpt).slice(0, 100)}"`)
-    }
-    if (qd.handoff_recommendation_question) parts.push('Asked recommendation on a generator')
-    if (qd.surge_protector_question) parts.push('Asked about surge protector')
-    if (qd.priority === 'urgent') parts.push('URGENT — customer demanded immediate callback')
-    if (qd.prefers_email_channel) parts.push('Prefers email over text')
-    if (qd.mentions_hoa) parts.push('HOA approval needed')
-    if (qd.off_topic_clarifying) parts.push('Asked off-topic technical question')
-    if (qd.county) {
-      const permit = qd.permit_authority
-      parts.push(permit ? `${qd.county} County (permit: ${permit})` : `${qd.county} County`)
-    }
-    if (Array.isArray(qd.load_mentions) && qd.load_mentions.length) {
-      parts.push(`Loads mentioned: ${qd.load_mentions.length}`)
+      reasons.push(`• Coverage Q: "${String(qd.coverage_excerpt).slice(0, 100)}"`)
     }
     if (input.callback_excerpt) {
-      parts.push(`They said: "${input.callback_excerpt.slice(0, 140)}"`)
+      reasons.push(`• They said: "${input.callback_excerpt.slice(0, 140)}"`)
     }
-    parts.push('See CRM for full thread.')
-    smsBody = parts.join('. ')
+    if (reasons.length) {
+      lines.push('')
+      lines.push('Why:')
+      lines.push(...reasons)
+    }
+    lines.push('')
+    lines.push('See CRM for full thread.')
+    smsBody = lines.join('\n')
   }
 
-  if (smsBody.length > 480) smsBody = smsBody.slice(0, 477) + '...'
+  // Twilio + OpenPhone both accept up to 1600 chars per SMS (chunked into
+  // segments by carrier). Was 480 before — too tight, was truncating.
+  if (smsBody.length > 1500) smsBody = smsBody.slice(0, 1497) + '...'
 
   const sendResp = await sendInternalSms(smsBody, input.contact_id, 'bot-handoff')
   if (!sendResp.ok) {

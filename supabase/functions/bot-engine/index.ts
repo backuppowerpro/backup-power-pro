@@ -269,6 +269,19 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       recent_turns: recentTurns,
     })
 
+    // v10.1.32 — suppress email_typo_suspected false-positives for legit
+    // custom domains. The classifier is over-eager: any long domain that
+    // isn't gmail/yahoo/etc gets flagged. Only TRUST the typo flag when the
+    // domain looks like a misspelling of a known provider (gmial, yahooo,
+    // hotnail, outlok, icoud, etc).
+    if (classifier?.email_typo_suspected) {
+      const inboundLower = String(input.message_body || '').toLowerCase()
+      const realTypoPatterns = /\b(gmial|gmal|gnail|gmaill|yahooo|yaho|hotnail|hotmial|outlok|outluk|icoud|iclod|aol\.cm|comcasr)\b/
+      if (!realTypoPatterns.test(inboundLower)) {
+        classifier.email_typo_suspected = false
+      }
+    }
+
     // 8. State machine transition
     const ctx = buildSmCtx(contact, classifier)
     const transitionResult = smTransition(contact.bot_state, classifier.label, ctx)
@@ -281,13 +294,55 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       qualification_data: newQd,
       last_bot_inbound_at: new Date().toISOString(),
     }
-    if (classifier?.extracted_value) {
-      // shallow common slot writes
-      if (classifier.label === 'gen_240v') stateUpdate.gen_240v = true
-      if (classifier.label === 'gen_120v') stateUpdate.gen_240v = false
-      if (classifier.label === 'outlet_50a') stateUpdate.outlet_amps = 50
-      if (classifier.label === 'outlet_30a_4prong' || classifier.label === 'outlet_30a') stateUpdate.outlet_amps = 30
-      if (classifier.label === 'email_provided' && classifier.extracted_value) stateUpdate.email = classifier.extracted_value
+    // Classifier-label-based slot writes
+    if (classifier?.label === 'gen_240v') stateUpdate.gen_240v = true
+    if (classifier?.label === 'gen_120v') stateUpdate.gen_240v = false
+    if (classifier?.label === 'outlet_50a') stateUpdate.outlet_amps = 50
+    if (classifier?.label === 'outlet_30a_4prong' || classifier?.label === 'outlet_30a') stateUpdate.outlet_amps = 30
+    if (classifier?.label === 'email_provided' && classifier.extracted_value) stateUpdate.email = classifier.extracted_value
+
+    // v10.1.32 — regex-based slot extraction. Customers often dump
+    // last name + email + address in one message at AWAIT_EMAIL. The
+    // classifier picks one primary label (usually email_provided), but
+    // we want ALL three captured regardless of which label it picked.
+    // Run cheap regexes on the inbound text and write any slot we find
+    // that isn't already filled. Existing values stay protected.
+    const inboundText = String(input.message_body || '')
+    if (inboundText) {
+      // Email
+      if (!stateUpdate.email && !contact.qualification_data?.email_locked) {
+        const emailMatch = inboundText.match(/[\w.+-]+@[\w-]+\.[\w.-]+/i)
+        if (emailMatch) stateUpdate.email = emailMatch[0]
+      }
+      // Address: street-number + street + (city + state + zip optional)
+      // Pattern: "123 Main St" / "22 Kimbell Ct Greenville SC 29615"
+      if (!contact.install_address) {
+        const addrMatch = inboundText.match(
+          /\b\d{1,6}\s+\w[\w\s.,'-]{3,80}?\b(?:st|street|rd|road|ave|avenue|blvd|dr|drive|ln|lane|trl|trail|way|ct|court|pl|place|hwy|highway|pkwy|parkway|cir|circle)\b[^.\n]{0,120}/i
+        )
+        if (addrMatch) {
+          stateUpdate.install_address = addrMatch[0].trim().replace(/[,;]+\s*$/, '')
+        }
+      }
+      // Last name — only at AWAIT_EMAIL (when we just asked for it)
+      // Customer often replies "Goodson, key@..." — first comma-separated
+      // token before email/address that's a single capitalized word.
+      if (contact.bot_state === 'AWAIT_EMAIL' && !contact.qualification_data?.last_name) {
+        // Take first token before first comma if it looks like a single
+        // capitalized name (no @, no digits, 2-25 chars)
+        const lnMatch = inboundText.match(/^\s*([A-Z][a-z'-]{1,24})(?:\s*[,]|\s*$)/)
+        if (lnMatch) {
+          const lname = lnMatch[1]
+          // Update both qualification_data and contacts.name (concat with first)
+          newQd.last_name = lname
+          stateUpdate.qualification_data = newQd
+          if (contact.name && !contact.name.includes(' ')) {
+            stateUpdate.name = `${contact.name} ${lname}`.trim()
+          } else if (!contact.name) {
+            stateUpdate.name = lname
+          }
+        }
+      }
     }
     await sb.from('contacts').update(stateUpdate).eq('id', contact.id)
 

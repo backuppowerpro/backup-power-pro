@@ -2506,7 +2506,20 @@ Deno.serve(async (req) => {
   // SMS are under 320 chars; anything over 2000 is almost certainly abuse.
   const rawMessageText = (messageData.body || messageData.text || '').trim()
   const messageText    = rawMessageText.length > 2000 ? rawMessageText.slice(0, 2000) + ' [truncated]' : rawMessageText
-  const hasMedia       = !!(messageData.media?.length)
+  // v10.1.32 — OpenPhone MMS may use any of `media`, `attachments`, or
+  // `mediaUrls`. Detect any non-empty array as media. Log raw shape on first
+  // hit so we can debug if a fourth shape shows up. Without this, photo MMS
+  // gets skipped as "empty" because plain `media` field is missing.
+  const mediaCandidates: any[] = []
+  if (Array.isArray(messageData.media)) mediaCandidates.push(...messageData.media)
+  if (Array.isArray(messageData.attachments)) mediaCandidates.push(...messageData.attachments)
+  if (Array.isArray(messageData.mediaUrls)) mediaCandidates.push(...messageData.mediaUrls)
+  if (Array.isArray(messageData.attachmentUrls)) mediaCandidates.push(...messageData.attachmentUrls)
+  const hasMedia = mediaCandidates.length > 0
+  if (hasMedia) {
+    console.log('[alex] media detected, count=', mediaCandidates.length,
+                'shape keys=', Object.keys(messageData).filter(k => /media|attach/i.test(k)).join(','))
+  }
   const quoMsgId       = messageData.id || `${fromPhone}-${messageData.createdAt || Date.now()}`
 
   // TEST_MODE allowlist: KEY_PHONE (Key's real test path) + any phone listed
@@ -2565,9 +2578,32 @@ Deno.serve(async (req) => {
       if (botContact?.bot_state && !botContact.bot_disabled) {
         const SUPABASE_URL_LOCAL = Deno.env.get('SUPABASE_URL')!
         const SUPABASE_SERVICE_KEY_LOCAL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        // v10.1.32 — extract media URLs from any of the OpenPhone shapes
         const mediaUrls = hasMedia
-          ? (messageData.media || []).map((m: any) => m.url || m).filter(Boolean)
+          ? mediaCandidates.map((m: any) => typeof m === 'string' ? m : (m?.url || m?.href || null)).filter(Boolean)
           : undefined
+
+        // v10.1.32 — persist inbound to messages table BEFORE routing to
+        // bot-engine, so the CRM thread shows the customer's side. Without
+        // this, only Ashley's outbound replies appear and the thread looks
+        // one-sided. Best-effort: don't block the bot pipeline if insert fails.
+        try {
+          const dbBody = mediaUrls && mediaUrls.length > 0
+            ? `[media:${mediaUrls[0]}]${messageText ? ' ' + messageText : ''}`
+            : messageText
+          await sb.from('messages').insert({
+            contact_id:     botContact.id,
+            direction:      'inbound',
+            body:           dbBody,
+            sender:         'lead',
+            sender_phone:   fromPhone,
+            quo_message_id: quoMsgId,
+            status:         'received',
+          })
+        } catch (e) {
+          console.warn('[ashley-route] inbound persist failed (non-fatal)', e)
+        }
+
         await fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
           method: 'POST',
           headers: {

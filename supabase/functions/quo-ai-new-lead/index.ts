@@ -289,6 +289,20 @@ Deno.serve(async (req) => {
       .select()
       .single()
     contact = c
+  } else {
+    // v10.1.32 — re-submit on an existing contact: backfill name/email/address
+    // if they were blank so the bot/CRM has fresh fields. Don't overwrite
+    // existing values (the customer's prior data wins).
+    const updates: Record<string, unknown> = {}
+    if (!contact.name && fullName) updates.name = fullName
+    if (!contact.email && email) updates.email = email
+    if (!contact.address && fullAddress) updates.address = fullAddress
+    if (Object.keys(updates).length > 0) {
+      try {
+        await supabase.from('contacts').update(updates).eq('id', contact.id)
+        Object.assign(contact, updates)
+      } catch (_) { /* best-effort */ }
+    }
   }
 
   if (!contact) {
