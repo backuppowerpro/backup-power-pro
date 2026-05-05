@@ -104,6 +104,20 @@ Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.co
 
 ---
 
+## Verify ground truth before assuming a file represents production
+
+**Failure mode (2026-05-05):** I grep'd for `get-quote.html`, found three copies, picked the most detailed (`website/get-quote.html`), and built logic on the assumption that its fields were live. The actual deployed form is the root `/get-quote.html` (a redirect stub) that hands off to a much simpler form on `/#getStarted` — `website/` was a draft. I shipped dead code before catching it.
+
+**The rule going forward — apply before any task that depends on what users actually see or send:**
+
+1. **Multiple files with the same name = a yellow flag, not a default.** If `find` returns 2+ copies, do NOT pick by which looks more "complete." Verify which is reachable from production.
+2. **Verify the live URL.** For anything customer-facing: `curl -s "https://backuppowerpro.com/<path>"` and read what actually returns. The deployed bytes are ground truth, not what's in the repo at any given path.
+3. **Watch for redirect stubs.** A 24-line file with `<meta http-equiv="refresh">` is a redirect, not a form. If you see one, follow it to the real surface.
+4. **Consult the production surface map.** `wiki/Operations/Production Surface Map.md` is the canonical mapping of customer-facing surfaces → file paths → what fields/data they capture. Read it before reasoning about a surface; update it when something changes.
+5. **Ask if uncertain.** Two seconds of "is this the live one?" beats an hour of dead code. Default to checking when stakes are >5 minutes of work.
+
+This applies double in autonomous loops where there's no live operator catching the mistake — a wrong assumption can cascade into 5 dead iterations.
+
 ## Thinking style — broaden before narrowing, every task
 
 Default failure mode: a task arrives, focus collapses to its literal scope, obvious adjacent things get missed. **Counter this on every non-trivial task.** Scope should *open* before it closes.
