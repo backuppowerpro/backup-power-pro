@@ -229,6 +229,17 @@ async function handleInbound(input: InboundInput): Promise<Response> {
         { status: 200, headers: { 'content-type': 'application/json' } })
     }
 
+    // v10.1.36 — race-condition guard: if conversation already terminal AND
+    // handoff already fired, drop subsequent rapid-fire messages so we don't
+    // send 3 duplicate "Key will follow up" texts. Customer can still
+    // re-engage via a fresh form submit; mid-flow at terminal is done.
+    if (TERMINAL_STATES.has(contact.bot_state) && contact.qualification_data?.handoff_fired_at) {
+      outcome = 'silent'
+      return new Response(JSON.stringify({ ok: true, skipped: 'already_terminal',
+        bot_state: contact.bot_state, handoff_fired_at: contact.qualification_data.handoff_fired_at }),
+        { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+
     // 4. STOP keyword fast path
     if (STOP_RE.test(input.message_body || '')) {
       await sb.from('contacts').update({
@@ -461,14 +472,79 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       } else {
         console.log('[bot-engine] handoff already fired, skipping duplicate')
       }
-      outcome = 'silent'
+      // v10.1.35 — send a polite customer-facing reply on terminal states
+      // so the customer doesn't get crickets. Silent on STOPPED only (TCPA).
+      // Vary the wording to feel less robotic.
+      let terminalReply: string | null = null
+      const fname = (contact.name ? String(contact.name).split(/\s+/)[0] : '').trim()
+      // v10.1.36 — don't prefix with first name if it matches the electrician's
+      // name (creates "Key, let me have Key..." double-Key). Also skip generic
+      // placeholders like "there" / "Lead".
+      const skipName = !fname || /^(there|lead|customer|unknown|key)$/i.test(fname)
+      const namePrefix = skipName ? '' : `${fname}, `
+      switch (transitionResult.next) {
+        case 'NEEDS_CALLBACK':
+          // Vary by simple hash of contact_id for natural variation.
+          // Avoid em-dashes (Key's hard rule). Avoid double-Key when
+          // fname=Key (skipName above already handles).
+          {
+            const greet = skipName ? 'Hey, ' : `Hey ${fname}, `
+            const variants = [
+              `${namePrefix}I'll have Key follow up with you on this one personally. He'll reach out shortly.`,
+              `${greet}going to pass this to Key directly so he can answer. He'll be in touch soon.`,
+              `Got it. I'll loop in Key on this one and he'll text you back personally.`,
+              `${namePrefix}Key handles this kind of thing himself. He'll follow up with you shortly.`,
+              `Sounds good. Letting Key take it from here, he'll reach out to you directly.`,
+            ]
+            const idx = (input.contact_id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % variants.length
+            terminalReply = variants[idx]
+          }
+          break
+        case 'POSTPONED':
+          terminalReply = `${namePrefix}no rush — text me back whenever you're ready and we'll pick up where we left off.`
+          break
+        case 'DISQUALIFIED_120V':
+          terminalReply = `${namePrefix}sounds like the generator's a 120V model, which won't work for a whole-home connection. If you ever upgrade to a 240V unit we'd be happy to help.`
+          break
+        case 'DISQUALIFIED_RENTER':
+          terminalReply = `${namePrefix}we can only install for property owners, since the work is permanent and needs permits. If you own a home elsewhere or end up buying, reach back out.`
+          break
+        case 'DISQUALIFIED_OUT_OF_AREA':
+          terminalReply = `${namePrefix}unfortunately you're outside our service area (Greenville/Spartanburg/Pickens counties). Wishing you luck finding someone local.`
+          break
+        // STOPPED stays silent per TCPA. COMPLETE has its own SCHEDULE_QUOTE
+        // close-out handled by phraser before reaching this point.
+      }
+
+      let sentTerminal = false
+      if (terminalReply) {
+        try {
+          const sendResp = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ contactId: contact.id, body: terminalReply }),
+          })
+          sentTerminal = sendResp.ok
+          if (sendResp.ok) {
+            await sb.from('contacts').update({
+              last_bot_outbound_at: new Date().toISOString(),
+            }).eq('id', contact.id)
+          }
+        } catch (e) {
+          console.warn('[bot-engine] terminal reply send failed', e)
+        }
+      }
+      outcome = sentTerminal ? 'replied' : 'silent'
       return new Response(JSON.stringify({
         ok: true,
         prev_state: contact.bot_state,
         next_state: transitionResult.next,
         classifier_label: classifier.label,
         intent: transitionResult.intent,
-        sent: false,
+        sent: sentTerminal,
         terminal: true,
       }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
