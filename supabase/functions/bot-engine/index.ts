@@ -24,7 +24,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { requireServiceRole } from '../_shared/auth.ts'
 import { assignGreetingVariant, renderGreeting, timeOfDayBucket } from '../_shared/exp008-variant.ts'
-import { transition as smTransition, INITIAL_STATE } from '../_shared/bot-state-machine.ts'
+import { transition as smTransition, INITIAL_STATE, STATES as SM_STATES } from '../_shared/bot-state-machine.ts'
 import { tryAcquireMessageLock, recordProcessed } from '../_shared/bot-idempotency.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -321,22 +321,60 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       !classifier?.email_typo_suspected &&
       (transitionResult.next === 'CHECK_EMAIL_TYPO' || transitionResult.next === 'AWAIT_ADDRESS_CONFIRM')
     if (skipToRecap) {
-      transitionResult = { ...transitionResult, next: 'RECAP', intent: undefined }
+      const recapMeta = SM_STATES?.RECAP
+      transitionResult = {
+        ...transitionResult,
+        next: 'RECAP',
+        intent: recapMeta?.intent,
+        fallback: typeof recapMeta?.fallback === 'function' ? recapMeta.fallback(ctx) : (recapMeta?.fallback || ''),
+      }
     }
 
     // v10.1.34 — auto-advance through AWAIT_RUN when customer already gave
     // panel location at AWAIT_PANEL_PHOTO (eg "in the garage on the outside
     // wall"). Don't make them answer the same question twice. Detect via
     // panel_location in qualification_data OR by panel keywords in inbound.
-    const panelLocKnown = !!(contact.qualification_data?.panel_location
-      || newQd.panel_location)
+    const panelLocPrior = !!(contact.qualification_data?.panel_location)
+    const panelLocInBody = /\b(garage|basement|utility|exterior|interior|outside|outdoor|crawl|attic)\b/i.test(inboundText)
+    const panelLocFromClassifier = !!(classifier?.label && /^panel_/.test(classifier.label))
+    const panelLocAny = panelLocPrior || panelLocInBody || panelLocFromClassifier
     if (
       transitionResult.next === 'AWAIT_RUN' &&
-      (panelLocKnown || /\b(garage|basement|utility|exterior|interior|outside|outdoor|crawl|attic)\b/i.test(inboundText))
+      panelLocAny
     ) {
       // If we're heading to AWAIT_RUN purely to ask panel location, but
       // the customer ALREADY told us, jump to AWAIT_EMAIL (close-info ask).
-      transitionResult = { ...transitionResult, next: 'AWAIT_EMAIL', intent: undefined }
+      // Swap intent + fallback to AWAIT_EMAIL's so the phraser renders
+      // the close-info ask (not the original transition's text).
+      const aeMeta = SM_STATES?.AWAIT_EMAIL
+      transitionResult = {
+        ...transitionResult,
+        next: 'AWAIT_EMAIL',
+        intent: aeMeta?.intent,
+        fallback: typeof aeMeta?.fallback === 'function' ? aeMeta.fallback(ctx) : (aeMeta?.fallback || ''),
+      }
+    }
+
+    // v10.1.34b — guard against false-positive NEEDS_CALLBACK at
+    // AWAIT_PANEL_PHOTO. Multi-clause messages like "panels in basement,
+    // ill grab pic tomorrow" sometimes classify as off_topic_question →
+    // NEEDS_CALLBACK terminal. If panel location is mentioned, treat as
+    // photo_will_send_later (soft pause) instead of going terminal. This
+    // also catches "no garage" / "actually it's basement" corrections.
+    if (
+      contact.bot_state === 'AWAIT_PANEL_PHOTO' &&
+      transitionResult.next === 'NEEDS_CALLBACK' &&
+      panelLocAny
+    ) {
+      // Swap intent + fallback to AWAIT_EMAIL's so the phraser renders
+      // the close-info ask (not the original transition's text).
+      const aeMeta = SM_STATES?.AWAIT_EMAIL
+      transitionResult = {
+        ...transitionResult,
+        next: 'AWAIT_EMAIL',
+        intent: aeMeta?.intent,
+        fallback: typeof aeMeta?.fallback === 'function' ? aeMeta.fallback(ctx) : (aeMeta?.fallback || ''),
+      }
     }
 
     // 9. Persist slot updates + new state
