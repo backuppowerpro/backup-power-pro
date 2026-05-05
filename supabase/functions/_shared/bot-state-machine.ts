@@ -222,7 +222,8 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_240V',  // self-loop with answer-briefly intent
       friendly_chitchat: 'AWAIT_240V',  // self-loop with chitchat-ack intent
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',  // skip ahead since voltage was paired
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — was terminal-routing on legit clarifying Qs. Now self-loop.
+      off_topic_question: 'AWAIT_240V',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_240V_RETRY',
     },
@@ -325,7 +326,8 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_OUTLET',
       friendly_chitchat: 'AWAIT_OUTLET',
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      off_topic_question: 'AWAIT_OUTLET',
       stop_variant: 'STOPPED',
       unclear: 'NEEDS_CALLBACK',
     },
@@ -372,7 +374,8 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_OWNERSHIP',
       friendly_chitchat: 'AWAIT_OWNERSHIP',
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      off_topic_question: 'AWAIT_OWNERSHIP',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_OWNERSHIP_RETRY',
     },
@@ -437,7 +440,8 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_RUN',
       friendly_chitchat: 'AWAIT_RUN',
       answered_with_impatience: 'AWAIT_EMAIL',
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      off_topic_question: 'AWAIT_RUN',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_RUN_RETRY',
     },
@@ -685,7 +689,10 @@ const STATES: Record<string, any> = {
       spouse_approval_needed: 'POSTPONED',
       referral_mentioned: 'AWAIT_PANEL_PHOTO',  // ack referral, continue
       dont_own_generator_yet: 'NEEDS_CALLBACK',
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — was routing off_topic_question to NEEDS_CALLBACK terminal,
+      // killing conversations on legit clarifying Qs ("do you do Generac
+      // generators?"). Now self-loop with brief acknowledgment intent.
+      off_topic_question: 'AWAIT_PANEL_PHOTO',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_PANEL_PHOTO',  // wait for photo
     },
