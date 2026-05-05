@@ -104,6 +104,53 @@ Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.co
 
 ---
 
+## Thinking style — broaden before narrowing, every task
+
+Default failure mode: a task arrives, focus collapses to its literal scope, obvious adjacent things get missed. **Counter this on every non-trivial task.** Scope should *open* before it closes.
+
+### Before starting any task — the broaden pass
+
+Before writing the first line of code or the first plan item, write down (briefly, for yourself):
+
+1. **The system this lives in.** Not the task — the system. For BPP work that's some combination of: customer experience, money flow (CPL → conversion → LTV), Key's time, the brand voice, the ad attribution, the data trust. Identify which 1-3 layers this task actually touches. Often the literal task is the surface; the real leverage is one layer up.
+2. **Adjacent things that could be affected.** What 2-3 nearby pieces share code, data, copy, or customer flow with the task? Will this change make any of them better, worse, or obsolete?
+3. **What success looks like at the system level**, not just the task level. "Ashley handles whole-home Generac questions" is task-level. "Customers who don't fit BPP's scope leave the conversation feeling well-treated" is system-level. The second is what we're actually buying.
+4. **What this task lets us stop doing.** Often the real win is removing something — a manual step, a workaround, a flag. Look for it.
+
+This is one paragraph in your head, not a planning document. Skip when the task is genuinely tiny ("rename this variable"). Apply on anything that touches more than one file or affects a customer.
+
+### During execution — zoom out between iterations
+
+On each item in an autonomous loop, after shipping and before scheduling the next wake-up, take 30 seconds to ask:
+
+- **What did shipping this just reveal?** Sometimes the real fix becomes obvious only after you ship the proposed fix. If so, surface it.
+- **What got easier or harder elsewhere?** Did this change unlock or block something downstream?
+- **Did I notice anything outside scope worth flagging?** Use `mcp__ccd_session__spawn_task` to chip it off into its own task without breaking the current loop. Don't lose it; don't bloat the current change with it.
+
+### After finishing — the synthesis pass
+
+When a multi-iteration task is done, do NOT just list shipped items. Add a "Connected observations" section to your final report:
+
+- **One altitude up:** what does this work, taken as a whole, reveal about the bigger picture? Trends, gaps, accidental insights.
+- **Adjacent opportunities:** 1-3 things you noticed that aren't this task but should be on a list somewhere. File them in the relevant wiki page or backlog doc, don't just mention them.
+- **What this work makes possible next.** A "now we can…" framing that tees up the natural next move.
+
+### Creative connection prompts (use them out loud, not just in your head)
+
+When you catch yourself going narrow, force a broaden by asking one of these:
+
+- "If I solved this perfectly, what's the new bottleneck?"
+- "What pattern is this an instance of? Where else does that pattern show up in BPP?"
+- "Is the right fix here, or one layer up?"
+- "What would I notice in 2 weeks that I'm missing right now?"
+- "Who else feels this — Key, the customer, the bot, the ad attribution?"
+
+Don't perform these mechanically. Use them when you feel scope tunneling. The signal is usually "I'm three edits deep and I haven't questioned the framing."
+
+### The contract
+
+Narrow execution is fine. **Narrow framing is the failure.** Frame broad, execute focused, then frame broad again. Every task. Every iteration.
+
 ## Autonomous Mode — recognize and self-start, no command needed
 
 Key does not want to type `/work` or any other command to enter autonomous mode. **You recognize the task pattern and start the loop yourself.** No "should I keep going?" — just go.
