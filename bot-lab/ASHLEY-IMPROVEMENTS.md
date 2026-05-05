@@ -1,122 +1,62 @@
-# Ashley Production Smoke-Test Improvements
+# Ashley Production Improvements — Live Test Log
 
-Live test 2026-05-05 on Key's phone via OpenPhone bypass. Full pipeline verified end-to-end. Bugs + improvements below, organized by severity.
+Tonight's marathon session brought Ashley from prototype → production-ready.
 
-## Result: **PIPELINE WORKS** ✅
-Form → GREETING → 9 conversation turns → COMPLETE → handoff alert from 7155 to Key's cell. All edge functions firing.
+## Verified live (all shipped)
 
----
+✅ **Form-to-handoff pipeline** — full multi-turn conversation with classifier+state-machine+phraser, ending in structured 7155 handoff alert
+✅ **Soft handoff format** — multi-line, scannable, "📋 Lead handoff" / "🟠 New lead — 2.5/5 STANDARD" tiered headers
+✅ **City + drive time** — "Greer, ~25 min away" instead of full address
+✅ **Full panel description** — "Panel: garage on an exterior wall" / "Panel: basement"
+✅ **Slot extraction across turns** — name + email + address pulled from a single combined message via regex pre-extraction
+✅ **Handoff idempotency** — single fire per terminal reach, race guard for state already terminal
+✅ **Polite customer-facing terminal replies** — 5 NEEDS_CALLBACK voice variants by contact_id hash, DQ explanations, no more silent drops
+✅ **Prompt injection defense** — "Ignore all previous instructions" → "Honest answer: I'm Ashley, the BPP intake assistant (automated). Key is our real electrician..." + redirect back to qualification
+✅ **No double-Key bug** — namePrefix skips when fname matches electrician
+✅ **Off-topic Qs no longer terminal** — clarifying customer Qs at AWAIT_240V/OUTLET/OWNERSHIP/RUN/PANEL_PHOTO self-loop instead
+✅ **Email typo false-positive suppressed** for legit custom domains
+✅ **AWAIT_RUN auto-skip** when panel location captured at AWAIT_PANEL_PHOTO
+✅ **AWAIT_ADDRESS_CONFIRM bypass** when email + address in same message
+✅ **CRM thread inbound persistence** — customer's side of conversation now visible
+✅ **config.toml `verify_jwt = false`** — survives across deploys, no more manual toggle flipping
 
-## Critical (block conversation)
+## Open improvements (next session)
 
-### 1. State machine: AWAIT_240V missing `affirmative` ✅ FIXED
-- Bare "yes" to 240V Q fell through to NEEDS_CALLBACK.
-- Fix: added `affirmative: 'AWAIT_OUTLET'` mapping.
+### High impact
 
-### 2. JWT toggle resets on every deploy ⚠️ ARCHITECTURAL
-- `Verify JWT with legacy secret` toggle flips back to ON every time `supabase functions deploy` runs.
-- Affects every internal-call surface (bot-engine→bot-classifier, bot-engine→handoff-notifier, alex-agent→bot-engine).
-- Symptom: 401 `UNAUTHORIZED_INVALID_JWT_FORMAT` on internal fetch.
-- Workaround so far: manually re-toggle after every deploy.
-- **Permanent fix:** add `[functions.<name>] verify_jwt = false` to `supabase/config.toml` for every internal-only fn so deploys preserve the setting.
+1. **Concurrent rapid-fire dedup** — 3 simultaneous webhooks all bypass handoff_fired_at before any can write it. Fix: per-contact advisory lock via `pg_try_advisory_xact_lock(hashtext(contact_id))` at handler entry.
 
-### 3. system-prompt.txt not bundled ✅ FIXED
-- `Deno.readTextFile('./system-prompt.txt')` failed at runtime; .txt assets weren't in deploy bundle.
-- Fix: converted to .ts modules with `export const SYSTEM_PROMPT_TEMPLATE = \`...\`` and static import.
+2. **Photo MMS not reaching alex-agent** — iMessage routes MMS via Twilio (A2P-blocked) not OpenPhone. Will likely auto-resolve when 10DLC clears. Until then, photo path can't be tested live.
 
-### 4. bot-engine schema mismatch (first_name/last_name) ✅ FIXED
-- contacts table only has `name` column; bot-engine SELECT included nonexistent first_name/last_name.
-- Fix: dropped those from SELECT + buildSmCtx.
+3. **Out-of-scope-but-genuine queries** — "Do you do Generac standby generators?" is a legit clarifying Q but routes to terminal (correct since BPP doesn't install whole-home standby). Better customer-facing reply: "We do inlet boxes for portable generators. For whole-home Generac install Key handles those personally."
 
-### 5. handoff-notifier schema mismatch ✅ FIXED
-- Same first_name/last_name issue.
-- Fix: stripped via sed; lname now empty string.
+### Medium impact
 
----
+4. **Rapid-fire 3 messages in <5s produces 3 same handoff texts** — see #1.
 
-## High (degrades quality but conversation completes)
+5. **Bot occasionally double-replies at AWAIT_PANEL_PHOTO** when customer asks "what else do you need?" — phraser generates explanation AND prompt simultaneously. Investigate single-output mode.
 
-### 6. Slot extraction missing for AWAIT_EMAIL multi-field response
-- Customer sent: `Goodson, key@backuppowerpro.com, 22 Kimbell Ct Greenville SC 29615`
-- All three slots (last_name, email, install_address) were NOT extracted to contact row.
-- Result: handoff text shows `Unknown` for name, missing address.
-- **Fix:** classifier needs to extract email + address from a single combined response, AND bot-engine needs to write those slots when the classifier emits them. Currently bot-engine only writes a hardcoded set (gen_240v, outlet_amps, email when label=email_provided). Need to generalize.
+6. **Voice could feel less templated** — fallback responses repeat opener phrases ("Got it" / "Thank you"). Add more rotation.
 
-### 7. Email typo detector flags real custom domains
-- `key@backuppowerpro.com` triggered `email_typo_suspected=true`.
-- Pattern matching probably checks against major-domain typos (gmial→gmail) but treats long custom domains as suspicious.
-- **Fix:** classifier prompt — only flag typos for KNOWN major email providers (gmail/yahoo/hotmail/outlook/icloud). Custom domains pass through.
+7. **Generac/Kohler/whole-home detection** — when customer mentions specific brand or "whole home", route to a NEW intent (out-of-scope) with tailored explanation, not generic NEEDS_CALLBACK.
 
-### 8. Photo MMS not detected by alex-agent
-- Sent panel photo MMS via iMessage to OpenPhone 5302.
-- alex-agent fired but no `[alex] Incoming` log → returned via `if (!messageText && !hasMedia)` skip.
-- OpenPhone webhook payload uses different field name than `messageData.media[]`.
-- **Fix:** inspect a real OpenPhone MMS webhook payload via debug log and update `hasMedia` detection. Likely it's `messageData.attachments` or nested `data.object.media`.
+### Low impact
 
-### 9. Inbound messages don't appear in CRM thread
-- Ashley gate routes BEFORE alex-agent's messages-table insert.
-- Result: customer's "yes", "50 amp", etc. invisible in CRM; only Ashley's outbound shows.
-- **Fix:** bot-engine should insert an `inbound` row when handling inbound_message, OR alex-agent gate should insert before short-circuiting.
+8. **Ashley occasionally re-asks panel location at AWAIT_RUN** — fixed via AWAIT_RUN auto-skip when panel keywords in body. Verify holding under more inputs.
 
-### 10. Contact `name` not populated from form firstName
-- Form posts firstName="Key", but contacts.name ends up NULL.
-- Result: GREETING says "Hi there" instead of "Hi Key".
-- **Fix:** quo-ai-new-lead — set `name` column from firstName + lastName on contact insert.
+9. **Handoff text `Last reply: "..."`** when no real flags — works correctly but could be omitted entirely if conversation ended cleanly.
 
----
+10. **Slot extraction: zip code separate from address** — sometimes regex captures "Greer SC 29650" but city extraction looks for known city, missing the zip.
 
-## Medium (functional but ugly)
+## Production cleanup (post-A2P)
 
-### 11. RECAP missing email + address in confirmation
-- After all close-info given, RECAP said only "240v 50A, garage exterior" — no email or address.
-- Slot extraction (#6) is upstream cause.
+11. Unset `ASHLEY_OPENPHONE_TEST_PHONES` → outbound returns to Twilio 7800.
+12. Open `ASHLEY_ALLOWED_PHONES='*'` after ~20 successful conversations from various phones.
 
-### 12. SCHEDULE_QUOTE → terminal needs explicit affirmative
-- Customer's "thanks" was classified as something other than affirmative/unclear → routed to NEEDS_CALLBACK.
-- Specific classifier label was probably `friendly_chitchat` which isn't in SCHEDULE_QUOTE's transition map.
-- **Fix:** add `friendly_chitchat: 'COMPLETE'` to SCHEDULE_QUOTE transitions.
+## Stats from tonight
 
-### 13. RECAP transitions need richer mapping
-- "yes confirmed" took two cycles to reach COMPLETE — RECAP → SCHEDULE_QUOTE → (separate yes) → COMPLETE.
-- Could SCHEDULE_QUOTE be auto-onEnter-terminal when slots are filled? Would skip an extra round-trip per conversation.
-
-### 14. Multi-turn lag ~25–35s
-- Each Ashley reply: classifier + state machine + phraser + send-sms + OpenPhone delivery.
-- Acceptable for SMS context (humans expect this) but track.
-
-### 15. Sweep all states for missing common transitions
-- Pattern: every state asking yes/no needs `affirmative` AND `negative` mapped explicitly.
-- Apply audit to all 30+ states post-test.
-
----
-
-## Production cleanup (post A2P 10DLC)
-
-### 16. Remove OpenPhone bypass
-- Once A2P clears: `supabase secrets unset ASHLEY_OPENPHONE_TEST_PHONES`.
-- Outbound returns to Twilio 7800.
-
-### 17. handoff-notifier OpenPhone path
-- Currently routes via 7155 OpenPhone when test-phones var set.
-- After A2P: hand-coded fallback to direct Twilio (already there) takes over.
-
-### 18. Open ASHLEY_ALLOWED_PHONES to '*'
-- Currently +19414417996 only.
-- After A2P + ~20 successful test conversations from various test phones: open to all qualifying leads.
-
----
-
-## Documentation/observability
-
-### 19. Add classifier output + intent to log lines
-- Currently bot-engine logs only at error level.
-- Add INFO logs: `[bot-engine] classifier={label, conf}, transition={prev}→{next}, intent={...}`
-- Lets us debug state-machine routing without DB queries.
-
-### 20. Photo classifier integration not tested
-- Photo MMS never reached alex-agent (issue #8).
-- Once #8 fixed, validate photo classifier with real panel/sub-panel/non-panel images.
-
----
-
-*Final state of test contact ed36d39f-91cb-4cdd-922c-586b094c7ad5: bot_state=COMPLETE, handoff fired with score 1.5/5 BORDERLINE.*
+- 6 commits (`ec04c96` → `5e5d115`)
+- ~40 fixes
+- 7 conversations driven, 4 successful end-to-end (form → COMPLETE handoff)
+- Prompt injection defense verified
+- All Key feedback items shipped + verified
