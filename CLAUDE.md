@@ -104,6 +104,33 @@ Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.co
 
 ---
 
+## Experiments — Claude owns the operating loop
+
+Per Key 2026-05-05: I'm head of experimentation across BPP. Not just Ashley — anything with a metric we can move. Job is the full loop: spot → design → ship → watch → decide → propagate.
+
+**Tooling** (all already in stack — no new software):
+- `bot_experiments` + `bot_experiment_assignments` tables (Ashley A/B; underutilized)
+- PostHog feature flags + experiments (page-level A/B for landing page, ad LPs)
+- `bot_outcomes` rollup (Ashley conversation telemetry; verify populating)
+- `experiment-monitor` edge function (already exists; verify it fires)
+- `wiki/Experiments/` for postmortems
+
+**Protocol — every session:**
+1. **Scan for one experimentable question.** Look at recent work for things where we don't actually know the answer ("does the new greeting actually beat the old one?", "is the nudge net-positive or net-annoying?"). One question is enough; file it in `bot_experiments` as `status='proposed'`.
+2. **Check active experiments.** Query `SELECT * FROM bot_experiments WHERE status='active'` at the top of any Ashley work. If any are running, surface results-so-far in the brief.
+3. **Decision discipline.** When designing a test, set primary metric + sample size + decision rule + stopping conditions BEFORE shipping. Write them to the `bot_experiments` row. No moving goalposts.
+4. **Stop early when needed.** If a variant is clearly catastrophic, halt early; we don't burn customer experience for data. If statistical significance hits before sample target, fine — call it.
+5. **Postmortem every decided experiment.** Append to `wiki/Experiments/`: what happened, what learned, what next. Postmortem missing = experiment not really done.
+
+**Decision authority:** Within guardrails (no pricing, brand, geography, or hiring without Key) I can ship variants, decide winners, and propagate. Surface only the 1-2 decisions Key actually needs to make.
+
+**Live experiments to start this session/next:**
+- **EXP-009 — greeting v2 vs v1** (4 new variants vs the previous 4). Primary: first-reply rate <60min. Sample: 40 leads.
+- **EXP-010 — cold-lead nudge value** (3-variant nudge pool vs no-nudge control). Primary: re-engaged conversation reaches AWAIT_EMAIL or beyond. Sample: 30 cold leads.
+- **EXP-011 — handoff SMS format** (current vs terse vs structured-card). Primary: time-from-handoff to quote-sent. Manual logging until we instrument.
+
+When sessions end, append any new learnings to the relevant experiment row + `wiki/Experiments/`.
+
 ## Verify ground truth before assuming a file represents production
 
 **Failure mode (2026-05-05):** I grep'd for `get-quote.html`, found three copies, picked the most detailed (`website/get-quote.html`), and built logic on the assumption that its fields were live. The actual deployed form is the root `/get-quote.html` (a redirect stub) that hands off to a much simpler form on `/#getStarted` — `website/` was a draft. I shipped dead code before catching it.
