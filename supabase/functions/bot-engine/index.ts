@@ -180,7 +180,7 @@ function applySlotUpdates(qd: Record<string, any>, classifier: any, photoResult:
 
 // Map the classifier label → state-machine label and ctx adjustments.
 function buildSmCtx(contact: any, classifier: any): any {
-  const firstName = contact.first_name || (contact.name ? String(contact.name).split(/\s+/)[0] : null)
+  const firstName = contact.name ? String(contact.name).split(/\s+/)[0] : null
   return {
     first_name: firstName,
     address_on_file: contact.install_address || contact.address || null,
@@ -214,7 +214,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
   try {
     // 2. Pull contact
     const { data: contact, error } = await sb.from('contacts')
-      .select('id, first_name, last_name, name, phone, bot_state, bot_disabled, do_not_contact, qualification_data, paused_at_state, last_bot_inbound_at, install_address, address')
+      .select('id, name, phone, bot_state, bot_disabled, do_not_contact, qualification_data, paused_at_state, last_bot_inbound_at, install_address, address')
       .eq('id', input.contact_id)
       .maybeSingle()
     if (error || !contact) {

@@ -145,7 +145,39 @@ Deno.serve(async (req) => {
   let twilioSid: string | null = null
   let sendError: string | null = null
 
-  try {
+  // v10.1.31 — OpenPhone bypass while Twilio A2P 10DLC is in carrier review.
+  // If the recipient is on ASHLEY_OPENPHONE_TEST_PHONES, route via OpenPhone
+  // (5302 line) instead of Twilio (7800). Same DB persistence path.
+  const OP_TEST_PHONES = (Deno.env.get('ASHLEY_OPENPHONE_TEST_PHONES') || '')
+    .split(',').map(s => s.trim()).filter(Boolean)
+  const useOpenPhone = OP_TEST_PHONES.includes('*') || OP_TEST_PHONES.includes(toPhone)
+
+  if (useOpenPhone) {
+    try {
+      const QUO_API_KEY = Deno.env.get('QUO_API_KEY')!
+      const QUO_PHONE_ID = Deno.env.get('QUO_PHONE_NUMBER_ID')!
+      const opRes = await fetch('https://api.openphone.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+        body: JSON.stringify({
+          from: QUO_PHONE_ID,
+          to: [toPhone],
+          content: body,
+        }),
+      })
+      if (!opRes.ok) {
+        const t = await opRes.text()
+        console.error('[send-sms] OpenPhone error:', opRes.status, t)
+        sendError = `openphone ${opRes.status}: ${t.slice(0, 150)}`
+      } else {
+        const opData = await opRes.json()
+        twilioSid = opData.data?.id || `openphone-${Date.now()}`
+      }
+    } catch (err) {
+      console.error('[send-sms] OpenPhone fetch threw:', err)
+      sendError = `openphone network: ${(err as Error).message}`
+    }
+  } else try {
     const statusCbUrl = (Deno.env.get('SUPABASE_URL') || '') + '/functions/v1/twilio-status-callback'
     const formData = new URLSearchParams({ From: TWILIO_FROM, To: toPhone, Body: body, StatusCallback: statusCbUrl })
     if (mediaUrl) formData.set('MediaUrl', mediaUrl)

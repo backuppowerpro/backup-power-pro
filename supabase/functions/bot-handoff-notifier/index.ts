@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
   if (input.terminal_state === 'DISQUALIFIED_120V') {
     const { data: c } = await sb
       .from('contacts')
-      .select('first_name, name, phone, gen_brand_model, qualification_data')
+      .select('name, phone, gen_brand_model, qualification_data')
       .eq('id', input.contact_id)
       .maybeSingle()
 
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const fname = c.first_name || (c.name ? String(c.name).split(/\s+/)[0] : 'Unknown')
+    const fname = (c.name ? String(c.name).split(/\s+/)[0] : 'Unknown')
     const recBody = `120V DQ + recommendation request: ${fname} (${formatPhone(c.phone)}) had ${c.gen_brand_model || 'a 120V generator'} and asked for upgrade picks.`
     await sendInternalSms(recBody, input.contact_id, 'bot-dq-recommendation')
     return new Response(
@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
   if (input.terminal_state === 'POSTPONED') {
     const { data: c } = await sb
       .from('contacts')
-      .select('first_name, name, phone, pause_reason, paused_at_state')
+      .select('name, phone, pause_reason, paused_at_state')
       .eq('id', input.contact_id)
       .maybeSingle()
     if (!c) return new Response('not found', { status: 404 })
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
       c.pause_reason === 'spouse_approval_needed' ? 'awaiting spouse approval' :
       c.pause_reason === 'callback_time_requested' ? 'requested a callback time' :
       'paused'
-    const fname = c.first_name || (c.name ? String(c.name).split(/\s+/)[0] : 'Unknown')
+    const fname = (c.name ? String(c.name).split(/\s+/)[0] : 'Unknown')
     const warmBody = `Warm pause: ${fname} (${formatPhone(c.phone)}) ${reason} at ${c.paused_at_state || 'unknown state'}. See CRM. No action needed unless you want to follow up in a week.`
     await sendInternalSms(warmBody, input.contact_id, 'bot-warm-pause')
     return new Response(
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
   // COMPLETE / NEEDS_CALLBACK — full handoff
   const { data: contact, error: cErr } = await sb
     .from('contacts')
-    .select('first_name, last_name, name, phone, email, install_address, gen_240v, outlet_amps, gen_brand_model, panel_brand, primary_panel_photo_path, primary_outlet_photo_path, extra_photos, bot_referral_source, qualification_data')
+    .select('name, phone, email, install_address, gen_240v, outlet_amps, gen_brand_model, panel_brand, primary_panel_photo_path, primary_outlet_photo_path, extra_photos, bot_referral_source, qualification_data')
     .eq('id', input.contact_id)
     .maybeSingle()
 
@@ -175,8 +175,8 @@ Deno.serve(async (req) => {
     return new Response(`Contact not found: ${input.contact_id}`, { status: 404 })
   }
 
-  const fname = contact.first_name || (contact.name ? String(contact.name).split(/\s+/)[0] : 'Unknown')
-  const lname = contact.last_name ? ' ' + contact.last_name : ''
+  const fname = (contact.name ? String(contact.name).split(/\s+/)[0] : 'Unknown')
+  const lname = ''
 
   let smsBody: string
   if (input.terminal_state === 'COMPLETE') {

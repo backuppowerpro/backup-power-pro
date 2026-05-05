@@ -201,6 +201,7 @@ const STATES: Record<string, any> = {
     },
     transitions: {
       gen_240v: 'AWAIT_OUTLET',  // they said 240V, need to clarify amperage
+      affirmative: 'AWAIT_OUTLET',  // v10.1.32: bare "yes" to 240V Q = same as gen_240v
       // v10.1.4 — 30A NOW DISAMBIGUATED:
       outlet_30a_4prong: 'AWAIT_PANEL_PHOTO',  // confirmed 240V 30A → BPP-compatible
       outlet_30a_3prong: 'DISQUALIFIED_120V',  // 30A but it's TT-30/L5-30 120V → soft DQ

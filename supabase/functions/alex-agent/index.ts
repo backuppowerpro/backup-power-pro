@@ -2548,6 +2548,48 @@ Deno.serve(async (req) => {
   // Security audit #12: redact phone in logs to last-4 for PII hygiene
   console.log('[alex] Incoming ***', fromPhone.slice(-4), ':', messageText.slice(0, 60))
 
+  // v10.1.31 — Ashley gated routing for OpenPhone-inbound. If sender is on
+  // the Ashley allowlist AND has an active bot_state, dispatch to bot-engine
+  // instead of running Alex. Purely additive: gate-closed = existing flow.
+  try {
+    const ASHLEY_ALLOWED_PHONES = (Deno.env.get('ASHLEY_ALLOWED_PHONES') || '')
+      .split(',').map(s => s.trim()).filter(Boolean)
+    const ashleyEnabled = ASHLEY_ALLOWED_PHONES.includes('*')
+      || ASHLEY_ALLOWED_PHONES.includes(fromPhone)
+    if (ashleyEnabled) {
+      const sb = db()
+      const { data: botContact } = await sb.from('contacts')
+        .select('id, bot_state, bot_disabled')
+        .eq('phone', fromPhone)
+        .maybeSingle()
+      if (botContact?.bot_state && !botContact.bot_disabled) {
+        const SUPABASE_URL_LOCAL = Deno.env.get('SUPABASE_URL')!
+        const SUPABASE_SERVICE_KEY_LOCAL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        const mediaUrls = hasMedia
+          ? (messageData.media || []).map((m: any) => m.url || m).filter(Boolean)
+          : undefined
+        await fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY_LOCAL}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            trigger: 'inbound_message',
+            contact_id: botContact.id,
+            message_sid: quoMsgId,
+            message_body: messageText,
+            media_urls: mediaUrls,
+          }),
+        })
+        return new Response(JSON.stringify({ ok: true, ashley: true }), { status: 200, headers: CORS })
+      }
+    }
+  } catch (e) {
+    console.error('[ashley-route]', e)
+    // fall through to Alex on error so message isn't lost
+  }
+
   const supabase = db()
 
   // Idempotency — primary claim by provider message id.

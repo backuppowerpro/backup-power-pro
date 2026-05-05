@@ -68,7 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_contacts_pipeline_stage_active
 
 CREATE INDEX IF NOT EXISTS idx_contacts_bot_qualified_recent
   ON public.contacts (bot_qualified_at DESC)
-  WHERE bot_qualified_at > (NOW() - INTERVAL '30 days');
+  WHERE bot_qualified_at IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_contacts_bot_state_active
   ON public.contacts (bot_state)

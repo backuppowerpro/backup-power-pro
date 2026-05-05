@@ -8,11 +8,10 @@ import { requireServiceRole, allowRate } from '../_shared/auth.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 
-// Locked classifier system prompt (Ashley voice). Loaded at module-init from
-// the colocated text file so the prompt + this code stay separately legible.
-const SYSTEM_PROMPT_TEMPLATE = await Deno.readTextFile(
-  new URL('./system-prompt.txt', import.meta.url),
-)
+// Locked classifier system prompt (Ashley voice). Imported from the .ts
+// module sibling so the prompt is bundled with the deployed function
+// (Supabase edge runtime can't load .txt assets at runtime).
+import { SYSTEM_PROMPT_TEMPLATE } from './system-prompt.ts'
 
 // JSON schema for structured output (anchored to enum on `label`).
 const OUTPUT_SCHEMA = {

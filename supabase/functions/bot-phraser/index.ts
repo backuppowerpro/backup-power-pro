@@ -10,10 +10,8 @@ import { requireServiceRole, allowRate } from '../_shared/auth.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 
-// Locked phraser system prompt. Loaded at module init.
-const SYSTEM_PROMPT_TEMPLATE = await Deno.readTextFile(
-  new URL('./system-prompt.txt', import.meta.url),
-)
+// Locked phraser system prompt. Imported from .ts sibling so it bundles.
+import { SYSTEM_PROMPT_TEMPLATE } from './system-prompt.ts'
 
 // Hard-constraint regex per the locked v10 phraser spec. Output that fails
 // ANY of these is rejected — caller falls back to deterministic state-machine
