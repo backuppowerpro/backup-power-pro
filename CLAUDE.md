@@ -242,6 +242,7 @@ Both still work. But Key prefers natural language. Both `/work` (in `.claude/com
 
 ## Hard Rules
 
+- **NO EM-DASHES (`—`) ANYWHERE.** Not in customer-facing copy, not in handoff SMS to Key, not in commit messages, not in code comments, not in chat replies, not in wiki pages. Use a comma, period, semicolon, or restructure the sentence. If you find yourself reaching for `—` it usually means the sentence is structurally weak; rewrite. Sweep new code for `—` before committing. (Repeated violations 2026-05-05; this is non-negotiable.)
 - Never touch `CNAME`, never modify `.gitignore` rules (only add)
 - Never move `ads/creative/`, `img/`, `assets/`, `supabase/functions/`
 - Never upload ad creative to Meta without Key's explicit approval
