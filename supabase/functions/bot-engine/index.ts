@@ -1,41 +1,65 @@
 /**
- * bot-engine — Ashley's orchestrator (MVP).
+ * bot-engine — Ashley's orchestrator.
  *
- * v10.1.15 entry point. Currently handles ONE trigger:
- *   { contact_id, trigger: 'new_lead' }
- *     → assigns EXP-008 variant via sha256(contact_id) % 4
- *     → renders templated GREETING (no LLM)
- *     → sends via send-sms with TCPA quiet-hours guard (defer 21:00–08:00 ET
- *       unless customer opted in within the last 4 hours)
- *     → persists greeting_variant to qualification_data
- *     → flips bot_state='AWAIT_240V'
+ * v10.1.30 entry point. Two triggers:
  *
- * NOT yet wired:
- *   - Inbound message routing (classifier → state machine → phraser)
- *   - Photo classifier integration
- *   - Generator + jurisdiction lookup
- *   - Handoff notifier
- * That's a separate stage. This stub closes the EXP-008 gate.
+ *   { trigger: 'new_lead', contact_id }
+ *     - Assigns EXP-008 variant via sha256(contact_id) % 4
+ *     - Renders templated GREETING (no LLM)
+ *     - Sends via send-sms
+ *     - Persists greeting_variant
+ *     - Flips bot_state='AWAIT_240V'
  *
- * Auth: requireServiceRole — internal-only. Called by quo-ai-new-lead.
+ *   { trigger: 'inbound_message', contact_id, message_sid, message_body, media_urls? }
+ *     - Idempotency dedupe via bot_processed_messages + advisory lock
+ *     - Hard guards: bot_disabled / DNC / null bot_state / STOP keyword
+ *     - Optional photo classification (when media_urls present)
+ *     - Classifier → state-machine transition → phraser
+ *     - send-sms with the produced text (or fallback)
+ *     - Terminal-state handoff to bot-handoff-notifier
+ *
+ * Auth: requireServiceRole — internal-only.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { requireServiceRole } from '../_shared/auth.ts'
 import { assignGreetingVariant, renderGreeting, timeOfDayBucket } from '../_shared/exp008-variant.ts'
+import { transition as smTransition, INITIAL_STATE } from '../_shared/bot-state-machine.ts'
+import { tryAcquireMessageLock, recordProcessed } from '../_shared/bot-idempotency.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+const TERMINAL_STATES = new Set([
+  'COMPLETE',
+  'NEEDS_CALLBACK',
+  'DISQUALIFIED_120V',
+  'DISQUALIFIED_RENTER',
+  'DISQUALIFIED_OUT_OF_AREA',
+  'POSTPONED',
+  'STOPPED',
+])
+
+const STOP_RE = /^\s*(stop|stopall|unsubscribe|cancel|end|quit)\s*$/i
+
 interface NewLeadInput {
-  contact_id: string
   trigger: 'new_lead'
+  contact_id: string
+}
+interface InboundInput {
+  trigger: 'inbound_message'
+  contact_id: string
+  message_sid: string
+  message_body: string
+  media_urls?: string[]
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+//  GREETING flow (preserved verbatim from prior stub)
+// ──────────────────────────────────────────────────────────────────────────
 async function handleNewLead(input: NewLeadInput): Promise<Response> {
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-  // Pull contact
   const { data: contact, error } = await sb.from('contacts')
     .select('id, name, phone, do_not_contact, bot_state, qualification_data')
     .eq('id', input.contact_id)
@@ -44,38 +68,22 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
     return new Response(`Contact not found: ${input.contact_id}`, { status: 404 })
   }
 
-  // TCPA: never SMS if STOPPED / DNC
   if (contact.do_not_contact) {
     return new Response(JSON.stringify({ ok: true, skipped: 'do_not_contact' }),
       { status: 200, headers: { 'content-type': 'application/json' } })
   }
 
-  // Idempotency: if already in a bot_state past GREETING, don't re-fire
   if (contact.bot_state && contact.bot_state !== 'GREETING') {
     return new Response(JSON.stringify({ ok: true, skipped: 'already_active', bot_state: contact.bot_state }),
       { status: 200, headers: { 'content-type': 'application/json' } })
   }
 
-  // EXP-008 variant assignment — deterministic from contact_id
   const variant = await assignGreetingVariant(input.contact_id)
-
-  // First name from contact.name
   const firstName = (contact.name || '').split(/\s+/)[0] || 'there'
-
-  // Time-of-day softener
   const bucket = timeOfDayBucket()
   const lateNight = bucket === 'late'
-
-  // Build the templated GREETING (no LLM call — variants are pre-approved)
   const messageBody = renderGreeting(variant, firstName, { lateNight })
 
-  // TCPA quiet-hours guard: 21:00–08:00 ET. If lead just opted in by
-  // submitting the form, the late-night greeting includes the softener
-  // (per bot-lab v10.1.12) and we DO send — express consent applies. The
-  // guard exists for downstream re-engagement crons, not the initial
-  // post-form GREETING.
-
-  // Send SMS via existing send-sms edge function
   const sendResp = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
     method: 'POST',
     headers: {
@@ -83,10 +91,8 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      to: contact.phone,
+      contactId: contact.id,
       body: messageBody,
-      from_label: 'ashley-greeting',
-      contact_id: contact.id,
     }),
   })
 
@@ -96,12 +102,12 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
       { status: 502, headers: { 'content-type': 'application/json' } })
   }
 
-  // Persist greeting_variant + advance bot_state
   const updatedQd = { ...(contact.qualification_data || {}), greeting_variant: variant }
   await sb.from('contacts')
     .update({
       bot_state: 'AWAIT_240V',
       qualification_data: updatedQd,
+      last_bot_outbound_at: new Date().toISOString(),
     })
     .eq('id', input.contact_id)
 
@@ -114,6 +120,295 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
   }), { status: 200, headers: { 'content-type': 'application/json' } })
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+//  INBOUND flow
+// ──────────────────────────────────────────────────────────────────────────
+
+async function callInternal(path: string, body: unknown): Promise<any> {
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    throw new Error(`${path} ${r.status}: ${text.slice(0, 200)}`)
+  }
+  return await r.json()
+}
+
+async function fetchRecentTurns(sb: any, contactId: string, limit = 4): Promise<Array<{ role: 'customer' | 'bot'; text: string }>> {
+  const { data } = await sb.from('messages')
+    .select('direction, body, created_at')
+    .eq('contact_id', contactId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (!data) return []
+  return data.reverse().map((m: any) => ({
+    role: (m.direction === 'inbound' ? 'customer' : 'bot') as 'customer' | 'bot',
+    text: String(m.body || '').slice(0, 600),
+  }))
+}
+
+function applySlotUpdates(qd: Record<string, any>, classifier: any, photoResult: any | null) {
+  const out = { ...(qd || {}) }
+  // Persist whatever orchestrator-relevant signals the classifier surfaced.
+  if (classifier?.referral_source) out.referral_source = classifier.referral_source
+  if (classifier?.requested_time) out.requested_time = classifier.requested_time
+  if (classifier?.coverage_excerpt) out.coverage_excerpt = classifier.coverage_excerpt
+  if (classifier?.email_likely_meant) out.email_likely_meant = classifier.email_likely_meant
+  if (Array.isArray(classifier?.load_mentions) && classifier.load_mentions.length) {
+    const prev = Array.isArray(out.load_mentions) ? out.load_mentions : []
+    out.load_mentions = Array.from(new Set([...prev, ...classifier.load_mentions]))
+  }
+  if (photoResult?.subject) {
+    out.last_photo_classification = {
+      subject: photoResult.subject,
+      confidence: photoResult.subject_confidence,
+      recommendation: photoResult.primary_recommendation,
+      panel_brand: photoResult.panel_brand_visible || null,
+      issues: photoResult.obvious_issues || null,
+    }
+    if (photoResult.subject === 'panel_hazardous_zinsco') out.hazardous_panel_brand = 'Zinsco'
+    if (photoResult.subject === 'panel_hazardous_fpe') out.hazardous_panel_brand = 'Federal Pacific'
+  }
+  return out
+}
+
+// Map the classifier label → state-machine label and ctx adjustments.
+function buildSmCtx(contact: any, classifier: any): any {
+  const firstName = contact.first_name || (contact.name ? String(contact.name).split(/\s+/)[0] : null)
+  return {
+    first_name: firstName,
+    address_on_file: contact.install_address || contact.address || null,
+    extracted_value: classifier?.extracted_value || null,
+    customer_last_message: classifier?.extracted_value || null,
+    amended_slot: classifier?.amended_slot || null,
+    email_typo_suspected: classifier?.email_typo_suspected || false,
+    email_likely_meant: classifier?.email_likely_meant || null,
+    requested_time: classifier?.requested_time || null,
+    referral_source: classifier?.referral_source || null,
+    coverage_excerpt: classifier?.coverage_excerpt || null,
+    address_captured: false,
+    time_of_day_bucket: timeOfDayBucket(),
+    greeting_variant: contact.qualification_data?.greeting_variant || 'A',
+    generator_lookup_result: contact.qualification_data?.generator_lookup_result || null,
+  }
+}
+
+async function handleInbound(input: InboundInput): Promise<Response> {
+  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+  // 1. Idempotency
+  const acquired = await tryAcquireMessageLock(input.message_sid)
+  if (!acquired) {
+    return new Response(JSON.stringify({ ok: true, skipped: 'duplicate_message_sid' }),
+      { status: 200, headers: { 'content-type': 'application/json' } })
+  }
+
+  let outcome: 'replied' | 'silent' | 'error' = 'silent'
+  let errorMsg: string | undefined
+  try {
+    // 2. Pull contact
+    const { data: contact, error } = await sb.from('contacts')
+      .select('id, first_name, last_name, name, phone, bot_state, bot_disabled, do_not_contact, qualification_data, paused_at_state, last_bot_inbound_at, install_address, address')
+      .eq('id', input.contact_id)
+      .maybeSingle()
+    if (error || !contact) {
+      throw new Error(`contact not found: ${input.contact_id}`)
+    }
+
+    // 3. Hard guards
+    if (contact.bot_disabled || contact.do_not_contact || !contact.bot_state) {
+      outcome = 'silent'
+      return new Response(JSON.stringify({ ok: true, skipped: 'gated_off',
+        bot_disabled: !!contact.bot_disabled, dnc: !!contact.do_not_contact, bot_state: contact.bot_state || null }),
+        { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+
+    // 4. STOP keyword fast path
+    if (STOP_RE.test(input.message_body || '')) {
+      await sb.from('contacts').update({
+        do_not_contact: true,
+        bot_state: 'STOPPED',
+        last_bot_inbound_at: new Date().toISOString(),
+      }).eq('id', contact.id)
+      outcome = 'silent'
+      return new Response(JSON.stringify({ ok: true, stopped: true }),
+        { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+
+    // 5. Recent turns
+    const recentTurns = await fetchRecentTurns(sb, contact.id, 4)
+
+    // 6. Optional photo classifier
+    let photoResult: any = null
+    if (input.media_urls && input.media_urls.length > 0) {
+      try {
+        const expected: 'panel' | 'outlet' | 'either' =
+          contact.bot_state === 'AWAIT_PANEL_PHOTO' ? 'panel'
+            : contact.bot_state === 'AWAIT_OUTLET_PHOTO' ? 'outlet'
+              : 'either'
+        photoResult = await callInternal('bot-photo-classifier', {
+          photo_url: input.media_urls[0],
+          expected_subject: expected,
+          conversation_context: `state=${contact.bot_state}`,
+        })
+      } catch (e) {
+        console.warn('[bot-engine] photo-classifier failed', e)
+      }
+    }
+
+    // 7. Classifier
+    const classifier = await callInternal('bot-classifier', {
+      inbound_message: input.message_body || '',
+      state: contact.bot_state,
+      recent_turns: recentTurns,
+    })
+
+    // 8. State machine transition
+    const ctx = buildSmCtx(contact, classifier)
+    const transitionResult = smTransition(contact.bot_state, classifier.label, ctx)
+
+    // 9. Persist slot updates + new state
+    const newQd = applySlotUpdates(contact.qualification_data || {}, classifier, photoResult)
+    if (transitionResult.onEnter) Object.assign(newQd, transitionResult.onEnter)
+    const stateUpdate: Record<string, unknown> = {
+      bot_state: transitionResult.next,
+      qualification_data: newQd,
+      last_bot_inbound_at: new Date().toISOString(),
+    }
+    if (classifier?.extracted_value) {
+      // shallow common slot writes
+      if (classifier.label === 'gen_240v') stateUpdate.gen_240v = true
+      if (classifier.label === 'gen_120v') stateUpdate.gen_240v = false
+      if (classifier.label === 'outlet_50a') stateUpdate.outlet_amps = 50
+      if (classifier.label === 'outlet_30a_4prong' || classifier.label === 'outlet_30a') stateUpdate.outlet_amps = 30
+      if (classifier.label === 'email_provided' && classifier.extracted_value) stateUpdate.email = classifier.extracted_value
+    }
+    await sb.from('contacts').update(stateUpdate).eq('id', contact.id)
+
+    // 10. Append turn to bot_state_history (best-effort; column may not exist)
+    try {
+      const history = Array.isArray(newQd.bot_state_history) ? newQd.bot_state_history : []
+      history.push({
+        ts: new Date().toISOString(),
+        prev_state: contact.bot_state,
+        next_state: transitionResult.next,
+        classifier_label: classifier.label,
+        classifier_confidence: classifier.confidence,
+        message_sid: input.message_sid,
+      })
+      // Cap at last 50
+      const trimmed = history.slice(-50)
+      await sb.from('contacts').update({
+        qualification_data: { ...newQd, bot_state_history: trimmed },
+      }).eq('id', contact.id)
+    } catch (_) { /* ignore */ }
+
+    // 11. Terminal handoff?
+    if (TERMINAL_STATES.has(transitionResult.next)) {
+      try {
+        await callInternal('bot-handoff-notifier', {
+          contact_id: contact.id,
+          terminal_state: transitionResult.next,
+          callback_excerpt: classifier?.off_topic_excerpt || classifier?.coverage_excerpt
+            || classifier?.impatience_excerpt || classifier?.chitchat_excerpt
+            || (input.message_body || '').slice(0, 140),
+        })
+      } catch (e) {
+        console.warn('[bot-engine] handoff-notifier failed', e)
+      }
+      outcome = 'silent'
+      return new Response(JSON.stringify({
+        ok: true,
+        prev_state: contact.bot_state,
+        next_state: transitionResult.next,
+        classifier_label: classifier.label,
+        intent: transitionResult.intent,
+        sent: false,
+        terminal: true,
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+
+    // 12. Phraser
+    let outboundText = transitionResult.fallback || ''
+    if (transitionResult.intent) {
+      try {
+        const phraserInput = {
+          intent: transitionResult.intent,
+          customer_first_name: ctx.first_name,
+          customer_last_message: input.message_body || null,
+          address_on_file: ctx.address_on_file,
+          chitchat_excerpt: classifier?.chitchat_excerpt || null,
+          impatience_excerpt: classifier?.impatience_excerpt || null,
+          amended_slot: classifier?.amended_slot || null,
+          email_typo_suspected: !!classifier?.email_typo_suspected,
+          email_likely_meant: classifier?.email_likely_meant || null,
+          clarifying_question: classifier?.clarifying_question || null,
+          requested_time: classifier?.requested_time || null,
+          referral_source: classifier?.referral_source || null,
+          customer_style: classifier?.inferred_customer_style || 'default',
+          customer_recent_length: (input.message_body || '').length,
+          time_of_day_bucket: timeOfDayBucket(),
+          qualification_slots: newQd || null,
+          fallback_text: transitionResult.fallback || '',
+        }
+        const phraserResp = await callInternal('bot-phraser', phraserInput)
+        if (phraserResp?.text) outboundText = phraserResp.text
+      } catch (e) {
+        console.warn('[bot-engine] phraser failed, using fallback', e)
+      }
+    }
+
+    // 13. send-sms
+    if (outboundText) {
+      const sendResp = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contactId: contact.id,
+          body: outboundText,
+        }),
+      })
+      if (!sendResp.ok) {
+        const t = await sendResp.text()
+        throw new Error(`send-sms failed: ${sendResp.status} ${t.slice(0, 200)}`)
+      }
+      outcome = 'replied'
+      await sb.from('contacts').update({
+        last_bot_outbound_at: new Date().toISOString(),
+      }).eq('id', contact.id)
+    }
+
+    return new Response(JSON.stringify({
+      ok: true,
+      prev_state: contact.bot_state,
+      next_state: transitionResult.next,
+      classifier_label: classifier.label,
+      intent: transitionResult.intent,
+      sent: !!outboundText,
+    }), { status: 200, headers: { 'content-type': 'application/json' } })
+  } catch (e) {
+    outcome = 'error'
+    errorMsg = String(e).slice(0, 200)
+    console.error('[bot-engine] inbound failed', e)
+    return new Response(JSON.stringify({ ok: false, error: errorMsg }),
+      { status: 500, headers: { 'content-type': 'application/json' } })
+  } finally {
+    try {
+      await recordProcessed(input.message_sid, outcome, input.contact_id, errorMsg)
+    } catch (_) { /* ignore */ }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
   const gate = requireServiceRole(req)
   if (gate) return gate
@@ -125,7 +420,7 @@ Deno.serve(async (req: Request) => {
     return new Response('Invalid JSON', { status: 400 })
   }
 
-  if (input.trigger === 'new_lead' && input.contact_id) {
+  if (input?.trigger === 'new_lead' && input?.contact_id) {
     try {
       return await handleNewLead(input as NewLeadInput)
     } catch (e) {
@@ -135,7 +430,15 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // Inbound-message + other triggers: stubbed for next deploy stage
-  return new Response(JSON.stringify({ ok: false, error: 'unsupported_trigger', trigger: input.trigger }),
+  if (input?.trigger === 'inbound_message' && input?.contact_id && input?.message_sid) {
+    return await handleInbound(input as InboundInput)
+  }
+
+  // Reference INITIAL_STATE so the import is retained even when GREETING
+  // takes a templated path through assignGreetingVariant. (Ashley's
+  // INITIAL_STATE === 'GREETING'.)
+  void INITIAL_STATE
+
+  return new Response(JSON.stringify({ ok: false, error: 'unsupported_trigger', trigger: input?.trigger }),
     { status: 400, headers: { 'content-type': 'application/json' } })
 })

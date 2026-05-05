@@ -157,6 +157,60 @@ Deno.serve(async (req) => {
 
   console.log(`[twilio-webhook] saved inbound from ${contact.name || contact.id}`)
 
+  // v10.1.30 — Ashley gated routing. If the sender is on the Ashley
+  // allowlist AND has an active bot_state, dispatch to bot-engine instead
+  // of falling through to alex-agent. Purely additive: when the gate is
+  // closed or the contact isn't bot-active, the existing flow continues.
+  try {
+    const ASHLEY_ALLOWED_PHONES = (Deno.env.get('ASHLEY_ALLOWED_PHONES') || '')
+      .split(',').map(s => s.trim()).filter(Boolean)
+    const ashleyEnabled = ASHLEY_ALLOWED_PHONES.includes('*')
+      || ASHLEY_ALLOWED_PHONES.includes(from)
+    if (ashleyEnabled) {
+      const { data: botContact } = await supabase.from('contacts')
+        .select('id, bot_state, bot_disabled')
+        .eq('id', contact.id)
+        .maybeSingle()
+      if (botContact?.bot_state && !botContact.bot_disabled) {
+        const { tryAcquireMessageLock, recordProcessed } = await import('../_shared/bot-idempotency.ts')
+        const acquired = await tryAcquireMessageLock(messageSid)
+        if (!acquired) {
+          // Duplicate webhook — just ack, don't re-process or fall through.
+          return twiml()
+        }
+        try {
+          const SUPABASE_URL_LOCAL = Deno.env.get('SUPABASE_URL')!
+          const SUPABASE_SERVICE_KEY_LOCAL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+          await fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY_LOCAL}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              trigger: 'inbound_message',
+              contact_id: botContact.id,
+              message_sid: messageSid,
+              message_body: body,
+              media_urls: numMedia > 0 ? mediaUrls : undefined,
+            }),
+          })
+          await recordProcessed(messageSid, 'replied', botContact.id)
+          return twiml()
+        } catch (e) {
+          console.error('[ashley-route]', e)
+          try {
+            await recordProcessed(messageSid, 'error', botContact.id, String(e).slice(0, 200))
+          } catch (_) { /* ignore */ }
+          // fall through to existing flow on error so message isn't lost
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[ashley-route] gate eval failed', e)
+    // fall through
+  }
+
   // ── SMART AUTO-EXTRACT CONTACT INFO ────────────────────────────────────────
   // Regex-scan inbound body for email + address. If the contact's current
   // value is empty (or a generic placeholder), auto-patch. This runs on

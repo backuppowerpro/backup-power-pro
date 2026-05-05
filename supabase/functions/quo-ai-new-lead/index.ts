@@ -330,6 +330,36 @@ Deno.serve(async (req) => {
     }).catch(err => console.error('[notify-key] unhandled:', err))
   }
 
+  // v10.1.30 — Ashley gated entry. Phone-allowlist gate so only smoke-test
+  // numbers (Key's cell, etc.) get the Ashley pipeline until A2P 10DLC clears.
+  // When the gate is closed (no allowlist set or phone not on list), this
+  // branch is skipped and the existing Alex flow runs. Consent log + Quo +
+  // CAPI + notifyKey have already fired above — those run for ALL leads.
+  const ASHLEY_ALLOWED_PHONES = (Deno.env.get('ASHLEY_ALLOWED_PHONES') || '')
+    .split(',').map(s => s.trim()).filter(Boolean)
+  const ashleyEnabled = ASHLEY_ALLOWED_PHONES.includes('*')
+    || ASHLEY_ALLOWED_PHONES.includes(normalizedPhone)
+  if (ashleyEnabled) {
+    try {
+      await supabase.from('contacts').update({ bot_state: 'GREETING' }).eq('id', contact.id)
+      const SUPABASE_URL_LOCAL = Deno.env.get('SUPABASE_URL')!
+      const SUPABASE_SERVICE_KEY_LOCAL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY_LOCAL}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ trigger: 'new_lead', contact_id: contact.id }),
+      }).catch(e => console.error('[ashley-greeting]', e))
+    } catch (e) {
+      console.error('[ashley-greeting] gate setup failed', e)
+    }
+    return new Response(JSON.stringify({ success: true, contactId: contact.id, ashley: true }), {
+      status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
+  }
+
   // ── ALEX OPENER (INLINED) ─────────────────────────────────────────────────
   // Full Alex flow: create alex_sessions row, pick an A/B variant, fire the
   // variant-specific opener text(s), mirror them into the messages table so
