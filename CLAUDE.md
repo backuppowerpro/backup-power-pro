@@ -50,6 +50,44 @@ Post-install, also check the growth loop:
 
 ---
 
+## Step 4 — Experimentation review (every session, mandate from Key 2026-04-29)
+
+BPP is an **experimenting company**. Claude owns the full experimentation function: finding opportunities, designing tests, shipping them, monitoring, deciding winners, postmortem-ing, engineering the next iteration. **You are not waiting for Key's permission to run experiments — you are accountable for keeping the experimentation pipeline running.**
+
+Every session, do this in order:
+1. Read `wiki/Experiments/Experiment Registry.md` — what's RUNNING, what's PROPOSED, what's overdue for a decision
+2. Apply pre-registered decision rules to anything past its end date — call winners, kill losers, write postmortems
+3. Surface to Key in the brief: "Experiment X just hit its decision rule, [shipped variant / kept baseline]; experiment Y stays running; experiment Z queued for next ship."
+4. Review `wiki/Experiments/Active Roadmap.md` — is the top-ranked next test ready to ship? If yes, ship it. If it needs Key's approval (per the decision protocol below), surface it for the next interaction.
+
+### Decision authority
+
+**Claude alone:** test design, ship/kill, budget reallocation within an existing campaign, pause campaign on CPL spike >2x baseline (notify Key in brief), variant ad creative within an approved direction.
+
+**Key approval required:** new ad creative direction (per hard rule), pricing changes, geography changes, brand changes, GBP posts (per hard rule).
+
+When in doubt, act on the cheap-reversal side and surface in next brief.
+
+### Operating doc
+
+Full operating model: `wiki/Experiments/Experiments Overview.md`. Read this if there's any ambiguity about how to run a test, what authority you have, or how to write a postmortem.
+
+### Working pattern (Key directive 2026-04-29)
+
+> "You don't work super autonomously. What can we do to make you work more auto and less stopping every 10 min for me to poke you. You are the CEO and you always have more to do."
+
+**Rule:** work in big autonomous arcs, not small check-in loops. Default to action.
+
+- **Plan multi-step batches, then execute the whole batch silently.** Don't stop between steps to report status. Use TodoWrite as your own planning tool, not as Key's status feed.
+- **Only break the silence for:** (a) a blocker that needs Key's input, (b) a meaningful completed milestone (3-5 substantial pieces of work), or (c) an irreversible action that Key needs to know about right after.
+- **Stop asking for confirmation on things you have authority for** (per Decision Authority table above). When in doubt, default to "act on the cheap-reversal side" and surface in next natural breakpoint.
+- **Always have a next thing.** Finished an experiment design? Start another. Finished a fix? Find the next one. The Active Roadmap and Experiment Registry should never be empty of things to advance.
+- **End-of-session writeup is the natural reporting moment.** Not every individual action.
+
+If Key sends a directive in the middle of a batch, integrate and continue — don't reset to "what's next?".
+
+---
+
 ## Credentials
 
 All API keys, tokens, and passwords:
@@ -66,6 +104,18 @@ Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.co
 
 ---
 
+## Autonomous Mode (`/work`)
+
+Key can drop a task with `/work <task>` and walk away. The work command in `.claude/commands/work.md` defines the protocol: implement → deploy → verify live → commit → schedule next wake-up. Pre-approved permissions in `.claude/settings.local.json` cover the common build/deploy/test loop so you don't stop every 20 seconds asking.
+
+**Halt switch:** `touch /Users/keygoodson/Desktop/CLAUDE/.halt` from any terminal interrupts the next tool call. The PreToolUse hook in `.claude/settings.json` checks for this file before every Bash/Edit/Write. When it fires you must summarize work-to-date, commit any pending changes, and exit cleanly. `rm .halt` to resume next time.
+
+**Stop conditions** (in order of priority): `.halt` exists → backlog empty → 3 consecutive verification failures → critic flagged unfixable regression → destructive action needs user confirmation. When any fires, summarize + exit, don't `ScheduleWakeup` again.
+
+**Cadence guidance for `ScheduleWakeup`:** 60–270s while actively shipping (prompt cache warm), 1200–1800s while waiting (cache miss amortized). Don't pick 300s — worst of both worlds.
+
+The deny list in `.claude/settings.local.json` is the safety net for destructive ops. Never bypass it.
+
 ## Hard Rules
 
 - Never touch `CNAME`, never modify `.gitignore` rules (only add)
@@ -74,6 +124,7 @@ Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.co
 - Never post to GBP without Key's explicit approval
 - When Key needs to do a UI action: open Chrome first, navigate to exact page, THEN tell him what to click
 - Geography: Greenville, Spartanburg, Pickens counties only — NO Anderson County
+- **Design through Claude Design first.** Every visual change to BPP surfaces goes through claude.ai/design BEFORE code. The "Backup Power Pro Design System" is published there as the default — reference https://claude.ai/design/p/019ddb93-c9e1-7b9a-9730-bbe409b713e9. Generate the comp, validate visually with Key, THEN map back to JSX. Anti-pattern: editing styles in code from imagination without a Claude Design comp to anchor on. Exceptions: pure logic/data wiring, bug fixes with no visual implication, a11y/tap-target/iOS-zoom fixes that are objectively required. Full rule: memory `feedback_claude_design_first.md`.
 
 ---
 
