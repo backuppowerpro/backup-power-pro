@@ -44,6 +44,86 @@ function formatPhone(e164: string | null): string {
   return m ? `(${m[1]}) ${m[2]}-${m[3]}` : e164
 }
 
+// v10.1.33 — friendly distance summary instead of full street address.
+// Pulls city out of the install_address. Cities below have hand-tuned
+// drive-times from Travelers Rest (Key's home base). City names match
+// case-insensitively.
+const CITY_DRIVE_MIN: Record<string, number> = {
+  'travelers rest': 8,
+  'taylors': 18,
+  'greer': 25,
+  'greenville': 22,
+  'easley': 28,
+  'mauldin': 30,
+  'pickens': 35,
+  'simpsonville': 35,
+  'fountain inn': 40,
+  'spartanburg': 42,
+  'piedmont': 30,
+  'liberty': 30,
+  'central': 35,
+  'powdersville': 32,
+  'duncan': 35,
+  'wellford': 33,
+  'lyman': 33,
+  'inman': 38,
+}
+
+function locationSummary(addr: string | null): string | null {
+  if (!addr) return null
+  // Try to extract: city + state + zip from the tail of the address.
+  // E.g. "22 Kimbell Ct Greenville SC 29615" → "Greenville SC".
+  const lower = addr.toLowerCase()
+  // Find the longest city name that appears in the address.
+  let bestCity: string | null = null
+  let bestLen = 0
+  for (const c of Object.keys(CITY_DRIVE_MIN)) {
+    if (lower.includes(c) && c.length > bestLen) {
+      bestCity = c
+      bestLen = c.length
+    }
+  }
+  if (bestCity) {
+    const cap = bestCity.replace(/\b\w/g, ch => ch.toUpperCase())
+    const mins = CITY_DRIVE_MIN[bestCity]
+    return `${cap}, ~${mins} min away`
+  }
+  // Fallback: try to grab 'CITY ST' before zip
+  const m = addr.match(/\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+[A-Z]{2}\b/)
+  return m ? m[1] : null
+}
+
+// v10.1.33 — human-readable setup description. Combines outlet info,
+// generator model (if known), and panel location into one or two
+// scannable lines.
+function setupSummary(c: any, qd: any): string[] {
+  const lines: string[] = []
+  // Outlet + voltage
+  const outletParts: string[] = []
+  if (c.outlet_amps === 50) outletParts.push('50-amp 240V outlet')
+  else if (c.outlet_amps === 30) outletParts.push('30-amp 240V outlet')
+  else if (c.gen_240v === true) outletParts.push('240V outlet (amps unconfirmed)')
+  else if (c.gen_240v === false) outletParts.push('120V only (DQ)')
+  if (c.gen_brand_model) outletParts.push(`on ${c.gen_brand_model}`)
+  if (outletParts.length) lines.push(`Generator: ${outletParts.join(' ')}`)
+  // Panel location
+  const panelLoc = qd.panel_location || qd.install_path
+  const panelBits: string[] = []
+  if (c.panel_brand) panelBits.push(c.panel_brand)
+  if (panelLoc) {
+    // Translate state-machine label to human ("garage exterior" → "garage on an exterior wall")
+    const human = String(panelLoc)
+      .replace(/garage exterior/i, 'garage on an exterior wall')
+      .replace(/garage interior/i, 'garage on an interior wall')
+      .replace(/basement/i, 'basement')
+      .replace(/interior wall/i, 'interior wall')
+      .replace(/exterior/i, 'exterior wall')
+    panelBits.push(human)
+  }
+  if (panelBits.length) lines.push(`Panel: ${panelBits.join(', ')}`)
+  return lines
+}
+
 function scoreLead(c: any): { score: number; scoreLabel: string } {
   let score = 1.0
   if (c.gen_240v === true) score += 1.0
@@ -209,37 +289,36 @@ Deno.serve(async (req) => {
   const phoneFmt = formatPhone(contact.phone)
   const fullName = (contact.name || '').trim() || 'Unknown name'
 
+  // v10.1.33 — softer header copy. Old "📞 CALLBACK NEEDED" felt alarming
+  // when the customer just gave a polite "thanks". Use neutral copy unless
+  // there's a real urgent flag. Differentiate by data quality, not by the
+  // word "CALLBACK" which sounds like an emergency.
+  const locSummary = locationSummary(contact.install_address)
+  const setupLines = setupSummary(contact, qd)
+  const hasFullInfo = !!(contact.email && contact.install_address && contact.outlet_amps)
+
   let smsBody: string
   if (input.terminal_state === 'COMPLETE') {
     const { score, scoreLabel } = scoreLead(contact)
     const lines: string[] = []
-    // Header — score first so Key sees urgency at a glance
     const scoreEmoji = score >= 4.5 ? '🟢' : score >= 3.5 ? '🟡' : '🟠'
-    lines.push(`${scoreEmoji} NEW LEAD — ${scoreLabel}`)
+    lines.push(`${scoreEmoji} New lead — ${scoreLabel}`)
     lines.push('')
-    // Contact block
+    // Contact block — show contact + location summary, not full street
     lines.push(`${fullName}`)
     lines.push(`${phoneFmt}`)
     if (contact.email) lines.push(`${contact.email}`)
-    if (contact.install_address) lines.push(`${contact.install_address}`)
+    if (locSummary) lines.push(locSummary)
     lines.push('')
-    // Setup block
-    const setupParts: string[] = []
-    if (contact.outlet_amps) setupParts.push(`${contact.outlet_amps}A 240V`)
-    else if (contact.gen_240v === true) setupParts.push('240V (amps unconfirmed)')
-    if (contact.gen_brand_model) setupParts.push(contact.gen_brand_model)
-    if (setupParts.length) lines.push(`Generator: ${setupParts.join(' · ')}`)
-    const panelLoc = qd.panel_location || qd.install_path
-    if (contact.panel_brand && panelLoc) lines.push(`Panel: ${contact.panel_brand}, ${panelLoc}`)
-    else if (contact.panel_brand) lines.push(`Panel: ${contact.panel_brand}`)
-    else if (panelLoc) lines.push(`Panel location: ${panelLoc}`)
+    // Setup
+    if (setupLines.length) lines.push(...setupLines)
     // Photos
     const photos: string[] = []
     if (contact.primary_panel_photo_path) photos.push('panel')
     if (contact.primary_outlet_photo_path) photos.push('outlet')
     if (Array.isArray(contact.extra_photos) && contact.extra_photos.length) photos.push(`+${contact.extra_photos.length} more`)
     if (photos.length) lines.push(`Photos: ${photos.join(', ')} (in CRM)`)
-    // Flags / asks
+    // Flags
     const flags: string[] = []
     if (qd.voltage_deferred) flags.push(`⚠️ Voltage UNCONFIRMED — verify ${contact.gen_brand_model || 'model'} specs`)
     else if (qd.voltage_pending) flags.push(`⚠️ Voltage selector check needed`)
@@ -266,22 +345,28 @@ Deno.serve(async (req) => {
     smsBody = lines.join('\n')
     await sb.from('contacts').update({ lead_quality_score: score }).eq('id', input.contact_id)
   } else {
-    // NEEDS_CALLBACK — same multi-line format
+    // NEEDS_CALLBACK — softer header. If we have full info + a benign
+    // signal (off-topic Q, "thanks"), present as a heads-up not a 911.
+    const isUrgent = qd.priority === 'urgent' || qd.hazardous_panel_brand
+      || qd.non_english_lead || qd.scope_mismatch_ats
     const lines: string[] = []
-    lines.push(`📞 CALLBACK NEEDED`)
+    if (isUrgent) {
+      lines.push(`🚨 Needs your eyes`)
+    } else if (hasFullInfo) {
+      // Customer gave full info but ended on something the bot couldn't
+      // confidently classify. Treat as a soft heads-up.
+      lines.push(`📋 Lead handoff — needs follow-up`)
+    } else {
+      lines.push(`📋 Heads up — partial info`)
+    }
     lines.push('')
     lines.push(`${fullName}`)
     lines.push(`${phoneFmt}`)
     if (contact.email) lines.push(`${contact.email}`)
-    if (contact.install_address) lines.push(`${contact.install_address}`)
+    if (locSummary) lines.push(locSummary)
     lines.push('')
-    // What we know so far
-    const known: string[] = []
-    if (contact.outlet_amps) known.push(`${contact.outlet_amps}A 240V`)
-    else if (contact.gen_240v === true) known.push('240V')
-    if (contact.gen_brand_model) known.push(contact.gen_brand_model)
-    if (known.length) lines.push(`Setup: ${known.join(' · ')}`)
-    // Why callback
+    if (setupLines.length) lines.push(...setupLines)
+    // Why follow-up
     const reasons: string[] = []
     if (qd.non_english_lead) reasons.push('• Non-English inbound (English-only support)')
     if (qd.scope_mismatch_ats) reasons.push('• Wants ATS / whole-home (out of scope)')

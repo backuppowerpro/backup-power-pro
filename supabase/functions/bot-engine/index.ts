@@ -282,9 +282,47 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     }
 
+    // v10.1.33 — regex pre-extraction BEFORE state machine, so the SM can
+    // see whether email/address/last_name were captured this turn and route
+    // accordingly. Without this, customer dumping "Goodson, x@y.com, 22 Main
+    // St" at AWAIT_EMAIL routes to AWAIT_ADDRESS_CONFIRM (state machine only
+    // saw email_provided, didn't know address was already in the body).
+    const inboundText = String(input.message_body || '')
+    const preExtracted: { email?: string; address?: string; last_name?: string } = {}
+    if (inboundText) {
+      const emailMatch = inboundText.match(/[\w.+-]+@[\w-]+\.[\w.-]+/i)
+      if (emailMatch) preExtracted.email = emailMatch[0]
+
+      const addrMatch = inboundText.match(
+        /\b\d{1,6}\s+\w[\w\s.,'-]{3,80}?\b(?:st|street|rd|road|ave|avenue|blvd|dr|drive|ln|lane|trl|trail|way|ct|court|pl|place|hwy|highway|pkwy|parkway|cir|circle)\b[^.\n]{0,120}/i
+      )
+      if (addrMatch) preExtracted.address = addrMatch[0].trim().replace(/[,;]+\s*$/, '')
+
+      if (contact.bot_state === 'AWAIT_EMAIL') {
+        const lnMatch = inboundText.match(/^\s*([A-Z][a-z'-]{1,24})(?:\s*[,]|\s*$)/)
+        if (lnMatch) preExtracted.last_name = lnMatch[1]
+      }
+    }
+
     // 8. State machine transition
     const ctx = buildSmCtx(contact, classifier)
-    const transitionResult = smTransition(contact.bot_state, classifier.label, ctx)
+    let transitionResult = smTransition(contact.bot_state, classifier.label, ctx)
+
+    // v10.1.33 — at AWAIT_EMAIL, if customer provided email + address in
+    // the same message AND email isn't a real typo, skip both
+    // CHECK_EMAIL_TYPO and AWAIT_ADDRESS_CONFIRM and go straight to RECAP.
+    // The state machine doesn't know about regex extraction or our typo
+    // suppression; we override here.
+    const emailSeen = preExtracted.email || contact.email
+    const addressSeen = preExtracted.address || contact.install_address
+    const skipToRecap =
+      contact.bot_state === 'AWAIT_EMAIL' &&
+      emailSeen && addressSeen &&
+      !classifier?.email_typo_suspected &&
+      (transitionResult.next === 'CHECK_EMAIL_TYPO' || transitionResult.next === 'AWAIT_ADDRESS_CONFIRM')
+    if (skipToRecap) {
+      transitionResult = { ...transitionResult, next: 'RECAP', intent: undefined }
+    }
 
     // 9. Persist slot updates + new state
     const newQd = applySlotUpdates(contact.qualification_data || {}, classifier, photoResult)
@@ -301,48 +339,27 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     if (classifier?.label === 'outlet_30a_4prong' || classifier?.label === 'outlet_30a') stateUpdate.outlet_amps = 30
     if (classifier?.label === 'email_provided' && classifier.extracted_value) stateUpdate.email = classifier.extracted_value
 
-    // v10.1.32 — regex-based slot extraction. Customers often dump
-    // last name + email + address in one message at AWAIT_EMAIL. The
-    // classifier picks one primary label (usually email_provided), but
-    // we want ALL three captured regardless of which label it picked.
-    // Run cheap regexes on the inbound text and write any slot we find
-    // that isn't already filled. Existing values stay protected.
-    const inboundText = String(input.message_body || '')
-    if (inboundText) {
-      // Email
-      if (!stateUpdate.email && !contact.qualification_data?.email_locked) {
-        const emailMatch = inboundText.match(/[\w.+-]+@[\w-]+\.[\w.-]+/i)
-        if (emailMatch) stateUpdate.email = emailMatch[0]
+    // Apply pre-extracted slots (only fill blanks; don't overwrite existing)
+    if (preExtracted.email && !stateUpdate.email && !contact.qualification_data?.email_locked) {
+      stateUpdate.email = preExtracted.email
+    }
+    if (preExtracted.address && !contact.install_address) {
+      stateUpdate.install_address = preExtracted.address
+    }
+    if (preExtracted.last_name && !contact.qualification_data?.last_name) {
+      newQd.last_name = preExtracted.last_name
+      stateUpdate.qualification_data = newQd
+      if (contact.name && !contact.name.includes(' ')) {
+        stateUpdate.name = `${contact.name} ${preExtracted.last_name}`.trim()
+      } else if (!contact.name) {
+        stateUpdate.name = preExtracted.last_name
       }
-      // Address: street-number + street + (city + state + zip optional)
-      // Pattern: "123 Main St" / "22 Kimbell Ct Greenville SC 29615"
-      if (!contact.install_address) {
-        const addrMatch = inboundText.match(
-          /\b\d{1,6}\s+\w[\w\s.,'-]{3,80}?\b(?:st|street|rd|road|ave|avenue|blvd|dr|drive|ln|lane|trl|trail|way|ct|court|pl|place|hwy|highway|pkwy|parkway|cir|circle)\b[^.\n]{0,120}/i
-        )
-        if (addrMatch) {
-          stateUpdate.install_address = addrMatch[0].trim().replace(/[,;]+\s*$/, '')
-        }
-      }
-      // Last name — only at AWAIT_EMAIL (when we just asked for it)
-      // Customer often replies "Goodson, key@..." — first comma-separated
-      // token before email/address that's a single capitalized word.
-      if (contact.bot_state === 'AWAIT_EMAIL' && !contact.qualification_data?.last_name) {
-        // Take first token before first comma if it looks like a single
-        // capitalized name (no @, no digits, 2-25 chars)
-        const lnMatch = inboundText.match(/^\s*([A-Z][a-z'-]{1,24})(?:\s*[,]|\s*$)/)
-        if (lnMatch) {
-          const lname = lnMatch[1]
-          // Update both qualification_data and contacts.name (concat with first)
-          newQd.last_name = lname
-          stateUpdate.qualification_data = newQd
-          if (contact.name && !contact.name.includes(' ')) {
-            stateUpdate.name = `${contact.name} ${lname}`.trim()
-          } else if (!contact.name) {
-            stateUpdate.name = lname
-          }
-        }
-      }
+    }
+    // Capture install_path from explicit panel-location classifier labels
+    // for richer handoff context (e.g., panel_garage_exterior).
+    if (classifier?.label && /^panel_/.test(classifier.label)) {
+      newQd.panel_location = classifier.label.replace(/^panel_/, '').replace(/_/g, ' ')
+      stateUpdate.qualification_data = newQd
     }
     await sb.from('contacts').update(stateUpdate).eq('id', contact.id)
 
@@ -364,18 +381,32 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }).eq('id', contact.id)
     } catch (_) { /* ignore */ }
 
-    // 11. Terminal handoff?
+    // 11. Terminal handoff? (idempotent — only fire once per contact)
+    // v10.1.33 — was firing on every subsequent inbound when state stayed
+    // terminal, sending Key 2-3 duplicate handoff alerts. Track via
+    // qualification_data.handoff_fired_at.
     if (TERMINAL_STATES.has(transitionResult.next)) {
-      try {
-        await callInternal('bot-handoff-notifier', {
-          contact_id: contact.id,
-          terminal_state: transitionResult.next,
-          callback_excerpt: classifier?.off_topic_excerpt || classifier?.coverage_excerpt
-            || classifier?.impatience_excerpt || classifier?.chitchat_excerpt
-            || (input.message_body || '').slice(0, 140),
-        })
-      } catch (e) {
-        console.warn('[bot-engine] handoff-notifier failed', e)
+      const alreadyFired = !!(contact.qualification_data?.handoff_fired_at)
+      if (!alreadyFired) {
+        try {
+          await callInternal('bot-handoff-notifier', {
+            contact_id: contact.id,
+            terminal_state: transitionResult.next,
+            callback_excerpt: classifier?.off_topic_excerpt || classifier?.coverage_excerpt
+              || classifier?.impatience_excerpt || classifier?.chitchat_excerpt
+              || (input.message_body || '').slice(0, 140),
+          })
+          // Mark handoff as fired so subsequent inbounds don't re-trigger
+          newQd.handoff_fired_at = new Date().toISOString()
+          newQd.handoff_terminal_state = transitionResult.next
+          await sb.from('contacts').update({
+            qualification_data: newQd,
+          }).eq('id', contact.id)
+        } catch (e) {
+          console.warn('[bot-engine] handoff-notifier failed', e)
+        }
+      } else {
+        console.log('[bot-engine] handoff already fired, skipping duplicate')
       }
       outcome = 'silent'
       return new Response(JSON.stringify({

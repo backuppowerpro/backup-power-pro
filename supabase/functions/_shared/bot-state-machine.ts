@@ -702,6 +702,10 @@ const STATES: Record<string, any> = {
       amending_prior_answer: 'NEEDS_CALLBACK',  // they want to revise something — Key handles
       asking_for_human: 'NEEDS_CALLBACK',
       stop_variant: 'STOPPED',
+      // v10.1.33 — "thanks" / "great" / "sounds good" should advance to
+      // SCHEDULE_QUOTE (close-out). Was falling through to NEEDS_CALLBACK
+      // and producing a duplicate handoff alert.
+      friendly_chitchat: 'SCHEDULE_QUOTE',
       unclear: 'SCHEDULE_QUOTE',  // benign reply like "thanks" or "ok cool"
     },
   },
