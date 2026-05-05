@@ -717,10 +717,14 @@ const STATES: Record<string, any> = {
       return `Thank you${name}. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.`;
     },
     transitions: {
-      // Terminal-ish state — most replies route to NEEDS_CALLBACK so Key handles personally
+      // Terminal-ish state — most replies route to COMPLETE
       affirmative: 'COMPLETE',
       negative: 'NEEDS_CALLBACK',
       asking_for_human: 'NEEDS_CALLBACK',
+      // v10.1.32 — "thanks", "great", "sounds good" all classify as friendly_chitchat
+      // and should resolve as COMPLETE (customer is acknowledging the wrap-up, not
+      // raising a concern). Without this they fall to NEEDS_CALLBACK default.
+      friendly_chitchat: 'COMPLETE',
       photo_correction: 'AWAIT_PANEL_PHOTO',  // customer wants to replace the photo — rewind
       photo_received: 'SCHEDULE_QUOTE',  // additional photos append to extras (P35)
       stop_variant: 'STOPPED',

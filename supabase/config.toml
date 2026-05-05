@@ -1,0 +1,41 @@
+# Supabase project config — Ashley + internal functions
+# 2026-05-05: created so `verify_jwt = false` survives across deploys.
+# Without this, every `supabase functions deploy` resets the dashboard
+# toggle to ON and breaks internal edge-to-edge calls (401 UNAUTHORIZED_
+# INVALID_JWT_FORMAT) because the legacy secret was disabled 2026-04-23.
+
+project_id = "reowtzedjflwmlptupbk"
+
+# Internal-only functions: code does its own auth via requireServiceRole.
+# Gateway-level JWT check is redundant and broken post-2026-04-23.
+[functions.bot-engine]
+verify_jwt = false
+
+[functions.bot-classifier]
+verify_jwt = false
+
+[functions.bot-phraser]
+verify_jwt = false
+
+[functions.bot-photo-classifier]
+verify_jwt = false
+
+[functions.bot-handoff-notifier]
+verify_jwt = false
+
+[functions.send-sms]
+verify_jwt = false
+
+# Public webhook surfaces (signature-verified inside the function):
+[functions.twilio-webhook]
+verify_jwt = false
+
+[functions.alex-agent]
+verify_jwt = false
+
+[functions.quo-ai-webhook]
+verify_jwt = false
+
+# Public form-submit endpoint (rate-limited internally):
+[functions.quo-ai-new-lead]
+verify_jwt = false

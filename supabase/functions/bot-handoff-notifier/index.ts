@@ -66,8 +66,32 @@ function scoreLead(c: any): { score: number; scoreLabel: string } {
 }
 
 async function sendInternalSms(body: string, _contactId: string, _fromLabel: string) {
-  // Direct Twilio API — internal alert to Key's cell, not customer-facing.
-  // Matches the pattern used by lead-volume-alert / cpl-watchdog.
+  // v10.1.32 — OpenPhone bypass while Twilio A2P 10DLC is in carrier review.
+  // If KEY_CELL is on ASHLEY_OPENPHONE_TEST_PHONES, send via OpenPhone (5302).
+  // When A2P clears, unset that env var and this falls back to direct Twilio.
+  const OP_TEST_PHONES = (Deno.env.get('ASHLEY_OPENPHONE_TEST_PHONES') || '')
+    .split(',').map(s => s.trim()).filter(Boolean)
+  const useOpenPhone = OP_TEST_PHONES.includes('*') || OP_TEST_PHONES.includes(KEY_CELL)
+
+  if (useOpenPhone) {
+    const QUO_API_KEY = Deno.env.get('QUO_API_KEY')!
+    // v10.1.32 — use the INTERNAL OpenPhone line (864) 863-7155 for
+    // handoff alerts to Key, not the customer-facing 5302 line. Per
+    // Key 2026-05-04: handoff texts come from 7155 to keep customer
+    // and internal threads separate in his iMessage.
+    const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'
+    const res = await fetch('https://api.openphone.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
+      body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [KEY_CELL], content: body }),
+    })
+    if (!res.ok) {
+      console.error('[bot-handoff-notifier] openphone send failed', res.status, await res.text())
+    }
+    return res
+  }
+
+  // Direct Twilio API — default path (post-A2P).
   const creds = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
   const form = new URLSearchParams({ From: TWILIO_FROM, To: KEY_CELL, Body: body })
   const res = await fetch(
