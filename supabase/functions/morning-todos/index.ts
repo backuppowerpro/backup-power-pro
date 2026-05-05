@@ -74,7 +74,7 @@ async function gatherBusinessState(sb: ReturnType<typeof createClient>) {
       .select('id, name, qualification_data')
       .not('qualification_data->>hazardous_panel_brand', 'is', null)
       .limit(10),
-    // Voltage-deferred (Maya didn't confirm 240V; Key needs to verify model spec)
+    // Voltage-deferred (Ashley didn't confirm 240V; Key needs to verify model spec)
     sb.from('contacts')
       .select('id, name, gen_brand_model, qualification_data')
       .eq('qualification_data->>voltage_deferred', 'true')

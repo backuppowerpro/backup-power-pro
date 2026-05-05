@@ -1,5 +1,5 @@
 /**
- * bot-engine — Maya's orchestrator (MVP).
+ * bot-engine — Ashley's orchestrator (MVP).
  *
  * v10.1.15 entry point. Currently handles ONE trigger:
  *   { contact_id, trigger: 'new_lead' }
@@ -85,7 +85,7 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
     body: JSON.stringify({
       to: contact.phone,
       body: messageBody,
-      from_label: 'maya-greeting',
+      from_label: 'ashley-greeting',
       contact_id: contact.id,
     }),
   })

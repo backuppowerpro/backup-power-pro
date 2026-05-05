@@ -39,14 +39,14 @@ export function renderGreeting(
     : ''
   switch (variant) {
     case 'B':
-      return `Hi ${name}, this is Maya at Backup Power Pro intake. Our electrician Key handles your quote and install personally. I'll just gather a few details for him. Mind if I ask a couple things?${lateNightSuffix}`
+      return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro intake. Our electrician Key handles your quote and install personally. I'll just gather a few details for him. Mind if I ask a couple things?${lateNightSuffix}`
     case 'C':
-      return `Hi ${name}, this is Maya from Backup Power Pro. Thanks for reaching out about a home connection for your portable generator. Happy to help get this rolling. Got a few minutes to walk through what our electrician Key needs to provide an accurate quote?${lateNightSuffix}`
+      return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. Thanks for reaching out about a home connection for your portable generator. Happy to help get this rolling. Got a few minutes to walk through what our electrician Key needs to provide an accurate quote?${lateNightSuffix}`
     case 'D':
-      return `Hi ${name}, this is Maya from Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?${lateNightSuffix}`
+      return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?${lateNightSuffix}`
     case 'A':
     default:
-      return `Hi ${name}, this is Maya from Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?${lateNightSuffix}`
+      return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?${lateNightSuffix}`
   }
 }
 
