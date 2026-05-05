@@ -104,17 +104,53 @@ Repo at `/Users/keygoodson/Desktop/CLAUDE` → auto-deploys to backuppowerpro.co
 
 ---
 
-## Autonomous Mode (`/work`)
+## Autonomous Mode — recognize and self-start, no command needed
 
-Key can drop a task with `/work <task>` and walk away. The work command in `.claude/commands/work.md` defines the protocol: implement → deploy → verify live → commit → schedule next wake-up. Pre-approved permissions in `.claude/settings.local.json` cover the common build/deploy/test loop so you don't stop every 20 seconds asking.
+Key does not want to type `/work` or any other command to enter autonomous mode. **You recognize the task pattern and start the loop yourself.** No "should I keep going?" — just go.
 
-**Halt switch:** `touch /Users/keygoodson/Desktop/CLAUDE/.halt` from any terminal interrupts the next tool call. The PreToolUse hook in `.claude/settings.json` checks for this file before every Bash/Edit/Write. When it fires you must summarize work-to-date, commit any pending changes, and exit cleanly. `rm .halt` to resume next time.
+### When to enter autonomous mode (default to YES if any of these match)
 
-**Stop conditions** (in order of priority): `.halt` exists → backlog empty → 3 consecutive verification failures → critic flagged unfixable regression → destructive action needs user confirmation. When any fires, summarize + exit, don't `ScheduleWakeup` again.
+- **Backlog/multi-item tasks**: "ship the Ashley backlog", "fix all the bugs in X", "audit everything", "improve all of …", "go through the open items", "do the next 5 things"
+- **Open-ended improvement**: "make this better", "harden the …", "polish the …", "keep going", "do more testing"
+- **Anything with "and"-chains** that are clearly more than one turn of work: "ship it, verify, then audit and clean up"
+- **Explicit autonomy**: "work on this autonomously", "don't stop until …", "while I'm out", "self-pace"
+- **Open scope verbs**: "audit", "review", "harden", "refactor", "polish", "improve", "ship the rest", "finish what's open"
 
-**Cadence guidance for `ScheduleWakeup`:** 60–270s while actively shipping (prompt cache warm), 1200–1800s while waiting (cache miss amortized). Don't pick 300s — worst of both worlds.
+### When to stay interactive (default to ASK)
 
-The deny list in `.claude/settings.local.json` is the safety net for destructive ops. Never bypass it.
+- Single concrete edit ("change X to Y in file Z")
+- Information request ("what does this do?", "why did we …")
+- Strategic / planning conversation ("should we …", "what's the right approach to …")
+- Anything destructive or irreversible per the "Executing actions with care" guidance below
+
+### How to self-start (the loop you run without a command)
+
+1. **Acknowledge briefly, then start working.** One sentence: "Starting on X. I'll keep going until done or you say stop." Don't ask permission.
+2. **Do one full iteration** (implement → deploy if relevant → verify live → update the relevant doc → commit). One commit per item with a focused message.
+3. **Brief one line** of what shipped + what's next.
+4. **Schedule the next wake-up** by calling `ScheduleWakeup(delaySeconds, prompt)`. The `prompt` field MUST be a self-contained re-statement of the task — the next firing has no memory of this turn except this prompt. Pattern: `"Continue autonomous work on: <task>. Read the backlog at <path>, pick the next item, implement → verify → commit, then ScheduleWakeup again. Halt if .halt exists, backlog is empty, or 3 consecutive verification failures."`
+5. **Cadence**: 60–270s while actively shipping (prompt cache warm). 1200–1800s while genuinely waiting on something external. **Never pick 300s** — worst of both. Never `sleep` in bash; only use `ScheduleWakeup`.
+6. **Halt conditions** — when ANY fires, summarize + exit, do NOT call `ScheduleWakeup` again:
+   - `.halt` file exists at `/Users/keygoodson/Desktop/CLAUDE/.halt`
+   - Backlog has zero unchecked items
+   - 3 consecutive verification failures on the same item
+   - A critic agent flagged a regression you can't reconcile
+   - You hit a destructive action that needs explicit confirmation per "Executing actions with care"
+7. **Hook safety net**: `.claude/settings.json` has a PreToolUse hook that blocks Bash/Edit/Write if `.halt` exists. Key can `touch .halt` from any terminal to interrupt you mid-tool-call. When you see that block, treat it as a halt signal: summarize, commit pending work, exit cleanly.
+
+### What pre-approved means in practice
+
+`.claude/settings.local.json` has 338 pre-approved bash patterns covering the build/deploy/test loop (curl, supabase deploy/secrets/migrate, git status/diff/add/commit, gh, jq, python, node /tmp, /tmp/send-ashley.sh) plus scoped Edit/Write to project subdirs. **You don't stop every 20 seconds asking.** The deny list (force-push, db reset, secrets unset, .ssh/.aws writes) is the hard floor — never bypass.
+
+If you hit a tool that's NOT pre-approved, that's a signal: either the action is novel (good — pause and ask) or the allow list needs an addition (note it for Key, fall back to a permitted alternative if possible).
+
+### Halt switch usage
+
+Key can stop you cleanly from any terminal: `touch /Users/keygoodson/Desktop/CLAUDE/.halt`. Resume by `rm .halt`. The hook makes this work without any code from you.
+
+### Why not /loop or /work?
+
+Both still work. But Key prefers natural language. Both `/work` (in `.claude/commands/work.md`) and the loop protocol above implement the SAME pattern — recognize → iterate → ScheduleWakeup → halt-aware. Use whichever feels right for the prompt. Default to recognize-and-go.
 
 ## Hard Rules
 
