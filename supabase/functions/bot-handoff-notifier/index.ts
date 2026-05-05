@@ -210,11 +210,12 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'missing_fields' }), { status: 400 })
   }
 
-  // Fully-silent terminals
+  // v10.1.37 — was silent on OUT_OF_AREA; now Key gets a heads-up
+  // since misrouted leads need acknowledgment. RENTER stays silent
+  // (no work needed). STOPPED stays silent (TCPA).
   if (
     input.terminal_state === 'STOPPED' ||
-    input.terminal_state === 'DISQUALIFIED_RENTER' ||
-    input.terminal_state === 'DISQUALIFIED_OUT_OF_AREA'
+    input.terminal_state === 'DISQUALIFIED_RENTER'
   ) {
     return new Response(
       JSON.stringify({ notified: false, reason: 'silent_terminal' }),
@@ -345,12 +346,17 @@ Deno.serve(async (req) => {
     smsBody = lines.join('\n')
     await sb.from('contacts').update({ lead_quality_score: score }).eq('id', input.contact_id)
   } else {
-    // NEEDS_CALLBACK — softer header. If we have full info + a benign
-    // signal (off-topic Q, "thanks"), present as a heads-up not a 911.
+    // NEEDS_CALLBACK / DISQUALIFIED_OUT_OF_AREA — softer header.
+    // v10.1.37 — explicit headers for scope-mismatch and OOSA so Key
+    // doesn't mistake them for genuine qualified leads.
     const isUrgent = qd.priority === 'urgent' || qd.hazardous_panel_brand
-      || qd.non_english_lead || qd.scope_mismatch_ats
+      || qd.non_english_lead
     const lines: string[] = []
-    if (isUrgent) {
+    if (input.terminal_state === 'DISQUALIFIED_OUT_OF_AREA' || qd.scope_mismatch_oosa) {
+      lines.push(`🌎 Out of service area`)
+    } else if (qd.scope_mismatch_ats) {
+      lines.push(`🏠 Whole-home install (out of scope)`)
+    } else if (isUrgent) {
       lines.push(`🚨 Needs your eyes`)
     } else if (hasFullInfo) {
       // Customer gave full info but ended on something the bot couldn't
@@ -373,6 +379,7 @@ Deno.serve(async (req) => {
     const realReasons: string[] = []
     if (qd.non_english_lead) realReasons.push('• Non-English inbound (English-only support)')
     if (qd.scope_mismatch_ats) realReasons.push('• Wants ATS / whole-home (out of scope)')
+    if (qd.scope_mismatch_oosa) realReasons.push('• Address outside Greenville/Spartanburg/Pickens counties')
     if (qd.hazardous_panel_brand) realReasons.push(`• ⚠️ HAZARDOUS PANEL: ${qd.hazardous_panel_brand}`)
     if (qd.priority === 'urgent') realReasons.push('• 🚨 URGENT — customer demanded immediate callback')
     if (qd.handoff_recommendation_question) realReasons.push('• Wants generator recommendation')

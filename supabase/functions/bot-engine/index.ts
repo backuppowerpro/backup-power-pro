@@ -212,6 +212,27 @@ async function handleInbound(input: InboundInput): Promise<Response> {
   let outcome: 'replied' | 'silent' | 'error' = 'silent'
   let errorMsg: string | undefined
   try {
+    // v10.1.37 — per-contact advisory lock at handler entry. When 3 rapid-fire
+    // messages arrive within seconds, the message_sid lock on each is unique
+    // so they all bypass idempotency, then all check handoff_fired_at before
+    // any can write it (race), all fire handoff. Per-contact lock serializes
+    // them: only one inbound at a time per contact. Subsequent ones drop.
+    // Lock auto-releases at transaction end (Supabase wraps each .rpc call).
+    try {
+      const lockKey = parseInt(
+        // Hash contact UUID to a 64-bit BigInt fitting Postgres bigint
+        Array.from(input.contact_id).reduce((acc: bigint, c: string) => {
+          return (acc * 31n + BigInt(c.charCodeAt(0))) % 9223372036854775807n
+        }, 0n).toString(),
+      )
+      const { data: gotLock } = await sb.rpc('pg_try_advisory_xact_lock_wrapped', { lock_key: lockKey })
+      if (gotLock === false) {
+        outcome = 'silent'
+        return new Response(JSON.stringify({ ok: true, skipped: 'concurrent_processing' }),
+          { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+    } catch (_) { /* lock function may not exist; fall through */ }
+
     // 2. Pull contact
     const { data: contact, error } = await sb.from('contacts')
       .select('id, name, phone, bot_state, bot_disabled, do_not_contact, qualification_data, paused_at_state, last_bot_inbound_at, install_address, address')
@@ -315,17 +336,54 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     }
 
+    // v10.1.37 — out-of-scope + out-of-service-area detection. Compute
+    // flags here (BEFORE state machine) so we can override the transition.
+    // Persisted to qd later in step 9 so they survive into handoff-notifier.
+    const emailSeen = preExtracted.email || contact.email
+    const addressSeen = preExtracted.address || contact.install_address
+    const outOfScopeRe = /\b(whole.?home|whole.?house|standby\s*generator|generac.{0,15}(install|standby|stand-by|whole)|kohler.{0,15}(install|standby|stand-by|whole)|automatic\s*transfer\s*switch|\bats\b|permanent\s*generator|natural\s*gas\s*generator|propane\s*generator)\b/i
+    const detectedOutOfScope = outOfScopeRe.test(inboundText)
+    let detectedOutOfArea = false
+    if (preExtracted.address || addressSeen) {
+      const fullAddr = String(preExtracted.address || addressSeen || '')
+      const addrLower = fullAddr.toLowerCase()
+      const inAreaCities = [
+        'travelers rest','taylors','greer','greenville','easley','mauldin',
+        'pickens','simpsonville','fountain inn','spartanburg','piedmont',
+        'liberty','central','powdersville','duncan','wellford','lyman','inman',
+        'six mile','dacusville','salem','sunset','marietta','tigerville',
+      ]
+      const oosaCities = [
+        'charleston','columbia','charlotte','asheville','atlanta','raleigh',
+        'augusta','savannah','rock hill','myrtle beach','hilton head',
+        'florence','sumter','gaffney','rutherfordton','hendersonville',
+        'brevard','tryon','clemson','seneca','anderson','aiken',
+      ]
+      const isInArea = inAreaCities.some(c => addrLower.includes(c))
+      const isOutOfArea = !isInArea && oosaCities.some(c => addrLower.includes(c))
+      const otherState = /\b(NC|GA|TN|FL|TX|CA|NY|VA|AL|MS|LA|OH|PA|NJ|MA|MI|IL|WI|MN|OR|WA|CO|AZ|NV|UT|ID|MT|WY|MO|KS|NE|OK|AR|KY|IN|IA|MD|DE|CT|RI|VT|NH|ME|HI|AK|ND|SD)\b/.test(fullAddr)
+      detectedOutOfArea = isOutOfArea || otherState
+    }
+
     // 8. State machine transition
     const ctx = buildSmCtx(contact, classifier)
     let transitionResult = smTransition(contact.bot_state, classifier.label, ctx)
+
+    // v10.1.37 — when scope-mismatch flags fire, force terminal so we
+    // hand off to Key with clear out-of-scope context. Don't keep
+    // grinding through qualification when the answer is "we don't do that".
+    if (detectedOutOfScope || detectedOutOfArea) {
+      const targetState = detectedOutOfArea
+        ? 'DISQUALIFIED_OUT_OF_AREA'
+        : 'NEEDS_CALLBACK'
+      transitionResult = { ...transitionResult, next: targetState, intent: undefined }
+    }
 
     // v10.1.33 — at AWAIT_EMAIL, if customer provided email + address in
     // the same message AND email isn't a real typo, skip both
     // CHECK_EMAIL_TYPO and AWAIT_ADDRESS_CONFIRM and go straight to RECAP.
     // The state machine doesn't know about regex extraction or our typo
-    // suppression; we override here.
-    const emailSeen = preExtracted.email || contact.email
-    const addressSeen = preExtracted.address || contact.install_address
+    // suppression; we override here. (emailSeen/addressSeen hoisted above.)
     const skipToRecap =
       contact.bot_state === 'AWAIT_EMAIL' &&
       emailSeen && addressSeen &&
@@ -391,6 +449,9 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     // 9. Persist slot updates + new state
     const newQd = applySlotUpdates(contact.qualification_data || {}, classifier, photoResult)
     if (transitionResult.onEnter) Object.assign(newQd, transitionResult.onEnter)
+    // v10.1.37 — apply scope-mismatch flags computed earlier
+    if (detectedOutOfScope) newQd.scope_mismatch_ats = true
+    if (detectedOutOfArea) newQd.scope_mismatch_oosa = true
     const stateUpdate: Record<string, unknown> = {
       bot_state: transitionResult.next,
       qualification_data: newQd,
@@ -484,10 +545,16 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       const namePrefix = skipName ? '' : `${fname}, `
       switch (transitionResult.next) {
         case 'NEEDS_CALLBACK':
-          // Vary by simple hash of contact_id for natural variation.
-          // Avoid em-dashes (Key's hard rule). Avoid double-Key when
-          // fname=Key (skipName above already handles).
-          {
+          // v10.1.37 — scope-mismatch (whole-home) gets its OWN reply
+          // explaining BPP only does inlet boxes for portable generators.
+          // Was generic "Key will follow up" which left customers confused
+          // about why we couldn't quote them right now.
+          if (newQd.scope_mismatch_ats) {
+            terminalReply = `${namePrefix}we only do inlet box installs for portable generators (the kind you wheel out and plug in). Whole-home standby systems like Generac/Kohler with auto-transfer switches are a different scope, Key handles those personally so he'll reach out.`
+          } else {
+            // Vary by simple hash of contact_id for natural variation.
+            // Avoid em-dashes (Key's hard rule). Avoid double-Key when
+            // fname=Key (skipName above already handles).
             const greet = skipName ? 'Hey, ' : `Hey ${fname}, `
             const variants = [
               `${namePrefix}I'll have Key follow up with you on this one personally. He'll reach out shortly.`,
@@ -501,16 +568,16 @@ async function handleInbound(input: InboundInput): Promise<Response> {
           }
           break
         case 'POSTPONED':
-          terminalReply = `${namePrefix}no rush — text me back whenever you're ready and we'll pick up where we left off.`
+          terminalReply = `${namePrefix}no rush, text me back whenever you're ready and we'll pick up where we left off.`
           break
         case 'DISQUALIFIED_120V':
-          terminalReply = `${namePrefix}sounds like the generator's a 120V model, which won't work for a whole-home connection. If you ever upgrade to a 240V unit we'd be happy to help.`
+          terminalReply = `${namePrefix}sounds like the generator is a 120V model, which won't work for a whole-home connection. If you ever upgrade to a 240V unit we'd be happy to help.`
           break
         case 'DISQUALIFIED_RENTER':
           terminalReply = `${namePrefix}we can only install for property owners, since the work is permanent and needs permits. If you own a home elsewhere or end up buying, reach back out.`
           break
         case 'DISQUALIFIED_OUT_OF_AREA':
-          terminalReply = `${namePrefix}unfortunately you're outside our service area (Greenville/Spartanburg/Pickens counties). Wishing you luck finding someone local.`
+          terminalReply = `${namePrefix}looks like that's outside our service area, we only cover Greenville, Spartanburg, and Pickens counties in Upstate SC. Wishing you luck finding someone local.`
           break
         // STOPPED stays silent per TCPA. COMPLETE has its own SCHEDULE_QUOTE
         // close-out handled by phraser before reaching this point.
