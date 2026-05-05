@@ -366,27 +366,33 @@ Deno.serve(async (req) => {
     if (locSummary) lines.push(locSummary)
     lines.push('')
     if (setupLines.length) lines.push(...setupLines)
-    // Why follow-up
-    const reasons: string[] = []
-    if (qd.non_english_lead) reasons.push('• Non-English inbound (English-only support)')
-    if (qd.scope_mismatch_ats) reasons.push('• Wants ATS / whole-home (out of scope)')
-    if (qd.hazardous_panel_brand) reasons.push(`• ⚠️ HAZARDOUS PANEL: ${qd.hazardous_panel_brand}`)
-    if (qd.priority === 'urgent') reasons.push('• 🚨 URGENT — customer demanded immediate callback')
-    if (qd.handoff_recommendation_question) reasons.push('• Wants generator recommendation')
-    if (qd.surge_protector_question) reasons.push('• Asked about surge protector')
-    if (qd.prefers_email_channel) reasons.push('• Prefers email channel')
-    if (qd.mentions_hoa) reasons.push('• HOA approval needed')
-    if (qd.off_topic_clarifying) reasons.push('• Asked off-topic technical question')
+    // v10.1.34 — only show "Why:" section when there's a SPECIFIC reason
+    // (urgent flag, off-topic Q, etc). Was auto-echoing the customer's last
+    // message which made benign data responses look like problems.
+    // E.g. customer's "105 Main St" appearing as a "Why" reason was wrong.
+    const realReasons: string[] = []
+    if (qd.non_english_lead) realReasons.push('• Non-English inbound (English-only support)')
+    if (qd.scope_mismatch_ats) realReasons.push('• Wants ATS / whole-home (out of scope)')
+    if (qd.hazardous_panel_brand) realReasons.push(`• ⚠️ HAZARDOUS PANEL: ${qd.hazardous_panel_brand}`)
+    if (qd.priority === 'urgent') realReasons.push('• 🚨 URGENT — customer demanded immediate callback')
+    if (qd.handoff_recommendation_question) realReasons.push('• Wants generator recommendation')
+    if (qd.surge_protector_question) realReasons.push('• Asked about surge protector')
+    if (qd.prefers_email_channel) realReasons.push('• Prefers email channel')
+    if (qd.mentions_hoa) realReasons.push('• HOA approval needed')
+    if (qd.off_topic_clarifying) realReasons.push('• Asked off-topic technical question')
     if (qd.defer_coverage_to_key && qd.coverage_excerpt) {
-      reasons.push(`• Coverage Q: "${String(qd.coverage_excerpt).slice(0, 100)}"`)
+      realReasons.push(`• Coverage Q: "${String(qd.coverage_excerpt).slice(0, 100)}"`)
     }
-    if (input.callback_excerpt) {
-      reasons.push(`• They said: "${input.callback_excerpt.slice(0, 140)}"`)
-    }
-    if (reasons.length) {
+    if (realReasons.length) {
       lines.push('')
       lines.push('Why:')
-      lines.push(...reasons)
+      lines.push(...realReasons)
+    } else if (input.callback_excerpt) {
+      // No specific flags — just show the last message as plain context,
+      // not framed as "why". Avoids implying the customer's last input was
+      // a problem when it was actually a normal data response.
+      lines.push('')
+      lines.push(`Last reply: "${input.callback_excerpt.slice(0, 140)}"`)
     }
     lines.push('')
     lines.push('See CRM for full thread.')

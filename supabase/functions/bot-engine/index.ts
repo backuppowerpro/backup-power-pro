@@ -324,6 +324,21 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       transitionResult = { ...transitionResult, next: 'RECAP', intent: undefined }
     }
 
+    // v10.1.34 — auto-advance through AWAIT_RUN when customer already gave
+    // panel location at AWAIT_PANEL_PHOTO (eg "in the garage on the outside
+    // wall"). Don't make them answer the same question twice. Detect via
+    // panel_location in qualification_data OR by panel keywords in inbound.
+    const panelLocKnown = !!(contact.qualification_data?.panel_location
+      || newQd.panel_location)
+    if (
+      transitionResult.next === 'AWAIT_RUN' &&
+      (panelLocKnown || /\b(garage|basement|utility|exterior|interior|outside|outdoor|crawl|attic)\b/i.test(inboundText))
+    ) {
+      // If we're heading to AWAIT_RUN purely to ask panel location, but
+      // the customer ALREADY told us, jump to AWAIT_EMAIL (close-info ask).
+      transitionResult = { ...transitionResult, next: 'AWAIT_EMAIL', intent: undefined }
+    }
+
     // 9. Persist slot updates + new state
     const newQd = applySlotUpdates(contact.qualification_data || {}, classifier, photoResult)
     if (transitionResult.onEnter) Object.assign(newQd, transitionResult.onEnter)
