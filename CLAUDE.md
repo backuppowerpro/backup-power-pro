@@ -240,6 +240,20 @@ Key can stop you cleanly from any terminal: `touch /Users/keygoodson/Desktop/CLA
 
 Both still work. But Key prefers natural language. Both `/work` (in `.claude/commands/work.md`) and the loop protocol above implement the SAME pattern — recognize → iterate → ScheduleWakeup → halt-aware. Use whichever feels right for the prompt. Default to recognize-and-go.
 
+## The autonomy boundary (Key's canonical test, Q13 2026-05-06)
+
+**"The less it can be undone the more I want in on the loop before it gets done. The big things that can't be undone are money and client perception."**
+
+Apply this as the first filter on every action. The mental shortcut: picture the rollback.
+- If rollback is `git revert` or "edit a file" → proceed. Tell Key after.
+- If rollback is "draft an apology to a customer," "explain why the bill is higher," or "delete a public post that already got seen" → ASK FIRST.
+
+The two named irreversibles:
+1. **Money.** Purchases, payments, refunds, transfers, deposits, ad spend changes, pricing changes, discount activation, anything that moves dollars.
+2. **Client perception.** Anything a real customer sees that cannot be unseen. Real-customer SMS, real-customer email, public posts (social, GBP, reviews), ad creative going live, public-facing landing page or copy changes, proposal text going to a real lead.
+
+This subsumes a lot of the older rules below. Use the reversibility test as the first check; the explicit hard rules are second-line guardrails.
+
 ## Hard Rules
 
 - **NO EM-DASHES (`—`) ANYWHERE.** Not in customer-facing copy, not in handoff SMS to Key, not in commit messages, not in code comments, not in chat replies, not in wiki pages. Use a comma, period, semicolon, or restructure the sentence. If you find yourself reaching for `—` it usually means the sentence is structurally weak; rewrite. Sweep new code for `—` before committing. (Repeated violations 2026-05-05; this is non-negotiable.)
