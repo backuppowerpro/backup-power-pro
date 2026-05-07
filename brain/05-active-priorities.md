@@ -1,80 +1,136 @@
+> This file is auto-synced from `wiki/Key/<name>.md` via `scripts/brain/sync-from-wiki.sh`.
+> Edit the wiki source, not this file. Sanitization strips specific dollar figures, account balances, and phone numbers.
+
+---
+title: Active Priorities
+branch: Key
+type: state
+updated: 2026-05-05
+tags: [key, priorities, current, weekly]
+---
+
 # Active Priorities
 
-## North star (12 months, mid-2027)
+> What Key is focused on **right now**. Updated by Claude every session that surfaces a priority shift; should be re-read at every session start. Stale entries get archived to [[Decisions Log]] with an outcome note.
 
-Hands-off operationally, multi-city SC + NC, $5K/month personal profit, captain-of-the-ship feel. See `01-identity.md` for the full destination picture. Every priority below should ladder up to this.
+---
 
-## Pivot in progress (the canonical good-Key-call)
+## Last updated: 2026-05-05
 
-Hourly general residential service electrical → flat-rate specialty portable-generator inlet installs. Started, revenue + profit + overhead all moving the right direction, **not yet complete**. Completing it is implicit in the 12-month picture; the multi-state hands-off model only works on top of a fully embedded specialty + flat-rate base.
+## North star (12 months)
 
-## The wealth-lever framing (the picture beyond the destination)
+Hands-off operationally, multi-city SC + NC, $5K/month personal profit, captain-of-the-ship feel. See [[Identity#What winning looks like]]. Every priority below should ladder up to this.
 
-> Captured 2026-05-06 after the millionaire-question + lifestyle preferences sweep.
+## Pivot in progress
 
-BPP year-2 destination ($10-15K/month) buys the **floor** (time agency + comfortable family support). The **lifestyle tier** (small-but-nice home, Porsche, Tesla, RZR) comes from capital accumulation on top of BPP cash flow, not from grinding BPP harder.
+Hourly general residential service electrical → flat-rate specialty portable-generator inlet installs. The canonical good-Key-call (per [[Decisions Log]]). Pivot started, revenue + profit + overhead all moving the right direction, **not yet complete**. Completing it is implicit in the 12-month picture; the multi-state hands-off model only works on top of a fully embedded specialty + flat-rate base.
 
-**Right shape:**
-- BPP year 1-2 = cash-flow machine. Hit 12-month destination.
-- Capital allocation = wealth lever. Profit deployment, layered:
-  - 60-70% into broad index DCA (boring floor)
-  - 20-30% into asymmetric conviction plays in the 8pm-12am learning window (Key has a Tesla-success track record on this)
-  - 10% liquid for opportunistic small real estate deal (Key's electrical labor cuts the renovation budget)
-- **Path B (productize as SaaS) deferred to year 3-5** if at all. Right answer for $5-10M exit; overshoots time-agency goal and demands grind that violates Q19 dream-job preference.
-- **Sales + brand stay yours.** Don't outsource as BPP grows.
+## Top 3 in flight
 
-## Top workstreams in flight
+### 1. Ashley spotlight ready
+Goal: Ashley qualifies real customers reliably with no two-voice collisions, no false-terminals on benign deferrals, and a brand-faithful voice. Status: production-ready as of 2026-05-05; greeting v3 active under EXP-009; smart re-engagement live; quote-due watcher live. Next signal: 40 greetings completed → EXP-009 decision.
 
-### 1. Stage-aware comm orchestrator (per Q18 drainage map) — **SHIPPED 2026-05-07**
-Client communication is the #1 named drainer. The friction is **context-switching** across many contacts at different stages, not copywriting. Existing pieces: bot-reengagement (pre-quote), quote-due-watcher (Key-side), proposal-nudge (some), auto-review-ask (post-install). Post-quote-to-install middle layer NOW SHIPPED as `comm-orchestrator` edge function (hourly cron, quiet-hours-aware). Carve-out respected: stage 4+ "Key handles personally" rule still holds; only permit-pipeline status notifications fire to customers (Key authorized via Q18).
+### 2. CPL down, lead-quality up
+Quarterly thread per [[BPP/Q2 Operating Goal]]. Daily PostHog check, channel-attribution-based optimization. Meta CAPI CompleteRegistration just shipped (2026-05-05) so Meta's optimizer now sees which form-fills actually qualified. Watching for CPL drift over the next 2-4 weeks.
 
-Trigger table to build:
-| Trigger | Action |
-|---|---|
-| Quote sent, no view 24h | Customer SMS: "did you get a chance to look?" |
-| Quote sent, viewed but no approve in 48h | Customer SMS: "anything to clarify?" |
-| Quote approved | Customer SMS: "permit submitted to [jurisdiction], ~N days" |
-| Permit pending T+3d | Customer SMS: trust-preservation nudge |
-| Permit pending T+7d | Customer SMS: "still waiting on jurisdiction, just keeping you in the loop" |
-| Permit pending past typical+3d | Internal Key SMS + customer notification |
-| Permit approved | Customer SMS: "permit approved, ready to schedule install" |
-| Install scheduled, T-24h | Customer SMS reminder |
-| Install done, T+24h | Customer SMS: "everything good?" |
-| Install done, T+7d | Auto-review-ask |
-| Any stage, contact stalled X days | Internal Key SMS surfaced list |
+### 3. Build the Key/ brain layer (this branch)
+Goal: capture Key-as-a-person at the same fidelity the rest of the brain captures BPP-as-a-business. Status: scaffold shipped 2026-05-05; interview questions pending Key answers in [[Interview Questions]].
 
-### 2. Per-jurisdiction permit playbook + state tracker (Build 2)
-Permits drain because every jurisdiction has different portal, paperwork, format, contact path, status mechanism. Existing: `permits/mailing-inserts/`, `bot-lab/sc-jurisdictions.json`. Missing: per-jurisdiction playbook table, permit state machine, status tracking + reminders, status-change-triggered customer notifications (which feed Build 1).
+## Open questions Key hasn't answered yet
 
-### 3. Sub recruitment + sub onboarding structure
-Required to hit the hands-off year-2 picture. Per Q6 delegation rule, structure must be **on Key's terms** (briefs, checklists, quality gates, review cadence). Not a vendor or agency, not "hire and let them figure it out." Stays open until first sub onboarded.
+See [[Open Questions]]. Don't autonomously decide things on that list.
 
-### 4. EXP-009 greeting v2 vs v1
-Active. Sample target 40 greetings. Decision rule: highest first-reply rate within 60min, must beat lowest variant by ≥8pp. Experiment-monitor watches it daily.
+## Recent shifts (last 7 days)
 
-## Drainage map (what to automate next)
+- 2026-05-07: Build 1 (stage-aware comm orchestrator) **shipped** as `comm-orchestrator` edge function. Q18 drainer #1 structurally addressed. Cron schedule staged at `20260507100000_schedule_comm_orchestrator_cron.sql` pending one db push.
+- 2026-05-07: brain/ now auto-syncs from `wiki/Key/` via `scripts/brain/sync-from-wiki.sh` (sanitizes specifics). Edit wiki source, run script, commit.
+- 2026-05-05: removed "tomorrow morning" customer-facing promise; replaced with soft commitment.
+- 2026-05-05: locked greeting copy at "Ashley, auto-text intake for Key" pattern (v3).
+- 2026-05-05: reframed Claude as autonomous-mode operator (recognize-and-go, no /work command).
+- 2026-05-05: Claude declared head of experiments + voice + decision capture.
 
-> Per Key Q18 2026-05-06: client communication + permits.
+## Drainage map (what to automate next, per Key Q18 2026-05-06)
 
-Both are orchestration problems, not copy/process problems. The mental tax of "who needs what next, across N contacts at different stages, across M jurisdictions with different rules" is what burns Key out.
+The two drainers Key wants automated next:
 
-**Build 1 (orchestrator)** and **Build 2 (permit state tracker)** above are the responses. They are PATH workstreams to the 12-month destination. Hands-off ops requires Key not running these. Subbed install labor doesn't help if Key is still tracking communication and permits manually.
+### 1. Client communication
+**Clarified Q18 follow-up 2026-05-06:** "Pretty much all communication and reminders and follow ups. Not hard but tricky when you have so many moving parts and so many contacts at different stages."
+
+The drain is NOT copywriting. It's **context-switching across many contacts at different stages simultaneously**. The mental tax of "who needs what next" is the friction, not the actual messages.
+
+**What this maps to as a build:**
+A stage-aware orchestrator that maintains the per-contact cadence map and fires the right outbound at the right time without Key tracking it. Per-stage triggers (rough draft):
+
+| Stage transition | Trigger | Action |
+|---|---|---|
+| Quote sent, no view in 24h | timer | Customer SMS: "Did you get a chance to look?" |
+| Quote sent, viewed but no approve in 48h | timer | Customer SMS: "Anything to clarify?" |
+| Quote approved | event | Customer SMS: "Permit submitted to [jurisdiction]. ~[N] days for approval." |
+| Permit pending, T+3d | timer | Customer SMS: "Permit's in with [jurisdiction]. Typically takes [N] business days, I'll text once it's approved." |
+| Permit pending, T+7d | timer | Customer SMS: "Still waiting on [jurisdiction]. They run their own timeline, nothing for you to do, just keeping you in the loop." |
+| Permit pending past typical+3d | timer | Internal Key SMS: "[Name] permit overdue at [jurisdiction]." Customer SMS: "Permit's running past their usual window. I'll follow up with them and let you know." |
+| Permit approved | event | Customer SMS: "Permit approved, ready to schedule install." |
+| Install scheduled, T-24h | timer | Customer SMS: "See you tomorrow at [time]." |
+| Install done, T+24h | timer | Customer SMS: "Everything good? Questions?" |
+| Install done, T+7d | timer | Customer SMS: "Review ask via auto-review-ask cron." |
+| Any stage, contact stalled X days | timer | Internal Key SMS: "[Name] stalled at [stage] [X] days." |
+
+Existing pieces: `bot-reengagement` (pre-quote), `quote-due-watcher` (Key-side reminder), `proposal-nudge` (some), `auto-review-ask` (post-install). What's missing: the post-quote-to-install middle layer. That's the highest-leverage build.
+
+### 2. Permits
+**Clarified Q18 follow-up 2026-05-06:** "Permits are in all different jurisdictions with different websites and processes."
+
+Same orchestration shape: not a copy problem, a **directory + state-tracking** problem. Each jurisdiction has its own portal, paperwork, format, contact path, status mechanism.
+
+**What this maps to as a build:**
+- Per-jurisdiction playbook table: `jurisdictions { id, name, portal_url, submission_method, status_check_method, typical_approval_days, contact_email, paperwork_template_id }`
+- Per-permit state machine: `submitted → under_review → approved → inspected → closed`
+- Auto-generated paperwork by jurisdiction (mailing-insert pattern is half of this; the digital portal version is the other half)
+- Status-change events trigger customer notifications via the orchestrator above
+
+Existing pieces: `permits/mailing-inserts/` (paperwork half), `bot-lab/sc-jurisdictions.json` (data has 4 jurisdictions). What's missing: the state machine + portal-per-jurisdiction playbooks + status tracking.
+
+**Both drainers are PATH workstreams to the 12-month destination.** Hands-off ops requires Key not running these. Subbed install labor doesn't help if Key is still tracking communication and permits.
+
+### 2. Permits
+Per [[Operations/Permit Jurisdictions]] there are 4 jurisdictions (Greenville County, Spartanburg County, Pickens County, City of Greenville). Permit drainage layers:
+- Per-jurisdiction paperwork generation (the mailing-insert pattern in memory already partly automates this)
+- Submission to the right portal/email per jurisdiction
+- Status tracking + reminders
+- Inspection scheduling
+- Customer status updates as permit moves
+
+Some of this is automatable (paperwork, status tracking, customer notifications). Some isn't (manual portal submissions, in-person inspections, jurisdiction-relationship friction). The automation surface is real.
+
+**This connects directly to the 12-month destination bet** (hands-off ops). Hands-off requires both layers automated because Key can't be doing them if he's not doing installs. These are PATH workstreams (per Q12) toward the destination.
 
 ## Tripwires (defensive monitoring)
 
-Per the [losing picture in `01-identity.md`], watch for:
+Per the [[Identity#What losing looks like]] floor, watch for:
 
-1. **Trailing 30-day personal profit trending toward $3K/month** = code-red. Add to morning brief.
+1. **Trailing 30-day personal profit trending toward $3K/month** = code-red. Not built yet; add to morning brief.
 2. **CPL rising + close rate dropping simultaneously** for 7+ days = TAM-saturation early warning. Add to experiment-monitor.
 3. **Lead-day count below 1/day for 3+ days** = pipeline alert. Already covered by PostHog zero-day cron alerts.
 4. **Sub install owner-profit < $X** (X TBD) = sub model is breaking. Add once first sub installs accumulate data.
 
 ## What's NOT in flight (deliberate)
 
-- Path B (SaaS productize): deferred to year 3-5.
-- M&A roll-up of competitor electrical contractors: blocked by capital position, deferred 12-18+ months.
-- Anderson SC market entry: permanent no.
-- Whole-home Generac: permanent no.
-- Off-the-shelf CRM migration: permanent no.
-- Lead-gen aggregator services: permanent no.
-- Marketing / sales / receptionist agencies: permanent no.
+- Anderson County expansion (see [[Avoid List]])
+- Whole-home Generac standby pivot (see [[Avoid List]])
+- Hiring full-time employee (Hormozi Stage 3 trigger; not yet)
+- Video assessments in sales process
+
+---
+
+## How to update this file
+
+Append a one-liner to "Recent shifts" each time something material changes. Quarterly: rotate top-3 if a goal completes or a new top-3 candidate beats the lowest current entry. Annually: archive into [[Decisions Log]] with outcomes.
+
+---
+
+## See also
+
+- [[Open Questions]], unresolved questions Claude should not autonomously answer
+- [[Decisions Log]], historical decisions
+- [[BPP/Q2 Operating Goal]], quarterly metric
+- [[BPP/Hormozi Scaling Roadmap]], broader stage map

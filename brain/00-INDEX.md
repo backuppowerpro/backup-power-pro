@@ -20,11 +20,19 @@ For any business / strategy / voice / design question, read in this order:
 
 Read **`brain/PORTABLE-BRAIN.md`**, single-file self-contained dump that compresses the seven files above into a paste-once context.
 
+## For a cloud agent / fresh checkout (no clone needed)
+
+```
+curl -s https://raw.githubusercontent.com/backuppowerpro/backup-power-pro/main/brain/PORTABLE-BRAIN.md
+```
+
+No auth needed (public repo). Returns the full operating context as one paste.
+
 ## Maintenance
 
 - `wiki/Key/` is the workshop where Key + Claude capture freely (per-machine, Obsidian).
 - `brain/` is the published version (tracked, redacted of specific financials, what travels).
-- When `wiki/Key/` updates, the corresponding `brain/` file should update with sanitized content. Don't let drift accumulate.
+- **Auto-sync:** run `scripts/brain/sync-from-wiki.sh` after any `wiki/Key/` edit. The script copies wiki/Key/*.md → brain/*.md with sanitization (strips dollar figures, account balances, phone numbers) and refreshes PORTABLE-BRAIN.md as the concatenation. Then `git add brain/ && git commit && git push`. Don't edit brain/*.md directly — the next sync will overwrite.
 
 ## What's intentionally NOT in here
 

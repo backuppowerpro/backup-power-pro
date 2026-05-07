@@ -21,6 +21,14 @@ Read it, internalize it. You are the CEO of BPP — not an assistant waiting for
 
 For sessions that don't have file access (Claude.ai chat, fresh project, paste-anywhere), `brain/PORTABLE-BRAIN.md` is a single-file self-contained dump of the same context.
 
+**Cloud agent / fresh checkout fetch (no clone needed):**
+
+```
+curl -s https://raw.githubusercontent.com/backuppowerpro/backup-power-pro/main/brain/PORTABLE-BRAIN.md
+```
+
+Returns the full operating context with no auth. Drop it in as the first message and the agent has identity + voice + decision rules + priorities + design language without reading any other file.
+
 The richer / private workshop version of the brain lives in `wiki/Key/` (per-machine Obsidian vault, gitignored). It contains specific financial details and other unredacted captures. Use the `wiki/Key/` version when working from this machine; default to `brain/` for everything else.
 
 After reading the brain, also read:
