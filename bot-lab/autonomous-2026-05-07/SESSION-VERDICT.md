@@ -7,9 +7,10 @@
 
 ## TL;DR
 
-- **22 LLM-driven persona simulations** across 4 rounds (18 baseline + 4 verification).
-- **All 22 reached correct terminal state.** No structural failures.
-- **8 production bugs surfaced and fixed** across three deploy waves (v10.1.40, v10.1.41, v10.1.42).
+- **28+ LLM-driven persona simulations** across 5 rounds (18 baseline + 4 verification + 6 adversarial edge cases + ongoing v43 re-tests).
+- **All terminal states correct** except where the bug WAS the test (Liar persona surfaced real bugs, now fixed).
+- **12 production bugs surfaced and fixed** across four deploy waves (v10.1.40, v10.1.41, v10.1.42, v10.1.43).
+- **5-pillar voice north star locked in** at top of phraser system prompt: warm, easy to talk to, trust building, confident, professional.
 - Voice-judge baseline: 8.80/10 overall. After v41+v42 patches on 6-transcript spot-check: **8.83/10**, with the worst transcript (Carl 7.4) recovering all the way to **9.3** after desperation-tell bans.
 - Regression battery: **59/59 brutal scenarios PASS** through every change wave. 0 audit hits across 480+ outbound bot messages.
 - **READY for Tyler-style live test** by Key (the final smoke step). NOT YET flipping `ASHLEY_ALLOWED_PHONES = "*"`. Per-dim averages still want one more pass to fully clear 9.0 across all 7 (Closing Rituals dipped slightly on 6-sample re-grade, suggesting recap-pool bypass of regex). Tyler test is the right next step before ramp.
@@ -128,6 +129,19 @@ The em-dash strip script collapsed the literal em-dash regex `/—/` into `/, /`
 6. **Once 1-5 clear, flip ASHLEY_ALLOWED_PHONES from "+19414417996" to "*"** + monitor first 10 real conversations closely.
 
 ---
+
+## Round 5 adversarial edge cases (post-north-star)
+
+After Key locked in the 5-pillar voice north star (warm, easy to talk to, trust building, confident, professional), ran 6 personas the first 22 didn't reach. Goal: find what breaks at the edges.
+
+| Persona | Result | Finding |
+|---|---|---|
+| Frank, Upseller (wants whole-home Generac) | NEEDS_CALLBACK | Premium posture held, scope-mismatch routed cleanly, no apology. PASS. |
+| Mark, Workshop (detached structure + sub-panel) | NEEDS_CALLBACK | Complexity flagged, sub-panel detected via photo classifier, handoff context preserved. PASS. |
+| Jen, ColdLead (returning 5 days later) | continues | Clean reconnection: "Yep, still here." No "thanks for getting back to us" stale customer-service. PASS. |
+| Steve, MultiGen (two generators) | COMPLETE | Primary picked cleanly, secondary captured for handoff. ONE finding: Ashley said "most 3500w units are 120V" when asked about second generator. That's a spec claim she shouldn't make solo. FIXED via prompt ban on "most X are Y" generalizations. |
+| Brad, The Liar (lied about owning, revealed via "landlord" mid-flow) | classifier missed it | THREE bugs surfaced: classifier didn't catch "landlord" as renter signal, state machine had no UNIVERSAL renter escape (only at GREETING + AWAIT_OWNERSHIP), volunteered-data scan missing keyword. FIXED all three: classifier now flags "landlord" + "let me ask my landlord" etc., state machine has new universal renter escape from any non-terminal state. |
+| Linda, Photo Spammer (5 photos in 30s) | mid-flow continued | Bot fired 5 separate replies, one per MMS. Phone-flooding UX hit + 5x LLM spend. Advisory lock serializes but doesn't dedupe. **NOT FIXED THIS WAVE** (fix is non-trivial: debounce window + queue table + scheduled processor). Documented as EXP-photo-burst-coalesce. |
 
 ## Round 4 verification results (post-v41 patches)
 
