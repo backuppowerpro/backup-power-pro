@@ -1,0 +1,154 @@
+{
+  "_meta": {
+    "purpose": "Per-jurisdiction permit playbook for the BPP service area. Used by permit-morning-check, comm-orchestrator (jurisdiction substitution in customer SMS), and the CRM's permit-section dropdowns. Source of truth for portal URL, submission method, typical timing, and contact path.",
+    "version": "v1.0 - 2026-05-07",
+    "service_area": ["Greenville County", "Spartanburg County", "Pickens County", "City of Greenville", "City of Spartanburg"],
+    "out_of_service": ["Anderson County", "Oconee County", "Cherokee County", "Laurens County", "Greenwood County"]
+  },
+  "jurisdictions": {
+    "greenville_county": {
+      "display_name": "Greenville County",
+      "in_service": true,
+      "portal": {
+        "url": "https://aca.greenvillecounty.org/ACA/",
+        "name": "Accela Citizen Access (eTRAKiT)",
+        "auto_check": true,
+        "auto_checker_function": "permit-morning-check"
+      },
+      "submission": {
+        "method": "online_portal",
+        "applicant_login_required": true
+      },
+      "typical_days": {
+        "submit_to_ready_to_pay": 3,
+        "ready_to_pay_to_approved": 1,
+        "approved_to_inspection_scheduled": 5,
+        "total_typical": 10
+      },
+      "permit_fee_typical_usd": 65,
+      "contact": {
+        "phone": "864-467-7060",
+        "email": null,
+        "office_hours_et": "8am-5pm Mon-Fri"
+      },
+      "notes": "Most-common BPP jurisdiction. Auto-tracked daily. Permits typically clear in 7-10 business days from submission. If pending past 12 business days, escalate."
+    },
+    "city_of_greenville": {
+      "display_name": "City of Greenville",
+      "in_service": true,
+      "portal": {
+        "url": "https://www.greenvillesc.gov/249/Building-Codes",
+        "name": "City of Greenville Building Codes",
+        "auto_check": false,
+        "auto_checker_function": null
+      },
+      "submission": {
+        "method": "online_or_in_person",
+        "applicant_login_required": false
+      },
+      "typical_days": {
+        "submit_to_ready_to_pay": 4,
+        "ready_to_pay_to_approved": 1,
+        "approved_to_inspection_scheduled": 5,
+        "total_typical": 12
+      },
+      "permit_fee_typical_usd": 75,
+      "contact": {
+        "phone": "864-467-4570",
+        "email": "buildingcodes@greenvillesc.gov",
+        "office_hours_et": "8am-5pm Mon-Fri"
+      },
+      "notes": "Separate from Greenville County. City limits only. NOT auto-tracked, requires manual check. Slightly slower than county on average."
+    },
+    "spartanburg_county": {
+      "display_name": "Spartanburg County",
+      "in_service": true,
+      "portal": {
+        "url": "https://www.spartanburgcounty.org/183/Building-Codes-Inspections",
+        "name": "Spartanburg County Building Codes",
+        "auto_check": false,
+        "auto_checker_function": null
+      },
+      "submission": {
+        "method": "in_person_or_email",
+        "applicant_login_required": false
+      },
+      "typical_days": {
+        "submit_to_ready_to_pay": 5,
+        "ready_to_pay_to_approved": 2,
+        "approved_to_inspection_scheduled": 7,
+        "total_typical": 14
+      },
+      "permit_fee_typical_usd": 60,
+      "contact": {
+        "phone": "864-596-3582",
+        "email": "buildingcodes@spartanburgcounty.org",
+        "office_hours_et": "8am-5pm Mon-Fri"
+      },
+      "notes": "Email or in-person submission. NOT auto-tracked. Status checks via phone only. Slower than Greenville County average."
+    },
+    "city_of_spartanburg": {
+      "display_name": "City of Spartanburg",
+      "in_service": true,
+      "portal": {
+        "url": "https://www.cityofspartanburg.org/161/Building-Codes",
+        "name": "City of Spartanburg Building Codes",
+        "auto_check": false,
+        "auto_checker_function": null
+      },
+      "submission": {
+        "method": "online_login",
+        "applicant_login_required": true,
+        "login_email": "keyelectricupstate@gmail.com"
+      },
+      "typical_days": {
+        "submit_to_ready_to_pay": 5,
+        "ready_to_pay_to_approved": 2,
+        "approved_to_inspection_scheduled": 7,
+        "total_typical": 14
+      },
+      "permit_fee_typical_usd": 70,
+      "contact": {
+        "phone": "864-596-2041",
+        "email": "buildingpermits@cityofspartanburg.org",
+        "office_hours_et": "8am-5pm Mon-Fri"
+      },
+      "notes": "Separate from Spartanburg County. Login required. NOT auto-tracked."
+    },
+    "pickens_county": {
+      "display_name": "Pickens County",
+      "in_service": true,
+      "portal": {
+        "url": "https://www.co.pickens.sc.us/207/Building-Codes",
+        "name": "Pickens County Building Codes",
+        "auto_check": false,
+        "auto_checker_function": null
+      },
+      "submission": {
+        "method": "in_person_or_email",
+        "applicant_login_required": false
+      },
+      "typical_days": {
+        "submit_to_ready_to_pay": 5,
+        "ready_to_pay_to_approved": 2,
+        "approved_to_inspection_scheduled": 5,
+        "total_typical": 12
+      },
+      "permit_fee_typical_usd": 60,
+      "contact": {
+        "phone": "864-898-5950",
+        "email": "buildingcodes@co.pickens.sc.us",
+        "office_hours_et": "8am-5pm Mon-Fri"
+      },
+      "notes": "Includes Easley, Clemson, Liberty, Central, Six Mile, Dacusville, Pickens. NOT auto-tracked. Smallest jurisdiction, fastest turnaround typically."
+    }
+  },
+  "lookup_strategy": {
+    "city_to_jurisdiction": "Use bot-lab/sc-jurisdictions.json -> cities[city_lowercase].permit_authority. That field maps to the keys above.",
+    "fallback": "If no jurisdiction can be resolved from address, default to greenville_county and flag for Key review."
+  },
+  "comm_orchestrator_integration": {
+    "purpose": "Used by supabase/functions/comm-orchestrator/index.ts when generating customer SMS at stage 5/6/7 milestones. Substitute jurisdiction display_name into SMS copy. Use typical_days for soft expectation-setting, never as a promise.",
+    "example_substitution": "permit is sitting with {display_name} and we're a few days into their queue (they typically run {total_typical} business days)."
+  }
+}
