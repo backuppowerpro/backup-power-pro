@@ -26,12 +26,12 @@ if [[ ! -d "$BRAIN" ]]; then
   exit 1
 fi
 
-# ── 1. Em-dash audit ──────────────────────────────────────────────────────────
+# ── 1. Em-dash audit (brain/ + CLAUDE.md, the two AI-loaded entry surfaces) ──
 echo "→ check 1: em-dash audit"
-EM_HITS=$(grep -rn -- "—" "$BRAIN" 2>/dev/null || true)
+EM_HITS=$(grep -rn -- "—" "$BRAIN" "$REPO_ROOT/CLAUDE.md" 2>/dev/null || true)
 if [[ -n "$EM_HITS" ]]; then
   echo "$EM_HITS" | sed 's/^/    /'
-  echo "✗ em-dashes found in brain/. Key's hard rule: no em-dashes ANYWHERE."
+  echo "✗ em-dashes found. Key's hard rule: no em-dashes ANYWHERE."
   FAIL=1
 else
   echo "  ✓ clean"
