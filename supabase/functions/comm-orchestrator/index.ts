@@ -80,8 +80,26 @@ function pmDate(notes: string, key: string): Date | null {
   return isNaN(d.getTime()) ? null : d
 }
 
-// ── Twilio sender (matches permit-morning-check pattern, internal use) ───────
-async function sendTwilio(to: string, body: string): Promise<{ ok: boolean; err?: string }> {
+// ── Internal Key alert sender, OpenPhone-aware (mirrors handoff-notifier) ────
+// Honors ASHLEY_OPENPHONE_TEST_PHONES wildcard so internal alerts survive
+// the Twilio A2P 10DLC review window. Falls back to direct Twilio after.
+async function sendKeyAlert(to: string, body: string): Promise<{ ok: boolean; err?: string }> {
+  const opTestPhones = (Deno.env.get('ASHLEY_OPENPHONE_TEST_PHONES') || '').split(',').map(s => s.trim()).filter(Boolean)
+  const useOpenPhone = opTestPhones.includes('*') || opTestPhones.includes(to)
+  if (useOpenPhone) {
+    const QUO_API_KEY = Deno.env.get('QUO_API_KEY') || ''
+    const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'
+    if (!QUO_API_KEY) return { ok: false, err: 'QUO_API_KEY missing' }
+    try {
+      const r = await fetch('https://api.openphone.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+        body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [to], content: body }),
+      })
+      if (!r.ok) return { ok: false, err: `openphone ${r.status} ${(await r.text()).slice(0, 200)}` }
+      return { ok: true }
+    } catch (e: any) { return { ok: false, err: String(e?.message || e).slice(0, 200) } }
+  }
   if (!TWILIO_SID || !TWILIO_TOKEN) return { ok: false, err: 'twilio creds missing' }
   try {
     const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
@@ -296,7 +314,7 @@ Deno.serve(async (req) => {
         .map(s => `- ${s.name || '(no name)'} stage ${s.stage} ${s.ageDays}d`)
         .join('\n')
       const digest = `Weekly stalled-contact digest (${stalledForDigest.length} stuck 14d+):\n${top}\nOpen CRM > Stalled lens to triage.`
-      const r = await sendTwilio(KEY_CELL, digest)
+      const r = await sendKeyAlert(KEY_CELL, digest)
       if (r.ok) {
         digestSent = true
         try {

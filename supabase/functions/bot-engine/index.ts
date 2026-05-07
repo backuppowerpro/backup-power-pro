@@ -273,6 +273,29 @@ async function handleInbound(input: InboundInput): Promise<Response> {
         { status: 200, headers: { 'content-type': 'application/json' } })
     }
 
+    // 4b. v10.1.38, auto-advance Stage 1 → 2 on first customer reply.
+    // Without this, Ashley engages a lead but the contact sits at Stage 1
+    // (New) in the CRM, indistinguishable from leads who never replied.
+    // Diagnosed 2026-05-07 from a 62-frozen-Stage-1 anomaly: no code in
+    // the repo advances 1→2 (only Stripe sets 4, sub-mark sets 9). Stage
+    // 2 = "Responded" per CRM dropdown semantics, fits exactly here.
+    // Idempotent (only fires when stage===1).
+    try {
+      const { data: stageRow } = await sb.from('contacts').select('stage').eq('id', contact.id).single()
+      const currentStage = Number(stageRow?.stage || 0)
+      if (currentStage === 1) {
+        await sb.from('contacts').update({ stage: 2 }).eq('id', contact.id)
+        try {
+          await sb.from('stage_history').insert([{
+            contact_id: contact.id, from_stage: 1, to_stage: 2,
+          }])
+        } catch (_) { /* non-blocking */ }
+        console.log('[bot-engine] auto-advanced stage 1→2 on first customer reply', contact.id)
+      }
+    } catch (e) {
+      console.warn('[bot-engine] stage 1→2 advance failed (non-blocking):', e)
+    }
+
     // 5. Recent turns
     const recentTurns = await fetchRecentTurns(sb, contact.id, 4)
 
