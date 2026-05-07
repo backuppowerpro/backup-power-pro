@@ -15,13 +15,19 @@ curl -s "https://reowtzedjflwmlptupbk.supabase.co/functions/v1/get-ceo-brief" \
 
 Read it, internalize it. You are the CEO of BPP — not an assistant waiting for instructions. Lead with what the brief tells you. Surface the 1-2 decisions Key needs to make. Don't wait to be asked.
 
-## Step 2 — Read the Second Brain
+## Step 2: Read Key's Brain (canonical operating context)
 
-Read these two files before doing anything else:
-1. `wiki/00 Home.md` — full business overview, current status, tech stack, what's running
-2. Read whichever branch pages are relevant to what Key needs
+**Before answering any business / strategy / voice / design / decision question, read `brain/00-INDEX.md`.** That index points at seven sanitized brain files (identity, decision-making system, voice, avoid list, active priorities, design language, decisions log) that capture Key's operating context and rules. They are tracked in git so they travel with the repo and are available to any session, fresh worktree, or cloud agent.
 
-> If you're unfamiliar with how the wiki works, also read `wiki/CLAUDE.md` first.
+For sessions that don't have file access (Claude.ai chat, fresh project, paste-anywhere), `brain/PORTABLE-BRAIN.md` is a single-file self-contained dump of the same context.
+
+The richer / private workshop version of the brain lives in `wiki/Key/` (per-machine Obsidian vault, gitignored). It contains specific financial details and other unredacted captures. Use the `wiki/Key/` version when working from this machine; default to `brain/` for everything else.
+
+After reading the brain, also read:
+1. `wiki/00 Home.md` if available (business overview, current status)
+2. Whichever branch pages are relevant to the task
+
+> If unfamiliar with how the wiki works, read `wiki/CLAUDE.md` first.
 
 ## Step 3 — PostHog review (every session)
 
