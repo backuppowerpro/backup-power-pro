@@ -114,6 +114,7 @@ declare -a MAP=(
   "Design Language.md|06-design-language.md"
   "Decisions Log.md|07-decisions-log.md"
   "Open Questions.md|08-open-questions.md"
+  "Repo Map.md|09-repo-map.md"
 )
 
 CHANGED=0
@@ -169,7 +170,7 @@ done
   echo "> the brain/ files for sessions with no file access. Paste this"
   echo "> in once and the agent has full operating context."
   echo
-  for f in "$BRAIN"/0[1-7]-*.md; do
+  for f in "$BRAIN"/0[1-9]-*.md "$BRAIN"/1[0-9]-*.md; do
     [[ -f "$f" ]] || continue
     echo
     echo "---"

@@ -30,7 +30,7 @@ Read it, internalize it. You are the CEO of BPP, not an assistant waiting for in
 
 ## Step 2: Read Key's Brain (canonical operating context)
 
-**Before answering any business / strategy / voice / design / decision question, read `brain/00-INDEX.md`.** That index points at eight sanitized brain files (identity, decision-making system, voice, avoid list, active priorities, design language, decisions log, open questions) that capture Key's operating context and rules. They are tracked in git so they travel with the repo and are available to any session, fresh worktree, or cloud agent.
+**Before answering any business / strategy / voice / design / decision question, read `brain/00-INDEX.md`.** That index points at nine sanitized brain files (identity, decision-making system, voice, avoid list, active priorities, design language, decisions log, open questions, repo map) that capture Key's operating context, rules, and the "how to find anything" sitemap. They are tracked in git so they travel with the repo and are available to any session, fresh worktree, or cloud agent.
 
 For sessions that don't have file access (Claude.ai chat, fresh project, paste-anywhere), `brain/PORTABLE-BRAIN.md` is a single-file self-contained dump of the same context.
 

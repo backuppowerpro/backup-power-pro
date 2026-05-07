@@ -63,7 +63,7 @@ fi
 # ── 4. Required files ─────────────────────────────────────────────────────────
 echo "→ check 4: required files exist"
 MISSING=()
-for n in 00-INDEX 01-identity 02-how-i-decide 03-my-voice 04-avoid-list 05-active-priorities 06-design-language 07-decisions-log; do
+for n in 00-INDEX 01-identity 02-how-i-decide 03-my-voice 04-avoid-list 05-active-priorities 06-design-language 07-decisions-log 08-open-questions 09-repo-map; do
   if [[ ! -f "$BRAIN/$n.md" ]]; then
     MISSING+=("$n.md")
   fi
@@ -76,7 +76,7 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
   echo "✗ required brain files missing."
   FAIL=1
 else
-  echo "  ✓ all 8 core files present"
+  echo "  ✓ all 10 core files present (00-INDEX + 01-09 + PORTABLE)"
 fi
 
 # ── 5. PORTABLE-BRAIN concatenation size sanity ───────────────────────────────
@@ -84,7 +84,7 @@ echo "→ check 5: PORTABLE-BRAIN.md concatenation integrity"
 if [[ -f "$BRAIN/PORTABLE-BRAIN.md" ]]; then
   PORTABLE_SIZE=$(wc -c < "$BRAIN/PORTABLE-BRAIN.md")
   PARTS_SIZE=0
-  for n in 01-identity 02-how-i-decide 03-my-voice 04-avoid-list 05-active-priorities 06-design-language 07-decisions-log; do
+  for n in 01-identity 02-how-i-decide 03-my-voice 04-avoid-list 05-active-priorities 06-design-language 07-decisions-log 08-open-questions 09-repo-map; do
     if [[ -f "$BRAIN/$n.md" ]]; then
       sz=$(wc -c < "$BRAIN/$n.md")
       PARTS_SIZE=$((PARTS_SIZE + sz))
