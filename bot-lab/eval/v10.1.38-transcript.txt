@@ -1,0 +1,1446 @@
+# v10.1.38 brutal run — 2026-05-07T19:28:07.825Z
+# 54/54 PASS, 0 FAIL, 0 ERROR
+# total audit hits: 0
+# runtime: 19ms
+
+# S1 — clean Square D garage exterior 50A
+Terminal: COMPLETE
+
+[T0] BOT (GREETING): Hi Sarah, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yeah go ahead
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 240 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D, main panel open clear, breakers visible]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage on the exterior wall
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Sarah Bennett, sbennett@gmail.com, 142 Pinehurst Dr Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes that looks right
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Sarah. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+[T7] CUST: thanks
+       SM:   SCHEDULE_QUOTE -> COMPLETE
+[T7.5] BOT (COMPLETE): (no outbound — terminal state)
+
+--------------------------------------------------------------------------------
+
+# S2 — 30A but 3-prong RV outlet (TT-30R 120V only)
+Terminal: DISQUALIFIED_120V
+
+[T0] BOT (GREETING): Hi Mike, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: sure
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: 30 amp
+       SM:   AWAIT_240V -> AWAIT_240V_RETRY
+[T2.5] BOT (AWAIT_240V_RETRY): Got it, 30 amp. Just to nail down which one: is it the 4-prong twist-lock (the bigger one with 4 holes) or the 3-prong RV-style? A quick pic of the outlet works too if easier.
+[T3] CUST: its 3 prong, like an rv plug
+       SM:   AWAIT_240V_RETRY -> DISQUALIFIED_120V
+[T3.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+[T4] CUST: so what kind should I get
+       SM:   DISQUALIFIED_120V -> DISQUALIFIED_120V
+[T4.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+
+--------------------------------------------------------------------------------
+
+# S3 — sub-panel first, then Zinsco main panel
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Don, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: ok
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp 4 prong
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends sub-panel photo from workshop, no main breaker visible]
+       PHOTO: subject=panel_subpanel rec=ask_main_panel conf=0.88
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): Looks like that may be a sub-panel (no main breaker visible). For the quote Key needs the MAIN panel, usually larger, fed directly from the meter, with a big main breaker at the top. No rush, whenever you can grab one.
+[T4] CUST: [sends main panel, Zinsco silver bus bars and pink/blue/green breakers]
+       PHOTO: subject=panel_hazardous_zinsco rec=accept_flag_hazardous conf=0.85 brand=Zinsco
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: in the basement on an interior wall
+       SLOT: detected [panel_location=basement]
+       SM:   AWAIT_RUN -> CONFIRM_PANEL_WALL_TYPE
+[T5.5] BOT (CONFIRM_PANEL_WALL_TYPE): Quick clarification: an EXTERIOR wall backs up to the outside of your house (something mountable on the other side). An INTERIOR wall is between two indoor rooms (house on both sides). Which is your panel on?
+[T6] CUST: yeah we have a crawlspace under the house
+       SLOT: detected [install_path=crawlspace_access]
+       SM:   CONFIRM_PANEL_WALL_TYPE -> AWAIT_INLET_LOCATION
+[T6.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T7] CUST: Don Hollis, dhollis62@yahoo.com, 88 Foggy Oak Ln Spartanburg SC 29307
+       SLOT: detected [email=email_present]
+       JURISDICTION: spartanburg → Spartanburg County (IN-SERVICE) — permit: City of Spartanburg (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T7.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T8] CUST: yep all good
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T8.5] BOT (SCHEDULE_QUOTE): Thank you, Don. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S4 — Predator 3500 + recommendation push
+Terminal: DISQUALIFIED_120V
+
+[T0] BOT (GREETING): Hi Justin, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?
+[T1] CUST: predator 3500
+       LOOKUP: "predator 3500" → predator 3500 → incompatible_120v_only
+       SM:   GREETING -> DISQUALIFIED_120V
+[T1.5] BOT (DISQUALIFIED_120V): Got it, predator 3500. Looks like that one outputs 120 volts only and would not work with our setup. If you upgrade to a 240V generator down the road, we would be happy to help with the install then.
+[T2] CUST: damn ok. so what generator should I get
+       SM:   DISQUALIFIED_120V -> DISQUALIFIED_120V
+[T2.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+[T3] CUST: cool. is the dewalt dxgnr7000 ok
+       SM:   DISQUALIFIED_120V -> DISQUALIFIED_120V
+[T3.5] BOT (DISQUALIFIED_120V): Thanks for asking. For our install side, the generator just needs a 240V outlet, either the 4-prong twist-lock (L14-30) or the 4-prong 50-amp. As for the wattage to actually run your home, Key handles sizing and load questions personally and would walk through that with you.
+[T4] CUST: thanks
+       SM:   DISQUALIFIED_120V -> DISQUALIFIED_120V
+[T4.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+
+--------------------------------------------------------------------------------
+
+# S5 — Champion 8500 (known compatible) + interior basement
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Patricia, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?
+[T1] CUST: champion 8500
+       LOOKUP: "champion 8500" → champion 8500 → compatible_30a
+       SM:   GREETING -> AWAIT_PANEL_PHOTO
+[T1.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T2] CUST: [sends main panel photo, Eaton CH, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T2.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T3] CUST: no, basement
+       SM:   AWAIT_RUN -> CONFIRM_PANEL_WALL_TYPE
+[T3.5] BOT (CONFIRM_PANEL_WALL_TYPE): Quick clarification: an EXTERIOR wall backs up to the outside of your house (something mountable on the other side). An INTERIOR wall is between two indoor rooms (house on both sides). Which is your panel on?
+[T4] CUST: we have an attic too
+       SLOT: detected [install_path=attic_access]
+       SM:   CONFIRM_PANEL_WALL_TYPE -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Patricia Wells, pat.wells@gmail.com, 7012 Coachlight Dr Simpsonville SC 29680
+       SLOT: detected [email=email_present]
+       JURISDICTION: simpsonville → Greenville County (IN-SERVICE) — permit: Greenville County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: looks right
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Patricia. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S6 — hostile, demands price + human
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Tony, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: what's this gonna cost me
+       SM:   GREETING -> NEEDS_CALLBACK
+[T1.5] BOT (NEEDS_CALLBACK): No problem. I will have Key follow up with you personally on this one. He will reach out shortly.
+
+--------------------------------------------------------------------------------
+
+# S7 — FPE Stab-Lok hazardous panel
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Diana, I'm Ashley, the automated assistant at Backup Power Pro. Thanks for reaching out about a home connection for your portable generator. Happy to help get this rolling. Got a few minutes to walk through what our electrician Key needs to provide an accurate quote?
+[T1] CUST: sure I have a few mins
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 30 amp 4 prong twist lock
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Federal Pacific Stab-Lok, red label, thin breaker handles]
+       PHOTO: subject=panel_hazardous_fpe rec=accept_flag_hazardous conf=0.85 brand=Federal Pacific
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: on the outside actually, mounted to the back of the house
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Diana Rodriguez, drod1985@gmail.com, 51 Indigo Hill Rd Pickens SC 29671
+       SLOT: detected [email=email_present]
+       JURISDICTION: pickens → Pickens County (IN-SERVICE) — permit: Pickens County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes correct
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Diana. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S8 — customer says STOP mid-flow
+Terminal: STOPPED
+
+[T0] BOT (GREETING): Hi Pat, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: STOP
+       SM:   AWAIT_240V -> STOPPED
+[T2.5] BOT (STOPPED): (no outbound — terminal state)
+
+--------------------------------------------------------------------------------
+
+# S9 — Honda EU7000iS (voltage selector)
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Brad, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?
+[T1] CUST: honda eu7000is
+       LOOKUP: "honda eu7000is" → honda EU7000iS → voltage_selector_check
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 240v 30 amp 4 prong
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel pic, Square D Homeline, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior wall
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Brad Foster, brad.foster73@gmail.com, 209 Hampton Ridge Dr Greenville SC 29615
+       SLOT: detected [email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: all good
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Brad. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S10 — generator in box, brand+model resolves via lookup
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Greg, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yeah
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: not sure, its still in the box
+       SM:   AWAIT_240V -> CLARIFY_240V
+[T2.5] BOT (CLARIFY_240V): No problem, no rush. You can send a picture of the outlets whenever you get a chance.
+[T3] CUST: westinghouse wgen7500
+       LOOKUP: "westinghouse wgen7500" → westinghouse WGen7500 → compatible_30a
+       SM:   CLARIFY_240V -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T4] CUST: l14-30 4 prong yes
+       SLOT: detected [outlet=outlet_30a_4prong]
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_PANEL_PHOTO
+[T4.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T5] CUST: [sends panel photo, Siemens, main open]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=siemens
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T5.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T6] CUST: garage exterior wall yes
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T6.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T7] CUST: Greg Tanner, gtanner@yahoo.com, 1850 Roper Mountain Rd Greenville SC 29615
+       SLOT: detected [email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T7.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T8] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T8.5] BOT (SCHEDULE_QUOTE): Thank you, Greg. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S11 — sends 3 wrong photos before getting it right
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Carl, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yeah lets go
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: 50 amp 4 prong yes
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [accidentally sends a selfie]
+       PHOTO: subject=wrong_subject rec=ask_correct conf=0.95
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): Looks like that one was off. For the quote Key needs the main breaker panel inside the house (usually a gray metal box). No rush whenever you can resnap.
+[T4] CUST: [sends meter outside the house]
+       PHOTO: subject=meter rec=ask_correct conf=0.93
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_PANEL_PHOTO
+[T4.5] BOT (AWAIT_PANEL_PHOTO): Got the meter pic. What we need is the breaker panel inside the house, usually a gray metal box in a closet, basement, or garage. No rush.
+[T5] CUST: [sends panel finally, Eaton, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T5.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T6] CUST: garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T6.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T7] CUST: Carl Marsh, cmarsh77@gmail.com, 412 Riverbend Dr Greenville SC 29609
+       SLOT: detected [email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T7.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T8] CUST: yep
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T8.5] BOT (SCHEDULE_QUOTE): Thank you, Carl. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S12 — spouse approval pause
+Terminal: POSTPONED
+
+[T0] BOT (GREETING): Hi Linda, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 240 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: let me check with my husband first
+       SM:   AWAIT_PANEL_PHOTO -> POSTPONED
+[T3.5] BOT (POSTPONED): No problem. Just let me know whenever you are ready and I would be happy to follow up.
+
+--------------------------------------------------------------------------------
+
+# S13 — pricing demand early
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Nate, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: how much for an inlet install
+       SM:   GREETING -> NEEDS_CALLBACK
+[T1.5] BOT (NEEDS_CALLBACK): No problem. I will have Key follow up with you personally on this one. He will reach out shortly.
+
+--------------------------------------------------------------------------------
+
+# S14 — renter volunteers
+Terminal: DISQUALIFIED_RENTER
+
+[T0] BOT (GREETING): Hi Beverly, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes but I'm renting btw, would my landlord need to approve
+       SM:   GREETING -> DISQUALIFIED_RENTER
+[T1.5] BOT (DISQUALIFIED_RENTER): Got it. For panel work like this we would need the property owner to sign off. If you can loop in your landlord, we would be happy to take it from there.
+
+--------------------------------------------------------------------------------
+
+# S15 — "are you a bot?" check
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Trevor, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: are you a real person or a bot
+       SM:   GREETING -> GREETING
+[T1.5] BOT (GREETING): Good question. I'm Ashley, the BPP intake assistant (automated). Our electrician Key personally handles the quote and the install, I'm just gathering the details he needs. Got a couple of minutes to walk through them?
+[T2] CUST: ok yeah lets do it
+       SM:   GREETING -> AWAIT_240V
+[T2.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T3] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T4] CUST: [sends panel photo, GE, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=ge
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Trevor Kim, tkim@gmail.com, 7 Sycamore Way Mauldin SC 29662
+       SLOT: detected [email=email_present]
+       JURISDICTION: mauldin → Greenville County (IN-SERVICE) — permit: Greenville County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes good
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Trevor. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S16 — detached garage, no attic, no crawlspace
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Tom, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D, main panel open]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: detached garage building
+       LOADS: detected [detached_workshop]
+       SLOT: detected [panel_location=detached_garage]
+       SM:   AWAIT_RUN -> AWAIT_INSTALL_PATH
+[T4.5] BOT (AWAIT_INSTALL_PATH): Thanks for that. Since the panel is on an interior wall, Key would route the cable through either the attic or crawlspace to reach the outside. Do you happen to have one of those accessible?
+[T5] CUST: no attic and the house is on a slab
+       SLOT: detected [install_path=no_access]
+       SM:   AWAIT_INSTALL_PATH -> NEEDS_CALLBACK
+[T5.5] BOT (NEEDS_CALLBACK): No problem. I will have Key follow up with you personally on this one. He will reach out shortly.
+
+--------------------------------------------------------------------------------
+
+# S17 — email typo gmial.com
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Mark, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Eaton, main panel open]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Mark Davies, mdavies82@gmial.com, 1011 Westbrook Ln Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> CHECK_EMAIL_TYPO
+[T5.5] BOT (CHECK_EMAIL_TYPO): Just to double-check, that's the right spelling? Looks close to a typo so wanted to confirm.
+[T6] CUST: oh whoops, mdavies82@gmail.com
+       SM:   CHECK_EMAIL_TYPO -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yep all good
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Mark. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S18 — out-of-area Atlanta address
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Steve, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, GE, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=ge
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior wall
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Steve Hollins, shollins@gmail.com, 4202 Peachtree Rd Atlanta GA 30319
+       SLOT: detected [email=email_present]
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes correct
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Steve. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S19 — DQ then "should I get the Generac GP6500"
+Terminal: DISQUALIFIED_120V
+
+[T0] BOT (GREETING): Hi Janet, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: sure
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: just regular outlets, 120v
+       SM:   AWAIT_240V -> DISQUALIFIED_120V
+[T2.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+[T3] CUST: so should I get a Generac GP6500?
+       SM:   DISQUALIFIED_120V -> DISQUALIFIED_120V
+[T3.5] BOT (DISQUALIFIED_120V): Honestly that's a Key call, he sees the specific specs day-to-day. I will pass the question to him so he can weigh in directly.
+[T4] CUST: ok thanks
+       SM:   DISQUALIFIED_120V -> DISQUALIFIED_120V
+[T4.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+
+--------------------------------------------------------------------------------
+
+# S20 — "what days do you install" timing push
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Walter, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yeah
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: what days do yall do installs
+       SM:   AWAIT_240V -> NEEDS_CALLBACK
+[T2.5] BOT (NEEDS_CALLBACK): No problem. I will have Key follow up with you personally on this one. He will reach out shortly.
+
+--------------------------------------------------------------------------------
+
+# S21 — claims 4-prong, photo shows 3-prong (TT-30R)
+Terminal: DISQUALIFIED_120V
+
+[T0] BOT (GREETING): Hi Bobby, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yeah I think 4 prong
+       SM:   GREETING -> AWAIT_PANEL_PHOTO
+[T1.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T2] CUST: [sends outlet photo, TT-30R RV-style 3-prong 120V]
+       PHOTO: subject=outlet_120v_3prong_30a rec=accept conf=0.89
+       SM:   AWAIT_PANEL_PHOTO -> DISQUALIFIED_120V
+[T2.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+
+--------------------------------------------------------------------------------
+
+# S22 — amending: "actually it's 30 amp not 50"
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Karen, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yeah 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: wait actually I think its 30 amp 4 prong, my mistake
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_240V
+[T3.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T4] CUST: yes 30 amp 4 prong twist lock
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T4.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T5] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T5.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T6] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T6.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T7] CUST: Karen Lee, klee@gmail.com, 88 Birchwood Way Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T7.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T8] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T8.5] BOT (SCHEDULE_QUOTE): Thank you, Karen. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S23 — neighbor referral + chitchat
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Holly, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yeah! my neighbor Bob on Hampton said y'all did his last month and he loved it haha
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D Homeline, open]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Holly Briggs, hbriggs@gmail.com, 5 Hampton Lake Dr Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes good thanks!
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Holly. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S24 — custom install location request
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Frank, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Eaton, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: panel is in the garage but I want the inlet around the side near my carport
+       SM:   AWAIT_RUN -> AWAIT_INSTALL_PATH
+[T4.5] BOT (AWAIT_INSTALL_PATH): Thanks for that. Since the panel is on an interior wall, Key would route the cable through either the attic or crawlspace to reach the outside. Do you happen to have one of those accessible?
+[T5] CUST: yes there is attic access above the garage
+       SLOT: detected [install_path=attic_access]
+       SM:   AWAIT_INSTALL_PATH -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Frank Vance, fvance51@gmail.com, 707 Cedar Hill Dr Greenville SC 29615
+       SLOT: detected [email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Frank. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S25 — "will it power my whole house" mid-flow
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Andy, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: will my 7500W generator power my whole house?
+       SM:   AWAIT_240V -> AWAIT_240V
+[T2.5] BOT (AWAIT_240V): That one's a Key call, he handles sizing and load personally. In the meantime, just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T3] CUST: yes 30 amp 4 prong
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T4] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Andy Holt, aholt@gmail.com, 33 Magnolia Way Greenville SC 29615
+       SLOT: detected [email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Andy. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S26 — "is Generac 7500 enough for AC + fridge"
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Lisa, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: is the Generac 7500 enough to run my AC and fridge?
+       SM:   AWAIT_240V -> AWAIT_240V
+[T2.5] BOT (AWAIT_240V): That one's a Key call, he handles sizing and load personally. In the meantime, just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T3] CUST: yes 30 amp 4 prong
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T4] CUST: [sends panel photo, GE, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=ge
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Lisa Bremer, lbremer@gmail.com, 9 Greenway Ct Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes correct
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Lisa. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S27 — DQ_120V + coverage push
+Terminal: DISQUALIFIED_120V
+
+[T0] BOT (GREETING): Hi Otis, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: just a 120v inverter
+       SM:   AWAIT_240V -> DISQUALIFIED_120V
+[T2.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+[T3] CUST: so what wattage do I need to actually power my whole house?
+       SM:   DISQUALIFIED_120V -> DISQUALIFIED_120V
+[T3.5] BOT (DISQUALIFIED_120V): That one's a Key call, he handles sizing and load personally. In the meantime, looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+[T4] CUST: ok thanks
+       SM:   DISQUALIFIED_120V -> DISQUALIFIED_120V
+[T4.5] BOT (DISQUALIFIED_120V): Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.
+
+--------------------------------------------------------------------------------
+
+# S28 — Honda EU7000iS + heat pump load question
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Ray, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?
+[T1] CUST: honda eu7000is
+       LOOKUP: "honda eu7000is" → honda EU7000iS → voltage_selector_check
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: will it run my heat pump and my fridge?
+       LOADS: detected [heat_pump]
+       SM:   AWAIT_240V -> AWAIT_240V
+[T2.5] BOT (AWAIT_240V): That one's a Key call, he handles sizing and load personally. In the meantime, just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T3] CUST: yes 240v 30 amp 4 prong
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T4] CUST: [sends panel photo, Eaton, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: yes garage exterior wall
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Ray Polk, rpolk@gmail.com, 88 Forest Trail Pickens SC 29671
+       SLOT: detected [email=email_present]
+       JURISDICTION: pickens → Pickens County (IN-SERVICE) — permit: Pickens County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: looks right
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Ray. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# N1 — Spanish inbound (English-only response + handoff)
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Maria, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: Hola, necesito ayuda con un generador. Hablan español?
+       SM:   GREETING -> NEEDS_CALLBACK
+[T1.5] BOT (NEEDS_CALLBACK): Sorry, we currently support English-only at BPP. Key will follow up with you personally so we can find a way to help.
+
+--------------------------------------------------------------------------------
+
+# N2 — wants ATS / fully automatic setup
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Roy, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: I want an automatic transfer switch so it kicks on when the power goes out
+       SM:   GREETING -> NEEDS_CALLBACK
+[T1.5] BOT (NEEDS_CALLBACK): Got it. The automatic / whole-home setup is a different scope than what we typically install (inlet + interlock for portable generators). Key would be happy to walk through what those options look like, I will have him reach out shortly.
+
+--------------------------------------------------------------------------------
+
+# N3 — 22kW Generac whole-home standby
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Pete, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?
+[T1] CUST: I have a 22kW Generac whole-home standby generator already installed
+       SM:   GREETING -> NEEDS_CALLBACK
+[T1.5] BOT (NEEDS_CALLBACK): Got it. The automatic / whole-home setup is a different scope than what we typically install (inlet + interlock for portable generators). Key would be happy to walk through what those options look like, I will have him reach out shortly.
+
+--------------------------------------------------------------------------------
+
+# N4 — "are you licensed and insured" mid-flow
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Susan, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: quick question are you licensed and insured?
+       SM:   AWAIT_240V -> AWAIT_240V
+[T2.5] BOT (AWAIT_240V): Yes. Key is a licensed SC electrician, BPP carries general liability, permit and inspection on every install. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T3] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T4] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Susan Drake, sdrake@gmail.com, 712 Riverbend Dr Greenville SC 29609
+       SLOT: detected [email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Susan. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# N5 — brand only, no model (Champion)
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Phil, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?
+[T1] CUST: champion
+       LOOKUP: "champion" → no match (brand_only)
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Got it, a Champion. Do you happen to know the model too? Either way, just need to confirm it has a 240V 30 amp or 50 amp outlet. A picture of the outlet works too if easier.
+[T2] CUST: oh I think 7500 maybe
+       LOOKUP: "champion 7500" → champion 7500 → compatible_30a
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, GE, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=ge
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Phil Adkins, padkins@gmail.com, 41 Pinegate Way Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Phil. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# N6 — multiple load mentions for Key context
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Lara, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes, especially worried about my central AC during summer outages
+       LOADS: detected [central_ac]
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp, also have a well pump and a level 2 EV charger
+       LOADS: detected [well_pump, ev_charger, level_2_charger]
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Lara Quinn, lquinn@gmail.com, 88 Hidden Spring Ln Simpsonville SC 29680
+       SLOT: detected [email=email_present]
+       JURISDICTION: simpsonville → Greenville County (IN-SERVICE) — permit: Greenville County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Lara. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# N7 — Boiling Springs jurisdiction trap (Spartanburg, not Greenville)
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Hank, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Eaton, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Hank Reeves, hreeves@gmail.com, 1101 Brookside Dr Boiling Springs SC 29316
+       SLOT: detected [email=email_present]
+       JURISDICTION: boiling springs → Spartanburg County (IN-SERVICE) — permit: Spartanburg County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Hank. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# N8 — Seneca/Oconee out-of-service auto-DQ
+Terminal: DISQUALIFIED_OUT_OF_AREA
+
+[T0] BOT (GREETING): Hi Glen, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Glen Marsh, gmarsh@gmail.com, 500 Lake Hartwell Dr Seneca SC 29672
+       SLOT: detected [email=email_present]
+       JURISDICTION: seneca → Oconee County (OUT-OF-AREA) — permit: Oconee County
+       SM:   AWAIT_INLET_LOCATION -> DISQUALIFIED_OUT_OF_AREA
+[T5.5] BOT (DISQUALIFIED_OUT_OF_AREA): Looks like you are a little outside our normal service area. We cover Greenville, Spartanburg, and Pickens counties. Sorry we cannot help with this one.
+
+--------------------------------------------------------------------------------
+
+# N9 — surge protector question mid-flow
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Eli, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: should I add a whole-home surge protector with this?
+       SM:   AWAIT_240V -> AWAIT_240V
+[T2.5] BOT (AWAIT_240V): Good question. Key handles surge protector options on the install call (can be added during the same visit). Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T3] CUST: yes 30 amp 4 prong
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T4] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Eli Brown, ebrown@gmail.com, 7 Ridgeline Rd Mauldin SC 29662
+       SLOT: detected [email=email_present]
+       JURISDICTION: mauldin → Greenville County (IN-SERVICE) — permit: Greenville County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Eli. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# N10 — Williamston/Anderson out-of-service auto-DQ
+Terminal: DISQUALIFIED_OUT_OF_AREA
+
+[T0] BOT (GREETING): Hi Cindy, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, GE, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=ge
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Cindy Hayes, chayes@gmail.com, 222 Mill St Williamston SC 29697
+       SLOT: detected [email=email_present]
+       JURISDICTION: williamston → Anderson County (OUT-OF-AREA) — permit: Anderson County
+       SM:   AWAIT_INLET_LOCATION -> DISQUALIFIED_OUT_OF_AREA
+[T5.5] BOT (DISQUALIFIED_OUT_OF_AREA): Looks like you are a little outside our normal service area. We cover Greenville, Spartanburg, and Pickens counties. Sorry we cannot help with this one.
+
+--------------------------------------------------------------------------------
+
+# B1 — burst message: yes / generac / 50 amp 4 prong
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Brent, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+I have a generac
+50 amp 4 prong twist lock
+       SLOT: detected [outlet=outlet_50a]
+       SM:   GREETING -> AWAIT_PANEL_PHOTO
+[T1.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T2] CUST: [sends panel photo, Eaton, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T2.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T3] CUST: yes garage exterior wall
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T3.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T4] CUST: Brent Mason, bmason@gmail.com, 411 Pine Ridge Dr Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T4.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T5] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T5.5] BOT (SCHEDULE_QUOTE): Thank you, Brent. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# B2 — multi-intent: location + email in same message
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Maria, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: garage exterior wall — also: Maria Aguirre, maguirre@gmail.com, 88 Hampton Ridge Dr Greenville SC 29615
+       SLOT: detected [panel_location=garage_exterior, email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_RUN -> RECAP
+[T4.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T5] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T5.5] BOT (SCHEDULE_QUOTE): Thank you, Maria. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# B3 — off-topic technical mid-flow (panel upgrades)
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Owen, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: do you guys do whole panel upgrades or service replacements too
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): No problem. The main panel is the metal box inside the house with the breaker switches (closet, garage, basement, or utility room). Open the door so the breakers are visible and snap one whenever you can.
+[T4] CUST: [sends panel photo, GE, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=ge
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Owen Reed, oreed@gmail.com, 51 Maple Ave Easley SC 29642
+       SLOT: detected [email=email_present]
+       JURISDICTION: easley → Pickens County (IN-SERVICE) — permit: Pickens County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Owen. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# P1 — urgent: storm-imminent demands Key NOW
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Bobby, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: I need someone to call me NOW, storm hits in 4 hours can someone come out today?
+       LOADS: detected [urgent_marker]
+       SM:   GREETING -> NEEDS_CALLBACK
+[T1.5] BOT (NEEDS_CALLBACK): Got it, sending Key your number now so he can reach out as soon as he's free. Hang tight.
+
+--------------------------------------------------------------------------------
+
+# P2 — prefers email channel
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Joan, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes, but can you email me instead? I dont do text well
+       LOADS: detected [prefers_email]
+       SM:   GREETING -> GREETING
+[T1.5] BOT (GREETING): Got it, will pass to Key, the quote goes via email anyway. Just need a few quick details by text first. Got a couple of minutes?
+[T2] CUST: yes 50 amp 4 prong
+       SLOT: detected [outlet=outlet_50a]
+       SM:   GREETING -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Joan Pierce, jpierce@gmail.com, 412 Hampton Lake Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Joan. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# P3 — HOA approval mention mid-flow
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Reggie, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp, but I need to check with my HOA first about the outdoor outlet
+       LOADS: detected [mentions_hoa]
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Eaton, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Reggie Stratton, rstratton@gmail.com, 7 Fairway Lakes Dr Mauldin SC 29662
+       SLOT: detected [email=email_present]
+       JURISDICTION: mauldin → Greenville County (IN-SERVICE) — permit: Greenville County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Reggie. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# P4 — manufactured home flag for Key
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Vera, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes, just so you know I have a manufactured home
+       LOADS: detected [manufactured_home]
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 30 amp 4 prong twist lock
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, GE, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=ge
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Vera Holt, vholt@gmail.com, 22 Pine Ridge Way Pickens SC 29671
+       SLOT: detected [email=email_present]
+       JURISDICTION: pickens → Pickens County (IN-SERVICE) — permit: Pickens County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Vera. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# P5 — 1920 farmhouse + knob-and-tube wiring
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Otis, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes, FYI we live in a 1925 farmhouse with some original knob and tube wiring
+       LOADS: detected [older_home, knob_and_tube]
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: basement on interior wall
+       SLOT: detected [panel_location=basement]
+       SM:   AWAIT_RUN -> CONFIRM_PANEL_WALL_TYPE
+[T4.5] BOT (CONFIRM_PANEL_WALL_TYPE): Quick clarification: an EXTERIOR wall backs up to the outside of your house (something mountable on the other side). An INTERIOR wall is between two indoor rooms (house on both sides). Which is your panel on?
+[T5] CUST: yes attic and crawl
+       SM:   CONFIRM_PANEL_WALL_TYPE -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: Otis Mercer, omercer@gmail.com, 88 Old Spring Rd Greenville SC 29609
+       SLOT: detected [email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Otis. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# P6 — solar panels + Tesla Powerwall mention
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Riley, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes, we already have solar panels and a Tesla Powerwall but want backup for extended outages
+       LOADS: detected [solar_panels, battery_storage]
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Eaton, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Riley Burke, rburke@gmail.com, 51 Lake Forest Dr Simpsonville SC 29680
+       SLOT: detected [email=email_present]
+       JURISDICTION: simpsonville → Greenville County (IN-SERVICE) — permit: Greenville County
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Riley. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# P7 — late-night form fires (time-of-day suffix)
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Marcus, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them? I know it's late, no rush, tomorrow works as well if easier.
+[T1] CUST: yeah I'm up
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp 4 prong
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: Marcus Aldridge, maldridge@gmail.com, 71 Riverwood Dr Greenville SC 29609
+       SLOT: detected [email=email_present]
+       JURISDICTION: greenville → Greenville County (IN-SERVICE) — permit: City of Greenville (separate from county)
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T5.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T6] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T6.5] BOT (SCHEDULE_QUOTE): Thank you, Marcus. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# T1 — interior-vs-exterior wall confusion (Tyler case)
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Carlos, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 30 amp 4 prong
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Square D 200A main breaker visible at top]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: in the garage but its inside not the outside
+       SM:   AWAIT_RUN -> CONFIRM_PANEL_WALL_TYPE
+[T4.5] BOT (CONFIRM_PANEL_WALL_TYPE): Quick clarification: an EXTERIOR wall backs up to the outside of your house (something mountable on the other side). An INTERIOR wall is between two indoor rooms (house on both sides). Which is your panel on?
+[T5] CUST: oh, exterior then. the wall backs up to the back yard
+       SM:   CONFIRM_PANEL_WALL_TYPE -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: yeah right behind the panel works
+       SM:   AWAIT_INLET_LOCATION -> AWAIT_EMAIL
+[T6.5] BOT (AWAIT_EMAIL): Thank you. To complete the quote could I get your last name, email, and address?
+[T7] CUST: Carlos Reyes, creyes@gmail.com, 22 Pine Way Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_EMAIL -> RECAP
+[T7.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T8] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T8.5] BOT (SCHEDULE_QUOTE): Thank you, Carlos. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# T2 — custom inlet location, 30ft from panel
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Marsha, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Eaton 150A main breaker labeled at top]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=eaton
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: yes garage on exterior wall
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T4.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T5] CUST: actually I'd want it on the side near my carport, about 30 feet from the panel
+       SM:   AWAIT_INLET_LOCATION -> AWAIT_EMAIL
+[T5.5] BOT (AWAIT_EMAIL): Thank you. To complete the quote could I get your last name, email, and address?
+[T6] CUST: Marsha Quill, mquill@gmail.com, 88 Lake Forest Dr Simpsonville SC 29680
+       SLOT: detected [email=email_present]
+       JURISDICTION: simpsonville → Greenville County (IN-SERVICE) — permit: Greenville County
+       SM:   AWAIT_EMAIL -> RECAP
+[T6.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T7] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T7.5] BOT (SCHEDULE_QUOTE): Thank you, Marsha. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# T3 — main breaker unclear, bot asks customer to verify
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Doug, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Bryant 125A label, main breaker unclear top cut off]
+       PHOTO: subject=panel_main_open_clear rec=accept_with_followup conf=0.94 brand=bryant
+       SM:   AWAIT_PANEL_PHOTO -> CONFIRM_MAIN_BREAKER
+[T3.5] BOT (CONFIRM_MAIN_BREAKER): Quick double-check on the panel. Is there a larger breaker at the top labeled MAIN or rated higher than the others (100A, 150A, 200A)? The install needs that to work.
+[T4] CUST: yeah there's a 200 at the top, says MAIN
+       SM:   CONFIRM_MAIN_BREAKER -> AWAIT_RUN
+[T4.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T5] CUST: garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T5.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T6] CUST: right behind panel is fine
+       SM:   AWAIT_INLET_LOCATION -> AWAIT_EMAIL
+[T6.5] BOT (AWAIT_EMAIL): Thank you. To complete the quote could I get your last name, email, and address?
+[T7] CUST: Doug Sims, dsims@gmail.com, 51 Mockingbird Ln Mauldin SC 29662
+       SLOT: detected [email=email_present]
+       JURISDICTION: mauldin → Greenville County (IN-SERVICE) — permit: Greenville County
+       SM:   AWAIT_EMAIL -> RECAP
+[T7.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T8] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T8.5] BOT (SCHEDULE_QUOTE): Thank you, Doug. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# T4 — confirmed sub-panel (no main breaker) → callback
+Terminal: NEEDS_CALLBACK
+
+[T0] BOT (GREETING): Hi Vince, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 50 amp
+       SLOT: detected [outlet=outlet_50a]
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, Bryant subpanel no main breaker all breakers same size]
+       PHOTO: subject=panel_subpanel rec=ask_main_panel conf=0.88
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): Looks like that may be a sub-panel (no main breaker visible). For the quote Key needs the MAIN panel, usually larger, fed directly from the meter, with a big main breaker at the top. No rush, whenever you can grab one.
+[T4] CUST: no there is no big switch at the top, just regular breakers all the same
+       SM:   AWAIT_PANEL_PHOTO -> NEEDS_CALLBACK
+[T4.5] BOT (NEEDS_CALLBACK): No problem. I will have Key follow up with you personally on this one. He will reach out shortly.
+
+--------------------------------------------------------------------------------
+
+# T5 — truly interior wall (between rooms) → install path
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Helen, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: yes 30 amp 4 prong
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T2.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T3] CUST: [sends panel photo, GE 200A main breaker visible at top]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=ge
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T3.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T4] CUST: in a hallway closet, interior wall
+       SM:   AWAIT_RUN -> CONFIRM_PANEL_WALL_TYPE
+[T4.5] BOT (CONFIRM_PANEL_WALL_TYPE): Quick clarification: an EXTERIOR wall backs up to the outside of your house (something mountable on the other side). An INTERIOR wall is between two indoor rooms (house on both sides). Which is your panel on?
+[T5] CUST: right, between two rooms inside, no outside on either side
+       SM:   CONFIRM_PANEL_WALL_TYPE -> AWAIT_INSTALL_PATH
+[T5.5] BOT (AWAIT_INSTALL_PATH): Thanks for that. Since the panel is on an interior wall, Key would route the cable through either the attic or crawlspace to reach the outside. Do you happen to have one of those accessible?
+[T6] CUST: we have an attic above the hallway
+       SLOT: detected [install_path=attic_access]
+       SM:   AWAIT_INSTALL_PATH -> AWAIT_INLET_LOCATION
+[T6.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T7] CUST: around the side of the house near the back door, maybe 25 feet from panel
+       SM:   AWAIT_INLET_LOCATION -> AWAIT_EMAIL
+[T7.5] BOT (AWAIT_EMAIL): Thank you. To complete the quote could I get your last name, email, and address?
+[T8] CUST: Helen Park, hpark@gmail.com, 7 Oakwood Way Pickens SC 29671
+       SLOT: detected [email=email_present]
+       JURISDICTION: pickens → Pickens County (IN-SERVICE) — permit: Pickens County
+       SM:   AWAIT_EMAIL -> RECAP
+[T8.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T9] CUST: yes
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T9.5] BOT (SCHEDULE_QUOTE): Thank you, Helen. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------
+
+# S29 — repeated coverage push at every step
+Terminal: SCHEDULE_QUOTE
+
+[T0] BOT (GREETING): Hi Wendy, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?
+[T1] CUST: yes
+       SM:   GREETING -> AWAIT_240V
+[T1.5] BOT (AWAIT_240V): Perfect. Just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T2] CUST: will an 8000W run my whole house easily?
+       SM:   AWAIT_240V -> AWAIT_240V
+[T2.5] BOT (AWAIT_240V): That one's a Key call, he handles sizing and load personally. In the meantime, just confirming the generator has a 240V outlet on it, either the 4-prong twist-lock or the 50-amp. A pic of the generator's outlet works too if easier.
+[T3] CUST: yes 30 amp 4 prong
+       SM:   AWAIT_240V -> AWAIT_PANEL_PHOTO
+[T3.5] BOT (AWAIT_PANEL_PHOTO): To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T4] CUST: wait one more — is that enough for two ACs?
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_PANEL_PHOTO
+[T4.5] BOT (AWAIT_PANEL_PHOTO): That one's a Key call, he handles sizing and load personally. In the meantime, to put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance.
+[T5] CUST: [sends panel photo, Square D, clear]
+       PHOTO: subject=panel_main_open_clear rec=accept conf=0.94 brand=square d
+       SM:   AWAIT_PANEL_PHOTO -> AWAIT_RUN
+[T5.5] BOT (AWAIT_RUN): Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?
+[T6] CUST: yes garage exterior
+       SLOT: detected [panel_location=garage_exterior]
+       SM:   AWAIT_RUN -> AWAIT_INLET_LOCATION
+[T6.5] BOT (AWAIT_INLET_LOCATION): Where would you want the inlet box mounted on the outside? Standard install puts it right behind your panel with a 20ft cord. Or if you'd want it elsewhere (closer to the generator), roughly how far from the panel?
+[T7] CUST: Wendy Cole, wcole@gmail.com, 41 Ridge Crest Dr Greer SC 29651
+       SLOT: detected [email=email_present]
+       JURISDICTION: greer → Greenville County (IN-SERVICE) — permit: varies — Greer spans Greenville/Spartanburg county line; verify by street address
+       SM:   AWAIT_INLET_LOCATION -> RECAP
+[T7.5] BOT (RECAP): Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?
+[T8] CUST: yes good
+       SM:   RECAP -> SCHEDULE_QUOTE
+[T8.5] BOT (SCHEDULE_QUOTE): Thank you, Wendy. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.
+
+--------------------------------------------------------------------------------

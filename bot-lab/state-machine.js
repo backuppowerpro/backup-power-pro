@@ -197,6 +197,7 @@ const STATES = {
     },
     transitions: {
       gen_240v: 'AWAIT_OUTLET',  // they said 240V, need to clarify amperage
+      affirmative: 'AWAIT_OUTLET',  // v10.1.32: bare "yes" to 240V Q = same as gen_240v
       // v10.1.4 — 30A NOW DISAMBIGUATED:
       outlet_30a_4prong: 'AWAIT_PANEL_PHOTO',  // confirmed 240V 30A → BPP-compatible
       outlet_30a_3prong: 'DISQUALIFIED_120V',  // 30A but it's TT-30/L5-30 120V → soft DQ
@@ -217,7 +218,8 @@ const STATES = {
       asking_clarifying_technical: 'AWAIT_240V',  // self-loop with answer-briefly intent
       friendly_chitchat: 'AWAIT_240V',  // self-loop with chitchat-ack intent
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',  // skip ahead since voltage was paired
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — was terminal-routing on legit clarifying Qs. Now self-loop.
+      off_topic_question: 'AWAIT_240V',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_240V_RETRY',
     },
@@ -320,7 +322,8 @@ const STATES = {
       asking_clarifying_technical: 'AWAIT_OUTLET',
       friendly_chitchat: 'AWAIT_OUTLET',
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      off_topic_question: 'AWAIT_OUTLET',
       stop_variant: 'STOPPED',
       unclear: 'NEEDS_CALLBACK',
     },
@@ -367,7 +370,8 @@ const STATES = {
       asking_clarifying_technical: 'AWAIT_OWNERSHIP',
       friendly_chitchat: 'AWAIT_OWNERSHIP',
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      off_topic_question: 'AWAIT_OWNERSHIP',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_OWNERSHIP_RETRY',
     },
@@ -432,7 +436,8 @@ const STATES = {
       asking_clarifying_technical: 'AWAIT_RUN',
       friendly_chitchat: 'AWAIT_RUN',
       answered_with_impatience: 'AWAIT_EMAIL',
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      off_topic_question: 'AWAIT_RUN',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_RUN_RETRY',
     },
@@ -680,7 +685,10 @@ const STATES = {
       spouse_approval_needed: 'POSTPONED',
       referral_mentioned: 'AWAIT_PANEL_PHOTO',  // ack referral, continue
       dont_own_generator_yet: 'NEEDS_CALLBACK',
-      off_topic_question: 'NEEDS_CALLBACK',
+      // v10.1.36 — was routing off_topic_question to NEEDS_CALLBACK terminal,
+      // killing conversations on legit clarifying Qs ("do you do Generac
+      // generators?"). Now self-loop with brief acknowledgment intent.
+      off_topic_question: 'AWAIT_PANEL_PHOTO',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_PANEL_PHOTO',  // wait for photo
     },
@@ -697,6 +705,10 @@ const STATES = {
       amending_prior_answer: 'NEEDS_CALLBACK',  // they want to revise something — Key handles
       asking_for_human: 'NEEDS_CALLBACK',
       stop_variant: 'STOPPED',
+      // v10.1.33 — "thanks" / "great" / "sounds good" should advance to
+      // SCHEDULE_QUOTE (close-out). Was falling through to NEEDS_CALLBACK
+      // and producing a duplicate handoff alert.
+      friendly_chitchat: 'SCHEDULE_QUOTE',
       unclear: 'SCHEDULE_QUOTE',  // benign reply like "thanks" or "ok cool"
     },
   },
@@ -716,6 +728,10 @@ const STATES = {
       affirmative: 'COMPLETE',
       negative: 'NEEDS_CALLBACK',
       asking_for_human: 'NEEDS_CALLBACK',
+      // v10.1.32 — "thanks", "great", "sounds good" all classify as friendly_chitchat
+      // and should resolve as COMPLETE (customer is acknowledging the wrap-up, not
+      // raising a concern). Without this they fall to NEEDS_CALLBACK default.
+      friendly_chitchat: 'COMPLETE',
       photo_correction: 'AWAIT_PANEL_PHOTO',  // customer wants to replace the photo — rewind
       photo_received: 'SCHEDULE_QUOTE',  // additional photos append to extras (P35)
       stop_variant: 'STOPPED',
