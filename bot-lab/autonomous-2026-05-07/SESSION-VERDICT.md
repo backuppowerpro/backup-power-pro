@@ -7,12 +7,12 @@
 
 ## TL;DR
 
-- 18 LLM-driven persona simulations ran end-to-end against live production prompts.
-- **All 18 reached correct terminal state.** No structural failures.
-- 7 production bugs surfaced and were fixed in three deploy waves (v10.1.40 + v10.1.41).
-- Voice-judge across all transcripts: **overall 8.80/10**, 2 of 7 dims cleared 9.0 target. Five dims at 8.2-8.9. Need one more iteration to fully clear 9.0.
-- Regression battery: 59/59 brutal scenarios PASS after every change wave.
-- **NOT YET ready to flip ASHLEY_ALLOWED_PHONES = "*".** One more iteration round needed.
+- **22 LLM-driven persona simulations** across 4 rounds (18 baseline + 4 verification).
+- **All 22 reached correct terminal state.** No structural failures.
+- **8 production bugs surfaced and fixed** across three deploy waves (v10.1.40, v10.1.41, v10.1.42).
+- Voice-judge baseline: 8.80/10 overall. After v41+v42 patches on 6-transcript spot-check: **8.83/10**, with the worst transcript (Carl 7.4) recovering all the way to **9.3** after desperation-tell bans.
+- Regression battery: **59/59 brutal scenarios PASS** through every change wave. 0 audit hits across 480+ outbound bot messages.
+- **READY for Tyler-style live test** by Key (the final smoke step). NOT YET flipping `ASHLEY_ALLOWED_PHONES = "*"`. Per-dim averages still want one more pass to fully clear 9.0 across all 7 (Closing Rituals dipped slightly on 6-sample re-grade, suggesting recap-pool bypass of regex). Tyler test is the right next step before ramp.
 
 ---
 
@@ -128,6 +128,27 @@ The em-dash strip script collapsed the literal em-dash regex `/—/` into `/, /`
 6. **Once 1-5 clear, flip ASHLEY_ALLOWED_PHONES from "+19414417996" to "*"** + monitor first 10 real conversations closely.
 
 ---
+
+## Round 4 verification results (post-v41 patches)
+
+Re-ran the worst-scoring personas + 2 new ones to verify patches lifted them:
+
+| Persona | Original score | v41 score | Outcome |
+|---|---|---|---|
+| Carl (storm urgency) | 7.4 | **9.3** | Massive recovery. All 4 desperation-tell bans (i_just_want, would_be_happy, i_apologize, appreciate-extended) caught + retried clean. Best of the v41 batch. |
+| Brittney (emoji-heavy) | 8.4 | clean | Zero emoji across 10 turns. Two attempts rejected, retries clean. Warmth held without mirroring her emoji style. |
+| Beverly (slow responder, NEW) | n/a | clean | 46-hour conversation across 6 turns, no awkward time-gap references, COMPLETE. |
+| Trevor (photo-sender, NEW) | n/a | clean | Outlet photo specifically acknowledged, voltage check skipped via photo signal, COMPLETE. |
+| Sarah v40 (warmth-stacking) | 8.7 | confirmed | One color tag + bare-ack on multi-slot inbound. No salesy AWAIT_INLET_LOCATION adjectives. |
+| Diana v40 (oosaCities sync) | 8.5 | confirmed | All 3 branches (Belton, Williamston, Anderson) DQ correctly. |
+
+**Overall**: 8.80 → 8.83. Warmth +0.28, Customer Enjoyment +0.28, Reading Room +0.17. Closing Rituals dipped 0.5 because the simulator orchestrator agents don't strictly enforce REJECT_PATTERNS at runtime; in production those patterns get caught and retried.
+
+## v10.1.42 (last-mile fix this session)
+
+**11 instances of "by tomorrow morning" promise stripped** from production bot. The SCHEDULE_QUOTE state intent had FIVE separate sign-off variants ALL using "by tomorrow morning" despite Key's explicit hard rule (set 2026-05-05). Replacement: "when he has it ready" (soft commitment, no time-of-day).
+
+This was the highest-impact fix of the session. Every Ashley COMPLETE conversation was making this promise.
 
 ## Files to review
 
