@@ -381,6 +381,13 @@ async function handleInbound(input: InboundInput): Promise<Response> {
         'augusta','savannah','rock hill','myrtle beach','hilton head',
         'florence','sumter','gaffney','rutherfordton','hendersonville',
         'brevard','tryon','clemson','seneca','anderson','aiken',
+        // v10.1.40: synced with bot-lab/sc-jurisdictions.json. Anderson
+        // County cities surfaced in P06 Diana sim 2026-05-07 as gaps;
+        // a customer typing "Belton, SC" would slip past mid-conversation
+        // OOA detection. Same for the other Anderson + Oconee city stubs.
+        'belton','honea path','williamston','iva','pendleton',
+        'walhalla','westminster','newry','salem',
+        'blacksburg','clinton','laurens','ware shoals',
       ]
       const isInArea = inAreaCities.some(c => addrLower.includes(c))
       const isOutOfArea = !isInArea && oosaCities.some(c => addrLower.includes(c))
