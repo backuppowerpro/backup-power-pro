@@ -4,6 +4,11 @@
 >
 > Sanitized version (specific dollar figures live in `wiki/Key/Decisions Log.md`, per-machine private). Most entries are operating principles + product decisions, which are safe to track here.
 
+## 2026-05-07
+
+### Build 1 shipped: stage-aware comm orchestrator
+Edge function `comm-orchestrator` deployed. Hourly cron pattern, quiet-hours-aware. Owns the post-quote-to-install middle layer Q18 named as a drainer. Trigger table from `05-active-priorities.md` implemented as: stage 5 +3d / +7d customer reassurance, stage 7 fresh approval ack, stage 8 install reminder, weekly Mon-9am Key digest of contacts stalled 14d+. Stage 4+ no-AI-customer-comm rule preserved (only permit-pipeline status sends). Markers stored as `__orch_<trigger>:<iso>` in contacts.notes, matching existing `__pm_*` / `__review_asked` convention. Cron schedule migration staged at `20260507100000_schedule_comm_orchestrator_cron.sql` but needs `vault.create_secret` precondition + db-push reconciliation with the 20260505* migration drift before activation. Function is deployed and callable now; cron is the last mile.
+
 ## 2026-05-06 (Round 5 + post-interview captures)
 
 ### Brain made portable

@@ -25,8 +25,8 @@ BPP year-2 destination ($10-15K/month) buys the **floor** (time agency + comfort
 
 ## Top workstreams in flight
 
-### 1. Stage-aware comm orchestrator (per Q18 drainage map)
-Client communication is the #1 named drainer. The friction is **context-switching** across many contacts at different stages, not copywriting. Existing pieces: bot-reengagement (pre-quote), quote-due-watcher (Key-side), proposal-nudge (some), auto-review-ask (post-install). Missing: the post-quote-to-install middle layer.
+### 1. Stage-aware comm orchestrator (per Q18 drainage map) — **SHIPPED 2026-05-07**
+Client communication is the #1 named drainer. The friction is **context-switching** across many contacts at different stages, not copywriting. Existing pieces: bot-reengagement (pre-quote), quote-due-watcher (Key-side), proposal-nudge (some), auto-review-ask (post-install). Post-quote-to-install middle layer NOW SHIPPED as `comm-orchestrator` edge function (hourly cron, quiet-hours-aware). Carve-out respected: stage 4+ "Key handles personally" rule still holds; only permit-pipeline status notifications fire to customers (Key authorized via Q18).
 
 Trigger table to build:
 | Trigger | Action |
