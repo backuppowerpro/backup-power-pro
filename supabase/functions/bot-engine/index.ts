@@ -233,6 +233,79 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     } catch (_) { /* lock function may not exist; fall through */ }
 
+    // 1b. v10.1.44 PHOTO-BURST COALESCING (P-PhotoSpammer sim 2026-05-07)
+    //
+    // When a customer sends N photos in rapid succession (each its own MMS
+    // and webhook), each used to fire its own classifier + phraser + reply.
+    // Result: phone-flooding UX hit + N x LLM cost. Per-contact lock
+    // serializes but doesn't coalesce.
+    //
+    // Strategy: when an inbound has media AND we have any photo-expecting
+    // states active, wait a short debounce, then check if a newer inbound
+    // has arrived from the same contact. If yes, this one yields (returns
+    // silent_burst_yielded). Net effect: the LAST photo in a burst is the
+    // only one that runs the classifier + replies. Earlier photos in the
+    // burst get marked silent and are not visible to the LLM pipeline.
+    //
+    // This is a 5-second wall clock cost only on photo turns. Twilio
+    // webhook timeout default is 15s so this fits comfortably.
+    if (input.media_urls && input.media_urls.length > 0) {
+      // Pull current bot_state to confirm we're in a photo-expecting state.
+      // Skip the debounce on non-photo states (would waste compute).
+      const { data: stateCheck } = await sb.from('contacts')
+        .select('bot_state')
+        .eq('id', input.contact_id)
+        .maybeSingle()
+      const botStateNow = stateCheck?.bot_state || ''
+      const PHOTO_STATES = new Set([
+        'AWAIT_PANEL_PHOTO',
+        'AWAIT_240V',          // customer may send outlet pic instead of verbal
+        'AWAIT_OUTLET',         // outlet photo path
+        'CONFIRM_MAIN_BREAKER', // re-photo after sub-panel detection
+      ])
+      if (PHOTO_STATES.has(botStateNow)) {
+        // Stamp the current message's arrival time. We use the earliest
+        // arrival of THIS message (now) as our reference.
+        const myArrivalMs = Date.now()
+        const DEBOUNCE_MS = 5000  // 5s window. Bursts typically span 1-30s.
+
+        // Sleep the debounce window
+        await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS))
+
+        // Check for newer inbound media messages from this contact since
+        // my arrival. If any exist, yield to them.
+        const sinceISO = new Date(myArrivalMs).toISOString()
+        const { data: newerInbounds } = await sb.from('messages')
+          .select('id, body, created_at, twilio_sid')
+          .eq('contact_id', input.contact_id)
+          .eq('direction', 'inbound')
+          .gt('created_at', sinceISO)
+          .neq('twilio_sid', input.message_sid)
+          .order('created_at', { ascending: false })
+          .limit(5)
+
+        const hasNewerPhoto = (newerInbounds || []).some(m =>
+          /\[media:/i.test(String(m.body || '')) || /^\[media:/i.test(String(m.body || ''))
+        )
+
+        if (hasNewerPhoto) {
+          // A newer photo arrived during our debounce window. Yield: mark
+          // this message silent and exit. The newest photo's invocation
+          // will handle the full burst.
+          outcome = 'silent'
+          return new Response(JSON.stringify({
+            ok: true,
+            skipped: 'photo_burst_yielded_to_newer',
+            newer_count: (newerInbounds || []).length,
+          }), { status: 200, headers: { 'content-type': 'application/json' } })
+        }
+        // We are the latest photo in this burst window. Continue to
+        // normal processing. The classifier will see whatever single
+        // photo URL was on this webhook. Earlier photos in the burst
+        // already exited silent above, so no double-reply.
+      }
+    }
+
     // 2. Pull contact
     const { data: contact, error } = await sb.from('contacts')
       .select('id, name, phone, bot_state, bot_disabled, do_not_contact, qualification_data, paused_at_state, last_bot_inbound_at, install_address, address')
