@@ -852,9 +852,14 @@ const STATES: Record<string, any> = {
     // Greenwood are OUT. The prior fallback incorrectly listed Oconee as
     // in-service. Per Alex Topic 6 county mapping, Oconee (Seneca, Walhalla,
     // Westminster) is OUTSIDE BPP's service area.
-    intent: 'KEY-VOICE: politely explain we cover Greenville, Spartanburg, and Pickens counties only. Add a courtesy "if you are still interested..." opener since Key extends courtesy to nearby out-of-area leads.',
+    // v10.1.43 (Diana voice-judge feedback 2026-05-07): prior intent let
+    // the LLM soften too far ("appreciate the details, I will pass to
+    // Key in case he can refer you"). DQ should be clean and confident,
+    // not apologetic theater. ONE polite explanation, no over-apology,
+    // wishing-luck close.
+    intent: 'KEY-VOICE: clean DQ. ONE sentence explaining service area (Greenville, Spartanburg, Pickens counties only). No apology stacking. No "appreciate the details," no "pass this to Key," no promise to refer them anywhere. Wishing-luck close is acceptable. Confident, not apologetic. Customer should walk away knowing the answer is no without Ashley feeling bad about saying it.',
     fallback: () =>
-      `Looks like you are a little outside our normal service area. We cover Greenville, Spartanburg, and Pickens counties. Sorry we cannot help with this one.`,
+      `Looks like you are outside our service area. We only cover Greenville, Spartanburg, and Pickens counties. Wishing you luck finding someone local.`,
     transitions: { stop_variant: 'STOPPED' },
     terminal: true,
   },
@@ -1083,6 +1088,21 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
   }
 
   // ── v10.1.8 (2026-05-03 Alex KB cross-check + Spanish drop): NEW UNIVERSAL ESCAPES ──
+
+  // v10.1.43 (Liar persona sim 2026-05-07): renter escape from any non-
+  // terminal state. Customer who said they owned earlier may reveal renting
+  // mid-flow via casual mentions ("landlord said it'd be cool", "let me ask
+  // my landlord"). Without this universal escape, we'd quote a job to
+  // someone who can't legally authorize panel work, and Key can't deliver.
+  if (label === 'renter' && !state.terminal) {
+    return {
+      next: 'DISQUALIFIED_RENTER',
+      intent: STATES.DISQUALIFIED_RENTER.intent,
+      fallback: STATES.DISQUALIFIED_RENTER.fallback(ctx),
+      endConversation: true,
+      onEnter: { renter_revealed_at: currentState },
+    };
+  }
 
   // v10.1.9, Out-of-service-area address. Orchestrator runs jurisdiction
   // lookup post-`email_provided`; if city is in Anderson / Oconee / Cherokee /

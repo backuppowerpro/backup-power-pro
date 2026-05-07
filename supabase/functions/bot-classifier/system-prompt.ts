@@ -283,6 +283,23 @@ AWAIT_OWNERSHIP / AWAIT_OWNERSHIP_RETRY:
 - "owner", owns the home
 - "renter", rents
 
+v10.1.43 (Liar persona sim 2026-05-07): "renter" should ALSO fire at
+ANY non-terminal state, not just AWAIT_OWNERSHIP. Customer who said
+they owned earlier may reveal renting later via casual mentions like:
+- "landlord said it'd be cool to mount it" → renter
+- "let me check with my landlord" → renter
+- "we rent here" / "I rent the place" / "renting" → renter
+- "my landlord" used in any property-related context → renter
+- "the property manager said" → renter
+
+When you detect any of these mid-flow, emit the "renter" label
+regardless of current state. The state machine has a universal
+escape for renter from any non-terminal state.
+
+The keyword "landlord" alone is a strong renter signal even without
+the customer explicitly saying "I rent." Real owners do not casually
+reference a landlord on their own property.
+
 AWAIT_RUN / AWAIT_RUN_RETRY (v10.1.5: panel-location labels, Key now
 asks WHERE the panel is, not "how far"):
 - "panel_garage_exterior", panel is in garage on an exterior wall.
