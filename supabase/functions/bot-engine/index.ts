@@ -124,20 +124,37 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
 //  INBOUND flow
 // ──────────────────────────────────────────────────────────────────────────
 
-async function callInternal(path: string, body: unknown): Promise<any> {
-  const r = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-  if (!r.ok) {
-    const text = await r.text()
-    throw new Error(`${path} ${r.status}: ${text.slice(0, 200)}`)
+async function callInternal(path: string, body: unknown, timeoutMs: number = 12000): Promise<any> {
+  // v10.1.45: timeout guard. Without this, a hung classifier or phraser
+  // call holds the whole edge function until Supabase's 150s default
+  // timeout, by which time Twilio has retried + customer has waited
+  // forever. 12s leaves headroom for the 5s photo-burst debounce + DB
+  // queries + send-sms within Twilio's 15s webhook window.
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+    if (!r.ok) {
+      const text = await r.text()
+      throw new Error(`${path} ${r.status}: ${text.slice(0, 200)}`)
+    }
+    return await r.json()
+  } catch (e: any) {
+    if (e?.name === 'AbortError') {
+      throw new Error(`${path} timeout after ${timeoutMs}ms`)
+    }
+    throw e
+  } finally {
+    clearTimeout(timeoutId)
   }
-  return await r.json()
 }
 
 async function fetchRecentTurns(sb: any, contactId: string, limit = 4): Promise<Array<{ role: 'customer' | 'bot'; text: string }>> {
@@ -482,6 +499,48 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       transitionResult = { ...transitionResult, next: targetState, intent: undefined }
     }
 
+    // v10.1.45 STUCK-STATE ESCALATION CAP (Patricia sim 2026-05-07)
+    //
+    // When off_topic_question self-loops repeatedly at the same state,
+    // the customer is deflecting and the conversation is going nowhere.
+    // Without a cap, this loops forever. Cap at 3 consecutive off-topic
+    // self-loops on a given state, then auto-escalate to NEEDS_CALLBACK.
+    // Counter is per-state, stored in qualification_data, increments only
+    // when the SAME state self-loops on off_topic_question, resets on any
+    // forward progress.
+    {
+      const qdNow: any = contact.qualification_data || {}
+      const stuckKey = `stuck_offtopic_at_${contact.bot_state}`
+      const isOffTopicSelfLoop =
+        classifier?.label === 'off_topic_question' &&
+        transitionResult.next === contact.bot_state &&
+        !TERMINAL_STATES.has(transitionResult.next)
+      if (isOffTopicSelfLoop) {
+        const next = (qdNow[stuckKey] || 0) + 1
+        qdNow[stuckKey] = next
+        // Carry forward into newQd writes downstream by mutating ctx,
+        // we apply via applySlotUpdates which preserves prior qd. The
+        // cap kicks in when this would be the THIRD reply on the same
+        // off_topic_question loop.
+        if (next >= 3) {
+          transitionResult = {
+            ...transitionResult,
+            next: 'NEEDS_CALLBACK',
+            intent: `customer has deflected with off_topic_question 3+ times at ${contact.bot_state}; escalate to Key warmly. Do NOT shame the customer or list their questions back. Use the standard NEEDS_CALLBACK fallback.`,
+            fallback: SM_STATES.NEEDS_CALLBACK?.fallback?.(ctx) || 'No problem. I will have Key follow up with you personally on this one. He will reach out shortly.',
+          }
+        }
+        // Stash on contact.qualification_data so applySlotUpdates merges it.
+        contact.qualification_data = qdNow
+      } else if (transitionResult.next !== contact.bot_state) {
+        // Forward progress, reset all stuck counters
+        for (const k of Object.keys(qdNow)) {
+          if (k.startsWith('stuck_offtopic_at_')) delete qdNow[k]
+        }
+        contact.qualification_data = qdNow
+      }
+    }
+
     // v10.1.33, at AWAIT_EMAIL, if customer provided email + address in
     // the same message AND email isn't a real typo, skip both
     // CHECK_EMAIL_TYPO and AWAIT_ADDRESS_CONFIRM and go straight to RECAP.
@@ -555,6 +614,12 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     // v10.1.37, apply scope-mismatch flags computed earlier
     if (detectedOutOfScope) newQd.scope_mismatch_ats = true
     if (detectedOutOfArea) newQd.scope_mismatch_oosa = true
+    // v10.1.45 SEND-FAIL STATE-ROLLBACK PREP. Capture prior state so we
+    // can roll back bot_state if send-sms fails after the DB write.
+    // Without this, a transient send failure leaves the contact stuck at
+    // the next state but having never received the prompt for it. Their
+    // next inbound would be processed from the wrong state.
+    const priorBotState = contact.bot_state
     const stateUpdate: Record<string, unknown> = {
       bot_state: transitionResult.next,
       qualification_data: newQd,
@@ -764,6 +829,24 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       })
       if (!sendResp.ok) {
         const t = await sendResp.text()
+        // v10.1.45 SEND-FAIL ROLLBACK. The state was already advanced
+        // earlier (line ~620) before send-sms fired. If the customer
+        // never receives the bot's reply, their next inbound would be
+        // processed from the wrong state. Roll bot_state back to prior
+        // so the customer's next message resumes from where they were.
+        // qualification_data stays forward (we did learn things from
+        // the inbound). Best-effort: if rollback itself fails, log and
+        // throw the original send error.
+        try {
+          await sb.from('contacts').update({
+            bot_state: priorBotState,
+          }).eq('id', contact.id)
+          console.warn('[bot-engine] send failed, rolled bot_state back', {
+            contact_id: contact.id, from: transitionResult.next, to: priorBotState,
+          })
+        } catch (rbErr) {
+          console.error('[bot-engine] send-fail rollback ALSO failed', rbErr)
+        }
         throw new Error(`send-sms failed: ${sendResp.status} ${t.slice(0, 200)}`)
       }
       outcome = 'replied'

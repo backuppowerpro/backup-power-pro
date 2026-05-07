@@ -53,9 +53,32 @@ function pmWrite(notes: string, key: string, value: string): string {
   return value ? `__pm_${key}:${value}${txt ? '\n' + txt : ''}`.trim() : txt
 }
 
-// ── Twilio SMS ──
+// ── SMS sender (v10.1.45: OpenPhone-aware so internal alerts to Key
+// survive the Twilio A2P 10DLC review window. Honors same env var
+// wildcard the rest of the bot stack uses.) ──
 
 async function sendSms(to: string, body: string): Promise<void> {
+  const opTestPhones = (Deno.env.get('ASHLEY_OPENPHONE_TEST_PHONES') || '').split(',').map(s => s.trim()).filter(Boolean)
+  const useOpenPhone = opTestPhones.includes('*') || opTestPhones.includes(to)
+  if (useOpenPhone) {
+    const QUO_API_KEY = Deno.env.get('QUO_API_KEY') || ''
+    const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'
+    if (QUO_API_KEY) {
+      try {
+        const r = await fetch('https://api.openphone.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+          body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [to], content: body }),
+        })
+        if (!r.ok) console.error('[permit-morning-check] openphone send failed', r.status, await r.text())
+        return
+      } catch (e) {
+        console.error('[permit-morning-check] openphone fetch threw, falling through to Twilio', e)
+      }
+    } else {
+      console.error('[permit-morning-check] QUO_API_KEY missing, falling through to Twilio')
+    }
+  }
   const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
   const resp = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,

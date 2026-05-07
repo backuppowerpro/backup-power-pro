@@ -2651,7 +2651,7 @@ Deno.serve(async (req) => {
   // fails — we still want alex-agent to process the message.
   try {
     const { data: matchedContact } = await supabase
-      .from('contacts').select('id').eq('phone', fromPhone).limit(1).maybeSingle()
+      .from('contacts').select('id, stage').eq('phone', fromPhone).limit(1).maybeSingle()
     if (matchedContact?.id) {
       await supabase.from('messages').insert({
         contact_id: matchedContact.id,
@@ -2661,6 +2661,28 @@ Deno.serve(async (req) => {
         quo_message_id: quoMsgId,
         status: 'received',
       })
+
+      // v10.1.45 STAGE 1 -> 2 AUTO-ADVANCE for the Alex path. The 62-
+      // frozen-Stage-1 anomaly diagnosed 2026-05-07: NO code in the
+      // repo was advancing 1 -> 2 (only Stripe sets 4, sub-mark sets 9).
+      // Real customers all go through Alex, so the Alex path was where
+      // 62 contacts piled up. Bot-engine got the equivalent fix earlier;
+      // this is the matching fix for Alex. Stage 2 = "Responded" per CRM
+      // dropdown semantics. Idempotent.
+      const currentStage = Number((matchedContact as any).stage || 0)
+      if (currentStage === 1) {
+        try {
+          await supabase.from('contacts').update({ stage: 2 }).eq('id', matchedContact.id)
+          try {
+            await supabase.from('stage_history').insert([{
+              contact_id: matchedContact.id, from_stage: 1, to_stage: 2,
+            }])
+          } catch (_) { /* non-blocking */ }
+          console.log('[alex] auto-advanced stage 1->2 on first customer reply', matchedContact.id)
+        } catch (e) {
+          console.warn('[alex] stage 1->2 advance failed (non-blocking):', e)
+        }
+      }
     }
   } catch (e) { console.error('[alex] inbound persist failed:', e) }
 

@@ -532,5 +532,27 @@ Deno.serve(async (req) => {
     }
   }
 
+  // v10.1.45 (2026-05-07): piggyback comm-orchestrator on this hourly
+  // cron because the dedicated comm-orchestrator-hourly cron migration
+  // is blocked by 20260505* local-vs-remote drift. Until that's
+  // resolved, fire orchestrator at the end of each alex-followup-hourly
+  // run. Fire-and-forget: orchestrator has its own quiet hours and
+  // idempotent markers, can't double-fire customer SMS even if this
+  // runs more than expected.
+  try {
+    const SUPABASE_URL_2 = Deno.env.get('SUPABASE_URL') || ''
+    const SR_KEY_2 = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    if (SUPABASE_URL_2 && SR_KEY_2) {
+      fetch(`${SUPABASE_URL_2}/functions/v1/comm-orchestrator`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SR_KEY_2}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      }).catch(e => console.warn('[followup] comm-orchestrator piggyback failed', e))
+    }
+  } catch (e) { console.warn('[followup] orchestrator fire-off setup failed', e) }
+
   return new Response(JSON.stringify({ ok: true, processed }), { status: 200, headers: CORS })
 })

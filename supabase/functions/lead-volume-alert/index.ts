@@ -23,7 +23,34 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
+// v10.1.45 (2026-05-07): OpenPhone-aware so internal alerts to Key
+// don't get blocked by Twilio A2P 10DLC review. Honors the same
+// ASHLEY_OPENPHONE_TEST_PHONES wildcard the rest of the stack uses.
 async function sendSms(to: string, body: string): Promise<boolean> {
+  const opTestPhones = (Deno.env.get('ASHLEY_OPENPHONE_TEST_PHONES') || '').split(',').map(s => s.trim()).filter(Boolean)
+  const useOpenPhone = opTestPhones.includes('*') || opTestPhones.includes(to)
+  if (useOpenPhone) {
+    const QUO_API_KEY = Deno.env.get('QUO_API_KEY') || ''
+    const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'
+    if (QUO_API_KEY) {
+      try {
+        const r = await fetch('https://api.openphone.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+          body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [to], content: body }),
+        })
+        if (!r.ok) {
+          console.error('[lead-volume-alert] openphone send failed', r.status, await r.text())
+          return false
+        }
+        return true
+      } catch (e) {
+        console.error('[lead-volume-alert] openphone fetch threw', e)
+        return false
+      }
+    }
+    console.error('[lead-volume-alert] QUO_API_KEY missing, falling through to Twilio')
+  }
   const creds = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
   const form = new URLSearchParams({ From: TWILIO_FROM, To: to, Body: body })
   const res = await fetch(
