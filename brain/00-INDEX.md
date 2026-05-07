@@ -15,10 +15,11 @@ For any business / strategy / voice / design question, read in this order:
 5. **`brain/05-active-priorities.md`**, current 12-month destination, the pivot in progress, drainage map (orchestrator + permits as path workstreams), tripwires.
 6. **`brain/06-design-language.md`**, UX/UI canon. Two surface families (customer-facing polished vs. internal Minesweeper Brutalist), one-app-two-layouts rule, brand tokens, decision tree.
 7. **`brain/07-decisions-log.md`**, chronological record of captured decisions and their rationale. Useful for understanding WHY rules exist.
+8. **`brain/08-open-questions.md`**, gaps Key hasn't answered yet. Don't autonomously decide things on this list, surface them.
 
 ## For a session that has no file access (Claude.ai chat, fresh project)
 
-Read **`brain/PORTABLE-BRAIN.md`**, single-file self-contained dump that compresses the seven files above into a paste-once context.
+Read **`brain/PORTABLE-BRAIN.md`**, single-file self-contained dump that compresses the eight files above into a paste-once context.
 
 ## For a cloud agent / fresh checkout (no clone needed)
 
