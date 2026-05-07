@@ -141,7 +141,7 @@ After Key locked in the 5-pillar voice north star (warm, easy to talk to, trust 
 | Jen, ColdLead (returning 5 days later) | continues | Clean reconnection: "Yep, still here." No "thanks for getting back to us" stale customer-service. PASS. |
 | Steve, MultiGen (two generators) | COMPLETE | Primary picked cleanly, secondary captured for handoff. ONE finding: Ashley said "most 3500w units are 120V" when asked about second generator. That's a spec claim she shouldn't make solo. FIXED via prompt ban on "most X are Y" generalizations. |
 | Brad, The Liar (lied about owning, revealed via "landlord" mid-flow) | classifier missed it | THREE bugs surfaced: classifier didn't catch "landlord" as renter signal, state machine had no UNIVERSAL renter escape (only at GREETING + AWAIT_OWNERSHIP), volunteered-data scan missing keyword. FIXED all three: classifier now flags "landlord" + "let me ask my landlord" etc., state machine has new universal renter escape from any non-terminal state. |
-| Linda, Photo Spammer (5 photos in 30s) | mid-flow continued | Bot fired 5 separate replies, one per MMS. Phone-flooding UX hit + 5x LLM spend. Advisory lock serializes but doesn't dedupe. **NOT FIXED THIS WAVE** (fix is non-trivial: debounce window + queue table + scheduled processor). Documented as EXP-photo-burst-coalesce. |
+| Linda, Photo Spammer (5 photos in 30s) | mid-flow continued | Bot fired 5 separate replies, one per MMS. **FIXED v10.1.44**: 5-second debounce in bot-engine when inbound has media + state is photo-expecting. The LAST photo in a burst wins; earlier ones yield silent. Verified: 5-photo burst now gets 1 reply (target 1, was 5). |
 
 ## Round 4 verification results (post-v41 patches)
 
