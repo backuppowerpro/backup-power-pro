@@ -46,21 +46,37 @@ async function pingKeyViaSms(summary: string, priority: string, smsBodyOverride?
     body = `${prefix}: ${short}\n\nOpen CRM → Sparky tab.`
   }
 
-  const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
-  const resp = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({ To: KEY_CELL, From: TWILIO_FROM, Body: body }).toString(),
+  // v10.1.47: OpenPhone-aware so internal alerts to Key survive 10DLC review.
+  const opTestPhones = (Deno.env.get('ASHLEY_OPENPHONE_TEST_PHONES') || '').split(',').map(s => s.trim()).filter(Boolean)
+  const useOpenPhone = opTestPhones.includes('*') || opTestPhones.includes(KEY_CELL)
+  let resp: Response
+  if (useOpenPhone) {
+    const QUO_API_KEY = Deno.env.get('QUO_API_KEY') || ''
+    const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'
+    if (!QUO_API_KEY) {
+      console.error('[sparky-notify] QUO_API_KEY missing, falling through to Twilio')
+      const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
+      resp = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
+        { method: 'POST', headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ To: KEY_CELL, From: TWILIO_FROM, Body: body }).toString() },
+      )
+    } else {
+      resp = await fetch('https://api.openphone.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+        body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [KEY_CELL], content: body }),
+      })
     }
-  )
+  } else {
+    const auth = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
+    resp = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
+      { method: 'POST', headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ To: KEY_CELL, From: TWILIO_FROM, Body: body }).toString() },
+    )
+  }
   if (!resp.ok) {
     const err = await resp.text()
-    console.error('[sparky-notify] Twilio SMS failed:', err)
+    console.error('[sparky-notify] SMS failed:', err)
   } else {
     console.log('[sparky-notify] Pinged Key:', body.slice(0, 60))
   }

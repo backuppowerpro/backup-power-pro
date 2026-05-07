@@ -61,7 +61,33 @@ HARD RULES:
 - If the data is thin, send a thin digest. Don't pad.
 - If there's literally nothing worth saying, reply exactly "QUIET DAY" and nothing else — the caller will skip the send.`
 
+// v10.1.47: OpenPhone-aware so internal alerts to Key survive Twilio
+// 10DLC review window. Honors ASHLEY_OPENPHONE_TEST_PHONES wildcard.
 async function sendSms(to: string, body: string): Promise<boolean> {
+  const opTestPhones = (Deno.env.get('ASHLEY_OPENPHONE_TEST_PHONES') || '').split(',').map(s => s.trim()).filter(Boolean)
+  const useOpenPhone = opTestPhones.includes('*') || opTestPhones.includes(to)
+  if (useOpenPhone) {
+    const QUO_API_KEY = Deno.env.get('QUO_API_KEY') || ''
+    const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0ua'
+    if (QUO_API_KEY) {
+      try {
+        const r = await fetch('https://api.openphone.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
+          body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [to], content: body }),
+        })
+        if (!r.ok) {
+          console.error('[daily-digest] openphone send failed', r.status, await r.text())
+          return false
+        }
+        return true
+      } catch (e) {
+        console.error('[daily-digest] openphone fetch threw, fall through to Twilio', e)
+      }
+    } else {
+      console.error('[daily-digest] QUO_API_KEY missing, fall through to Twilio')
+    }
+  }
   const creds = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)
   const form = new URLSearchParams({ From: TWILIO_FROM, To: to, Body: body })
   const res = await fetch(
