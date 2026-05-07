@@ -1,5 +1,5 @@
 /**
- * bot-engine — Ashley's orchestrator.
+ * bot-engine, Ashley's orchestrator.
  *
  * v10.1.30 entry point. Two triggers:
  *
@@ -18,7 +18,7 @@
  *     - send-sms with the produced text (or fallback)
  *     - Terminal-state handoff to bot-handoff-notifier
  *
- * Auth: requireServiceRole — internal-only.
+ * Auth: requireServiceRole, internal-only.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -212,7 +212,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
   let outcome: 'replied' | 'silent' | 'error' = 'silent'
   let errorMsg: string | undefined
   try {
-    // v10.1.37 — per-contact advisory lock at handler entry. When 3 rapid-fire
+    // v10.1.37, per-contact advisory lock at handler entry. When 3 rapid-fire
     // messages arrive within seconds, the message_sid lock on each is unique
     // so they all bypass idempotency, then all check handoff_fired_at before
     // any can write it (race), all fire handoff. Per-contact lock serializes
@@ -250,7 +250,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
         { status: 200, headers: { 'content-type': 'application/json' } })
     }
 
-    // v10.1.36 — race-condition guard: if conversation already terminal AND
+    // v10.1.36, race-condition guard: if conversation already terminal AND
     // handoff already fired, drop subsequent rapid-fire messages so we don't
     // send 3 duplicate "Key will follow up" texts. Customer can still
     // re-engage via a fresh form submit; mid-flow at terminal is done.
@@ -324,7 +324,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       recent_turns: recentTurns,
     })
 
-    // v10.1.32 — suppress email_typo_suspected false-positives for legit
+    // v10.1.32, suppress email_typo_suspected false-positives for legit
     // custom domains. The classifier is over-eager: any long domain that
     // isn't gmail/yahoo/etc gets flagged. Only TRUST the typo flag when the
     // domain looks like a misspelling of a known provider (gmial, yahooo,
@@ -337,7 +337,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     }
 
-    // v10.1.33 — regex pre-extraction BEFORE state machine, so the SM can
+    // v10.1.33, regex pre-extraction BEFORE state machine, so the SM can
     // see whether email/address/last_name were captured this turn and route
     // accordingly. Without this, customer dumping "Goodson, x@y.com, 22 Main
     // St" at AWAIT_EMAIL routes to AWAIT_ADDRESS_CONFIRM (state machine only
@@ -359,7 +359,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     }
 
-    // v10.1.37 — out-of-scope + out-of-service-area detection. Compute
+    // v10.1.37, out-of-scope + out-of-service-area detection. Compute
     // flags here (BEFORE state machine) so we can override the transition.
     // Persisted to qd later in step 9 so they survive into handoff-notifier.
     const emailSeen = preExtracted.email || contact.email
@@ -399,7 +399,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     const ctx = buildSmCtx(contact, classifier)
     let transitionResult = smTransition(contact.bot_state, classifier.label, ctx)
 
-    // v10.1.37 — when scope-mismatch flags fire, force terminal so we
+    // v10.1.37, when scope-mismatch flags fire, force terminal so we
     // hand off to Key with clear out-of-scope context. Don't keep
     // grinding through qualification when the answer is "we don't do that".
     if (detectedOutOfScope || detectedOutOfArea) {
@@ -409,7 +409,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       transitionResult = { ...transitionResult, next: targetState, intent: undefined }
     }
 
-    // v10.1.33 — at AWAIT_EMAIL, if customer provided email + address in
+    // v10.1.33, at AWAIT_EMAIL, if customer provided email + address in
     // the same message AND email isn't a real typo, skip both
     // CHECK_EMAIL_TYPO and AWAIT_ADDRESS_CONFIRM and go straight to RECAP.
     // The state machine doesn't know about regex extraction or our typo
@@ -429,7 +429,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     }
 
-    // v10.1.34 — auto-advance through AWAIT_RUN when customer already gave
+    // v10.1.34, auto-advance through AWAIT_RUN when customer already gave
     // panel location at AWAIT_PANEL_PHOTO (eg "in the garage on the outside
     // wall"). Don't make them answer the same question twice. Detect via
     // panel_location in qualification_data OR by panel keywords in inbound.
@@ -454,7 +454,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     }
 
-    // v10.1.34b — guard against false-positive NEEDS_CALLBACK at
+    // v10.1.34b, guard against false-positive NEEDS_CALLBACK at
     // AWAIT_PANEL_PHOTO. Multi-clause messages like "panels in basement,
     // ill grab pic tomorrow" sometimes classify as off_topic_question →
     // NEEDS_CALLBACK terminal. If panel location is mentioned, treat as
@@ -479,7 +479,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     // 9. Persist slot updates + new state
     const newQd = applySlotUpdates(contact.qualification_data || {}, classifier, photoResult)
     if (transitionResult.onEnter) Object.assign(newQd, transitionResult.onEnter)
-    // v10.1.37 — apply scope-mismatch flags computed earlier
+    // v10.1.37, apply scope-mismatch flags computed earlier
     if (detectedOutOfScope) newQd.scope_mismatch_ats = true
     if (detectedOutOfArea) newQd.scope_mismatch_oosa = true
     const stateUpdate: Record<string, unknown> = {
@@ -536,8 +536,8 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }).eq('id', contact.id)
     } catch (_) { /* ignore */ }
 
-    // 11. Terminal handoff? (idempotent — only fire once per contact)
-    // v10.1.33 — was firing on every subsequent inbound when state stayed
+    // 11. Terminal handoff? (idempotent, only fire once per contact)
+    // v10.1.33, was firing on every subsequent inbound when state stayed
     // terminal, sending Key 2-3 duplicate handoff alerts. Track via
     // qualification_data.handoff_fired_at.
     if (TERMINAL_STATES.has(transitionResult.next)) {
@@ -563,19 +563,19 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       } else {
         console.log('[bot-engine] handoff already fired, skipping duplicate')
       }
-      // v10.1.35 — send a polite customer-facing reply on terminal states
+      // v10.1.35, send a polite customer-facing reply on terminal states
       // so the customer doesn't get crickets. Silent on STOPPED only (TCPA).
       // Vary the wording to feel less robotic.
       let terminalReply: string | null = null
       const fname = (contact.name ? String(contact.name).split(/\s+/)[0] : '').trim()
-      // v10.1.36 — don't prefix with first name if it matches the electrician's
+      // v10.1.36, don't prefix with first name if it matches the electrician's
       // name (creates "Key, let me have Key..." double-Key). Also skip generic
       // placeholders like "there" / "Lead".
       const skipName = !fname || /^(there|lead|customer|unknown|key)$/i.test(fname)
       const namePrefix = skipName ? '' : `${fname}, `
       switch (transitionResult.next) {
         case 'NEEDS_CALLBACK':
-          // v10.1.37 — scope-mismatch (whole-home) gets its OWN reply
+          // v10.1.37, scope-mismatch (whole-home) gets its OWN reply
           // explaining BPP only does inlet boxes for portable generators.
           // Was generic "Key will follow up" which left customers confused
           // about why we couldn't quote them right now.

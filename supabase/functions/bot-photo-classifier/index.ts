@@ -2,7 +2,7 @@
 // Reads a photo URL + expected subject, returns a vision-classifier result.
 // Uses Anthropic Opus 4.7 (vision) with the proven tool-call pattern.
 //
-// Auth: requireServiceRole — internal-only.
+// Auth: requireServiceRole, internal-only.
 
 import { requireServiceRole, allowRate } from '../_shared/auth.ts'
 
@@ -57,8 +57,8 @@ const OUTPUT_SCHEMA = {
 }
 
 interface PhotoClassifierInput {
-  photo_url?: string             // public/signed URL OR https URL — preferred
-  storage_path?: string          // path within mms-inbound bucket — fallback
+  photo_url?: string             // public/signed URL OR https URL, preferred
+  storage_path?: string          // path within mms-inbound bucket, fallback
   expected_subject: 'panel' | 'outlet' | 'either'
   conversation_context?: string
 }

@@ -49,11 +49,11 @@ const STATES: Record<string, any> = {
     // wiring), defaults to variant A. Bot-engine assigns the variant via
     // sha256(contact_id) before calling this state. Full spec at
     // bot-lab/experimentation/greeting-variants.md.
-    intent: 'KEY-VOICE: time-of-day greeting (Good morning/afternoon/evening per time_of_day_bucket), identify as Ashley at Backup Power Pro intake helping Key, use "I would be happy to" as the offer phrase. If form already pre-confirmed they have a generator, skip "do you have a generator" and go straight to voltage/amp confirmation paired with photo offer. Otherwise, ask if they already have a generator or are looking to get one. NEVER use "Hey [name]!" alone (too casual). NEVER duplicate the Quo auto-reply\'s "thanks for filling out the form" — that already fired. NOTE: in production, the GREETING is templated (not LLM-generated) and selected via ctx.greeting_variant per EXP-008. The phraser is not normally called for GREETING in v10.1.',
+    intent: 'KEY-VOICE: time-of-day greeting (Good morning/afternoon/evening per time_of_day_bucket), identify as Ashley at Backup Power Pro intake helping Key, use "I would be happy to" as the offer phrase. If form already pre-confirmed they have a generator, skip "do you have a generator" and go straight to voltage/amp confirmation paired with photo offer. Otherwise, ask if they already have a generator or are looking to get one. NEVER use "Hey [name]!" alone (too casual). NEVER duplicate the Quo auto-reply\'s "thanks for filling out the form", that already fired. NOTE: in production, the GREETING is templated (not LLM-generated) and selected via ctx.greeting_variant per EXP-008. The phraser is not normally called for GREETING in v10.1.',
     fallback: ({ first_name, greeting_variant, time_of_day_bucket }) => {
       const name = first_name || 'there';
       const variant = greeting_variant || 'A';
-      // v10.1.12 — time-of-day awareness. When the form fires after 9pm
+      // v10.1.12, time-of-day awareness. When the form fires after 9pm
       // local, the bot opens with "I know it's late, no rush, tomorrow
       // morning works as well" instead of pushing the customer to engage
       // immediately. Verbatim Key pattern from real corpus.
@@ -73,29 +73,29 @@ const STATES: Record<string, any> = {
       //   - Ashley never claims to give the quote (Key's role)
       //   - Never promises "one quick question" (there are several)
       //   - "generator install" framing avoided (we install home connections,
-      //     not generators) — except in variant A which Key approved as-is
+      //     not generators), except in variant A which Key approved as-is
       //   - Whenever Key is mentioned, his role as electrician is clarified
       //     ("our electrician Key" not just "Key")
       switch (variant) {
         case 'B':
-          // HUMAN-ANCHOR — Key named explicitly as the electrician handling
+          // HUMAN-ANCHOR, Key named explicitly as the electrician handling
           // the quote and install personally. (Phone number removed per Key
-          // feedback — phone in greeting can read as cold-call selling.)
+          // feedback, phone in greeting can read as cold-call selling.)
           return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro intake. Our electrician Key handles your quote and install personally. I'll just gather a few details for him. Mind if I ask a couple things?`;
 
         case 'C':
-          // FORM-FILL WARMTH — gratitude lead with "home connection for your
+          // FORM-FILL WARMTH, gratitude lead with "home connection for your
           // portable generator" framing per Key (we install the home-side
           // connection, not the generator itself). Clarifies Key as "our
           // electrician Key" so customer knows his role. Adds "to provide
-          // an accurate quote" so the WHY of the questions is upfront — per
+          // an accurate quote" so the WHY of the questions is upfront, per
           // trust-research delta on stating the why before asking.
           return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. Thanks for reaching out about a home connection for your portable generator. Happy to help get this rolling. Got a few minutes to walk through what our electrician Key needs to provide an accurate quote?`;
 
         case 'D':
-          // DIRECT CONVERSATIONAL — fixed: "home connection set up for your
+          // DIRECT CONVERSATIONAL, fixed: "home connection set up for your
           // portable generator" framing + asks for make and model (useful
-          // for Key, who looks up specs online — verified pattern in his
+          // for Key, who looks up specs online, verified pattern in his
           // 702-message OpenPhone corpus). Size isn't what we care about
           // (per Key 2026-05-03); make/model is.
           return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?`;
@@ -103,7 +103,7 @@ const STATES: Record<string, any> = {
         case 'A':
         default:
           // FLOW EXPECTATION. v10.1.11 (2026-05-03): "your generator install
-          // quote" was misleading — BPP does NOT install generators; we install
+          // quote" was misleading, BPP does NOT install generators; we install
           // the home-side connection (inlet + interlock) that lets the
           // customer's portable generator power their home during outages.
           // Corrected to "home connection quote for your generator" matching
@@ -121,7 +121,7 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'GREETING',  // self-loop, answer briefly + re-ask
       friendly_chitchat: 'GREETING',  // self-loop with intent "acknowledge chitchat + re-ask"
       // v10.1.6 (2026-05-03 brutal-test fix): GREETING variant D explicitly
-      // asks "do you have the make and model handy?" — customer answers
+      // asks "do you have the make and model handy?", customer answers
       // with a brand+model. Orchestrator runs generator-lookup, then
       // emits the lookup-aware label below. Without these transitions
       // the bot dumped to NEEDS_CALLBACK on every variant-D answer.
@@ -161,7 +161,7 @@ const STATES: Record<string, any> = {
     //
     // v10.1.4 (2026-05-03): 30A AMBIGUITY FIX. Some generators have a 30A
     // outlet that is 120V-only (NEMA TT-30R RV-style or NEMA L5-30R
-    // 120V locking) — NOT compatible with BPP install. The phrase "30 amp"
+    // 120V locking), NOT compatible with BPP install. The phrase "30 amp"
     // alone does NOT confirm BPP-compatible. Voltage AND prong count
     // matter:
     //   - L14-30R = 30A 240V 4-prong locking → COMPATIBLE
@@ -184,9 +184,9 @@ const STATES: Record<string, any> = {
     //   - lookup → voltage_selector_check (Honda EU7000iS) → flag
     //     voltage_pending=true, fire normal voltage check but Key alerts
     //   - lookup → unknown / brand-only → fire normal voltage check
-    intent: 'KEY-VOICE PATTERN: ask for confirmation that the generator has a 240V 30-amp or 50-amp outlet, AND offer the photo path in the SAME message. Verbatim Key example: "Perfect. I just wanted to confirm that it has a 240 volt 30 amp or 50 amp outlet on it. If you are unsure you can send a picture of the outlets whenever you get a chance." Use "Perfect." as the opener since the customer just said "yes" or similar to the GREETING. Add brief context if needed but DO NOT split off the photo offer into a separate turn — Key always pairs them. NOTE: orchestrator may have already done generator-spec lookup; if voltage_known=true via lookup, this state is skipped entirely (bot advances to AWAIT_OUTLET or AWAIT_PANEL_PHOTO). v10.1.9: when generator_lookup_result.matched===false && reason==="brand_only", phraser should ack the brand and ask for the model number BEFORE asking voltage — improves handoff data and gives Ashley a chance to lookup again.',
+    intent: 'KEY-VOICE PATTERN: ask for confirmation that the generator has a 240V 30-amp or 50-amp outlet, AND offer the photo path in the SAME message. Verbatim Key example: "Perfect. I just wanted to confirm that it has a 240 volt 30 amp or 50 amp outlet on it. If you are unsure you can send a picture of the outlets whenever you get a chance." Use "Perfect." as the opener since the customer just said "yes" or similar to the GREETING. Add brief context if needed but DO NOT split off the photo offer into a separate turn, Key always pairs them. NOTE: orchestrator may have already done generator-spec lookup; if voltage_known=true via lookup, this state is skipped entirely (bot advances to AWAIT_OUTLET or AWAIT_PANEL_PHOTO). v10.1.9: when generator_lookup_result.matched===false && reason==="brand_only", phraser should ack the brand and ask for the model number BEFORE asking voltage, improves handoff data and gives Ashley a chance to lookup again.',
     fallback: ({ generator_lookup_result } = {}) => {
-      // v10.1.9 (2026-05-03): brand-only lookup result — customer named a
+      // v10.1.9 (2026-05-03): brand-only lookup result, customer named a
       // brand but no model. Ack the brand + ask for model alongside voltage.
       if (generator_lookup_result && generator_lookup_result.matched === false && generator_lookup_result.reason === 'brand_only' && generator_lookup_result.brand) {
         const brand = generator_lookup_result.brand;
@@ -202,14 +202,14 @@ const STATES: Record<string, any> = {
     transitions: {
       gen_240v: 'AWAIT_OUTLET',  // they said 240V, need to clarify amperage
       affirmative: 'AWAIT_OUTLET',  // v10.1.32: bare "yes" to 240V Q = same as gen_240v
-      // v10.1.4 — 30A NOW DISAMBIGUATED:
+      // v10.1.4, 30A NOW DISAMBIGUATED:
       outlet_30a_4prong: 'AWAIT_PANEL_PHOTO',  // confirmed 240V 30A → BPP-compatible
       outlet_30a_3prong: 'DISQUALIFIED_120V',  // 30A but it's TT-30/L5-30 120V → soft DQ
       outlet_30a_unspecified: 'AWAIT_240V_RETRY',  // ambiguous, re-ask 4-prong vs 3-prong
       // Backwards-compat: legacy outlet_30a label routes to the
       // unspecified path so the bot verifies voltage before advancing.
       outlet_30a: 'AWAIT_240V_RETRY',
-      outlet_50a: 'AWAIT_PANEL_PHOTO',  // 50A is reliably 240V — no ambiguity
+      outlet_50a: 'AWAIT_PANEL_PHOTO',  // 50A is reliably 240V, no ambiguity
       outlet_unknown: 'AWAIT_OUTLET',  // v10.1.10: lookup compatible_either → customer picks 30 vs 50
       photo_received: 'AWAIT_PANEL_PHOTO',  // they sent outlet photo, voltage+amp confirmed offline
       // v10.1.10 (R2 fix): customer says "let me go look" / "I'll check" → soft-pause to CLARIFY_240V
@@ -222,7 +222,7 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_240V',  // self-loop with answer-briefly intent
       friendly_chitchat: 'AWAIT_240V',  // self-loop with chitchat-ack intent
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',  // skip ahead since voltage was paired
-      // v10.1.36 — was terminal-routing on legit clarifying Qs. Now self-loop.
+      // v10.1.36, was terminal-routing on legit clarifying Qs. Now self-loop.
       off_topic_question: 'AWAIT_240V',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_240V_RETRY',
@@ -234,7 +234,7 @@ const STATES: Record<string, any> = {
     // "30 amp" without specifying 4-prong vs 3-prong, this state asks
     // for the prong count. 4-prong = L14-30 (240V, compatible); 3-prong
     // = TT-30 or L5-30 (120V, not compatible). Photo path always works.
-    intent: 'KEY-VOICE: distinguish 30A 4-prong (L14-30, 240V, compatible) from 30A 3-prong (TT-30 or L5-30, 120V RV outlet, not compatible). Brief, neutral, photo-friendly. Pattern: "Got it, 30 amp. Just to nail down which one — is it the 4-prong twist-lock (the bigger one with 4 holes) or the 3-prong RV-style? A quick pic of the outlet works too if easier."',
+    intent: 'KEY-VOICE: distinguish 30A 4-prong (L14-30, 240V, compatible) from 30A 3-prong (TT-30 or L5-30, 120V RV outlet, not compatible). Brief, neutral, photo-friendly. Pattern: "Got it, 30 amp. Just to nail down which one, is it the 4-prong twist-lock (the bigger one with 4 holes) or the 3-prong RV-style? A quick pic of the outlet works too if easier."',
     fallback: () =>
       `Got it, 30 amp. Just to nail down which one: is it the 4-prong twist-lock (the bigger one with 4 holes) or the 3-prong RV-style? A quick pic of the outlet works too if easier.`,
     transitions: {
@@ -251,7 +251,7 @@ const STATES: Record<string, any> = {
   },
 
   CLARIFY_240V: {
-    // v10: Key-voice update — "no problem, no rush" softener mandatory
+    // v10: Key-voice update, "no problem, no rush" softener mandatory
     // v10.1.2 (2026-05-03 Justin test): added park-and-continue path.
     // When customer can't or won't send the outlet photo (e.g., generator
     // is in the box), the bot used to terminate to NEEDS_CALLBACK leaving
@@ -272,7 +272,7 @@ const STATES: Record<string, any> = {
       photo_received_panel: 'AWAIT_RUN',
       gen_240v: 'AWAIT_OUTLET',
       gen_120v: 'DISQUALIFIED_120V',
-      // v10.1.9 — when orchestrator runs lookup on a brand+model volunteered
+      // v10.1.9, when orchestrator runs lookup on a brand+model volunteered
       // at CLARIFY_240V (e.g., customer said "Westinghouse WGen7500" because
       // unboxing wasn't an option), the lookup-and-route override sets
       // label=outlet_30a_4prong / outlet_50a / outlet_30a_3prong. CLARIFY_240V
@@ -298,21 +298,21 @@ const STATES: Record<string, any> = {
   },
 
   AWAIT_OUTLET: {
-    // v10: this state now fires only as fallback — most cases skip via paired AWAIT_240V message.
+    // v10: this state now fires only as fallback, most cases skip via paired AWAIT_240V message.
     // Skip AWAIT_OWNERSHIP entirely (form filters); go straight to AWAIT_PANEL_PHOTO.
     //
     // v10.1.4: KEY name-correction. The verbatim Key pattern incorrectly
     // associated "30 amp" with "3-prong twist-lock" (which is the L14-30
-    // 4-prong 240V outlet — Key meant "the smaller round one" but mis-
+    // 4-prong 240V outlet, Key meant "the smaller round one" but mis-
     // described prong count). Updated intent to be accurate:
-    //   - L14-30R (30A 240V): 4-prong twist-lock — BPP compatible
-    //   - 14-50R (50A 240V):  4-prong straight-blade — BPP compatible
-    //   - TT-30R / L5-30R (30A 120V): 3-prong — NOT compatible
-    intent: 'KEY-VOICE: ask if the outlet is 30 amp 4-prong (L14-30, 240V, compatible) or 50 amp (14-50R, 240V, compatible), with photo offer paired in same message. Verbatim Key pattern: "The connection requires either a 30 amp 240V outlet or a 50 amp outlet on your generator. Does your generator have either of those? If you are unsure you can send a picture of your generator outlets." If customer answers "30 amp" without confirming 4-prong, route to AWAIT_240V_RETRY for prong-count clarification — some 30A outlets are 120V-only (TT-30R RV-style) and would NOT qualify.',
+    //   - L14-30R (30A 240V): 4-prong twist-lock, BPP compatible
+    //   - 14-50R (50A 240V):  4-prong straight-blade, BPP compatible
+    //   - TT-30R / L5-30R (30A 120V): 3-prong, NOT compatible
+    intent: 'KEY-VOICE: ask if the outlet is 30 amp 4-prong (L14-30, 240V, compatible) or 50 amp (14-50R, 240V, compatible), with photo offer paired in same message. Verbatim Key pattern: "The connection requires either a 30 amp 240V outlet or a 50 amp outlet on your generator. Does your generator have either of those? If you are unsure you can send a picture of your generator outlets." If customer answers "30 amp" without confirming 4-prong, route to AWAIT_240V_RETRY for prong-count clarification, some 30A outlets are 120V-only (TT-30R RV-style) and would NOT qualify.',
     fallback: () =>
       `The connection needs either a 30 amp 4-prong twist-lock or a 50 amp 240V outlet. Does the generator have either? A pic of the outlet works too if easier.`,
     transitions: {
-      // v10.1.4 — 30A disambiguation
+      // v10.1.4, 30A disambiguation
       outlet_30a_4prong: 'AWAIT_PANEL_PHOTO',
       outlet_30a_3prong: 'DISQUALIFIED_120V',
       outlet_30a_unspecified: 'AWAIT_240V_RETRY',
@@ -326,7 +326,7 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_OUTLET',
       friendly_chitchat: 'AWAIT_OUTLET',
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',
-      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      // v10.1.36, self-loop on off-topic Qs instead of terminal
       off_topic_question: 'AWAIT_OUTLET',
       stop_variant: 'STOPPED',
       unclear: 'NEEDS_CALLBACK',
@@ -358,7 +358,7 @@ const STATES: Record<string, any> = {
   },
 
   AWAIT_OWNERSHIP: {
-    // v10 BYPASSED IN DEFAULT FLOW — Key never asks ownership across 702 real
+    // v10 BYPASSED IN DEFAULT FLOW, Key never asks ownership across 702 real
     // messages. The lead form already filters to homeowners. This state only
     // fires if the customer VOLUNTEERS that they rent / mentions a landlord.
     // Then DQ_RENTER kicks in.
@@ -374,7 +374,7 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_OWNERSHIP',
       friendly_chitchat: 'AWAIT_OWNERSHIP',
       answered_with_impatience: 'AWAIT_PANEL_PHOTO',
-      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      // v10.1.36, self-loop on off-topic Qs instead of terminal
       off_topic_question: 'AWAIT_OWNERSHIP',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_OWNERSHIP_RETRY',
@@ -406,27 +406,27 @@ const STATES: Record<string, any> = {
     // If panel is on an INTERIOR WALL (interior of garage, basement,
     // utility closet, etc.) → need to know attic/crawlspace access
     // for cable routing. Routes to AWAIT_INSTALL_PATH for follow-up.
-    intent: 'KEY-VOICE: ask where the main panel is located AND clarify what "exterior wall" means upfront so customer doesn\'t get confused (homeowners often think "interior wall" because panel is inside the house, when actually the panel is on a wall that backs to the outside). v10.1.14 — verbose-but-clear question that defines exterior wall inline. NEVER claim Ashley does the install ("I install" banned — Ashley is intake).',
+    intent: 'KEY-VOICE: ask where the main panel is located AND clarify what "exterior wall" means upfront so customer doesn\'t get confused (homeowners often think "interior wall" because panel is inside the house, when actually the panel is on a wall that backs to the outside). v10.1.14, verbose-but-clear question that defines exterior wall inline. NEVER claim Ashley does the install ("I install" banned, Ashley is intake).',
     fallback: () =>
       `Thank you. Most main panels around here are mounted in the garage on an exterior wall (a wall that backs up to the outside of the house, where you could mount something on the other side). Is that your setup, or is it somewhere else?`,
     transitions: {
-      // v10.1.10 — customer volunteers contact info before answering panel
+      // v10.1.10, customer volunteers contact info before answering panel
       // location (multi-intent message). Route to AWAIT_EMAIL's email_provided
       // handler which then advances to RECAP / CHECK_EMAIL_TYPO normally.
       email_provided: 'AWAIT_EMAIL',
       address_confirmed: 'AWAIT_EMAIL',
       address_corrected: 'AWAIT_EMAIL',
       // v10.1.5 panel-location specific labels
-      // v10.1.14 — customer-facing clarification before continuing. Garage-exterior
+      // v10.1.14, customer-facing clarification before continuing. Garage-exterior
       // skips straight to inlet-location (best case). Interior/basement/etc.
       // routes through CONFIRM_PANEL_WALL_TYPE first to catch the common
       // "interior wall (because it's inside the house)" misclassification.
-      panel_garage_exterior: 'AWAIT_INLET_LOCATION',  // ideal case — confirm inlet placement
+      panel_garage_exterior: 'AWAIT_INLET_LOCATION',  // ideal case, confirm inlet placement
       panel_garage_interior: 'CONFIRM_PANEL_WALL_TYPE',  // could be either; verify
       panel_basement: 'CONFIRM_PANEL_WALL_TYPE',
       panel_interior_wall: 'CONFIRM_PANEL_WALL_TYPE',
-      panel_outdoor: 'AWAIT_INLET_LOCATION',  // sometimes panels are on the outside (especially in southern homes) — install is straightforward
-      panel_other: 'AWAIT_INSTALL_PATH',  // detached garage, unusual location — Key needs details
+      panel_outdoor: 'AWAIT_INLET_LOCATION',  // sometimes panels are on the outside (especially in southern homes), install is straightforward
+      panel_other: 'AWAIT_INSTALL_PATH',  // detached garage, unusual location, Key needs details
       // Backwards-compat: old labels
       affirmative: 'AWAIT_INLET_LOCATION',  // "yes garage exterior" → ideal, ask inlet
       run_short: 'AWAIT_INLET_LOCATION',
@@ -440,7 +440,7 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_RUN',
       friendly_chitchat: 'AWAIT_RUN',
       answered_with_impatience: 'AWAIT_EMAIL',
-      // v10.1.36 — self-loop on off-topic Qs instead of terminal
+      // v10.1.36, self-loop on off-topic Qs instead of terminal
       off_topic_question: 'AWAIT_RUN',
       stop_variant: 'STOPPED',
       unclear: 'AWAIT_RUN_RETRY',
@@ -451,7 +451,7 @@ const STATES: Record<string, any> = {
     // v10.1.14 (Tyler-test feedback): photo classifier returned moderate
     // confidence on main breaker presence. Bot asks customer to verify
     // before advancing rather than silently committing to a wrong path.
-    // Ashley is NOT an electrician — when uncertain, ask, don't guess.
+    // Ashley is NOT an electrician, when uncertain, ask, don't guess.
     intent: 'KEY-VOICE: politely ask customer to confirm a main breaker is present in the panel. The interlock kit needs a main breaker to work. Frame the question in everyday terms (no jargon). Examples: "Just to double-check, on the panel you sent, is there a big switch at the top labeled MAIN, or one larger breaker that controls everything? Sometimes those are the easiest way to spot a main panel."',
     fallback: () =>
       `Quick double-check on the panel. Is there a larger breaker at the top labeled MAIN or rated higher than the others (100A, 150A, 200A)? The install needs that to work.`,
@@ -470,7 +470,7 @@ const STATES: Record<string, any> = {
 
   CONFIRM_PANEL_WALL_TYPE: {
     // v10.1.14 (Tyler-test fix): homeowners often say "interior wall" when
-    // they actually mean "the panel is inside the house" — the wall itself
+    // they actually mean "the panel is inside the house", the wall itself
     // is still an exterior wall (one side faces inside, the other side
     // faces the outside of the house). Bot explicitly clarifies before
     // committing to attic/crawlspace cable routing path.
@@ -487,7 +487,7 @@ const STATES: Record<string, any> = {
       panel_garage_interior: 'AWAIT_INSTALL_PATH',
       panel_basement: 'AWAIT_INSTALL_PATH',
       negative: 'AWAIT_INSTALL_PATH',  // "no it's truly interior between rooms" → install path
-      // v10.1.14 — customer skips past wall-confirm by giving install path
+      // v10.1.14, customer skips past wall-confirm by giving install path
       // directly ("we have a crawlspace" implies interior wall already).
       // Skip AWAIT_INSTALL_PATH and route to AWAIT_INLET_LOCATION since
       // the install path is now known.
@@ -509,7 +509,7 @@ const STATES: Record<string, any> = {
     // distance from panel to inlet. Default install: inlet right outside
     // behind/near panel, 20ft cord standard. Custom: customer wants it
     // elsewhere (closer to where they store generator, around a corner).
-    // This is critical info Key needs for the quote — affects cord length,
+    // This is critical info Key needs for the quote, affects cord length,
     // labor, and conduit run.
     intent: 'KEY-VOICE: ask where the customer wants the inlet box mounted on the outside of the house, plus rough distance from the panel. Standard install puts it on the exterior right behind/near the panel with a 20ft cord. Some customers prefer it closer to where they keep the generator. Capture preference + distance for handoff.',
     fallback: () =>
@@ -519,7 +519,7 @@ const STATES: Record<string, any> = {
       inlet_default: 'AWAIT_EMAIL',
       inlet_custom: 'AWAIT_EMAIL',  // captured location preference, continue
       inlet_far: 'NEEDS_CALLBACK',  // distance > 20ft, Key needs to spec longer cord/conduit run
-      negative: 'AWAIT_INLET_LOCATION',  // "no not behind panel" — wait for them to specify
+      negative: 'AWAIT_INLET_LOCATION',  // "no not behind panel", wait for them to specify
       asking_clarifying_technical: 'AWAIT_INLET_LOCATION',
       asking_for_human: 'NEEDS_CALLBACK',
       stop_variant: 'STOPPED',
@@ -537,7 +537,7 @@ const STATES: Record<string, any> = {
     fallback: () =>
       `Thanks for that. Since the panel is on an interior wall, Key would route the cable through either the attic or crawlspace to reach the outside. Do you happen to have one of those accessible?`,
     transitions: {
-      // v10.1.14 — route through AWAIT_INLET_LOCATION before AWAIT_EMAIL so
+      // v10.1.14, route through AWAIT_INLET_LOCATION before AWAIT_EMAIL so
       // we capture inlet placement + distance after the cable-routing path
       // is known.
       attic_access: 'AWAIT_INLET_LOCATION',
@@ -556,7 +556,7 @@ const STATES: Record<string, any> = {
   },
 
   AWAIT_RUN_RETRY: {
-    // v10: also repurposed — soft retry on default install offer
+    // v10: also repurposed, soft retry on default install offer
     intent: 'KEY-VOICE: re-ask if the default install plan (right beside panel, 20 foot cord) works for them, more simply. If they want something different, accept it gracefully.',
     fallback: () => `No problem. Would the connection box right beside your main panel work for you? Or a different location?`,
     transitions: {
@@ -572,16 +572,16 @@ const STATES: Record<string, any> = {
   },
 
   AWAIT_EMAIL: {
-    // v10: REPURPOSED as combined CLOSE-INFO ask — Key always asks for last name,
+    // v10: REPURPOSED as combined CLOSE-INFO ask, Key always asks for last name,
     // email, AND address together at the END of the qualification flow. Verbatim Key
     // pattern (used 8+ times): "I would be happy to send over the quote for approval.
     // I just need your last name, email, and address" / "To complete the quote could
     // I get your last name, email, and address?"
-    intent: 'KEY-VOICE: ask for last name + email + install address combined in ONE close-info request. IDENTITY-TRANSLATION RULE: Key verbatim was "I would be happy to send over the quote" / "I will put a quote together" — but Ashley is intake, not the electrician. Translate to: "Key will put your quote together" / "Key will send the quote over" / use "we" for BPP-the-business action. v10.1.7: lead with thanks (customer just answered the install-path question). Bot output patterns: "Thank you. To complete the quote could I get your last name, email, and address?" or "Thanks for that. Key will put your quote together. To complete it could I get your last name, email, and address?" Acceptable opens: "Thank you." / "Thanks for that." / "Sounds good." / "Got it." / "Perfect." — rotate. This is the close — handing off to Key who will send the quote PDF.',
+    intent: 'KEY-VOICE: ask for last name + email + install address combined in ONE close-info request. IDENTITY-TRANSLATION RULE: Key verbatim was "I would be happy to send over the quote" / "I will put a quote together", but Ashley is intake, not the electrician. Translate to: "Key will put your quote together" / "Key will send the quote over" / use "we" for BPP-the-business action. v10.1.7: lead with thanks (customer just answered the install-path question). Bot output patterns: "Thank you. To complete the quote could I get your last name, email, and address?" or "Thanks for that. Key will put your quote together. To complete it could I get your last name, email, and address?" Acceptable opens: "Thank you." / "Thanks for that." / "Sounds good." / "Got it." / "Perfect.", rotate. This is the close, handing off to Key who will send the quote PDF.',
     fallback: () => `Thank you. To complete the quote could I get your last name, email, and address?`,
     transitions: {
       email_provided: 'CHECK_EMAIL_TYPO',  // typo-check the email; address may be in same message
-      address_confirmed: 'CHECK_EMAIL_TYPO',  // partial — address received, still need email check
+      address_confirmed: 'CHECK_EMAIL_TYPO',  // partial, address received, still need email check
       asking_for_human: 'NEEDS_CALLBACK',
       asking_if_human: 'AWAIT_EMAIL',
       asking_for_context: 'AWAIT_EMAIL',
@@ -596,13 +596,13 @@ const STATES: Record<string, any> = {
     // emits email_typo_suspected=true. If typo is NOT suspected, orchestrator
     // skips this state and goes straight to RECAP (v10: AWAIT_ADDRESS_CONFIRM
     // is now a fallback retry only since address is captured in AWAIT_EMAIL).
-    intent: 'confirm the spelling of an email that looks like a typo of a major domain (e.g. gmial -> gmail). Do not be patronizing — give them an out.',
+    intent: 'confirm the spelling of an email that looks like a typo of a major domain (e.g. gmial -> gmail). Do not be patronizing, give them an out.',
     fallback: () =>
       `Just to double-check, that's the right spelling? Looks close to a typo so wanted to confirm.`,
     transitions: {
       affirmative: 'RECAP',  // v10: skip AWAIT_ADDRESS_CONFIRM since address was in close-info
       address_corrected: 'RECAP',  // they corrected the email; address still on file
-      email_provided: 'CHECK_EMAIL_TYPO',  // they sent a different email — re-check
+      email_provided: 'CHECK_EMAIL_TYPO',  // they sent a different email, re-check
       asking_for_human: 'NEEDS_CALLBACK',
       stop_variant: 'STOPPED',
       unclear: 'CHECK_EMAIL_TYPO',
@@ -631,7 +631,7 @@ const STATES: Record<string, any> = {
   AWAIT_PANEL_PHOTO: {
     // v10: panel photo comes EARLY (after voltage/amp confirmed). Then we go to
     // AWAIT_RUN (default install offer) → AWAIT_EMAIL (combined close info).
-    intent: 'KEY-VOICE: ask for a photo of their main electrical panel and breakers with verified Key softener. IDENTITY-TRANSLATION RULE: Key verbatim was "I will also need" — but Ashley is intake. Translate to "Key will need" or "we will need" (BPP-business voice). Bot output patterns: (1) "To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance." (2) "Got it. To put your quote together we will also need a picture of your main electrical panel and breakers. I know it is late, no rush, tomorrow works as well." Use evening variant if time_of_day_bucket is "evening" or "late". Closing softener "no rush, whenever you get the chance" is non-negotiable Key voice — always include it. NEVER use first-person "I will need" / "I install" — Ashley is not the electrician.',
+    intent: 'KEY-VOICE: ask for a photo of their main electrical panel and breakers with verified Key softener. IDENTITY-TRANSLATION RULE: Key verbatim was "I will also need", but Ashley is intake. Translate to "Key will need" or "we will need" (BPP-business voice). Bot output patterns: (1) "To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance." (2) "Got it. To put your quote together we will also need a picture of your main electrical panel and breakers. I know it is late, no rush, tomorrow works as well." Use evening variant if time_of_day_bucket is "evening" or "late". Closing softener "no rush, whenever you get the chance" is non-negotiable Key voice, always include it. NEVER use first-person "I will need" / "I install", Ashley is not the electrician.',
     fallback: ({ photo_classification } = {}) => {
       // v10.1.6 (2026-05-03 brutal-test fix): when photo_correction fires,
       // the orchestrator passes the photo_classification result. Render
@@ -662,7 +662,7 @@ const STATES: Record<string, any> = {
     },
     transitions: {
       photo_received: 'AWAIT_RUN',  // v10: route to default-install-offer (renamed AWAIT_RUN intent)
-      // v10.1.14 — photo classifier moderate confidence on main breaker.
+      // v10.1.14, photo classifier moderate confidence on main breaker.
       // Bot asks customer to verify main breaker is present before advancing.
       photo_received_main_breaker_unsure: 'CONFIRM_MAIN_BREAKER',
       photo_will_send_later: 'AWAIT_PANEL_PHOTO',  // soft-pause, 24h reminder
@@ -678,7 +678,7 @@ const STATES: Record<string, any> = {
       outlet_30a_3prong: 'DISQUALIFIED_120V',
       outlet_30a_4prong: 'AWAIT_PANEL_PHOTO',
       outlet_50a: 'AWAIT_PANEL_PHOTO',
-      // amending — customer wants to revise an earlier slot
+      // amending, customer wants to revise an earlier slot
       amending_prior_answer: 'AWAIT_PANEL_PHOTO',  // routed via SLOT_TO_STATE; this entry just keeps the universal pathway from defaulting to NEEDS_CALLBACK
       asking_for_human: 'NEEDS_CALLBACK',
       asking_if_human: 'AWAIT_PANEL_PHOTO',
@@ -689,7 +689,7 @@ const STATES: Record<string, any> = {
       spouse_approval_needed: 'POSTPONED',
       referral_mentioned: 'AWAIT_PANEL_PHOTO',  // ack referral, continue
       dont_own_generator_yet: 'NEEDS_CALLBACK',
-      // v10.1.36 — was routing off_topic_question to NEEDS_CALLBACK terminal,
+      // v10.1.36, was routing off_topic_question to NEEDS_CALLBACK terminal,
       // killing conversations on legit clarifying Qs ("do you do Generac
       // generators?"). Now self-loop with brief acknowledgment intent.
       off_topic_question: 'AWAIT_PANEL_PHOTO',
@@ -704,12 +704,12 @@ const STATES: Record<string, any> = {
       `Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?`,
     transitions: {
       affirmative: 'SCHEDULE_QUOTE',
-      negative: 'NEEDS_CALLBACK',  // they spotted an error — let Key clarify
+      negative: 'NEEDS_CALLBACK',  // they spotted an error, let Key clarify
       address_corrected: 'AWAIT_ADDRESS_CONFIRM',  // they corrected the address in recap
-      amending_prior_answer: 'NEEDS_CALLBACK',  // they want to revise something — Key handles
+      amending_prior_answer: 'NEEDS_CALLBACK',  // they want to revise something, Key handles
       asking_for_human: 'NEEDS_CALLBACK',
       stop_variant: 'STOPPED',
-      // v10.1.33 — "thanks" / "great" / "sounds good" should advance to
+      // v10.1.33, "thanks" / "great" / "sounds good" should advance to
       // SCHEDULE_QUOTE (close-out). Was falling through to NEEDS_CALLBACK
       // and producing a duplicate handoff alert.
       friendly_chitchat: 'SCHEDULE_QUOTE',
@@ -718,25 +718,25 @@ const STATES: Record<string, any> = {
   },
 
   SCHEDULE_QUOTE: {
-    // v10: KEY-VOICE rotation — verified sign-offs only. No "y'all", "holler",
+    // v10: KEY-VOICE rotation, verified sign-offs only. No "y'all", "holler",
     // "talk soon", "catch ya". Use Key's actual sign-offs from real data:
     // "I would be happy to help with the project" (60+ uses), "let me know if
     // you have any questions" (37 uses), "Looking forward to it" (5 uses).
-    intent: 'KEY-VOICE: wrap up. SOFT commitment that Key will have the quote ready by tomorrow morning. v10.1.7: lead with thanks (customer just confirmed the recap — they have given their full info). Sign-off rotation (Key-real, rotate, never reuse same one in last 5 conversations): (1) "Thank you {name}. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions." (2) "Thanks for all of that. Key will review everything tonight and have the quote in your inbox by tomorrow morning." (3) "Thank you. I will pass this over to Key. He will send the quote over by tomorrow morning." (4) "Sounds good, thank you. Key will put your quote together. He will send it over by tomorrow morning. I would be happy to help if you have any questions in the meantime." (5) "Perfect, thanks for all of that. Quote will be in your inbox by tomorrow morning. Looking forward to helping out with this." Pick the variant that fits the register (terse=shorter, default=mid). NEVER use "y\'all", "y\'all\'ll", "holler", "talk soon", "catch ya", "have a good one". Those are fake-Key. Zero em-dashes anywhere.',
+    intent: 'KEY-VOICE: wrap up. SOFT commitment that Key will have the quote ready by tomorrow morning. v10.1.7: lead with thanks (customer just confirmed the recap, they have given their full info). Sign-off rotation (Key-real, rotate, never reuse same one in last 5 conversations): (1) "Thank you {name}. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions." (2) "Thanks for all of that. Key will review everything tonight and have the quote in your inbox by tomorrow morning." (3) "Thank you. I will pass this over to Key. He will send the quote over by tomorrow morning." (4) "Sounds good, thank you. Key will put your quote together. He will send it over by tomorrow morning. I would be happy to help if you have any questions in the meantime." (5) "Perfect, thanks for all of that. Quote will be in your inbox by tomorrow morning. Looking forward to helping out with this." Pick the variant that fits the register (terse=shorter, default=mid). NEVER use "y\'all", "y\'all\'ll", "holler", "talk soon", "catch ya", "have a good one". Those are fake-Key. Zero em-dashes anywhere.',
     fallback: ({ first_name } = {}) => {
       const name = first_name && first_name !== 'there' ? `, ${first_name}` : '';
       return `Thank you${name}. Key will put the quote together and send it over by tomorrow morning. Let me know if you have any questions.`;
     },
     transitions: {
-      // Terminal-ish state — most replies route to COMPLETE
+      // Terminal-ish state, most replies route to COMPLETE
       affirmative: 'COMPLETE',
       negative: 'NEEDS_CALLBACK',
       asking_for_human: 'NEEDS_CALLBACK',
-      // v10.1.32 — "thanks", "great", "sounds good" all classify as friendly_chitchat
+      // v10.1.32, "thanks", "great", "sounds good" all classify as friendly_chitchat
       // and should resolve as COMPLETE (customer is acknowledging the wrap-up, not
       // raising a concern). Without this they fall to NEEDS_CALLBACK default.
       friendly_chitchat: 'COMPLETE',
-      photo_correction: 'AWAIT_PANEL_PHOTO',  // customer wants to replace the photo — rewind
+      photo_correction: 'AWAIT_PANEL_PHOTO',  // customer wants to replace the photo, rewind
       photo_received: 'SCHEDULE_QUOTE',  // additional photos append to extras (P35)
       stop_variant: 'STOPPED',
       unclear: 'COMPLETE',  // they probably said "thanks" or similar
@@ -769,7 +769,7 @@ const STATES: Record<string, any> = {
       // before transition() is called. The transitions below are the
       // "did not return" / "returned with explicit signals" paths.
       affirmative: 'POSTPONED_RESUME',  // "yes ready to continue", "ok bill is on board"
-      negative: 'POSTPONED',  // "still need to think" — stay paused
+      negative: 'POSTPONED',  // "still need to think", stay paused
     },
     terminal: false,  // CHANGED: was true, now soft-resumable
     onEnter: { warm_pause: true },  // signal for handoff-notifier to send softer notification
@@ -789,20 +789,20 @@ const STATES: Record<string, any> = {
   },
 
   DISQUALIFIED_120V: {
-    // v10: KEY-VOICE — verified verbatim soft DQ pattern from data:
+    // v10: KEY-VOICE, verified verbatim soft DQ pattern from data:
     // "Ok. At the moment that only outputs 120 volts so when you upgrade get one with a 240 volt outlet"
     //
     // v10.1.3 (2026-05-03 Key feedback after Justin test):
-    // 1. HEDGE the DQ slightly — bot lookup might be wrong (database error,
+    // 1. HEDGE the DQ slightly, bot lookup might be wrong (database error,
     //    typo, ambiguous brand). Use "looks like" / "from what I can see".
-    // 2. EXPLICIT future-install offer — "if you upgrade later we would
+    // 2. EXPLICIT future-install offer, "if you upgrade later we would
     //    still be happy to help."
-    // 3. NOT terminal anymore — accept follow-up questions about
+    // 3. NOT terminal anymore, accept follow-up questions about
     //    recommendations. The phraser handles tiered response:
     //    - general spec request → "at least 240V, around 5,000W
     //      minimum" (Key approved guidance)
     //    - specific model request → defer to Key + notify Key
-    intent: 'KEY-VOICE: hedged soft DQ. Frame as "looks like / from what I can see" rather than absolute. Offer future-install. Verbatim Key pattern + v10.1.3 hedge: "Got it, {gen_brand_model}. Looks like that one outputs 120 volts only and would not work with our setup. If you upgrade to a 240V generator down the road, we would be happy to help with the install then." DO NOT proactively offer generator recommendations — wait for customer to ask.',
+    intent: 'KEY-VOICE: hedged soft DQ. Frame as "looks like / from what I can see" rather than absolute. Offer future-install. Verbatim Key pattern + v10.1.3 hedge: "Got it, {gen_brand_model}. Looks like that one outputs 120 volts only and would not work with our setup. If you upgrade to a 240V generator down the road, we would be happy to help with the install then." DO NOT proactively offer generator recommendations, wait for customer to ask.',
     fallback: ({ gen_brand_model }) => {
       // v10.1.6 (2026-05-03 brutal-test fix): when no brand+model is in
       // ctx (DQ via 30A 3-prong path or just "120 volt only"), the prior
@@ -815,13 +815,13 @@ const STATES: Record<string, any> = {
       return `Got it. Looks like that outlet is 120 volts only. Our install needs a 240V outlet (the larger 4-prong twist-lock or the 50-amp). If you upgrade down the road we would be happy to help with the install then.`;
     },
     transitions: {
-      // v10.1.3 — accept follow-up questions instead of terminating
+      // v10.1.3, accept follow-up questions instead of terminating
       asking_clarifying_technical: 'DISQUALIFIED_120V',  // self-loop, phraser handles tiered recommendation response
       asking_for_human: 'NEEDS_CALLBACK',
       // dont_own_generator_yet fires when customer says "ok i'll get a different one, what should i get"
       dont_own_generator_yet: 'DISQUALIFIED_120V',  // self-loop, phraser gives general spec or defers specific
-      affirmative: 'DISQUALIFIED_120V',  // "ok thanks" — stay parked
-      negative: 'DISQUALIFIED_120V',     // "ok bummer" — stay parked
+      affirmative: 'DISQUALIFIED_120V',  // "ok thanks", stay parked
+      negative: 'DISQUALIFIED_120V',     // "ok bummer", stay parked
       // v10.1.3 LOOKUP-CORRECTION PATHS: the bot's hedge ("Looks like...")
       // explicitly invites the customer to correct us if our generator-spec
       // lookup was wrong. If they do (say it actually has 240V, or send
@@ -831,7 +831,7 @@ const STATES: Record<string, any> = {
       outlet_50a: 'AWAIT_PANEL_PHOTO',
       photo_received: 'AWAIT_PANEL_PHOTO',
       stop_variant: 'STOPPED',
-      // unclear after the DQ message — assume conversation winding down
+      // unclear after the DQ message, assume conversation winding down
       unclear: 'DISQUALIFIED_120V',
     },
     terminal: false,  // CHANGED v10.1.3: was true, now soft-terminal (accepts followups)
@@ -869,7 +869,7 @@ const STATES: Record<string, any> = {
   },
 
   STOPPED: {
-    intent: null,  // no outbound after STOP — TCPA
+    intent: null,  // no outbound after STOP, TCPA
     fallback: () => null,
     transitions: {},
     terminal: true,
@@ -877,7 +877,7 @@ const STATES: Record<string, any> = {
   },
 };
 
-// Pure transition function — the heart of the bot.
+// Pure transition function, the heart of the bot.
 //
 // `ctx` may contain:
 //   - first_name, address_on_file (for fallback rendering)
@@ -932,7 +932,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
       };
     }
     // Don't own generator yet → NEEDS_CALLBACK so Key can recommend.
-    // v10.1.3: states can OVERRIDE this universal escape — DISQUALIFIED_120V
+    // v10.1.3: states can OVERRIDE this universal escape, DISQUALIFIED_120V
     // has its own dont_own_generator_yet self-loop because the customer
     // already had a 120V unit and is now asking what to upgrade to. The
     // phraser handles tiered response (general spec / specific defer).
@@ -996,7 +996,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
         amended: true,
       };
     }
-    // Unknown slot — fall through to NEEDS_CALLBACK
+    // Unknown slot, fall through to NEEDS_CALLBACK
     return {
       next: 'NEEDS_CALLBACK',
       intent: STATES.NEEDS_CALLBACK.intent,
@@ -1084,7 +1084,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
 
   // ── v10.1.8 (2026-05-03 Alex KB cross-check + Spanish drop): NEW UNIVERSAL ESCAPES ──
 
-  // v10.1.9 — Out-of-service-area address. Orchestrator runs jurisdiction
+  // v10.1.9, Out-of-service-area address. Orchestrator runs jurisdiction
   // lookup post-`email_provided`; if city is in Anderson / Oconee / Cherokee /
   // Laurens / Greenwood, label gets overridden to `out_of_area_address` and
   // we route to DISQUALIFIED_OUT_OF_AREA with the courtesy message.
@@ -1098,7 +1098,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
-  // Non-English inbound (Spanish or other) — BPP is English-only. Per Key
+  // Non-English inbound (Spanish or other), BPP is English-only. Per Key
   // directive 2026-05-03: "no spanish, i dont speak it so i cant help them."
   // Bot sends a polite English message and routes to NEEDS_CALLBACK so Key
   // sees the lead. Bot does NOT attempt translation.
@@ -1114,19 +1114,19 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
 
   // Out-of-scope install: customer wants an Automatic Transfer Switch (ATS)
   // or whole-home automatic standby system. BPP installs the inlet+interlock
-  // for portable generators — different scope. Don't reject; route to Key
+  // for portable generators, different scope. Don't reject; route to Key
   // who can clarify scope and either pivot or refer out.
   if (label === 'out_of_scope_install' && !state.terminal) {
     return {
       next: 'NEEDS_CALLBACK',
-      intent: 'customer asked about an automatic transfer switch (ATS), whole-home standby generator, or fully-automatic setup — different scope than BPP\'s portable generator inlet+interlock install. Politely flag that this is a Key conversation (different scope, different price band) and hand off. Do NOT decline outright; Key may have options.',
+      intent: 'customer asked about an automatic transfer switch (ATS), whole-home standby generator, or fully-automatic setup, different scope than BPP\'s portable generator inlet+interlock install. Politely flag that this is a Key conversation (different scope, different price band) and hand off. Do NOT decline outright; Key may have options.',
       fallback: `Got it. The automatic / whole-home setup is a different scope than what we typically install (inlet + interlock for portable generators). Key would be happy to walk through what those options look like, I will have him reach out shortly.`,
       endConversation: true,
       onEnter: { handoff: true, scope_mismatch_ats: true },
     };
   }
 
-  // v10.1.12 — Urgent callback demand. Customer is panicking / time-pressed.
+  // v10.1.12, Urgent callback demand. Customer is panicking / time-pressed.
   // Routes to NEEDS_CALLBACK with priority flag so Key sees a red badge.
   if (label === 'urgent_callback_demand' && !state.terminal) {
     return {
@@ -1138,7 +1138,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
-  // v10.1.12 — Customer prefers email channel. Acknowledge + capture preference.
+  // v10.1.12, Customer prefers email channel. Acknowledge + capture preference.
   // Continue text-based qualification flow (still need answers to qualify).
   if (label === 'prefers_email_channel' && !state.terminal) {
     // At GREETING, the customer is opting for email before the bot has
@@ -1165,7 +1165,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
-  // v10.1.12 — Customer mentioned HOA approval. Brief ack + Key handles
+  // v10.1.12, Customer mentioned HOA approval. Brief ack + Key handles
   // HOA submittal package (some neighborhoods require). Continue flow.
   if (label === 'mentions_hoa' && !state.terminal) {
     const askPart = capFirst((state.fallback ? state.fallback(ctx) : '')
@@ -1196,16 +1196,16 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
-  // No need to redefine asking_about_surge_protector — it's already below.
+  // No need to redefine asking_about_surge_protector, it's already below.
 
-  // v10.1.10 — asking_clarifying_technical at specific states needs an
+  // v10.1.10, asking_clarifying_technical at specific states needs an
   // actual explanation, not just re-asking the same question. The plain
   // self-loop in transition table dumps to state.fallback() which doesn't
   // address the customer's confusion. Provide state-specific clarifications
   // that ARE self-contained (don't append the state's full fallback after,
   // which doubles message length).
   if (label === 'asking_clarifying_technical' && !state.terminal) {
-    // v10.1.11 — topic matcher. Detect whether the customer's question is
+    // v10.1.11, topic matcher. Detect whether the customer's question is
     // ON-TOPIC (related to current state's slot) or OFF-TOPIC (about
     // sizing, install procedure, soft-start kits, etc.). Off-topic
     // clarifying questions get a Key-call defer + state ask (don't
@@ -1239,7 +1239,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
           onEnter: { explained: true },
         };
       }
-      // OFF-TOPIC technical question — defer to Key + continue with state ask.
+      // OFF-TOPIC technical question, defer to Key + continue with state ask.
       const askPart = capFirst((state.fallback ? state.fallback(ctx) : '')
         .replace(/^(Thank you\.?|Thanks( for that)?\.?|Perfect\.?|Got it\.?|Sounds good\.?|No problem\.?)[\s,]*/i, '')
         .trim());
@@ -1254,7 +1254,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     // Fall through to default self-loop for states without a specific explanation
   }
 
-  // v10.1.9 — Surge-protector question (Alex Topic 7). Customer asked about
+  // v10.1.9, Surge-protector question (Alex Topic 7). Customer asked about
   // whole-home surge protector or surge protection in general. Brief defer
   // (Key handles surge recommendations on the install call) + continue.
   if (label === 'asking_about_surge_protector' && !state.terminal) {
@@ -1270,7 +1270,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
-  // ── Special-case for COVERAGE / SIZING questions (v10.1.7 — Key directive 2026-05-03) ──
+  // ── Special-case for COVERAGE / SIZING questions (v10.1.7, Key directive 2026-05-03) ──
   // Customer asks "will my generator power my home / run my AC / handle my appliances".
   // Ashley MUST NOT answer. Defer to Key, thank them for the question, and CONTINUE
   // the current state's question (don't dead-end to NEEDS_CALLBACK).
@@ -1284,7 +1284,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
       .trim());
     return {
       next: currentState,
-      intent: `customer asked a generator coverage / sizing / load question (in ctx.coverage_excerpt). Ashley MUST NOT answer — that is a Key call (he handles sizing and load personally). Lead with thanks for the question, defer it to Key explicitly ("Key handles sizing and load questions personally"), and CONTINUE with the current state's ask (do not dead-end). Zero em-dashes. Re-ask: ${state.intent}`,
+      intent: `customer asked a generator coverage / sizing / load question (in ctx.coverage_excerpt). Ashley MUST NOT answer, that is a Key call (he handles sizing and load personally). Lead with thanks for the question, defer it to Key explicitly ("Key handles sizing and load questions personally"), and CONTINUE with the current state's ask (do not dead-end). Zero em-dashes. Re-ask: ${state.intent}`,
       fallback: `That one's a Key call, he handles sizing and load personally. In the meantime, ${lcFirst(askPart)}`,
       endConversation: false,
       onEnter: { defer_coverage_to_key: true, coverage_excerpt: ctx.coverage_excerpt || null },
@@ -1298,7 +1298,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
   if (currentState === 'DISQUALIFIED_120V') {
     if (label === 'asking_clarifying_technical' || label === 'dont_own_generator_yet') {
       // Look at the customer's last message (extracted_value) for a
-      // specific brand+model — if found, defer to Key explicitly.
+      // specific brand+model, if found, defer to Key explicitly.
       const last = (ctx.extracted_value || ctx.customer_last_message || '').toLowerCase();
       const brandPattern = /(generac|champion|honda|westinghouse|predator|duromax|firman|ryobi|briggs|wen|harbor freight|northstar|cummins|kohler|onan|pulsar|powerstroke|powerhorse|simpson|titan)/i;
       const hasSpecificModel = brandPattern.test(last);
@@ -1313,7 +1313,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
       }
       return {
         next: 'DISQUALIFIED_120V',
-        intent: 'customer at DQ_120V asked for general guidance on what generator to get; give general spec only — what makes a generator work with the BPP install (240V outlet + 4-prong twist-lock or 50-amp). Do NOT name specific models. Do NOT promise a wattage will power their home or any specific appliances — sizing/load is Key\'s call. Lead with thanks.',
+        intent: 'customer at DQ_120V asked for general guidance on what generator to get; give general spec only, what makes a generator work with the BPP install (240V outlet + 4-prong twist-lock or 50-amp). Do NOT name specific models. Do NOT promise a wattage will power their home or any specific appliances, sizing/load is Key\'s call. Lead with thanks.',
         fallback: `Thanks for asking. For our install side, the generator just needs a 240V outlet, either the 4-prong twist-lock (L14-30) or the 4-prong 50-amp. As for the wattage to actually run your home, Key handles sizing and load questions personally and would walk through that with you.`,
         endConversation: false,
       };

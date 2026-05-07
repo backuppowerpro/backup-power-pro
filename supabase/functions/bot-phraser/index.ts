@@ -4,7 +4,7 @@
 // produced text is validated against the v10 hard-constraint regex; on
 // rejection we fall back to the state machine's hardcoded fallback.
 //
-// Auth: requireServiceRole — internal-only.
+// Auth: requireServiceRole, internal-only.
 
 import { requireServiceRole, allowRate } from '../_shared/auth.ts'
 
@@ -14,7 +14,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 import { SYSTEM_PROMPT_TEMPLATE } from './system-prompt.ts'
 
 // Hard-constraint regex per the locked v10 phraser spec. Output that fails
-// ANY of these is rejected — caller falls back to deterministic state-machine
+// ANY of these is rejected, caller falls back to deterministic state-machine
 // fallback text.
 const REJECT_PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: 'price_dollar', re: /\$\d/ },
@@ -26,7 +26,11 @@ const REJECT_PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: 'awesome_no_bang', re: /\bawesome\b(?!!)/i },
   { name: 'perfect_exclamation', re: /\bperfect!/i },
   { name: 'perfect_comma_midclause', re: /\bperfect,\s+(?!that's|i)/i },
-  { name: 'appreciate', re: /\b(I appreciate|appreciate (you|it))\b/i },
+  { name: 'appreciate', re: /\b(I appreciate|appreciate (you|it|your|the))\b/i },
+  // v10.1.41 (voice-judge 2026-05-07 carl-storm-urgency findings):
+  { name: 'i_just_want', re: /\bI(?:'m| just| simply)? (?:just )?want(?:ed|ing)? to\b/i },
+  { name: 'would_be_happy_broad', re: /\b(I|we)(?:'d| would| 'll)? be happy to\b/i },
+  { name: 'i_apologize', re: /\b(I apologize|my apologies|so sorry|truly sorry)\b/i },
   { name: 'hope_this_helps', re: /\b(I hope this helps|hope that helps)\b/i },
   { name: 'happy_to_help', re: /\b(happy to (help|assist))\b/i },
   { name: 'have_a_great_day', re: /\bhave a (great|wonderful|good) day\b/i },
@@ -39,10 +43,16 @@ const REJECT_PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: 'contrast_framing', re: /\bnot (just|only) [^.?!]+ but\b/i },
   { name: 'ing_tail', re: /\b(ensuring|making sure|keeping|getting) (you|y'all|everything) [a-z]+\b/i },
   { name: 'countdown', re: /\b(two more|three more|few more|last (quick )?(one|thing|couple|piece|bit)|one (more|last)|just one more|almost done|few more questions)\b/i },
+  // v10.1.41: regex restored after auto-sweep collapsed the literal em-dash.
+  // Em-dashes (Unicode U+2014) are banned in customer-facing copy per Key's
+  // hard rule. Pattern is the literal codepoint, escaped here as — so
+  // future text-replace passes can't mangle it.
   { name: 'em_dash', re: /—/ },
   { name: 'multiple_questions', re: /\?[^?]*\?/ },
   { name: 'too_long', re: /^.{281,}$/s },
-  { name: 'emoji_count', re: /([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}].*){2,}/u },
+  // v10.1.41: zero-emoji (was {2,} permitting one). P09 Brittney sim
+  // 2026-05-07 caught Ashley using 👍 once. Key's voice rule is no emoji.
+  { name: 'emoji_present', re: /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F600}-\u{1F64F}]/u },
   // v10 fake-Southern bans
   { name: 'v10_yall', re: /\by'all\b/i },
   { name: 'v10_yallll', re: /\by'all'll\b/i },
@@ -164,7 +174,7 @@ async function phrase(input: PhraserInput): Promise<PhraserOutput> {
       return { text, used_fallback: false }
     }
     lastReason = validation.reason || 'invalid'
-    console.warn('[bot-phraser] output rejected', lastReason, '— attempt', attempt + 1)
+    console.warn('[bot-phraser] output rejected', lastReason, ', attempt', attempt + 1)
   }
 
   return { text: input.fallback_text, used_fallback: true, rejection_reason: lastReason }

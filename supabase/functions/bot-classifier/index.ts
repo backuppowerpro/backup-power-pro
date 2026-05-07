@@ -2,7 +2,7 @@
 // Reads one inbound customer SMS, returns one structured classifier output.
 // Uses Anthropic Haiku 4.5 with the proven tool-call pattern for structured outputs.
 //
-// Auth: requireServiceRole — internal-only, callable from bot-engine / twilio-webhook.
+// Auth: requireServiceRole, internal-only, callable from bot-engine / twilio-webhook.
 
 import { requireServiceRole, allowRate } from '../_shared/auth.ts'
 
