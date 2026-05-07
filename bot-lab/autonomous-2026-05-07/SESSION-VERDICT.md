@@ -7,12 +7,24 @@
 
 ## TL;DR
 
-- **28+ LLM-driven persona simulations** across 5 rounds (18 baseline + 4 verification + 6 adversarial edge cases + ongoing v43 re-tests).
-- **All terminal states correct** except where the bug WAS the test (Liar persona surfaced real bugs, now fixed).
-- **12 production bugs surfaced and fixed** across four deploy waves (v10.1.40, v10.1.41, v10.1.42, v10.1.43).
-- **5-pillar voice north star locked in** at top of phraser system prompt: warm, easy to talk to, trust building, confident, professional.
-- Voice-judge baseline: 8.80/10 overall. After v41+v42 patches on 6-transcript spot-check: **8.83/10**, with the worst transcript (Carl 7.4) recovering all the way to **9.3** after desperation-tell bans.
-- Regression battery: **59/59 brutal scenarios PASS** through every change wave. 0 audit hits across 480+ outbound bot messages.
+- **35+ LLM-driven persona simulations** across 7+ rounds (18 baseline + 4 verification + 6 adversarial + 4 v43 re-tests + 3 v45/46 verifications + Canceler + photo-burst).
+- **All terminal states correct** except where the bug WAS the test (Liar + Canceler personas surfaced real routing bugs, both now fixed).
+- **20+ production bugs surfaced and fixed** across eight deploy waves (v10.1.40, .41, .42, .43, .44, .45, .46, .47).
+- **5-pillar voice north star locked in** at top of phraser system prompt + brain: warm, easy to talk to, trust building, confident, professional.
+- Voice-judge baseline: 8.80/10 overall. v45 full re-grade: 8.72 (surfaced em-dash + Awesome. + slang leaks). v46 patches deployed for those.
+- Regression battery: **59/59 brutal scenarios PASS** through every change wave. 0 audit hits across 600+ outbound bot messages.
+
+## Multi-wave roadmap executed (per Key directive 2026-05-07)
+
+| Wave | Focus | Status |
+|---|---|---|
+| 1 | Stuck-state cap + send-fail rollback + LLM timeouts | SHIPPED v10.1.45, verified |
+| 2 | Internal alerts (lead-volume, permit-morning-check) → OpenPhone | SHIPPED v10.1.45 |
+| 3 | Alex Stage 1→2 advance (the 62-frozen-leads fix) | SHIPPED v10.1.45 |
+| 4 | comm-orchestrator cron via alex-followup-hourly piggyback | SHIPPED v10.1.45 |
+| 5 | Voice-judge v45 corpus re-grade | SHIPPED, 3 fixes surfaced |
+| 6 | v46: em-dash+en-dash, Awesome any, slang regex, Canceler routing | SHIPPED v10.1.46 |
+| 7 | Build 2 jurisdictions.json playbook + comm-orchestrator integration | SHIPPED v10.1.47 |
 - **READY for Tyler-style live test** by Key (the final smoke step). NOT YET flipping `ASHLEY_ALLOWED_PHONES = "*"`. Per-dim averages still want one more pass to fully clear 9.0 across all 7 (Closing Rituals dipped slightly on 6-sample re-grade, suggesting recap-pool bypass of regex). Tyler test is the right next step before ramp.
 
 ---
