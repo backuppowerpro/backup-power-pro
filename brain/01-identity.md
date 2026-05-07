@@ -188,7 +188,7 @@ Implications for which paths are right-sized:
   - Surface major decisions and nuanced briefs in the evening window, not at 6am.
   - The CEO morning brief Key wakes up to is consumption-not-deep-work; keep it tight, action-oriented.
   - Schedule big-thinking proposals for the 8pm-12am block.
-  - Customer-side quiet hours (Ashley nudges, etc) stay 8am-9pm ET — that's the CUSTOMER's window, not Key's. Different layer.
+  - Customer-side quiet hours (Ashley nudges, etc) stay 8am-9pm ET, that's the CUSTOMER's window, not Key's. Different layer.
 
 ## Why this business
 

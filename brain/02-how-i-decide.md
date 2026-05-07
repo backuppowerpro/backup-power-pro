@@ -185,7 +185,7 @@ Trust the timestamp. Read the actual file/state, not the description of it. "The
 - Doesn't write "Thanks for being a valued customer" boilerplate
 - Doesn't promise specific times he might not honor
 - Doesn't talk down to customers (no "for your information," no "as I mentioned earlier")
-- Doesn't use em-dashes (`—`), anywhere. See [[My Voice]] for the full list.
+- Doesn't use em-dashes (`, `), anywhere. See [[My Voice]] for the full list.
 - Doesn't fake-Southern ("y'all," "holler," "talk soon," "catch ya")
 - Doesn't sign off with "have a great day" / "feel free to reach out" / "I appreciate"
 - Doesn't run an experiment without a decision rule and stopping condition

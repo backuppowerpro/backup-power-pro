@@ -51,7 +51,7 @@ When tempted to write a phrase that "sounds confident" but is unsupported, ask: 
 
 These appear in [[Identity]], in CLAUDE.md, and in the phraser regex. If Claude writes any of them, the message is wrong.
 
-- **`—` (em-dash)** anywhere. Not in customer copy, not in handoff SMS, not in commit messages, not in code comments, not in chat replies. Use a comma, period, semicolon, or restructure. (Repeated violations 2026-05-05; locked into CLAUDE.md as a hard rule.)
+- **`, ` (em-dash)** anywhere. Not in customer copy, not in handoff SMS, not in commit messages, not in code comments, not in chat replies. Use a comma, period, semicolon, or restructure. (Repeated violations 2026-05-05; locked into CLAUDE.md as a hard rule.)
 - **Specific time-of-day promises** ("by tomorrow morning," "by EOD," "this afternoon at 2"). Per Key 2026-05-05: installs sometimes block him from honoring those. Soft-commitment only ("once he's put it together," "once it's ready," "Key will send it your way").
 - **Manufactured scarcity / urgency.** "Only 3 spots left," "filling up fast," "won't last," "act now." Violates the honesty filter even when it converts.
 - **Manufactured guarantees.** "100% guaranteed," "fully guaranteed," "trust me / us." Real guarantees (price-lock, satisfaction, workmanship) are stated factually, not as a sales hammer.

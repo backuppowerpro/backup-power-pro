@@ -38,7 +38,7 @@ This is the single most important file in [[00 Key Index|Key/]] for Claude. Befo
 **Decision (Build 1):** Shipped `comm-orchestrator` edge function. Hourly cron pattern (quiet-hours-aware), stage 5/7/8 customer triggers, weekly Mon-9am Key digest of contacts stalled 14d+. Stage 4+ "Key handles personally" rule preserved (only permit-pipeline status sends auto-fire). Markers stored as `__orch_<trigger>:<iso>` on contacts.notes. Cron migration staged but waits on one manual db push (Supabase dashboard SQL editor) due to 20260505* migration drift.
 **Decision (brain auto-sync):** `scripts/brain/sync-from-wiki.sh` mirrors wiki/Key/ → brain/ with sanitization (strips dollar specifics, account balances, phone numbers). PORTABLE-BRAIN.md auto-regenerated as concatenation of the seven sanitized files. MEMORY.md footer updated to point at brain/ as canonical, wiki/00 Home.md as business knowledge, wiki/Key/ as per-machine workshop.
 **Decision (cloud-agent fetch):** Public github raw URL is the fetch path. `curl https://raw.githubusercontent.com/backuppowerpro/backup-power-pro/main/brain/PORTABLE-BRAIN.md` gets a fresh agent the full operating context with no auth. Documented in CLAUDE.md.
-**Reversibility:** All three changes are file-shaped + tracked. `git revert` undoes any of them. Comm-orchestrator carve-out (no customer SMS to stage 4+ except permit pipeline) is the one client-perception edge — but the function won't fire customer SMS without an explicit __orch trigger condition met, and DNC + ai_disabled gates run first.
+**Reversibility:** All three changes are file-shaped + tracked. `git revert` undoes any of them. Comm-orchestrator carve-out (no customer SMS to stage 4+ except permit pipeline) is the one client-perception edge, but the function won't fire customer SMS without an explicit __orch trigger condition met, and DNC + ai_disabled gates run first.
 **Refs:** [[Active Priorities#Top 3 in flight]], `supabase/functions/comm-orchestrator/index.ts`, `scripts/brain/sync-from-wiki.sh`, [[BPP/CLAUDE]].
 
 ### 2026-05-06: The hidden cost of inaction (spontaneous, mid-interview)
@@ -103,14 +103,14 @@ This is the single most important file in [[00 Key Index|Key/]] for Claude. Befo
 ### 2026-05-06: Round 5 (vault meta) Q20 + Q21
 **Q20 ("What's missing from the brain?"):** "I feel like I'm explaining UX/UI elements a ton."
 **The gap:** UX/UI preferences were scattered across the auto-memory file (`~/.claude/projects/.../memory/MEMORY.md`) and `wiki/CRM/Style Guide.md` but never consolidated into the wiki/Key/ brain. Future sessions had to re-learn from fragments.
-**Fix shipped:** Created `wiki/Key/Design Language.md` — canonical UX/UI reference. Consolidates: two surface families (customer-facing polished marketing vs internal Minesweeper Brutalist + 8-bit), one app two layouts, Claude Design first, design every feature affordance, iOS safe-area, smart-versions-of-basic-things, brand tokens, CRM bevel/transition/typography rules, customer-facing rules, anti-patterns, decision tree for ambiguous cases. Cross-links to `wiki/CRM/Style Guide.md` for the deeper CRM dive.
+**Fix shipped:** Created `wiki/Key/Design Language.md`, canonical UX/UI reference. Consolidates: two surface families (customer-facing polished marketing vs internal Minesweeper Brutalist + 8-bit), one app two layouts, Claude Design first, design every feature affordance, iOS safe-area, smart-versions-of-basic-things, brand tokens, CRM bevel/transition/typography rules, customer-facing rules, anti-patterns, decision tree for ambiguous cases. Cross-links to `wiki/CRM/Style Guide.md` for the deeper CRM dive.
 
 **Q21 ("Anything you don't want me to capture?"):** "No you are all good, the more the better."
 **Translation:** No privacy ceiling. Capture freely. Continue expanding the brain. (Common-sense filters still apply: don't volunteer specific financial numbers Key hasn't shared, don't speculate about family, don't fabricate.)
 
 **Round 5 complete. Interview complete.** All 21 questions captured plus the spontaneously-surfaced hidden-cost-of-inaction principle. Brain is rich enough to predict Key's reaction to most proposals.
 
-### 2026-05-06: Q19 (dream-job framing) — the unifying pattern of the whole interview
+### 2026-05-06: Q19 (dream-job framing), the unifying pattern of the whole interview
 **Context:** Interview Round 4 Q19 ("What gives you energy that you want more of?").
 **Answer captured (verbatim):** "I like orchestrating things, the person that makes high level decisions. My dream job would be self-learning all day to sharpen my mind to a point I could make 1 decision every so often that changes a trajectory in a large positive direction."
 **Why this is the most operationally-actionable answer in the interview:** It is the unifying frame for every other answer. Munger/Buffett/Thiel pattern: compound knowledge slowly, make rare high-leverage decisions. Q2 (captain), Q5 (fast pivot), Q11 (gut is data internalized), Q12 (destination bets), Q4 (long horizon), Q18 (drainage) are all instances of the same operating preference.
@@ -135,7 +135,7 @@ This is the single most important file in [[00 Key Index|Key/]] for Claude. Befo
 **Why this matters operationally:** This isn't customer service polish, it's trust preservation in a state where Key has no actionable update but the customer experiences silence as abandonment. The cost of silence is real (Q-hidden-cost-of-inaction principle directly applies).
 **Refs:** [[Active Priorities#Drainage map]], permit state machine in Build 2.
 
-### 2026-05-06: Q18 clarified — drainers are orchestration problems, not copy problems
+### 2026-05-06: Q18 clarified, drainers are orchestration problems, not copy problems
 **Context:** Q18 follow-up. Asked Key which layer of client communication drained.
 **Answer captured:** "Pretty much all communication and reminders and follow ups. Not hard but tricky when you have so many moving parts and so many contacts at different stages." Plus permits: "all different jurisdictions with different websites and processes."
 **Reframe:** Both drainers are not copy or process problems, they're **orchestration problems**. The friction is context-switching across many contacts at different stages and many jurisdictions with different rules. The mental tax of "who needs what next" is what burns, not the messages themselves.
@@ -164,7 +164,7 @@ This is the single most important file in [[00 Key Index|Key/]] for Claude. Befo
 1. Surface major decisions and nuanced briefs in the 8pm-12am window. That's when Key has leverage attention.
 2. CEO morning brief stays tight + action-oriented (consumption, not deep work).
 3. Schedule big-thinking proposals for late-evening firing, not 6am.
-4. Customer-side quiet hours (Ashley nudges, bot-reengagement) STAY 8am-9pm ET — that's the customer's window, not Key's. Separate concern.
+4. Customer-side quiet hours (Ashley nudges, bot-reengagement) STAY 8am-9pm ET, that's the customer's window, not Key's. Separate concern.
 5. ScheduleWakeup cadence in autonomous mode: when waiting for Key engagement on a decision, late-evening is the optimal fire time.
 **Refs:** [[Identity#Current life context]], `bot-reengagement` quiet-hours logic (unchanged for customer side).
 
@@ -172,7 +172,7 @@ This is the single most important file in [[00 Key Index|Key/]] for Claude. Befo
 **Context:** Interview Round 4 Q16 ("Things you've tried that didn't work").
 **Answer captured:** Lead companies, marketing companies, sales companies, receptionist companies. Four vendor categories, all burned.
 **The unifying pattern:** outsourcing customer-facing functions to vendors. Promises don't match Key's quality bar; customer perception (the irreversible from Q13) gets damaged.
-**Structural rule promoted to [[Avoid List]]:** **BPP does not outsource customer-facing functions.** Lead gen, marketing copy, sales, reception, customer conversations — all in-house (Key + Claude + tuned tooling). What CAN be outsourced: bookkeeping, taxes, infrastructure, install labor (with Q6 structure-on-Key's-terms).
+**Structural rule promoted to [[Avoid List]]:** **BPP does not outsource customer-facing functions.** Lead gen, marketing copy, sales, reception, customer conversations, all in-house (Key + Claude + tuned tooling). What CAN be outsourced: bookkeeping, taxes, infrastructure, install labor (with Q6 structure-on-Key's-terms).
 **Refs:** [[Avoid List#Outsourcing customer-facing functions to vendor services]], connects to Q6 (vendor pitches), Q13 (client perception irreversible), Q9 (the slick / pander archetype is what these vendors ship).
 
 ### 2026-05-06: No additional explicit rejections (Q15)
@@ -359,7 +359,7 @@ This is the single most important file in [[00 Key Index|Key/]] for Claude. Befo
 **Reversibility:** does not flip. Soft commitment is the correct stance regardless of operational improvements.
 **Refs:** [[My Voice]], [[Avoid List]] (entry: "By tomorrow morning"), `quote-due-watcher` function.
 
-### 2026-05-05: Em-dashes (`—`) banned everywhere Key writes or Claude writes for him
+### 2026-05-05: Em-dashes (`, `) banned everywhere Key writes or Claude writes for him
 **Context:** Em-dashes appeared in greeting variants, handoff SMS lines, code comments, and Claude's chat replies repeatedly across 2026-05-05.
 **Decision:** Hard ban. Anywhere. Use comma, period, semicolon, or restructure.
 **Why:** Brand voice rule. Em-dashes read as a writerly tic foreign to Key's small-shop tradesperson register.

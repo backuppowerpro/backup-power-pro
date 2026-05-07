@@ -32,7 +32,9 @@ No auth needed (public repo). Returns the full operating context as one paste.
 
 - `wiki/Key/` is the workshop where Key + Claude capture freely (per-machine, Obsidian).
 - `brain/` is the published version (tracked, redacted of specific financials, what travels).
-- **Auto-sync:** run `scripts/brain/sync-from-wiki.sh` after any `wiki/Key/` edit. The script copies wiki/Key/*.md → brain/*.md with sanitization (strips dollar figures, account balances, phone numbers) and refreshes PORTABLE-BRAIN.md as the concatenation. Then `git add brain/ && git commit && git push`. Don't edit brain/*.md directly — the next sync will overwrite.
+- **Auto-sync:** run `scripts/brain/sync-from-wiki.sh` after any `wiki/Key/` edit. The script copies wiki/Key/*.md → brain/*.md with sanitization (strips dollar figures, account balances, phone numbers, em-dashes) and refreshes PORTABLE-BRAIN.md as the concatenation. Then `git add brain/ && git commit && git push`. Don't edit brain/*.md directly, the next sync will overwrite.
+- **Validate:** run `scripts/brain/validate.sh` to enforce hard rules (no em-dashes, no dollar/phone leaks, all files present). Wired into the pre-commit hook so bad changes can't ship.
+- **Freshness:** see `brain/.last-synced` for the most recent sync timestamp.
 
 ## What's intentionally NOT in here
 

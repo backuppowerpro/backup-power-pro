@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run brain validation when brain/ or wiki/Key/ files
+# are part of the staged change. Blocks the commit if validation fails.
+#
+# Activate once per machine:
+#   git config core.hooksPath .githooks
+#
+# To skip in an emergency: git commit --no-verify (but fix the issue)
+
+set -uo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+STAGED=$(git diff --cached --name-only)
+
+# Only run if brain/ or wiki/Key/ changed.
+if echo "$STAGED" | grep -qE '^(brain/|wiki/Key/|scripts/brain/)'; then
+  if [[ -x "$REPO_ROOT/scripts/brain/validate.sh" ]]; then
+    "$REPO_ROOT/scripts/brain/validate.sh" || {
+      echo
+      echo "Pre-commit hook blocked. Fix the issues above, or run with --no-verify if you must."
+      exit 1
+    }
+  fi
+fi
+
+exit 0

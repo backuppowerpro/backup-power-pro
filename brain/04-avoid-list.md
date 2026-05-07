@@ -35,7 +35,7 @@ Removed 2026-05-05. Specific time-of-day promises Key can't always honor (instal
 
 ## Voice / Copy
 
-### Em-dashes (`—`)
+### Em-dashes (`, `)
 Permanent ban. See [[My Voice]]. Don't propose "but this one place a dash would read better." Use a comma or restructure.
 
 ### "Automated assistant" as the opening label
@@ -45,10 +45,10 @@ Replaced 2026-05-05 with "auto-text intake for Key" pattern in greeting v3. The 
 Permanent. "Only 3 spots left," "filling up fast," countdown timers. Violates honesty filter.
 
 ### Specific cringe-phrases banned (per Key 2026-05-05)
-- **"Act now"** — gimmicky.
-- **"Best in the business"** — cheesy.
-- **"Trust me on this"** — build trust through behavior, don't ask for it.
-- **"Competitive pricing"** — premium positioning, no race to the bottom.
+- **"Act now"**, gimmicky.
+- **"Best in the business"**, cheesy.
+- **"Trust me on this"**, build trust through behavior, don't ask for it.
+- **"Competitive pricing"**, premium positioning, no race to the bottom.
 All four are now in the phraser REJECT_PATTERNS regex.
 
 ### Desperation tells (NEVER sound desperate)
@@ -81,7 +81,7 @@ Permanent. The bot is not from a movie. Full ban list in [[My Voice]].
 ## Tools / Stack
 
 ### Outsourcing customer-facing functions to vendor services (the unifying rule)
-Per Key 2026-05-06 (Q16): Key has been burned by **lead companies, marketing companies, sales companies, and receptionist companies** — the four families of vendor services that promise to handle a customer-facing layer of the business.
+Per Key 2026-05-06 (Q16): Key has been burned by **lead companies, marketing companies, sales companies, and receptionist companies**, the four families of vendor services that promise to handle a customer-facing layer of the business.
 
 The structural pattern: any vendor that interfaces with Key's customers on Key's behalf will not match his quality bar, and customer perception is the most expensive thing to repair (per Q13: client perception is one of the two irreversibles). The four burns are not coincidences; they are instances of the same wrong shape.
 
