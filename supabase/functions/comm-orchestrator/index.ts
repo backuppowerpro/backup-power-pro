@@ -130,9 +130,34 @@ async function sendCustomerSms(contactId: string, body: string): Promise<{ ok: b
 
 // ── Copy bank — voice rules: no em-dashes, no desperation, no specific times,
 // no "happy to assist", first-name personalized, low-pressure ────────────────
+// v10.1.47: per-jurisdiction typical_days lookup. Source of truth is
+// permits/jurisdictions.json (Build 2). When jurisdiction is known, copy
+// references their actual typical timeline. When unknown, falls back to
+// generic phrasing. Inlined here to avoid an HTTP fetch from edge fn.
+function jurisdictionTypicalDays(jurisdiction: string | null): number | null {
+  if (!jurisdiction) return null
+  const j = jurisdiction.toLowerCase().replace(/\s+/g, '_')
+  const TABLE: Record<string, number> = {
+    'greenville_county': 10,
+    'city_of_greenville': 12,
+    'spartanburg_county': 14,
+    'city_of_spartanburg': 14,
+    'pickens_county': 12,
+  }
+  // Match by substring too: "Greenville County" -> greenville_county
+  for (const k of Object.keys(TABLE)) {
+    if (j.includes(k.replace(/_/g, '_')) || j === k || jurisdiction.toLowerCase().includes(k.replace(/_/g, ' '))) {
+      return TABLE[k]
+    }
+  }
+  return null
+}
+
 function copyPermitSubmitted3d(firstName: string, jurisdiction: string): string {
   const j = jurisdiction || 'the jurisdiction'
-  return `Hey ${firstName || 'there'}, quick update: permit is sitting with ${j} and we're a few days into their queue. Nothing's stuck on our end, just waiting for them to process. I'll text the moment it moves.`
+  const days = jurisdictionTypicalDays(jurisdiction)
+  const timing = days ? ` (they typically run ${days} business days)` : ''
+  return `Hey ${firstName || 'there'}, quick update: permit is sitting with ${j} and we're a few days into their queue${timing}. Nothing's stuck on our end, just waiting for them to process. I'll text the moment it moves.`
 }
 function copyPermitSubmitted7d(firstName: string, jurisdiction: string): string {
   const j = jurisdiction || 'the jurisdiction'
