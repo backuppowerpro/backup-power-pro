@@ -103,6 +103,16 @@ The em-dash strip script collapsed the literal em-dash regex `/—/` into `/, /`
 
 ---
 
+## Production-readiness audit findings (not blocking but worth knowing)
+
+**Failure-mode review of bot-engine inbound flow:**
+
+- ✓ Idempotency lock (advisory + bot_processed_messages dedup) prevents duplicate processing of the same message_sid
+- ✓ try/catch wraps full flow, errors recorded to bot_processed_messages in finally block
+- ✓ send-sms failure throws (does not silently succeed)
+- ⚠️ STATE-ADVANCE-BEFORE-SEND: state and qualification_data are persisted at line 485 BEFORE send-sms fires at line 687. If send-sms returns non-ok (OpenPhone hiccup, network error), the bot has advanced state forward and persisted qd, but the customer never received the reply. Their next inbound will be processed from the new state, potentially skipping the question they never saw. Fix options: (a) move state persistence to AFTER successful send, (b) retry send-sms on transient failures. Not critical (OpenPhone is reliable), but a known sharp edge.
+- ⚠️ No explicit timeouts on classifier or phraser fetch calls. If either hangs, the whole edge function eventually times out (~150s default). Customer eventually gets nothing back. Worth adding 10s timeouts with fallback to deterministic state-machine text.
+
 ## What's still needed before flipping the gate to clients
 
 1. **Round 4 sim** to verify v10.1.41 patches push averages over 9.0 across all 7 dims. Re-run Carl + Brittney + Sarah + 3 new personas (suggest: Beverly slow-responder, Trevor photo-sender, Pivot Pat amendment).
