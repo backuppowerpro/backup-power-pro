@@ -283,6 +283,26 @@ AWAIT_OWNERSHIP / AWAIT_OWNERSHIP_RETRY:
 - "owner", owns the home
 - "renter", rents
 
+v10.1.46 (Canceler persona sim 2026-05-07): NEW LABEL
+"customer_changed_mind" fires from any non-terminal state when the
+customer explicitly withdraws / cancels mid-flow. Phrases:
+- "never mind"
+- "nvm" / "nm"
+- "scratch that"
+- "I changed my mind"
+- "actually you know what, never mind"
+- "wait nope, gonna pass"
+- "drop it"
+- "cancel this"
+- "forget it"
+- "I am not interested anymore"
+
+Distinct from "negative" (which is "no" to a specific question).
+customer_changed_mind is global cancellation. Routes to POSTPONED
+with a "door's open whenever you're ready" pause, NOT to
+NEEDS_CALLBACK (which would commit Key to call them back, the
+opposite of what they asked for).
+
 v10.1.43 (Liar persona sim 2026-05-07): "renter" should ALSO fire at
 ANY non-terminal state, not just AWAIT_OWNERSHIP. Customer who said
 they owned earlier may reveal renting later via casual mentions like:

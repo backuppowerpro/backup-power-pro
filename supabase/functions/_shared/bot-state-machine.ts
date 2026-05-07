@@ -1104,6 +1104,24 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
+  // v10.1.46 (Canceler persona sim 2026-05-07): customer-changed-mind
+  // escape from any non-terminal state. "Never mind" / "scratch that" /
+  // "I changed my mind" mid-flow used to fall through to NEEDS_CALLBACK
+  // (since the negative label has no transition at most states),
+  // committing Key to call back, the opposite of what the customer
+  // asked for. Now: POSTPONED with paused_at_state preserved so a
+  // future "actually I'm interested again" comes back to where they
+  // left off cleanly.
+  if (label === 'customer_changed_mind' && !state.terminal) {
+    return {
+      next: 'POSTPONED',
+      intent: 'KEY-VOICE: customer withdrew mid-flow ("never mind" / "changed my mind"). Accept gracefully, no push-back, no asking why, no apology stacking. Leave a clean re-entry door: "no problem, just text us if you ever pick this back up." Premium posture.',
+      fallback: () => `No problem. The door's open whenever you're ready, just text us back.`,
+      endConversation: false,  // soft pause, customer can return
+      onEnter: { warm_pause: true, paused_at_state: currentState, paused_reason: 'changed_mind' },
+    };
+  }
+
   // v10.1.9, Out-of-service-area address. Orchestrator runs jurisdiction
   // lookup post-`email_provided`; if city is in Anderson / Oconee / Cherokee /
   // Laurens / Greenwood, label gets overridden to `out_of_area_address` and

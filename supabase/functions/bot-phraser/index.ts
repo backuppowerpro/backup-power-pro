@@ -23,7 +23,11 @@ const REJECT_PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: 'first_person_electrician', re: /\b(I'll install|I'll spec|I'll wire|I'll hook up|I'll quote|I'll come (out|by))\b/i },
   { name: 'ashley_claims_quote', re: /\bI(?:'ll| will| would be happy to)? (?:put together|write|send|prepare|create) (?:your |the )?quote\b/i },
   { name: 'ashley_claims_install', re: /\bI(?:'ll| will| would)? (?:set up|install|do) the (?:install|hook ?up|connection)\b/i },
-  { name: 'awesome_no_bang', re: /\bawesome\b(?!!)/i },
+  // v10.1.46: was `awesome\b(?!!)` which let "Awesome." pass because the
+  // negative-lookahead only excluded "!". The voice-judge across 24
+  // transcripts found "Awesome." still in 8. Strict ban now: any
+  // "awesome" rejects regardless of trailing punctuation.
+  { name: 'awesome_any', re: /\bawesome\b/i },
   { name: 'perfect_exclamation', re: /\bperfect!/i },
   { name: 'perfect_comma_midclause', re: /\bperfect,\s+(?!that's|i)/i },
   { name: 'appreciate', re: /\b(I appreciate|appreciate (you|it|your|the))\b/i },
@@ -47,7 +51,11 @@ const REJECT_PATTERNS: Array<{ name: string; re: RegExp }> = [
   // Em-dashes (Unicode U+2014) are banned in customer-facing copy per Key's
   // hard rule. Pattern is the literal codepoint, escaped here as — so
   // future text-replace passes can't mangle it.
-  { name: 'em_dash', re: /—/ },
+  // v10.1.46: expand from just em-dash (U+2014) to also catch en-dash
+  // (U+2013). Voice-judge found 10+ leaks across 24 transcripts. Some
+  // were en-dash, not em-dash — both look identical at typical SMS
+  // rendering and both violate Key's voice rule.
+  { name: 'em_dash', re: /[–—]/ },
   { name: 'multiple_questions', re: /\?[^?]*\?/ },
   { name: 'too_long', re: /^.{281,}$/s },
   // v10.1.41: zero-emoji (was {2,} permitting one). P09 Brittney sim
@@ -57,6 +65,17 @@ const REJECT_PATTERNS: Array<{ name: string; re: RegExp }> = [
   { name: 'v10_yall', re: /\by'all\b/i },
   { name: 'v10_yallll', re: /\by'all'll\b/i },
   { name: 'v10_holler', re: /\bholler\b/i },
+  // v10.1.46 (voice-judge 2026-05-07): north star slang ban not yet in
+  // regex. Add the explicit list. Note: "cool" is bot-tell, NOT customer
+  // word "cool" (we don't ban customer words). "ha\b" catches "ha" or
+  // "ha." but not "happy" or "hand". "gotcha" / "sweet" / "yep" are LLM
+  // tells of casual-buddy register.
+  { name: 'v10_cool', re: /\bcool\b/i },
+  { name: 'v10_ha', re: /\bha\b/i },
+  { name: 'v10_sweet', re: /\bsweet\b/i },
+  { name: 'v10_gotcha', re: /\bgotcha\b/i },
+  { name: 'v10_yep', re: /\byep\b/i },
+  { name: 'v10_right_on', re: /\bright on\b/i },
   { name: 'v10_talk_soon', re: /\btalk soon\b/i },
   { name: 'v10_yep', re: /\byep\b/i },
   { name: 'v10_cool_lowercase', re: /\bcool\b/i },

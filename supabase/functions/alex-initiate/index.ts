@@ -66,7 +66,7 @@ function getOpenerMessages(variant: Variant, firstName: string): string[] {
         ]
       case 'C':
         return [
-          `${hi}, this is Alex with Backup Power Pro. Thanks for filling out the form. Key, our electrician, will need a photo of your electrical panel to get your quote going. Whenever it is bright out tomorrow morning works great, no rush on our end.`,
+          `${hi}, this is Alex with Backup Power Pro. Thanks for filling out the form. Key, our electrician, will need a photo of your electrical panel to get your quote going. Whenever you have a bright moment to grab one, no rush on our end.`,
         ]
     }
   }
