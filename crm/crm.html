@@ -3674,93 +3674,68 @@ html.dark .tm-send:disabled{background:#252322;color:var(--text3)}
     <div class="modal-body" id="proposal-modal-body">
       <input type="hidden" id="p-contact-id">
 
-      <!-- Before creation: QB-integrated form -->
+      <!-- Before creation: V3 creator (sketch 2026-05-08) -->
       <div id="p-form">
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--text)">
           <strong id="p-contact-name"></strong>
           <div id="p-contact-addr" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
         </div>
 
+        <!-- 1. Amperage -->
         <div class="form-row">
-          <label>Amperage Recommendation</label>
-          <div style="display:flex;gap:4px;background:var(--bg);border-radius:var(--r-sm);padding:3px">
-            <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-30" onclick="pSetAmp('30')" style="flex:1;border-radius:calc(var(--r-sm) - 2px)">30A</button>
-            <button type="button" class="btn btn-sm p-amp-btn" id="p-amp-50" onclick="pSetAmp('50')" style="flex:1;border-radius:calc(var(--r-sm) - 2px)">50A</button>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="cv3-amp-pill" id="cv3-amp-30" onclick="cv3SetAmp('30')">30A</button>
+            <button type="button" class="cv3-amp-pill" id="cv3-amp-50" onclick="cv3SetAmp('50')">50A</button>
           </div>
         </div>
 
-        <!-- Run Length -->
+        <!-- 2. Length slider -->
         <div class="form-row">
-          <label>Run Length <span id="p-run-display" style="font-weight:800;color:var(--navy);float:right"></span></label>
-          <input type="range" min="5" max="80" step="5" value="5" id="p-run-slider" class="qb-range" oninput="pOnRunChange(this.value)" style="width:100%">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+            <label style="margin:0">Length</label>
+            <span id="cv3-len-display" style="font-family:'Outfit',sans-serif;font-weight:800;color:var(--navy);font-size:15px">5'</span>
+          </div>
+          <input type="range" min="5" max="100" step="5" value="5" id="cv3-len-slider" class="cv3-range" oninput="cv3SetLen(this.value)" style="width:100%">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:2px"><span>5'</span><span>100'</span></div>
         </div>
 
-        <!-- Add-ons -->
+        <!-- 3. Four toggle pills (cord, inlet, permit, peace of mind) -->
         <div class="form-row">
-          <label>Add-ons</label>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
-              <input type="checkbox" id="p-cord-check" checked onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
-              <span style="flex:1">Power transfer cord</span>
-              <span style="font-weight:600;color:var(--text2)" id="p-cord-price-lbl"></span>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
-              <input type="checkbox" id="p-main-breaker" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
-              <span style="flex:1">Main breaker replacement</span>
-              <span style="font-weight:600;color:var(--text2)">+$224</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
-              <input type="checkbox" id="p-twin-quad" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
-              <span style="flex:1">Panel space (twin/quad)</span>
-              <span style="font-weight:600;color:var(--text2)">+$129</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
-              <input type="checkbox" id="p-pom-check" onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
-              <span style="flex:1">Peace of Mind Package</span>
-              <span style="font-weight:600;color:var(--text2)">+$447</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:8px 10px;background:var(--bg);border-radius:var(--r-xs)">
-              <input type="checkbox" id="p-deposit-check" checked onchange="pRecalc()" style="width:16px;height:16px;accent-color:var(--navy)">
-              <span style="flex:1">Require deposit to book</span>
-              <span style="font-weight:600;color:var(--gold)" id="p-deposit-lbl">50% = $598</span>
-            </label>
+          <div class="cv3-toggle-grid">
+            <button type="button" class="cv3-tog" id="cv3-tog-cord"   onclick="cv3Tog('cord')">Cord</button>
+            <button type="button" class="cv3-tog" id="cv3-tog-inlet"  onclick="cv3Tog('inlet')">Inlet</button>
+            <button type="button" class="cv3-tog" id="cv3-tog-permit" onclick="cv3Tog('permit')">Permit</button>
+            <button type="button" class="cv3-tog" id="cv3-tog-pom"    onclick="cv3Tog('pom')">Peace of Mind</button>
           </div>
+          <div id="cv3-pom-helper" style="display:none;font-size:11px;color:var(--text3);margin-top:6px;font-style:italic">Visible to client as opt-in (not pre-checked).</div>
         </div>
 
-        <!-- Live Pricing Preview -->
-        <div style="background:var(--navy);border-radius:var(--r-md);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em">Customer sees</div>
-            <div id="p-total" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-top:2px">$1,197</div>
-            <div id="p-total-note" style="font-size:10px;color:rgba(255,255,255,.5)">+ surge offered on proposal page</div>
+        <!-- 4. + Line item / + Discount -->
+        <div class="form-row">
+          <div style="display:flex;gap:6px">
+            <button type="button" class="cv3-add" onclick="cv3AddLineItem()">+ Line Item</button>
+            <button type="button" class="cv3-add" id="cv3-add-discount-btn" onclick="cv3AddDiscount()">+ Discount</button>
           </div>
-          <div style="text-align:right">
-            <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em">Your profit</div>
-            <div id="p-profit" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:20px;color:var(--green);margin-top:2px"></div>
-          </div>
+          <div id="cv3-line-items" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
         </div>
 
-        <!-- Custom Line Items -->
-        <div class="form-row">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <label style="margin:0;color:var(--text3);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Extra Services</label>
-            <button type="button" onclick="pAddCustomItem()" id="p-add-item-btn" style="background:none;border:1px dashed var(--border);border-radius:var(--r-xs);padding:3px 10px;font-size:12px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px">
-              <span style="font-size:15px;line-height:1">+</span> Add service
-            </button>
+        <!-- 5. Total + Deposit -->
+        <div style="background:var(--navy);border-radius:var(--r-md);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em">Total</div>
+            <div id="cv3-total" style="font-family:'Outfit',sans-serif;font-weight:800;font-size:28px;color:#fff;margin-top:2px">$1,197</div>
+            <div id="cv3-pom-aside" style="display:none;font-size:10px;color:rgba(255,255,255,.55);margin-top:2px">PoM (you only): +$447 if client opts in</div>
           </div>
-          <div id="p-custom-items" style="display:flex;flex-direction:column;gap:6px"></div>
-          <!-- Discount -->
-          <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-top:4px;background:var(--bg);border-radius:var(--r-xs)">
-            <span style="font-size:13px;color:var(--text2);flex:1">Discount</span>
-            <span style="font-size:13px;font-weight:600;color:var(--text2)">−$</span>
-            <input type="number" id="p-discount-amt" min="0" step="1" placeholder="0" oninput="pRecalc()" style="width:80px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r-xs);font-size:13px;font-family:'Inter',sans-serif;background:var(--bg);text-align:right">
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px" id="cv3-deposit-wrap">
+            <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em">Deposit</div>
+            <button type="button" class="cv3-tog cv3-tog-dark" id="cv3-tog-deposit" onclick="cv3Tog('deposit')">50% to book</button>
           </div>
         </div>
 
         <!-- Notes -->
         <div class="form-row">
           <label>Notes <span style="font-weight:400;color:var(--text3)">(visible to customer)</span></label>
-          <textarea class="form-textarea" id="p-notes" placeholder="Special instructions, access notes..." style="min-height:56px"></textarea>
+          <textarea class="form-textarea" id="cv3-notes" placeholder="Special instructions, access notes..." style="min-height:48px"></textarea>
         </div>
       </div>
 
@@ -5370,10 +5345,14 @@ async function renderProposalDrill() {
     // Unified link style — Edit and Preview look identical (text links, no button chrome)
     const linkStyle = 'background:none;border:none;outline:none;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:0;text-decoration:underline;font-family:inherit;line-height:1.3;display:inline-flex;align-items:center;text-transform:none;letter-spacing:normal';
     const editLink = canEdit ? '<button type="button" onclick="editProposal(\'' + p.id + '\')" style="' + linkStyle + '">Edit</button>' : '';
+    const smsLink   = '<button type="button" onclick="sendProposalSMS(\'' + p.id + '\')" style="' + linkStyle + '">SMS</button>';
+    const emailLink = '<button type="button" onclick="sendProposalEmail(\'' + p.id + '\')" style="' + linkStyle + '">Email</button>';
+    const delLink   = canEdit ? '<button type="button" onclick="deleteProposalV3(\'' + p.id + '\')" style="' + linkStyle + ';color:var(--red)">Delete</button>' : '';
     unapprovedActions = '<button class="prop-action-btn prop-action-create" onclick="copyProposalAndUpdateStatus(\'' + esc(url) + '\',\'' + p.id + '\')" style="font-size:15px;padding:13px">Copy Quote Link</button>'
-      + '<div style="display:flex;justify-content:center;gap:4px;margin-top:6px;margin-bottom:4px">'
-      + editLink
+      + '<div style="display:flex;justify-content:center;gap:4px;margin-top:6px;margin-bottom:4px;flex-wrap:wrap">'
+      + smsLink + emailLink + editLink
       + '<a href="' + esc(previewUrl) + '" target="_blank" style="' + linkStyle + '">Preview</a>'
+      + delLink
       + '</div>';
   }
 
@@ -18989,6 +18968,494 @@ document.addEventListener('touchstart', function(e) {
   if (e.touches.length > 1) e.preventDefault();
 }, { passive: false });
 // Double-tap zoom: handled by user-scalable=no in viewport meta (no JS needed)
+
+// =====================================================================
+// Proposal / Invoice Creator V3 (Key sketch 2026-05-08)
+// =====================================================================
+// Architecture: replaces the body of #p-form. State lives in window.CV3.
+// Saves with creator_version='v3'. Renderer in proposal.html / invoice.html
+// branches on creator_version so legacy v2 rows render through the old
+// path untouched. Don't delete v2 logic until renderer is fully migrated.
+// =====================================================================
+(function(){
+  const CV3 = window.CV3 = {
+    // Pricing constants (single source of truth — adjust here only).
+    P: {
+      base:      { 30: 1197, 50: 1497 },   // includes 5' run, cord, inlet, permit
+      perFt:     { 30: 12,   50: 14   },   // adder per foot beyond 5'
+      cordOff:   { 30: 129,  50: 198  },   // discount when cord toggled off
+      inletOff:  { 30: 129,  50: 179  },   // discount when inlet toggled off
+      permitOff: 125,                       // discount when permit toggled off
+      pom:       447,                       // peace of mind add-on (not in total)
+    },
+    state: null,
+    mode:  'proposal',
+  };
+  window.CV3 = CV3;
+
+  // Inject CSS once.
+  function injectCSS() {
+    if (document.getElementById('cv3-style')) return;
+    const css = `
+      .cv3-amp-pill { flex:1; padding:10px 12px; border:1.5px solid var(--border); background:var(--bg);
+        font-family:'Outfit',sans-serif; font-weight:700; font-size:14px; color:var(--text2);
+        border-radius:var(--r-sm); cursor:pointer; transition:none; }
+      .cv3-amp-pill.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+      .cv3-range { -webkit-appearance:none; height:6px; background:var(--bg); border:1px solid var(--border);
+        border-radius:3px; outline:none; }
+      .cv3-range::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+        background:var(--navy); cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1px var(--navy); }
+      .cv3-toggle-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+      .cv3-tog { padding:10px 12px; border:1.5px solid var(--border); background:var(--bg);
+        font-family:'Inter',sans-serif; font-weight:600; font-size:13px; color:var(--text2);
+        border-radius:var(--r-sm); cursor:pointer; text-align:center; }
+      .cv3-tog.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+      .cv3-tog.on.cv3-pom { background:var(--gold); color:var(--navy); border-color:var(--gold); }
+      .cv3-tog-dark { background:transparent; color:rgba(255,255,255,.65); border-color:rgba(255,255,255,.25);
+        font-size:11px; padding:6px 10px; }
+      .cv3-tog-dark.on { background:var(--gold); color:var(--navy); border-color:var(--gold); }
+      .cv3-add { flex:1; padding:8px 12px; border:1px dashed var(--border); background:var(--bg);
+        font-family:'Inter',sans-serif; font-weight:600; font-size:12px; color:var(--text3);
+        border-radius:var(--r-xs); cursor:pointer; }
+      .cv3-add:hover { color:var(--navy); border-color:var(--navy); }
+      .cv3-li { display:flex; align-items:center; gap:6px; padding:6px 8px; background:var(--bg);
+        border:1px solid var(--border); border-radius:var(--r-xs); }
+      .cv3-li-handle { cursor:grab; color:var(--text3); padding:2px 4px; user-select:none; font-size:14px; }
+      .cv3-li-handle:active { cursor:grabbing; }
+      .cv3-li-check { width:14px; height:14px; accent-color:var(--navy); flex-shrink:0; }
+      .cv3-li-name { flex:1; min-width:0; padding:4px 6px; border:none; background:transparent;
+        font-size:13px; color:var(--text); font-family:'Inter',sans-serif; }
+      .cv3-li-name:focus { outline:1px solid var(--navy); border-radius:2px; }
+      .cv3-li-amt { width:74px; padding:4px 6px; border:1px solid var(--border); border-radius:var(--r-xs);
+        font-size:13px; text-align:right; font-weight:700; background:#fff; }
+      .cv3-li-x { background:none; border:none; color:var(--text3); cursor:pointer; padding:2px 4px;
+        font-size:14px; line-height:1; }
+      .cv3-li-x:hover { color:var(--red); }
+      .cv3-disc-toggle { display:inline-flex; gap:1px; background:var(--border); padding:1px;
+        border-radius:var(--r-xs); margin-right:4px; }
+      .cv3-disc-toggle button { padding:3px 7px; border:none; background:#fff; font-weight:700; font-size:11px;
+        cursor:pointer; color:var(--text3); }
+      .cv3-disc-toggle button.on { background:var(--navy); color:#fff; }
+      .cv3-li.cv3-li-discount { background:#fff8e0; border-color:var(--gold); }
+    `;
+    const s = document.createElement('style');
+    s.id = 'cv3-style'; s.textContent = css; document.head.appendChild(s);
+  }
+
+  // Default state factory.
+  function defaultState(opts) {
+    return {
+      mode:           opts.mode || 'proposal',
+      contactId:      opts.contactId,
+      editingId:      opts.editingId || null,
+      amp:            '30',
+      lengthFt:       5,
+      includeCord:    true,
+      includeInlet:   true,
+      includePermit:  true,
+      pomOffered:     false,
+      lineItems:      [], // {id,kind:'item'|'discount',name,amount,checked,discountType}
+      requireDeposit: false,
+      notes:          '',
+    };
+  }
+
+  // Public init — called by openProposalModal.
+  CV3.init = function(opts) {
+    injectCSS();
+    CV3.mode = opts.mode || 'proposal';
+    CV3.state = defaultState(opts);
+    // Hide deposit row entirely on invoices.
+    const depWrap = document.getElementById('cv3-deposit-wrap');
+    if (depWrap) depWrap.style.display = (CV3.mode === 'invoice') ? 'none' : '';
+    // Restore from existing proposal (v3 native, or v2 via lift-and-shift).
+    if (opts.existing) {
+      const e = opts.existing;
+      const isV3 = e.creator_version === 'v3';
+      CV3.state.amp           = String(e.amp_type || '30');
+      CV3.state.lengthFt      = isV3 ? (e.length_ft || 5) : (e.run_ft || 5);
+      CV3.state.includeCord   = isV3 ? (e.include_cord !== false) : (e.cord_included !== false);
+      CV3.state.includeInlet  = e.include_inlet !== false;     // v2 had no toggle — defaults true
+      CV3.state.includePermit = e.include_permit !== false;    // v2 had no toggle — defaults true
+      CV3.state.pomOffered    = isV3 ? !!e.pom_offered : !!(e.selected_pom || e.include_pom);
+      CV3.state.requireDeposit= !!e.require_deposit;
+      const extra = isV3 && Array.isArray(e.extra_line_items)
+        ? JSON.parse(JSON.stringify(e.extra_line_items))
+        : (Array.isArray(e.custom_items) ? e.custom_items.map(ci => ({
+            id: 'i_' + Math.random().toString(36).slice(2,8),
+            kind: 'item', name: ci.title || ci.name || '', amount: Number(ci.price || ci.amount) || 0, checked: true,
+          })) : []);
+      CV3.state.lineItems = extra;
+      // Discount fold-in
+      if (isV3 && e.discount_type) {
+        CV3.state.lineItems.push({ id: 'd_' + Date.now(), kind: 'discount',
+          name: 'Discount', discountType: e.discount_type, amount: Number(e.discount_value || 0), checked: true });
+      } else if (!isV3 && e.discount_amount && Number(e.discount_amount) > 0) {
+        CV3.state.lineItems.push({ id: 'd_' + Date.now(), kind: 'discount',
+          name: 'Discount', discountType: 'dollar', amount: Number(e.discount_amount), checked: true });
+      }
+      CV3.state.notes = e.notes || '';
+    }
+    CV3.render();
+  };
+
+  CV3.render = function() {
+    const s = CV3.state;
+    if (!s) return;
+    // Amp pills
+    document.getElementById('cv3-amp-30').classList.toggle('on', s.amp === '30');
+    document.getElementById('cv3-amp-50').classList.toggle('on', s.amp === '50');
+    // Slider
+    const slider = document.getElementById('cv3-len-slider');
+    if (slider && Number(slider.value) !== s.lengthFt) slider.value = s.lengthFt;
+    document.getElementById('cv3-len-display').textContent = s.lengthFt + "'";
+    // Toggle pills
+    document.getElementById('cv3-tog-cord'  ).classList.toggle('on', s.includeCord);
+    document.getElementById('cv3-tog-inlet' ).classList.toggle('on', s.includeInlet);
+    document.getElementById('cv3-tog-permit').classList.toggle('on', s.includePermit);
+    const pomBtn = document.getElementById('cv3-tog-pom');
+    pomBtn.classList.toggle('on',     s.pomOffered);
+    pomBtn.classList.toggle('cv3-pom', s.pomOffered);
+    document.getElementById('cv3-pom-helper').style.display = s.pomOffered ? 'block' : 'none';
+    // Deposit
+    const depBtn = document.getElementById('cv3-tog-deposit');
+    if (depBtn) depBtn.classList.toggle('on', s.requireDeposit);
+    // Line items
+    CV3.renderLineItems();
+    // Total
+    const total = CV3.calcTotal();
+    document.getElementById('cv3-total').textContent = '$' + total.toLocaleString();
+    const aside = document.getElementById('cv3-pom-aside');
+    aside.style.display = s.pomOffered ? 'block' : 'none';
+    aside.textContent = 'PoM (you only): +$' + CV3.P.pom + ' if client opts in';
+    // Disable a second discount click (only one allowed)
+    const discBtn = document.getElementById('cv3-add-discount-btn');
+    const hasDisc = s.lineItems.some(li => li.kind === 'discount');
+    discBtn.style.opacity = hasDisc ? '.4' : '';
+    discBtn.style.pointerEvents = hasDisc ? 'none' : '';
+  };
+
+  CV3.calcTotal = function() {
+    const s = CV3.state;
+    const amp = s.amp;
+    let t = CV3.P.base[amp];
+    // Length adder
+    const extraFt = Math.max(0, s.lengthFt - 5);
+    t += extraFt * CV3.P.perFt[amp];
+    // Toggle-off discounts
+    if (!s.includeCord)   t -= CV3.P.cordOff[amp];
+    if (!s.includeInlet)  t -= CV3.P.inletOff[amp];
+    if (!s.includePermit) t -= CV3.P.permitOff;
+    // Extra line items + discount
+    for (const li of s.lineItems) {
+      if (li.kind === 'discount') {
+        if (li.discountType === 'percent') t -= Math.round(t * (Number(li.amount)||0) / 100);
+        else                                t -= Number(li.amount) || 0;
+      } else {
+        t += Number(li.amount) || 0;
+      }
+    }
+    // PoM is NOT added to client-facing total even when offered.
+    return Math.max(0, Math.round(t));
+  };
+
+  CV3.renderLineItems = function() {
+    const wrap = document.getElementById('cv3-line-items');
+    const s = CV3.state;
+    wrap.innerHTML = '';
+    s.lineItems.forEach((li, i) => {
+      const row = document.createElement('div');
+      row.className = 'cv3-li' + (li.kind === 'discount' ? ' cv3-li-discount' : '');
+      row.draggable = true;
+      row.dataset.idx = i;
+      if (li.kind === 'discount') {
+        row.innerHTML =
+          '<span class="cv3-li-handle" title="Drag to reorder">⋮⋮</span>' +
+          '<span class="cv3-disc-toggle">' +
+            '<button type="button" class="' + (li.discountType==='dollar'?'on':'') + '" onclick="window.CV3.setDiscType(' + i + ',\'dollar\')">$</button>' +
+            '<button type="button" class="' + (li.discountType==='percent'?'on':'') + '" onclick="window.CV3.setDiscType(' + i + ',\'percent\')">%</button>' +
+          '</span>' +
+          '<input class="cv3-li-name" value="' + (li.name || 'Discount').replace(/"/g,'&quot;') + '" oninput="window.CV3.setName(' + i + ',this.value)" placeholder="Discount label">' +
+          '<input class="cv3-li-amt" type="number" min="0" step="1" value="' + (li.amount || 0) + '" oninput="window.CV3.setAmount(' + i + ',this.value)">' +
+          '<button class="cv3-li-x" onclick="window.CV3.removeItem(' + i + ')" title="Remove">✕</button>';
+      } else {
+        row.innerHTML =
+          '<span class="cv3-li-handle" title="Drag to reorder">⋮⋮</span>' +
+          '<input type="checkbox" class="cv3-li-check" ' + (li.checked!==false?'checked':'') + ' onchange="window.CV3.setChecked(' + i + ',this.checked)" title="Pre-checked for client (client can uncheck)">' +
+          '<input class="cv3-li-name" value="' + (li.name || '').replace(/"/g,'&quot;') + '" oninput="window.CV3.setName(' + i + ',this.value)" placeholder="Service name">' +
+          '<span style="color:var(--text3);font-size:13px">$</span>' +
+          '<input class="cv3-li-amt" type="number" min="0" step="1" value="' + (li.amount || 0) + '" oninput="window.CV3.setAmount(' + i + ',this.value)">' +
+          '<button class="cv3-li-x" onclick="window.CV3.removeItem(' + i + ')" title="Remove">✕</button>';
+      }
+      // Drag-reorder
+      row.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', String(i)); row.style.opacity = '.4'; });
+      row.addEventListener('dragend',   ()  => { row.style.opacity = ''; });
+      row.addEventListener('dragover',  (e) => { e.preventDefault(); });
+      row.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const from = Number(e.dataTransfer.getData('text/plain'));
+        const to   = i;
+        if (from === to || isNaN(from)) return;
+        const moved = s.lineItems.splice(from, 1)[0];
+        s.lineItems.splice(to, 0, moved);
+        CV3.render();
+      });
+      wrap.appendChild(row);
+    });
+  };
+
+  // Mutators (exposed because rendered HTML calls them by index)
+  CV3.setName     = (i,v) => { CV3.state.lineItems[i].name = v; };
+  CV3.setAmount   = (i,v) => { CV3.state.lineItems[i].amount = parseFloat(v) || 0; CV3.render(); };
+  CV3.setChecked  = (i,v) => { CV3.state.lineItems[i].checked = v; };
+  CV3.setDiscType = (i,t) => { CV3.state.lineItems[i].discountType = t; CV3.render(); };
+  CV3.removeItem  = (i)   => { CV3.state.lineItems.splice(i,1); CV3.render(); };
+  CV3.addLineItem = function() {
+    CV3.state.lineItems.push({ id:'i_'+Date.now(), kind:'item', name:'', amount:0, checked:true });
+    CV3.render();
+  };
+  CV3.addDiscount = function() {
+    if (CV3.state.lineItems.some(li => li.kind === 'discount')) return;
+    CV3.state.lineItems.push({ id:'d_'+Date.now(), kind:'discount', name:'Discount', discountType:'dollar', amount:0, checked:true });
+    CV3.render();
+  };
+  CV3.setAmp = (a) => { CV3.state.amp = String(a); CV3.render(); };
+  CV3.setLen = (v) => { CV3.state.lengthFt = parseInt(v,10) || 5; CV3.render(); };
+  CV3.tog = function(key) {
+    const s = CV3.state;
+    if (key === 'cord')        s.includeCord    = !s.includeCord;
+    else if (key === 'inlet')  s.includeInlet   = !s.includeInlet;
+    else if (key === 'permit') s.includePermit  = !s.includePermit;
+    else if (key === 'pom')    s.pomOffered     = !s.pomOffered;
+    else if (key === 'deposit')s.requireDeposit = !s.requireDeposit;
+    CV3.render();
+  };
+
+  // Build the payload for INSERT/UPDATE on `proposals`.
+  CV3.buildPayload = function(contact) {
+    const s = CV3.state;
+    const total = CV3.calcTotal();
+    const discItem = s.lineItems.find(li => li.kind === 'discount');
+    const extraLI = s.lineItems
+      .filter(li => li.kind !== 'discount')
+      .map(li => ({ id: li.id, name: li.name || '', amount: Number(li.amount)||0, checked: li.checked !== false }));
+    const payload = {
+      contact_id:      s.contactId,
+      contact_name:    contact?.name    || '',
+      contact_email:   contact?.email   || '',
+      contact_phone:   contact?.phone   || '',
+      contact_address: contact?.address || '',
+      creator_version: 'v3',
+      amp_type:        s.amp,
+      length_ft:       s.lengthFt,
+      run_ft:          s.lengthFt, // legacy mirror so v2 reports work
+      include_cord:    s.includeCord,
+      include_inlet:   s.includeInlet,
+      include_permit:  s.includePermit,
+      pom_offered:     s.pomOffered,
+      pom_accepted:    false,
+      include_pom:     false,                  // legacy mirror — never auto-included
+      selected_pom:    false,
+      pom_price:       CV3.P.pom,
+      require_deposit: s.requireDeposit,
+      discount_type:   discItem ? discItem.discountType : null,
+      discount_value:  discItem ? Number(discItem.amount)||0 : null,
+      discount_amount: discItem && discItem.discountType === 'dollar' ? Number(discItem.amount)||0 : 0,
+      extra_line_items: extraLI,
+      custom_items:    extraLI.map(li => ({ title: li.name, price: li.amount })), // legacy mirror
+      total:           total,
+      price_base:      total,
+      notes:           document.getElementById('cv3-notes').value.trim(),
+      status:          'Created',
+    };
+    return payload;
+  };
+
+  CV3.save = async function() {
+    if (window.savingProposal) return;
+    window.savingProposal = true;
+    const _btn = document.getElementById('p-create-btn');
+    const _orig = _btn ? _btn.textContent : '';
+    if (_btn) { _btn.disabled = true; _btn.textContent = 'Saving…'; }
+    try {
+      const s = CV3.state;
+      const c = (window.allContacts || []).find(x => x.id === s.contactId);
+      const payload = CV3.buildPayload(c);
+      let data, error;
+      if (s.editingId) {
+        delete payload.status;
+        ({ data, error } = await db.from('proposals').update(payload).eq('id', s.editingId).select().single());
+      } else {
+        ({ data, error } = await db.from('proposals').insert([payload]).select().single());
+      }
+      if (error) { showToast('Failed: ' + error.message, 'error'); return; }
+      const link = (window.PROPOSAL_BASE_URL || '') + '?token=' + data.token;
+      // Update local stores
+      if (s.editingId) {
+        const arr = window.proposalMap?.[s.contactId] || [];
+        const idx = arr.findIndex(x => x.id === s.editingId);
+        if (idx >= 0) arr[idx] = data;
+        const aIdx = (window.allProposals || []).findIndex(x => x.id === s.editingId);
+        if (aIdx >= 0) window.allProposals[aIdx] = data;
+        window._editingProposalId = null;
+        if (window.touchContact) touchContact(s.contactId);
+        showToast('Proposal updated', 'success');
+        closeModal('proposal-overlay');
+        if (window.openPanel) openPanel(s.contactId);
+        return;
+      }
+      window.proposalMap = window.proposalMap || {};
+      window.proposalMap[s.contactId] = [data, ...(window.proposalMap[s.contactId]||[])];
+      (window.allProposals || (window.allProposals = [])).unshift(data);
+      // Quote_amount mirror
+      await db.from('contacts').update({ quote_amount: payload.total }).eq('id', s.contactId);
+      if (c) c.quote_amount = payload.total;
+      if (window.setStageFromLatestProposal) setStageFromLatestProposal(s.contactId, 3);
+      if (window.renderContacts) renderContacts();
+      try { await navigator.clipboard.writeText(link); } catch(_){}
+      data.status = 'Copied';
+      data.copied_at = new Date().toISOString();
+      db.from('proposals').update({ status: 'Copied', copied_at: data.copied_at }).eq('id', data.id).then(()=>{},()=>{});
+      closeModal('proposal-overlay');
+      window.currentProposalIdx = 0;
+      if (window.openPanel) openPanel(s.contactId);
+      if (window.drillTo) drillTo('proposal');
+      if (window.touchContact) touchContact(s.contactId);
+      showToast('Proposal created — link copied', 'success');
+    } finally {
+      window.savingProposal = false;
+      if (_btn) { _btn.disabled = false; _btn.textContent = _orig; }
+    }
+  };
+
+  // Global wrappers (HTML onclick handlers expect bare names).
+  window.cv3SetAmp     = (a) => CV3.setAmp(a);
+  window.cv3SetLen     = (v) => CV3.setLen(v);
+  window.cv3Tog        = (k) => CV3.tog(k);
+  window.cv3AddLineItem= ()  => CV3.addLineItem();
+  window.cv3AddDiscount= ()  => CV3.addDiscount();
+
+  // Re-route legacy entry points.
+  // openProposalModal is replaced wholesale — original referenced removed v2 IDs.
+  window.openProposalModal = function(contactId, existingProposal) {
+    const c = (window.allContacts || []).find(x => x.id === contactId);
+    if (!c) return;
+    window._proposalReturnContactId = contactId;
+    const fEl = document.getElementById('p-form');     if (fEl) fEl.style.display = '';
+    const cEl = document.getElementById('p-created');  if (cEl) cEl.style.display = 'none';
+    const bEl = document.getElementById('p-create-btn');
+    if (bEl) { bEl.style.display = ''; bEl.textContent = existingProposal ? 'Save Changes' : 'Create & Get Link'; bEl.disabled = false; }
+    const idEl = document.getElementById('p-contact-id'); if (idEl) idEl.value = contactId;
+    const nm = document.getElementById('p-contact-name'); if (nm) nm.textContent = c.name || '';
+    const ad = document.getElementById('p-contact-addr'); if (ad) ad.textContent = c.address || '';
+    const t  = document.getElementById('proposal-modal-title');
+    if (t) t.textContent = existingProposal ? 'Edit Proposal — ' + (c.name || '') : 'Proposal — ' + (c.name || '');
+    const editingId = (existingProposal && existingProposal.creator_version === 'v3') ? existingProposal.id : null;
+    CV3.init({ mode:'proposal', contactId, editingId, existing: existingProposal });
+    document.getElementById('proposal-overlay').classList.add('open');
+    if (typeof window.lockBody === 'function') window.lockBody();
+  };
+
+  // saveProposal dispatcher — v3 form is now the only form, route through CV3.
+  const _origSave = window.saveProposal;
+  window.saveProposal = async function() {
+    if (CV3.state) return CV3.save();
+    if (typeof _origSave === 'function') return _origSave();
+  };
+
+  // Edit hook — all edits route through V3 (v2 data lifted in CV3.init).
+  // Saving will rewrite as creator_version='v3'.
+  window.editProposal = function(proposalId) {
+    const all = window.allProposals || [];
+    const p = all.find(x => x.id === proposalId);
+    if (!p) { showToast('Proposal not found', 'error'); return; }
+    window._editingProposalId = proposalId;
+    window.openProposalModal(p.contact_id, p);
+  };
+
+  // === Action helpers exposed for action-row buttons ====================
+  function findProposalById(id) { return (window.allProposals || []).find(x => x.id === id); }
+  function proposalUrl(p) { return (window.PROPOSAL_BASE_URL || '') + '?token=' + p.token; }
+
+  // Send SMS — drops the proposal link into the messages drill, prefilled.
+  window.sendProposalSMS = function(proposalId) {
+    const p = findProposalById(proposalId);
+    if (!p) { showToast('Proposal not found', 'error'); return; }
+    const url = proposalUrl(p);
+    const c = (window.allContacts || []).find(x => x.id === p.contact_id);
+    const fname = (c?.name || '').split(/\s+/)[0] || '';
+    const msg = `Hi ${fname}, here's the quote for the inlet install — ${url}\n\nQuestions? Just text back.`;
+    // Open messages drill and prefill the composer if available.
+    if (window.openPanel)  openPanel(p.contact_id);
+    if (window.drillTo)    drillTo('messages');
+    setTimeout(() => {
+      const ta = document.getElementById('msg-input') || document.getElementById('chat-input') || document.querySelector('textarea[placeholder*="message"]');
+      if (ta) { ta.value = msg; ta.dispatchEvent(new Event('input', { bubbles:true })); ta.focus(); }
+      else { try { navigator.clipboard.writeText(msg); showToast('Message copied — paste in chat', 'info'); } catch(_){} }
+    }, 220);
+  };
+
+  // Send Email — calls the send-email edge function with template='proposal'.
+  window.sendProposalEmail = async function(proposalId) {
+    const p = findProposalById(proposalId);
+    if (!p) { showToast('Proposal not found', 'error'); return; }
+    const c = (window.allContacts || []).find(x => x.id === p.contact_id);
+    if (!c?.email) { showToast('No email on contact — add one first', 'error'); return; }
+    if (!confirm(`Send proposal email to ${c.email}?`)) return;
+    const url = proposalUrl(p);
+    try {
+      const SB_URL = (typeof SUPABASE_URL !== 'undefined') ? SUPABASE_URL : '';
+      const SB_KEY = (typeof SUPABASE_KEY !== 'undefined') ? SUPABASE_KEY : '';
+      const resp = await fetch(SB_URL + '/functions/v1/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY },
+        body: JSON.stringify({
+          template: 'proposal',
+          contact_id: p.contact_id,
+          variables: { proposal_url: url, total: '$' + (p.total||0).toLocaleString(), amp_type: p.amp_type || '30' },
+          trigger_source: 'crm_v3_proposal_action',
+        }),
+      });
+      const j = await resp.json().catch(() => ({}));
+      if (!resp.ok) { showToast('Email failed: ' + (j.error || resp.status), 'error'); return; }
+      showToast('Email sent', 'success');
+    } catch (e) {
+      showToast('Email failed: ' + String(e), 'error');
+    }
+  };
+
+  // Delete — hard delete with single-tap-confirm, distinct from Cancel (soft archive).
+  let _delPending = null, _delTimer = null;
+  window.deleteProposalV3 = async function(proposalId) {
+    if (_delPending !== proposalId) {
+      _delPending = proposalId;
+      clearTimeout(_delTimer);
+      const btns = document.querySelectorAll('button[onclick*="deleteProposalV3(\\\''+proposalId+'\\\')"]');
+      btns.forEach(b => { b._origText = b.textContent; b.textContent = 'Tap again to delete'; b.style.fontWeight = '700'; });
+      _delTimer = setTimeout(() => {
+        _delPending = null;
+        btns.forEach(b => { if (b._origText) b.textContent = b._origText; b.style.fontWeight = ''; });
+      }, 3000);
+      return;
+    }
+    clearTimeout(_delTimer); _delPending = null;
+    const { error } = await db.from('proposals').delete().eq('id', proposalId);
+    if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+    // Local cleanup
+    const p = findProposalById(proposalId);
+    if (p && window.proposalMap) {
+      const arr = window.proposalMap[p.contact_id] || [];
+      const idx = arr.findIndex(x => x.id === proposalId);
+      if (idx >= 0) arr.splice(idx, 1);
+    }
+    if (window.allProposals) {
+      const i = window.allProposals.findIndex(x => x.id === proposalId);
+      if (i >= 0) window.allProposals.splice(i, 1);
+    }
+    showToast('Proposal deleted', 'success');
+    if (window.currentPanelContactId && window.openPanel) openPanel(window.currentPanelContactId);
+  };
+})();
 
 </script>
 </body>
