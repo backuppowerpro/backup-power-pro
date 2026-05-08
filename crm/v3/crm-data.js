@@ -264,11 +264,18 @@ function mapMessage(r) {
   // sent_at and read_at don't exist; sent_at falls back to created_at,
   // read_at stays null (every message renders as "read" — until the
   // column is added the unread-badge feature is a no-op).
+  // Normalize direction at the boundary. Twilio/edge functions write
+  // 'outbound'/'inbound' to DB; the rest of the app reads/filters with
+  // 'out'/'in'. Until 2026-05-08 this mismatch silently nulled
+  // `daysSinceTouch` on every contact whose only activity was an outbound
+  // SMS — so "Rotting" + "Silent leads" chips undercounted dramatically.
+  const dirRaw = r.direction || 'in';
+  const dir = dirRaw === 'outbound' ? 'out' : dirRaw === 'inbound' ? 'in' : dirRaw;
   return {
     id: r.id,
     contact_id: r.contact_id,
-    direction: r.direction || 'in',
-    sender_role: r.sender_role || (r.direction === 'out' ? 'key' : 'customer'),
+    direction: dir,
+    sender_role: r.sender_role || (dir === 'out' ? 'key' : 'customer'),
     body: r.body || '',
     sent_at: r.sent_at || r.created_at,
     read_at: r.read_at || null,
