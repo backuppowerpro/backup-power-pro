@@ -315,6 +315,27 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const [search, setSearch] = React.useState('');
   const [stage, setStage] = React.useState('all');
   const [newContactOpen, setNewContactOpen] = React.useState(false);
+  // Cmd+K (Mac) / Ctrl+K (PC) / "/" anywhere on the page → focus the
+  // contact search box. Solo-operator workflow: 90% of CRM trips begin
+  // with "find that one customer" — a keyboard shortcut beats tap-tap-type.
+  // Skip when the user is already typing into another input/textarea so
+  // we don't hijack form fills. Only active on the Contacts tab.
+  React.useEffect(() => {
+    if (tab !== 'contacts') return;
+    const onKey = (e) => {
+      const isCmdK = (e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K');
+      const isSlash = e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey;
+      if (!isCmdK && !isSlash) return;
+      const tag = (e.target?.tagName || '').toLowerCase();
+      const inField = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
+      if (isSlash && inField) return; // let "/" type into other fields
+      e.preventDefault();
+      const el = document.getElementById('bpp-contact-search');
+      if (el) { el.focus(); el.select?.(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tab]);
   // Recently-viewed contacts (max 5 chips). Stored by handleOpen in
   // crm-app.jsx — re-render when that fires crm-recent-changed.
   const RECENT_KEY = 'bpp_v3_recent_contacts';
@@ -403,10 +424,27 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     return s;
   }, [signalMap, contacts]);
 
+  // "Silent leads" — stage='new' contacts with no inbound reply in 2+ days.
+  // The 2026-05-08 audit found 71 silent stage-1 contacts (Alex's initial
+  // SMS fired but no reply, follow-up cron isn't running on them yet
+  // because ALEX_TEST_MODE=true). This chip is the diagnostic surface so
+  // Key can see who's stuck and re-engage manually.
+  const silentSet = React.useMemo(() => {
+    const s = new Set();
+    for (const [id, sig] of signalMap.entries()) {
+      const c = contacts.find(x => x.id === id);
+      if (!c || c.archived || c.stage !== 'new') continue;
+      const days = sig.daysSinceTouch;
+      if (days != null && days >= 2) s.add(id);
+    }
+    return s;
+  }, [signalMap, contacts]);
+
   const stageOpts = [
-    { value:'all',        label:'All',          count: visibleContacts.length },
-    { value:'rotting',    label:'Rotting',     count: rottingSet.size },
-    { value:'needs_reply', label:'Needs reply', count: needsReplySet.size },
+    { value:'all',         label:'All',           count: visibleContacts.length },
+    { value:'silent_new',  label:'Silent leads',  count: silentSet.size },
+    { value:'rotting',     label:'Rotting',       count: rottingSet.size },
+    { value:'needs_reply', label:'Needs reply',   count: needsReplySet.size },
     ...CRM.STAGE_ORDER.map(s => ({ value:s, label: STAGE_COLORS[s].label, count: stageCounts[s] }))
   ];
 
@@ -417,7 +455,11 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
 
   const filtered = contacts
     .filter(c => !c.archived)
-    .filter(c => stage === 'all' ? true : stage === 'needs_reply' ? needsReplySet.has(c.id) : stage === 'rotting' ? rottingSet.has(c.id) : c.stage === stage)
+    .filter(c => stage === 'all' ? true
+              : stage === 'needs_reply' ? needsReplySet.has(c.id)
+              : stage === 'rotting' ? rottingSet.has(c.id)
+              : stage === 'silent_new' ? silentSet.has(c.id)
+              : c.stage === stage)
     .filter(c => {
       if (!search) return true;
       const q = search.toLowerCase();
@@ -464,7 +506,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
       <div style={{ padding:'11px 18px 8px', background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         <div style={{ position:'relative' }}>
           <div style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', width:14,height:14, color:MUTED, pointerEvents:'none' }}>{Icons.search}</div>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone, address…"
+          <input id="bpp-contact-search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone, address… (⌘K or /)"
             style={{ width:'100%', height:40, borderRadius:8, border:'1.5px solid #EBEBEA', padding:'0 12px 0 30px', fontSize:16, background:BG, outline:'none', fontFamily:'inherit', color:NAVY, boxSizing:'border-box' }} />
         </div>
         {/* Recently-viewed chip row — last 5 opened contacts. Daily
@@ -566,8 +608,12 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                 </div>
                 <div style={{ fontSize:12, color:MUTED, marginTop:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                   {formatPhone(c.phone)}{c.address ? ` · ${cityFromAddrShort(c.address)}` : ''}
-                  {sig.daysSinceTouch != null && sig.daysSinceTouch >= 7 && (
-                    <span title={`Last contact ${sig.daysSinceTouch}d ago`} style={{ marginLeft:6, color: sig.daysSinceTouch >= 14 ? '#DC2626' : '#92400E', fontWeight:600 }}>
+                  {sig.daysSinceTouch != null && sig.daysSinceTouch >= (c.stage === 'new' ? 2 : 7) && (
+                    <span title={`Last contact ${sig.daysSinceTouch}d ago`} style={{ marginLeft:6,
+                      color: sig.daysSinceTouch >= 14 ? '#DC2626'
+                           : sig.daysSinceTouch >= 7  ? '#92400E'
+                           : '#6B7280',  // muted gray for 2-6d on new contacts — visible but not alarming
+                      fontWeight:600 }}>
                       · {sig.daysSinceTouch}d ago
                     </span>
                   )}

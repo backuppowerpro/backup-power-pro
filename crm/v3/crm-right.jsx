@@ -3275,6 +3275,15 @@ function ContactMessages({ contact, thread, isDnc }) {
           {/* v10.1.29: 1-line default, auto-grow to 3 lines, then scroll.
               Sets row=1 + measures scrollHeight on every input to expand. */}
           <textarea value={msg}
+            ref={(el) => {
+              // Desktop autofocus on first mount so Key can type immediately
+              // when navigating to Messages — saves a tap-to-focus per visit.
+              // Skip on mobile to avoid forcing the keyboard up.
+              if (el && window.innerWidth >= 768 && !el.dataset.bppAutofocused) {
+                el.dataset.bppAutofocused = '1';
+                setTimeout(() => el.focus({ preventScroll: true }), 50);
+              }
+            }}
             rows={1}
             onChange={e => {
               setMsg(e.target.value);
