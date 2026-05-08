@@ -1122,7 +1122,13 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
   if (label === 'owner' && !state.terminal && currentState !== 'AWAIT_OWNERSHIP' && currentState !== 'AWAIT_OWNERSHIP_RETRY') {
     return {
       next: currentState,
-      intent: `customer confirmed ownership mid-flow; brief ack ("Got it.") and continue with: ${state.intent}`,
+      // v10.1.52 (pacing/acknowledgment fix 2026-05-07): force the phraser
+      // to EXPLICITLY name what the customer just confirmed before re-
+      // asking the current state's question. Generic "Got it." reads
+      // mechanical; "Got it, owner-side checked off. Now just the panel
+      // pic." feels heard. This matters more for customer experience than
+      // any other voice tweak.
+      intent: `customer confirmed ownership mid-flow ("yes we own it" / "we own"). REQUIRED: open with explicit acknowledgment that names ownership ("Got it, owner-side checked off." / "Owner confirmed, thanks." / "Got it, ownership noted."), THEN continue with: ${state.intent}. Do NOT use a bare "Got it." that ignores what they just said.`,
       fallback: state.fallback ? state.fallback(ctx) : '',
       endConversation: false,
       onEnter: { ownership_confirmed: true },
@@ -1145,12 +1151,16 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     'CONFIRM_MAIN_BREAKER', 'CONFIRM_PANEL_WALL_TYPE', 'AWAIT_INLET_LOCATION',
   ]);
   if (label && /^panel_/.test(label) && !state.terminal && !panelOnlyStates.has(currentState)) {
+    const locReadable = label.replace(/^panel_/, '').replace(/_/g, ' ');
     return {
       next: currentState,
-      intent: `customer volunteered panel-location info ("${label}") while we were at ${currentState}; brief ack + continue with: ${state.intent}`,
+      // v10.1.52: force explicit acknowledgment of the panel-location
+      // info before re-asking. "Got the panel location, garage exterior,
+      // noted." then continue.
+      intent: `customer volunteered panel-location info ("${locReadable}") while we were at ${currentState}. REQUIRED: open with explicit acknowledgment that names the panel location ("Got the panel location, ${locReadable}, noted." / "Panel ${locReadable}, got it.") THEN continue with: ${state.intent}. Do NOT use a bare ack that ignores what they just said.`,
       fallback: state.fallback ? state.fallback(ctx) : '',
       endConversation: false,
-      onEnter: { panel_location_volunteered: label.replace(/^panel_/, '') },
+      onEnter: { panel_location_volunteered: locReadable },
     };
   }
 
