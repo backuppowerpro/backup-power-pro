@@ -3619,13 +3619,49 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
         setBusy(false);
         return;
       }
+      // Optimistically push the new proposal into CRM.proposals so the
+      // row renders immediately. Realtime would do this eventually, but
+      // there's a perceptible gap where the modal closes and the user
+      // sees an empty / stale list. Mirror the shape mapProposal returns
+      // so DealCard renders without missing fields.
+      const dollars = Number(data.total) || 0;
+      const mapped = {
+        id: data.id, token: data.token, contact_id: data.contact_id,
+        tier: data.pricing_tier || 'standard',
+        amount_cents: Math.round(dollars * 100),
+        amp_spec: data.amp_type ? data.amp_type + 'A' : null,
+        status: isEdit ? (
+          ({ Sent:'sent', Copied:'sent', Created:'draft', Signed:'approved', Approved:'approved', Cancelled:'declined' })[data.status] ||
+          (data.status||'sent').toLowerCase()
+        ) : 'draft',
+        sent_at: data.copied_at || data.created_at,
+        viewed_at: data.viewed_at || null,
+        approved_at: data.signed_at || null,
+        label: data.amp_type ? `Generator inlet, ${data.amp_type}A` : 'Generator inlet',
+        creator_version: data.creator_version || 'v3',
+        length_ft: data.length_ft != null ? Number(data.length_ft) : null,
+        include_cord: data.include_cord !== false,
+        include_inlet: data.include_inlet !== false,
+        include_permit: data.include_permit !== false,
+        pom_offered: !!data.pom_offered,
+        pom_accepted: !!data.pom_accepted,
+        require_deposit: !!data.require_deposit,
+        extra_line_items: Array.isArray(data.extra_line_items) ? data.extra_line_items : [],
+        discount_type: data.discount_type || null,
+        discount_value: data.discount_value != null ? Number(data.discount_value) : null,
+        notes: data.notes || '',
+        amp_type: data.amp_type || null,
+      };
+      const arr = (window.CRM.proposals = window.CRM.proposals || []);
+      const idx = arr.findIndex(p => p.id === mapped.id);
+      if (idx >= 0) arr[idx] = mapped; else arr.unshift(mapped);
       // Bump contact stage NEW → QUOTED on first proposal create.
       if (!isEdit && contact.stage === 'new') {
         const numQuoted = CRM.STAGE_STR_TO_NUM?.quoted ?? 2;
         contact.stage = 'quoted';
-        window.dispatchEvent(new CustomEvent('crm-data-changed'));
         CRM.__db.from('contacts').update({ stage: numQuoted }).eq('id', contact.id).then(() => {}, () => {});
       }
+      window.dispatchEvent(new CustomEvent('crm-data-changed'));
       window.showToast?.(isEdit ? 'Proposal updated' : 'Proposal created');
       onClose();
     } catch (e) {
@@ -4074,6 +4110,26 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
         setBusy(false);
         return;
       }
+      // Optimistically push the new invoice into CRM.invoices so it shows
+      // up immediately. Realtime would do this eventually but there's a
+      // gap where the modal closes and the row hasn't materialized yet.
+      const cents = Math.round(Number(data.total) * 100);
+      const mapped = {
+        id: data.id, token: data.token, contact_id: data.contact_id,
+        proposal_id: data.proposal_id || null,
+        amount_cents: cents,
+        kind: data.kind || (cents >= 150000 ? 'final' : 'deposit'),
+        status: isEdit ? (data.status === 'unpaid' ? 'sent' : (data.status||'sent').toLowerCase()) : 'draft',
+        sent_at: data.sent_at || data.created_at,
+        viewed_at: data.viewed_at || null,
+        paid_at: data.paid_at || null,
+        line_items: Array.isArray(data.line_items) ? data.line_items : [],
+        creator_version: data.creator_version || 'v3',
+      };
+      const arr = (window.CRM.invoices = window.CRM.invoices || []);
+      const idx = arr.findIndex(i => i.id === mapped.id);
+      if (idx >= 0) arr[idx] = mapped; else arr.unshift(mapped);
+      window.dispatchEvent(new CustomEvent('crm-data-changed'));
       window.showToast?.(isEdit ? 'Invoice updated' : 'Invoice created');
       onClose();
     } catch (e) {
