@@ -1104,6 +1104,22 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
+  // v10.1.49 (real-LLM voice-judge battery 2026-05-07): owner / renter
+  // confirmation mid-flow. Customer says "we own it" or "yeah it's ours"
+  // when bot is at AWAIT_PANEL_PHOTO / AWAIT_RUN / AWAIT_EMAIL etc, and
+  // "owner" classifier label has no transition there → falls through to
+  // NEEDS_CALLBACK default → kills the conversation. The customer is
+  // just confirming, bot should self-loop and continue with current ask.
+  if (label === 'owner' && !state.terminal && currentState !== 'AWAIT_OWNERSHIP' && currentState !== 'AWAIT_OWNERSHIP_RETRY') {
+    return {
+      next: currentState,
+      intent: `customer confirmed ownership mid-flow; brief ack ("Got it.") and continue with: ${state.intent}`,
+      fallback: state.fallback ? state.fallback(ctx) : '',
+      endConversation: false,
+      onEnter: { ownership_confirmed: true },
+    };
+  }
+
   // v10.1.46 (Canceler persona sim 2026-05-07): customer-changed-mind
   // escape from any non-terminal state. "Never mind" / "scratch that" /
   // "I changed my mind" mid-flow used to fall through to NEEDS_CALLBACK

@@ -685,6 +685,18 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     if (TERMINAL_STATES.has(transitionResult.next)) {
       const alreadyFired = !!(contact.qualification_data?.handoff_fired_at)
       if (!alreadyFired) {
+        // v10.1.49 (real-LLM voice-judge 2026-05-07): ALWAYS stamp
+        // handoff_fired_at, even if handoff-notifier itself fails. Was:
+        // notifier throws → handoff_fired_at never set → subsequent
+        // inbounds re-fire notifier + terminal-reply path → customer
+        // gets the same callback message 3-4x in a row. The conversation
+        // gating must be hard-stamped locally; the alert to Key is
+        // best-effort and can fail without breaking flow control.
+        newQd.handoff_fired_at = new Date().toISOString()
+        newQd.handoff_terminal_state = transitionResult.next
+        await sb.from('contacts').update({
+          qualification_data: newQd,
+        }).eq('id', contact.id)
         try {
           await callInternal('bot-handoff-notifier', {
             contact_id: contact.id,
@@ -693,14 +705,8 @@ async function handleInbound(input: InboundInput): Promise<Response> {
               || classifier?.impatience_excerpt || classifier?.chitchat_excerpt
               || (input.message_body || '').slice(0, 140),
           })
-          // Mark handoff as fired so subsequent inbounds don't re-trigger
-          newQd.handoff_fired_at = new Date().toISOString()
-          newQd.handoff_terminal_state = transitionResult.next
-          await sb.from('contacts').update({
-            qualification_data: newQd,
-          }).eq('id', contact.id)
         } catch (e) {
-          console.warn('[bot-engine] handoff-notifier failed', e)
+          console.warn('[bot-engine] handoff-notifier failed (handoff_fired_at already stamped)', e)
         }
       } else {
         console.log('[bot-engine] handoff already fired, skipping duplicate')
