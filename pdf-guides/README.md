@@ -6,10 +6,13 @@ Print-ready, customer-keepsake-quality PDFs for the BPP brand. All US Letter por
 
 | File | Pages | Purpose | Distribution |
 |------|-------|---------|--------------|
-| `buyers-guide-cover.html` | 2 (cover + ToC) | Lead magnet anchor — sample of the full 32-page Generator Hookup Buyer's Guide | Email after PDF download form fill, linked from website /guides, Meta lead magnet |
+| `buyers-guide-cover.html` | 2 (cover + ToC) | Lead magnet anchor — front of the 32-page Generator Hookup Buyer's Guide | Email after PDF download form fill, linked from website /guides, Meta lead magnet |
+| `buyers-guide-chapter-3.html` | 4 | Highest-leverage chapter — "The 240V Outlet Trap" (the one teased in the download email) | Bundled into full Buyer's Guide PDF; standalone share-friendly excerpt |
 | `storm-prep-checklist.html` | 4 | Seasonal asset — 7-day countdown + day-of + after-storm | June 1 + Nov 1 cron, post-install email follow-up, customer-share-friendly |
 | `sizing-cheat-sheet.html` | 1 | One-page wallet card — running watts table + AC tonnage match + house-size match | Pre-purchase shoppers, email signature link, printable |
 | `owners-manual.html` | 4 (sample of 12) | Customer keepsake — outage protocol + maintenance schedule + warranty | Linked from completion email; archive copy in CRM contact section |
+| `service-guarantee-certificate.html` | 1 (US Letter LANDSCAPE) | Customer keepsake certificate — diploma-aesthetic warranty document | Issued post-permit-approval; PDF email attachment or printed hand-delivery |
+| `quote-pdf.html` | 2 | Printable proposal | Attached to proposal email for customers who want to print or file with insurance |
 
 ## How to render to PDF
 
