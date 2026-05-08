@@ -3609,15 +3609,37 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
   };
 
   // ── UI primitives (scoped to this component) ──────────────────────────
-  const Pill = ({ on, onClick, children, accent }) => (
+  // V3 polish: pills accept a `withCheck` prop to show a checkbox-style icon
+  // on the left, indicating toggle state at a glance (matches the Claude
+  // Design polish pass — checkbox-in-pill is more legible than fill-only).
+  const Pill = ({ on, onClick, children, accent, withCheck = false }) => (
     <button onClick={onClick} style={{
-      flex:1, height:36, borderRadius:8,
+      flex:1, minHeight:38, padding:'0 14px', borderRadius:8,
       background: on ? (accent || NAVY) : 'white',
       color: on ? (accent === GOLD ? NAVY : 'white') : NAVY,
       border: on ? 'none' : '1px solid rgba(11,31,59,0.15)',
       fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
-      whiteSpace:'nowrap',
-    }}>{children}</button>
+      whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8,
+      boxShadow: on ? '0 1px 0 rgba(11,31,59,0.04), 0 0 0 1px rgba(11,31,59,0.04)' : 'none',
+      transition:'background 120ms, color 120ms',
+    }}>
+      {withCheck && (
+        <span aria-hidden="true" style={{
+          width:14, height:14, borderRadius:3, flexShrink:0,
+          border: on ? '1.5px solid currentColor' : '1.5px solid rgba(11,31,59,0.35)',
+          background: on ? 'transparent' : 'white',
+          display:'inline-flex', alignItems:'center', justifyContent:'center',
+          color: 'currentColor',
+        }}>
+          {on && (
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="2,6.5 5,9 10,3" />
+            </svg>
+          )}
+        </span>
+      )}
+      {children}
+    </button>
   );
 
   const renderLineRow = (li, i) => {
@@ -3631,27 +3653,33 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
         onDrop={() => { if (dragIdx != null) moveItem(dragIdx, i); setDragIdx(null); }}
         onDragEnd={() => setDragIdx(null)}
         style={{
-          display:'flex', alignItems:'center', gap:6,
-          padding:'7px 8px',
+          display:'flex', alignItems:'center', gap:8,
+          padding:'9px 10px',
           background: isDiscount ? '#FFF8E0' : 'white',
-          border: '1px solid ' + (isDiscount ? GOLD : 'rgba(11,31,59,0.12)'),
-          borderRadius:6, opacity: dragIdx === i ? 0.5 : 1,
+          border: '1px solid ' + (isDiscount ? GOLD : 'rgba(11,31,59,0.10)'),
+          borderRadius:8,
+          opacity: dragIdx === i ? 0.5 : 1,
+          boxShadow: dragIdx === i ? 'none' : (isDiscount
+            ? '0 1px 2px rgba(255,186,0,0.18)'
+            : '0 1px 2px rgba(11,31,59,0.05)'),
+          cursor: dragIdx === i ? 'grabbing' : 'default',
+          transition:'box-shadow 120ms, opacity 120ms',
         }}
       >
-        <span title="Drag to reorder" style={{ cursor:'grab', color:'#999', userSelect:'none', fontSize:14, padding:'0 2px' }}>⋮⋮</span>
+        <span title="Drag to reorder" style={{ cursor:'grab', color:'#9CA3AF', userSelect:'none', fontSize:15, padding:'0 2px', letterSpacing:'-0.05em' }}>⋮⋮</span>
         {isDiscount ? (
-          <span style={{ display:'inline-flex', gap:1, background:'#EBEBEA', padding:1, borderRadius:6, marginRight:4 }}>
+          <span style={{ display:'inline-flex', gap:1, background:'rgba(11,31,59,0.06)', padding:2, borderRadius:6, marginRight:2 }}>
             <button type="button" onClick={() => updateItem(i, { discountType: 'dollar' })} style={{
-              padding:'3px 7px', border:'none', borderRadius:5,
-              background: li.discountType === 'dollar' ? NAVY : 'white',
-              color: li.discountType === 'dollar' ? 'white' : '#666',
-              fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit',
+              padding:'4px 8px', border:'none', borderRadius:5,
+              background: li.discountType === 'dollar' ? GOLD : 'transparent',
+              color: li.discountType === 'dollar' ? NAVY : '#6B7280',
+              fontWeight:800, fontSize:11, cursor:'pointer', fontFamily:'inherit', minWidth:22,
             }}>$</button>
             <button type="button" onClick={() => updateItem(i, { discountType: 'percent' })} style={{
-              padding:'3px 7px', border:'none', borderRadius:5,
-              background: li.discountType === 'percent' ? NAVY : 'white',
-              color: li.discountType === 'percent' ? 'white' : '#666',
-              fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit',
+              padding:'4px 8px', border:'none', borderRadius:5,
+              background: li.discountType === 'percent' ? GOLD : 'transparent',
+              color: li.discountType === 'percent' ? NAVY : '#6B7280',
+              fontWeight:800, fontSize:11, cursor:'pointer', fontFamily:'inherit', minWidth:22,
             }}>%</button>
           </span>
         ) : (
@@ -3660,7 +3688,7 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
             checked={li.checked !== false}
             onChange={(e) => updateItem(i, { checked: e.target.checked })}
             title="Pre-checked for client (client can uncheck)"
-            style={{ width:14, height:14, accentColor: NAVY, flexShrink:0 }}
+            style={{ width:16, height:16, accentColor: NAVY, flexShrink:0, cursor:'pointer' }}
           />
         )}
         <input
@@ -3668,22 +3696,23 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
           value={li.name}
           onChange={(e) => updateItem(i, { name: e.target.value })}
           placeholder={isDiscount ? 'Discount label' : 'Service name'}
-          style={{ flex:1, minWidth:0, padding:'4px 6px', border:'none', background:'transparent',
-                   fontSize:13, color:NAVY, fontFamily:'inherit', outline:'none' }}
+          style={{ flex:1, minWidth:0, padding:'5px 6px', border:'none', background:'transparent',
+                   fontSize:13, color:NAVY, fontFamily:'inherit', outline:'none', fontWeight:500 }}
         />
-        {!isDiscount && <span style={{ color:'#999', fontSize:13 }}>$</span>}
+        <span style={{ color:'#9CA3AF', fontSize:13, fontWeight:600 }}>{isDiscount ? '−$' : '$'}</span>
         <input
           type="number"
           inputMode="decimal"
           min="0" step="1"
           value={li.amount}
           onChange={(e) => updateItem(i, { amount: parseFloat(e.target.value) || 0 })}
-          style={{ width:74, padding:'4px 6px', border:'1px solid rgba(11,31,59,0.15)', borderRadius:5,
-                   fontSize:13, textAlign:'right', fontWeight:700, color:NAVY, fontFamily:'inherit', background:'white' }}
+          style={{ width:64, padding:'5px 8px', border:'1px solid rgba(11,31,59,0.10)', borderRadius:6,
+                   fontSize:13, textAlign:'right', fontWeight:700, color:NAVY,
+                   fontFamily:"'JetBrains Mono','DM Mono',monospace", background:'white' }}
         />
         <button type="button" onClick={() => removeItem(i)} aria-label="Remove" style={{
-          background:'none', border:'none', color:'#999', cursor:'pointer', padding:'2px 4px',
-          fontSize:14, lineHeight:1, fontFamily:'inherit',
+          background:'none', border:'none', color:'#9CA3AF', cursor:'pointer', padding:'4px 6px',
+          fontSize:14, lineHeight:1, fontFamily:'inherit', borderRadius:4,
         }}>✕</button>
       </div>
     );
@@ -3699,32 +3728,46 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
           <Pill on={amp === '50'} onClick={() => setAmp('50')}>50A</Pill>
         </div>
       </div>
-      {/* 2. Length slider */}
+      {/* 2. Length slider — gradient-filled track shows progress visually */}
       <div>
         <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
           <span style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Length</span>
           <span style={{ fontSize:14, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono','DM Mono',monospace" }}>{lengthFt}'</span>
         </div>
-        <input
-          type="range" min="5" max="100" step="5" value={lengthFt}
-          onChange={(e) => setLengthFt(parseInt(e.target.value, 10) || 5)}
-          style={{ width:'100%', accentColor: NAVY, height:6 }}
-        />
+        {(() => {
+          const pct = Math.round(((lengthFt - 5) / 95) * 100);
+          return (
+            <input
+              type="range" min="5" max="100" step="5" value={lengthFt}
+              onChange={(e) => setLengthFt(parseInt(e.target.value, 10) || 5)}
+              className="cv3-range"
+              style={{
+                width:'100%', height:6, WebkitAppearance:'none', appearance:'none',
+                background: `linear-gradient(to right, ${NAVY} 0%, ${NAVY} ${pct}%, #E5E7EB ${pct}%, #E5E7EB 100%)`,
+                borderRadius:6, outline:'none', accentColor: NAVY,
+              }}
+            />
+          );
+        })()}
         <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#999', marginTop:2 }}>
           <span>5'</span><span>100'</span>
         </div>
       </div>
-      {/* 3. 4 toggle pills */}
+      {/* 3. 4 toggle pills with embedded check icons (per design polish) */}
       <div>
         <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Scope</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-          <Pill on={includeCord}    onClick={() => setIncludeCord(v => !v)}>Cord</Pill>
-          <Pill on={includeInlet}   onClick={() => setIncludeInlet(v => !v)}>Inlet</Pill>
-          <Pill on={includePermit}  onClick={() => setIncludePermit(v => !v)}>Permit</Pill>
-          <Pill on={pomOffered}     onClick={() => setPomOffered(v => !v)} accent={GOLD}>Peace of Mind</Pill>
+          <Pill on={includeCord}    onClick={() => setIncludeCord(v => !v)}    withCheck>Cord</Pill>
+          <Pill on={includeInlet}   onClick={() => setIncludeInlet(v => !v)}   withCheck>Inlet</Pill>
+          <Pill on={includePermit}  onClick={() => setIncludePermit(v => !v)}  withCheck>Permit</Pill>
+          <Pill on={pomOffered}     onClick={() => setPomOffered(v => !v)} accent={GOLD} withCheck>Peace of Mind</Pill>
         </div>
         {pomOffered && (
-          <div style={{ fontSize:11, color:'#666', fontStyle:'italic', marginTop:6 }}>
+          <div style={{
+            fontSize:11, color:'#92400E', fontStyle:'italic', marginTop:8,
+            padding:'8px 12px', background:'#FFFBEB', border:'1px solid #FDE68A',
+            borderLeft:`3px solid ${GOLD}`, borderRadius:6,
+          }}>
             Visible to client as opt-in (not pre-checked, not in displayed total).
           </div>
         )}
@@ -3755,7 +3798,7 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
       {/* Notes */}
       <div>
         <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
-          Notes <span style={{ fontWeight:400, opacity:0.7, textTransform:'none', letterSpacing:0 }}>(visible to customer)</span>
+          Notes
         </div>
         <textarea
           value={notes}
@@ -3766,29 +3809,46 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
                    fontSize:14, color:NAVY, fontFamily:'inherit', outline:'none', resize:'vertical',
                    boxSizing:'border-box' }}
         />
+        <div style={{ display:'inline-flex', alignItems:'center', gap:5, marginTop:5, fontSize:11, color:'#9CA3AF' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          Visible to customer
+        </div>
       </div>
     </div>
   );
 
   const footerRow = (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+    <div style={{
+      display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap',
+      padding:'10px 12px', borderRadius:8, background:'#F9FAFB',
+      borderTop:`2px solid ${NAVY}`,
+    }}>
       <div style={{ minWidth:0 }}>
-        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Total</div>
-        <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono','DM Mono',monospace" }}>${total.toLocaleString()}</div>
+        <div style={{ fontSize:10, fontWeight:700, color:'#6B7280', textTransform:'uppercase', letterSpacing:'0.07em' }}>Total</div>
+        <div style={{ fontSize:24, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono','DM Mono',monospace", letterSpacing:'-0.01em' }}>
+          ${total.toLocaleString()}
+        </div>
         {pomOffered && (
-          <div style={{ fontSize:10, color:'#999', marginTop:2 }}>
-            +${(window.V3_PRICING?.pom) || 447} if client opts into PoM
+          <div style={{ fontSize:10, color:'#9CA3AF', marginTop:2 }}>
+            +${(window.V3_PRICING?.pom) || 447} if client opts into Peace of Mind
           </div>
         )}
       </div>
-      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
         <button type="button" onClick={() => setRequireDeposit(v => !v)} style={{
-          height:36, padding:'0 12px', borderRadius:8,
+          height:38, padding:'0 14px', borderRadius:8,
           background: requireDeposit ? GOLD : 'white',
-          color: requireDeposit ? NAVY : '#666',
+          color: requireDeposit ? NAVY : '#6B7280',
           border: requireDeposit ? 'none' : '1px solid rgba(11,31,59,0.15)',
-          fontSize:11, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
-        }}>{requireDeposit ? '✓ ' : ''}50% deposit</button>
+          fontSize:11, fontWeight:700, fontFamily:'inherit', cursor:'pointer',
+          display:'inline-flex', alignItems:'center', gap:5,
+        }}>{requireDeposit && (
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="2,6.5 5,9 10,3" />
+          </svg>
+        )}50% deposit</button>
         <button
           onClick={submit}
           disabled={busy || (!isEdit && contact.do_not_contact)}
@@ -3799,9 +3859,15 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
             border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
             cursor: busy || (!isEdit && contact.do_not_contact) ? 'not-allowed' : 'pointer',
             display:'flex', alignItems:'center', gap:7,
+            boxShadow: busy || (!isEdit && contact.do_not_contact) ? 'none' : '0 1px 2px rgba(255,186,0,0.3)',
           }}
         >
           {busy ? (isEdit ? 'Saving…' : 'Sending…') : (isEdit ? 'Save changes' : 'Send to customer')}
+          {!busy && !(!isEdit && contact.do_not_contact) && (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+            </svg>
+          )}
         </button>
       </div>
     </div>
@@ -4015,27 +4081,33 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
         onDrop={() => { if (dragIdx != null) moveItem(dragIdx, i); setDragIdx(null); }}
         onDragEnd={() => setDragIdx(null)}
         style={{
-          display:'flex', alignItems:'center', gap:6,
-          padding:'7px 8px',
+          display:'flex', alignItems:'center', gap:8,
+          padding:'9px 10px',
           background: isDiscount ? '#FFF8E0' : 'white',
-          border: '1px solid ' + (isDiscount ? GOLD : 'rgba(11,31,59,0.12)'),
-          borderRadius:6, opacity: dragIdx === i ? 0.5 : 1,
+          border: '1px solid ' + (isDiscount ? GOLD : 'rgba(11,31,59,0.10)'),
+          borderRadius:8,
+          opacity: dragIdx === i ? 0.5 : 1,
+          boxShadow: dragIdx === i ? 'none' : (isDiscount
+            ? '0 1px 2px rgba(255,186,0,0.18)'
+            : '0 1px 2px rgba(11,31,59,0.05)'),
+          cursor: dragIdx === i ? 'grabbing' : 'default',
+          transition:'box-shadow 120ms, opacity 120ms',
         }}
       >
-        <span title="Drag to reorder" style={{ cursor:'grab', color:'#999', userSelect:'none', fontSize:14, padding:'0 2px' }}>⋮⋮</span>
+        <span title="Drag to reorder" style={{ cursor:'grab', color:'#9CA3AF', userSelect:'none', fontSize:15, padding:'0 2px', letterSpacing:'-0.05em' }}>⋮⋮</span>
         {isDiscount ? (
-          <span style={{ display:'inline-flex', gap:1, background:'#EBEBEA', padding:1, borderRadius:6, marginRight:4 }}>
+          <span style={{ display:'inline-flex', gap:1, background:'rgba(11,31,59,0.06)', padding:2, borderRadius:6, marginRight:2 }}>
             <button type="button" onClick={() => updateItem(i, { discountType: 'dollar' })} style={{
-              padding:'3px 7px', border:'none', borderRadius:5,
-              background: li.discountType === 'dollar' ? NAVY : 'white',
-              color: li.discountType === 'dollar' ? 'white' : '#666',
-              fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit',
+              padding:'4px 8px', border:'none', borderRadius:5,
+              background: li.discountType === 'dollar' ? GOLD : 'transparent',
+              color: li.discountType === 'dollar' ? NAVY : '#6B7280',
+              fontWeight:800, fontSize:11, cursor:'pointer', fontFamily:'inherit', minWidth:22,
             }}>$</button>
             <button type="button" onClick={() => updateItem(i, { discountType: 'percent' })} style={{
-              padding:'3px 7px', border:'none', borderRadius:5,
-              background: li.discountType === 'percent' ? NAVY : 'white',
-              color: li.discountType === 'percent' ? 'white' : '#666',
-              fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit',
+              padding:'4px 8px', border:'none', borderRadius:5,
+              background: li.discountType === 'percent' ? GOLD : 'transparent',
+              color: li.discountType === 'percent' ? NAVY : '#6B7280',
+              fontWeight:800, fontSize:11, cursor:'pointer', fontFamily:'inherit', minWidth:22,
             }}>%</button>
           </span>
         ) : (
@@ -4044,7 +4116,7 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
             checked={li.checked !== false}
             onChange={(e) => updateItem(i, { checked: e.target.checked })}
             title="Pre-checked for client"
-            style={{ width:14, height:14, accentColor: NAVY, flexShrink:0 }}
+            style={{ width:16, height:16, accentColor: NAVY, flexShrink:0, cursor:'pointer' }}
           />
         )}
         <input
@@ -4052,20 +4124,21 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
           value={li.name}
           onChange={(e) => updateItem(i, { name: e.target.value })}
           placeholder={isDiscount ? 'Discount label' : 'Line item'}
-          style={{ flex:1, minWidth:0, padding:'4px 6px', border:'none', background:'transparent',
-                   fontSize:13, color:NAVY, fontFamily:'inherit', outline:'none' }}
+          style={{ flex:1, minWidth:0, padding:'5px 6px', border:'none', background:'transparent',
+                   fontSize:13, color:NAVY, fontFamily:'inherit', outline:'none', fontWeight:500 }}
         />
-        {!isDiscount && <span style={{ color:'#999', fontSize:13 }}>$</span>}
+        <span style={{ color:'#9CA3AF', fontSize:13, fontWeight:600 }}>{isDiscount ? '−$' : '$'}</span>
         <input
           type="number" inputMode="decimal" min="0" step="1"
           value={li.amount}
           onChange={(e) => updateItem(i, { amount: parseFloat(e.target.value) || 0 })}
-          style={{ width:74, padding:'4px 6px', border:'1px solid rgba(11,31,59,0.15)', borderRadius:5,
-                   fontSize:13, textAlign:'right', fontWeight:700, color:NAVY, fontFamily:'inherit', background:'white' }}
+          style={{ width:64, padding:'5px 8px', border:'1px solid rgba(11,31,59,0.10)', borderRadius:6,
+                   fontSize:13, textAlign:'right', fontWeight:700, color:NAVY,
+                   fontFamily:"'JetBrains Mono','DM Mono',monospace", background:'white' }}
         />
         <button type="button" onClick={() => removeItem(i)} aria-label="Remove" style={{
-          background:'none', border:'none', color:'#999', cursor:'pointer', padding:'2px 4px',
-          fontSize:14, lineHeight:1, fontFamily:'inherit',
+          background:'none', border:'none', color:'#9CA3AF', cursor:'pointer', padding:'4px 6px',
+          fontSize:14, lineHeight:1, fontFamily:'inherit', borderRadius:4,
         }}>✕</button>
       </div>
     );
@@ -4125,10 +4198,14 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
   );
 
   const footerRow = (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+    <div style={{
+      display:'flex', alignItems:'center', justifyContent:'space-between', gap:12,
+      padding:'10px 12px', borderRadius:8, background:'#F9FAFB',
+      borderTop:`2px solid ${NAVY}`,
+    }}>
       <div>
-        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Total</div>
-        <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono','DM Mono',monospace" }}>${total.toLocaleString()}</div>
+        <div style={{ fontSize:10, fontWeight:700, color:'#6B7280', textTransform:'uppercase', letterSpacing:'0.07em' }}>Total</div>
+        <div style={{ fontSize:24, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono','DM Mono',monospace", letterSpacing:'-0.01em' }}>${total.toLocaleString()}</div>
       </div>
       <button
         onClick={submit}
@@ -4140,9 +4217,15 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
           border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
           cursor: busy || (!isEdit && contact.do_not_contact) || total <= 0 ? 'not-allowed' : 'pointer',
           display:'flex', alignItems:'center', gap:7,
+          boxShadow: busy || (!isEdit && contact.do_not_contact) || total <= 0 ? 'none' : '0 1px 2px rgba(255,186,0,0.3)',
         }}
       >
         {busy ? (isEdit ? 'Saving…' : 'Sending…') : (isEdit ? 'Save changes' : 'Send to customer')}
+        {!busy && !(!isEdit && contact.do_not_contact) && total > 0 && (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+          </svg>
+        )}
       </button>
     </div>
   );
