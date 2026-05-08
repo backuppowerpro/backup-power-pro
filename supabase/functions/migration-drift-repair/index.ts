@@ -158,6 +158,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (action === 'contacts_with_photos') {
+      const r = await conn.queryObject(
+        `SELECT id, name, phone, primary_panel_photo_path, primary_outlet_photo_path, panel_brand,
+                jsonb_array_length(coalesce(extra_photos, '[]'::jsonb)) AS extra_count, created_at
+         FROM contacts
+         WHERE primary_panel_photo_path IS NOT NULL
+            OR primary_outlet_photo_path IS NOT NULL
+            OR jsonb_array_length(coalesce(extra_photos, '[]'::jsonb)) > 0
+         ORDER BY created_at DESC LIMIT 30`
+      )
+      return json(200, { ok: true, count: r.rows.length, rows: r.rows })
+    }
+
     if (action === 'apply_messages_email_migration') {
       // One-shot migration apply for messages_email (20260508140000).
       // Replaces the supabase db push --linked path which still requires

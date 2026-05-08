@@ -155,9 +155,9 @@ Deno.serve(async (req) => {
 
   const sb = createClient(SUPABASE_URL, SR)
 
-  // Pull contact + DNC + email gate
+  // Pull contact + DNC + email gate (also pulls photo paths so we can sign URLs for personalized templates)
   const { data: contact, error } = await sb.from('contacts')
-    .select('id, name, email, do_not_contact, install_address, qualification_data, notes')
+    .select('id, name, email, do_not_contact, install_address, qualification_data, notes, primary_panel_photo_path, primary_outlet_photo_path, panel_brand, outlet_amps, gen_240v')
     .eq('id', body.contact_id)
     .maybeSingle()
   if (error || !contact) return json(404, { error: 'contact_not_found' })
@@ -179,11 +179,59 @@ Deno.serve(async (req) => {
 
   // Standard auto-derived variables
   const firstName = (contact.name || '').split(/\s+/)[0] || 'there'
+  const lastName = (contact.name || '').split(/\s+/).slice(1).join(' ')
+  const installAddr = String(contact.install_address || '')
+  const addrShort = installAddr.split(',')[0].trim() || 'your place'
+
+  // Auto-sign a panel photo URL if we have one. Falls back to a generic
+  // placeholder so the proposal email always has SOMETHING in the slot.
+  let panelPhotoUrl = `https://placehold.co/520x340/2a3a5c/ffffff?text=Your+panel`
+  if (contact.primary_panel_photo_path) {
+    try {
+      const signResp = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/sign/mms-inbound/${contact.primary_panel_photo_path}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${SR}`, apikey: SR, 'Content-Type': 'application/json' },
+          // 30 days — long enough for a customer to revisit a forwarded email
+          body: JSON.stringify({ expiresIn: 2592000 }),
+        },
+      )
+      if (signResp.ok) {
+        const sd = await signResp.json()
+        panelPhotoUrl = `${SUPABASE_URL}/storage/v1${sd.signedURL}`
+      }
+    } catch (_) { /* fallback stays */ }
+  }
+
+  // Caption for the photo: derive from panel_brand when available
+  const panelBrand = String(contact.panel_brand || '').trim()
+  const panelCaption = panelBrand
+    ? `Your ${panelBrand}, clean and ready for the inlet.`
+    : 'Your panel, photographed during qualification.'
+
+  // Outlet language for personalized 30A/50A templates
+  const outletAmps = contact.outlet_amps as number | null
+  const inletNema = outletAmps === 50 ? '14-50R'
+    : outletAmps === 30 ? 'L14-30R'
+    : 'standard'
+
   const vars: Record<string, string> = {
     first_name: firstName,
-    install_address: String(contact.install_address || ''),
-    preferences_url: `https://backuppowerpro.com/preferences?cid=${contact.id}`,
-    unsubscribe_url: `https://backuppowerpro.com/unsubscribe?cid=${contact.id}&t=${body.template}`,
+    last_name: lastName,
+    install_address: installAddr,
+    address_short: addrShort,
+    preferences_url: `https://backuppowerpro.com/preferences/?cid=${contact.id}`,
+    // Point at the Supabase function directly so Gmail's RFC-8058 one-click
+    // POST hits the handler with no client-side redirect. Customers clicking
+    // from the footer also land directly on the BPP-branded confirm page
+    // served by the function.
+    unsubscribe_url: `${SUPABASE_URL}/functions/v1/unsubscribe?cid=${contact.id}&t=${body.template}`,
+    panel_photo_url: panelPhotoUrl,
+    panel_caption: panelCaption,
+    panel_brand: panelBrand,
+    inlet_nema: inletNema,
+    outlet_amps: outletAmps != null ? String(outletAmps) : '',
     ...(body.variables || {}),
   }
   const html = renderVars(raw, vars)
@@ -195,6 +243,14 @@ Deno.serve(async (req) => {
   if ((body as any).dry_run === true) {
     return json(200, { ok: true, dry_run: true, template: body.template, html_length: html.length, text_length: text.length, html_head: html.slice(0, 300), to: contact.email })
   }
+
+  // RFC 8058 List-Unsubscribe headers, makes Gmail show the "Unsubscribe"
+  // button at the top of the email natively. Both URL + mailto for
+  // compatibility, plus the One-Click signal so Gmail bypasses the
+  // confirmation step.
+  const unsubUrl = vars.unsubscribe_url
+  const listUnsubscribe = `<${unsubUrl}>, <mailto:unsubscribe@backuppowerpro.com?subject=cid=${contact.id}>`
+  const listUnsubscribePost = 'List-Unsubscribe=One-Click'
 
   // Send via Resend
   const resp = await fetch('https://api.resend.com/emails', {
@@ -211,6 +267,10 @@ Deno.serve(async (req) => {
       html,
       text,  // plaintext fallback for accessibility + deliverability
       attachments: body.attachments || undefined,
+      headers: {
+        'List-Unsubscribe': listUnsubscribe,
+        'List-Unsubscribe-Post': listUnsubscribePost,
+      },
       tags: [
         { name: 'template', value: body.template },
         { name: 'contact_id', value: body.contact_id },

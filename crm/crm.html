@@ -6198,6 +6198,90 @@ window.generateMailingInsert = function(contactId) {
   w.onload = function() { w.print(); };
 };
 
+// ── EMAIL HISTORY MODAL ────────────────────────────────────────
+// Reads from messages_email table (migration 20260508140000). Shows
+// every email sent to a contact, when, what status, and lets Key
+// drill into the rendered HTML if needed for debugging.
+window.openEmailHistory = async function(contactId) {
+  var c = allContacts.find(function(x) { return x.id === contactId; });
+  if (!c) { showToast('No contact found', 'error'); return; }
+
+  // Lift any existing modal
+  document.querySelectorAll('.email-history-modal').forEach(function(el) { el.remove(); });
+
+  var modal = document.createElement('div');
+  modal.className = 'email-history-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(11,31,59,0.55);backdrop-filter:blur(2px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  modal.innerHTML = '<div style="background:var(--card);border-radius:12px;box-shadow:0 24px 48px rgba(11,31,59,0.18);max-width:720px;width:100%;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">' +
+    '<div style="background:var(--navy);color:#fff;padding:16px 24px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;">' +
+      '<div><div style="font-family:var(--font-display);font-weight:800;font-size:14px;letter-spacing:0.06em;text-transform:uppercase;">Email History</div>' +
+      '<div style="font-size:12px;color:rgba(255,255,255,0.72);margin-top:2px;">' + esc(c.name || c.email || c.id.slice(0,8)) + ' · ' + esc(c.email || 'no email on file') + '</div></div>' +
+      '<button onclick="this.closest(\'.email-history-modal\').remove()" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;padding:4px 10px;border-radius:4px;">×</button>' +
+    '</div>' +
+    '<div id="email-history-body" style="flex:1;overflow:auto;padding:18px 24px;font-family:var(--font-body);">' +
+      '<div style="text-align:center;color:var(--text-muted);padding:40px 0;">Loading…</div>' +
+    '</div>' +
+  '</div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+
+  try {
+    var { data: rows, error } = await db
+      .from('messages_email')
+      .select('id, template, subject, to_email, status, error, trigger, sent_at, delivered_at, bounced_at, opened_at, clicked_at')
+      .eq('contact_id', contactId)
+      .order('sent_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+
+    var body = modal.querySelector('#email-history-body');
+    if (!rows || rows.length === 0) {
+      body.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:14px;">No emails sent yet.<br /><span style="font-size:12px;">Once the email program goes live, sends to this contact appear here.</span></div>';
+      return;
+    }
+
+    var fmt = function(d) { return d ? new Date(d).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : ''; };
+    var statusBadge = function(s) {
+      var color = '#6b7280', bg = '#f4f6fa';
+      if (s === 'delivered') { color = '#047857'; bg = '#ecfdf5'; }
+      else if (s === 'bounced') { color = '#991b1b'; bg = '#fff5f5'; }
+      else if (s === 'complained') { color = '#7c2d12'; bg = '#fff7ed'; }
+      else if (s === 'sent') { color = '#0b1f3b'; bg = '#fff8e0'; }
+      return '<span style="display:inline-block;padding:2px 8px;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;border-radius:100px;color:' + color + ';background:' + bg + ';">' + s + '</span>';
+    };
+
+    var rowHtml = rows.map(function(r) {
+      var stamps = [];
+      if (r.delivered_at) stamps.push('Delivered ' + fmt(r.delivered_at));
+      if (r.opened_at) stamps.push('Opened ' + fmt(r.opened_at));
+      if (r.clicked_at) stamps.push('Clicked ' + fmt(r.clicked_at));
+      if (r.bounced_at) stamps.push('Bounced ' + fmt(r.bounced_at));
+      var stampsLine = stamps.length ? '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + esc(stamps.join(' · ')) + '</div>' : '';
+      var errLine = r.error ? '<div style="font-size:11px;color:#991b1b;margin-top:4px;font-family:ui-monospace,monospace;">' + esc(r.error) + '</div>' : '';
+      return '<div style="padding:12px 0;border-bottom:1px solid var(--ring);">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+              '<span style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--navy);">' + esc(r.template) + '</span>' +
+              statusBadge(r.status) +
+              '<span style="font-size:10px;color:var(--text-muted);font-family:ui-monospace,monospace;">' + esc(r.trigger || 'manual') + '</span>' +
+            '</div>' +
+            '<div style="font-size:13px;color:var(--text-primary);margin-top:4px;">' + esc(r.subject || '') + '</div>' +
+            stampsLine + errLine +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">' + esc(fmt(r.sent_at)) + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    body.innerHTML = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">' + rows.length + ' email' + (rows.length === 1 ? '' : 's') + ' sent · most recent first</div>' + rowHtml;
+  } catch (e) {
+    console.error('[email-history] load failed', e);
+    var body = modal.querySelector('#email-history-body');
+    body.innerHTML = '<div style="color:#991b1b;padding:24px 0;font-size:13px;">Failed to load email history.<br /><span style="font-size:11px;font-family:ui-monospace,monospace;">' + esc(String(e.message || e)) + '</span></div>';
+  }
+};
+
 // ── SEND INVOICE LINK ─────────────────────────────────────────
 async function sendInvoiceLink(contactId) {
   var c = allContacts.find(function(x) { return x.id === contactId; });
@@ -14084,9 +14168,13 @@ setTimeout(() => {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             Pull Permit with Sparky
           </button>
-          <button onclick="window.generateMailingInsert('${id}')" class="pm-pill" style="width:100%;padding:10px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:7px" title="Generate a fold-and-mail letter with permit instructions — prints to a #10 window envelope">
+          <button onclick="window.generateMailingInsert('${id}')" class="pm-pill" style="width:100%;padding:10px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:7px" title="Generate a fold-and-mail letter with permit instructions, prints to a #10 window envelope">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
             Generate Mail Insert
+          </button>
+          <button onclick="window.openEmailHistory('${id}')" class="pm-pill" style="width:100%;padding:10px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:7px" title="View every email this contact has received from BPP">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.66-1.5 2.5-4.34 2.5-9 0-4.66-.84-7.5-2.5-9m0 18c-1.66-1.5-2.5-4.34-2.5-9 0-4.66.84-7.5 2.5-9m-9 9a9 9 0 0 1 9-9"/></svg>
+            Email History
           </button>
         </div>
       </div>
