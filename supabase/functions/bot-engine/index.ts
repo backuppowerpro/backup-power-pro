@@ -518,11 +518,10 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       if (stageErr) {
         console.warn('[bot-engine] stage 1→2 advance returned error:', stageErr)
       } else if (updated && updated.length > 0) {
-        try {
-          await sb.from('stage_history').insert([{
-            contact_id: contact.id, from_stage: 1, to_stage: 2,
-          }])
-        } catch (_) { /* non-blocking */ }
+        // v10.1.62: removed manual stage_history insert. The
+        // contacts_stage_change_record AFTER UPDATE trigger now records
+        // the transition automatically (fixed in 20260508 migration).
+        // Doing both produced duplicate stage_history rows.
         console.log('[bot-engine] auto-advanced stage 1→2 on first customer reply', contact.id)
       }
     } catch (e) {
@@ -787,10 +786,43 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       last_bot_inbound_at: new Date().toISOString(),
     }
     // Classifier-label-based slot writes
+    // v10.1.62: outlet labels also imply voltage. 50A residential is
+    // always 240V. 30A 4-prong (L14-30) is 240V. 30A 3-prong (TT-30R)
+    // is 120V (handled at DISQUALIFIED_120V state already). gen_240v
+    // mirrors that so the CRM has correct voltage on every qualified lead.
     if (classifier?.label === 'gen_240v') stateUpdate.gen_240v = true
     if (classifier?.label === 'gen_120v') stateUpdate.gen_240v = false
-    if (classifier?.label === 'outlet_50a') stateUpdate.outlet_amps = 50
-    if (classifier?.label === 'outlet_30a_4prong' || classifier?.label === 'outlet_30a') stateUpdate.outlet_amps = 30
+    if (classifier?.label === 'outlet_50a') {
+      stateUpdate.outlet_amps = 50
+      stateUpdate.outlet_type = '14-50R'  // NEMA 14-50R
+      stateUpdate.gen_240v = true
+    }
+    if (classifier?.label === 'outlet_30a_4prong' || classifier?.label === 'outlet_30a') {
+      stateUpdate.outlet_amps = 30
+      stateUpdate.outlet_type = 'L14-30R'  // NEMA L14-30R
+      stateUpdate.gen_240v = true
+    }
+    if (classifier?.label === 'outlet_30a_3prong') {
+      stateUpdate.outlet_amps = 30
+      stateUpdate.outlet_type = 'TT-30R-or-L5-30R'  // 120V variants
+      stateUpdate.gen_240v = false
+    }
+    // v10.1.62: ownership writes (was missing entirely - is_owner was
+    // never persisted even when classifier returned 'owner' or 'renter').
+    if (classifier?.label === 'owner') stateUpdate.is_owner = true
+    if (classifier?.label === 'renter') stateUpdate.is_owner = false
+    // v10.1.62: volunteered ownership detection. Classifier prioritizes
+    // routing labels (panel_*, outlet_*) over secondary signals, so a
+    // message like "we own. panel is on the outside wall" returns
+    // panel_garage_exterior and is_owner never gets stamped. Sniff the
+    // raw inbound for explicit ownership language as a fallback.
+    if (stateUpdate.is_owner === undefined) {
+      const inboundLower = String(input.message_body || '').toLowerCase()
+      const ownerSignal = /\b(we own|i own|we're the owner|i'm the owner|owner here|own the (place|home|house)|we bought|i bought|just bought)\b/.test(inboundLower)
+      const renterSignal = /\b(we rent|i rent|renting|landlord|property manager|tenant|rental property)\b/.test(inboundLower)
+      if (ownerSignal && !renterSignal) stateUpdate.is_owner = true
+      if (renterSignal && !ownerSignal) stateUpdate.is_owner = false
+    }
     if (classifier?.label === 'email_provided' && classifier.extracted_value) stateUpdate.email = classifier.extracted_value
 
     // Apply pre-extracted slots (only fill blanks; don't overwrite existing)
@@ -921,7 +953,15 @@ async function handleInbound(input: InboundInput): Promise<Response> {
           }
           break
         case 'POSTPONED':
-          terminalReply = `${namePrefix}no rush, text me back whenever you're ready and we'll pick up where we left off.`
+          // v10.1.62: respect transitionResult.fallback when the universal
+          // escape supplied a context-specific one (wrong_person_polite,
+          // customer_changed_mind, spouse_approval_needed). Falling back
+          // to the generic "no rush" only when no specific fallback is set.
+          if (transitionResult.fallback && typeof transitionResult.fallback === 'string') {
+            terminalReply = transitionResult.fallback
+          } else {
+            terminalReply = `${namePrefix}no rush, text me back whenever you're ready and we'll pick up where we left off.`
+          }
           break
         case 'DISQUALIFIED_120V':
           terminalReply = `${namePrefix}sounds like the generator is a 120V model, which won't work for a whole-home connection. If you ever upgrade to a 240V unit we'd be happy to help.`

@@ -1244,7 +1244,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
         return {
           next: currentState,
           intent: `customer gave a partial address ("${addrRaw.slice(0, 60)}"); politely ask for the full address including city and zip so the permit gets filed correctly. Do NOT thank them for it yet (it's incomplete). Do NOT advance state.`,
-          fallback: () => `Got the start of that, can you send the full address with city and zip too? Need that for the permit.`,
+          fallback: `Got the start of that, can you send the full address with city and zip too? Need that for the permit.`,
           endConversation: false,
           onEnter: { partial_address: addrRaw },
         };
@@ -1258,8 +1258,8 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
   if (label === 'wrong_person_polite' && !state.terminal) {
     return {
       next: 'POSTPONED',
-      intent: 'KEY-VOICE: customer kindly clarified they are not the lead (spouse/family member picked up the phone). Apologize briefly, ask the actual lead to text us back at their convenience. Do NOT keep qualifying. No pressure.',
-      fallback: () => `Got it, sorry about that. If the person who filled the form can shoot us a quick text when they get a sec, we'll pick it up from there.`,
+      intent: 'STRICT: customer kindly clarified they are not the lead (a spouse / family member picked up the phone). REQUIRED OPENING: brief sorry-about-the-mixup. REQUIRED ASK: have the person who actually filled the form text us back when they get a sec. Do NOT use a generic "no rush, text me back whenever" — that misses the point. Do NOT thank them for "all that" — they did not give qualifying info. Do NOT keep asking qualifying questions.',
+      fallback: `Sorry about that, I had the wrong person. If whoever filled out the form can shoot us a quick text when they get a sec, we'll pick it up from there.`,
       endConversation: true,
       onEnter: { wrong_person_polite: true, paused_at_state: currentState },
     };
@@ -1280,10 +1280,11 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
   // v10.1.60: audio MMS (voice memo). We don't transcribe. Politely
   // ask for text. Self-loop until they reply with text.
   if (label === 'audio_received' && !state.terminal) {
+    const reAsk = state.fallback ? state.fallback(ctx) : '';
     return {
       next: currentState,
       intent: `customer sent a voice memo / audio file. We don't transcribe audio yet. Politely ask them to text the answer instead. Then re-ask: ${state.intent}`,
-      fallback: `Hey, I can't open voice memos on my end yet, would you mind typing the answer? ${state.fallback ? state.fallback(ctx) : ''}`.trim(),
+      fallback: `Hey, I can't open voice memos on my end yet, would you mind typing the answer? ${reAsk}`.trim(),
       endConversation: false,
       onEnter: { audio_attempted_at: currentState },
     };
@@ -1301,7 +1302,7 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     return {
       next: 'POSTPONED',
       intent: 'KEY-VOICE: customer withdrew mid-flow ("never mind" / "changed my mind"). Accept gracefully, no push-back, no asking why, no apology stacking. Leave a clean re-entry door: "no problem, just text us if you ever pick this back up." Premium posture.',
-      fallback: () => `No problem. The door's open whenever you're ready, just text us back.`,
+      fallback: `No problem. The door's open whenever you're ready, just text us back.`,
       endConversation: false,  // soft pause, customer can return
       onEnter: { warm_pause: true, paused_at_state: currentState, paused_reason: 'changed_mind' },
     };

@@ -79,6 +79,20 @@ Deno.serve(async (req) => {
   const conn = await pool.connect()
 
   try {
+    if (action === 'raw_contact_inspect') {
+      const id = body?.contact_id
+      if (!id) return json(400, { error: 'contact_id required' })
+      const r = await conn.queryObject(
+        `SELECT id, phone, email, install_address, address, outlet_amps, outlet_type,
+                gen_240v, is_owner, panel_brand, run_feet_estimate, bot_state, stage,
+                qualification_data
+         FROM contacts WHERE id = $1`, [id])
+      // Also: stage_history
+      const sh = await conn.queryObject(
+        `SELECT from_stage, to_stage, changed_at FROM stage_history WHERE contact_id = $1 ORDER BY changed_at`, [id])
+      return json(200, { ok: true, contact: r.rows[0], stage_history: sh.rows })
+    }
+
     if (action === 'inspect_stage_setup') {
       // No-phone inspector: dump triggers, RLS policies, generated cols, and
       // the column definition for `stage`. Used to diagnose why the 1->2
