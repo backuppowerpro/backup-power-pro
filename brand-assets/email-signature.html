@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>BPP — Email Signature</title>
+<style>
+  /* Page-only chrome — NOT part of the signature itself.
+     The signature block below is fully self-contained and inline-styled
+     so it survives copy/paste into Gmail / Apple Mail / Resend. */
+  body {
+    margin: 0;
+    padding: 32px;
+    background: #ececec;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: #0b1f3b;
+  }
+  .stage {
+    max-width: 540px;
+    margin: 0 auto;
+  }
+  .stage h1 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #6a6a78;
+    font-weight: 600;
+    margin: 0 0 14px;
+  }
+  .signature-frame {
+    background: #ffffff;
+    padding: 28px 24px;
+    border: 1px solid #e0ddd2;
+    border-radius: 4px;
+    box-shadow: 0 6px 24px rgba(11,31,59,0.06);
+  }
+  .stage .helper {
+    font-size: 12px;
+    color: #6a6a78;
+    margin-top: 14px;
+    line-height: 1.55;
+  }
+  .stage .helper code {
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+    background: #f4f1e6;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-size: 11px;
+    color: #0b1f3b;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <h1>BPP Email Signature · v1</h1>
+
+  <div class="signature-frame">
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- BPP EMAIL SIGNATURE — START                                       -->
+    <!-- Copy from <table> to </table> below into Gmail signature settings. -->
+    <!-- All styles inlined; tables for layout; safe in Gmail/Apple Mail.   -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+
+    <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;max-width:460px;width:100%;font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#0b1f3b;line-height:1.4;">
+      <tr>
+        <!-- LEFT: avatar -->
+        <td valign="top" style="padding:0 18px 0 0;width:108px;vertical-align:top;">
+          <!-- TWEAK: replace src with Key's actual headshot URL (or Gravatar) at deploy time -->
+          <img
+            src="https://www.gravatar.com/avatar/00000000000000000000000000000000?s=192&d=mp"
+            alt="Key Goodson, BPP"
+            width="96"
+            height="96"
+            style="display:block;width:96px;height:96px;border-radius:50%;border:2px solid #ffba00;background:#f4f1e6;"
+          />
+        </td>
+
+        <!-- RIGHT: identity + contact -->
+        <td valign="top" style="vertical-align:top;padding:0;">
+
+          <div style="font-family:'Outfit','Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:700;color:#0b1f3b;line-height:1.15;letter-spacing:-0.01em;">
+            Key Goodson
+          </div>
+
+          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:400;color:#4a4a5a;margin-top:2px;line-height:1.4;">
+            Backup Power Pro &middot; SC Licensed Electrician
+          </div>
+
+          <!-- gold rule -->
+          <div style="width:120px;height:1px;background:#ffba00;margin:10px 0 10px;font-size:0;line-height:0;">&nbsp;</div>
+
+          <!-- Phone -->
+          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;color:#0b1f3b;margin:0 0 4px;line-height:1.45;">
+            <span style="display:inline-block;width:14px;color:#ffba00;font-size:13px;">&#9990;</span>
+            <a href="tel:+18648637800" style="color:#0b1f3b;text-decoration:none;font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-weight:700;font-size:13px;">(864)&nbsp;863-7800</a>
+          </div>
+
+          <!-- Email -->
+          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:12px;color:#0b1f3b;margin:0 0 4px;line-height:1.45;">
+            <span style="display:inline-block;width:14px;color:#ffba00;font-size:12px;">&#9993;</span>
+            <a href="/cdn-cgi/l/email-protection#b2d9d7cbf2d0d3d1d9c7c2c2ddc5d7c0c2c0dd9cd1dddf" style="color:#0b1f3b;text-decoration:none;"><span class="__cf_email__" data-cfemail="7318160a33111210180603031c04160103011c5d101c1e">[email&#160;protected]</span></a>
+          </div>
+
+          <!-- Web -->
+          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:12px;color:#0b1f3b;margin:0 0 8px;line-height:1.45;">
+            <span style="display:inline-block;width:14px;color:#ffba00;font-size:12px;">&#127760;</span>
+            <a href="https://backuppowerpro.com" style="color:#0b1f3b;text-decoration:none;">backuppowerpro.com</a>
+          </div>
+
+          <!-- Tagline -->
+          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;font-style:italic;color:#8a5a00;margin:6px 0 0;line-height:1.4;">
+            One-Day Generator Inlet Installation. Done Right.
+          </div>
+
+        </td>
+      </tr>
+
+      <!-- Bottom service-area row, full width -->
+      <tr>
+        <td colspan="2" style="padding:14px 0 0;">
+          <div style="font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:9px;color:#0b1f3b;letter-spacing:0.18em;text-transform:uppercase;text-align:center;line-height:1.4;">
+            GREENVILLE &middot; SPARTANBURG &middot; PICKENS &middot; UPSTATE&nbsp;SC
+          </div>
+          <div style="height:2px;background:#ffba00;margin:6px auto 0;max-width:460px;font-size:0;line-height:0;">&nbsp;</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- BPP EMAIL SIGNATURE — END                                         -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+
+  </div>
+
+  <p class="helper">
+    To install: select the signature block above (from "Key Goodson" through the gold rule), copy with <code>Cmd+C</code>, then paste into Gmail → Settings → Signature. The block is table-based with inline styles, so Gmail won't strip the layout. Avatar URL is a Gravatar placeholder &mdash; swap for Key's actual headshot URL once available.
+  </p>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+</html>
