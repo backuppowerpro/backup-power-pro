@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Generator Hookup Buyer's Guide — Chapter 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0b1f3b;
+    --navy-soft: #16315a;
+    --gold: #ffba00;
+    --gold-soft: #fff4d0;
+    --ink: #0b1f3b;
+    --paper: #fbfaf6;
+    --rule: #d9d4c5;
+    --muted: #5a6478;
+    --danger: #b3261e;
+    --ok: #1f7a3a;
+  }
+
+  @page {
+    size: Letter portrait;
+    margin: 0.75in;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ddd;
+    color: var(--ink);
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  /* Screen preview: render letter-sized pages stacked */
+  .page {
+    background: var(--paper);
+    width: 8.5in;
+    height: 11in;
+    padding: 0.75in;
+    margin: 24px auto;
+    position: relative;
+    page-break-after: always;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    overflow: hidden;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  @media print {
+    html, body { background: var(--paper); }
+    .page {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      box-shadow: none;
+    }
+  }
+
+  /* Common page chrome */
+  .gold-rule {
+    height: 3px;
+    background: var(--gold);
+    width: 100%;
+    margin-bottom: 18pt;
+  }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9pt;
+    font-weight: 500;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .eyebrow .right {
+    color: var(--muted);
+  }
+
+  .footer {
+    position: absolute;
+    bottom: 0.5in;
+    left: 0.75in;
+    right: 0.75in;
+    display: flex;
+    justify-content: space-between;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8pt;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-top: 8pt;
+    border-top: 1px solid var(--rule);
+  }
+  .footer .brand {
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .footer .brand b { color: var(--gold); }
+
+  /* ───── Page 1: chapter opener ───── */
+
+  .opener {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
+    gap: 24pt;
+    height: calc(11in - 1.5in);
+  }
+  .opener .head {
+    grid-column: 1 / -1;
+  }
+  .opener .num {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 360pt;
+    line-height: 0.78;
+    color: var(--gold);
+    margin: 0;
+    letter-spacing: -0.06em;
+    align-self: center;
+  }
+  .opener .title-block {
+    align-self: center;
+    padding-left: 8pt;
+    border-left: 3px solid var(--navy);
+  }
+  .opener h1 {
+    font-family: "Outfit", sans-serif;
+    font-weight: 700;
+    font-size: 36pt;
+    line-height: 1.05;
+    margin: 0 0 12pt;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+  }
+  .opener h1 em {
+    font-style: normal;
+    color: var(--gold);
+  }
+  .opener .subtitle {
+    font-family: "Inter", sans-serif;
+    font-size: 14pt;
+    line-height: 1.45;
+    color: var(--ink);
+    margin: 0;
+    max-width: 28ch;
+  }
+  .opener .meta {
+    margin-top: 18pt;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8.5pt;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    line-height: 1.7;
+  }
+  .opener .meta b { color: var(--navy); font-weight: 600; }
+
+  .pull-quote {
+    grid-column: 1 / -1;
+    background: var(--gold);
+    color: var(--navy);
+    padding: 18pt 22pt;
+    position: relative;
+    border-radius: 2px;
+  }
+  .pull-quote::before {
+    content: "\201C";
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 64pt;
+    line-height: 0.6;
+    position: absolute;
+    top: 18pt;
+    left: 14pt;
+    color: var(--navy);
+    opacity: 0.18;
+  }
+  .pull-quote p {
+    margin: 0 0 8pt;
+    font-family: "Outfit", sans-serif;
+    font-weight: 500;
+    font-size: 14pt;
+    line-height: 1.4;
+    padding-left: 36pt;
+  }
+  .pull-quote .attrib {
+    padding-left: 36pt;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--navy);
+    opacity: 0.75;
+    margin: 0;
+  }
+
+  /* ───── Pages 2-4: section title ───── */
+
+  .section-title {
+    font-family: "Outfit", sans-serif;
+    font-weight: 700;
+    font-size: 22pt;
+    line-height: 1.15;
+    color: var(--navy);
+    margin: 6pt 0 14pt;
+    letter-spacing: -0.01em;
+  }
+  .section-title .dot {
+    color: var(--gold);
+  }
+
+  .body p {
+    margin: 0 0 10pt;
+    font-size: 11pt;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+  .body p .mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.92em;
+    background: rgba(11,31,59,0.06);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--navy);
+    font-weight: 500;
+  }
+  .body p strong { color: var(--navy); }
+
+  /* Image placeholder */
+  .placeholder {
+    width: 100%;
+    height: 300px;
+    background:
+      repeating-linear-gradient(
+        135deg,
+        #ece7d3 0 12px,
+        #e3decb 12px 24px
+      );
+    border: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 16pt;
+    margin: 12pt 0 6pt;
+  }
+  .placeholder .ph-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9pt;
+    color: var(--navy);
+    background: var(--paper);
+    padding: 8px 12px;
+    border: 1px solid var(--navy);
+    max-width: 80%;
+    line-height: 1.5;
+  }
+  .caption {
+    font-family: "Inter", sans-serif;
+    font-style: italic;
+    font-size: 9.5pt;
+    color: var(--muted);
+    margin: 0 0 16pt;
+    text-align: center;
+  }
+
+  /* Warning box */
+  .warning {
+    border: 1.5px solid var(--navy);
+    background: var(--paper);
+    padding: 12pt 14pt 12pt 44pt;
+    position: relative;
+    margin-top: 10pt;
+    border-left: 6px solid var(--gold);
+  }
+  .warning::before {
+    content: "★";
+    position: absolute;
+    left: 14pt;
+    top: 11pt;
+    color: var(--gold);
+    font-size: 18pt;
+    line-height: 1;
+  }
+  .warning p {
+    margin: 0;
+    font-size: 10.5pt;
+    line-height: 1.5;
+  }
+  .warning b { color: var(--navy); }
+
+  /* Compatibility table (page 3) */
+  .compat-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 18pt;
+    font-size: 11pt;
+  }
+  .compat-table thead th {
+    background: var(--navy);
+    color: var(--paper);
+    text-align: left;
+    padding: 10pt 12pt;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    font-size: 9.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .compat-table tbody td {
+    padding: 11pt 12pt;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: middle;
+  }
+  .compat-table tbody tr:nth-child(even) td {
+    background: rgba(11,31,59,0.025);
+  }
+  .compat-table .code {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
+    font-size: 11pt;
+    color: var(--navy);
+  }
+  .compat-table .yes {
+    color: var(--ok);
+    font-weight: 600;
+  }
+  .compat-table .no {
+    color: var(--danger);
+    font-weight: 600;
+  }
+  .compat-table .check { font-family: "JetBrains Mono", monospace; }
+
+  /* Outlet thumbnail row */
+  .outlet-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12pt;
+    margin: 6pt 0 18pt;
+  }
+  .outlet-thumb {
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    text-align: center;
+    padding: 10pt 6pt 8pt;
+  }
+  .outlet-thumb .swatch {
+    height: 90px;
+    background:
+      repeating-linear-gradient(
+        135deg,
+        #ece7d3 0 8px,
+        #e3decb 8px 16px
+      );
+    border: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 7.5pt;
+    color: var(--navy);
+    margin-bottom: 8pt;
+  }
+  .outlet-thumb .code {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
+    font-size: 10pt;
+    color: var(--navy);
+    display: block;
+  }
+  .outlet-thumb .desc {
+    font-family: "Inter", sans-serif;
+    font-size: 8.5pt;
+    color: var(--muted);
+    display: block;
+    margin-top: 2pt;
+  }
+
+  /* Pro tip card */
+  .protip {
+    background: var(--navy);
+    color: var(--paper);
+    padding: 14pt 18pt;
+    margin-top: 10pt;
+    border-radius: 2px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14pt;
+    align-items: center;
+  }
+  .protip .badge {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8pt;
+    font-weight: 600;
+    background: var(--gold);
+    color: var(--navy);
+    padding: 4pt 8pt;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .protip p {
+    margin: 0;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+  .protip b { color: var(--gold); }
+
+  /* Page 4: recommendation cards */
+  .rec-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12pt;
+    margin-bottom: 18pt;
+  }
+  .rec-card {
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--gold);
+    background: var(--paper);
+    padding: 14pt 16pt;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6pt 18pt;
+    align-items: start;
+  }
+  .rec-card .name {
+    font-family: "Outfit", sans-serif;
+    font-weight: 700;
+    font-size: 16pt;
+    color: var(--navy);
+    line-height: 1.15;
+    margin: 0;
+  }
+  .rec-card .brand-line {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8.5pt;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 2pt 0 0;
+  }
+  .rec-card .brand-line b { color: var(--navy); font-weight: 600; }
+  .rec-card .desc {
+    grid-column: 1 / -1;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    margin: 6pt 0 0;
+    color: var(--ink);
+  }
+  .rec-card .compat {
+    align-self: start;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: var(--navy);
+    background: var(--gold);
+    padding: 4pt 8pt;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .rec-card .compat::before {
+    content: "✓ ";
+  }
+  .rec-card .specs {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 16pt;
+    margin-top: 6pt;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9pt;
+    color: var(--navy);
+    flex-wrap: wrap;
+  }
+  .rec-card .specs span b {
+    color: var(--muted);
+    font-weight: 500;
+    margin-right: 4pt;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE 1 — CHAPTER OPENER                                     -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="page" data-screen-label="01 Opener">
+  <div class="gold-rule"></div>
+  <div class="eyebrow">
+    <span>Chapter 3 · Page 11</span>
+    <span class="right">The Generator Hookup Buyer's Guide</span>
+  </div>
+
+  <div class="opener">
+    <div class="head"></div>
+
+    <div class="num">03</div>
+
+    <div class="title-block">
+      <h1>The 240V<br />Outlet <em>Trap.</em></h1>
+      <p class="subtitle">Why a "30 amp" generator outlet sometimes isn't compatible. The single number that saves people the most money.</p>
+      <div class="meta">
+        <b>Read time</b> &nbsp; 6 min<br />
+        <b>If you read nothing else</b> &nbsp; read this
+      </div>
+    </div>
+
+    <div class="pull-quote">
+      <p>If a customer's 30A outlet is 3-prong, my install won't work — and they spent $400 on the wrong generator. This page is why I include outlet photos in every Ashley conversation.</p>
+      <p class="attrib">— Key Mitchell, lead installer</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="brand">BPP <b>·</b> Backup Power Pro</span>
+    <span>011</span>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE 2 — THE MISTAKE EXPLAINED                              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="page" data-screen-label="02 What goes wrong">
+  <div class="gold-rule"></div>
+  <div class="eyebrow">
+    <span>Chapter 3 · The 240V Outlet Trap</span>
+    <span class="right">Page 12</span>
+  </div>
+
+  <h2 class="section-title">What goes wrong<span class="dot">.</span></h2>
+
+  <div class="body">
+    <p>A customer buys a generator labeled <strong>"30 amp"</strong> on the box. They get it home, slide it out of the carton, and look at the back panel. There's a round outlet, three prongs in a curved arc — that <em>looks</em> right. So they assume it's the standard hookup we asked them to provide and schedule the install.</p>
+
+    <p>When we show up, we find one of two things. Either the outlet is a <span class="mono">TT-30R</span> — the round 3-prong used on RV pedestals — or it's an <span class="mono">L5-30R</span>, the twist-lock 3-prong used in light commercial work. Both are rated 30 amps. Both are <strong>120 volts only</strong>. Neither one can carry the 240V circuits the transfer switch needs to feed your panel.</p>
+
+    <p>The fix at that point is not cheap. The generator goes back, restocking fee included, and we re-spec to a 4-prong unit — usually a <span class="mono">L14-30R</span> or <span class="mono">14-50R</span>. That's a wasted afternoon and roughly $400 of generator the customer doesn't get back. The whole thing is avoidable with a 4-second prong count before purchase.</p>
+  </div>
+
+  <!-- TWEAK: replace placeholder with hi-res comparison photo when available
+       suggested filename: assets/outlet-comparison-l14-vs-tt30.jpg -->
+  <div class="placeholder">
+    <div class="ph-label">[ comparison: NEMA L14-30R 4-prong (240V, BPP-compatible)<br />vs NEMA TT-30R 3-prong (120V, NOT compatible) ]</div>
+  </div>
+  <p class="caption">Same "30 amp" label. Different worlds.</p>
+
+  <div class="warning">
+    <p><b>The label "30 amp" on a generator can mean either 240V (compatible) or 120V (not compatible).</b> Always check prong count.</p>
+  </div>
+
+  <div class="footer">
+    <span class="brand">BPP <b>·</b> Backup Power Pro</span>
+    <span>012</span>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE 3 — HOW TO SPOT IT                                     -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="page" data-screen-label="03 How to spot it">
+  <div class="gold-rule"></div>
+  <div class="eyebrow">
+    <span>Chapter 3 · The 240V Outlet Trap</span>
+    <span class="right">Page 13</span>
+  </div>
+
+  <h2 class="section-title">How to spot it in 5 seconds<span class="dot">.</span></h2>
+
+  <div class="body">
+    <p>Count the prongs. Read the code stamped on the face of the outlet. Match it to this table.</p>
+  </div>
+
+  <table class="compat-table">
+    <thead>
+      <tr>
+        <th>Outlet name</th>
+        <th>Prongs</th>
+        <th>Voltage</th>
+        <th>BPP-compatible</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="code">L14-30R</td>
+        <td>4 (twist)</td>
+        <td class="code">240V</td>
+        <td class="yes"><span class="check">✓</span> Yes</td>
+      </tr>
+      <tr>
+        <td class="code">14-50R</td>
+        <td>4 (straight)</td>
+        <td class="code">240V</td>
+        <td class="yes"><span class="check">✓</span> Yes</td>
+      </tr>
+      <tr>
+        <td class="code">TT-30R</td>
+        <td>3 (round)</td>
+        <td class="code">120V</td>
+        <td class="no"><span class="check">✗</span> No (DQ)</td>
+      </tr>
+      <tr>
+        <td class="code">L5-30R</td>
+        <td>3 (twist)</td>
+        <td class="code">120V</td>
+        <td class="no"><span class="check">✗</span> No (DQ)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TWEAK: replace each .swatch with a real outlet photograph
+       suggested files: assets/outlet-l14-30r.jpg, /14-50r.jpg, /tt-30r.jpg, /l5-30r.jpg -->
+  <div class="outlet-row">
+    <div class="outlet-thumb">
+      <div class="swatch">[ photo: L14-30R ]</div>
+      <span class="code">L14-30R</span>
+      <span class="desc">4-prong twist-lock</span>
+    </div>
+    <div class="outlet-thumb">
+      <div class="swatch">[ photo: 14-50R ]</div>
+      <span class="code">14-50R</span>
+      <span class="desc">4-prong straight (RV/EV)</span>
+    </div>
+    <div class="outlet-thumb">
+      <div class="swatch">[ photo: TT-30R ]</div>
+      <span class="code">TT-30R</span>
+      <span class="desc">3-prong round (RV)</span>
+    </div>
+    <div class="outlet-thumb">
+      <div class="swatch">[ photo: L5-30R ]</div>
+      <span class="code">L5-30R</span>
+      <span class="desc">3-prong twist-lock</span>
+    </div>
+  </div>
+
+  <div class="protip">
+    <span class="badge">Pro tip</span>
+    <p>When in doubt: snap a pic of the outlet panel and text it to <b>Key</b>. Photo classifier reads it in 4 seconds.</p>
+  </div>
+
+  <div class="footer">
+    <span class="brand">BPP <b>·</b> Backup Power Pro</span>
+    <span>013</span>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE 4 — WHAT TO BUY                                        -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="page" data-screen-label="04 What to buy">
+  <div class="gold-rule"></div>
+  <div class="eyebrow">
+    <span>Chapter 3 · The 240V Outlet Trap</span>
+    <span class="right">Page 14</span>
+  </div>
+
+  <h2 class="section-title">If you haven't bought yet<span class="dot">.</span></h2>
+
+  <div class="body">
+    <p>Three units we install behind the most. All three carry a 240V 4-prong outlet — they pass the prong-count test from the previous page. Listed cheapest to priciest.</p>
+  </div>
+
+  <div class="rec-list">
+
+    <!-- TWEAK: model + price — confirm with Key before reprint
+         retail tracked at lowes.com / homedepot.com / tractorsupply.com -->
+    <article class="rec-card">
+      <div>
+        <h3 class="name">Champion 8500 DF</h3>
+        <p class="brand-line"><b>Champion</b> · 8,500W running · dual fuel</p>
+      </div>
+      <span class="compat">BPP-compatible</span>
+      <p class="desc">What I install behind the most. Under $1,500 retail. Dual fuel (gas + propane) means you're not stranded if the gas station line is around the block.</p>
+      <div class="specs">
+        <span><b>Outlets</b><span class="code">14-50R · L14-30R</span></span>
+        <span><b>Run watts</b>8,500W</span>
+        <span><b>Retail</b>~$1,499</span>
+      </div>
+    </article>
+
+    <!-- TWEAK: Westinghouse model — verify outlet config on current revision -->
+    <article class="rec-card">
+      <div>
+        <h3 class="name">Westinghouse WGen9500DF</h3>
+        <p class="brand-line"><b>Westinghouse</b> · 9,500W running · dual fuel</p>
+      </div>
+      <span class="compat">BPP-compatible</span>
+      <p class="desc">Bigger sibling. Quieter than Champion under load. Worth the bump if you've got a 4-ton AC or an electric range you want covered.</p>
+      <div class="specs">
+        <span><b>Outlets</b><span class="code">14-50R · L14-30R</span></span>
+        <span><b>Run watts</b>9,500W</span>
+        <span><b>Retail</b>~$1,799</span>
+      </div>
+    </article>
+
+    <!-- TWEAK: Generac GP6500E — confirm the E (electric start) variant, not base GP6500 -->
+    <article class="rec-card">
+      <div>
+        <h3 class="name">Generac GP6500E</h3>
+        <p class="brand-line"><b>Generac</b> · 6,500W running · gas only</p>
+      </div>
+      <span class="compat">BPP-compatible</span>
+      <p class="desc">Best budget option for smaller homes. L14-30R only — fine for the essentials circuit (fridge, furnace, well pump, a few lights). Won't run a whole-home A/C.</p>
+      <div class="specs">
+        <span><b>Outlets</b><span class="code">L14-30R</span></span>
+        <span><b>Run watts</b>6,500W</span>
+        <span><b>Retail</b>~$999</span>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="pull-quote">
+    <p>All three of these are at Lowe's, Home Depot, or Tractor Supply. Just text me the model before you buy if you want a sanity check.</p>
+    <p class="attrib">— Key</p>
+  </div>
+
+  <div class="footer">
+    <span class="brand">BPP <b>·</b> Backup Power Pro</span>
+    <span>014</span>
+  </div>
+</section>
+
+</body>
+</html>
