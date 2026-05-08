@@ -2132,6 +2132,19 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   // realtime updates flow through automatically).
   const [editingProposalId, setEditingProposalId] = React.useState(null);
   const [editingInvoiceId,  setEditingInvoiceId]  = React.useState(null);
+  // If the row being edited disappears (deleted via realtime), close the
+  // modal — but do it in an effect, not during render. setState during
+  // render triggers a re-render warning and can briefly thrash.
+  React.useEffect(() => {
+    if (editingProposalId && !(CRM.proposals || []).some(p => p.id === editingProposalId)) {
+      setEditingProposalId(null);
+    }
+  }, [editingProposalId, proposals]);
+  React.useEffect(() => {
+    if (editingInvoiceId && !(CRM.invoices || []).some(i => i.id === editingInvoiceId)) {
+      setEditingInvoiceId(null);
+    }
+  }, [editingInvoiceId, invoices]);
 
   // Cross-tab triggers — Contact tab's "Send quote" gold button on stage=NEW
   // dispatches `crm-open-new-proposal` to skip the user manually navigating
@@ -2253,11 +2266,21 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   // when a customer goes silent and then circles back.
   const reviveProposal = async (prop) => {
     if (!CRM.__db) return;
+    if (markingRef.current.has('revive:'+prop.id)) return;
+    markingRef.current.add('revive:'+prop.id);
     const live = (CRM.proposals || []).find(x => x.id === prop.id) || prop;
     const prev = live.status;
     live.status = 'sent';
     window.dispatchEvent(new CustomEvent('crm-data-changed'));
-    const { error } = await CRM.__db.from('proposals').update({ status: 'Sent' }).eq('id', prop.id);
+    // Server-side status guard: only revive rows actually in a cancelled
+    // state. Prevents a stale tab or direct API call from flipping a
+    // paid/approved proposal back to Sent. Mirrors the lock cancelProposal
+    // already implements via `prev` / rollback, but enforced server-side.
+    const { error } = await CRM.__db.from('proposals')
+      .update({ status: 'Sent' })
+      .eq('id', prop.id)
+      .in('status', ['declined', 'cancelled', 'expired', 'Cancelled', 'Declined', 'Expired']);
+    markingRef.current.delete('revive:'+prop.id);
     if (error) {
       live.status = prev;
       window.dispatchEvent(new CustomEvent('crm-data-changed'));
@@ -2268,11 +2291,17 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   };
   const reviveInvoice = async (inv) => {
     if (!CRM.__db) return;
+    if (markingRef.current.has('revive:'+inv.id)) return;
+    markingRef.current.add('revive:'+inv.id);
     const live = (CRM.invoices || []).find(x => x.id === inv.id) || inv;
     const prev = live.status;
     live.status = 'sent';
     window.dispatchEvent(new CustomEvent('crm-data-changed'));
-    const { error } = await CRM.__db.from('invoices').update({ status: 'unpaid' }).eq('id', inv.id);
+    const { error } = await CRM.__db.from('invoices')
+      .update({ status: 'unpaid' })
+      .eq('id', inv.id)
+      .in('status', ['voided', 'refunded', 'Voided', 'Refunded']);
+    markingRef.current.delete('revive:'+inv.id);
     if (error) {
       live.status = prev;
       window.dispatchEvent(new CustomEvent('crm-data-changed'));
@@ -2809,10 +2838,13 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
 
       {dealCards.map(d => <DealCard key={d.key} proposal={d.proposal} invoices={d.invoices} />)}
 
-      {/* Edit modals — mounted at this level so they overlay the deal list */}
+      {/* Edit modals — mounted at this level so they overlay the deal list.
+          Cleanup of editingProposalId/editingInvoiceId when the underlying
+          row disappears (deleted by realtime mid-edit) lives in a useEffect
+          below — calling setState during render warns and re-renders. */}
       {editingProposalId && (() => {
         const ep = (CRM.proposals || []).find(p => p.id === editingProposalId);
-        if (!ep) { setEditingProposalId(null); return null; }
+        if (!ep) return null;
         return (
           <NewProposalModal
             contact={contact}
@@ -2823,7 +2855,7 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
       })()}
       {editingInvoiceId && (() => {
         const ei = (CRM.invoices || []).find(i => i.id === editingInvoiceId);
-        if (!ei) { setEditingInvoiceId(null); return null; }
+        if (!ei) return null;
         return (
           <NewInvoiceModal
             contact={contact}
@@ -3703,11 +3735,26 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
       const arr = (window.CRM.proposals = window.CRM.proposals || []);
       const idx = arr.findIndex(p => p.id === mapped.id);
       if (idx >= 0) arr[idx] = mapped; else arr.unshift(mapped);
-      // Bump contact stage NEW → QUOTED on first proposal create.
+      // Bump contact stage NEW → QUOTED on first proposal create. Roll back
+      // the optimistic local mutation if the DB UPDATE fails so the next
+      // refresh doesn't show the contact stuck mid-state.
       if (!isEdit && contact.stage === 'new') {
         const numQuoted = CRM.STAGE_STR_TO_NUM?.quoted ?? 2;
         contact.stage = 'quoted';
-        CRM.__db.from('contacts').update({ stage: numQuoted }).eq('id', contact.id).then(() => {}, () => {});
+        CRM.__db.from('contacts').update({ stage: numQuoted }).eq('id', contact.id).then(
+          ({ error }) => {
+            if (error) {
+              contact.stage = 'new';
+              window.dispatchEvent(new CustomEvent('crm-data-changed'));
+              window.showToast?.(`Stage update failed: ${error.message}`);
+            }
+          },
+          (err) => {
+            contact.stage = 'new';
+            window.dispatchEvent(new CustomEvent('crm-data-changed'));
+            window.showToast?.(`Stage update failed: ${err?.message || err}`);
+          }
+        );
       }
       window.dispatchEvent(new CustomEvent('crm-data-changed'));
       window.showToast?.(isEdit ? 'Proposal updated' : 'Proposal created');
@@ -4034,7 +4081,10 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
 
   const proposalTotal = (latestSignedProposal?.amount_cents || 0) / 100;
   const billedSum = invoices
-    .filter(i => !['voided', 'refunded', 'draft', 'declined'].includes(i.status))
+    // In edit mode the invoice being edited is still in the list; counting
+    // it would shrink `remaining` by its own amount and break the Final
+    // preset (it would suggest $0 even when room exists). Exclude self.
+    .filter(i => i.id !== ei.id && !['voided', 'refunded', 'draft', 'declined'].includes(i.status))
     .reduce((s,i) => s + (i.amount_cents || 0), 0) / 100;
   const remaining = Math.max(0, proposalTotal - billedSum);
 

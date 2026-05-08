@@ -1050,9 +1050,15 @@ function quoteV3Total({ amp, lengthFt, includeCord, includeInlet, includePermit,
   if (!includePermit) t -= V3_PRICING.permitOff;
   for (const li of (lineItems || [])) {
     if (li.kind === 'discount') {
+      // Discounts apply unconditionally — they're never "client-uncheckable".
       if (li.discountType === 'percent') t -= Math.round(t * (Number(li.amount) || 0) / 100);
       else                                 t -= Number(li.amount) || 0;
     } else {
+      // Item rows respect `checked`. The customer page (proposal.html) only
+      // adds an item when its toggle is on, so the creator's "what the
+      // client sees" total must match — items pre-unchecked by Key here
+      // shouldn't bump the client-facing total either.
+      if (li.checked === false) continue;
       t += Number(li.amount) || 0;
     }
   }
