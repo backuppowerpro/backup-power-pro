@@ -1084,12 +1084,21 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     const askPart = capFirst((state.fallback ? state.fallback(ctx) : '')
       .replace(/^(Thanks for all of that\.?|Thank you\.?|Thanks( for that)?\.?|Perfect\.?|Got it\.?|Sounds good\.?|No problem\.?|Quick recap\.?)[\s,]*/i, '')
       .trim());
+    // v10.1.57 (Tyler iMessage feedback 2026-05-08): Key flagged the
+    // disclosure as "robot trying to sound human." Two issues:
+    // (1) "BPP intake assistant (automated)" reads like HR-speak.
+    //     Real-Key would just say "yeah this is auto-text from BPP."
+    // (2) Old copy said "Key handles the quote and install in person"
+    //     which is FACTUALLY WRONG. Key quotes over TEXT (he texts
+    //     the quote over after seeing the panel pic). Only the
+    //     install is in-person. Customers expecting an in-home quote
+    //     visit would be confused when Key just texts a number.
     const disclosureFallback = currentState === 'GREETING'
-      ? `Good question. I'm Ashley, the BPP intake assistant (automated). Our electrician Key personally handles the quote and the install, I'm just gathering the details he needs. Got a couple of minutes to walk through them?`
-      : `Honest answer: I'm Ashley, the BPP intake assistant (automated). Key is our real electrician, he personally handles the quote and the install. ${askPart}`;
+      ? `Yeah honest answer, this is auto-text from BPP. I'm Ashley. Key's the actual electrician, he texts the quote over himself once he's seen your panel, and he does the install in person. Want to keep going so I can grab what he needs?`
+      : `Yeah, auto-text on my side. I'm Ashley. Key's the real electrician and he texts you the quote himself once he's seen your panel. ${askPart}`;
     return {
       next: currentState,
-      intent: `customer asked if you're a real person or AI; answer honestly: this is BPP intake (automated), our electrician Key handles the actual quote and install in person. Then re-ask: ${state.intent}`,
+      intent: `customer asked if you're a real person or AI; answer honestly. CRITICAL: Key TEXTS the quote, he does NOT quote in person. Only the install is in-person. The disclosure should sound CASUAL, not corporate ("yeah this is auto-text from BPP" not "I'm Ashley, the BPP intake assistant (automated)"). Then re-ask: ${state.intent}`,
       fallback: disclosureFallback,
       endConversation: false,
       onEnter: { disclose_ai: true },
