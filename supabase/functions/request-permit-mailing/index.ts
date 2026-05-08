@@ -1,37 +1,31 @@
 /**
- * request-permit-mailing — fires when the customer clicks the "Mail it to me"
- * button in the permit-document email. Texts Key with the address + records
- * the request on the contact, then renders a plain "Got it" success page.
+ * request-permit-mailing — fires when the customer clicks "Mail it to me"
+ * in the permit-document email.
  *
- * Public endpoint, NOT brain-token gated, but every request requires a
- * signed token in the URL ?t= param (HMAC of contact_id with a server-only
- * MAIL_REQUEST_SECRET). Token has a 14-day TTL.
+ * Action sequence on a valid click:
+ *   1. Verify HMAC token + look up contact
+ *   2. Generate the 8.5x11 mailing insert PDF (matches spec at
+ *      wiki/Operations/Mailing Insert Template.md): return address +
+ *      customer address positioned for #10 double-window envelope, fold
+ *      lines at 3.667in / 7.333in, body letter in middle panel, Times
+ *      Roman 11pt.
+ *   3. Upload PDF to Supabase storage at permit-mailers/{contact_id}-{ts}.pdf
+ *   4. Sign URL valid 14 days
+ *   5. Stamp contact qualification_data + notes
+ *   6. Text Key with the request + signed PDF URL so he can tap, save,
+ *      print, fold, mail.
+ *   7. Render BPP-branded "Got it" page back to the customer.
  *
- * URL pattern (rendered into the permit-document email at send time):
- *   https://reowtzedjflwmlptupbk.supabase.co/functions/v1/request-permit-mailing
- *     ?cid={contact_id}&t={token}
+ * The customer NEVER sees the mailer layout — that's Key's print-and-mail
+ * artifact only. The customer just clicks the email button and gets a
+ * confirmation page.
  *
- * Token generation (Node/Deno-compatible):
- *   const ts = Math.floor(Date.now() / 1000);
- *   const payload = `${contact_id}.${ts}`;
- *   const sig = hmacSha256(MAIL_REQUEST_SECRET, payload);
- *   const token = base64url(`${ts}.${sig}`);
- *
- * Validation:
- *   1. Decode token, split into [ts, sig].
- *   2. Verify ts is within 14 days.
- *   3. Recompute HMAC; timing-safe compare.
- *
- * Side effects:
- *   - Stamps contacts.qualification_data.permit_mailing_requested_at
- *   - Appends to contacts.notes: __permit_mail_requested: <ISO>
- *   - Texts Key (via OpenPhone for OP-allowed phones, else Twilio)
- *
- * Response: HTML page (200) confirming the request to the customer, or
- * plain-text error (400/410) if token invalid/expired.
+ * Auth: public endpoint, signed-token gated (HMAC-SHA256 of contact_id +
+ * timestamp, MAIL_REQUEST_SECRET env). 14-day TTL on tokens.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SR = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -47,6 +41,14 @@ const QUO_INTERNAL_PHONE_ID = Deno.env.get('QUO_INTERNAL_PHONE_ID') || 'PNPhgKi0
 const OPENPHONE_TEST_PHONES = (Deno.env.get('ASHLEY_OPENPHONE_TEST_PHONES') || '')
   .split(',').map(s => s.trim()).filter(Boolean)
 
+// Hardcoded BPP return address. Mirror of crm/crm.html MAILING_RETURN_ADDRESS.
+const RETURN_ADDR = {
+  name: 'Key Goodson',
+  company: 'Backup Power Pro',
+  street: '22 Kimbell Ct',
+  cityStateZip: 'Greenville, SC 29617',
+}
+
 const MAX_TOKEN_AGE_SEC = 14 * 24 * 3600
 
 const html = (status: number, body: string) =>
@@ -55,36 +57,31 @@ const html = (status: number, body: string) =>
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   })
 
-function base64UrlDecode(s: string): Uint8Array {
+// ── Token verification ──────────────────────────────────────────────
+function base64UrlDecode(s: string): string {
   const pad = s.length % 4
   if (pad) s += '='.repeat(4 - pad)
   s = s.replace(/-/g, '+').replace(/_/g, '/')
-  const bin = atob(s)
-  const buf = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i)
-  return buf
+  return atob(s)
 }
-
-async function hmacSha256(secret: string, msg: string): Promise<Uint8Array> {
+async function hmacSha256Hex(secret: string, msg: string): Promise<string> {
   const enc = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   )
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(msg))
-  return new Uint8Array(sig)
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
-
-function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
+function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false
   let r = 0
-  for (let i = 0; i < a.length; i++) r |= a[i] ^ b[i]
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i)
   return r === 0
 }
-
 async function verifyToken(contact_id: string, token: string): Promise<boolean> {
   if (!SECRET || !token) return false
   try {
-    const decoded = new TextDecoder().decode(base64UrlDecode(token))
+    const decoded = base64UrlDecode(token)
     const dot = decoded.indexOf('.')
     if (dot < 0) return false
     const ts = parseInt(decoded.slice(0, dot), 10)
@@ -92,18 +89,219 @@ async function verifyToken(contact_id: string, token: string): Promise<boolean> 
     if (!ts || !sig) return false
     const ageSec = Math.floor(Date.now() / 1000) - ts
     if (ageSec < 0 || ageSec > MAX_TOKEN_AGE_SEC) return false
-    const expected = await hmacSha256(SECRET, `${contact_id}.${ts}`)
-    const expectedHex = Array.from(expected).map(b => b.toString(16).padStart(2, '0')).join('')
-    const sigBytes = new TextEncoder().encode(sig)
-    const expectedBytes = new TextEncoder().encode(expectedHex)
-    return timingSafeEqual(sigBytes, expectedBytes)
+    const expected = await hmacSha256Hex(SECRET, `${contact_id}.${ts}`)
+    return timingSafeEqual(sig, expected)
   } catch {
     return false
   }
 }
 
+// ── Mailing insert PDF generator ────────────────────────────────────
+//
+// Layout (Times Roman 11pt, US Letter portrait):
+//   Return address: 0.38in top, 0.7in left  (top window of #10 envelope)
+//   Customer addr:  2.00in top, 0.7in left  (bottom window of #10 envelope)
+//   Fold line 1:    3.667in (dashed gray, with "fold" label)
+//   Fold line 2:    7.333in (dashed gray, with "fold" label)
+//   Letter body:    4.05in top, 0.85in left, 6.8in wide
+//
+// pdf-lib origin is bottom-left; we convert from "top-down inches" by
+// computing y = pageHeight - (topInches * 72).
+//
+// Customer address spans up to 4 lines. Letter body wraps at ~6.8in.
+async function buildMailingInsertPdf(args: {
+  customerName: string
+  customerStreet: string
+  customerCityStateZip: string
+}): Promise<Uint8Array> {
+  const PAGE_W = 8.5 * 72
+  const PAGE_H = 11 * 72
+  const inToY = (topIn: number) => PAGE_H - topIn * 72
+  const inToX = (leftIn: number) => leftIn * 72
+
+  const pdf = await PDFDocument.create()
+  const page = pdf.addPage([PAGE_W, PAGE_H])
+  const font = await pdf.embedFont(StandardFonts.TimesRoman)
+  const bold = await pdf.embedFont(StandardFonts.TimesRomanBold)
+
+  const black = rgb(0, 0, 0)
+  const gray = rgb(0.73, 0.73, 0.73)
+
+  // ── Return address (top-left) ─────────────────────────────────────
+  let y = inToY(0.38) - 8.5  // first line baseline a bit below "0.38in top"
+  const retX = inToX(0.7)
+  const retSize = 8.5
+  for (const line of [
+    RETURN_ADDR.name,
+    RETURN_ADDR.company,
+    RETURN_ADDR.street,
+    RETURN_ADDR.cityStateZip,
+  ]) {
+    page.drawText(line, { x: retX, y, size: retSize, font, color: black })
+    y -= retSize * 1.35
+  }
+
+  // ── Customer address (bottom window of envelope) ──────────────────
+  y = inToY(2.0) - 10.5
+  const custX = inToX(0.7)
+  const custSize = 10.5
+  const custLines = [
+    args.customerName,
+    args.customerStreet,
+    args.customerCityStateZip,
+  ].filter(Boolean)
+  for (const line of custLines) {
+    page.drawText(line, { x: custX, y, size: custSize, font, color: black })
+    y -= custSize * 1.55
+  }
+
+  // ── Fold lines (dashed gray) ──────────────────────────────────────
+  for (const [topIn, label] of [[3.667, 'fold'], [7.333, 'fold']] as const) {
+    const lineY = inToY(topIn)
+    page.drawLine({
+      start: { x: inToX(0.15), y: lineY },
+      end: { x: PAGE_W - inToX(0.15), y: lineY },
+      thickness: 0.75,
+      color: gray,
+      dashArray: [3, 3],
+    })
+    // tiny "fold" label below the line, centered
+    const labelSize = 5.5
+    const labelW = font.widthOfTextAtSize(`-- ${label} --`, labelSize)
+    page.drawText(`-- ${label} --`, {
+      x: (PAGE_W - labelW) / 2,
+      y: lineY - 8,
+      size: labelSize,
+      font,
+      color: gray,
+    })
+  }
+
+  // ── Letter body (middle panel) ────────────────────────────────────
+  // Wrap at ~6.8 inches wide.
+  const bodyX = inToX(0.85)
+  const bodyW = (8.5 - 0.85 - 0.85) * 72  // 6.8 in
+  const bodySize = 11
+  const lineHeight = bodySize * 1.65
+
+  type Run = { text: string; bold?: boolean }
+  type Para = Run[]
+  const firstName = args.customerName.split(/\s+/)[0] || 'there'
+  const paras: Para[] = [
+    [{ text: `Hey ${firstName}!` }],
+    [{ text: 'Enclosed is your permit documentation for the generator connection system we installed at your home. Please keep this document for your records, it is your official proof that the work was permitted and officially approved.' }],
+    [
+      { text: 'About your upcoming inspection: ', bold: true },
+      { text: 'You will most likely need to be home when the inspector arrives to verify the work. Unfortunately, we are not able to choose a specific time of day, only the weekday.' },
+    ],
+    [
+      { text: 'We recommend ', bold: true },
+      { text: 'placing the enclosed permit copy inside your electrical panel door. When the inspector opens the panel, they will find it immediately, this keeps things moving smoothly with no delays on your end.' },
+    ],
+    [{ text: "If you have any questions before or after the inspection, don't hesitate to reach out. It was great working with you!" }],
+    [{ text: 'Best,' }],
+    [{ text: 'Key Goodson' }],
+    [{ text: 'Backup Power Pro' }],
+    [{ text: '(864) 400-5302' }],
+  ]
+
+  // Word-wrap a single Para with mixed bold runs.
+  function wrapParagraph(para: Para, fontPlain: typeof font, fontBold: typeof bold, size: number, maxWidth: number): { runs: Run[]; widths: number[] }[] {
+    const lines: { runs: Run[]; widths: number[] }[] = []
+    let curLine: { runs: Run[]; widths: number[] } = { runs: [], widths: [] }
+    let curWidth = 0
+    for (const run of para) {
+      const f = run.bold ? fontBold : fontPlain
+      const words = run.text.split(/(\s+)/)  // keep separators
+      for (const w of words) {
+        if (w === '') continue
+        const wWidth = f.widthOfTextAtSize(w, size)
+        if (curWidth + wWidth > maxWidth && curWidth > 0) {
+          lines.push(curLine)
+          curLine = { runs: [], widths: [] }
+          curWidth = 0
+          // Skip leading whitespace at start of new line
+          if (/^\s+$/.test(w)) continue
+        }
+        curLine.runs.push({ text: w, bold: run.bold })
+        curLine.widths.push(wWidth)
+        curWidth += wWidth
+      }
+    }
+    if (curLine.runs.length) lines.push(curLine)
+    return lines
+  }
+
+  let bodyY = inToY(4.05)
+  for (let pi = 0; pi < paras.length; pi++) {
+    const para = paras[pi]
+    const isClosingBlock = pi >= 5  // "Best," and after
+    const lines = wrapParagraph(para, font, bold, bodySize, bodyW)
+    for (const line of lines) {
+      let xCursor = bodyX
+      for (let i = 0; i < line.runs.length; i++) {
+        const run = line.runs[i]
+        page.drawText(run.text, {
+          x: xCursor,
+          y: bodyY,
+          size: bodySize,
+          font: run.bold ? bold : font,
+          color: black,
+        })
+        xCursor += line.widths[i]
+      }
+      bodyY -= lineHeight
+    }
+    // Paragraph spacing: extra space between paragraphs except inside the closing signature block
+    if (pi < paras.length - 1 && !(isClosingBlock && pi >= 5)) {
+      bodyY -= 0.16 * 72 - lineHeight + lineHeight  // ~0.16in extra
+    }
+    if (pi === 4) {
+      // Big gap before "Best,"
+      bodyY -= 0.18 * 72
+    }
+  }
+
+  return await pdf.save()
+}
+
+// ── Storage upload + sign ────────────────────────────────────────────
+async function uploadPdfAndSign(contactId: string, pdfBytes: Uint8Array): Promise<string | null> {
+  const path = `${contactId}-${Date.now()}.pdf`
+  const upResp = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/permit-mailers/${path}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SR}`,
+        apikey: SR,
+        'Content-Type': 'application/pdf',
+        'x-upsert': 'true',
+      },
+      body: pdfBytes,
+    },
+  )
+  if (!upResp.ok) {
+    console.warn('[permit-mailing] PDF upload failed', upResp.status, (await upResp.text()).slice(0, 200))
+    return null
+  }
+  const signResp = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/sign/permit-mailers/${path}`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SR}`, apikey: SR, 'Content-Type': 'application/json' },
+      // 14 days = 1209600 seconds. Long enough that Key has time to print + mail
+      // even if he doesn't see the SMS for a few days.
+      body: JSON.stringify({ expiresIn: 1209600 }),
+    },
+  )
+  if (!signResp.ok) return null
+  const sd = await signResp.json()
+  return `${SUPABASE_URL}/storage/v1${sd.signedURL}`
+}
+
+// ── Notify Key (SMS) ─────────────────────────────────────────────────
 async function notifyKey(message: string): Promise<void> {
-  // Prefer OpenPhone if Key's phone is on the allowlist (matches Ashley's pattern).
   const useOpenPhone = OPENPHONE_TEST_PHONES.includes('*')
     || OPENPHONE_TEST_PHONES.includes(KEY_CELL)
   if (useOpenPhone && QUO_API_KEY) {
@@ -111,15 +309,11 @@ async function notifyKey(message: string): Promise<void> {
       await fetch('https://api.openphone.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: QUO_API_KEY },
-        body: JSON.stringify({
-          from: QUO_INTERNAL_PHONE_ID,
-          to: [KEY_CELL],
-          content: message,
-        }),
+        body: JSON.stringify({ from: QUO_INTERNAL_PHONE_ID, to: [KEY_CELL], content: message }),
       })
       return
     } catch (e) {
-      console.warn('[request-permit-mailing] openphone failed', e)
+      console.warn('[permit-mailing] openphone failed', e)
     }
   }
   if (TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM) {
@@ -131,11 +325,12 @@ async function notifyKey(message: string): Promise<void> {
         body: new URLSearchParams({ To: KEY_CELL, From: TWILIO_FROM, Body: message }).toString(),
       })
     } catch (e) {
-      console.warn('[request-permit-mailing] twilio failed', e)
+      console.warn('[permit-mailing] twilio failed', e)
     }
   }
 }
 
+// ── HTML responses ──────────────────────────────────────────────────
 const SUCCESS_HTML = (firstName: string, addressOnFile: string) => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -169,7 +364,7 @@ const SUCCESS_HTML = (firstName: string, addressOnFile: string) => `<!doctype ht
   <div class="body">
     <span class="pill">★ Got it</span>
     <h1>Coming your way${firstName ? ', ' + firstName : ''}.</h1>
-    <p>I'll drop your permit application in the mail today, with a pre-stamped envelope back to me. Should land in 2 to 4 business days.</p>
+    <p>I'll drop your permit documentation in the mail today, with a pre-stamped envelope back to me. Should land in 2 to 4 business days.</p>
     <p>Sign the bottom in black or blue pen, drop it in the return envelope, that's it.</p>
     <div class="meta">
       <strong>Mailing to:</strong><br />
@@ -192,6 +387,22 @@ a { color: #0b1f3b; }</style></head>
 <p style="margin-top: 32px; font-size: 12px; color: #6b7280;">Backup Power Pro</p>
 </body></html>`
 
+// ── Address normalization helper ────────────────────────────────────
+function splitAddress(full: string): { street: string; cityStateZip: string } {
+  const s = (full || '').trim().replace(/\s+/g, ' ')
+  if (!s) return { street: '', cityStateZip: '' }
+  // Try to split at last comma. Common shape: "412 Oakmont Dr, Greenville SC 29609"
+  const idx = s.lastIndexOf(',')
+  if (idx > 0 && idx < s.length - 4) {
+    return { street: s.slice(0, idx).trim(), cityStateZip: s.slice(idx + 1).trim() }
+  }
+  // Fallback: split before last "City State Zip" pattern
+  const m = s.match(/^(.*?)\s+([A-Za-z .]+ [A-Z]{2}\s+\d{5}(-\d{4})?)$/)
+  if (m) return { street: m[1].trim(), cityStateZip: m[2].trim() }
+  return { street: s, cityStateZip: '' }
+}
+
+// ── Server entry ─────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   const url = new URL(req.url)
   const cid = url.searchParams.get('cid') || ''
@@ -209,8 +420,6 @@ Deno.serve(async (req) => {
     .maybeSingle()
   if (error || !contact) return html(404, ERROR_HTML('We could not find your record.'))
 
-  // Idempotent: if already requested in the last 24h, just show the success page again
-  // without firing another Key alert (so duplicate clicks don't spam).
   const qd = (contact.qualification_data || {}) as Record<string, unknown>
   const lastReq = String(qd.permit_mailing_requested_at || '')
   const recentlyRequested = lastReq
@@ -218,25 +427,55 @@ Deno.serve(async (req) => {
     : false
 
   const firstName = String(contact.name || '').split(/\s+/)[0] || ''
-  const addr = String(contact.install_address || contact.address || '')
+  const addressFull = String(contact.install_address || contact.address || '')
+  const { street, cityStateZip } = splitAddress(addressFull)
 
-  if (!recentlyRequested) {
-    // Stamp request + alert Key
-    const newQd = { ...qd, permit_mailing_requested_at: new Date().toISOString() }
-    const newNotes = (contact.notes ? contact.notes + '\n' : '')
-      + `__permit_mail_requested: ${new Date().toISOString()}`
-    try {
-      await sb.from('contacts')
-        .update({ qualification_data: newQd, notes: newNotes })
-        .eq('id', cid)
-    } catch (e) {
-      console.warn('[request-permit-mailing] stamp failed', e)
-    }
-    const message = `📬 PERMIT MAIL REQUEST · ${firstName || 'Customer'}` +
-      ` (${(contact.phone || '').slice(-4)})` +
-      `\n${addr || '(no address on file)'}\n\nDrop in mail today.`
-    await notifyKey(message)
+  if (recentlyRequested) {
+    // Idempotent: don't re-generate or re-text Key. Just show success.
+    return html(200, SUCCESS_HTML(firstName, addressFull))
   }
 
-  return html(200, SUCCESS_HTML(firstName, addr))
+  // ── Generate the mailing-insert PDF ─────────────────────────────
+  let pdfUrl: string | null = null
+  try {
+    const pdfBytes = await buildMailingInsertPdf({
+      customerName: contact.name || '(name missing)',
+      customerStreet: street,
+      customerCityStateZip: cityStateZip,
+    })
+    pdfUrl = await uploadPdfAndSign(cid, pdfBytes)
+  } catch (e) {
+    console.error('[permit-mailing] PDF generation failed', e)
+  }
+
+  // ── Stamp contact ────────────────────────────────────────────────
+  try {
+    const newQd = {
+      ...qd,
+      permit_mailing_requested_at: new Date().toISOString(),
+      permit_mailer_pdf_url: pdfUrl,
+    }
+    const newNotes = (contact.notes ? contact.notes + '\n' : '')
+      + `__permit_mail_requested: ${new Date().toISOString()}`
+      + (pdfUrl ? `\n__permit_mailer_pdf: ${pdfUrl}` : '')
+    await sb.from('contacts')
+      .update({ qualification_data: newQd, notes: newNotes })
+      .eq('id', cid)
+  } catch (e) {
+    console.warn('[permit-mailing] contact stamp failed', e)
+  }
+
+  // ── SMS to Key ───────────────────────────────────────────────────
+  const lastFour = (contact.phone || '').replace(/\D/g, '').slice(-4)
+  const smsLines = [
+    `📬 PERMIT MAIL REQUEST · ${firstName || 'Customer'}${lastFour ? ' (***' + lastFour + ')' : ''}`,
+    addressFull || '(no address on file)',
+    '',
+    pdfUrl
+      ? `Print this 8.5x11 letter:\n${pdfUrl}`
+      : '⚠ PDF generation FAILED. Open CRM, click Generate Mail Insert manually.',
+  ]
+  await notifyKey(smsLines.join('\n'))
+
+  return html(200, SUCCESS_HTML(firstName, addressFull))
 })
