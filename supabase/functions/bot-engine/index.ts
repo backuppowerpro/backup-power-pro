@@ -117,6 +117,99 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+//  Inbound photo persistence — v10.1.63
+//
+//  Per Key directive 2026-05-08: all photos sent to Ashley auto-save to
+//  the contact's CRM photo section. Routing:
+//   - First panel-subject photo  → contacts.primary_panel_photo_path
+//   - First outlet-subject photo → contacts.primary_outlet_photo_path
+//   - Generator / extra panel / unclassified → contacts.extra_photos[]
+//
+//  Storage: Supabase storage `mms-inbound` bucket at path
+//  `{contact_id}/{ts}-{idx}.jpg`. Twilio media URLs expire (signed for
+//  short windows), so we have to download + re-upload for permanence.
+//  CRM render reads via signed URL flow already used by photo-classifier.
+// ──────────────────────────────────────────────────────────────────────────
+async function persistInboundPhoto(
+  sb: any,
+  contactId: string,
+  mediaUrl: string,
+  photoResult: any | null,
+  index: number,
+): Promise<{ ok: boolean; storage_path?: string; err?: string }> {
+  try {
+    // Fetch the Twilio MMS bytes. Twilio MediaUrls 302-redirect to S3 with a
+    // short-lived signature — fetch handles redirect by default.
+    const r = await fetch(mediaUrl)
+    if (!r.ok) return { ok: false, err: `fetch ${r.status}` }
+    const bytes = new Uint8Array(await r.arrayBuffer())
+    const contentType = r.headers.get('content-type') || 'image/jpeg'
+    const ext = contentType.includes('png') ? 'png'
+      : contentType.includes('heic') ? 'heic'
+      : contentType.includes('gif') ? 'gif'
+      : 'jpg'
+    const path = `${contactId}/${Date.now()}-${index}.${ext}`
+
+    // Upload to mms-inbound bucket via storage REST API.
+    const upResp = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/mms-inbound/${path}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Content-Type': contentType,
+          'x-upsert': 'true',
+        },
+        body: bytes,
+      },
+    )
+    if (!upResp.ok) {
+      const t = await upResp.text()
+      return { ok: false, err: `upload ${upResp.status} ${t.slice(0, 120)}` }
+    }
+
+    // Persist to contact based on classified subject. We pull the current
+    // contact to know whether primary_*_photo_path is already set.
+    const { data: c } = await sb.from('contacts')
+      .select('primary_panel_photo_path, primary_outlet_photo_path, extra_photos')
+      .eq('id', contactId)
+      .maybeSingle()
+    const subject = String(photoResult?.subject || '')
+    const isPanel = subject.startsWith('panel_')
+    const isOutlet = subject === 'outlet'
+    const update: Record<string, unknown> = {}
+    if (isPanel && !c?.primary_panel_photo_path) {
+      update.primary_panel_photo_path = path
+      if (photoResult?.panel_brand_visible) {
+        update.panel_brand = photoResult.panel_brand_visible
+      }
+    } else if (isOutlet && !c?.primary_outlet_photo_path) {
+      update.primary_outlet_photo_path = path
+    } else {
+      // Append to extra_photos. Tag with subject so CRM render knows
+      // what each one is (generator, second panel angle, etc).
+      const prior = Array.isArray(c?.extra_photos) ? c!.extra_photos : []
+      update.extra_photos = [
+        ...prior,
+        {
+          path,
+          subject: subject || 'unclassified',
+          confidence: photoResult?.subject_confidence ?? null,
+          uploaded_at: new Date().toISOString(),
+        },
+      ]
+    }
+    if (Object.keys(update).length > 0) {
+      await sb.from('contacts').update(update).eq('id', contactId)
+    }
+    return { ok: true, storage_path: path }
+  } catch (e: any) {
+    return { ok: false, err: String(e?.message || e).slice(0, 200) }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 //  Human-typing delay — v10.1.61
 //  Makes Ashley feel like a real person typing, not an instant-fire bot.
 //  Length-dependent: longer replies take longer to "type" (per Key directive
@@ -531,7 +624,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     // 5. Recent turns
     const recentTurns = await fetchRecentTurns(sb, contact.id, 4)
 
-    // 6. Optional photo classifier
+    // 6. Optional photo classifier + auto-save to CRM photo section
     let photoResult: any = null
     if (input.media_urls && input.media_urls.length > 0) {
       try {
@@ -546,6 +639,27 @@ async function handleInbound(input: InboundInput): Promise<Response> {
         })
       } catch (e) {
         console.warn('[bot-engine] photo-classifier failed', e)
+      }
+      // v10.1.63: persist EVERY inbound photo to the contact's CRM photo
+      // section. Runs even if classifier fails (subject becomes
+      // 'unclassified' and photo lands in extra_photos). Per Key
+      // directive 2026-05-08: all photos sent to Ashley auto-save.
+      // Photos beyond the first in this MMS get classified as the same
+      // subject as the first (best-effort; cheap classifier doesn't run
+      // per-photo to keep latency in budget).
+      for (let i = 0; i < input.media_urls.length; i++) {
+        const url = input.media_urls[i]
+        const result = i === 0 ? photoResult : null  // only first ran through classifier
+        try {
+          const persisted = await persistInboundPhoto(sb, input.contact_id, url, result, i)
+          if (!persisted.ok) {
+            console.warn('[bot-engine] photo persist failed:', persisted.err)
+          } else {
+            console.log('[bot-engine] saved photo', i, 'to', persisted.storage_path)
+          }
+        } catch (e) {
+          console.warn('[bot-engine] photo persist threw', e)
+        }
       }
     }
 

@@ -79,6 +79,85 @@ Deno.serve(async (req) => {
   const conn = await pool.connect()
 
   try {
+    if (action === 'upload_test_photo') {
+      // Upload base64 photo to mms-inbound bucket and return a signed URL
+      // for use in dojo-helper simulate_inbound photo tests.
+      const SR = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+      const b64 = body?.base64_data
+      if (!b64) return json(400, { error: 'base64_data required' })
+      const path = `_e2e_test/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`
+      // Upload via storage REST
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+      const upResp = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/mms-inbound/${path}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SR}`,
+            'apikey': SR,
+            'Content-Type': body?.base64_content_type || 'image/jpeg',
+            'x-upsert': 'true',
+          },
+          body: bytes,
+        },
+      )
+      if (!upResp.ok) {
+        return json(500, { error: `upload failed: ${upResp.status} ${(await upResp.text()).slice(0, 200)}` })
+      }
+      // Sign a short-lived URL
+      const signResp = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/sign/mms-inbound/${path}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SR}`,
+            'apikey': SR,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ expiresIn: 3600 }),
+        },
+      )
+      if (!signResp.ok) return json(500, { error: 'sign failed' })
+      const sd = await signResp.json()
+      return json(200, { ok: true, path, signed_url: `${SUPABASE_URL}/storage/v1${sd.signedURL}` })
+    }
+
+    if (action === 'check_buckets') {
+      const r = await conn.queryObject(
+        `SELECT id, name, public, file_size_limit, allowed_mime_types
+         FROM storage.buckets ORDER BY name`,
+      )
+      return json(200, { ok: true, buckets: r.rows })
+    }
+
+    if (action === 'ensure_mms_bucket') {
+      // Create mms-inbound bucket if missing + add RLS policies that allow
+      // service-role full access. Bucket holds inbound MMS photos saved
+      // by bot-engine v10.1.63.
+      try {
+        await conn.queryArray(`
+          INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+          VALUES ('mms-inbound', 'mms-inbound', false, 26214400,
+                  ARRAY['image/jpeg','image/jpg','image/png','image/heic','image/heif','image/gif','image/webp'])
+          ON CONFLICT (id) DO UPDATE SET
+            file_size_limit = 26214400,
+            allowed_mime_types = ARRAY['image/jpeg','image/jpg','image/png','image/heic','image/heif','image/gif','image/webp'];
+
+          -- Service role + authenticated full access (CRM reads via authenticated)
+          DROP POLICY IF EXISTS "service_role_mms_inbound_all" ON storage.objects;
+          CREATE POLICY "service_role_mms_inbound_all" ON storage.objects
+            FOR ALL TO service_role USING (bucket_id = 'mms-inbound') WITH CHECK (bucket_id = 'mms-inbound');
+
+          DROP POLICY IF EXISTS "auth_mms_inbound_all" ON storage.objects;
+          CREATE POLICY "auth_mms_inbound_all" ON storage.objects
+            FOR ALL TO authenticated USING (bucket_id = 'mms-inbound') WITH CHECK (bucket_id = 'mms-inbound');
+        `)
+        return json(200, { ok: true, message: 'mms-inbound bucket + policies ensured' })
+      } catch (e: any) {
+        return json(500, { error: e?.message || String(e) })
+      }
+    }
+
     if (action === 'classify_photo') {
       // Proxy to bot-photo-classifier with proper service-role auth.
       // Used for e2e photo testing without needing public URLs.
@@ -110,6 +189,7 @@ Deno.serve(async (req) => {
       const r = await conn.queryObject(
         `SELECT id, phone, email, install_address, address, outlet_amps, outlet_type,
                 gen_240v, is_owner, panel_brand, run_feet_estimate, bot_state, stage,
+                primary_panel_photo_path, primary_outlet_photo_path, extra_photos,
                 qualification_data
          FROM contacts WHERE id = $1`, [id])
       // Also: stage_history
