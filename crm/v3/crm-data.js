@@ -195,6 +195,20 @@ function mapProposal(r) {
     viewed_at: r.viewed_at || null,
     approved_at: r.signed_at || null,
     label: r.amp_type ? `Generator inlet, ${r.amp_type}A` : 'Generator inlet',
+    // V3 fields — exposed so the editor can rehydrate without a refetch.
+    creator_version: r.creator_version || 'v2',
+    length_ft:       r.length_ft != null ? Number(r.length_ft) : null,
+    include_cord:    r.include_cord    !== false,
+    include_inlet:   r.include_inlet   !== false,
+    include_permit:  r.include_permit  !== false,
+    pom_offered:     !!r.pom_offered,
+    pom_accepted:    !!r.pom_accepted,
+    require_deposit: !!r.require_deposit,
+    extra_line_items: Array.isArray(r.extra_line_items) ? r.extra_line_items : [],
+    discount_type:   r.discount_type   || null,
+    discount_value:  r.discount_value != null ? Number(r.discount_value) : null,
+    notes:           r.notes || '',
+    amp_type:        r.amp_type || null,
   };
 }
 
@@ -239,6 +253,9 @@ function mapInvoice(r) {
     sent_at: r.sent_at || r.created_at,
     viewed_at: r.viewed_at || null,
     paid_at: r.paid_at || null,
+    // V3 invoice fields — line_items + creator_version exposed so editor can rehydrate.
+    line_items: Array.isArray(r.line_items) ? r.line_items : [],
+    creator_version: r.creator_version || 'v2',
   };
 }
 
@@ -435,7 +452,7 @@ async function loadLiveData() {
       .order('start_at', { ascending: true })
       .limit(500), 'calendar_events'),
     fetchTable(__db.from('proposals')
-      .select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at')
+      .select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at, creator_version, length_ft, include_cord, include_inlet, include_permit, pom_offered, pom_accepted, require_deposit, extra_line_items, discount_type, discount_value, notes')
       .order('created_at', { ascending: false })
       .limit(500), 'proposals'),
     fetchTable(__db.from('invoices')
@@ -443,7 +460,7 @@ async function loadLiveData() {
 // NO `kind` / `sent_at` / `viewed_at` columns. mapInvoice derives them:
 // kind from a $-amount heuristic, sent_at from created_at, viewed_at = null.
 // If those columns ever get added, expand the SELECT and the mapper.
-'id, token, contact_id, proposal_id, total, status, created_at, paid_at')
+'id, token, contact_id, proposal_id, total, status, created_at, paid_at, line_items, creator_version')
       .order('created_at', { ascending: false })
       .limit(500), 'invoices'),
     fetchTable(__db.from('messages')
@@ -524,7 +541,7 @@ async function loadLiveData() {
 // NO `kind` / `sent_at` / `viewed_at` columns. mapInvoice derives them:
 // kind from a $-amount heuristic, sent_at from created_at, viewed_at = null.
 // If those columns ever get added, expand the SELECT and the mapper.
-'id, token, contact_id, proposal_id, total, status, created_at, paid_at')
+'id, token, contact_id, proposal_id, total, status, created_at, paid_at, line_items, creator_version')
           .order('created_at', { ascending: false }).limit(500);
         if (error) { console.warn('[CRM] realtime invoices refetch failed:', error.message); return; }
         window.CRM.invoices = (data || []).map(mapInvoice);
@@ -563,7 +580,7 @@ async function refetchAll() {
 // NO `kind` / `sent_at` / `viewed_at` columns. mapInvoice derives them:
 // kind from a $-amount heuristic, sent_at from created_at, viewed_at = null.
 // If those columns ever get added, expand the SELECT and the mapper.
-'id, token, contact_id, proposal_id, total, status, created_at, paid_at').order('created_at', { ascending: false }).limit(500),
+'id, token, contact_id, proposal_id, total, status, created_at, paid_at, line_items, creator_version').order('created_at', { ascending: false }).limit(500),
       __db.from('messages').select('id, contact_id, direction, body, created_at').gte('created_at', since).order('created_at', { ascending: false }).limit(2000),
     ]);
     if (c.data) window.CRM.contacts = c.data.map(mapContact).filter(x => !x.archived);

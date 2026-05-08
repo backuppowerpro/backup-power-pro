@@ -1022,6 +1022,43 @@ function quickQuoteCompute({ amp, cordIncluded, includeSurge, includePom, includ
   };
 }
 
+// ── V3 pricing engine (Key sketch 2026-05-08) ──────────────────────────
+// Single consolidated total. Cord/inlet/permit included by default in
+// base; toggling off subtracts the listed value. Length adds a per-foot
+// adder beyond the standard 5'. Line items + discount applied last. PoM
+// is opt-in only and never folded into the displayed total.
+const V3_PRICING = {
+  base:      { 30: 1197, 50: 1497 }, // includes 5' run, cord, inlet, permit
+  perFt:     { 30: 12,   50: 14   }, // per-foot adder beyond 5'
+  cordOff:   { 30: 129,  50: 198  }, // discount when cord toggled off
+  inletOff:  { 30: 129,  50: 179  }, // discount when inlet toggled off
+  permitOff: 125,                     // discount when permit toggled off
+  pom:       447,                     // peace-of-mind add-on (not in total)
+};
+
+// Compute the v3 customer-facing total. lineItems is an array of
+// { kind: 'item'|'discount', amount, checked, discountType } where item
+// uses checked-pre-fill (still added to total when creator saves it on)
+// and discount has discountType: 'percent'|'dollar'.
+function quoteV3Total({ amp, lengthFt, includeCord, includeInlet, includePermit, lineItems }) {
+  const a = String(amp);
+  let t = V3_PRICING.base[a] || 0;
+  const extraFt = Math.max(0, (Number(lengthFt) || 5) - 5);
+  t += extraFt * (V3_PRICING.perFt[a] || 0);
+  if (!includeCord)   t -= V3_PRICING.cordOff[a]   || 0;
+  if (!includeInlet)  t -= V3_PRICING.inletOff[a]  || 0;
+  if (!includePermit) t -= V3_PRICING.permitOff;
+  for (const li of (lineItems || [])) {
+    if (li.kind === 'discount') {
+      if (li.discountType === 'percent') t -= Math.round(t * (Number(li.amount) || 0) / 100);
+      else                                 t -= Number(li.amount) || 0;
+    } else {
+      t += Number(li.amount) || 0;
+    }
+  }
+  return Math.max(0, Math.round(t));
+}
+
 // Export everything
 Object.assign(window, {
   NAVY, GOLD, BG, CARD, MUTED, NOW, RADIUS, contactHasInstalled,
@@ -1031,5 +1068,6 @@ Object.assign(window, {
   formatDate, formatTime, formatTimeShort, formatDuration, dayKey,
   relTime, fmtTime, fmtDate,
   QB_C, QB_S, TIER_META, TIER_IDS, quickQuoteTotal, quickQuoteCompute,
+  V3_PRICING, quoteV3Total,
   safeSetItem, checkSvImagery, isAddressableStreet, copyText,
 });

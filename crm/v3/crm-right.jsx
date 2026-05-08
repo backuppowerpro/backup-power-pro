@@ -2128,6 +2128,10 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   // modals stay open across re-renders from realtime updates.
   const [proposalModalOpen, setProposalModalOpen] = React.useState(false);
   const [invoiceModalOpen,  setInvoiceModalOpen]  = React.useState(false);
+  // V3: edit-mode targets (id only — we look up the row at render time so
+  // realtime updates flow through automatically).
+  const [editingProposalId, setEditingProposalId] = React.useState(null);
+  const [editingInvoiceId,  setEditingInvoiceId]  = React.useState(null);
 
   // Cross-tab triggers — Contact tab's "Send quote" gold button on stage=NEW
   // dispatches `crm-open-new-proposal` to skip the user manually navigating
@@ -2241,6 +2245,70 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
       },
       duration: 5000,
     });
+  };
+
+  // V3: hard delete (distinct from cancel/void which is reversible). Used
+  // for proposals/invoices Key created by mistake or wants gone entirely.
+  const deleteProposal = async (prop) => {
+    if (!CRM.__db) return;
+    const ok = await window.confirmAction?.({
+      title: 'Delete this proposal?',
+      body: 'This permanently removes the proposal and breaks the customer link. Cannot be undone. Use Cancel instead if you might need it back.',
+      confirmLabel: 'Delete permanently',
+      destructive: true,
+    });
+    if (!ok) return;
+    const { error } = await CRM.__db.from('proposals').delete().eq('id', prop.id);
+    if (error) { window.showToast?.(`Delete failed: ${error.message}`); return; }
+    const arr = CRM.proposals || [];
+    const idx = arr.findIndex(x => x.id === prop.id);
+    if (idx >= 0) arr.splice(idx, 1);
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    window.showToast?.('Proposal deleted');
+  };
+  const deleteInvoice = async (inv) => {
+    if (!CRM.__db) return;
+    const ok = await window.confirmAction?.({
+      title: 'Delete this invoice?',
+      body: 'This permanently removes the invoice and breaks the customer link. Cannot be undone. Use Void instead if you might need it back.',
+      confirmLabel: 'Delete permanently',
+      destructive: true,
+    });
+    if (!ok) return;
+    const { error } = await CRM.__db.from('invoices').delete().eq('id', inv.id);
+    if (error) { window.showToast?.(`Delete failed: ${error.message}`); return; }
+    const arr = CRM.invoices || [];
+    const idx = arr.findIndex(x => x.id === inv.id);
+    if (idx >= 0) arr.splice(idx, 1);
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    window.showToast?.('Invoice deleted');
+  };
+  // V3: email send via the send-email edge function with the proposal/invoice
+  // template. Confirms before firing because email is more permanent than SMS.
+  const emailDoc = async ({ template, contact_id, proposal, invoice }) => {
+    if (!contact?.email) { window.showToast?.('No email on contact — add one first'); return; }
+    const ok = await window.confirmAction?.({
+      title: `Email ${template} to ${contact.email}?`,
+      body: 'This sends the formatted email via Resend. Same content as the customer page.',
+      confirmLabel: 'Send email',
+    });
+    if (!ok) return;
+    const url = proposal ? proposalUrl(proposal) : (invoice ? invoiceUrl(invoice) : null);
+    const total = (proposal?.amount_cents || invoice?.amount_cents || 0) / 100;
+    const { error } = await CRM.__invokeFn('send-email', {
+      body: {
+        template,
+        contact_id,
+        variables: {
+          [`${template}_url`]: url,
+          total: '$' + total.toLocaleString(),
+          amp_type: proposal?.amp_type || '30',
+        },
+        trigger_source: 'crm_v3_finance_action',
+      },
+    });
+    if (error) window.showToast?.(`Email failed: ${error.message}`);
+    else       window.showToast?.(`Email sent to ${contact.email}`);
   };
 
   const FIN_PILL = {
@@ -2374,7 +2442,7 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     window.open(linkUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid, onCancel, onVoid }) => {
+  const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid, onCancel, onVoid, onEdit, onDelete, onEmail }) => {
     // 40px on touch (Apple HIG = 44; 40 keeps the row visually compact
     // while staying above the "frustration threshold" Material flags at
     // 48px). Cursor-driven desktop is fine at 32 — but the inline style
@@ -2435,11 +2503,27 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
             )}
           </div>
         )}
-        {/* Secondary actions row — Mark paid (manual override for cash
-            payments) + Cancel/Void destructive actions. Ghost styling
-            so they don't compete with the gold Send CTA. */}
-        {(onMarkPaid || onCancel || onVoid) && (
+        {/* Secondary actions row — Edit / Email / Mark paid + destructive
+            (Cancel/Void/Delete). Ghost styling so they don't compete with
+            the gold Send CTA. */}
+        {(onMarkPaid || onCancel || onVoid || onEdit || onDelete || onEmail) && (
           <div style={{ display:'flex', gap:6, marginTop:6, flexWrap:'wrap' }}>
+            {onEdit && (
+              <button onClick={onEdit} style={{
+                minHeight:40, padding:'0 14px', borderRadius:8,
+                background:'transparent', color:NAVY,
+                border:'1px solid rgba(11,31,59,0.20)',
+                fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+              }}>Edit</button>
+            )}
+            {onEmail && (
+              <button onClick={onEmail} style={{
+                minHeight:40, padding:'0 14px', borderRadius:8,
+                background:'transparent', color:NAVY,
+                border:'1px solid rgba(11,31,59,0.20)',
+                fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+              }}>Email</button>
+            )}
             {onMarkPaid && (
               <button onClick={onMarkPaid} style={{
                 minHeight:40, padding:'0 14px', borderRadius:8,
@@ -2479,6 +2563,14 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
                 border:'1px solid rgba(153,27,27,0.35)',
                 fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
               }}>Void</button>
+            )}
+            {onDelete && (
+              <button onClick={onDelete} style={{
+                minHeight:40, padding:'0 14px', borderRadius:8,
+                background:'transparent', color:'#991B1B',
+                border:'1px solid rgba(153,27,27,0.25)',
+                fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+              }}>Delete</button>
             )}
           </div>
         )}
@@ -2531,6 +2623,9 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
             activity={propActivity(proposal)}
             linkUrl={proposalUrl(proposal)}
             onCancel={proposal.status === 'sent' || proposal.status === 'viewed' ? () => cancelProposal(proposal) : null}
+            onEdit={['draft','sent','viewed'].includes(proposal.status) ? () => { setProposalModalOpen(false); setEditingProposalId(proposal.id); } : null}
+            onDelete={['draft','sent','viewed','declined','cancelled','expired'].includes(proposal.status) ? () => deleteProposal(proposal) : null}
+            onEmail={contact?.email && ['sent','viewed','draft'].includes(proposal.status) ? () => emailDoc({ template:'proposal', contact_id: contact.id, proposal }) : null}
           />
         )}
 
@@ -2579,6 +2674,9 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
                 linkUrl={invoiceUrl(inv)}
                 onMarkPaid={['sent','viewed','overdue'].includes(inv.status) ? () => markPaid(inv) : null}
                 onVoid={['sent','viewed','overdue'].includes(inv.status) ? () => voidInvoice(inv) : null}
+                onEdit={['draft','sent','viewed','overdue'].includes(inv.status) ? () => { setInvoiceModalOpen(false); setEditingInvoiceId(inv.id); } : null}
+                onDelete={['draft','sent','viewed','overdue','voided','refunded'].includes(inv.status) ? () => deleteInvoice(inv) : null}
+                onEmail={contact?.email && ['sent','viewed','draft','overdue'].includes(inv.status) ? () => emailDoc({ template:'invoice', contact_id: contact.id, invoice: inv }) : null}
               />
             ))}
           </div>
@@ -2630,6 +2728,32 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
       )}
 
       {dealCards.map(d => <DealCard key={d.key} proposal={d.proposal} invoices={d.invoices} />)}
+
+      {/* Edit modals — mounted at this level so they overlay the deal list */}
+      {editingProposalId && (() => {
+        const ep = (CRM.proposals || []).find(p => p.id === editingProposalId);
+        if (!ep) { setEditingProposalId(null); return null; }
+        return (
+          <NewProposalModal
+            contact={contact}
+            editingProposal={ep}
+            onClose={() => setEditingProposalId(null)}
+          />
+        );
+      })()}
+      {editingInvoiceId && (() => {
+        const ei = (CRM.invoices || []).find(i => i.id === editingInvoiceId);
+        if (!ei) { setEditingInvoiceId(null); return null; }
+        return (
+          <NewInvoiceModal
+            contact={contact}
+            latestSignedProposal={proposals.find(p => p.id === ei.proposal_id) || null}
+            invoices={invoices}
+            editingInvoice={ei}
+            onClose={() => setEditingInvoiceId(null)}
+          />
+        );
+      })()}
 
       {dealCards.length === 0 && !proposalModalOpen && !invoiceModalOpen && (
         <div style={{ padding:'48px 24px', textAlign:'center', color:MUTED, fontSize:13 }}>Use the buttons above to send a proposal or invoice.</div>
@@ -3319,39 +3443,87 @@ function ModalShell({ open, onClose, title, footer, children }) {
   return ReactDOM.createPortal(overlay, document.body);
 }
 
-// ── New Proposal Modal / Inline Composer ──────────────────────────────
-// Quick-quote — amp toggle, tier selector, add-on chips, auto-total,
-// "Send to customer" inserts proposal + fires send-sms in one move.
-// Mirrors the v1/v2 pricing engine exactly so proposal.html renders
-// the same totals.
+// ── New Proposal Modal / Inline Composer (V3, sketch 2026-05-08) ───────
+// Single creator: amp pills → length slider → 4 toggle pills (cord, inlet,
+// permit, peace of mind) → +Line Item / +Discount with drag-reorder →
+// total + deposit toggle → Send. PoM is creator-side only; when offered,
+// the client sees an opt-in checkbox on proposal.html (NOT pre-checked,
+// NOT in displayed total). Cord/inlet/permit are creator-only toggles —
+// flipping off subtracts from total + adds a discreet "customer providing
+// own X" line on the rendered proposal (price decrease never shown).
 //
-// When `inline` is true, renders as a plain card (no overlay). The
-// Finance pane uses inline mode so the composer feels like part of the
-// page, evolving into the proposal row once sent. Modal mode is kept
-// for any cross-tab dispatch path that still wants an overlay.
-function NewProposalModal({ contact, onClose, inline = false }) {
-  // Trim before split-or-default so a name of "  " doesn't render
-  // "Hey , here's your quote" — guards against whitespace-only DB rows.
+// Edit mode: passing editingProposal rehydrates the form. v2 proposals
+// lift cleanly into v3 fields; saving rewrites as creator_version='v3'.
+function NewProposalModal({ contact, onClose, inline = false, editingProposal = null }) {
   const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
-  // Default amp from the contact's actual install spec. mapContact
-  // selects `panel_amps` (canonical column) — `amp_type` was never
-  // mapped, so reading it always fell back to '30' even for a 50A
-  // panel. Coerce to '30'/'50' or fall back when unset/legacy.
-  const [amp,        setAmp]        = React.useState(['30','50'].includes(String(contact.panel_amps)) ? String(contact.panel_amps) : '30');
-  const [tier,       setTier]       = React.useState(contact.pricing_tier || 'standard');
-  const [cordIncluded,  setCord]    = React.useState(true);
-  const [includeSurge,  setSurge]   = React.useState(false);
-  const [includePom,    setPom]     = React.useState(false);
-  const [includePermit, setPermit]  = React.useState(true);
-  const [busy, setBusy] = React.useState(false);
+  const isEdit = !!editingProposal;
+  const ep = editingProposal || {};
 
-  const total = React.useMemo(() => quickQuoteTotal({
-    amp, cordIncluded, includeSurge, includePom, includePermit, tier,
-  }), [amp, cordIncluded, includeSurge, includePom, includePermit, tier]);
+  // Default amp from existing proposal, otherwise the contact's panel spec.
+  const [amp, setAmp] = React.useState(() => {
+    if (isEdit && ['30','50'].includes(String(ep.amp_type))) return String(ep.amp_type);
+    return ['30','50'].includes(String(contact.panel_amps)) ? String(contact.panel_amps) : '30';
+  });
+  const [lengthFt,       setLengthFt]      = React.useState(() => isEdit ? (Number(ep.length_ft) || 5) : 5);
+  const [includeCord,    setIncludeCord]   = React.useState(() => isEdit ? ep.include_cord    !== false : true);
+  const [includeInlet,   setIncludeInlet]  = React.useState(() => isEdit ? ep.include_inlet   !== false : true);
+  const [includePermit,  setIncludePermit] = React.useState(() => isEdit ? ep.include_permit  !== false : true);
+  const [pomOffered,     setPomOffered]    = React.useState(() => isEdit ? !!ep.pom_offered : false);
+  const [requireDeposit, setRequireDeposit]= React.useState(() => isEdit ? !!ep.require_deposit : false);
+  const [notes,          setNotes]         = React.useState(() => isEdit ? (ep.notes || '') : '');
+  // Line items: { id, kind: 'item'|'discount', name, amount, checked, discountType }.
+  const [lineItems, setLineItems] = React.useState(() => {
+    if (!isEdit) return [];
+    const items = (Array.isArray(ep.extra_line_items) ? ep.extra_line_items : []).map(li => ({
+      id: li.id || ('i_' + Math.random().toString(36).slice(2,8)),
+      kind: 'item',
+      name: li.name || '',
+      amount: Number(li.amount) || 0,
+      checked: li.checked !== false,
+    }));
+    if (ep.discount_type && Number(ep.discount_value) > 0) {
+      items.push({
+        id: 'd_' + Math.random().toString(36).slice(2,8),
+        kind: 'discount', name: 'Discount',
+        discountType: ep.discount_type,
+        amount: Number(ep.discount_value),
+        checked: true,
+      });
+    }
+    return items;
+  });
+  const [busy, setBusy] = React.useState(false);
+  const [dragIdx, setDragIdx] = React.useState(null);
+
+  const total = React.useMemo(() => quoteV3Total({
+    amp, lengthFt, includeCord, includeInlet, includePermit, lineItems,
+  }), [amp, lengthFt, includeCord, includeInlet, includePermit, lineItems]);
+
+  const hasDiscount = lineItems.some(li => li.kind === 'discount');
+  const addItem = () => setLineItems(prev => [...prev, {
+    id: 'i_' + Math.random().toString(36).slice(2,8),
+    kind: 'item', name: '', amount: 0, checked: true,
+  }]);
+  const addDiscount = () => {
+    if (hasDiscount) return;
+    setLineItems(prev => [...prev, {
+      id: 'd_' + Math.random().toString(36).slice(2,8),
+      kind: 'discount', name: 'Discount', discountType: 'dollar', amount: 0, checked: true,
+    }]);
+  };
+  const updateItem = (i, patch) => setLineItems(prev => prev.map((li, idx) => idx === i ? { ...li, ...patch } : li));
+  const removeItem = (i) => setLineItems(prev => prev.filter((_, idx) => idx !== i));
+  const moveItem = (from, to) => setLineItems(prev => {
+    if (from === to || from < 0 || to < 0 || from >= prev.length || to >= prev.length) return prev;
+    const next = [...prev];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    return next;
+  });
 
   const submit = async () => {
     if (busy) return;
-    if (contact.do_not_contact) {
+    if (!isEdit && contact.do_not_contact) {
       window.showToast?.('Marked do not contact — cannot send');
       return;
     }
@@ -3361,75 +3533,73 @@ function NewProposalModal({ contact, onClose, inline = false }) {
     }
     setBusy(true);
     try {
-      const pricing30 = quickQuoteCompute({ amp:'30', cordIncluded, includeSurge, includePom, includePermit });
-      const pricing50 = quickQuoteCompute({ amp:'50', cordIncluded, includeSurge, includePom, includePermit });
+      const discountItem = lineItems.find(li => li.kind === 'discount');
+      const extraLI = lineItems.filter(li => li.kind !== 'discount').map(li => ({
+        id: li.id, name: li.name || '', amount: Number(li.amount) || 0, checked: li.checked !== false,
+      }));
       const payload = {
-        contact_id: contact.id,
+        contact_id:      contact.id,
         contact_name:    contact.name    || '',
         contact_email:   contact.email   || '',
         contact_phone:   contact.phone   || '',
         contact_address: contact.address || '',
-        amp_type: amp,
-        selected_amp: amp,
-        run_ft: 5,
-        mode: 'standard',
-        include_cord: !!cordIncluded,
-        cord_included: !!cordIncluded,
-        price_cord: cordIncluded ? 0 : (amp === '50' ? QB_S.cordValue50 : QB_S.cordValue30),
-        include_surge: !!includeSurge,
-        price_surge: includeSurge ? QB_S.surge : 0,
-        surge_price: QB_S.surge,
-        include_pom: !!includePom,
-        pom_price: QB_S.pom,
-        include_permit: !!includePermit,
-        include_main_breaker: false,
-        include_twin_quad: false,
-        pricing_30: pricing30,
-        pricing_50: pricing50,
+        creator_version: 'v3',
+        amp_type:        amp,
+        selected_amp:    amp,
+        length_ft:       lengthFt,
+        run_ft:          lengthFt,                // legacy mirror
+        include_cord:    !!includeCord,
+        cord_included:   !!includeCord,           // legacy mirror
+        include_inlet:   !!includeInlet,
+        include_permit:  !!includePermit,
+        include_surge:   false,
+        pom_offered:     !!pomOffered,
+        pom_accepted:    isEdit ? !!ep.pom_accepted : false,
+        include_pom:     false,                    // never auto-included; opt-in on client page
+        selected_pom:    false,
+        pom_price:       (window.V3_PRICING?.pom) || 447,
+        require_deposit: !!requireDeposit,
+        discount_type:   discountItem ? discountItem.discountType : null,
+        discount_value:  discountItem ? Number(discountItem.amount) || 0 : null,
+        discount_amount: discountItem && discountItem.discountType === 'dollar' ? Number(discountItem.amount) || 0 : 0,
+        extra_line_items: extraLI,
+        custom_items:    extraLI.map(li => ({ title: li.name, price: li.amount })), // legacy mirror
         total,
-        price_base: total,
-        pricing_tier: tier,
-        pricing_variant: null,
-        notes: '',
-        custom_items: [],
-        status: 'Sent',
-        require_deposit: true,
+        price_base:      total,
+        price_cord:      0, price_surge: 0,
+        notes:           notes.trim(),
       };
-      const { data, error } = await CRM.__db.from('proposals').insert([payload]).select().single();
+      let data, error;
+      if (isEdit) {
+        ({ data, error } = await CRM.__db.from('proposals').update(payload).eq('id', ep.id).select().single());
+      } else {
+        ({ data, error } = await CRM.__db.from('proposals').insert([{ ...payload, status: 'Sent' }]).select().single());
+      }
       if (error || !data) {
-        window.showToast?.(`Insert failed: ${error?.message || 'unknown'}`);
+        window.showToast?.(`${isEdit ? 'Update' : 'Insert'} failed: ${error?.message || 'unknown'}`);
         setBusy(false);
         return;
       }
-      // Bump contact stage NEW → QUOTED. contact.stage is the v3 STRING
-      // form ('new'); the prior `=== 1` compared string vs number and
-      // never matched. Translate to numeric for the DB write.
-      if (contact.stage === 'new') {
+      // Bump contact stage NEW → QUOTED on first send.
+      if (!isEdit && contact.stage === 'new') {
         const numQuoted = CRM.STAGE_STR_TO_NUM?.quoted ?? 2;
         contact.stage = 'quoted';
         window.dispatchEvent(new CustomEvent('crm-data-changed'));
         CRM.__db.from('contacts').update({ stage: numQuoted }).eq('id', contact.id).then(() => {}, () => {});
       }
-      // Persist tier choice back to the contact if Key tweaked it.
-      if (tier !== (contact.pricing_tier || 'standard')) {
-        CRM.__db.from('contacts').update({ pricing_tier: tier }).eq('id', contact.id).then(() => {}, () => {});
-      }
-      // Send the SMS with the proposal link. Stable idempotency key keeps
-      // double-clicks from sending twice.
-      const url = `https://backuppowerpro.com/proposal.html?token=${data.token}`;
-      const minute = Math.floor(Date.now() / 60000);
-      // Include amp+tier so two distinct proposals to the same contact
-      // within the same minute (e.g. Key resends as 50A right after 30A)
-      // don't collide on server-side dedup.
-      const idempotencyKey = `v3-newprop-${contact.id}-${amp}-${tier}-${minute}`;
-      const body = `Hey ${firstName}, here's your install quote from Backup Power Pro: ${url}`;
-      const { error: smsErr } = await CRM.__invokeFn('send-sms', {
-        body: { contactId: contact.id, body, idempotencyKey },
-      });
-      if (smsErr) {
-        window.showToast?.(`Saved but send failed: ${smsErr.message}`);
+      // Send SMS only on create — edits don't auto-resend so Key controls the cadence.
+      if (!isEdit) {
+        const url = `https://backuppowerpro.com/proposal.html?token=${data.token}`;
+        const minute = Math.floor(Date.now() / 60000);
+        const idempotencyKey = `v3-newprop-${contact.id}-${amp}-${lengthFt}-${minute}`;
+        const body = `Hey ${firstName}, here's your install quote from Backup Power Pro: ${url}`;
+        const { error: smsErr } = await CRM.__invokeFn('send-sms', {
+          body: { contactId: contact.id, body, idempotencyKey },
+        });
+        if (smsErr) window.showToast?.(`Saved but send failed: ${smsErr.message}`);
+        else        window.showToast?.(`Proposal sent to ${firstName}`);
       } else {
-        window.showToast?.(`Proposal sent to ${firstName}`);
+        window.showToast?.('Proposal updated');
       }
       onClose();
     } catch (e) {
@@ -3438,88 +3608,202 @@ function NewProposalModal({ contact, onClose, inline = false }) {
     }
   };
 
-  const Chip = ({ on, onClick, children }) => (
-    // 2-up basis (~50% width) so "Peace of Mind" doesn't get squeezed
-    // below its intrinsic width on a 390px viewport (4-up = 83px each;
-    // Peace of Mind needs ~95px). flex-wrap drops the row to two when
-    // there's not enough space for all 4 inline.
+  // ── UI primitives (scoped to this component) ──────────────────────────
+  const Pill = ({ on, onClick, children, accent }) => (
     <button onClick={onClick} style={{
-      flex:'1 1 calc(50% - 4px)', minWidth:0, height:36, borderRadius:8,
-      background: on ? NAVY : 'white',
-      color: on ? 'white' : NAVY,
+      flex:1, height:36, borderRadius:8,
+      background: on ? (accent || NAVY) : 'white',
+      color: on ? (accent === GOLD ? NAVY : 'white') : NAVY,
       border: on ? 'none' : '1px solid rgba(11,31,59,0.15)',
       fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
       whiteSpace:'nowrap',
     }}>{children}</button>
   );
-  const Seg = ({ on, onClick, label, sub }) => (
-    <button onClick={onClick} style={{
-      flex:1, padding:'8px 6px', borderRadius:8,
-      background: on ? NAVY : 'white',
-      color: on ? 'white' : NAVY,
-      border: on ? 'none' : '1px solid rgba(11,31,59,0.15)',
-      fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
-      display:'flex', flexDirection:'column', alignItems:'center', gap:2,
-    }}>
-      <span>{label}</span>
-      {sub && <span style={{ fontSize:10, opacity:0.65, fontWeight:500 }}>{sub}</span>}
-    </button>
-  );
 
-  // Form body — extracted so we can render it in either a ModalShell
-  // or an inline card without duplicating all the chip/seg markup.
+  const renderLineRow = (li, i) => {
+    const isDiscount = li.kind === 'discount';
+    return (
+      <div
+        key={li.id}
+        draggable
+        onDragStart={() => setDragIdx(i)}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={() => { if (dragIdx != null) moveItem(dragIdx, i); setDragIdx(null); }}
+        onDragEnd={() => setDragIdx(null)}
+        style={{
+          display:'flex', alignItems:'center', gap:6,
+          padding:'7px 8px',
+          background: isDiscount ? '#FFF8E0' : 'white',
+          border: '1px solid ' + (isDiscount ? GOLD : 'rgba(11,31,59,0.12)'),
+          borderRadius:6, opacity: dragIdx === i ? 0.5 : 1,
+        }}
+      >
+        <span title="Drag to reorder" style={{ cursor:'grab', color:'#999', userSelect:'none', fontSize:14, padding:'0 2px' }}>⋮⋮</span>
+        {isDiscount ? (
+          <span style={{ display:'inline-flex', gap:1, background:'#EBEBEA', padding:1, borderRadius:6, marginRight:4 }}>
+            <button type="button" onClick={() => updateItem(i, { discountType: 'dollar' })} style={{
+              padding:'3px 7px', border:'none', borderRadius:5,
+              background: li.discountType === 'dollar' ? NAVY : 'white',
+              color: li.discountType === 'dollar' ? 'white' : '#666',
+              fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit',
+            }}>$</button>
+            <button type="button" onClick={() => updateItem(i, { discountType: 'percent' })} style={{
+              padding:'3px 7px', border:'none', borderRadius:5,
+              background: li.discountType === 'percent' ? NAVY : 'white',
+              color: li.discountType === 'percent' ? 'white' : '#666',
+              fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit',
+            }}>%</button>
+          </span>
+        ) : (
+          <input
+            type="checkbox"
+            checked={li.checked !== false}
+            onChange={(e) => updateItem(i, { checked: e.target.checked })}
+            title="Pre-checked for client (client can uncheck)"
+            style={{ width:14, height:14, accentColor: NAVY, flexShrink:0 }}
+          />
+        )}
+        <input
+          type="text"
+          value={li.name}
+          onChange={(e) => updateItem(i, { name: e.target.value })}
+          placeholder={isDiscount ? 'Discount label' : 'Service name'}
+          style={{ flex:1, minWidth:0, padding:'4px 6px', border:'none', background:'transparent',
+                   fontSize:13, color:NAVY, fontFamily:'inherit', outline:'none' }}
+        />
+        {!isDiscount && <span style={{ color:'#999', fontSize:13 }}>$</span>}
+        <input
+          type="number"
+          inputMode="decimal"
+          min="0" step="1"
+          value={li.amount}
+          onChange={(e) => updateItem(i, { amount: parseFloat(e.target.value) || 0 })}
+          style={{ width:74, padding:'4px 6px', border:'1px solid rgba(11,31,59,0.15)', borderRadius:5,
+                   fontSize:13, textAlign:'right', fontWeight:700, color:NAVY, fontFamily:'inherit', background:'white' }}
+        />
+        <button type="button" onClick={() => removeItem(i)} aria-label="Remove" style={{
+          background:'none', border:'none', color:'#999', cursor:'pointer', padding:'2px 4px',
+          fontSize:14, lineHeight:1, fontFamily:'inherit',
+        }}>✕</button>
+      </div>
+    );
+  };
+
   const formBody = (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-      {/* Amp toggle */}
+      {/* 1. Amp toggle */}
       <div>
         <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Amperage</div>
         <div style={{ display:'flex', gap:8 }}>
-          <Chip on={amp === '30'} onClick={() => setAmp('30')}>30A</Chip>
-          <Chip on={amp === '50'} onClick={() => setAmp('50')}>50A</Chip>
+          <Pill on={amp === '30'} onClick={() => setAmp('30')}>30A</Pill>
+          <Pill on={amp === '50'} onClick={() => setAmp('50')}>50A</Pill>
         </div>
       </div>
-      {/* Tier 3-segment */}
+      {/* 2. Length slider */}
       <div>
-        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Tier</div>
+        <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
+          <span style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Length</span>
+          <span style={{ fontSize:14, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono','DM Mono',monospace" }}>{lengthFt}'</span>
+        </div>
+        <input
+          type="range" min="5" max="100" step="5" value={lengthFt}
+          onChange={(e) => setLengthFt(parseInt(e.target.value, 10) || 5)}
+          style={{ width:'100%', accentColor: NAVY, height:6 }}
+        />
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#999', marginTop:2 }}>
+          <span>5'</span><span>100'</span>
+        </div>
+      </div>
+      {/* 3. 4 toggle pills */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Scope</div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+          <Pill on={includeCord}    onClick={() => setIncludeCord(v => !v)}>Cord</Pill>
+          <Pill on={includeInlet}   onClick={() => setIncludeInlet(v => !v)}>Inlet</Pill>
+          <Pill on={includePermit}  onClick={() => setIncludePermit(v => !v)}>Permit</Pill>
+          <Pill on={pomOffered}     onClick={() => setPomOffered(v => !v)} accent={GOLD}>Peace of Mind</Pill>
+        </div>
+        {pomOffered && (
+          <div style={{ fontSize:11, color:'#666', fontStyle:'italic', marginTop:6 }}>
+            Visible to client as opt-in (not pre-checked, not in displayed total).
+          </div>
+        )}
+      </div>
+      {/* 4. + Line Item / + Discount */}
+      <div>
         <div style={{ display:'flex', gap:8 }}>
-          <Seg on={tier === 'standard'}     onClick={() => setTier('standard')}     label="Standard" sub="Base" />
-          <Seg on={tier === 'premium'}      onClick={() => setTier('premium')}      label="Premium"  sub="+$300" />
-          <Seg on={tier === 'premium_plus'} onClick={() => setTier('premium_plus')} label="Premium+" sub="+$600" />
+          <button type="button" onClick={addItem} style={{
+            flex:1, height:36, padding:'0 12px', borderRadius:8, background:'white',
+            border:'1px dashed rgba(11,31,59,0.25)', color:'#666',
+            fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+          }}>+ Line Item</button>
+          <button type="button" onClick={addDiscount} disabled={hasDiscount} style={{
+            flex:1, height:36, padding:'0 12px', borderRadius:8,
+            background: hasDiscount ? '#F5F5F5' : 'white',
+            border:'1px dashed rgba(11,31,59,0.25)',
+            color: hasDiscount ? '#bbb' : '#666',
+            fontSize:12, fontWeight:600, fontFamily:'inherit',
+            cursor: hasDiscount ? 'not-allowed' : 'pointer',
+          }}>+ Discount</button>
         </div>
+        {lineItems.length > 0 && (
+          <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:8 }}>
+            {lineItems.map((li, i) => renderLineRow(li, i))}
+          </div>
+        )}
       </div>
-      {/* Add-ons */}
+      {/* Notes */}
       <div>
-        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Add-ons</div>
-        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-          <Chip on={cordIncluded}  onClick={() => setCord(c => !c)}>Cord</Chip>
-          <Chip on={includeSurge}  onClick={() => setSurge(s => !s)}>Surge</Chip>
-          <Chip on={includePom}    onClick={() => setPom(p => !p)}>Peace of Mind</Chip>
-          <Chip on={includePermit} onClick={() => setPermit(p => !p)}>Permit</Chip>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
+          Notes <span style={{ fontWeight:400, opacity:0.7, textTransform:'none', letterSpacing:0 }}>(visible to customer)</span>
         </div>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Special instructions, access notes…"
+          rows={2}
+          style={{ width:'100%', padding:'8px 10px', border:'1.5px solid #EBEBEA', borderRadius:8,
+                   fontSize:14, color:NAVY, fontFamily:'inherit', outline:'none', resize:'vertical',
+                   boxSizing:'border-box' }}
+        />
       </div>
     </div>
   );
 
   const footerRow = (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-      <div>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+      <div style={{ minWidth:0 }}>
         <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Total</div>
-        <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono', 'DM Mono', monospace" }}>${total.toLocaleString()}</div>
+        <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono','DM Mono',monospace" }}>${total.toLocaleString()}</div>
+        {pomOffered && (
+          <div style={{ fontSize:10, color:'#999', marginTop:2 }}>
+            +${(window.V3_PRICING?.pom) || 447} if client opts into PoM
+          </div>
+        )}
       </div>
-      <button
-        onClick={submit}
-        disabled={busy || contact.do_not_contact}
-        style={{
-          height:42, padding:'0 18px', borderRadius:8,
-          background: busy || contact.do_not_contact ? '#E5E5E5' : '#ffba00',
-          color: busy || contact.do_not_contact ? '#999' : NAVY,
-          border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
-          cursor: busy || contact.do_not_contact ? 'not-allowed' : 'pointer',
-          display:'flex', alignItems:'center', gap:7,
-        }}
-      >
-        {busy ? 'Sending…' : 'Send to customer'}
-      </button>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <button type="button" onClick={() => setRequireDeposit(v => !v)} style={{
+          height:36, padding:'0 12px', borderRadius:8,
+          background: requireDeposit ? GOLD : 'white',
+          color: requireDeposit ? NAVY : '#666',
+          border: requireDeposit ? 'none' : '1px solid rgba(11,31,59,0.15)',
+          fontSize:11, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+        }}>{requireDeposit ? '✓ ' : ''}50% deposit</button>
+        <button
+          onClick={submit}
+          disabled={busy || (!isEdit && contact.do_not_contact)}
+          style={{
+            height:42, padding:'0 18px', borderRadius:8,
+            background: busy || (!isEdit && contact.do_not_contact) ? '#E5E5E5' : '#ffba00',
+            color: busy || (!isEdit && contact.do_not_contact) ? '#999' : NAVY,
+            border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
+            cursor: busy || (!isEdit && contact.do_not_contact) ? 'not-allowed' : 'pointer',
+            display:'flex', alignItems:'center', gap:7,
+          }}
+        >
+          {busy ? (isEdit ? 'Saving…' : 'Sending…') : (isEdit ? 'Save changes' : 'Send to customer')}
+        </button>
+      </div>
     </div>
   );
 
@@ -3530,7 +3814,7 @@ function NewProposalModal({ contact, onClose, inline = false }) {
         marginBottom:12,
       }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 10px', borderBottom:'1px solid rgba(11,31,59,0.06)' }}>
-          <div style={{ fontSize:13, fontWeight:600, color:NAVY }}>New proposal</div>
+          <div style={{ fontSize:13, fontWeight:600, color:NAVY }}>{isEdit ? 'Edit proposal' : 'New proposal'}</div>
           <button onClick={onClose} aria-label="Cancel" style={{
             width:32, height:32, borderRadius:6, border:'none', background:'transparent',
             color:'#666', fontSize:22, lineHeight:1, cursor:'pointer', fontFamily:'inherit',
@@ -3549,7 +3833,7 @@ function NewProposalModal({ contact, onClose, inline = false }) {
     <ModalShell
       open={true}
       onClose={onClose}
-      title={`New proposal — ${contact.name || formatPhone(contact.phone)}`}
+      title={`${isEdit ? 'Edit proposal' : 'New proposal'} — ${contact.name || formatPhone(contact.phone)}`}
       footer={footerRow}
     >
       {formBody}
@@ -3557,63 +3841,97 @@ function NewProposalModal({ contact, onClose, inline = false }) {
   );
 }
 
-// ── New Invoice Modal ─────────────────────────────────────────────────
-// Type picker (Deposit/Final/Balance), amount input, optional description.
-// Deposit auto-fills 50% of approved-proposal total; Final fills remainder
-// after summing deposit invoices; Balance is custom (Key types it).
-function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inline = false }) {
-  // Trim before split-or-default so a name of "  " doesn't render
-  // "Hey , here's your quote" — guards against whitespace-only DB rows.
+// ── New Invoice Modal (V3, sketch 2026-05-08) ─────────────────────────
+// Same line-items + discount editing model as the proposal creator, but
+// no deposit toggle (per Key's spec). Type picker (Deposit/Final/Balance)
+// is a one-click preset that pre-fills line items; Key can then add /
+// remove / reorder / discount before sending.
+function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inline = false, editingInvoice = null }) {
   const firstName = ((contact.name || '').trim().split(/\s+/)[0] || 'there');
+  const isEdit = !!editingInvoice;
+  const ei = editingInvoice || {};
 
   const proposalTotal = (latestSignedProposal?.amount_cents || 0) / 100;
-  // "Already-billed" — any invoice that's a live obligation reduces the
-  // Final remainder. We INCLUDE 'sent' here intentionally (counter to a
-  // narrow "only paid counts" reading) because Key wants Final to be
-  // proposalTotal MINUS what's already been billed (deposit etc.) — sending
-  // a Final that ignores an outstanding deposit double-bills the customer.
-  // Voided/refunded/draft are excluded so they don't artificially inflate.
   const billedSum = invoices
     .filter(i => !['voided', 'refunded', 'draft', 'declined'].includes(i.status))
     .reduce((s,i) => s + (i.amount_cents || 0), 0) / 100;
   const remaining = Math.max(0, proposalTotal - billedSum);
 
-  const [kind, setKind] = React.useState('deposit');
-  const [amount, setAmount] = React.useState(() => {
-    if (proposalTotal > 0) return Math.round(proposalTotal * 0.5);
-    return 0;
+  const [lineItems, setLineItems] = React.useState(() => {
+    if (isEdit) {
+      const items = (Array.isArray(ei.line_items) ? ei.line_items : []).map(li => ({
+        id: li.id || ('i_' + Math.random().toString(36).slice(2,8)),
+        kind: li.kind || (li.discountType ? 'discount' : 'item'),
+        name: li.name || '',
+        amount: Number(li.amount) || 0,
+        checked: li.checked !== false,
+        discountType: li.discountType || null,
+      }));
+      return items;
+    }
+    // Default preset: 50% deposit if there's an approved proposal, otherwise empty.
+    if (proposalTotal > 0) {
+      return [{
+        id: 'i_' + Math.random().toString(36).slice(2,8),
+        kind: 'item', name: '50% deposit', amount: Math.round(proposalTotal * 0.5), checked: true,
+      }];
+    }
+    return [];
   });
-  const [description, setDescription] = React.useState('');
   const [busy, setBusy] = React.useState(false);
+  const [dragIdx, setDragIdx] = React.useState(null);
 
-  // Auto-fill amount when kind switches.
-  const onKindChange = (k) => {
-    setKind(k);
-    if (k === 'deposit' && proposalTotal > 0) {
-      setAmount(Math.round(proposalTotal * 0.5));
-    } else if (k === 'final') {
-      setAmount(Math.round(remaining));
-    } else if (k === 'balance') {
-      setAmount(0);
+  const total = React.useMemo(() => {
+    let t = 0;
+    for (const li of lineItems) {
+      if (li.kind === 'discount') {
+        if (li.discountType === 'percent') t -= Math.round(t * (Number(li.amount) || 0) / 100);
+        else                                 t -= Number(li.amount) || 0;
+      } else {
+        t += Number(li.amount) || 0;
+      }
+    }
+    return Math.max(0, Math.round(t));
+  }, [lineItems]);
+
+  const hasDiscount = lineItems.some(li => li.kind === 'discount');
+  const addItem = () => setLineItems(prev => [...prev, {
+    id: 'i_' + Math.random().toString(36).slice(2,8),
+    kind: 'item', name: '', amount: 0, checked: true,
+  }]);
+  const addDiscount = () => {
+    if (hasDiscount) return;
+    setLineItems(prev => [...prev, {
+      id: 'd_' + Math.random().toString(36).slice(2,8),
+      kind: 'discount', name: 'Discount', discountType: 'dollar', amount: 0, checked: true,
+    }]);
+  };
+  const updateItem = (i, patch) => setLineItems(prev => prev.map((li, idx) => idx === i ? { ...li, ...patch } : li));
+  const removeItem = (i) => setLineItems(prev => prev.filter((_, idx) => idx !== i));
+  const moveItem = (from, to) => setLineItems(prev => {
+    if (from === to || from < 0 || to < 0 || from >= prev.length || to >= prev.length) return prev;
+    const next = [...prev]; const [m] = next.splice(from, 1); next.splice(to, 0, m); return next;
+  });
+
+  // Quick presets — replace current line items with the preset.
+  const applyPreset = (kind) => {
+    const id = () => 'i_' + Math.random().toString(36).slice(2,8);
+    if (kind === 'deposit' && proposalTotal > 0) {
+      setLineItems([{ id: id(), kind: 'item', name: '50% deposit', amount: Math.round(proposalTotal * 0.5), checked: true }]);
+    } else if (kind === 'final') {
+      setLineItems([{ id: id(), kind: 'item', name: 'Final balance', amount: Math.round(remaining), checked: true }]);
+    } else if (kind === 'balance') {
+      setLineItems([{ id: id(), kind: 'item', name: 'Balance due', amount: 0, checked: true }]);
     }
   };
 
-  const lineLabel = kind === 'deposit' ? '50% deposit'
-                  : kind === 'final'   ? 'Final balance'
-                  : 'Balance due';
-  const lineItems = [{
-    name: description.trim() || lineLabel,
-    amount: Number(amount) || 0,
-  }];
-
   const submit = async () => {
     if (busy) return;
-    const total = Number(amount) || 0;
     if (total <= 0) {
-      window.showToast?.('Amount must be greater than 0');
+      window.showToast?.('Total must be greater than 0');
       return;
     }
-    if (contact.do_not_contact) {
+    if (!isEdit && contact.do_not_contact) {
       window.showToast?.('Marked do not contact — cannot send');
       return;
     }
@@ -3623,36 +3941,47 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
     }
     setBusy(true);
     try {
+      // Stored line_items keep the kind/discountType so editor can rehydrate.
+      const storedItems = lineItems.map(li => ({
+        id: li.id, kind: li.kind, name: li.name || '',
+        amount: Number(li.amount) || 0,
+        checked: li.checked !== false,
+        discountType: li.discountType || undefined,
+      }));
       const payload = {
         contact_id: contact.id,
-        proposal_id: latestSignedProposal?.id || null,
+        proposal_id: latestSignedProposal?.id || (isEdit ? ei.proposal_id || null : null),
         contact_name:    contact.name    || '',
         contact_email:   contact.email   || '',
         contact_phone:   contact.phone   || '',
         contact_address: contact.address || '',
-        line_items: lineItems,
+        creator_version: 'v3',
+        line_items: storedItems,
         total,
-        status: 'unpaid',
       };
-      const { data, error } = await CRM.__db.from('invoices').insert([payload]).select().single();
+      let data, error;
+      if (isEdit) {
+        ({ data, error } = await CRM.__db.from('invoices').update(payload).eq('id', ei.id).select().single());
+      } else {
+        ({ data, error } = await CRM.__db.from('invoices').insert([{ ...payload, status: 'unpaid' }]).select().single());
+      }
       if (error || !data) {
-        window.showToast?.(`Insert failed: ${error?.message || 'unknown'}`);
+        window.showToast?.(`${isEdit ? 'Update' : 'Insert'} failed: ${error?.message || 'unknown'}`);
         setBusy(false);
         return;
       }
-      const url = `https://backuppowerpro.com/invoice.html?token=${data.token}`;
-      const minute = Math.floor(Date.now() / 60000);
-      // Include kind so distinct deposit/final/balance invoices to the
-      // same contact within the same minute don't collide.
-      const idempotencyKey = `v3-newinv-${contact.id}-${kind}-${minute}`;
-      const body = `Hey ${firstName}, here's your invoice from Backup Power Pro: ${url}`;
-      const { error: smsErr } = await CRM.__invokeFn('send-sms', {
-        body: { contactId: contact.id, body, idempotencyKey },
-      });
-      if (smsErr) {
-        window.showToast?.(`Saved but send failed: ${smsErr.message}`);
+      if (!isEdit) {
+        const url = `https://backuppowerpro.com/invoice.html?token=${data.token}`;
+        const minute = Math.floor(Date.now() / 60000);
+        const idempotencyKey = `v3-newinv-${contact.id}-${total}-${minute}`;
+        const body = `Hey ${firstName}, here's your invoice from Backup Power Pro: ${url}`;
+        const { error: smsErr } = await CRM.__invokeFn('send-sms', {
+          body: { contactId: contact.id, body, idempotencyKey },
+        });
+        if (smsErr) window.showToast?.(`Saved but send failed: ${smsErr.message}`);
+        else        window.showToast?.(`Invoice sent to ${firstName}`);
       } else {
-        window.showToast?.(`Invoice sent to ${firstName}`);
+        window.showToast?.('Invoice updated');
       }
       onClose();
     } catch (e) {
@@ -3675,6 +4004,73 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
     </button>
   );
 
+  const renderLineRow = (li, i) => {
+    const isDiscount = li.kind === 'discount';
+    return (
+      <div
+        key={li.id}
+        draggable
+        onDragStart={() => setDragIdx(i)}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={() => { if (dragIdx != null) moveItem(dragIdx, i); setDragIdx(null); }}
+        onDragEnd={() => setDragIdx(null)}
+        style={{
+          display:'flex', alignItems:'center', gap:6,
+          padding:'7px 8px',
+          background: isDiscount ? '#FFF8E0' : 'white',
+          border: '1px solid ' + (isDiscount ? GOLD : 'rgba(11,31,59,0.12)'),
+          borderRadius:6, opacity: dragIdx === i ? 0.5 : 1,
+        }}
+      >
+        <span title="Drag to reorder" style={{ cursor:'grab', color:'#999', userSelect:'none', fontSize:14, padding:'0 2px' }}>⋮⋮</span>
+        {isDiscount ? (
+          <span style={{ display:'inline-flex', gap:1, background:'#EBEBEA', padding:1, borderRadius:6, marginRight:4 }}>
+            <button type="button" onClick={() => updateItem(i, { discountType: 'dollar' })} style={{
+              padding:'3px 7px', border:'none', borderRadius:5,
+              background: li.discountType === 'dollar' ? NAVY : 'white',
+              color: li.discountType === 'dollar' ? 'white' : '#666',
+              fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit',
+            }}>$</button>
+            <button type="button" onClick={() => updateItem(i, { discountType: 'percent' })} style={{
+              padding:'3px 7px', border:'none', borderRadius:5,
+              background: li.discountType === 'percent' ? NAVY : 'white',
+              color: li.discountType === 'percent' ? 'white' : '#666',
+              fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit',
+            }}>%</button>
+          </span>
+        ) : (
+          <input
+            type="checkbox"
+            checked={li.checked !== false}
+            onChange={(e) => updateItem(i, { checked: e.target.checked })}
+            title="Pre-checked for client"
+            style={{ width:14, height:14, accentColor: NAVY, flexShrink:0 }}
+          />
+        )}
+        <input
+          type="text"
+          value={li.name}
+          onChange={(e) => updateItem(i, { name: e.target.value })}
+          placeholder={isDiscount ? 'Discount label' : 'Line item'}
+          style={{ flex:1, minWidth:0, padding:'4px 6px', border:'none', background:'transparent',
+                   fontSize:13, color:NAVY, fontFamily:'inherit', outline:'none' }}
+        />
+        {!isDiscount && <span style={{ color:'#999', fontSize:13 }}>$</span>}
+        <input
+          type="number" inputMode="decimal" min="0" step="1"
+          value={li.amount}
+          onChange={(e) => updateItem(i, { amount: parseFloat(e.target.value) || 0 })}
+          style={{ width:74, padding:'4px 6px', border:'1px solid rgba(11,31,59,0.15)', borderRadius:5,
+                   fontSize:13, textAlign:'right', fontWeight:700, color:NAVY, fontFamily:'inherit', background:'white' }}
+        />
+        <button type="button" onClick={() => removeItem(i)} aria-label="Remove" style={{
+          background:'none', border:'none', color:'#999', cursor:'pointer', padding:'2px 4px',
+          fontSize:14, lineHeight:1, fontFamily:'inherit',
+        }}>✕</button>
+      </div>
+    );
+  };
+
   const formBody = (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       {/* Reference proposal */}
@@ -3683,52 +4079,47 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
           <span style={{ fontSize:12, color:'#666' }}>Linked to approved proposal</span>
           <span style={{ fontSize:12, fontWeight:600, color:NAVY, fontFamily:"'DM Mono', monospace" }}>${proposalTotal.toLocaleString()}</span>
         </div>
-      ) : (
+      ) : !isEdit && (
         <div style={{ padding:'8px 12px', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:8, fontSize:12, color:'#92400E' }}>
-          No approved proposal — Final/Deposit auto-fill won't work. Use Balance for custom amount.
+          No approved proposal — use Balance preset for custom amount.
         </div>
       )}
-      {/* Final = $0 warning — proposal already invoiced in full. */}
-      {kind === 'final' && latestSignedProposal && remaining === 0 && (
-        <div style={{ padding:'8px 12px', background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, fontSize:12, color:'#991B1B' }}>
-          This proposal has already been invoiced in full. Switch to <strong>Balance</strong> to send a custom amount, or close.
+      {/* Quick presets (skip on edit) */}
+      {!isEdit && (
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Quick preset</div>
+          <div style={{ display:'flex', gap:8 }}>
+            <Seg on={false} onClick={() => applyPreset('deposit')} label="Deposit" sub="50%" />
+            <Seg on={false} onClick={() => applyPreset('final')}   label="Final"   sub="Remainder" />
+            <Seg on={false} onClick={() => applyPreset('balance')} label="Balance" sub="Custom" />
+          </div>
         </div>
       )}
-      {/* Type picker */}
+      {/* Line items + discount */}
       <div>
-        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Type</div>
-        <div style={{ display:'flex', gap:8 }}>
-          <Seg on={kind === 'deposit'} onClick={() => onKindChange('deposit')} label="Deposit" sub="50%" />
-          <Seg on={kind === 'final'}   onClick={() => onKindChange('final')}   label="Final"   sub="Remainder" />
-          <Seg on={kind === 'balance'} onClick={() => onKindChange('balance')} label="Balance" sub="Custom" />
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:6 }}>
+          <span style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Line items</span>
         </div>
-      </div>
-      {/* Amount */}
-      <div>
-        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Amount (USD)</div>
-        <div style={{ display:'flex', alignItems:'center', gap:6, border:'1.5px solid #EBEBEA', borderRadius:8, padding:'2px 10px', background:'white' }}>
-          <span style={{ fontSize:15, color:'#666', fontWeight:600 }}>$</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="1"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            style={{ flex:1, height:40, border:'none', outline:'none', fontSize:16, fontWeight:600, color:NAVY, fontFamily:"'DM Mono', monospace", background:'transparent' }}
-          />
+        <div style={{ display:'flex', gap:8, marginBottom: lineItems.length > 0 ? 8 : 0 }}>
+          <button type="button" onClick={addItem} style={{
+            flex:1, height:36, padding:'0 12px', borderRadius:8, background:'white',
+            border:'1px dashed rgba(11,31,59,0.25)', color:'#666',
+            fontSize:12, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+          }}>+ Line Item</button>
+          <button type="button" onClick={addDiscount} disabled={hasDiscount} style={{
+            flex:1, height:36, padding:'0 12px', borderRadius:8,
+            background: hasDiscount ? '#F5F5F5' : 'white',
+            border:'1px dashed rgba(11,31,59,0.25)',
+            color: hasDiscount ? '#bbb' : '#666',
+            fontSize:12, fontWeight:600, fontFamily:'inherit',
+            cursor: hasDiscount ? 'not-allowed' : 'pointer',
+          }}>+ Discount</button>
         </div>
-      </div>
-      {/* Description */}
-      <div>
-        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Description (optional)</div>
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder={lineLabel}
-          style={{ width:'100%', height:40, border:'1.5px solid #EBEBEA', borderRadius:8, padding:'0 10px', fontSize:16, color:NAVY, outline:'none', fontFamily:'inherit', background:'white', boxSizing:'border-box' }}
-        />
+        {lineItems.length > 0 && (
+          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            {lineItems.map((li, i) => renderLineRow(li, i))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3736,22 +4127,22 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
   const footerRow = (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
       <div>
-        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Amount</div>
-        <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono', 'DM Mono', monospace" }}>${(Number(amount) || 0).toLocaleString()}</div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em' }}>Total</div>
+        <div style={{ fontSize:22, fontWeight:700, color:NAVY, fontFamily:"'JetBrains Mono','DM Mono',monospace" }}>${total.toLocaleString()}</div>
       </div>
       <button
         onClick={submit}
-        disabled={busy || contact.do_not_contact}
+        disabled={busy || (!isEdit && contact.do_not_contact) || total <= 0}
         style={{
           height:42, padding:'0 18px', borderRadius:8,
-          background: busy || contact.do_not_contact ? '#E5E5E5' : '#ffba00',
-          color: busy || contact.do_not_contact ? '#999' : NAVY,
+          background: busy || (!isEdit && contact.do_not_contact) || total <= 0 ? '#E5E5E5' : '#ffba00',
+          color: busy || (!isEdit && contact.do_not_contact) || total <= 0 ? '#999' : NAVY,
           border:'none', fontSize:14, fontWeight:700, fontFamily:'inherit',
-          cursor: busy || contact.do_not_contact ? 'not-allowed' : 'pointer',
+          cursor: busy || (!isEdit && contact.do_not_contact) || total <= 0 ? 'not-allowed' : 'pointer',
           display:'flex', alignItems:'center', gap:7,
         }}
       >
-        {busy ? 'Sending…' : 'Send to customer'}
+        {busy ? (isEdit ? 'Saving…' : 'Sending…') : (isEdit ? 'Save changes' : 'Send to customer')}
       </button>
     </div>
   );
@@ -3764,7 +4155,7 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
       }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 10px', borderBottom:'1px solid rgba(11,31,59,0.06)' }}>
           <div style={{ fontSize:13, fontWeight:600, color:NAVY }}>
-            {latestSignedProposal ? 'Generate invoice' : 'New invoice'}
+            {isEdit ? 'Edit invoice' : (latestSignedProposal ? 'Generate invoice' : 'New invoice')}
           </div>
           <button onClick={onClose} aria-label="Cancel" style={{
             width:32, height:32, borderRadius:6, border:'none', background:'transparent',
@@ -3784,7 +4175,7 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
     <ModalShell
       open={true}
       onClose={onClose}
-      title={`New invoice — ${contact.name || formatPhone(contact.phone)}`}
+      title={`${isEdit ? 'Edit invoice' : 'New invoice'} — ${contact.name || formatPhone(contact.phone)}`}
       footer={footerRow}
     >
       {formBody}
