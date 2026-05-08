@@ -406,19 +406,23 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
 
   // Per-contact rot signals (stale quote, $owed, days-since-touch, etc.)
   const signalMap = React.useMemo(
-    () => buildContactSignals({ contacts, messages, calls, proposals, invoices, events }),
+    () => buildContactSignals({ contacts, messages, calls, proposals, invoices, events, stageHistory: window.CRM?.stageHistory || [] }),
     [contacts, messages, calls, proposals, invoices, events]
   );
 
-  // "Rotting" — anything Key should chase: stale quote, $owed, or
-  // 7+ days since last touch with an active stage.
+  // "Rotting" — anything Key should chase: stale quote, $owed, 7+ days
+  // since last touch with an active stage, OR stage-stuck (over SLA for
+  // its current stage). The stuck signal catches deals stalling in
+  // booked/permit_submit/permit_approved/install — situations the prior
+  // rot detector missed because it only watched touch-cadence.
   const rottingSet = React.useMemo(() => {
     const s = new Set();
     for (const [id, sig] of signalMap.entries()) {
       const c = contacts.find(x => x.id === id);
       if (!c || c.archived) continue;
       const isActiveStage = c.stage !== 'archived' && c.stage !== 'paid';
-      const hasRot = sig.stale || sig.outstandingCents > 0 || (isActiveStage && sig.daysSinceTouch != null && sig.daysSinceTouch >= 7);
+      const hasRot = sig.stale || sig.outstandingCents > 0 || sig.stuck
+        || (isActiveStage && sig.daysSinceTouch != null && sig.daysSinceTouch >= 7);
       if (hasRot) s.add(id);
     }
     return s;
@@ -601,6 +605,16 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                     <span title="Customer viewed your proposal recently" style={{ fontSize:9, fontWeight:700, color:'#1E40AF', background:'#DBEAFE', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>VIEWED</span>
                   )}
                   {recentCallSet.has(c.id) && <span title="Called within 24h" style={{ fontSize:9, fontWeight:700, color:'#065F46', background:'#D1FAE5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>📞 24h</span>}
+                  {/* Stage-stuck pill — surfaces deals that have sat in
+                      their current stage past the per-stage SLA. Catches
+                      stalls in booked/permit/install that the
+                      "stale quote" detector misses. */}
+                  {sig.stuck && c.stage !== 'new' && (
+                    <span title={`Stuck in ${(window.CRM?.STAGE_LABELS||{})[c.stage] || c.stage} for ${sig.daysInStage}d`}
+                      style={{ fontSize:9, fontWeight:700, color:'#7F1D1D', background:'#FEE2E2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                      STUCK · {sig.daysInStage}d
+                    </span>
+                  )}
                   {/* "New" hidden — it's the default for ~80% of the
                       list and adds visual noise. Surface only the
                       stages where the deal has actually moved. */}
@@ -924,22 +938,30 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
       m.set(i.contact_id, (m.get(i.contact_id) || 0) + (i.amount_cents || 0));
       return m;
     }, new Map());
-  const topOwed = [...owedByContact.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  // Top-owed contacts. When an aged bucket is selected (clickable buckets
+  // below), filter to only contacts whose oldest overdue invoice falls in
+  // that bucket — turns the dashboard into a one-click triage list.
+  const topOwedAll = [...owedByContact.entries()].sort((a, b) => b[1] - a[1]);
 
   // Aged receivables — bucket outstanding (post-install) invoices by
-  // age in days. 90+ day items signal write-off risk.
-  const aged = invoices
-    .filter(i => (i.status === 'sent' || i.status === 'overdue') && installedSet.has(i.contact_id))
-    .reduce((acc, i) => {
-      const t = i.sent_at || i.created_at;
-      if (!t) return acc;
-      const days = Math.max(0, Math.floor((Date.now() - new Date(t).getTime()) / 86400000));
-      const bucket = days <= 30 ? '0_30' : days <= 60 ? '31_60' : days <= 90 ? '61_90' : '90p';
-      acc[bucket] = (acc[bucket] || 0) + (i.amount_cents || 0);
-      return acc;
-    }, {});
+  // age in days. 90+ day items signal write-off risk. Also build a
+  // contact→bucket map (uses the OLDEST outstanding invoice per contact)
+  // so clicking a bucket can drill the Top-owed list.
+  const [agedFilter, setAgedFilter] = React.useState(null);
+  const aged = {};
+  const contactBucket = new Map(); // contact_id → bucket of oldest overdue invoice
+  for (const i of invoices) {
+    if (!((i.status === 'sent' || i.status === 'overdue') && installedSet.has(i.contact_id))) continue;
+    const t = i.sent_at || i.created_at;
+    if (!t) continue;
+    const days = Math.max(0, Math.floor((Date.now() - new Date(t).getTime()) / 86400000));
+    const bucket = days <= 30 ? '0_30' : days <= 60 ? '31_60' : days <= 90 ? '61_90' : '90p';
+    aged[bucket] = (aged[bucket] || 0) + (i.amount_cents || 0);
+    // Track oldest bucket per contact (90p > 61_90 > 31_60 > 0_30)
+    const rank = { '0_30':0, '31_60':1, '61_90':2, '90p':3 };
+    const prev = contactBucket.get(i.contact_id);
+    if (prev == null || rank[bucket] > rank[prev]) contactBucket.set(i.contact_id, bucket);
+  }
 
   // Counts for sub-tab pills
   const invCounts = invoices.reduce((acc,i)=>({...acc,[i.status]:(acc[i.status]||0)+1}),{});
@@ -1050,27 +1072,60 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
           today, 60-90 = remind, 30-60 = monitor. */}
       {(aged['0_30'] || aged['31_60'] || aged['61_90'] || aged['90p']) && (
         <div style={{ background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0, padding:'10px 18px' }}>
-          <div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Aged receivables</div>
+          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:8 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.08em' }}>Aged receivables</div>
+            {agedFilter && (
+              <button onClick={() => setAgedFilter(null)} style={{
+                background:'transparent', border:'none', color:NAVY, fontSize:11, fontWeight:600,
+                cursor:'pointer', padding:0, fontFamily:'inherit', textDecoration:'underline',
+              }}>Show all</button>
+            )}
+          </div>
           <div style={{ display:'flex', gap:6 }}>
             {[
-              { label:'0-30',  val: aged['0_30']  || 0, color:'#0F766E' },
-              { label:'31-60', val: aged['31_60'] || 0, color:'#92400E' },
-              { label:'61-90', val: aged['61_90'] || 0, color:'#B45309' },
-              { label:'90+',   val: aged['90p']   || 0, color:'#991B1B' },
-            ].map(b => (
-              <div key={b.label} style={{ flex:1, padding:'6px 8px', background: b.val>0 ? `${b.color}10` : '#F5F5F3', borderRadius:6, textAlign:'center' }}>
-                <div style={{ fontSize:9, fontWeight:700, color:b.val>0?b.color:MUTED, letterSpacing:'0.05em' }}>{b.label}d</div>
-                <div style={{ fontSize:13, fontWeight:700, color:b.val>0?b.color:MUTED, fontFamily:"'DM Mono', monospace", marginTop:2 }}>{formatMoneyCents(b.val)}</div>
-              </div>
-            ))}
+              { key:'0_30',  label:'0-30',  val: aged['0_30']  || 0, color:'#0F766E' },
+              { key:'31_60', label:'31-60', val: aged['31_60'] || 0, color:'#92400E' },
+              { key:'61_90', label:'61-90', val: aged['61_90'] || 0, color:'#B45309' },
+              { key:'90p',   label:'90+',   val: aged['90p']   || 0, color:'#991B1B' },
+            ].map(b => {
+              const active = agedFilter === b.key;
+              const clickable = b.val > 0;
+              return (
+                <button
+                  key={b.key}
+                  onClick={() => clickable && setAgedFilter(active ? null : b.key)}
+                  disabled={!clickable}
+                  style={{
+                    flex:1, padding:'6px 8px',
+                    background: active ? b.color : (clickable ? `${b.color}10` : '#F5F5F3'),
+                    color: active ? 'white' : (clickable ? b.color : MUTED),
+                    border: 'none', borderRadius:6, textAlign:'center', fontFamily:'inherit',
+                    cursor: clickable ? 'pointer' : 'default',
+                    transition:'background 120ms, color 120ms',
+                  }}
+                >
+                  <div style={{ fontSize:9, fontWeight:700, letterSpacing:'0.05em', color:'inherit' }}>{b.label}d</div>
+                  <div style={{ fontSize:13, fontWeight:700, fontFamily:"'DM Mono', monospace", marginTop:2, color:'inherit' }}>{formatMoneyCents(b.val)}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
       {/* Top owed — only renders when ≥1 contact has unpaid balance.
-          Tap a row to jump to that contact's Finance tab to chase. */}
-      {topOwed.length > 0 && (
+          Tap a row to jump to that contact's Finance tab to chase.
+          When an aged bucket is active, list is filtered to that bucket. */}
+      {(() => {
+        const topOwed = (agedFilter
+          ? topOwedAll.filter(([cid]) => contactBucket.get(cid) === agedFilter)
+          : topOwedAll
+        ).slice(0, agedFilter ? 50 : 5); // show all matches when bucket-filtered
+        if (topOwed.length === 0) return null;
+        return (
         <div style={{ background:'white', borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
-          <div style={{ padding:'10px 18px 6px', fontSize:10, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.08em' }}>Top owed</div>
+          <div style={{ padding:'10px 18px 6px', fontSize:10, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.08em' }}>
+            {agedFilter ? `${{ '0_30':'0-30', '31_60':'31-60', '61_90':'61-90', '90p':'90+' }[agedFilter]}d overdue (${topOwed.length})` : 'Top owed'}
+          </div>
           {topOwed.map(([contactId, cents]) => {
             const c = getContact(contactId);
             const isOver = invoices.some(i => i.contact_id === contactId && i.status === 'overdue');
@@ -1087,7 +1142,8 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
             );
           })}
         </div>
-      )}
+        );
+      })()}
       {/* Sub-tabs */}
       <div style={{ display:'flex', padding:'11px 18px 8px', gap:6, background:BG, borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
         {[

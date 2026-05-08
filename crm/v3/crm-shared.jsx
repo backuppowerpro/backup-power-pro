@@ -753,9 +753,25 @@ function formatMoneyCents(cents) {
 // ── Rot detection signals ───────────────────────────────────────────
 // One pure function, called once per ContactsList render with the full
 // data set, returns a Map<contactId, signals> the row renderer pulls from.
+// Per-stage "should have moved by now" SLA in days. Catches deals that
+// stall in a stage besides "stale quote" (the only signal previously
+// tracked). Calibrated to BPP's typical lifecycle:
+//   new            2d — Alex/Key reply within 2 days or it goes cold
+//   quoted         5d — customers decide within a workweek; >5d = nudge
+//   booked         7d — permit needs to file within a week of booking
+//   permit_submit  14d — jurisdiction queue; warn but not aggressive
+//   permit_waiting 14d — same
+//   permit_approved 3d — once approved, schedule install fast
+//   install        3d — installed-but-still-on-stage means invoice slipped
+//   done           never (terminal)
+const STAGE_SLA_DAYS = {
+  new: 2, quoted: 5, booked: 7, permit_submit: 14, permit_waiting: 14,
+  permit_approved: 3, install: 3, done: Infinity,
+};
+
 // Centralized here so the Money tab and Calendar can reuse the same
 // definitions (no two-source-of-truth drift on what counts as "stale").
-function buildContactSignals({ contacts, messages, calls, proposals, invoices, events, now = Date.now() }) {
+function buildContactSignals({ contacts, messages, calls, proposals, invoices, events, stageHistory, now = Date.now() }) {
   const out = new Map();
   // Index for O(1) lookups instead of O(N*M) per contact.
   const msgsByC = new Map();
@@ -763,6 +779,17 @@ function buildContactSignals({ contacts, messages, calls, proposals, invoices, e
   const propsByC = new Map();
   const invsByC = new Map();
   const eventsByC = new Map();
+  // Stage-history index: latest changed_at per contact (DB column is
+  // changed_at, not created_at — empirically verified). Used to compute
+  // days-in-current-stage; falls back to contact.created_at for contacts
+  // that never transitioned (i.e., still in their initial 'new' stage).
+  const stageEntryByC = new Map();
+  for (const h of stageHistory || []) {
+    const prev = stageEntryByC.get(h.contact_id);
+    if (!prev || (h.changed_at || '') > (prev.changed_at || '')) {
+      stageEntryByC.set(h.contact_id, h);
+    }
+  }
   for (const m of messages || [])  (msgsByC.get(m.contact_id) || msgsByC.set(m.contact_id, []).get(m.contact_id)).push(m);
   for (const c of calls || [])     (callsByC.get(c.contact_id) || callsByC.set(c.contact_id, []).get(c.contact_id)).push(c);
   for (const p of proposals || []) (propsByC.get(p.contact_id) || propsByC.set(p.contact_id, []).get(p.contact_id)).push(p);
@@ -840,12 +867,25 @@ function buildContactSignals({ contacts, messages, calls, proposals, invoices, e
       installNeedsInvoice = !invoiceAfterInstall;
     }
 
+    // Days-in-current-stage. Latest stage_history.changed_at if available,
+    // else fall back to contact.created_at (covers contacts that never
+    // transitioned out of 'new'). Compared against STAGE_SLA_DAYS to flag
+    // deals stalling in stages other than 'sent quote'.
+    const stageEntry = stageEntryByC.get(c.id);
+    const stageEnteredAt = stageEntry?.changed_at || c.created_at;
+    const daysInStage = stageEnteredAt
+      ? Math.floor((now - new Date(stageEnteredAt).getTime()) / 86400000)
+      : null;
+    const sla = STAGE_SLA_DAYS[c.stage];
+    const stuck = (daysInStage != null && sla != null && daysInStage > sla);
+
     out.set(c.id, {
       lastTouchAt, daysSinceTouch, lastMsg,
       stale, veryStale, proposalAgeDays, freshestStale,
       recentlyViewedProposal,
       outstandingCents, outstandingOldestDays,
       installNeedsInvoice,
+      daysInStage, stuck, stageSla: sla,
     });
   }
   return out;
