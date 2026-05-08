@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Generator Hookup Buyer's Guide — Backup Power Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ─────────────────────────────────────────────
+     BPP design tokens (locked) — print edition
+     ───────────────────────────────────────────── */
+  :root {
+    --navy: #0b1f3b;
+    --navy-mid: #1a3a5c;
+    --gold: #ffba00;
+    --gold-ink: #8a5a00;
+    --paper: #fafaf7;        /* warmer than #fff so it photographs like real stock */
+    --paper-card: #ffffff;
+    --text: #14172a;
+    --text-muted: #5a5e72;
+    --text-faint: #8a8e9f;
+    --rule: rgba(11,31,59,0.12);
+
+    --font-display: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  /* ─────────────────────────────────────────────
+     Page geometry — US Letter portrait, 0.75" margins
+     ───────────────────────────────────────────── */
+  @page {
+    size: 8.5in 11in;
+    margin: 0;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #d9d8d3; }
+  body {
+    font-family: var(--font-body);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 8.5in;
+    height: 11in;
+    padding: 0.75in;
+    background: var(--paper);
+    position: relative;
+    margin: 24px auto;
+    box-shadow: 0 24px 60px rgba(11,31,59,0.18);
+    overflow: hidden;
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  @media print {
+    body { background: var(--paper); }
+    .page {
+      margin: 0;
+      box-shadow: none;
+      width: 8.5in;
+      height: 11in;
+    }
+  }
+
+  /* Thin gold rule across the very top of the trim */
+  .top-rule {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--gold);
+  }
+
+  .eyebrow {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10pt;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-ink);
+  }
+
+  /* ─────────────────────────────────────────────
+     Page 1 — Cover
+     ───────────────────────────────────────────── */
+  .cover-eyebrow {
+    margin-top: 0.15in;
+  }
+
+  .cover-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 64pt;
+    line-height: 0.96;
+    letter-spacing: -0.035em;
+    color: var(--navy);
+    margin: 0.45in 0 0.32in 0;
+    /* Hanging indent so the cap-height aligns with the eyebrow */
+    text-indent: -2px;
+    max-width: 6.6in;
+  }
+  .cover-title .accent { color: var(--gold); }
+
+  .cover-sub {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 15pt;
+    line-height: 1.4;
+    color: var(--text-muted);
+    max-width: 5.8in;
+    margin: 0;
+  }
+
+  .cover-sub strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* Hero photo — 16:9 placeholder treated like a real install plate */
+  .cover-hero {
+    margin-top: auto;
+    margin-bottom: 0.35in;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(11,31,59,0.18);
+    background: linear-gradient(135deg, #2a3a55 0%, #4a5a78 45%, #c89968 78%, #f4c977 100%);
+  }
+  /* TWEAK: replace .cover-hero background with an <img src="…install photo…">
+     when Key delivers the final golden-hour Greer photo. Keep aspect 16:9. */
+  .cover-hero::before {
+    /* faint dot grid to suggest siding texture without an image */
+    content: "";
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(0,0,0,0.10) 1px, transparent 1px);
+    background-size: 14px 14px;
+    mix-blend-mode: multiply;
+  }
+  .cover-hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    box-shadow: inset 0 0 0 1px rgba(11,31,59,0.18);
+    border-radius: 6px;
+  }
+  .cover-hero-alt {
+    position: absolute;
+    left: 18px; bottom: 14px;
+    font-family: var(--font-mono);
+    font-size: 9pt;
+    color: rgba(255,255,255,0.92);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    letter-spacing: 0.02em;
+  }
+
+  .cover-caption {
+    font-family: var(--font-mono);
+    font-size: 9.5pt;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    margin: 0 0 0.55in 0;
+    text-align: center;
+  }
+
+  .cover-foot {
+    border-top: 2px solid var(--gold);
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .cover-foot .word {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13pt;
+    letter-spacing: -0.02em;
+    color: var(--navy);
+  }
+  .cover-foot .word .accent { color: var(--gold-ink); }
+  .cover-foot .edition {
+    /* TWEAK: edition string — bump for each refresh of the guide */
+    font-family: var(--font-mono);
+    font-size: 9.5pt;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ─────────────────────────────────────────────
+     Page 2 — Table of contents
+     ───────────────────────────────────────────── */
+  .toc-head {
+    margin-top: 0.15in;
+    margin-bottom: 0.45in;
+  }
+  .toc-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 36pt;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    color: var(--navy);
+    margin: 14px 0 0 0;
+    max-width: 6.6in;
+  }
+  .toc-title .accent { color: var(--gold); }
+
+  .toc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0.45in;
+    row-gap: 22px;
+  }
+
+  .toc-item {
+    display: grid;
+    grid-template-columns: 0.55in 1fr auto;
+    column-gap: 14px;
+    align-items: baseline;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .toc-num {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 26pt;
+    line-height: 1;
+    color: var(--gold);
+    letter-spacing: -0.04em;
+    font-feature-settings: "tnum";
+  }
+  .toc-text { min-width: 0; }
+  .toc-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13pt;
+    line-height: 1.2;
+    color: var(--text);
+    margin: 0 0 4px 0;
+    letter-spacing: -0.005em;
+  }
+  .toc-desc {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .toc-page {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 10pt;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    align-self: baseline;
+    white-space: nowrap;
+  }
+
+  /* Pull-quote — gold-tint card sitting at bottom of TOC */
+  .pull {
+    margin-top: auto;
+    background: #fff7e0;
+    border-left: 4px solid var(--gold);
+    border-radius: 4px;
+    padding: 22px 28px 22px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pull-eyebrow {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 9pt;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-ink);
+  }
+  .pull-quote {
+    /* TWEAK: pull-quote — keep ≤ 14 words, no period at the end */
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 21pt;
+    line-height: 1.18;
+    letter-spacing: -0.015em;
+    color: var(--navy);
+    margin: 0;
+  }
+  .pull-quote .accent { color: var(--gold-ink); }
+
+  .page-num {
+    position: absolute;
+    right: 0.75in;
+    bottom: 0.55in;
+    font-family: var(--font-mono);
+    font-size: 9.5pt;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     PAGE 1 — COVER
+     ════════════════════════════════════════════ -->
+<section class="page" aria-label="Cover">
+  <div class="top-rule"></div>
+
+  <!-- TWEAK: eyebrow — "Field Guide No. 1" increments as the series grows -->
+  <p class="eyebrow cover-eyebrow">Backup Power Pro &middot; Field Guide No. 1</p>
+
+  <h1 class="cover-title">
+    The Generator<br/>
+    Hookup Buyer's<br/>
+    <span class="accent">Guide.</span>
+  </h1>
+
+  <p class="cover-sub">
+    What to know before you buy a generator — from a <strong>licensed Upstate&nbsp;SC electrician</strong> who installs them every week.
+  </p>
+
+  <!-- TWEAK: hero image — swap the gradient block for <img src="..."/> when the
+       golden-hour Greer install photo is final. Keep 16:9, soft warm tone. -->
+  <figure class="cover-hero" role="img"
+          aria-label="Key installing a 30A inlet box on a Greer SC home, golden hour light, hands visible, exterior wall.">
+    <span class="cover-hero-alt">[ install photo · greer, sc · 16:9 ]</span>
+  </figure>
+
+  <p class="cover-caption">Greer, SC &middot; Real install &middot; April&nbsp;2026</p>
+
+  <footer class="cover-foot">
+    <span class="word">Backup Power <span class="accent">Pro</span></span>
+    <span class="edition">Edition 2026.05</span>
+  </footer>
+</section>
+
+
+<!-- ════════════════════════════════════════════
+     PAGE 2 — TABLE OF CONTENTS
+     ════════════════════════════════════════════ -->
+<section class="page" aria-label="Table of contents">
+  <div class="top-rule"></div>
+
+  <header class="toc-head">
+    <p class="eyebrow">What's inside</p>
+    <h2 class="toc-title">
+      Everything you need before you spend a dollar on a <span class="accent">generator.</span>
+    </h2>
+  </header>
+
+  <div class="toc-grid">
+
+    <!-- TWEAK: chapter list — keep names ≤ 6 words, descriptions one line.
+         Page numbers track the body PDF; bump them when chapters reflow. -->
+    <article class="toc-item">
+      <span class="toc-num">01</span>
+      <div class="toc-text">
+        <p class="toc-name">Sizing without the math</p>
+        <p class="toc-desc">How big is "big enough" for your house.</p>
+      </div>
+      <span class="toc-page">p.&nbsp;3</span>
+    </article>
+
+    <article class="toc-item">
+      <span class="toc-num">02</span>
+      <div class="toc-text">
+        <p class="toc-name">Inverter vs. open-frame</p>
+        <p class="toc-desc">Why this matters more than wattage.</p>
+      </div>
+      <span class="toc-page">p.&nbsp;7</span>
+    </article>
+
+    <article class="toc-item">
+      <span class="toc-num">03</span>
+      <div class="toc-text">
+        <p class="toc-name">The 240V outlet trap</p>
+        <p class="toc-desc">One number that changes everything.</p>
+      </div>
+      <span class="toc-page">p.&nbsp;11</span>
+    </article>
+
+    <article class="toc-item">
+      <span class="toc-num">04</span>
+      <div class="toc-text">
+        <p class="toc-name">Reading a panel photo</p>
+        <p class="toc-desc">What I look for before I quote.</p>
+      </div>
+      <span class="toc-page">p.&nbsp;15</span>
+    </article>
+
+    <article class="toc-item">
+      <span class="toc-num">05</span>
+      <div class="toc-text">
+        <p class="toc-name">Permits, inspections, and the inlet</p>
+        <p class="toc-desc">Why DIY hookups fail inspection.</p>
+      </div>
+      <span class="toc-page">p.&nbsp;19</span>
+    </article>
+
+    <article class="toc-item">
+      <span class="toc-num">06</span>
+      <div class="toc-text">
+        <p class="toc-name">The cord question</p>
+        <p class="toc-desc">25&nbsp;ft vs. 50&nbsp;ft, indoor vs. outdoor.</p>
+      </div>
+      <span class="toc-page">p.&nbsp;23</span>
+    </article>
+
+    <article class="toc-item">
+      <span class="toc-num">07</span>
+      <div class="toc-text">
+        <p class="toc-name">Maintenance the dealer skipped</p>
+        <p class="toc-desc">4 things that double its lifespan.</p>
+      </div>
+      <span class="toc-page">p.&nbsp;27</span>
+    </article>
+
+    <article class="toc-item">
+      <span class="toc-num">08</span>
+      <div class="toc-text">
+        <p class="toc-name">When to call vs. when to wait</p>
+        <p class="toc-desc">A flowchart for storm season.</p>
+      </div>
+      <span class="toc-page">p.&nbsp;31</span>
+    </article>
+
+  </div>
+
+  <aside class="pull" aria-label="Editor's note">
+    <span class="pull-eyebrow">Editor's note</span>
+    <p class="pull-quote">
+      If you read nothing else, read <span class="accent">chapter 3</span>.
+    </p>
+  </aside>
+
+  <span class="page-num">2</span>
+</section>
+
+</body>
+</html>
