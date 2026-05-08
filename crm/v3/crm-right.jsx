@@ -2474,7 +2474,7 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     window.open(linkUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid, onCancel, onVoid, onEdit, onDelete, onEmail }) => {
+  const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid, onCancel, onVoid, onEdit, onDelete, onEmail, divided }) => {
     // 40px on touch (Apple HIG = 44; 40 keeps the row visually compact
     // while staying above the "frustration threshold" Material flags at
     // 48px). Cursor-driven desktop is fine at 32 — but the inline style
@@ -2502,9 +2502,15 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     const showCopy = !['voided','refunded'].includes(status);
     const showView = !['voided','refunded'].includes(status);
     return (
+      // FinanceRow is always rendered inside DealCard which already provides
+      // the white bg + border + radius. Wrapping it in another bordered card
+      // produced a "double chin" effect at the bottom where the inner card's
+      // padding stacked on the outer card's. Strip the inner box; rely on
+      // DealCard for the visual boundary, separate stacked rows (proposal +
+      // invoices) with a hairline top divider via the `divided` prop.
       <div style={{
-        background:'white', border:'1px solid rgba(11,31,59,0.08)', borderRadius:8,
-        padding:'12px 14px', marginBottom:8,
+        padding:'12px 14px',
+        borderTop: divided ? '1px solid rgba(11,31,59,0.06)' : 'none',
       }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
           <div style={{ fontSize:14, fontWeight:600, color:NAVY }}>{left}</div>
@@ -2694,25 +2700,22 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
           </div>
         )}
 
-        {invoices.length > 0 && (
-          <div style={{ padding:'0 14px 12px' }}>
-            {invoices.map(inv => (
-              <FinanceRow
-                key={inv.id}
-                left={capitalize(inv.kind)}
-                money={formatMoneyCents(inv.amount_cents)}
-                status={inv.status}
-                activity={invActivity(inv)}
-                linkUrl={invoiceUrl(inv)}
-                onMarkPaid={['sent','viewed','overdue'].includes(inv.status) ? () => markPaid(inv) : null}
-                onVoid={['sent','viewed','overdue'].includes(inv.status) ? () => voidInvoice(inv) : null}
-                onEdit={['draft','sent','viewed','overdue'].includes(inv.status) ? () => { setInvoiceModalOpen(false); setEditingInvoiceId(inv.id); } : null}
-                onDelete={['draft','sent','viewed','overdue','voided','refunded'].includes(inv.status) ? () => deleteInvoice(inv) : null}
-                onEmail={contact?.email && ['sent','viewed','draft','overdue'].includes(inv.status) ? () => emailDoc({ template:'invoice', contact_id: contact.id, invoice: inv }) : null}
-              />
-            ))}
-          </div>
-        )}
+        {invoices.length > 0 && invoices.map(inv => (
+          <FinanceRow
+            key={inv.id}
+            left={capitalize(inv.kind)}
+            money={formatMoneyCents(inv.amount_cents)}
+            status={inv.status}
+            activity={invActivity(inv)}
+            linkUrl={invoiceUrl(inv)}
+            divided
+            onMarkPaid={['sent','viewed','overdue'].includes(inv.status) ? () => markPaid(inv) : null}
+            onVoid={['sent','viewed','overdue'].includes(inv.status) ? () => voidInvoice(inv) : null}
+            onEdit={['draft','sent','viewed','overdue'].includes(inv.status) ? () => { setInvoiceModalOpen(false); setEditingInvoiceId(inv.id); } : null}
+            onDelete={['draft','sent','viewed','overdue','voided','refunded'].includes(inv.status) ? () => deleteInvoice(inv) : null}
+            onEmail={contact?.email && ['sent','viewed','draft','overdue'].includes(inv.status) ? () => emailDoc({ template:'invoice', contact_id: contact.id, invoice: inv }) : null}
+          />
+        ))}
       </div>
     );
   };
