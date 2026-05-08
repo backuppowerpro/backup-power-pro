@@ -222,16 +222,20 @@ Deno.serve(async (req) => {
   }
   const sent = await resp.json()
 
-  // Log to messages_email table (TODO: create the table)
+  // Log to messages_email table (migration 20260508140000)
   try {
     await sb.from('messages_email').insert({
       contact_id: body.contact_id,
       template: body.template,
       subject: body.subject,
+      to_email: contact.email,
       provider_id: sent?.id || null,
+      status: 'sent',
+      vars: vars,
+      trigger: (body as any).trigger || 'manual',
       sent_at: new Date().toISOString(),
     })
-  } catch { /* table may not exist yet */ }
+  } catch (e) { console.warn('[send-email] log to messages_email failed:', e) }
 
   return json(200, { ok: true, sent: sent?.id })
 })
