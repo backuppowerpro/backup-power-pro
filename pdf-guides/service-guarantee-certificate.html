@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Backup Power Pro — Certificate of Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0b1f3b;
+    --navy-mid: #2c3e60;
+    --gold: #ffba00;
+    --gold-soft: #fff4d0;
+    --paper: #fbfaf6;
+    --paper-deep: #f4f1e6;
+    --rule: #d9d4c5;
+    --ink: #0b1f3b;
+  }
+
+  @page {
+    size: Letter landscape;
+    margin: 0.6in;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ddd;
+    color: var(--ink);
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  /* Screen preview */
+  .page {
+    background: var(--paper);
+    width: 11in;
+    height: 8.5in;
+    padding: 0.6in;
+    margin: 24px auto;
+    position: relative;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    overflow: hidden;
+  }
+
+  @media print {
+    html, body { background: var(--paper); }
+    .page {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      box-shadow: none;
+    }
+  }
+
+  /* ─── Border construction: double navy rule + gold inner rule + pinstripe ─── */
+  .frame {
+    position: absolute;
+    inset: 0.6in;
+    /* outer 6pt double rule navy */
+    border: 6pt double var(--navy);
+    padding: 10pt;
+  }
+  .frame-gold {
+    width: 100%;
+    height: 100%;
+    /* 14pt gold band */
+    border: 1.5pt solid var(--navy);
+    outline: 14pt solid var(--gold);
+    outline-offset: -14pt;
+    padding: 22pt;
+    position: relative;
+  }
+  .frame-inner {
+    width: 100%;
+    height: 100%;
+    /* navy pinstripe inside the gold */
+    border: 0.75pt solid var(--navy);
+    padding: 32pt 48pt;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Corner ornaments */
+  .corner {
+    position: absolute;
+    width: 18pt;
+    height: 18pt;
+    border: 1.5pt solid var(--navy);
+    background: var(--gold);
+  }
+  .corner.tl { top: -9pt; left: -9pt; transform: rotate(45deg); }
+  .corner.tr { top: -9pt; right: -9pt; transform: rotate(45deg); }
+  .corner.bl { bottom: -9pt; left: -9pt; transform: rotate(45deg); }
+  .corner.br { bottom: -9pt; right: -9pt; transform: rotate(45deg); }
+
+  /* ─── Header ─── */
+  .header {
+    text-align: center;
+    margin-bottom: 14pt;
+  }
+  .wordmark {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 22pt;
+    letter-spacing: 0.32em;
+    color: var(--navy);
+    margin: 0;
+    padding-bottom: 6pt;
+    display: inline-block;
+    border-bottom: 1.5pt solid var(--navy);
+  }
+  .wordmark .dot {
+    display: inline-block;
+    width: 6pt;
+    height: 6pt;
+    background: var(--gold);
+    margin: 0 8pt;
+    transform: translateY(-3pt) rotate(45deg);
+  }
+  .eyebrow {
+    margin-top: 10pt;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11pt;
+    font-weight: 500;
+    color: var(--gold);
+    letter-spacing: 0.22em;
+  }
+  .eyebrow .sep {
+    color: var(--navy);
+    opacity: 0.4;
+    margin: 0 6pt;
+  }
+
+  /* ─── Title ─── */
+  .title-block {
+    text-align: center;
+    margin: 14pt 0 10pt;
+  }
+  h1 {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 64pt;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+  h1 .dot {
+    color: var(--gold);
+  }
+  .subtitle {
+    font-family: "Outfit", sans-serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 18pt;
+    color: var(--navy-mid);
+    margin: 12pt 0 0;
+  }
+
+  /* ─── Declaration ─── */
+  .declaration {
+    max-width: 7in;
+    margin: 18pt auto 0;
+    text-align: center;
+    font-family: "Inter", sans-serif;
+    font-size: 14pt;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  .declaration .who {
+    display: block;
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    font-size: 17pt;
+    color: var(--navy);
+    margin: 6pt 0;
+    letter-spacing: 0.01em;
+  }
+
+  /* Decorative flourish */
+  .flourish {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10pt;
+    margin: 14pt 0 6pt;
+  }
+  .flourish .line {
+    height: 0.75pt;
+    background: var(--navy);
+    width: 80pt;
+  }
+  .flourish .diamond {
+    width: 6pt;
+    height: 6pt;
+    background: var(--gold);
+    border: 0.75pt solid var(--navy);
+    transform: rotate(45deg);
+  }
+
+  /* ─── Medallions ─── */
+  .medallions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24pt;
+    margin: 20pt auto 0;
+    max-width: 7in;
+  }
+  .medallion {
+    text-align: center;
+  }
+  .medallion .seal {
+    width: 1in;
+    height: 1in;
+    margin: 0 auto 8pt;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 2pt solid var(--gold);
+    box-shadow:
+      inset 0 0 0 3pt var(--paper),
+      inset 0 0 0 3.5pt var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--navy);
+  }
+  .medallion .seal svg {
+    width: 32pt;
+    height: 32pt;
+  }
+  .medallion .label {
+    font-family: "Inter", sans-serif;
+    font-weight: 500;
+    font-size: 11pt;
+    color: var(--navy);
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  /* ─── Signature row ─── */
+  .signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64pt;
+    margin-top: auto;
+    padding-top: 18pt;
+  }
+  .sig {
+    text-align: center;
+  }
+  .sig .scribble {
+    height: 60px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    font-family: "Caveat", cursive;
+    font-size: 32pt;
+    color: var(--navy);
+    line-height: 1;
+    padding-bottom: 4pt;
+  }
+  .sig .rule {
+    border-top: 1pt solid var(--navy);
+    width: 100%;
+    margin-bottom: 6pt;
+  }
+  .sig .name {
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    font-size: 13pt;
+    color: var(--navy);
+    margin: 0 0 2pt;
+  }
+  .sig .role {
+    font-family: "Inter", sans-serif;
+    font-size: 11pt;
+    color: var(--navy-mid);
+    margin: 0;
+  }
+
+  /* ─── Bottom stamp strip ─── */
+  .stamp {
+    position: absolute;
+    left: calc(0.6in + 10pt + 14pt + 32pt + 1pt);
+    right: calc(0.6in + 10pt + 14pt + 32pt + 1pt);
+    bottom: calc(0.6in + 10pt + 14pt + 16pt);
+    background: var(--navy);
+    color: var(--paper);
+    padding: 7pt 14pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8.5pt;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .stamp .gold-mark {
+    color: var(--gold);
+    margin-right: 4pt;
+  }
+  .stamp span b { color: var(--gold); font-weight: 500; margin-right: 4pt; }
+
+</style>
+</head>
+<body>
+
+<section class="page" data-screen-label="Certificate">
+  <div class="frame">
+    <div class="frame-gold">
+      <span class="corner tl"></span>
+      <span class="corner tr"></span>
+      <span class="corner bl"></span>
+      <span class="corner br"></span>
+
+      <div class="frame-inner">
+
+        <!-- Header -->
+        <div class="header">
+          <h2 class="wordmark">BACKUP<span class="dot"></span>POWER<span class="dot"></span>PRO</h2>
+          <!-- TWEAK[per-customer]: certificate number -->
+          <div class="eyebrow">
+            CERTIFICATE OF SERVICE
+            <span class="sep">·</span>
+            NO. BPP-2026-0142
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div class="title-block">
+          <h1>Service Guarantee<span class="dot">.</span></h1>
+          <p class="subtitle">Issued upon completion of a Backup Power Pro generator hookup install.</p>
+        </div>
+
+        <div class="flourish">
+          <span class="line"></span>
+          <span class="diamond"></span>
+          <span class="line"></span>
+        </div>
+
+        <!-- Declaration -->
+        <div class="declaration">
+          This certifies that the generator hookup at
+          <!-- TWEAK[per-customer]: customer name + install address -->
+          <span class="who">Margaret &amp; Tom Holloway · 412 Pine Hollow Road, Greenville, SC</span>
+          was installed in accordance with the South Carolina state electrical code, inspected and approved by the local jurisdiction, and is covered under Backup Power Pro's two-year workmanship warranty effective on the date below.
+        </div>
+
+        <!-- Medallions -->
+        <div class="medallions">
+          <div class="medallion">
+            <div class="seal">
+              <!-- Lightning bolt -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="#ffba00" stroke="#0b1f3b" />
+              </svg>
+            </div>
+            <p class="label">Inspected to<br />NEC 2020</p>
+          </div>
+          <div class="medallion">
+            <div class="seal">
+              <!-- Calendar -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3.5" y="5" width="17" height="15" rx="1.5" fill="#fff4d0" stroke="#0b1f3b" />
+                <line x1="3.5" y1="9.5" x2="20.5" y2="9.5" stroke="#0b1f3b" />
+                <line x1="8" y1="3" x2="8" y2="6.5" stroke="#0b1f3b" />
+                <line x1="16" y1="3" x2="16" y2="6.5" stroke="#0b1f3b" />
+                <rect x="7" y="12" width="3" height="3" fill="#ffba00" />
+                <rect x="14" y="12" width="3" height="3" fill="#ffba00" />
+              </svg>
+            </div>
+            <p class="label">2-Year Workmanship<br />Warranty</p>
+          </div>
+          <div class="medallion">
+            <div class="seal">
+              <!-- Shield -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2.5l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10v-6l8-3z" fill="#ffba00" stroke="#0b1f3b" />
+                <path d="M8.5 12l2.5 2.5L16 9.5" stroke="#0b1f3b" stroke-width="1.6" />
+              </svg>
+            </div>
+            <p class="label">Permit<br />Closed-Out</p>
+          </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="signatures">
+          <div class="sig">
+            <!-- TWEAK[per-customer]: replace with image src="assets/key-signature.png" -->
+            <div class="scribble">Key Goodson</div>
+            <div class="rule"></div>
+            <p class="name">Key Goodson</p>
+            <p class="role">Backup Power Pro · SC Licensed Electrician</p>
+          </div>
+          <div class="sig">
+            <!-- TWEAK[per-customer]: customer signature image goes here at print time -->
+            <div class="scribble" style="opacity:0.55;">&nbsp;</div>
+            <div class="rule"></div>
+            <!-- TWEAK[per-customer]: customer name printed under signature line -->
+            <p class="name">Margaret Holloway</p>
+            <p class="role">Owner</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom stamp strip -->
+  <div class="stamp">
+    <!-- TWEAK[per-customer]: edition / install metadata -->
+    <span><b class="gold-mark">EDITION</b>2026.04</span>
+    <span><b class="gold-mark">PERMIT</b>GVL-EL-26-1187</span>
+    <span><b class="gold-mark">INSTALLED</b>04 · 18 · 2026</span>
+  </div>
+
+</section>
+
+</body>
+</html>
