@@ -3494,6 +3494,10 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
   });
   const [busy, setBusy] = React.useState(false);
   const [dragIdx, setDragIdx] = React.useState(null);
+  // ref shadow so onDrop reads the live value, not the stale closure value.
+  // React state updates from onDragStart aren't visible to onDrop's render
+  // when the events fire close together — the ref bypasses that race.
+  const dragIdxRef = React.useRef(null);
 
   const total = React.useMemo(() => quoteV3Total({
     amp, lengthFt, includeCord, includeInlet, includePermit, lineItems,
@@ -3648,10 +3652,15 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
       <div
         key={li.id}
         draggable
-        onDragStart={() => setDragIdx(i)}
+        onDragStart={() => { dragIdxRef.current = i; setDragIdx(i); }}
         onDragOver={(e) => e.preventDefault()}
-        onDrop={() => { if (dragIdx != null) moveItem(dragIdx, i); setDragIdx(null); }}
-        onDragEnd={() => setDragIdx(null)}
+        onDrop={() => {
+          const from = dragIdxRef.current;
+          if (from != null) moveItem(from, i);
+          dragIdxRef.current = null;
+          setDragIdx(null);
+        }}
+        onDragEnd={() => { dragIdxRef.current = null; setDragIdx(null); }}
         style={{
           display:'flex', alignItems:'center', gap:8,
           padding:'9px 10px',
@@ -3946,6 +3955,10 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
   });
   const [busy, setBusy] = React.useState(false);
   const [dragIdx, setDragIdx] = React.useState(null);
+  // ref shadow so onDrop reads the live value, not the stale closure value.
+  // React state updates from onDragStart aren't visible to onDrop's render
+  // when the events fire close together — the ref bypasses that race.
+  const dragIdxRef = React.useRef(null);
 
   const total = React.useMemo(() => {
     let t = 0;
@@ -4076,10 +4089,15 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
       <div
         key={li.id}
         draggable
-        onDragStart={() => setDragIdx(i)}
+        onDragStart={() => { dragIdxRef.current = i; setDragIdx(i); }}
         onDragOver={(e) => e.preventDefault()}
-        onDrop={() => { if (dragIdx != null) moveItem(dragIdx, i); setDragIdx(null); }}
-        onDragEnd={() => setDragIdx(null)}
+        onDrop={() => {
+          const from = dragIdxRef.current;
+          if (from != null) moveItem(from, i);
+          dragIdxRef.current = null;
+          setDragIdx(null);
+        }}
+        onDragEnd={() => { dragIdxRef.current = null; setDragIdx(null); }}
         style={{
           display:'flex', alignItems:'center', gap:8,
           padding:'9px 10px',
