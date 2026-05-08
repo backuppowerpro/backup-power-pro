@@ -719,8 +719,19 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       // v10.1.36, don't prefix with first name if it matches the electrician's
       // name (creates "Key, let me have Key..." double-Key). Also skip generic
       // placeholders like "there" / "Lead".
+      // v10.1.58 (Tyler iMessage feedback 2026-05-08): Key flagged that
+      // repeating the customer's name on every terminal reads robotic.
+      // Real humans don't text "Sarah, no rush" -> just "no rush." The
+      // name-prefix-on-every-turn pattern signals "CRM trying to
+      // personalize" not "person texting you." Drop the namePrefix
+      // entirely on terminal replies. Greeting still uses the name once
+      // (correct: introducing the relationship). Final SCHEDULE_QUOTE
+      // close-out keeps the name once for warmth ("Thanks, Sarah." -
+      // that's a normal sign-off). Mid-flow terminals (NEEDS_CALLBACK
+      // / DQ / POSTPONED): no name opener.
       const skipName = !fname || /^(there|lead|customer|unknown|key)$/i.test(fname)
-      const namePrefix = skipName ? '' : `${fname}, `
+      const _legacyNamePrefix = skipName ? '' : `${fname}, `  // kept for reference
+      const namePrefix = ''  // v10.1.58: ALWAYS empty for terminal openers
       switch (transitionResult.next) {
         case 'NEEDS_CALLBACK':
           // v10.1.37, scope-mismatch (whole-home) gets its OWN reply

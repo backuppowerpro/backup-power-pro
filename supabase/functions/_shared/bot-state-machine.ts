@@ -81,7 +81,7 @@ const STATES: Record<string, any> = {
           // HUMAN-ANCHOR, Key named explicitly as the electrician handling
           // the quote and install personally. (Phone number removed per Key
           // feedback, phone in greeting can read as cold-call selling.)
-          return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro intake. Our electrician Key handles your quote and install personally. I'll just gather a few details for him. Mind if I ask a couple things?`;
+          return `Hi ${name}, I'm Ashley, this is auto-text from Backup Power Pro. Our electrician Key texts the quote over himself once he's seen the panel, and he does the install in person. I'll just gather a few details for him. Mind if I ask a couple things?`;
 
         case 'C':
           // FORM-FILL WARMTH, gratitude lead with "home connection for your
@@ -90,7 +90,7 @@ const STATES: Record<string, any> = {
           // electrician Key" so customer knows his role. Adds "to provide
           // an accurate quote" so the WHY of the questions is upfront, per
           // trust-research delta on stating the why before asking.
-          return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. Thanks for reaching out about a home connection for your portable generator. Happy to help get this rolling. Got a few minutes to walk through what our electrician Key needs to provide an accurate quote?`;
+          return `Hi ${name}, I'm Ashley, this is auto-text from Backup Power Pro. Thanks for reaching out about a home connection for your portable generator. Happy to help get this rolling. Got a few minutes to walk through what our electrician Key needs to provide an accurate quote?`;
 
         case 'D':
           // DIRECT CONVERSATIONAL, fixed: "home connection set up for your
@@ -98,7 +98,7 @@ const STATES: Record<string, any> = {
           // for Key, who looks up specs online, verified pattern in his
           // 702-message OpenPhone corpus). Size isn't what we care about
           // (per Key 2026-05-03); make/model is.
-          return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?`;
+          return `Hi ${name}, I'm Ashley, this is auto-text from Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?`;
 
         case 'A':
         default:
@@ -108,7 +108,7 @@ const STATES: Record<string, any> = {
           // customer's portable generator power their home during outages.
           // Corrected to "home connection quote for your generator" matching
           // the same framing as variants C and D.
-          return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?${lateNightSuffix}`;
+          return `Hi ${name}, I'm Ashley, this is auto-text from Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?${lateNightSuffix}`;
       }
     },
     transitions: {
@@ -731,11 +731,16 @@ const STATES: Record<string, any> = {
     // "talk soon", "catch ya". Use Key's actual sign-offs from real data:
     // "I would be happy to help with the project" (60+ uses), "let me know if
     // you have any questions" (37 uses), "Looking forward to it" (5 uses).
-    intent: 'KEY-VOICE: wrap up. SOFT commitment that Key will have the quote ready when he has it ready. v10.1.7: lead with thanks (customer just confirmed the recap, they have given their full info). Sign-off rotation (Key-real, rotate, never reuse same one in last 5 conversations): (1) "Thank you {name}. Key will put the quote together and send it over when he has it ready. Let me know if you have any questions." (2) "Thanks for all of that. Key will review everything tonight and have the quote in your inbox when he has it ready." (3) "Thank you. I will pass this over to Key. He will send the quote over when he has it ready." (4) "Sounds good, thank you. Key will put your quote together. He will send it over when he has it ready. I would be happy to help if you have any questions in the meantime." (5) "Perfect, thanks for all of that. Quote will be in your inbox when he has it ready. Looking forward to helping out with this." Pick the variant that fits the register (terse=shorter, default=mid). NEVER use "y\'all", "y\'all\'ll", "holler", "talk soon", "catch ya", "have a good one". Those are fake-Key. Zero em-dashes anywhere.',
-    fallback: ({ first_name } = {}) => {
-      const name = first_name && first_name !== 'there' ? `, ${first_name}` : '';
-      return `Thank you${name}. Key will put the quote together and send it over when he has it ready. Let me know if you have any questions.`;
-    },
+    // v10.1.58 (Tyler iMessage feedback 2026-05-08): Key flagged that
+    // repeating the customer's name on every reply reads robotic. Wrap-up
+    // intent + variants no longer use {name}. The "Thank you / Thanks
+    // for all of that" opener is the warmth itself; adding the name on
+    // top tips it into CRM-personalization territory. Removed variant 4
+    // entirely (contains "I would be happy to help" - banned per
+    // would_be_happy_broad regex since v10.1.41).
+    intent: 'KEY-VOICE: wrap up. SOFT commitment that Key will have the quote ready when he has it ready. lead with thanks (customer just confirmed the recap, they have given their full info). DO NOT use the customer\'s first name in the opener - it reads CRM-robotic. Sign-off rotation (rotate, never reuse same one in last 5 conversations): (1) "Thank you. Key will put the quote together and send it over when he has it ready. Let me know if you have any questions." (2) "Thanks for all of that. Key will review everything tonight and have the quote in your inbox when he has it ready." (3) "Thank you. I will pass this over to Key. He will send the quote over when he has it ready." (4) "Perfect, thanks for all of that. Quote will be in your inbox when he has it ready. Looking forward to helping out with this." Pick the variant that fits the register (terse=shorter, default=mid). NEVER use "y\'all", "y\'all\'ll", "holler", "talk soon", "catch ya", "have a good one", "I would be happy to". Those are fake-Key or banned. Zero em-dashes anywhere.',
+    fallback: () =>
+      `Thank you. Key will put the quote together and send it over when he has it ready. Let me know if you have any questions.`,
     transitions: {
       // Terminal-ish state, most replies route to COMPLETE
       affirmative: 'COMPLETE',
