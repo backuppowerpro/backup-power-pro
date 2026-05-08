@@ -25,7 +25,10 @@ Untitled_Artwork*
 !ads/creative/*.jpg
 !generators/img/*.jpg
 !email-templates/assets/*.jpg
+!email-templates/assets/*.png
 !pdf-guides/assets/*.jpg
+!brand-assets/key-headshot.jpg
+!brand-assets/logo-white.png
 IMG_*
 bpp-claude-code-context.md
 

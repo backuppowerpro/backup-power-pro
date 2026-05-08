@@ -2,141 +2,94 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>BPP — Email Signature</title>
+<title>Key Goodson · Backup Power Pro · Email Signature</title>
 <style>
-  /* Page-only chrome — NOT part of the signature itself.
-     The signature block below is fully self-contained and inline-styled
-     so it survives copy/paste into Gmail / Apple Mail / Resend. */
-  body {
-    margin: 0;
-    padding: 32px;
-    background: #ececec;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    color: #0b1f3b;
-  }
-  .stage {
-    max-width: 540px;
-    margin: 0 auto;
-  }
-  .stage h1 {
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    color: #6a6a78;
-    font-weight: 600;
-    margin: 0 0 14px;
-  }
-  .signature-frame {
-    background: #ffffff;
-    padding: 28px 24px;
-    border: 1px solid #e0ddd2;
-    border-radius: 4px;
-    box-shadow: 0 6px 24px rgba(11,31,59,0.06);
-  }
-  .stage .helper {
-    font-size: 12px;
-    color: #6a6a78;
-    margin-top: 14px;
-    line-height: 1.55;
-  }
-  .stage .helper code {
-    font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
-    background: #f4f1e6;
-    padding: 1px 5px;
-    border-radius: 2px;
-    font-size: 11px;
-    color: #0b1f3b;
-  }
+  body { margin: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: #f4f6fa; color: #14172a; }
+  .preview-label { font-family: ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #6b7280; margin-bottom: 12px; }
+  .preview-card { background: #ffffff; border-radius: 12px; box-shadow: 0 8px 28px rgba(11,31,59,0.08); padding: 32px; max-width: 600px; }
 </style>
 </head>
 <body>
 
-<div class="stage">
-  <h1>BPP Email Signature · v1</h1>
+<div class="preview-label">Email signature preview · paste-ready for Gmail · Apple Mail · Outlook</div>
+<div class="preview-card">
 
-  <div class="signature-frame">
+<!-- ════════════════════════════════════════════════════════════════════
+     EMAIL SIGNATURE STARTS HERE
+     Copy from <table> below through closing </table> for paste-in.
+     All styles inline so Gmail's CSS stripper doesn't kill the design.
+     ════════════════════════════════════════════════════════════════════ -->
 
-    <!-- ════════════════════════════════════════════════════════════════ -->
-    <!-- BPP EMAIL SIGNATURE — START                                       -->
-    <!-- Copy from <table> to </table> below into Gmail signature settings. -->
-    <!-- All styles inlined; tables for layout; safe in Gmail/Apple Mail.   -->
-    <!-- ════════════════════════════════════════════════════════════════ -->
+<table cellpadding="0" cellspacing="0" border="0" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#14172a;border-collapse:collapse;line-height:1.4;">
+  <tr>
+    <!-- Avatar column -->
+    <td valign="top" style="padding:0 18px 0 0;width:88px;">
+      <!-- TWEAK: when deployed, replace this with a public-hosted URL
+           (Supabase storage at /storage/v1/object/public/brand/key-headshot.jpg
+           or backuppowerpro.com/email/key-headshot.jpg). For local preview
+           the relative path resolves. -->
+      <img src="key-headshot.jpg"
+           width="80" height="80"
+           alt="Key Goodson"
+           style="display:block;width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #ffba00;" />
+    </td>
 
-    <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;max-width:460px;width:100%;font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#0b1f3b;line-height:1.4;">
-      <tr>
-        <!-- LEFT: avatar -->
-        <td valign="top" style="padding:0 18px 0 0;width:108px;vertical-align:top;">
-          <!-- TWEAK: replace src with Key's actual headshot URL (or Gravatar) at deploy time -->
-          <img
-            src="https://www.gravatar.com/avatar/00000000000000000000000000000000?s=192&d=mp"
-            alt="Key Goodson, BPP"
-            width="96"
-            height="96"
-            style="display:block;width:96px;height:96px;border-radius:50%;border:2px solid #ffba00;background:#f4f1e6;"
-          />
-        </td>
+    <!-- Identity + contact column -->
+    <td valign="top" style="padding:2px 0 0 0;border-left:3px solid #ffba00;padding-left:18px;">
+      <div style="font-family:'Outfit','Inter',Arial,sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.01em;color:#0b1f3b;line-height:1.15;">
+        Key Goodson
+      </div>
+      <div style="font-family:'Inter',Arial,sans-serif;font-weight:400;font-size:12px;color:#6b7280;margin-top:3px;letter-spacing:0.02em;">
+        Owner · Licensed SC Electrician
+      </div>
 
-        <!-- RIGHT: identity + contact -->
-        <td valign="top" style="vertical-align:top;padding:0;">
+      <!-- Wordmark / logo line -->
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(11,31,59,0.08);font-family:'Outfit','Inter',Arial,sans-serif;font-weight:800;font-size:14px;letter-spacing:-0.01em;color:#0b1f3b;">
+        Backup Power <span style="color:#ffba00;">Pro</span>
+      </div>
 
-          <div style="font-family:'Outfit','Helvetica Neue',Arial,sans-serif;font-size:18px;font-weight:700;color:#0b1f3b;line-height:1.15;letter-spacing:-0.01em;">
-            Key Goodson
-          </div>
+      <!-- Contact rows -->
+      <div style="margin-top:8px;font-family:'Inter',Arial,sans-serif;font-size:13px;color:#14172a;line-height:1.7;">
+        <div>
+          <span style="color:#ffba00;font-size:13px;">✆</span>&nbsp;&nbsp;
+          <a href="tel:+18648637800" style="color:#0b1f3b;font-weight:600;text-decoration:none;font-family:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;letter-spacing:0.01em;">
+            (864) 863-7800
+          </a>
+        </div>
+        <div>
+          <span style="color:#ffba00;font-size:13px;">✉</span>&nbsp;&nbsp;
+          <a href="mailto:key@backuppowerpro.com" style="color:#0b1f3b;text-decoration:none;">
+            key@backuppowerpro.com
+          </a>
+        </div>
+        <div>
+          <span style="color:#ffba00;font-size:13px;">⌂</span>&nbsp;&nbsp;
+          <a href="https://backuppowerpro.com" style="color:#0b1f3b;text-decoration:none;">
+            backuppowerpro.com
+          </a>
+        </div>
+      </div>
 
-          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:400;color:#4a4a5a;margin-top:2px;line-height:1.4;">
-            Backup Power Pro &middot; SC Licensed Electrician
-          </div>
+      <!-- Service area + tagline -->
+      <div style="margin-top:12px;font-family:'Inter',Arial,sans-serif;font-size:11px;color:#6b7280;letter-spacing:0.04em;">
+        Serving Greenville · Spartanburg · Pickens · Upstate SC
+      </div>
+      <div style="margin-top:4px;font-family:'Inter',Arial,sans-serif;font-style:italic;font-size:11px;color:#8a5a00;">
+        One-day generator inlet installation. Done right.
+      </div>
+    </td>
+  </tr>
+</table>
 
-          <!-- gold rule -->
-          <div style="width:120px;height:1px;background:#ffba00;margin:10px 0 10px;font-size:0;line-height:0;">&nbsp;</div>
+<!-- ════════════════════════════════════════════════════════════════════
+     EMAIL SIGNATURE ENDS HERE
+     ════════════════════════════════════════════════════════════════════ -->
 
-          <!-- Phone -->
-          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;color:#0b1f3b;margin:0 0 4px;line-height:1.45;">
-            <span style="display:inline-block;width:14px;color:#ffba00;font-size:13px;">&#9990;</span>
-            <a href="tel:+18648637800" style="color:#0b1f3b;text-decoration:none;font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-weight:700;font-size:13px;">(864)&nbsp;863-7800</a>
-          </div>
-
-          <!-- Email -->
-          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:12px;color:#0b1f3b;margin:0 0 4px;line-height:1.45;">
-            <span style="display:inline-block;width:14px;color:#ffba00;font-size:12px;">&#9993;</span>
-            <a href="/cdn-cgi/l/email-protection#b2d9d7cbf2d0d3d1d9c7c2c2ddc5d7c0c2c0dd9cd1dddf" style="color:#0b1f3b;text-decoration:none;"><span class="__cf_email__" data-cfemail="7318160a33111210180603031c04160103011c5d101c1e">[email&#160;protected]</span></a>
-          </div>
-
-          <!-- Web -->
-          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:12px;color:#0b1f3b;margin:0 0 8px;line-height:1.45;">
-            <span style="display:inline-block;width:14px;color:#ffba00;font-size:12px;">&#127760;</span>
-            <a href="https://backuppowerpro.com" style="color:#0b1f3b;text-decoration:none;">backuppowerpro.com</a>
-          </div>
-
-          <!-- Tagline -->
-          <div style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;font-style:italic;color:#8a5a00;margin:6px 0 0;line-height:1.4;">
-            One-Day Generator Inlet Installation. Done Right.
-          </div>
-
-        </td>
-      </tr>
-
-      <!-- Bottom service-area row, full width -->
-      <tr>
-        <td colspan="2" style="padding:14px 0 0;">
-          <div style="font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:9px;color:#0b1f3b;letter-spacing:0.18em;text-transform:uppercase;text-align:center;line-height:1.4;">
-            GREENVILLE &middot; SPARTANBURG &middot; PICKENS &middot; UPSTATE&nbsp;SC
-          </div>
-          <div style="height:2px;background:#ffba00;margin:6px auto 0;max-width:460px;font-size:0;line-height:0;">&nbsp;</div>
-        </td>
-      </tr>
-    </table>
-
-    <!-- ════════════════════════════════════════════════════════════════ -->
-    <!-- BPP EMAIL SIGNATURE — END                                         -->
-    <!-- ════════════════════════════════════════════════════════════════ -->
-
-  </div>
-
-  <p class="helper">
-    To install: select the signature block above (from "Key Goodson" through the gold rule), copy with <code>Cmd+C</code>, then paste into Gmail → Settings → Signature. The block is table-based with inline styles, so Gmail won't strip the layout. Avatar URL is a Gravatar placeholder &mdash; swap for Key's actual headshot URL once available.
-  </p>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+<div style="margin-top:24px;font-family:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;font-size:10px;letter-spacing:0.06em;color:#6b7280;text-transform:uppercase;max-width:600px;line-height:1.6;">
+  Setup · Open this file in Chrome · Select the signature block (everything inside the white card) · Copy · Paste into Gmail Settings → Signature, or Apple Mail Preferences → Signatures · Save · Set as default for new + reply mail.
+</div>
+
+</body>
 </html>
