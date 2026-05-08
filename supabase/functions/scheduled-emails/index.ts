@@ -150,7 +150,7 @@ const TEMPLATES: TemplateSpec[] = [
     buildSubject: (c) => `Two days in, running clean? · Backup Power Pro`,
     buildVars: (c) => ({
       first_name: firstName(c),
-      review_url: 'https://g.page/r/CXYZ',  // TWEAK: real Google review URL
+      review_url: 'https://g.page/r/CVxLI9ZsiZS_EAE/review',  // BPP GBP — same URL used by quo-ai-review
     }),
     query: async (sb) => {
       const cutoff48 = new Date(Date.now() - 48 * 3600 * 1000).toISOString()

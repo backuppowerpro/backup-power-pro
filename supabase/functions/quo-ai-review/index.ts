@@ -12,7 +12,8 @@ import { requireServiceRole } from '../_shared/auth.ts'
 const QUO_API_KEY        = Deno.env.get('QUO_API_KEY')!
 const QUO_PHONE_ID       = Deno.env.get('QUO_PHONE_NUMBER_ID')!
 const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY')!
-// TODO: Replace with your real Google review short link (get it from Google Business Profile → Ask for reviews → Get more reviews)
+// BPP Google Business Profile review short link. CID confirmed 2026-05-08.
+// Mirrored in scheduled-emails (review preset) and review-email.html.
 const GOOGLE_REVIEW_URL  = 'https://g.page/r/CVxLI9ZsiZS_EAE/review'
 
 const CORS = {
