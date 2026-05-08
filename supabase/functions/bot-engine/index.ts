@@ -368,17 +368,20 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     }
 
     // 4b. v10.1.38, auto-advance Stage 1 → 2 on first customer reply.
-    // Without this, Ashley engages a lead but the contact sits at Stage 1
-    // (New) in the CRM, indistinguishable from leads who never replied.
-    // Diagnosed 2026-05-07 from a 62-frozen-Stage-1 anomaly: no code in
-    // the repo advances 1→2 (only Stripe sets 4, sub-mark sets 9). Stage
-    // 2 = "Responded" per CRM dropdown semantics, fits exactly here.
-    // Idempotent (only fires when stage===1).
+    // v10.1.59 (Tyler audit 2026-05-07): switched to atomic UPDATE-WHERE
+    // because the prior SELECT-then-UPDATE pattern was somehow not
+    // landing the change in production (verified: stage stayed 1 after
+    // first inbound). Atomic conditional UPDATE returns the row if
+    // stage was 1 + got set to 2; nothing if not.
     try {
-      const { data: stageRow } = await sb.from('contacts').select('stage').eq('id', contact.id).single()
-      const currentStage = Number(stageRow?.stage || 0)
-      if (currentStage === 1) {
-        await sb.from('contacts').update({ stage: 2 }).eq('id', contact.id)
+      const { data: updated, error: stageErr } = await sb.from('contacts')
+        .update({ stage: 2 })
+        .eq('id', contact.id)
+        .eq('stage', 1)
+        .select('id, stage')
+      if (stageErr) {
+        console.warn('[bot-engine] stage 1→2 advance returned error:', stageErr)
+      } else if (updated && updated.length > 0) {
         try {
           await sb.from('stage_history').insert([{
             contact_id: contact.id, from_stage: 1, to_stage: 2,

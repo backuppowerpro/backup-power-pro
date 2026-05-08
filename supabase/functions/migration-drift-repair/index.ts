@@ -79,6 +79,43 @@ Deno.serve(async (req) => {
   const conn = await pool.connect()
 
   try {
+    if (action === 'check_stage_advance') {
+      const phone = body?.phone || ''
+      // Inspect the contact's stage + run a fresh stage 1->2 update to see if it sticks
+      const before = await conn.queryObject<{ id: string; stage: number; bot_state: string }>(
+        'SELECT id, stage, bot_state FROM contacts WHERE phone = $1',
+        [phone],
+      )
+      if (!before.rows.length) return json(404, { error: 'no contact' })
+      const contactId = before.rows[0].id
+      const stageBefore = before.rows[0].stage
+      // Try the same UPDATE bot-engine runs
+      const upd = await conn.queryObject(
+        'UPDATE contacts SET stage = 2 WHERE id = $1 AND stage = 1 RETURNING id, stage',
+        [contactId],
+      )
+      // Check if it stuck
+      const after = await conn.queryObject<{ stage: number }>(
+        'SELECT stage FROM contacts WHERE id = $1',
+        [contactId],
+      )
+      // Look for any triggers on contacts table
+      const triggers = await conn.queryObject<{ trigger_name: string; event_manipulation: string; action_statement: string }>(
+        `SELECT trigger_name, event_manipulation, action_statement
+         FROM information_schema.triggers
+         WHERE event_object_table = 'contacts' AND event_object_schema = 'public'`,
+      )
+      return json(200, {
+        ok: true,
+        contact_id: contactId,
+        stage_before: stageBefore,
+        update_returned_rows: upd.rows.length,
+        update_returned: upd.rows,
+        stage_after: after.rows[0]?.stage,
+        contacts_triggers: triggers.rows,
+      })
+    }
+
     if (action === 'inspect') {
       const result = await conn.queryObject<{ version: string; statements: string[] | null; name: string | null }>(
         'SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version',

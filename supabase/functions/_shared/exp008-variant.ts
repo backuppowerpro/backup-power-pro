@@ -39,14 +39,16 @@ export function renderGreeting(
     : ''
   switch (variant) {
     case 'B':
-      return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro intake. Our electrician Key handles your quote and install personally. I'll just gather a few details for him. Mind if I ask a couple things?${lateNightSuffix}`
+      // v10.1.59 (Tyler iMessage 2026-05-08): variant B had factual
+      // error "handles your quote and install personally" - fixed.
+      return `Hi ${name}, this is Ashley with Backup Power Pro. Key (our electrician) texts the quote over himself once he's seen the panel, and he does the install in person. I just grab a few details up front to set him up. Mind if I run through them?${lateNightSuffix}`
     case 'C':
-      return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. Thanks for reaching out about a home connection for your portable generator. Happy to help get this rolling. Got a few minutes to walk through what our electrician Key needs to provide an accurate quote?${lateNightSuffix}`
+      return `Hi ${name}, this is Ashley with Backup Power Pro. Thanks for reaching out about a generator hookup. Got a few minutes for me to walk through what Key needs to get a quote together?${lateNightSuffix}`
     case 'D':
-      return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. Happy to help get a home connection set up for your portable generator. To get our electrician Key started: do you happen to have the make and model handy?${lateNightSuffix}`
+      return `Hi ${name}, this is Ashley with Backup Power Pro. Happy to help get a generator hookup quoted out. Quick start, what's the make and model of your generator?${lateNightSuffix}`
     case 'A':
     default:
-      return `Hi ${name}, I'm Ashley, the automated assistant at Backup Power Pro. I'm helping our electrician Key gather a few details for the home connection quote for your generator. Got a couple of minutes to walk through them?${lateNightSuffix}`
+      return `Hi ${name}, this is Ashley with Backup Power Pro. Key got your form and asked me to grab a few details so he can put a quote together for the generator hookup. Got a couple minutes?${lateNightSuffix}`
   }
 }
 

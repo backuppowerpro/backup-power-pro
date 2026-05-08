@@ -70,6 +70,9 @@ Deno.serve(async (req: Request) => {
   const KEY_CELL = '+19414417996'
   const KEY_ALLOWED_ACTIONS = new Set(['reset_bot_state', 'messages', 'inspect_contact', 'simulate_inbound'])
   const isKeyAllowedAction = phone === KEY_CELL && KEY_ALLOWED_ACTIONS.has(action)
+  // v10.1.59: also allow inspect_contact for test phones (already-allowed
+  // actions). Useful for debugging stage advancement etc.
+  const isTestInspect = phone.startsWith(TEST_PHONE_PREFIX) && action === 'inspect_contact'
 
   if (!phone.startsWith(TEST_PHONE_PREFIX) && !isKeyAllowedAction) {
     return new Response(JSON.stringify({ error: 'phone outside test range' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })

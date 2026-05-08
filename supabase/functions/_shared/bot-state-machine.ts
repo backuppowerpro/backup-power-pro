@@ -708,9 +708,17 @@ const STATES: Record<string, any> = {
   },
 
   RECAP: {
-    intent: 'summarize all qualification slots back to customer in a tight one-message recap (e.g. "Thanks for all of that. Just to recap: 240v 50A, owner, 22ft run, install at 412 Oakmont Dr. Look right?") so they can confirm or correct anything before Key reviews. v10.1.7: lead with thanks since customer just gave their contact info (the close-info ask). Use the volunteered + classifier-extracted slot store. Casual phrasing.',
-    fallback: ({ first_name }) =>
-      `Thanks for all of that. Quick recap before Key reviews. Does everything look right on what you sent?`,
+    // v10.1.59 (Tyler iMessage common-sense audit 2026-05-08):
+    // Live test caught the recap inventing "~22ft run" when customer
+    // never said anything about run distance. Root cause: the intent
+    // example included "22ft run" which the phraser was treating as a
+    // template to fill in. Confabulation risk. Plus the checklist
+    // format ("240v 50A, owner, ~22ft run, install at...") reads
+    // CRM-robotic per Key's name-repetition feedback. Switched to
+    // conversational format + ONLY-captured-slots requirement.
+    intent: 'summarize the slots the customer ACTUALLY captured back to them for confirmation. Use ONLY slots from qualification_slots in ctx. NEVER invent details (no run distance unless customer volunteered one, no panel location unless captured, etc.). Format CONVERSATIONALLY not as a data list. Preferred shape: "Want to make sure I got it all, Champion 8500 with the 50A twist, panel in the garage exterior, install at 412 Oakmont. Look right?" Acceptable tight version for terse customers: "Quick recap: 240V 50A, panel garage exterior, install at 412 Oakmont. Right?" Lead with a thanks-style opener that does NOT use the customer first name (per v58 name-repetition rule). NEVER include slots that were not captured. Casual phrasing.',
+    fallback: () =>
+      `Thanks for all of that. Want to make sure I got everything right before passing it to Key. Does it all look correct on what you sent?`,
     transitions: {
       affirmative: 'SCHEDULE_QUOTE',
       negative: 'NEEDS_CALLBACK',  // they spotted an error, let Key clarify
