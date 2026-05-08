@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Owner's Manual · Backup Power Pro</title>
+<style>
+  @page { size: 8.5in 11in; margin: 0.75in; }
+  @media screen { body { background: #e8e8e8; padding: 24px; } .page { box-shadow: 0 8px 28px rgba(11,31,59,0.18); margin: 0 auto 28px auto; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #14172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3, .display { font-family: 'Outfit', 'Inter', Helvetica, Arial, sans-serif; letter-spacing: -0.02em; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; }
+
+  .page { width: 8.5in; min-height: 11in; padding: 0.75in; background: #ffffff; position: relative; page-break-after: always; }
+  .page:last-of-type { page-break-after: auto; }
+  .gold-rule { height: 4px; background: #ffba00; margin: 0 -0.75in; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #ffba00; font-weight: 700; }
+  .pagenum { position: absolute; bottom: 0.55in; right: 0.75in; font-size: 11px; letter-spacing: 0.16em; color: #6b7280; }
+  .footer-rule { position: absolute; bottom: 0.85in; left: 0.75in; right: 0.75in; height: 1px; background: rgba(11,31,59,0.07); }
+  .wordmark-foot { position: absolute; bottom: 0.55in; left: 0.75in; font-family: 'Outfit', 'Inter', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: -0.02em; color: #0b1f3b; }
+  .wordmark-foot .pro { color: #ffba00; }
+
+  /* Cover */
+  .cover { display: flex; flex-direction: column; min-height: 11in; padding-top: 1in; }
+  .cover .eyebrow { color: #8a5a00; }
+  .cover h1 { font-size: 56pt; font-weight: 800; line-height: 0.96; color: #0b1f3b; margin: 26px 0 24px 0; }
+  .cover h1 .gold { color: #ffba00; }
+  .cover .sub { font-size: 13pt; line-height: 1.5; color: #4a4a5a; max-width: 5.6in; }
+  .cover .badge { display: inline-block; background: #fff8e0; border: 1.5px solid #ffba00; border-radius: 100px; padding: 6px 16px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 10pt; letter-spacing: 0.16em; text-transform: uppercase; color: #8a5a00; margin-bottom: 18px; }
+  .cover .install-meta { margin-top: 28px; padding: 14px 0; border-top: 1px solid rgba(11,31,59,0.08); border-bottom: 1px solid rgba(11,31,59,0.08); display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 10pt; color: #6b7280; letter-spacing: 0.04em; }
+  .cover .meta-row { margin-top: auto; padding-top: 24px; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 10pt; color: #6b7280; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* Spread */
+  .section-title { font-family: 'Outfit', 'Inter', sans-serif; font-weight: 800; font-size: 22pt; color: #0b1f3b; margin: 6px 0 18px 0; letter-spacing: -0.015em; }
+  .step { display: flex; gap: 18px; padding: 14px 0; border-bottom: 1px solid rgba(11,31,59,0.06); }
+  .step .num { font-family: 'Outfit', 'Inter', sans-serif; font-weight: 800; font-size: 26pt; color: #ffba00; line-height: 1; min-width: 60px; }
+  .step .body { flex: 1; padding-top: 4px; }
+  .step .title { font-family: 'Outfit', 'Inter', sans-serif; font-weight: 700; font-size: 13pt; color: #0b1f3b; margin: 0 0 4px 0; }
+  .step .desc { font-size: 11.5pt; line-height: 1.5; color: #4a4a5a; margin: 0; }
+  .pull { background: #fff8e0; border: 1px solid #ffba00; border-radius: 6px; padding: 16px 20px; margin: 22px 0; font-size: 12pt; line-height: 1.5; color: #14172a; }
+  .pull strong { color: #8a5a00; font-weight: 700; }
+
+  table.maint { width: 100%; border-collapse: collapse; margin: 14px 0 8px 0; font-size: 11pt; }
+  table.maint th { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 10pt; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; text-align: left; padding: 10px 8px; border-bottom: 2px solid #0b1f3b; }
+  table.maint td { padding: 9px 8px; border-bottom: 1px solid rgba(11,31,59,0.06); color: #14172a; }
+  table.maint td.cad { font-family: 'JetBrains Mono', monospace; color: #0b1f3b; font-weight: 600; width: 30%; }
+</style>
+</head>
+<body>
+
+<!-- ──────────────────────────────────────────────
+     PAGE 1 — COVER
+     ────────────────────────────────────────────── -->
+<div class="page cover">
+  <div class="gold-rule" style="margin-top: -0.75in;"></div>
+  <div style="margin-top: 80px;">
+    <div class="badge">★ Owner's Manual · 2-Year Warranty</div>
+    <div class="eyebrow">Backup Power Pro</div>
+    <h1>Your Generator<br />Hookup<br /><span class="gold">Owner's Manual.</span></h1>
+    <p class="sub">Outage protocol, test cycle schedule, troubleshooting flowchart, and warranty terms for your BPP install. Keep this PDF on your phone or print + tape it inside the panel cover.</p>
+
+    <div class="install-meta">
+      <span><!-- TWEAK -->Sarah Thomas · 412 Oakmont Drive</span>
+      <span><!-- TWEAK -->Installed May 15, 2026</span>
+    </div>
+  </div>
+  <div class="meta-row">
+    <span>Edition 2026.05</span>
+    <span>backuppowerpro.com · (864) 863-7800</span>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────
+     PAGE 2 — OUTAGE PROTOCOL (the main spread)
+     ────────────────────────────────────────────── -->
+<div class="page">
+  <div class="gold-rule" style="margin-top: -0.75in;"></div>
+  <div style="margin-top: 36px;">
+    <div class="eyebrow" style="color: #8a5a00;">When the power goes out</div>
+    <h2 class="section-title">Your 5-step outage protocol.</h2>
+
+    <div class="step">
+      <div class="num">01</div>
+      <div class="body">
+        <div class="title">Confirm the outage isn't just your house.</div>
+        <div class="desc">Check Duke Energy outage map (or call 800-769-3766). If it's a tripped main breaker on your end, the generator won't help.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">02</div>
+      <div class="body">
+        <div class="title">Roll the generator outside, minimum 20 ft from any window.</div>
+        <div class="desc">Never run it inside a garage, even with the door open. CO will pool and kill in minutes. Downwind, level ground, dry surface.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">03</div>
+      <div class="body">
+        <div class="title">Plug the yellow L14-30 cord into the inlet, THEN start the generator.</div>
+        <div class="desc">Hot before plug = arc damage to the prongs. Plug first, start second. Let it idle 60 seconds to warm up.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">04</div>
+      <div class="body">
+        <div class="title">Inside the panel: main breaker OFF first, then the generator breaker ON.</div>
+        <div class="desc">The interlock plate enforces this sequence physically. If it won't slide, you're trying to do them in the wrong order — that's by design.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">05</div>
+      <div class="body">
+        <div class="title">Flip on circuits one at a time, biggest load first.</div>
+        <div class="desc">Refrigerator → freezer → AC → lights → outlets. If the generator bogs (RPMs drop, lights dim), drop a circuit. Don't flip them all at once.</div>
+      </div>
+    </div>
+
+    <div class="pull">
+      <strong>Reverse order to shut down:</strong> generator breaker OFF → main breaker ON → unplug cord → let generator run 60 seconds with no load → shut off.
+    </div>
+  </div>
+  <div class="footer-rule"></div>
+  <div class="wordmark-foot">Backup Power <span class="pro">Pro</span></div>
+  <div class="pagenum mono">2 / 12</div>
+</div>
+
+<!-- ──────────────────────────────────────────────
+     PAGE 3 — MAINTENANCE SCHEDULE
+     ────────────────────────────────────────────── -->
+<div class="page">
+  <div class="gold-rule" style="margin-top: -0.75in;"></div>
+  <div style="margin-top: 36px;">
+    <div class="eyebrow" style="color: #8a5a00;">Maintenance schedule</div>
+    <h2 class="section-title">Five things that double its lifespan.</h2>
+
+    <table class="maint">
+      <tr><th>Cadence</th><th>Action</th></tr>
+      <tr>
+        <td class="cad">Every month</td>
+        <td>Visual check: cover the inlet, look for nests/dust/water staining inside the box.</td>
+      </tr>
+      <tr>
+        <td class="cad">Every 3 months</td>
+        <td>Run a 10-minute test cycle under house load. Same routine as outage protocol, steps 02–05.</td>
+      </tr>
+      <tr>
+        <td class="cad">Twice a year (Jun + Nov)</td>
+        <td>Pre-storm-season check. Run for 30 min on actual house load, top off oil, inspect cord ends.</td>
+      </tr>
+      <tr>
+        <td class="cad">Every 50 hours</td>
+        <td>Change the oil. Most portables ship with break-in oil; first change is at 25 hours, then every 50.</td>
+      </tr>
+      <tr>
+        <td class="cad">Every 100 hours</td>
+        <td>Air filter check, spark plug check, fuel filter (if equipped).</td>
+      </tr>
+      <tr>
+        <td class="cad">Annually</td>
+        <td>Fuel system clean-out: drain old fuel, refill with stabilized fresh, run 5 min to circulate.</td>
+      </tr>
+    </table>
+
+    <div class="pull">
+      <strong>The single most common failure</strong> — old gas. Generators that sit 6+ months on un-stabilized fuel will gum up the carb. Fix is a $30 carb cleaner kit and 2 hours, OR add Sta-Bil to the tank twice a year.
+    </div>
+
+    <div style="margin-top: 26px;">
+      <div class="eyebrow" style="color: #8a5a00;">Troubleshooting · the 4 most common</div>
+      <table class="maint" style="margin-top: 12px;">
+        <tr><th>Symptom</th><th>What to check first</th></tr>
+        <tr><td>Won't start</td><td>Fuel valve open? Choke set? Oil sensor (most portables won't start with low oil).</td></tr>
+        <tr><td>Starts then dies</td><td>Old gas / clogged carburetor. Rare: vacuum lock in the gas tank cap.</td></tr>
+        <tr><td>Bogs under load</td><td>Too many circuits at once. Drop the AC or fridge first, restart sequence.</td></tr>
+        <tr><td>Trips main when connecting</td><td>Main breaker should be OFF before generator breaker ON. Reverse the order.</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer-rule"></div>
+  <div class="wordmark-foot">Backup Power <span class="pro">Pro</span></div>
+  <div class="pagenum mono">3 / 12</div>
+</div>
+
+<!-- ──────────────────────────────────────────────
+     PAGE 4 — WARRANTY + CONTACT (closing spread)
+     ────────────────────────────────────────────── -->
+<div class="page">
+  <div class="gold-rule" style="margin-top: -0.75in;"></div>
+  <div style="margin-top: 36px;">
+    <div class="eyebrow" style="color: #8a5a00;">Warranty + support</div>
+    <h2 class="section-title">Two-year workmanship coverage.</h2>
+
+    <p style="font-size: 12pt; line-height: 1.55; color: #14172a; margin: 0 0 18px 0;">
+      Backup Power Pro warrants the workmanship on your install for <strong style="color: #0b1f3b;">2 years from the install date</strong>. That covers anything I touched or installed: the inlet box, the interlock kit, the wiring runs, the breakers I added or relabeled, the seal at the wall penetration.
+    </p>
+
+    <table class="maint">
+      <tr><th>What's covered</th><th>What's not</th></tr>
+      <tr>
+        <td>Inlet box mounting / sealing</td>
+        <td>Your generator (manufacturer warranty applies separately)</td>
+      </tr>
+      <tr>
+        <td>Interlock kit operation</td>
+        <td>Generator cord (separate accessory, 1-year coverage from BPP)</td>
+      </tr>
+      <tr>
+        <td>Breaker installation</td>
+        <td>Damage from improper use (running generator indoors, wet outlet, etc.)</td>
+      </tr>
+      <tr>
+        <td>Wiring inside the panel I installed</td>
+        <td>Storm damage (homeowner's insurance)</td>
+      </tr>
+      <tr>
+        <td>Permit closeout paperwork</td>
+        <td>Pre-existing panel issues outside scope of install</td>
+      </tr>
+    </table>
+
+    <div class="pull">
+      <strong>If anything looks off:</strong> text Key directly at <span style="font-family: 'JetBrains Mono', monospace;">(864) 863-7800</span>. Don't try to diagnose remotely or open the panel yourself. I'd rather drive out and look than have you guessing.
+    </div>
+
+    <div style="margin-top: 26px; padding-top: 22px; border-top: 1px solid rgba(11,31,59,0.08);">
+      <div class="eyebrow" style="color: #8a5a00;">Quick contacts</div>
+      <table style="width: 100%; margin-top: 12px; font-size: 11pt;">
+        <tr><td style="padding: 6px 0; color: #6b7280; width: 50%;">Key Goodson · BPP</td><td style="padding: 6px 0; font-family: 'JetBrains Mono', monospace; color: #0b1f3b; font-weight: 600;">(864) 863-7800</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Email</td><td style="padding: 6px 0; font-family: 'JetBrains Mono', monospace; color: #0b1f3b; font-weight: 600;">key@backuppowerpro.com</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Web</td><td style="padding: 6px 0; font-family: 'JetBrains Mono', monospace; color: #0b1f3b; font-weight: 600;">backuppowerpro.com</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Service area</td><td style="padding: 6px 0; color: #14172a;">Greenville · Spartanburg · Pickens counties, SC</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer-rule"></div>
+  <div class="wordmark-foot">Backup Power <span class="pro">Pro</span></div>
+  <div class="pagenum mono">4 / 12</div>
+</div>
+
+</body>
+</html>

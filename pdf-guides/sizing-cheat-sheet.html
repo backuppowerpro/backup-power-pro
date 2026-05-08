@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Generator Sizing Cheat Sheet · Backup Power Pro</title>
+<style>
+  @page { size: 8.5in 11in; margin: 0.6in; }
+  @media screen { body { background: #e8e8e8; padding: 24px; } .page { box-shadow: 0 8px 28px rgba(11,31,59,0.18); margin: 0 auto; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #14172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3, .display { font-family: 'Outfit', 'Inter', Helvetica, Arial, sans-serif; letter-spacing: -0.02em; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; }
+  .page { width: 8.5in; min-height: 11in; padding: 0.6in; background: #ffffff; position: relative; }
+
+  .gold-rule { height: 4px; background: #ffba00; margin: 0 -0.6in; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #8a5a00; font-weight: 700; }
+  .wordmark { font-family: 'Outfit', 'Inter', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: -0.02em; color: #0b1f3b; }
+  .wordmark .pro { color: #ffba00; }
+
+  h1 { font-size: 38pt; font-weight: 800; line-height: 1.0; color: #0b1f3b; margin: 18px 0 8px 0; }
+  h1 .gold { color: #ffba00; }
+  .subtitle { font-size: 13pt; color: #4a4a5a; margin: 0 0 18px 0; line-height: 1.4; }
+
+  table.sizing { width: 100%; border-collapse: collapse; margin: 10px 0 14px 0; font-size: 11pt; }
+  table.sizing th { font-family: 'Outfit', 'Inter', sans-serif; font-weight: 700; font-size: 9.5pt; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; text-align: left; padding: 10px 8px; border-bottom: 2px solid #0b1f3b; }
+  table.sizing th.r { text-align: right; }
+  table.sizing td { padding: 9px 8px; border-bottom: 1px solid rgba(11,31,59,0.08); color: #14172a; }
+  table.sizing td.r { text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #0b1f3b; }
+  table.sizing td.note { color: #6b7280; font-size: 10pt; }
+  table.sizing tr.head { background: #f4f6fa; }
+
+  .two-col { display: flex; gap: 24px; margin-top: 14px; }
+  .col { flex: 1; }
+  .col h3 { font-size: 14pt; font-weight: 700; color: #0b1f3b; margin: 0 0 10px 0; }
+
+  .ac-box { background: #fff8e0; border: 1px solid #ffba00; border-radius: 6px; padding: 14px 16px; margin: 14px 0; font-size: 11pt; line-height: 1.5; color: #14172a; }
+  .ac-box strong { color: #8a5a00; }
+
+  .footer { position: absolute; bottom: 0.55in; left: 0.6in; right: 0.6in; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #6b7280; padding-top: 14px; border-top: 1px solid rgba(11,31,59,0.08); }
+  .footer .right { text-align: right; }
+  .footer .right .num { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0b1f3b; font-size: 12pt; letter-spacing: 0.04em; }
+
+  .pull { background: #0b1f3b; color: #ffffff; border-radius: 8px; padding: 16px 20px; margin: 18px 0 8px 0; }
+  .pull .eyebrow { color: #ffba00; }
+  .pull p { margin: 6px 0 0 0; font-size: 12pt; line-height: 1.45; }
+  .pull strong { color: #ffba00; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="gold-rule" style="margin-top: -0.6in;"></div>
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 14px;">
+    <div>
+      <div class="eyebrow">Field Guide · 1-page reference</div>
+      <h1>Generator <span class="gold">Sizing</span><br />Cheat Sheet.</h1>
+      <p class="subtitle">Print it. Keep it in the truck or pinned next to the panel. Quick wattage reference for portable generator buying in Upstate SC.</p>
+    </div>
+    <div class="wordmark">Backup Power <span class="pro">Pro</span></div>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <h3>Common appliances · running watts</h3>
+      <table class="sizing">
+        <tr class="head"><th>Appliance</th><th class="r">Running W</th><th class="r">Surge W</th></tr>
+        <tr><td>Refrigerator</td><td class="r">700</td><td class="r">1,400</td></tr>
+        <tr><td>Chest freezer</td><td class="r">500</td><td class="r">900</td></tr>
+        <tr><td>Window AC (10k BTU)</td><td class="r">1,200</td><td class="r">1,800</td></tr>
+        <tr><td>Window AC (15k BTU)</td><td class="r">1,800</td><td class="r">2,700</td></tr>
+        <tr><td>Microwave</td><td class="r">1,000</td><td class="r">1,000</td></tr>
+        <tr><td>Coffee maker</td><td class="r">800</td><td class="r">800</td></tr>
+        <tr><td>LED home lighting (whole house)</td><td class="r">300</td><td class="r">300</td></tr>
+        <tr><td>TV (LED, 55")</td><td class="r">100</td><td class="r">100</td></tr>
+        <tr><td>WiFi router + modem</td><td class="r">30</td><td class="r">30</td></tr>
+        <tr><td>Sump pump (1/3 HP)</td><td class="r">800</td><td class="r">2,400</td></tr>
+        <tr><td>Well pump (1/2 HP)</td><td class="r">1,000</td><td class="r">3,000</td></tr>
+        <tr><td>Gas furnace blower</td><td class="r">800</td><td class="r">2,400</td></tr>
+      </table>
+    </div>
+
+    <div class="col">
+      <h3>Match by AC tonnage</h3>
+      <table class="sizing">
+        <tr class="head"><th>Central AC size</th><th class="r">Min generator</th></tr>
+        <tr><td>1.5 ton</td><td class="r">5,000W</td></tr>
+        <tr><td>2 ton</td><td class="r">7,500W</td></tr>
+        <tr><td>2.5 ton</td><td class="r">8,500W</td></tr>
+        <tr><td>3 ton</td><td class="r">10,000W</td></tr>
+        <tr><td>3.5 ton</td><td class="r">12,500W</td></tr>
+        <tr><td>4 ton</td><td class="r">14,000W</td></tr>
+        <tr><td>5 ton</td><td class="r">17,500W+</td></tr>
+      </table>
+      <p style="font-size: 10pt; color: #6b7280; margin: -2px 0 14px 0; line-height: 1.4;">Numbers above include the AC + a refrigerator + lights + outlets running concurrently.</p>
+
+      <h3>What size for what house?</h3>
+      <table class="sizing">
+        <tr class="head"><th>House size</th><th class="r">Recommended</th></tr>
+        <tr><td>Under 1,500 sq ft, gas heat</td><td class="r">5,500–7,500W</td></tr>
+        <tr><td>1,500–2,500 sq ft</td><td class="r">7,500–10,000W</td></tr>
+        <tr><td>2,500–3,500 sq ft</td><td class="r">10,000–12,500W</td></tr>
+        <tr><td>3,500+ sq ft, electric heat</td><td class="r">14,000W+ inverter</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="ac-box">
+    <strong>The 240V rule:</strong> a portable generator MUST have a 30A 4-prong (L14-30R) or 50A (14-50R) outlet on its panel for whole-home interlock work. The 30A 3-prong (TT-30R or L5-30R) is 120V only — fine for an RV, NOT compatible with a BPP install.
+  </div>
+
+  <div class="pull">
+    <div class="eyebrow">Why a portable + interlock vs. a standby system</div>
+    <p>A portable + inlet + interlock is roughly <strong>$1,200 installed</strong>, runs the circuits you choose, and you control which loads stay on. A standby ATS system is $8K–$15K and runs everything automatically. For 90% of Upstate SC homes, the portable approach is enough &mdash; and you're not paying for capacity you'll use 3 days a year.</p>
+  </div>
+
+  <div class="footer">
+    <div>Backup Power Pro · Edition 2026.05 · backuppowerpro.com</div>
+    <div class="right">
+      For your custom quote, text:<br />
+      <span class="num">(864) 863-7800</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
