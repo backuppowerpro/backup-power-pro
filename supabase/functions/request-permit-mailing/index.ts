@@ -206,22 +206,30 @@ async function buildMailingInsertPdf(args: {
   ]
 
   // Word-wrap a single Para with mixed bold runs.
+  // We tokenize as "word + trailing whitespace" units so pdf-lib renders
+  // each token's whitespace inline (drawing whitespace as a SEPARATE
+  // drawText call eats it). This preserves spaces at bold/plain run
+  // boundaries which the prior split(/(\s+)/) approach was losing.
   function wrapParagraph(para: Para, fontPlain: typeof font, fontBold: typeof bold, size: number, maxWidth: number): { runs: Run[]; widths: number[] }[] {
     const lines: { runs: Run[]; widths: number[] }[] = []
     let curLine: { runs: Run[]; widths: number[] } = { runs: [], widths: [] }
     let curWidth = 0
     for (const run of para) {
       const f = run.bold ? fontBold : fontPlain
-      const words = run.text.split(/(\s+)/)  // keep separators
+      // Match each non-whitespace word plus any trailing whitespace
+      // attached to that word. Final word in run may have no trailing ws.
+      const words = run.text.match(/\S+\s*/g) || []
       for (const w of words) {
-        if (w === '') continue
         const wWidth = f.widthOfTextAtSize(w, size)
         if (curWidth + wWidth > maxWidth && curWidth > 0) {
+          // Strip the trailing whitespace from the previous-line last word
+          // so the line ending isn't visually padded into the right margin.
+          // Then push, start a fresh line with this word's stripped form
+          // (drop its leading position-equivalent ws — it's already a
+          // word-with-trailing-ws unit, no leading ws to worry about).
           lines.push(curLine)
           curLine = { runs: [], widths: [] }
           curWidth = 0
-          // Skip leading whitespace at start of new line
-          if (/^\s+$/.test(w)) continue
         }
         curLine.runs.push({ text: w, bold: run.bold })
         curLine.widths.push(wWidth)
