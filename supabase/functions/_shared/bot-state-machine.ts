@@ -1164,6 +1164,45 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
+  // v10.1.53 (real-LLM voice-judge round 3 finding 2026-05-07): email
+  // volunteered out-of-order at non-AWAIT_EMAIL non-terminal states fell
+  // through to NEEDS_CALLBACK, killing Sarah T4 and Tony T5 from
+  // reaching COMPLETE. Same anti-pattern as owner/panel_*/renter.
+  // Specific states handled inline at line ~1033 already; this is the
+  // catch-all for any other state where the customer hands an email
+  // mid-flow (AWAIT_OUTLET, AWAIT_240V, AWAIT_PANEL_PHOTO etc).
+  const emailHandledStates = new Set([
+    'AWAIT_EMAIL', 'AWAIT_EMAIL_RETRY', 'CHECK_EMAIL_TYPO',
+    'AWAIT_RUN', 'AWAIT_INSTALL_PATH', 'AWAIT_INLET_LOCATION',
+    'CONFIRM_PANEL_WALL_TYPE', 'CONFIRM_MAIN_BREAKER',
+    'AWAIT_ADDRESS_CONFIRM', 'RECAP', 'POSTPONED_RESUME',
+  ]);
+  if (label === 'email_provided' && !state.terminal && !emailHandledStates.has(currentState)) {
+    return {
+      next: currentState,
+      intent: `customer volunteered an email address while we were at ${currentState}. REQUIRED: open with explicit acknowledgment ("Got the email, thanks." / "Email noted.") THEN continue with: ${state.intent}. Do NOT use a bare ack that ignores what they just said. The orchestrator persists the email; you do not need to confirm it.`,
+      fallback: state.fallback ? state.fallback(ctx) : '',
+      endConversation: false,
+      onEnter: { email_volunteered_at: currentState },
+    };
+  }
+
+  // v10.1.53: address volunteered out-of-order at non-handling states.
+  // Same pattern, prevents premature NEEDS_CALLBACK termination.
+  const addressHandledStates = new Set([
+    'AWAIT_EMAIL', 'AWAIT_EMAIL_RETRY', 'AWAIT_ADDRESS_CONFIRM',
+    'RECAP', 'POSTPONED_RESUME',
+  ]);
+  if (label === 'address_corrected' && !state.terminal && !addressHandledStates.has(currentState)) {
+    return {
+      next: currentState,
+      intent: `customer volunteered an install address while we were at ${currentState}. REQUIRED: open with explicit acknowledgment ("Got the address, thanks." / "Address noted.") THEN continue with: ${state.intent}.`,
+      fallback: state.fallback ? state.fallback(ctx) : '',
+      endConversation: false,
+      onEnter: { address_volunteered_at: currentState },
+    };
+  }
+
   // v10.1.46 (Canceler persona sim 2026-05-07): customer-changed-mind
   // escape from any non-terminal state. "Never mind" / "scratch that" /
   // "I changed my mind" mid-flow used to fall through to NEEDS_CALLBACK
