@@ -1842,7 +1842,7 @@ function renderApproved() {
         <div>
           <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px">Know a Neighbor With a Generator?</div>
           <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:10px">Send them our way and <strong>you both win</strong> — they get <strong>$75 off</strong> their install, and we'll send you a <strong>$75 Visa gift card</strong> when they complete theirs.</div>
-          <a href="sms:8644005302?body=Hey Key, I want to refer a neighbor — my name is ${esc(P.contact_name)}" style="display:inline-block;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;padding:9px 18px;border-radius:8px;text-decoration:none">Text Key to Claim Your Referral &rarr;</a>
+          <a href="sms:8644005302?body=${encodeURIComponent("Hey Key, I want to refer a neighbor, my name is " + (P.contact_name || ''))}" style="display:inline-block;background:var(--gold);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;padding:9px 18px;border-radius:8px;text-decoration:none">Text Key to Claim Your Referral &rarr;</a>
         </div>
       </div>
     </div>

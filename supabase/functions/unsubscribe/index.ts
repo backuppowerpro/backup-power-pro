@@ -33,20 +33,46 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { allowRate } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SR = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+// Strict input shape — UUID for cid; alphanumeric+dash for template.
+// Anything else gets a 400 + skips the DB hit, so a malformed param
+// can't (a) populate notes with garbage or (b) reach the renderer.
+const UUID_RE = /^[0-9a-f-]{36}$/i
+const TEMPLATE_RE = /^[a-z][a-z0-9-]{0,40}$/i
 
 const html = (status: number, body: string) =>
   new Response(body, { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
+// Escape user-supplied strings before interpolation into HTML/attributes.
+// `firstName` comes from contacts.name (customer-controlled at form-fill).
+// `cid` and `template` come from URL params. All three were being inlined
+// into an HTML string and into a `javascript:` href without escaping —
+// stored-XSS path: any contact name containing `</h1><script>...` would
+// execute when the unsub page rendered. Patch 2026-05-08.
+const htmlEscape = (s: string) =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
 const MARKETING_TEMPLATES = new Set([
   'anniversary', 'referral-nudge', 'storm-prep-reminder', 'pdf-download',
 ])
 
-function confirmPage(firstName: string, kind: 'marketing' | 'transactional', cid: string, template: string) {
+function confirmPage(firstNameRaw: string, kind: 'marketing' | 'transactional', cidRaw: string, templateRaw: string) {
+  // Escape every interpolation site to defang stored-XSS via the contact's
+  // own name field, plus reflected-XSS via the cid / template URL params.
+  const firstName = htmlEscape(firstNameRaw);
+  const cid       = htmlEscape(cidRaw);
+  const template  = htmlEscape(templateRaw);
   const headline = kind === 'marketing'
     ? "We won't bother you with marketing emails again."
     : "Got it, you're noted."
@@ -89,9 +115,25 @@ function confirmPage(firstName: string, kind: 'marketing' | 'transactional', cid
     <h1>${headline}${firstName ? ' Take care, ' + firstName + '.' : ''}</h1>
     <p>${body}</p>
     <p>
-      <a class="undo" href="javascript:fetch('/functions/v1/unsubscribe?cid=${cid}&t=${template}&undo=1', {method:'POST'}).then(()=>location.href='/preferences/?cid=${cid}')">Undo</a>
+      <button class="undo" id="undo-btn" type="button">Undo</button>
       <a class="ghost" href="/preferences/?cid=${cid}">Manage all preferences</a>
     </p>
+    <script>
+      // Wire the Undo button via a real handler so cid/template never flow
+      // into a `javascript:` href (where escaping rules diverge from HTML).
+      // The values were already validated upstream and HTML-escaped here.
+      (function () {
+        var btn = document.getElementById('undo-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+          var u = '/functions/v1/unsubscribe?cid=' + encodeURIComponent(${JSON.stringify(cidRaw)}) +
+                  '&t=' + encodeURIComponent(${JSON.stringify(templateRaw)}) + '&undo=1';
+          fetch(u, { method: 'POST' }).then(function () {
+            location.href = '/preferences/?cid=' + encodeURIComponent(${JSON.stringify(cidRaw)});
+          });
+        });
+      })();
+    </script>
   </div>
   <div class="foot">Backup Power Pro · SC Licensed Electrician · Greenville, SC</div>
 </div>
@@ -129,10 +171,34 @@ async function processUnsub(cid: string, template: string, undo: boolean): Promi
 }
 
 Deno.serve(async (req) => {
+  // Per-IP rate limit. The endpoint is public (no Supabase key required —
+  // it has to be reachable from email clients clicking List-Unsubscribe),
+  // so an attacker who scrapes one cid can otherwise hammer it forever.
+  // 30/min per IP is generous for legit clicks, tight enough to flag abuse.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!allowRate(`unsub:${ip}`, 30)) {
+    return req.method === 'POST'
+      ? json(429, { error: 'rate_limited' })
+      : html(429, ERR_HTML)
+  }
   const url = new URL(req.url)
   const cid = url.searchParams.get('cid') || ''
   const template = url.searchParams.get('t') || ''
   const undo = url.searchParams.get('undo') === '1'
+
+  // Strict input validation — bad shape = 400. Prevents the param from
+  // reaching the renderer (XSS surface) AND prevents writing junk into
+  // contacts.notes via the `(template=${template})` audit stamp.
+  if (cid && !UUID_RE.test(cid)) {
+    return req.method === 'POST'
+      ? json(400, { error: 'invalid_cid' })
+      : html(400, ERR_HTML)
+  }
+  if (template && !TEMPLATE_RE.test(template)) {
+    return req.method === 'POST'
+      ? json(400, { error: 'invalid_template' })
+      : html(400, ERR_HTML)
+  }
 
   if (!cid) {
     if (req.method === 'POST') return json(400, { error: 'cid required' })

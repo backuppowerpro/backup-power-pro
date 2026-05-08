@@ -23,9 +23,13 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { allowRate } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SR = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+// UUIDs only. Wrong shape returns 400 before any DB hit.
+const UUID_RE = /^[0-9a-f-]{36}$/i
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -73,12 +77,22 @@ function writePrefs(notes: string, prefs: Partial<Record<PrefKey, boolean>>): st
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
 
+  // Per-IP rate limit. Endpoint is publicly callable (no Supabase key
+  // required — has to work from email clients), so a leaked cid would
+  // otherwise let an attacker flip prefs unbounded. 30/min per IP is
+  // generous for legit clicks, tight enough that scripted abuse fails.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!allowRate(`email-prefs:${ip}`, 30)) {
+    return json(429, { error: 'rate_limited' })
+  }
+
   const sb = createClient(SUPABASE_URL, SR)
 
   if (req.method === 'GET') {
     const url = new URL(req.url)
     const cid = url.searchParams.get('cid') || ''
     if (!cid) return json(400, { error: 'cid required' })
+    if (!UUID_RE.test(cid)) return json(400, { error: 'invalid_cid' })
     const { data: c, error } = await sb.from('contacts')
       .select('id, name, email, notes')
       .eq('id', cid)
@@ -100,6 +114,7 @@ Deno.serve(async (req) => {
     let body: { cid?: string; preferences?: Partial<Record<PrefKey, boolean>>; optout_all_marketing?: boolean }
     try { body = await req.json() } catch { return json(400, { error: 'invalid_json' }) }
     if (!body.cid) return json(400, { error: 'cid required' })
+    if (!UUID_RE.test(body.cid)) return json(400, { error: 'invalid_cid' })
 
     const { data: c, error } = await sb.from('contacts')
       .select('id, notes')
