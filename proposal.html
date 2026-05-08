@@ -593,7 +593,14 @@ function calcTotal(amp) {
   const base = pr.total || pr.base || 0;
   const pomAdder = pomOn ? (P.pom_price || 447) : 0;
   const customAdder = Array.isArray(P.custom_items) ? P.custom_items.reduce((s, i, idx) => s + (customItemsOn[idx] !== false ? (i.price || 0) : 0), 0) : 0;
-  return base + pomAdder + customAdder;
+  // V3 percent discount: recompute against current amp's subtotal so toggling amps stays consistent.
+  if (P.creator_version === 'v3' && P._v3_discount_pct > 0) {
+    const sub = base + customAdder;
+    P.discount_amount = Math.round(sub * P._v3_discount_pct / 100);
+  }
+  // V3 totals must subtract the discount themselves (v2 bakes it into pr.total at create time).
+  const v3Discount = (P.creator_version === 'v3' && P.discount_amount > 0) ? P.discount_amount : 0;
+  return base + pomAdder + customAdder - v3Discount;
 }
 
 function fmt(n) { return '$' + Number(n).toLocaleString('en-US'); }
@@ -803,12 +810,57 @@ function closeCelebrationModal() {
 
 // ── RENDER PROPOSAL ──────────────────────────────────────────
 function renderProposal() {
+  // V3 NORMALIZATION — synthesize legacy pricing fields from the new schema.
+  // V3 saves a single consolidated total; the renderer expects pricing_30/50.
+  // Mirroring keeps the existing render path working.
+  if (P.creator_version === 'v3' && !P.pricing_30) {
+    const V3P = { base:{30:1197,50:1497}, perFt:{30:12,50:14},
+      cordOff:{30:129,50:198}, inletOff:{30:129,50:179}, permitOff:125 };
+    const lengthFt = Number(P.length_ft || P.run_ft || 5);
+    const extraFt  = Math.max(0, lengthFt - 5);
+    const buildPr = (amp) => {
+      const a = String(amp);
+      const longRun = extraFt * V3P.perFt[a];
+      const cordOff   = P.include_cord    === false ? V3P.cordOff[a]   : 0;
+      const inletOff  = P.include_inlet   === false ? V3P.inletOff[a]  : 0;
+      const permitOff = P.include_permit  === false ? V3P.permitOff    : 0;
+      const subtotal  = V3P.base[a] + longRun - cordOff - inletOff - permitOff;
+      return { base: subtotal, cord: 0, mainBreaker: 0, twinQuad: 0,
+               longRun: longRun, permitInspection: 0, total: subtotal };
+    };
+    P.pricing_30 = buildPr('30');
+    P.pricing_50 = buildPr('50');
+    // Mirror PoM offered → include_pom so the card renders only when offered.
+    P.include_pom    = !!P.pom_offered;
+    // Discount: percent → compute dollar against the consolidated subtotal at render time.
+    if (P.discount_type === 'percent' && Number(P.discount_value) > 0) {
+      const sub = P.pricing_30.total; // applied uniformly; switching amp recomputes via calcTotal
+      P._v3_discount_pct = Number(P.discount_value);
+      P.discount_amount  = Math.round(sub * P._v3_discount_pct / 100);
+    } else if (P.discount_type === 'dollar' && Number(P.discount_value) > 0) {
+      P.discount_amount = Number(P.discount_value);
+    }
+    // extra_line_items → custom_items mirror so existing renderCustomItems works.
+    if (Array.isArray(P.extra_line_items) && !Array.isArray(P.custom_items)) {
+      P.custom_items = P.extra_line_items.map(li => ({ title: li.name || '', price: Number(li.amount)||0 }));
+    }
+  }
+  const isV3 = P.creator_version === 'v3';
+
   const isNew = !!P.pricing_30 || !!P.pricing_50;
   const hasBothPricing = !!P.pricing_30 && !!P.pricing_50;
   chosenAmp = P.selected_amp || P.amp_type || '30';
   surgeOn = P.selected_surge || false;
   pomOn = P.selected_pom || false;
-  customItemsOn = Array.isArray(P.custom_items) ? P.custom_items.map(() => true) : [];
+  // V3 honors per-item `checked` from extra_line_items; v2 defaults all on.
+  customItemsOn = Array.isArray(P.custom_items)
+    ? P.custom_items.map((_, i) => {
+        if (P.creator_version === 'v3' && Array.isArray(P.extra_line_items) && P.extra_line_items[i]) {
+          return P.extra_line_items[i].checked !== false;
+        }
+        return true;
+      })
+    : [];
   const requireDeposit = P.require_deposit !== false;
 
   const firstName = (P.contact_name || '').trim().split(/\s+/)[0] || P.contact_name || 'Homeowner';
@@ -824,20 +876,38 @@ function renderProposal() {
   // What's included
   const pr = getPrice(chosenAmp);
   const _ai = chosenAmp === '50' ? '50' : '30';
-  const includes = [
-    { name: 'Generator inlet box', desc: 'Installed on your exterior wall, weather-rated' },
-    { name: 'Interlock kit', desc: 'Panel-matched and code-compliant — prevents dangerous back-feed' },
-    { name: 'Permit pulled & filed', desc: 'We handle all county paperwork — nothing for you to do' },
-    { name: 'Electrical inspection', desc: 'We book it for a specific day — you don\'t have to coordinate anything' },
+  // V3 toggle handling: omit items when toggled off + collect disclaimers.
+  const v3InletOff   = isV3 && P.include_inlet  === false;
+  const v3PermitOff  = isV3 && P.include_permit === false;
+  const v3CordOff    = (isV3 && P.include_cord  === false) || (!isV3 && P.cord_included === false);
+  const includes = [];
+  if (!v3InletOff)  includes.push({ name: 'Generator inlet box', desc: 'Installed on your exterior wall, weather-rated' });
+  includes.push({ name: 'Interlock kit', desc: 'Panel-matched and code-compliant — prevents dangerous back-feed' });
+  if (!v3PermitOff) {
+    includes.push(
+      { name: 'Permit pulled & filed', desc: 'We handle all county paperwork — nothing for you to do' },
+      { name: 'Electrical inspection', desc: 'We book it for a specific day — you don\'t have to coordinate anything' }
+    );
+  }
+  includes.push(
     { name: 'Site cleanup', desc: 'We leave your home exactly how we found it' },
-    { name: 'Customer walkthrough', desc: 'We show you exactly how to use your system before we leave' },
-  ];
-  if (P.cord_included !== false) {
+    { name: 'Customer walkthrough', desc: 'We show you exactly how to use your system before we leave' }
+  );
+  if (!v3CordOff) {
     includes.push(
       { name: 'Power transfer cord', desc: 'Connects your generator directly to the inlet box' },
       { name: 'Breaker & panel wiring', desc: 'All internal panel connections done to code — nothing left unfinished' }
     );
   }
+  // Build a disclaimer line for any toggled-off items (price reflects the change; not shown to client).
+  const v3Disclaimers = [];
+  if (v3CordOff)   v3Disclaimers.push('Customer providing their own power transfer cord');
+  if (v3InletOff)  v3Disclaimers.push('Customer supplying the generator inlet box');
+  if (v3PermitOff) v3Disclaimers.push('Customer handling the permit & inspection');
+  const disclaimerHtml = (isV3 && v3Disclaimers.length) ? `
+    <div class="reveal" style="margin:14px 18px 0;padding:10px 14px;background:#fff8e0;border-left:3px solid var(--gold);border-radius:6px;font-size:12px;color:var(--text2);font-style:italic">
+      <strong style="font-style:normal;color:var(--navy)">Note:</strong> ${v3Disclaimers.join('. ')}. Quote total reflects this scope.
+    </div>` : '';
 
 
   const scopeItems = includes.map(i => `
@@ -949,6 +1019,7 @@ function renderProposal() {
       <!-- Scope list -->
       <div class="scope-proof-body">
         <ul class="scope-list reveal">${scopeItems}</ul>
+        ${disclaimerHtml}
       </div>
 
       <!-- Price anchor (seamless, no divider line) -->
@@ -1261,7 +1332,12 @@ function renderPricing() {
         'Step-by-step walkthrough before we leave'
       ]
     );
-    if (longRun) rows += priceRowIncluded('Extended Wire Run', `${P.run_ft || 5}ft of wire run — distance already included in your quote`, null, null);
+    if (longRun) {
+      const lrDesc = (P.creator_version === 'v3')
+        ? 'Extra wire length included — already in your quote'
+        : `${P.run_ft || 5}ft of wire run — distance already included in your quote`;
+      rows += priceRowIncluded('Extended Wire Run', lrDesc, null, null);
+    }
     rows += priceRow(
       'Permit & County Inspection',
       null,
