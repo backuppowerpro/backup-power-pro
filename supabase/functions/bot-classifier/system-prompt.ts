@@ -246,8 +246,14 @@ State-specific (only emit when relevant to current state):
 
 AWAIT_240V / AWAIT_240V_RETRY / CLARIFY_240V:
 - "gen_240v", they confirmed 240v capability
-- "gen_120v", they confirmed 120v only
-- "gen_unsure", they don't know
+- "gen_120v", they confirmed 120v only.
+  v10.1.51 (Mike persona sim 2026-05-07): "regular plug" / "household
+  plug" / "household outlet" / "the standard plug" / "normal outlet" /
+  "just an extension cord plug" / "the normal type" all signal 120V
+  territory. Emit gen_120v on these. Distinguishes from gen_unsure
+  which should ONLY fire when customer says "I don't know" / "not sure"
+  WITHOUT describing the plug type.
+- "gen_unsure", they don't know AND haven't described the plug type
 
 AWAIT_OUTLET / AWAIT_OUTLET_PHOTO:
 - "outlet_30a_4prong", confirmed 30A 4-prong (NEMA L14-30R, 240V).

@@ -293,6 +293,15 @@ const STATES: Record<string, any> = {
       // not NEEDS_CALLBACK. Customer might just be bad at typing or photos;
       // give them the chance to complete the rest of the qualification.
       unclear: 'AWAIT_PANEL_PHOTO',
+      // v10.1.51 (real-LLM voice-judge round 2 Mike regression 2026-05-07):
+      // outlet_unknown at CLARIFY_240V was falling through to NEEDS_CALLBACK,
+      // which lost the graceful "if you upgrade to 240V we'd be happy to
+      // help" close. Customer who answers "regular plug, household type"
+      // is signaling 120V territory. Route to AWAIT_OUTLET_PHOTO so they
+      // can send a pic of what they have, OR if classifier improves and
+      // detects "household type" as 120V signal, gen_120v will fire
+      // first (which is already wired to DISQUALIFIED_120V above).
+      outlet_unknown: 'AWAIT_OUTLET_PHOTO',
     },
     onEnter: { check_generator_lookup: true },  // signal orchestrator to run generator-lookup.js if gen_brand_model is set
   },
@@ -1117,6 +1126,31 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
       fallback: state.fallback ? state.fallback(ctx) : '',
       endConversation: false,
       onEnter: { ownership_confirmed: true },
+    };
+  }
+
+  // v10.1.51 (real-LLM voice-judge round 2 2026-05-07): panel-location
+  // labels mid-flow at unrelated states. Customer at AWAIT_OUTLET (or
+  // AWAIT_240V etc) volunteers panel info ("panel is in the garage, 200A
+  // main"). Classifier correctly emits panel_garage_exterior /
+  // panel_outdoor / panel_basement. State machine has no panel_* trans
+  // at AWAIT_OUTLET / AWAIT_240V → falls through to NEEDS_CALLBACK,
+  // killing the conversation. Same anti-pattern as the owner bug.
+  // Fix: when panel_* fires at non-terminal non-panel-related states,
+  // capture the slot AND self-loop with brief ack + continue current
+  // state's question. The volunteered panel_location persists via
+  // applySlotUpdates so we don't re-ask later.
+  const panelOnlyStates = new Set([
+    'AWAIT_RUN', 'AWAIT_RUN_RETRY', 'AWAIT_PANEL_PHOTO',
+    'CONFIRM_MAIN_BREAKER', 'CONFIRM_PANEL_WALL_TYPE', 'AWAIT_INLET_LOCATION',
+  ]);
+  if (label && /^panel_/.test(label) && !state.terminal && !panelOnlyStates.has(currentState)) {
+    return {
+      next: currentState,
+      intent: `customer volunteered panel-location info ("${label}") while we were at ${currentState}; brief ack + continue with: ${state.intent}`,
+      fallback: state.fallback ? state.fallback(ctx) : '',
+      endConversation: false,
+      onEnter: { panel_location_volunteered: label.replace(/^panel_/, '') },
     };
   }
 
