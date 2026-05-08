@@ -2258,6 +2258,16 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
       destructive: true,
     });
     if (!ok) return;
+    // The proposals table has a self-referential FK (superseded_by) created by
+    // the auto-supersede trigger when a newer proposal lands for the same
+    // contact. Postgres rejects deletes that leave dangling references, so
+    // we clear the FK on any rows pointing at us BEFORE deleting. SET NULL
+    // matches the auto-supersede semantics — the old proposal is just no
+    // longer marked as superseded by anything.
+    await CRM.__db.from('proposals').update({ superseded_by: null }).eq('superseded_by', prop.id);
+    // Same treatment for invoices that point at this proposal: keep the
+    // invoice (it may have been sent / paid) but detach the link.
+    await CRM.__db.from('invoices').update({ proposal_id: null }).eq('proposal_id', prop.id);
     const { error } = await CRM.__db.from('proposals').delete().eq('id', prop.id);
     if (error) { window.showToast?.(`Delete failed: ${error.message}`); return; }
     const arr = CRM.proposals || [];
