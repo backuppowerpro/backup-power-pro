@@ -817,13 +817,13 @@ function closeCelebrationModal() {
 // Math contract: pricing.base IS the consolidated total. The renderer's
 // main "Installation" row computes `base - cord - permit - longRun - mb - tq`
 // to derive a clean "installation labor" subtotal. Cord/permit show as
-// separate line items at their list price ($129/$198 for cord, $125 for
+// separate line items at their list price ($129/$249 for cord, $125 for
 // permit). Toggling cord/inlet/permit OFF in the creator removes both the
 // line item AND its discount from the base, so total stays constant.
 function applyV3Normalization() {
   if (P.creator_version === 'v3' && !P.pricing_30) {
     const V3P = { base:{30:1197,50:1497}, perFt:{30:12,50:14},
-      cordOff:{30:129,50:198}, inletOff:{30:129,50:179}, permitOff:125 };
+      cordOff:{30:129,50:249}, inletOff:{30:129,50:179}, permitOff:125 };
     const lengthFt = Number(P.length_ft || P.run_ft || 5);
     const extraFt  = Math.max(0, lengthFt - 5);
     const includeCord   = P.include_cord   !== false;

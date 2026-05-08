@@ -1030,7 +1030,14 @@ function quickQuoteCompute({ amp, cordIncluded, includeSurge, includePom, includ
 const V3_PRICING = {
   base:      { 30: 1197, 50: 1497 }, // includes 5' run, cord, inlet, permit
   perFt:     { 30: 12,   50: 14   }, // per-foot adder beyond 5'
-  cordOff:   { 30: 129,  50: 198  }, // discount when cord toggled off
+  // Cord adders mirror the actual L14-30 vs CS6365/14-50 retail spread.
+  // 30A 25ft cord ~$100-150 retail → $129. 50A 25ft cord ~$200-280 retail
+  // → $249 (was $198, bumped 2026-05-08 — Key flagged it as too close to
+  // 30A given the underlying material differential). The base price ALSO
+  // moves with this — when cord is included, the synthesizer surfaces
+  // cord at this list price and backs it out of Installation, so the
+  // total stays at $1,497 for 50A all-included.
+  cordOff:   { 30: 129,  50: 249  }, // discount when cord toggled off
   inletOff:  { 30: 129,  50: 179  }, // discount when inlet toggled off
   permitOff: 125,                     // discount when permit toggled off
   pom:       447,                     // peace-of-mind add-on (not in total)
