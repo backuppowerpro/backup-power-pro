@@ -725,14 +725,21 @@ async function handleInbound(input: InboundInput): Promise<Response> {
         case 'NEEDS_CALLBACK':
           // v10.1.37, scope-mismatch (whole-home) gets its OWN reply
           // explaining BPP only does inlet boxes for portable generators.
-          // Was generic "Key will follow up" which left customers confused
-          // about why we couldn't quote them right now.
           if (newQd.scope_mismatch_ats) {
             terminalReply = `${namePrefix}we only do inlet box installs for portable generators (the kind you wheel out and plug in). Whole-home standby systems like Generac/Kohler with auto-transfer switches are a different scope, Key handles those personally so he'll reach out.`
+          } else if (newQd.priority === 'urgent' || classifier?.label === 'urgent_callback_demand') {
+            // v10.1.50 (real-LLM voice-judge 2026-05-07): label-aware
+            // terminal reply for urgent_callback_demand. Was using generic
+            // "Key will follow up" which read cold to a panicked customer.
+            // Now: acknowledge urgency briefly, set realistic permit
+            // expectation, reassure Key sees it immediately. Premium
+            // posture (no over-promise on speed).
+            terminalReply = `${namePrefix}understood, sending Key your details now so he can reach out as soon as he's free. Heads up: even rush installs need a permit (typically 1-2 weeks per jurisdiction), so he'll talk through realistic timing with you when he calls.`
+          } else if (classifier?.label === 'asking_for_human') {
+            // v10.1.50: explicit-request-for-human gets a tighter ack.
+            terminalReply = `${namePrefix}got it, having Key reach out directly. He'll text you shortly.`
           } else {
             // Vary by simple hash of contact_id for natural variation.
-            // Avoid em-dashes (Key's hard rule). Avoid double-Key when
-            // fname=Key (skipName above already handles).
             const greet = skipName ? 'Hey, ' : `Hey ${fname}, `
             const variants = [
               `${namePrefix}I'll have Key follow up with you on this one personally. He'll reach out shortly.`,
