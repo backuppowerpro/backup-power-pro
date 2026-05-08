@@ -63,14 +63,68 @@ interface SendInput {
   reply_to?: string
 }
 
-// Templates are bundled at deploy. In production point this at a Supabase
-// storage bucket OR bundle directly via _shared/templates/{name}.html.
+// Templates are bundled into _shared/email-templates/ at deploy time.
+// Supabase deploys those alongside the function. Read at startup, cache
+// in-process for the lifetime of the worker.
+//
+// Naming: the {template} input matches the filename without extension.
+// e.g. template="proposal" -> _shared/email-templates/proposal-email.html
+// (we add the "-email.html" suffix automatically; PDFs are not loaded here).
+const TEMPLATE_CACHE = new Map<string, string>()
+const TEMPLATE_DIR = new URL('../_shared/email-templates/', import.meta.url)
+
+const TEMPLATE_MAP: Record<string, string> = {
+  // Email name → filename
+  'welcome': 'welcome-email.html',
+  'proposal': 'proposal-email.html',
+  'proposal-30a': 'proposal-personalized-30a.html',
+  'proposal-50a': 'proposal-personalized-50a.html',
+  'quote-followup-48h': 'quote-followup-48h-email.html',
+  'install-reminder': 'install-reminder-email.html',
+  'install-arrival': 'install-day-arrival-email.html',
+  'completion': 'completion-email.html',
+  'invoice': 'invoice-email.html',
+  'review': 'review-email.html',
+  'pdf-download': 'pdf-download-email.html',
+  'permit-document': 'permit-document-email.html',
+  'permit-approved': 'permit-approved-email.html',
+  'storm-prep-reminder': 'storm-prep-reminder-email.html',
+  'anniversary': 'anniversary-email.html',
+  'referral-nudge': 'referral-nudge-email.html',
+}
+
 async function loadTemplate(name: string): Promise<string | null> {
-  // SCAFFOLD: replace with actual template loading.
-  // Option A: storage bucket fetch
-  // Option B: bundled-at-deploy file read (simpler, recommended)
-  // Option C: hardcoded dispatch (fast, but loses TWEAK-comment edits)
-  return null
+  if (TEMPLATE_CACHE.has(name)) return TEMPLATE_CACHE.get(name)!
+  const filename = TEMPLATE_MAP[name]
+  if (!filename) return null
+  try {
+    const path = new URL(filename, TEMPLATE_DIR)
+    const html = await Deno.readTextFile(path)
+    TEMPLATE_CACHE.set(name, html)
+    return html
+  } catch (e) {
+    console.warn(`[send-email] template load failed: ${name}`, e)
+    return null
+  }
+}
+
+// Plaintext fallback generator. Strips HTML for clients that ask for text/plain
+// (Gmail's mobile preview, accessibility tools). Best-effort, not pretty,
+// but better than no plaintext at all (deliverability score).
+function htmlToPlain(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<\/?(p|div|tr|td|h[1-6]|li|br)\b[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .trim()
 }
 
 function renderVars(html: string, vars: Record<string, string>): string {
@@ -133,6 +187,14 @@ Deno.serve(async (req) => {
     ...(body.variables || {}),
   }
   const html = renderVars(raw, vars)
+  const text = htmlToPlain(html)
+
+  // Dry-run mode for testing without firing real Resend send.
+  // Returns the rendered HTML + plaintext so we can validate vars
+  // without spending sends or queuing customer mail.
+  if ((body as any).dry_run === true) {
+    return json(200, { ok: true, dry_run: true, template: body.template, html_length: html.length, text_length: text.length, html_head: html.slice(0, 300), to: contact.email })
+  }
 
   // Send via Resend
   const resp = await fetch('https://api.resend.com/emails', {
@@ -147,6 +209,7 @@ Deno.serve(async (req) => {
       to: contact.email,
       subject: body.subject,
       html,
+      text,  // plaintext fallback for accessibility + deliverability
       attachments: body.attachments || undefined,
       tags: [
         { name: 'template', value: body.template },
