@@ -2610,15 +2610,14 @@ Deno.serve(async (req) => {
           console.warn('[ashley-route] inbound persist failed (non-fatal)', e)
         }
 
-        await fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
+        // v10.1.61: background dispatch. Bot-engine has a 3s text-burst
+        // debounce + ~3s LLM + 1-5.5s typing delay; awaiting can hit
+        // upstream webhook timeouts. Use EdgeRuntime.waitUntil so the
+        // bot-engine call survives after this function returns.
+        const dispatchPromise = fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${SUPABASE_SERVICE_KEY_LOCAL}`,
-            // v10.1.55 (2026-05-08 iMessage Tyler test diagnosis):
-            // Supabase gateway requires apikey on edge-to-edge calls
-            // even when Authorization is a valid service-role JWT.
-            // Without this header bot-engine returned 401 silently and
-            // Ashley never replied to inbound iMessages from Key.
             'apikey': SUPABASE_SERVICE_KEY_LOCAL,
             'Content-Type': 'application/json',
           },
@@ -2630,7 +2629,8 @@ Deno.serve(async (req) => {
             media_urls: mediaUrls,
             media_types: mediaTypes,
           }),
-        })
+        }).catch(e => console.error('[ashley-route] bot-engine dispatch failed', e))
+        try { (globalThis as any).EdgeRuntime?.waitUntil?.(dispatchPromise) } catch (_) { /* shim absent */ }
         return new Response(JSON.stringify({ ok: true, ashley: true }), { status: 200, headers: CORS })
       }
     }

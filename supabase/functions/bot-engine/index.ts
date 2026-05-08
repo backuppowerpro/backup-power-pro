@@ -85,18 +85,12 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
   const lateNight = bucket === 'late'
   const messageBody = renderGreeting(variant, firstName, { lateNight })
 
-  const sendResp = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'apikey': SUPABASE_SERVICE_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contactId: contact.id,
-      body: messageBody,
-    }),
-  })
+  // v10.1.61: human-typing delay before GREETING. Even the opener should
+  // feel like a person typed it, not a bot that fired the instant the form
+  // hit the server. Customer just got Quo's "thanks for filling out" auto-
+  // reply; a brief pause before Ashley's first message reads as "she saw
+  // the form, took a sec, and is replying."
+  const sendResp = await sendCustomerReply(contact.id, messageBody)
 
   if (!sendResp.ok) {
     const text = await sendResp.text()
@@ -120,6 +114,48 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
     bot_state: 'AWAIT_240V',
     bucket,
   }), { status: 200, headers: { 'content-type': 'application/json' } })
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+//  Human-typing delay — v10.1.61
+//  Makes Ashley feel like a real person typing, not an instant-fire bot.
+//  Length-dependent: longer replies take longer to "type" (per Key directive
+//  2026-05-08 "humans take time to type and respond"). Includes ±15% jitter
+//  so the cadence isn't metronomic across a full conversation.
+//
+//  Budget: cap at 5500ms so total flow (3s burst debounce + ~3s LLM + this)
+//  stays comfortably inside Twilio's 15s webhook window.
+//
+//  Tuned: 1.2s read+pause base + 35ms/char typing speed (~30 wpm sustained,
+//  realistic for casual SMS where you don't proofread).
+// ──────────────────────────────────────────────────────────────────────────
+function humanTypingDelayMs(textLength: number): number {
+  const base = 1200
+  const perChar = 35
+  const jitter = 0.85 + Math.random() * 0.3  // 0.85-1.15
+  const raw = (base + textLength * perChar) * jitter
+  return Math.max(800, Math.min(5500, Math.round(raw)))
+}
+
+async function sendCustomerReply(
+  contactId: string,
+  body: string,
+  opts: { skipDelay?: boolean } = {},
+): Promise<Response> {
+  if (!opts.skipDelay) {
+    const delay = humanTypingDelayMs(body.length)
+    console.log(`[bot-engine] human-typing delay ${delay}ms for ${body.length}-char reply`)
+    await new Promise(r => setTimeout(r, delay))
+  }
+  return await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ contactId, body }),
+  })
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -903,15 +939,8 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       let sentTerminal = false
       if (terminalReply) {
         try {
-          const sendResp = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-              'apikey': SUPABASE_SERVICE_KEY,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ contactId: contact.id, body: terminalReply }),
-          })
+          // v10.1.61: human-typing delay
+          const sendResp = await sendCustomerReply(contact.id, terminalReply)
           sentTerminal = sendResp.ok
           if (sendResp.ok) {
             await sb.from('contacts').update({
@@ -964,20 +993,9 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     }
 
-    // 13. send-sms
+    // 13. send-sms (v10.1.61: with human-typing delay)
     if (outboundText) {
-      const sendResp = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contactId: contact.id,
-          body: outboundText,
-        }),
-      })
+      const sendResp = await sendCustomerReply(contact.id, outboundText)
       if (!sendResp.ok) {
         const t = await sendResp.text()
         // v10.1.45 SEND-FAIL ROLLBACK. The state was already advanced

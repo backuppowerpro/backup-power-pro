@@ -181,10 +181,17 @@ Deno.serve(async (req) => {
         try {
           const SUPABASE_URL_LOCAL = Deno.env.get('SUPABASE_URL')!
           const SUPABASE_SERVICE_KEY_LOCAL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-          await fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
+          // v10.1.61: background dispatch. Bot-engine now has a 3s text-burst
+          // debounce + ~3s LLM + 1-5.5s human-typing delay built in. That
+          // can total 8-12s, which makes awaiting risky against Twilio's
+          // 15s webhook timeout. Decouple by returning TwiML immediately
+          // and using EdgeRuntime.waitUntil so the bot-engine call survives
+          // after this function returns its response.
+          const dispatchPromise = fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${SUPABASE_SERVICE_KEY_LOCAL}`,
+              'apikey': SUPABASE_SERVICE_KEY_LOCAL,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -198,7 +205,11 @@ Deno.serve(async (req) => {
                     params.get(`MediaContentType${i}`) || 'image/jpeg')
                 : undefined,
             }),
-          })
+          }).catch(e => console.error('[ashley-route] bot-engine dispatch failed', e))
+          // Keep the dispatch alive past response return.
+          try { (globalThis as any).EdgeRuntime?.waitUntil?.(dispatchPromise) } catch (_) { /* shim absent */ }
+          // recordProcessed marks the lock as replied so duplicate webhooks
+          // dedupe. Awaited for correctness; cheap call.
           await recordProcessed(messageSid, 'replied', botContact.id)
           return twiml()
         } catch (e) {
