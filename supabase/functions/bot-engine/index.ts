@@ -88,6 +88,7 @@ async function handleNewLead(input: NewLeadInput): Promise<Response> {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'apikey': SUPABASE_SERVICE_KEY,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -137,6 +138,9 @@ async function callInternal(path: string, body: unknown, timeoutMs: number = 120
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        // v10.1.48: send apikey too. Supabase gateway requires it on
+        // some edge-to-edge call paths even when Authorization is present.
+        'apikey': SUPABASE_SERVICE_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -758,6 +762,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'apikey': SUPABASE_SERVICE_KEY,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ contactId: contact.id, body: terminalReply }),
@@ -820,6 +825,7 @@ async function handleInbound(input: InboundInput): Promise<Response> {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'apikey': SUPABASE_SERVICE_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

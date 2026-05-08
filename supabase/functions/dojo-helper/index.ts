@@ -124,5 +124,88 @@ Deno.serve(async (req: Request) => {
     }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
   }
 
+  // v10.1.48 (2026-05-07): real-LLM Ashley dojo. Lets a runner simulate a
+  // customer end-to-end against bot-engine using REAL classifier + phraser
+  // LLM calls (not just orchestrator-agent prompt simulation). Hard-gated
+  // to +1800555 prefix, brain-token auth, runner stays in edge function so
+  // service-role JWT never leaves the server.
+  if (action === 'init_contact') {
+    const name = String(body?.name || 'Dojo Tester')
+    const initialState = String(body?.initial_state || 'AWAIT_240V')
+    const { data: existing } = await sb.from('contacts').select('id').eq('phone', phone).limit(1)
+    if (existing?.[0]?.id) {
+      return new Response(JSON.stringify({ error: 'contact exists, reset first' }), { status: 409, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    const { data: created, error } = await sb.from('contacts').insert({
+      phone, name, stage: 1, bot_state: initialState,
+      ai_enabled: true, do_not_contact: false, qualification_data: {},
+    }).select().single()
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    return new Response(JSON.stringify({ ok: true, contact: created }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+
+  if (action === 'simulate_inbound') {
+    const inboundBody = String(body?.body || '')
+    const mediaUrls: string[] | undefined = Array.isArray(body?.media_urls) ? body.media_urls : undefined
+    if (!inboundBody && (!mediaUrls || mediaUrls.length === 0)) {
+      return new Response(JSON.stringify({ error: 'body or media_urls required' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    const { data: contacts2 } = await sb.from('contacts').select('id').eq('phone', phone).limit(1)
+    const contactId = contacts2?.[0]?.id
+    if (!contactId) {
+      return new Response(JSON.stringify({ error: 'no contact for this phone, init_contact first' }), { status: 404, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    const messageSid = `dojo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    await sb.from('messages').insert({
+      contact_id: contactId,
+      direction: 'inbound',
+      body: inboundBody || (mediaUrls ? `[media:${mediaUrls[0]}]` : ''),
+      sender: 'lead',
+      twilio_sid: messageSid,
+      status: 'received',
+    })
+    const SUPABASE_URL_LOCAL = Deno.env.get('SUPABASE_URL') || ''
+    const SR_KEY_LOCAL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    let botResp: any = null
+    let botStatus = 0
+    try {
+      // Some Supabase deployments require BOTH apikey + Authorization for
+      // edge-to-edge calls. Send both with service-role JWT.
+      const r = await fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SR_KEY_LOCAL}`,
+          'apikey': SR_KEY_LOCAL,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          trigger: 'inbound_message',
+          contact_id: contactId,
+          message_sid: messageSid,
+          message_body: inboundBody,
+          media_urls: mediaUrls,
+        }),
+      })
+      botStatus = r.status
+      botResp = await r.json().catch(() => ({}))
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: 'bot-engine fetch failed', detail: String(e?.message || e) }), { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    const { data: latestOut } = await sb
+      .from('messages')
+      .select('id, direction, body, sender, created_at')
+      .eq('contact_id', contactId)
+      .eq('direction', 'outbound')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    return new Response(JSON.stringify({
+      ok: true, contact_id: contactId, message_sid: messageSid,
+      bot_status: botStatus, bot_response: botResp,
+      latest_outbound: latestOut?.[0] || null,
+    }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+
   return new Response(JSON.stringify({ error: 'unknown action' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })
 })
