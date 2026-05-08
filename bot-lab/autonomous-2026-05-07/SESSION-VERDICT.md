@@ -25,6 +25,27 @@
 | 5 | Voice-judge v45 corpus re-grade | SHIPPED, 3 fixes surfaced |
 | 6 | v46: em-dash+en-dash, Awesome any, slang regex, Canceler routing | SHIPPED v10.1.46 |
 | 7 | Build 2 jurisdictions.json playbook + comm-orchestrator integration | SHIPPED v10.1.47 |
+| 8 | Migration drift repair + comm-orchestrator-hourly cron actually scheduled | SHIPPED via direct-Postgres edge fn |
+| 9 | Real-LLM dojo (init_contact + simulate_inbound + apikey) | SHIPPED v10.1.48 |
+| 10 | Real-LLM voice-judge battery → 2 critical structural bugs found + fixed | SHIPPED v10.1.49 |
+
+## The biggest finding of this session
+
+The first real-LLM voice-judge battery (v10.1.48 dojo, hits actual Anthropic API via bot-engine) graded what production actually produces, not what the orchestrator-agent simulator approximated. Result: corpus average 6.22 not 8.72. The simulator was a polished mirage.
+
+Two critical state-machine bugs that simulator missed because it followed happy paths:
+
+1. **`owner` classifier mid-flow killed conversations.** Customer at AWAIT_PANEL_PHOTO who said "yes we own it" got bumped to NEEDS_CALLBACK because that state had no `owner` transition. Fixed via universal escape: `owner` from any non-terminal non-AWAIT_OWNERSHIP state self-loops with brief ack.
+
+2. **`NEEDS_CALLBACK` stuck-loop.** `handoff_fired_at` was only stamped AFTER handoff-notifier returned success. Notifier failures (OpenPhone hiccup, network) left the marker unset, and subsequent customer inbounds re-fired the same callback line verbatim 3-4x. Fixed: always stamp `handoff_fired_at` LOCALLY first, then call notifier best-effort. Conversation gating now hard-locked.
+
+3. (Lighter) phraser doesn't have label-aware ack templates for `customer_changed_mind` / `urgent_callback_demand` — they classify correctly but fall to generic NEEDS_CALLBACK copy. Recommended for next session.
+
+Verified end-to-end with real LLM after fixes:
+- T1: Sarah "240v champion 8500 50amp" → "Perfect. To put your quote together we'll need a picture of your main electrical panel and breakers. I know it's late, no rush, tomorrow works as well." (real Key voice, late-night softener present)
+- T2: "yes we own it" → state stays AWAIT_PANEL_PHOTO + bot re-asks panel pic (no more bump to NEEDS_CALLBACK)
+
+These two fixes alone should lift the real-LLM corpus average from 6.22 toward simulator's 8.72 without changing any voice prompts. Voice tuning hold; structural fixes first.
 - **READY for Tyler-style live test** by Key (the final smoke step). NOT YET flipping `ASHLEY_ALLOWED_PHONES = "*"`. Per-dim averages still want one more pass to fully clear 9.0 across all 7 (Closing Rituals dipped slightly on 6-sample re-grade, suggesting recap-pool bypass of regex). Tyler test is the right next step before ramp.
 
 ---
