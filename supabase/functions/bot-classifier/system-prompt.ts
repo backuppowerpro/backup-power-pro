@@ -143,7 +143,19 @@ Generic:
                              \`amended_slot\` to which slot they're rewinding:
                              one of "240v", "outlet", "ownership", "run",
                              "email", "address". The state machine rewinds.
-- "stop_variant", "stop", "unsubscribe", "leave me alone", "remove me"
+- "stop_variant", explicit opt-out only: "stop", "unsubscribe",
+  "leave me alone", "remove me", "stop texting me", "do not contact",
+  "take me off your list". v10.1.56 (Brian iMessage 2026-05-08):
+  do NOT classify "never mind" / "scratch that" / "changed my mind"
+  / "actually nope" as stop_variant — those are customer_changed_mind
+  (the customer doesn't want to PROCEED with the quote, but they're
+  not asking us to never contact them again). Stop_variant is for
+  TCPA opt-out language only and triggers DNC + permanent silence.
+  Use customer_changed_mind for casual cancellation; bot routes to
+  POSTPONED with "door's open whenever" reply, no DNC, no permanent
+  block. The distinguisher: stop_variant is hostile/legal-feeling
+  ("stop", "leave me alone"); customer_changed_mind is casual
+  ("never mind", "I'm good, thanks").
 - "not_my_lead", "wrong number", "who is this?" with hostility, "I didn't sign up"
 - "off_topic_question", STRICTLY: they asked about price ("how much",
                              "what's the cost", "discount"), schedule ("when",

@@ -62,7 +62,16 @@ Deno.serve(async (req: Request) => {
   const action: string = body?.action || ''
   const phone: string = String(body?.phone || '')
 
-  if (!phone.startsWith(TEST_PHONE_PREFIX)) {
+  // v10.1.54 (2026-05-08 iMessage Tyler-test prep): allow Key's own cell
+  // ONLY for the reset_bot_state action. Lets us reset Key's contact's
+  // bot_state cleanly between persona-test conversations without nuking
+  // his real contact data. Hard-gated to that one phone + that one
+  // action; other actions still require the +1800555 test range.
+  const KEY_CELL = '+19414417996'
+  const KEY_ALLOWED_ACTIONS = new Set(['reset_bot_state', 'messages', 'inspect_contact', 'simulate_inbound'])
+  const isKeyAllowedAction = phone === KEY_CELL && KEY_ALLOWED_ACTIONS.has(action)
+
+  if (!phone.startsWith(TEST_PHONE_PREFIX) && !isKeyAllowedAction) {
     return new Response(JSON.stringify({ error: 'phone outside test range' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })
   }
 
@@ -122,6 +131,41 @@ Deno.serve(async (req: Request) => {
       ok: true,
       deleted: { messages: messagesDel, queue: queueDel, consent: consentDel, sessions: sessionsDel, memory: memoryDel, contacts: contactsDel },
     }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+
+  // v10.1.54: inspect_contact — read the contact's bot-related fields
+  // for debugging routing issues (why didn't Ashley respond?).
+  if (action === 'inspect_contact') {
+    const { data: c } = await sb.from('contacts')
+      .select('id, name, phone, bot_state, bot_disabled, do_not_contact, ai_enabled, ai_paused_until, paused_at_state, qualification_data, last_bot_inbound_at, last_bot_outbound_at, stage, created_at')
+      .eq('phone', phone)
+      .maybeSingle()
+    return new Response(JSON.stringify({ ok: true, contact: c }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+
+  // v10.1.54 (2026-05-08): reset_bot_state — surgical reset of bot_state
+  // + qualification_data without deleting the contact. Used for the
+  // iMessage Tyler test on Key's phone so we can run multiple persona
+  // scenarios from the same number without losing his real contact data
+  // (name, email, address etc).
+  if (action === 'reset_bot_state') {
+    const initialState = String(body?.initial_state || 'AWAIT_240V')
+    const { data: contacts0 } = await sb.from('contacts').select('id').eq('phone', phone).limit(1)
+    const contactId0 = contacts0?.[0]?.id
+    if (!contactId0) {
+      return new Response(JSON.stringify({ error: 'contact not found for that phone' }), { status: 404, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    const { error: upErr } = await sb.from('contacts').update({
+      bot_state: initialState,
+      bot_disabled: false,
+      do_not_contact: false,  // v10.1.55: also clear DNC for re-test cycles
+      qualification_data: {},
+      paused_at_state: null,
+    }).eq('id', contactId0)
+    if (upErr) {
+      return new Response(JSON.stringify({ error: upErr.message }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    return new Response(JSON.stringify({ ok: true, contact_id: contactId0, reset_to_state: initialState }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
   }
 
   // v10.1.48 (2026-05-07): real-LLM Ashley dojo. Lets a runner simulate a

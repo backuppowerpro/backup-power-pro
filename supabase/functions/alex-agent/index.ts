@@ -2608,6 +2608,12 @@ Deno.serve(async (req) => {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${SUPABASE_SERVICE_KEY_LOCAL}`,
+            // v10.1.55 (2026-05-08 iMessage Tyler test diagnosis):
+            // Supabase gateway requires apikey on edge-to-edge calls
+            // even when Authorization is a valid service-role JWT.
+            // Without this header bot-engine returned 401 silently and
+            // Ashley never replied to inbound iMessages from Key.
+            'apikey': SUPABASE_SERVICE_KEY_LOCAL,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
