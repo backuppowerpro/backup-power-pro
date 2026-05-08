@@ -97,18 +97,24 @@ async function fetchAsBase64(url: string): Promise<{ b64: string; contentType: s
 }
 
 async function classify(input: PhotoClassifierInput) {
-  // Resolve URL
-  let imageUrl = input.photo_url || ''
-  if (!imageUrl && input.storage_path) {
-    const signed = await fetchSignedUrl(input.storage_path)
-    if (!signed) return null
-    imageUrl = signed
+  // v10.1.62: also accept inline base64 (for e2e testing without
+  // needing public URLs). When base64_data is set, skip URL resolution.
+  let img: { b64: string; contentType: string } | null = null
+  if ((input as any).base64_data && typeof (input as any).base64_data === 'string') {
+    img = {
+      b64: (input as any).base64_data,
+      contentType: (input as any).base64_content_type || 'image/jpeg',
+    }
+  } else {
+    let imageUrl = input.photo_url || ''
+    if (!imageUrl && input.storage_path) {
+      const signed = await fetchSignedUrl(input.storage_path)
+      if (!signed) return null
+      imageUrl = signed
+    }
+    if (!imageUrl) return null
+    img = await fetchAsBase64(imageUrl)
   }
-  if (!imageUrl) return null
-
-  // Anthropic supports image-by-URL on some endpoints, but base64 is the
-  // universally safe path. Fetch + base64 here.
-  const img = await fetchAsBase64(imageUrl)
   if (!img) return null
 
   const userContext =
@@ -179,7 +185,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'invalid_json' }), { status: 400 })
   }
 
-  if (!input?.expected_subject || (!input.photo_url && !input.storage_path)) {
+  if (!input?.expected_subject || (!input.photo_url && !input.storage_path && !(input as any).base64_data)) {
     return new Response(JSON.stringify({ error: 'missing_fields' }), { status: 400 })
   }
 

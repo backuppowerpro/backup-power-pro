@@ -79,6 +79,31 @@ Deno.serve(async (req) => {
   const conn = await pool.connect()
 
   try {
+    if (action === 'classify_photo') {
+      // Proxy to bot-photo-classifier with proper service-role auth.
+      // Used for e2e photo testing without needing public URLs.
+      const SR = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+      const url = `${SUPABASE_URL}/functions/v1/bot-photo-classifier`
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SR}`,
+          'apikey': SR,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          expected_subject: body.expected_subject || 'panel',
+          conversation_context: body.conversation_context || 'e2e test',
+          base64_data: body.base64_data,
+          base64_content_type: body.base64_content_type || 'image/jpeg',
+        }),
+      })
+      const txt = await r.text()
+      let parsed: any = null
+      try { parsed = JSON.parse(txt) } catch { parsed = { raw: txt } }
+      return json(r.status, { status: r.status, result: parsed })
+    }
+
     if (action === 'raw_contact_inspect') {
       const id = body?.contact_id
       if (!id) return json(400, { error: 'contact_id required' })
