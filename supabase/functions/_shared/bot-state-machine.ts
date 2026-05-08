@@ -1225,6 +1225,70 @@ function transition(currentState: string, label: string, ctx: any = {}): Transit
     };
   }
 
+  // v10.1.60: PARTIAL-ADDRESS GUARD. If classifier returned address_corrected
+  // but extracted_value is clearly incomplete (just "123 Main", no city/zip),
+  // re-prompt politely instead of stamping a half-address. Fires at any
+  // state that handles address.
+  const ADDR_STATES = new Set(['AWAIT_EMAIL', 'AWAIT_EMAIL_RETRY', 'AWAIT_ADDRESS_CONFIRM', 'RECAP']);
+  if (label === 'address_corrected' && ADDR_STATES.has(currentState)) {
+    const addrRaw = String(ctx.extracted_value || '').trim();
+    if (addrRaw) {
+      const hasNumber = /\b\d{1,6}\b/.test(addrRaw);
+      const hasStreetSuffix = /\b(rd|road|st|street|ave|avenue|blvd|boulevard|dr|drive|ln|lane|ct|court|way|pl|place|ter|terrace|hwy|highway|pkwy|parkway|cir|circle|loop|trail|trl)\b/i.test(addrRaw);
+      // Loose city/state/zip detector: zip OR a comma-separated city tail
+      const hasZipOrCity = /\b\d{5}(-\d{4})?\b/.test(addrRaw)
+        || /,\s*[A-Za-z][A-Za-z\s.]{2,30}/.test(addrRaw)
+        || /\b(SC|NC|GA|South Carolina|North Carolina|Georgia)\b/i.test(addrRaw);
+      const looksPartial = !hasNumber || !hasStreetSuffix || !hasZipOrCity;
+      if (looksPartial) {
+        return {
+          next: currentState,
+          intent: `customer gave a partial address ("${addrRaw.slice(0, 60)}"); politely ask for the full address including city and zip so the permit gets filed correctly. Do NOT thank them for it yet (it's incomplete). Do NOT advance state.`,
+          fallback: () => `Got the start of that, can you send the full address with city and zip too? Need that for the permit.`,
+          endConversation: false,
+          onEnter: { partial_address: addrRaw },
+        };
+      }
+    }
+  }
+
+  // v10.1.60: wrong-person-polite. Customer is not the lead but offers
+  // to pass it along ("this is his wife"). Soft-pause + ask the actual
+  // lead to text us, no DNC. Distinct from not_my_lead which is hostile.
+  if (label === 'wrong_person_polite' && !state.terminal) {
+    return {
+      next: 'POSTPONED',
+      intent: 'KEY-VOICE: customer kindly clarified they are not the lead (spouse/family member picked up the phone). Apologize briefly, ask the actual lead to text us back at their convenience. Do NOT keep qualifying. No pressure.',
+      fallback: () => `Got it, sorry about that. If the person who filled the form can shoot us a quick text when they get a sec, we'll pick it up from there.`,
+      endConversation: true,
+      onEnter: { wrong_person_polite: true, paused_at_state: currentState },
+    };
+  }
+
+  // v10.1.60: hostile profanity. Distinct from stop_variant (calm legal)
+  // and casual cursing. Aggressive opt-out energy → DNC + handoff alert.
+  if (label === 'hostile_profanity' && !state.terminal) {
+    return {
+      next: 'STOPPED',
+      intent: null,
+      fallback: null,
+      endConversation: true,
+      onEnter: { dnc: true, hostile: true, handoff: true, hostile_reason: 'profanity_aimed_at_bpp' },
+    };
+  }
+
+  // v10.1.60: audio MMS (voice memo). We don't transcribe. Politely
+  // ask for text. Self-loop until they reply with text.
+  if (label === 'audio_received' && !state.terminal) {
+    return {
+      next: currentState,
+      intent: `customer sent a voice memo / audio file. We don't transcribe audio yet. Politely ask them to text the answer instead. Then re-ask: ${state.intent}`,
+      fallback: `Hey, I can't open voice memos on my end yet, would you mind typing the answer? ${state.fallback ? state.fallback(ctx) : ''}`.trim(),
+      endConversation: false,
+      onEnter: { audio_attempted_at: currentState },
+    };
+  }
+
   // v10.1.46 (Canceler persona sim 2026-05-07): customer-changed-mind
   // escape from any non-terminal state. "Never mind" / "scratch that" /
   // "I changed my mind" mid-flow used to fall through to NEEDS_CALLBACK

@@ -355,14 +355,49 @@ Deno.serve(async (req) => {
     || ASHLEY_ALLOWED_PHONES.includes(normalizedPhone)
   if (ashleyEnabled) {
     try {
-      await supabase.from('contacts').update({ bot_state: 'GREETING' }).eq('id', contact.id)
+      // v10.1.60 DUPLICATE-LEAD HANDLING. If the contact already has a
+      // bot_state and it's NOT terminal, the customer is re-submitting
+      // mid-flow. Don't reset to GREETING (would re-greet them as if
+      // they're new). Instead: leave state alone, send a soft "got your
+      // resubmit" via existing thread, let qualification continue.
+      // Terminal states (STOPPED / NEEDS_CALLBACK / DISQUALIFIED_* /
+      // POSTPONED / COMPLETE): a fresh resubmit suggests they're
+      // re-engaging — re-open by setting bot_state to GREETING.
+      const TERMINAL_OR_PAUSED = new Set([
+        'STOPPED', 'POSTPONED', 'POSTPONED_RESUME', 'NEEDS_CALLBACK',
+        'COMPLETE', 'DISQUALIFIED_120V', 'DISQUALIFIED_OUT_OF_AREA',
+        'DISQUALIFIED_RENTER',
+      ])
+      const priorState = contact.bot_state || null
+      const isMidFlow = priorState && !TERMINAL_OR_PAUSED.has(priorState) && priorState !== 'GREETING'
+      const isResume = priorState && TERMINAL_OR_PAUSED.has(priorState)
       const SUPABASE_URL_LOCAL = Deno.env.get('SUPABASE_URL')!
       const SUPABASE_SERVICE_KEY_LOCAL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+      if (isMidFlow) {
+        // Mid-flow resubmit. Don't fire a new GREETING; just stamp a note
+        // so Key sees the customer pinged again, and let the existing
+        // thread continue.
+        console.log('[ashley-greeting] duplicate mid-flow submit; leaving bot_state', priorState)
+        await supabase.from('contacts').update({
+          notes: (contact.notes ? contact.notes + '\n' : '') + `__resubmit: ${nowIso} (was at ${priorState})`,
+        }).eq('id', contact.id)
+        return new Response(JSON.stringify({ success: true, contactId: contact.id, ashley: true, resubmit_inflight: true, prior_state: priorState }), {
+          status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Fresh lead OR resume from terminal: send GREETING (with re-engagement framing if resume).
+      await supabase.from('contacts').update({
+        bot_state: 'GREETING',
+        ...(isResume ? { qualification_data: { ...(contact.qualification_data || {}), resumed_from: priorState, resumed_at: nowIso } } : {}),
+      }).eq('id', contact.id)
       fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_SERVICE_KEY_LOCAL}`,
           'Content-Type': 'application/json',
+          'apikey': SUPABASE_SERVICE_KEY_LOCAL,
         },
         body: JSON.stringify({ trigger: 'new_lead', contact_id: contact.id }),
       }).catch(e => console.error('[ashley-greeting]', e))

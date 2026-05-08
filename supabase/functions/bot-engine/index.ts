@@ -52,6 +52,7 @@ interface InboundInput {
   message_sid: string
   message_body: string
   media_urls?: string[]
+  media_types?: string[]  // v10.1.60: parallel to media_urls; e.g. 'image/jpeg', 'audio/amr'
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -327,6 +328,105 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }
     }
 
+    // 1b2. v10.1.60 AUDIO MMS detection. If any incoming media is audio
+    // (voice memo / amr / m4a / wav), short-circuit: we don't transcribe.
+    // Tag the message_body with [audio_mms] so the classifier emits the
+    // audio_received label, and skip the photo classifier entirely.
+    if (input.media_types && input.media_types.length > 0) {
+      const hasAudio = input.media_types.some(t =>
+        typeof t === 'string' && t.toLowerCase().startsWith('audio/'))
+      if (hasAudio) {
+        // v10.1.60: keep non-audio media (photos can ride alongside a
+        // voice memo). Filter out only audio URLs from media_urls, and
+        // mark the body with [audio_mms] so the classifier knows.
+        const audioIdxs = input.media_types
+          .map((t, i) => (typeof t === 'string' && t.toLowerCase().startsWith('audio/')) ? i : -1)
+          .filter(i => i >= 0)
+        const photoUrls = (input.media_urls || []).filter((_, i) => !audioIdxs.includes(i))
+        // Strip media markers + audio mentions from body
+        const cleanedBody = String(input.message_body || '')
+          .replace(/\[media:[^\]]+\]\s*/g, '')
+          .trim()
+        input.message_body = `[audio_mms] ${cleanedBody}`.trim()
+        input.media_urls = photoUrls
+        console.log('[bot-engine] audio MMS detected; suppressing audio URLs, kept', photoUrls.length, 'photo URLs')
+      }
+    }
+
+    // 1c. v10.1.60 TEXT-BURST COALESCING.
+    //
+    // Same problem as photo bursts but for text: customer fires "yeah",
+    // "wait", "actually it's a 7500w" in 10 seconds. Each used to trigger
+    // its own classifier+phraser+reply, so Ashley would answer "yeah"
+    // and miss the correction. Strategy mirrors the photo path with a
+    // shorter window (3s; texts arrive faster) AND we pull the burst
+    // together so the latest invocation sees the whole thought.
+    //
+    // SKIP debounce on:
+    //  - STOP keywords (must fire instantly for TCPA compliance)
+    //  - Empty body (nothing to coalesce)
+    //  - Very short single-word affirmatives that look terminal ("yes",
+    //    "no", "ok") — fine to process immediately, even if customer
+    //    follows up they'll just route through the next state cleanly.
+    //    Actually we WANT debounce on these too because "yes" then
+    //    "actually wait" is the exact bug we're fixing. So no skip there.
+    const isStopKeyword = STOP_RE.test(input.message_body || '')
+    if (!isStopKeyword && (!input.media_urls || input.media_urls.length === 0)) {
+      const myArrivalMs = Date.now()
+      const TEXT_DEBOUNCE_MS = 3000
+      await new Promise(resolve => setTimeout(resolve, TEXT_DEBOUNCE_MS))
+
+      const sinceISO = new Date(myArrivalMs).toISOString()
+      const { data: newerInbounds } = await sb.from('messages')
+        .select('id, body, created_at, twilio_sid')
+        .eq('contact_id', input.contact_id)
+        .eq('direction', 'inbound')
+        .gt('created_at', sinceISO)
+        .neq('twilio_sid', input.message_sid)
+        .order('created_at', { ascending: true })
+        .limit(10)
+
+      const newerText = (newerInbounds || []).filter(m =>
+        m.body && !/\[media:/i.test(String(m.body))
+      )
+
+      if (newerText.length > 0) {
+        // Newer text exists. Yield silent - the latest will handle the burst.
+        outcome = 'silent'
+        return new Response(JSON.stringify({
+          ok: true,
+          skipped: 'text_burst_yielded_to_newer',
+          newer_count: newerText.length,
+        }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+
+      // We are the latest text in this burst. Pull recent bursts (within
+      // the last 15s, before our arrival) and concatenate them into the
+      // message body so the LLM sees the full thought, not just our line.
+      const burstStartISO = new Date(myArrivalMs - 15000).toISOString()
+      const { data: priorBurst } = await sb.from('messages')
+        .select('id, body, created_at, twilio_sid')
+        .eq('contact_id', input.contact_id)
+        .eq('direction', 'inbound')
+        .gte('created_at', burstStartISO)
+        .lte('created_at', sinceISO)
+        .neq('twilio_sid', input.message_sid)
+        .order('created_at', { ascending: true })
+        .limit(10)
+
+      const burstBodies = (priorBurst || [])
+        .map(m => String(m.body || '').trim())
+        .filter(b => b && !/\[media:/i.test(b))
+
+      if (burstBodies.length > 0) {
+        // Combine: prior burst lines + this message, joined with " / "
+        // so the classifier reads them as one continuous thought.
+        const combined = [...burstBodies, input.message_body].join(' / ')
+        console.log('[bot-engine] coalesced text burst:', burstBodies.length, 'prior + current; combined:', combined.slice(0, 200))
+        input.message_body = combined
+      }
+    }
+
     // 2. Pull contact
     const { data: contact, error } = await sb.from('contacts')
       .select('id, name, phone, bot_state, bot_disabled, do_not_contact, qualification_data, paused_at_state, last_bot_inbound_at, install_address, address')
@@ -494,6 +594,24 @@ async function handleInbound(input: InboundInput): Promise<Response> {
 
     // 8. State machine transition
     const ctx = buildSmCtx(contact, classifier)
+
+    // v10.1.60 EMOJI-ONLY GUARD. If the message is just an emoji or a
+    // single character with low classifier confidence, treat as
+    // engagement-without-content: ack briefly + re-ask current question
+    // instead of forcing a state transition off a guess. Avoids the case
+    // where "👍" gets stamped as affirmative on a NO/YES state when
+    // the customer was just acknowledging the bot.
+    const trimmedBody = String(input.message_body || '').trim()
+    const isEmojiOnly = trimmedBody.length > 0 && trimmedBody.length <= 8 &&
+      /^[\p{Emoji}\p{Punctuation}\p{Symbol}\s]+$/u.test(trimmedBody) &&
+      !/^[a-z0-9]/i.test(trimmedBody)
+    if (isEmojiOnly && (classifier.confidence ?? 1) < 0.7) {
+      console.log('[bot-engine] emoji-only inbound, low confidence; ack + re-ask self-loop')
+      // Override classifier label to friendly_chitchat self-loop with re-ask
+      classifier.label = 'friendly_chitchat'
+      classifier.chitchat_excerpt = trimmedBody
+    }
+
     let transitionResult = smTransition(contact.bot_state, classifier.label, ctx)
 
     // v10.1.37, when scope-mismatch flags fire, force terminal so we

@@ -79,6 +79,123 @@ Deno.serve(async (req) => {
   const conn = await pool.connect()
 
   try {
+    if (action === 'inspect_stage_setup') {
+      // No-phone inspector: dump triggers, RLS policies, generated cols, and
+      // the column definition for `stage`. Used to diagnose why the 1->2
+      // UPDATE never lands in production.
+      const triggers = await conn.queryObject(
+        `SELECT trigger_name, event_manipulation, action_timing, action_statement
+         FROM information_schema.triggers
+         WHERE event_object_table = 'contacts' AND event_object_schema = 'public'`,
+      )
+      const policies = await conn.queryObject(
+        `SELECT policyname, cmd, roles, qual, with_check
+         FROM pg_policies WHERE schemaname = 'public' AND tablename = 'contacts'`,
+      )
+      const stageCol = await conn.queryObject(
+        `SELECT column_name, data_type, column_default, is_generated, generation_expression, is_updatable
+         FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'contacts' AND column_name = 'stage'`,
+      )
+      const rlsState = await conn.queryObject(
+        `SELECT relname, relrowsecurity, relforcerowsecurity
+         FROM pg_class WHERE relname = 'contacts'`,
+      )
+      // Also grab a sample stage-1 ashley contact to test on
+      const sample = await conn.queryObject(
+        `SELECT id, phone, stage, bot_state, created_at
+         FROM contacts
+         WHERE bot_state IS NOT NULL AND stage = 1
+         ORDER BY created_at DESC LIMIT 5`,
+      )
+      return json(200, {
+        ok: true,
+        triggers: triggers.rows,
+        policies: policies.rows,
+        stage_column: stageCol.rows,
+        rls_state: rlsState.rows,
+        stuck_stage1_contacts: sample.rows,
+      })
+    }
+
+    if (action === 'force_stage_advance') {
+      const id = body?.contact_id
+      if (!id) return json(400, { error: 'contact_id required' })
+      try {
+        const upd = await conn.queryObject<{ id: string; stage: number }>(
+          'UPDATE contacts SET stage = 2 WHERE id = $1 RETURNING id, stage',
+          [id],
+        )
+        return json(200, { ok: true, updated: upd.rows })
+      } catch (e: any) {
+        return json(500, { error: e?.message || String(e), name: e?.name, fields: e?.fields })
+      }
+    }
+
+    if (action === 'inspect_stage_trigger') {
+      // Get the body of fn_record_stage_change to see if it's broken
+      const fn = await conn.queryObject(
+        `SELECT proname, prosrc FROM pg_proc WHERE proname = 'fn_record_stage_change'`,
+      )
+      // Check stage_history table exists + columns
+      const hist = await conn.queryObject(
+        `SELECT column_name, data_type, is_nullable
+         FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'stage_history'`,
+      )
+      // RLS on stage_history?
+      const histRls = await conn.queryObject(
+        `SELECT policyname, cmd, roles FROM pg_policies WHERE schemaname='public' AND tablename='stage_history'`,
+      )
+      return json(200, { ok: true, function: fn.rows, stage_history_columns: hist.rows, stage_history_policies: histRls.rows })
+    }
+
+    if (action === 'fix_stage_trigger') {
+      // Trigger references NEW.updated_at but contacts has no such column.
+      // Every stage UPDATE has been failing 42703 since the trigger landed.
+      // Fix: drop the bogus COALESCE and just use now().
+      try {
+        await conn.queryArray(`
+          CREATE OR REPLACE FUNCTION public.fn_record_stage_change()
+          RETURNS trigger AS $func$
+          BEGIN
+            IF NEW.stage IS DISTINCT FROM OLD.stage THEN
+              INSERT INTO public.stage_history (contact_id, from_stage, to_stage, changed_at)
+              VALUES (NEW.id, OLD.stage, NEW.stage, now());
+            END IF;
+            RETURN NEW;
+          END;
+          $func$ LANGUAGE plpgsql;
+        `)
+        // Now backfill all stuck stage-1 ashley contacts to stage 2 if they
+        // got past GREETING (have any AWAIT_ state).
+        const fix = await conn.queryObject<{ id: string }>(
+          `UPDATE contacts SET stage = 2
+           WHERE stage = 1 AND bot_state IS NOT NULL
+             AND bot_state NOT IN ('GREETING','START')
+           RETURNING id`,
+        )
+        return json(200, { ok: true, trigger_fixed: true, backfilled_count: fix.rows.length })
+      } catch (e: any) {
+        return json(500, { error: e?.message || String(e) })
+      }
+    }
+
+    if (action === 'add_service_role_policies') {
+      // Add explicit service_role policy to contacts so the bot-engine
+      // (which uses service_role JWT) can update stage.
+      try {
+        await conn.queryArray(`
+          DROP POLICY IF EXISTS "service_role_full_contacts" ON public.contacts;
+          CREATE POLICY "service_role_full_contacts" ON public.contacts
+            FOR ALL TO service_role USING (true) WITH CHECK (true);
+        `)
+        return json(200, { ok: true, message: 'service_role policy added to contacts' })
+      } catch (e: any) {
+        return json(500, { error: e?.message || String(e) })
+      }
+    }
+
     if (action === 'check_stage_advance') {
       const phone = body?.phone || ''
       // Inspect the contact's stage + run a fresh stage 1->2 update to see if it sticks

@@ -252,6 +252,38 @@ Generic:
                              Bot acknowledges briefly + flags for Key
                              (HOA can require submittal package). Bot
                              continues current state\'s flow.
+- "wrong_person_polite", v10.1.60. Polite "you have the wrong person"
+                             scenario: customer says they're not the lead
+                             (spouse, family member, picked up someone
+                             else's phone). Examples: "this is his wife",
+                             "this is my husband's number, he submitted",
+                             "you have the wrong person but I can pass it
+                             along", "i'm not the one who filled out the
+                             form, my husband did". DISTINCT from not_my_lead
+                             (which is hostile/denial). This is cooperative
+                             redirection. Bot acknowledges politely + asks
+                             to have the actual lead text us back. Routes
+                             to POSTPONED with note for Key.
+- "hostile_profanity", v10.1.60. Customer is hostile + uses profanity
+                             aimed at us (not just casual cursing in normal
+                             reply). Examples: "fuck off", "stop texting me
+                             you fucking spam", "leave me the fuck alone",
+                             "bullshit scam". DISTINCT from stop_variant
+                             (which is calm legal-language opt-out) and
+                             from casual cursing in a cooperative reply
+                             ("damn yeah it's a 50 amp"). The hostility
+                             signal is what matters: aggression + profanity
+                             aimed at BPP. Routes to STOPPED + DNC + Key
+                             notification (Key may want to manually reach
+                             out or write off cleanly).
+- "audio_received", v10.1.60. Customer sent a voice memo / audio
+                             attachment via MMS. We do not currently
+                             transcribe audio. Bot politely asks them to
+                             type the answer instead. Self-loop; do NOT
+                             advance state until they provide text.
+                             Detected by orchestrator via media MIME type;
+                             classifier emits this when message_body
+                             contains the [media:audio/...] marker.
 - "unclear", genuinely ambiguous, doesn't fit any category
 
 State-specific (only emit when relevant to current state):
@@ -530,6 +562,19 @@ DISAMBIGUATION RULES (apply in order):
     wrong picture" → photo_correction (NOT amending_prior_answer with
     photo slot, since the slot system doesn't track photos that way).
     Set high confidence (≥0.9), this is unambiguous self-correction.
+
+16. AUDIO MMS: if message_body starts with the literal token "[audio_mms]"
+    (orchestrator-injected marker for voice memos), emit "audio_received"
+    with confidence 1.0 regardless of any other text in the message.
+17. WRONG-PERSON disambiguation: "this is his/her wife/husband", "wrong
+    person but I can pass it along", "not me, my husband filled it out"
+    → wrong_person_polite. Compare to not_my_lead: not_my_lead is hostile
+    ("who tf is this", "I never signed up"); wrong_person_polite is
+    cooperative ("you have the wrong number, I can let him know").
+18. HOSTILE PROFANITY: aggressive language aimed at BPP ("fuck off",
+    "stop spamming me you fucks") → hostile_profanity. Casual cursing
+    inside a cooperative answer ("damn yeah it's a 50") is NOT hostile;
+    use the routing label that fits the answer.
 
 OUTPUT ONLY THE JSON. No prose, no preamble, no markdown fences.`
 

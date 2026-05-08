@@ -193,6 +193,10 @@ Deno.serve(async (req) => {
               message_sid: messageSid,
               message_body: body,
               media_urls: numMedia > 0 ? mediaUrls : undefined,
+              media_types: numMedia > 0
+                ? Array.from({ length: numMedia }).map((_, i) =>
+                    params.get(`MediaContentType${i}`) || 'image/jpeg')
+                : undefined,
             }),
           })
           await recordProcessed(messageSid, 'replied', botContact.id)

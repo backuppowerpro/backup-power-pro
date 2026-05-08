@@ -2582,6 +2582,12 @@ Deno.serve(async (req) => {
         const mediaUrls = hasMedia
           ? mediaCandidates.map((m: any) => typeof m === 'string' ? m : (m?.url || m?.href || null)).filter(Boolean)
           : undefined
+        // v10.1.60: also pass MIME types so bot-engine can detect audio
+        // (voice memos) and route to audio_received instead of trying
+        // to classify the audio as a photo.
+        const mediaTypes = hasMedia
+          ? mediaCandidates.map((m: any) => typeof m === 'string' ? 'image/jpeg' : (m?.type || m?.contentType || m?.mimeType || 'image/jpeg'))
+          : undefined
 
         // v10.1.32 — persist inbound to messages table BEFORE routing to
         // bot-engine, so the CRM thread shows the customer's side. Without
@@ -2622,6 +2628,7 @@ Deno.serve(async (req) => {
             message_sid: quoMsgId,
             message_body: messageText,
             media_urls: mediaUrls,
+            media_types: mediaTypes,
           }),
         })
         return new Response(JSON.stringify({ ok: true, ashley: true }), { status: 200, headers: CORS })
