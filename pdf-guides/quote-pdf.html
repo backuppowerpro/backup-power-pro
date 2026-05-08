@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>BPP — Generator Hookup Quote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0b1f3b;
+    --navy-mid: #2c3e60;
+    --gold: #ffba00;
+    --gold-soft: #fff4d0;
+    --paper: #fbfaf6;
+    --paper-deep: #f4f1e6;
+    --rule: #d9d4c5;
+    --muted: #5a6478;
+    --ink: #0b1f3b;
+    --ok: #1f7a3a;
+  }
+
+  @page {
+    size: Letter portrait;
+    margin: 0.5in;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ddd;
+    color: var(--ink);
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.5;
+  }
+
+  .page {
+    background: var(--paper);
+    width: 8.5in;
+    height: 11in;
+    padding: 0.5in;
+    margin: 24px auto;
+    position: relative;
+    page-break-after: always;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  @media print {
+    html, body { background: var(--paper); }
+    .page {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      box-shadow: none;
+    }
+  }
+
+  .gold-rule {
+    height: 3px;
+    background: var(--gold);
+    width: 100%;
+    margin-bottom: 14pt;
+  }
+
+  /* ── Top header bar ── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 10pt;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 16pt;
+  }
+  .wordmark {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 14pt;
+    letter-spacing: 0.18em;
+    color: var(--navy);
+    margin: 0;
+  }
+  .wordmark .dot {
+    display: inline-block;
+    width: 5pt;
+    height: 5pt;
+    background: var(--gold);
+    margin: 0 4pt;
+    transform: translateY(-2pt) rotate(45deg);
+  }
+  .header .meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8.5pt;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .header .meta b { color: var(--navy); font-weight: 600; }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9pt;
+    font-weight: 500;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    margin-bottom: 6pt;
+  }
+
+  h1 {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 30pt;
+    line-height: 1.05;
+    color: var(--navy);
+    margin: 0 0 12pt;
+    letter-spacing: -0.02em;
+  }
+  h1 .dot { color: var(--gold); }
+
+  /* ── Customer / installer info ── */
+  .info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32pt;
+    margin-bottom: 10pt;
+  }
+  .info .col h3 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8pt;
+    font-weight: 600;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin: 0 0 6pt;
+    padding-bottom: 4pt;
+    border-bottom: 1px solid var(--rule);
+  }
+  .info .col .name {
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    font-size: 13pt;
+    color: var(--navy);
+    margin: 0 0 4pt;
+  }
+  .info .col .line {
+    font-size: 10pt;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .info .col .line.mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9.5pt;
+  }
+
+  /* ── Photo placeholder ── */
+  .photo {
+    width: 100%;
+    height: 200px;
+    background:
+      repeating-linear-gradient(
+        135deg,
+        #ece7d3 0 12px,
+        #e3decb 12px 24px
+      );
+    border: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4pt;
+  }
+  .photo .ph-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9pt;
+    color: var(--navy);
+    background: var(--paper);
+    padding: 6px 10px;
+    border: 1px solid var(--navy);
+  }
+  .caption {
+    font-family: "Inter", sans-serif;
+    font-style: italic;
+    font-size: 9.5pt;
+    color: var(--muted);
+    margin: 0 0 8pt;
+  }
+
+  /* ── Section heads ── */
+  h2 {
+    font-family: "Outfit", sans-serif;
+    font-weight: 700;
+    font-size: 16pt;
+    color: var(--navy);
+    margin: 4pt 0 8pt;
+    letter-spacing: -0.01em;
+  }
+  h2 .dot { color: var(--gold); }
+
+  /* ── Scope table ── */
+  .scope-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10pt;
+    font-size: 10pt;
+  }
+  .scope-table thead th {
+    background: var(--navy);
+    color: var(--paper);
+    text-align: left;
+    padding: 8pt 10pt;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .scope-table tbody td {
+    padding: 7pt 10pt;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .scope-table tbody tr:nth-child(even) td {
+    background: rgba(11,31,59,0.025);
+  }
+  .scope-table .item {
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .scope-table .desc { color: var(--ink); }
+  .scope-table .desc .mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9pt;
+    color: var(--navy);
+  }
+  .scope-table .status {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9pt;
+    color: var(--ok);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .scope-table .status::before { content: "✓ "; }
+
+  /* ── Investment box ── */
+  .investment {
+    background: var(--gold);
+    color: var(--navy);
+    padding: 16pt 20pt;
+    text-align: center;
+    margin-top: auto;
+    border-radius: 2px;
+  }
+  .investment .label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--navy);
+    opacity: 0.7;
+    margin: 0 0 4pt;
+  }
+  .investment .total {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 28pt;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .investment .total .currency {
+    font-size: 18pt;
+    vertical-align: top;
+    margin-right: 2pt;
+    font-weight: 600;
+  }
+  .investment .sub {
+    font-family: "Inter", sans-serif;
+    font-style: italic;
+    font-size: 12pt;
+    color: var(--navy);
+    margin: 6pt 0 0;
+  }
+
+  /* ── Page 2: included list ── */
+  .included {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12pt 24pt;
+    margin-bottom: 18pt;
+  }
+  .included .item {
+    display: grid;
+    grid-template-columns: 22pt 1fr;
+    align-items: start;
+    padding: 4pt 0;
+  }
+  .included .check {
+    width: 14pt;
+    height: 14pt;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Inter", sans-serif;
+    font-weight: 700;
+    font-size: 10pt;
+    margin-top: 2pt;
+  }
+  .included .text {
+    font-size: 10pt;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .included .text b {
+    color: var(--navy);
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 1pt;
+  }
+
+  /* ── Schedule timeline ── */
+  .timeline {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    margin-bottom: 18pt;
+    position: relative;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    top: 14pt;
+    left: 16%;
+    right: 16%;
+    height: 2px;
+    background: var(--gold);
+    z-index: 0;
+  }
+  .timeline .step {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    padding: 0 6pt;
+  }
+  .timeline .num {
+    width: 28pt;
+    height: 28pt;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--gold);
+    font-family: "Outfit", sans-serif;
+    font-weight: 700;
+    font-size: 14pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8pt;
+    border: 2px solid var(--gold);
+  }
+  .timeline .step h4 {
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    font-size: 11pt;
+    color: var(--navy);
+    margin: 0 0 2pt;
+  }
+  .timeline .step p {
+    font-size: 9.5pt;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* ── Signature blocks ── */
+  .signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24pt;
+    margin-bottom: 14pt;
+  }
+  .sig-block .scribble {
+    height: 38pt;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    font-family: "Caveat", cursive;
+    font-size: 24pt;
+    color: var(--navy);
+    line-height: 1;
+    padding-bottom: 2pt;
+  }
+  .sig-block .rule {
+    border-top: 1pt solid var(--navy);
+    margin-bottom: 4pt;
+  }
+  .sig-block .label-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8pt;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .sig-block .printed {
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    font-size: 11pt;
+    color: var(--navy);
+    margin: 4pt 0 0;
+  }
+
+  .legal {
+    font-size: 9pt;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0 0 14pt;
+    padding: 10pt 12pt;
+    background: var(--paper-deep);
+    border-left: 2pt solid var(--gold);
+  }
+  .legal b { color: var(--navy); }
+
+  /* ── Bottom stamp ── */
+  .stamp {
+    margin-top: auto;
+    background: var(--navy);
+    color: var(--paper);
+    padding: 7pt 14pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8pt;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .stamp b { color: var(--gold); font-weight: 500; margin-right: 4pt; }
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- PAGE 1                                                        -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="page" data-screen-label="01 Quote front">
+  <div class="gold-rule"></div>
+
+  <div class="header">
+    <h2 class="wordmark">BACKUP<span class="dot"></span>POWER<span class="dot"></span>PRO</h2>
+    <!-- TWEAK[per-customer]: quote # + issue date -->
+    <div class="meta">
+      <b>QUOTE</b> #BPP-2026-0142<br />
+      <b>ISSUED</b> 04 · 18 · 2026
+    </div>
+  </div>
+
+  <div class="eyebrow">PROPOSAL</div>
+  <h1>Generator Hookup Quote<span class="dot">.</span></h1>
+
+  <!-- TWEAK[per-customer]: customer name, address, email -->
+  <div class="info">
+    <div class="col">
+      <h3>Prepared for</h3>
+      <p class="name">Sarah Thomas</p>
+      <p class="line">412 Oakmont Drive</p>
+      <p class="line">Greenville, SC 29609</p>
+      <p class="line mono"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1f4c7e6d7e77314b7770727e6c5f78727e7673317c7072">[email&#160;protected]</a></p>
+    </div>
+    <div class="col">
+      <h3>Prepared by</h3>
+      <p class="name">Key Goodson</p>
+      <p class="line">Backup Power Pro · SC Licensed Electrician</p>
+      <p class="line mono">(864) 863-7800</p>
+      <p class="line mono"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f398968ab3919290988683839c84968183819cdd909c9e">[email&#160;protected]</a></p>
+    </div>
+  </div>
+
+  <!-- TWEAK[per-customer]: replace src with site-visit panel photo
+       suggested file: assets/customers/thomas-panel.jpg -->
+  <div class="photo">
+    <div class="ph-label">[ photo: customer's main panel — site visit ]</div>
+  </div>
+  <p class="caption">Square D Homeline · main panel · garage exterior wall.</p>
+
+  <h2>Scope of Work<span class="dot">.</span></h2>
+
+  <table class="scope-table">
+    <thead>
+      <tr>
+        <th style="width:30%;">Item</th>
+        <th>Description</th>
+        <th style="width:18%;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="item">30A inlet box</td>
+        <td class="desc"><span class="mono">Reliance Controls 30410B</span>, exterior-mounted, sealed</td>
+        <td class="status">Included</td>
+      </tr>
+      <tr>
+        <td class="item">10ft 30A cord</td>
+        <td class="desc"><span class="mono">L14-30</span> generator-end-to-house cord</td>
+        <td class="status">Included</td>
+      </tr>
+      <tr>
+        <td class="item">Manual interlock kit</td>
+        <td class="desc">Panel-specific, code-compliant</td>
+        <td class="status">Included</td>
+      </tr>
+      <tr>
+        <td class="item">Permit + inspection</td>
+        <td class="desc">Greenville County, BPP files closeout</td>
+        <td class="status">Included</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TWEAK[per-customer]: total price — flat-rate per quote -->
+  <div class="investment">
+    <p class="label">Total investment</p>
+    <p class="total"><span class="currency">$</span>1,247</p>
+    <p class="sub">Flat-rate, no hidden fees.</p>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- PAGE 2                                                        -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="page" data-screen-label="02 Quote terms">
+  <div class="gold-rule"></div>
+
+  <div class="header">
+    <h2 class="wordmark">BACKUP<span class="dot"></span>POWER<span class="dot"></span>PRO</h2>
+    <!-- TWEAK[per-customer]: keep quote # in sync with page 1 -->
+    <div class="meta">
+      <b>QUOTE</b> #BPP-2026-0142 · continued<br />
+      <b>PAGE</b> 02 / 02
+    </div>
+  </div>
+
+  <h2>What's included<span class="dot">.</span></h2>
+
+  <div class="included">
+    <div class="item">
+      <div class="check">✓</div>
+      <p class="text"><b>Workmanship warranty</b>2-year coverage on everything BPP installs.</p>
+    </div>
+    <div class="item">
+      <div class="check">✓</div>
+      <p class="text"><b>Manufacturer warranty</b>Full pass-through on the inlet hardware.</p>
+    </div>
+    <div class="item">
+      <div class="check">✓</div>
+      <p class="text"><b>One day on site</b>Full system test before I leave.</p>
+    </div>
+    <div class="item">
+      <div class="check">✓</div>
+      <p class="text"><b>Permit closeout</b>Filed with the county in your name.</p>
+    </div>
+  </div>
+
+  <h2>Schedule<span class="dot">.</span></h2>
+
+  <div class="timeline">
+    <div class="step">
+      <div class="num">1</div>
+      <h4>Sign</h4>
+      <p>Sign &amp; return this quote.</p>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <h4>Scheduled</h4>
+      <p>Install slot booked within a week.</p>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <h4>Installed</h4>
+      <p>One visit, tested, done.</p>
+    </div>
+  </div>
+
+  <h2>Acceptance<span class="dot">.</span></h2>
+
+  <div class="signatures">
+    <div class="sig-block">
+      <div class="scribble">&nbsp;</div>
+      <div class="rule"></div>
+      <div class="label-row">
+        <span>Customer signature</span>
+        <span>Date</span>
+      </div>
+      <!-- TWEAK[per-customer]: printed customer name -->
+      <p class="printed">Sarah Thomas</p>
+    </div>
+    <div class="sig-block">
+      <!-- TWEAK[per-customer]: replace with image src="assets/key-signature.png" -->
+      <div class="scribble">Key Goodson</div>
+      <div class="rule"></div>
+      <div class="label-row">
+        <span>Backup Power Pro</span>
+        <!-- TWEAK[per-customer]: signing date -->
+        <span>04 · 18 · 2026</span>
+      </div>
+      <p class="printed">Key Goodson</p>
+    </div>
+  </div>
+
+  <p class="legal">
+    <b>By signing,</b> customer authorizes Backup Power Pro to perform the scope of work above at the install address. Quote valid 30 days from date issued.
+  </p>
+
+  <div class="stamp">
+    <span><b>QUOTE</b>#BPP-2026-0142</span>
+    <!-- TWEAK[per-customer]: install city -->
+    <span><b>INSTALL</b>GREENVILLE, SC</span>
+    <span><b>EDITION</b>2026.04</span>
+  </div>
+</section>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+</html>
