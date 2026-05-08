@@ -2435,6 +2435,28 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
         window.showToast?.(`Send failed: ${error?.message || data?.error || 'unknown'}`);
         return;
       }
+      // Promote draft → sent status. Pulled from linkKind: token in URL
+      // matches the row's token, so we can flip the right one server-side.
+      // Only promote if currently in a draft-equivalent state — never
+      // downgrade approved/paid/etc.
+      try {
+        const tokenMatch = linkUrl.match(/[?&]token=([0-9a-f-]{8,})/i);
+        const token = tokenMatch?.[1];
+        if (token && CRM.__db) {
+          if (linkKind === 'prop') {
+            await CRM.__db.from('proposals')
+              .update({ status: 'Sent', copied_at: new Date().toISOString() })
+              .eq('token', token)
+              .in('status', ['Created', 'Draft', 'draft']);
+          } else if (linkKind === 'inv') {
+            await CRM.__db.from('invoices')
+              .update({ status: 'unpaid', sent_at: new Date().toISOString() })
+              .eq('token', token)
+              .in('status', ['draft', 'Draft']);
+          }
+          window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        }
+      } catch (_) { /* status flip best-effort; the SMS already sent */ }
       window.showToast?.(`SMS sent to ${firstName}`);
     } finally {
       // Release the lock after 2s so a second click within that window
@@ -3587,34 +3609,24 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
       if (isEdit) {
         ({ data, error } = await CRM.__db.from('proposals').update(payload).eq('id', ep.id).select().single());
       } else {
-        ({ data, error } = await CRM.__db.from('proposals').insert([{ ...payload, status: 'Sent' }]).select().single());
+        // Initial status 'Created' (renders as Draft pill via mapProposal). The
+        // Send button on the FinanceRow is the trigger for SMS dispatch — Create
+        // just saves the document, leaving Key in control of cadence.
+        ({ data, error } = await CRM.__db.from('proposals').insert([{ ...payload, status: 'Created' }]).select().single());
       }
       if (error || !data) {
-        window.showToast?.(`${isEdit ? 'Update' : 'Insert'} failed: ${error?.message || 'unknown'}`);
+        window.showToast?.(`${isEdit ? 'Update' : 'Create'} failed: ${error?.message || 'unknown'}`);
         setBusy(false);
         return;
       }
-      // Bump contact stage NEW → QUOTED on first send.
+      // Bump contact stage NEW → QUOTED on first proposal create.
       if (!isEdit && contact.stage === 'new') {
         const numQuoted = CRM.STAGE_STR_TO_NUM?.quoted ?? 2;
         contact.stage = 'quoted';
         window.dispatchEvent(new CustomEvent('crm-data-changed'));
         CRM.__db.from('contacts').update({ stage: numQuoted }).eq('id', contact.id).then(() => {}, () => {});
       }
-      // Send SMS only on create — edits don't auto-resend so Key controls the cadence.
-      if (!isEdit) {
-        const url = `https://backuppowerpro.com/proposal.html?token=${data.token}`;
-        const minute = Math.floor(Date.now() / 60000);
-        const idempotencyKey = `v3-newprop-${contact.id}-${amp}-${lengthFt}-${minute}`;
-        const body = `Hey ${firstName}, here's your install quote from Backup Power Pro: ${url}`;
-        const { error: smsErr } = await CRM.__invokeFn('send-sms', {
-          body: { contactId: contact.id, body, idempotencyKey },
-        });
-        if (smsErr) window.showToast?.(`Saved but send failed: ${smsErr.message}`);
-        else        window.showToast?.(`Proposal sent to ${firstName}`);
-      } else {
-        window.showToast?.('Proposal updated');
-      }
+      window.showToast?.(isEdit ? 'Proposal updated' : 'Proposal created');
       onClose();
     } catch (e) {
       window.showToast?.(`Failed: ${e.message || e}`);
@@ -3881,10 +3893,10 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
             boxShadow: busy || (!isEdit && contact.do_not_contact) ? 'none' : '0 1px 2px rgba(255,186,0,0.3)',
           }}
         >
-          {busy ? (isEdit ? 'Saving…' : 'Sending…') : (isEdit ? 'Save changes' : 'Send to customer')}
+          {busy ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save changes' : 'Create proposal')}
           {!busy && !(!isEdit && contact.do_not_contact) && (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+              <polyline points="20 6 9 17 4 12"/>
             </svg>
           )}
         </button>
@@ -4052,26 +4064,17 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
       if (isEdit) {
         ({ data, error } = await CRM.__db.from('invoices').update(payload).eq('id', ei.id).select().single());
       } else {
-        ({ data, error } = await CRM.__db.from('invoices').insert([{ ...payload, status: 'unpaid' }]).select().single());
+        // Initial status 'draft' so the invoice doesn't surface as a live
+        // bill before Key actually sends it. The Send button on the
+        // FinanceRow flips status='unpaid' and dispatches SMS.
+        ({ data, error } = await CRM.__db.from('invoices').insert([{ ...payload, status: 'draft' }]).select().single());
       }
       if (error || !data) {
-        window.showToast?.(`${isEdit ? 'Update' : 'Insert'} failed: ${error?.message || 'unknown'}`);
+        window.showToast?.(`${isEdit ? 'Update' : 'Create'} failed: ${error?.message || 'unknown'}`);
         setBusy(false);
         return;
       }
-      if (!isEdit) {
-        const url = `https://backuppowerpro.com/invoice.html?token=${data.token}`;
-        const minute = Math.floor(Date.now() / 60000);
-        const idempotencyKey = `v3-newinv-${contact.id}-${total}-${minute}`;
-        const body = `Hey ${firstName}, here's your invoice from Backup Power Pro: ${url}`;
-        const { error: smsErr } = await CRM.__invokeFn('send-sms', {
-          body: { contactId: contact.id, body, idempotencyKey },
-        });
-        if (smsErr) window.showToast?.(`Saved but send failed: ${smsErr.message}`);
-        else        window.showToast?.(`Invoice sent to ${firstName}`);
-      } else {
-        window.showToast?.('Invoice updated');
-      }
+      window.showToast?.(isEdit ? 'Invoice updated' : 'Invoice created');
       onClose();
     } catch (e) {
       window.showToast?.(`Failed: ${e.message || e}`);
@@ -4248,10 +4251,10 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
           boxShadow: busy || (!isEdit && contact.do_not_contact) || total <= 0 ? 'none' : '0 1px 2px rgba(255,186,0,0.3)',
         }}
       >
-        {busy ? (isEdit ? 'Saving…' : 'Sending…') : (isEdit ? 'Save changes' : 'Send to customer')}
+        {busy ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save changes' : 'Create invoice')}
         {!busy && !(!isEdit && contact.do_not_contact) && total > 0 && (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+            <polyline points="20 6 9 17 4 12"/>
           </svg>
         )}
       </button>
