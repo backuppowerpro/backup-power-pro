@@ -808,28 +808,57 @@ function closeCelebrationModal() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── RENDER PROPOSAL ──────────────────────────────────────────
-function renderProposal() {
-  // V3 NORMALIZATION — synthesize legacy pricing fields from the new schema.
-  // V3 saves a single consolidated total; the renderer expects pricing_30/50.
-  // Mirroring keeps the existing render path working.
+// V3 NORMALIZATION — runs from BOTH renderProposal and renderApprovedView.
+// V3 saves a single consolidated total; the legacy renderer expects pricing
+// objects with broken-out base / cord / permit / longRun. We synthesize them
+// from the consolidated total so the customer sees an itemized breakdown
+// that still sums to the agreed-upon number.
+//
+// Math contract: pricing.base IS the consolidated total. The renderer's
+// main "Installation" row computes `base - cord - permit - longRun - mb - tq`
+// to derive a clean "installation labor" subtotal. Cord/permit show as
+// separate line items at their list price ($129/$198 for cord, $125 for
+// permit). Toggling cord/inlet/permit OFF in the creator removes both the
+// line item AND its discount from the base, so total stays constant.
+function applyV3Normalization() {
   if (P.creator_version === 'v3' && !P.pricing_30) {
     const V3P = { base:{30:1197,50:1497}, perFt:{30:12,50:14},
       cordOff:{30:129,50:198}, inletOff:{30:129,50:179}, permitOff:125 };
     const lengthFt = Number(P.length_ft || P.run_ft || 5);
     const extraFt  = Math.max(0, lengthFt - 5);
+    const includeCord   = P.include_cord   !== false;
+    const includeInlet  = P.include_inlet  !== false;
+    const includePermit = P.include_permit !== false;
     const buildPr = (amp) => {
       const a = String(amp);
       const longRun = extraFt * V3P.perFt[a];
-      const cordOff   = P.include_cord    === false ? V3P.cordOff[a]   : 0;
-      const inletOff  = P.include_inlet   === false ? V3P.inletOff[a]  : 0;
-      const permitOff = P.include_permit  === false ? V3P.permitOff    : 0;
-      const subtotal  = V3P.base[a] + longRun - cordOff - inletOff - permitOff;
-      return { base: subtotal, cord: 0, mainBreaker: 0, twinQuad: 0,
-               longRun: longRun, permitInspection: 0, total: subtotal };
+      const cordOffDisc   = includeCord   ? 0 : V3P.cordOff[a];
+      const inletOffDisc  = includeInlet  ? 0 : V3P.inletOff[a];
+      const permitOffDisc = includePermit ? 0 : V3P.permitOff;
+      const subtotal = V3P.base[a] + longRun - cordOffDisc - inletOffDisc - permitOffDisc;
+      // Surface cord + permit at list price WHEN included so they appear
+      // as itemized line items. The main "Installation" row's math
+      // (base - cord - permit) backs them out, leaving the labor remainder.
+      // Toggle-off paths set 0 + skip the row entirely.
+      return {
+        base: subtotal,
+        cord: includeCord ? V3P.cordOff[a] : 0,
+        mainBreaker: 0, twinQuad: 0,
+        longRun: longRun,
+        permitInspection: includePermit ? V3P.permitOff : 0,
+        total: subtotal,
+      };
     };
     P.pricing_30 = buildPr('30');
     P.pricing_50 = buildPr('50');
+    return true;
+  }
+  return false;
+}
+
+// ── RENDER PROPOSAL ──────────────────────────────────────────
+function renderProposal() {
+  if (applyV3Normalization()) {
     // Mirror PoM offered → include_pom so the card renders only when offered.
     P.include_pom    = !!P.pom_offered;
     // Discount: percent → compute dollar against the consolidated subtotal at render time.
@@ -1675,6 +1704,10 @@ async function approveProposal() {
 
 // ── APPROVED STATE ───────────────────────────────────────────
 function renderApproved() {
+  // Synthesize pricing_30/50 for v3 proposals so the itemized breakdown
+  // (Installation / Permit & inspection / Power transfer cord) renders
+  // correctly on the approved page too, not just pre-approval.
+  applyV3Normalization();
   window.scrollTo(0, 0);
   renderPropertyBanner && setTimeout(renderPropertyBanner, 100);
   const requireDeposit = P.require_deposit !== false;
@@ -1687,10 +1720,15 @@ function renderApproved() {
   const pr = getPrice(P.selected_amp || P.amp_type || '30');
   let pricingRowsHtml = '';
   if (P.pricing_30 || P.pricing_50) {
-    const base = pr.base || 0; const longRun = pr.longRun || 0; const mb = pr.mainBreaker || 0; const tq = pr.twinQuad || 0; const cord = pr.cord || 0; const permit = pr.permitInspection || 125;
+    // For v3 the synthesizer sets permitInspection=0 when permit is toggled
+    // off in the creator (don't fall back to 125 in that case). The legacy
+    // path defaults to 125 since v2 always includes permit.
+    const isV3Approved = P.creator_version === 'v3';
+    const base = pr.base || 0; const longRun = pr.longRun || 0; const mb = pr.mainBreaker || 0; const tq = pr.twinQuad || 0; const cord = pr.cord || 0;
+    const permit = isV3Approved ? (pr.permitInspection || 0) : (pr.permitInspection || 125);
     pricingRowsHtml += `<tr><td class="price-item-name">Installation</td><td>${fmt(Math.max(0, base - longRun - mb - tq - cord - permit))}</td></tr>`;
     if (longRun) pricingRowsHtml += `<tr><td class="price-item-name">Extended wire run</td><td><span style="color:var(--green);font-size:12px;font-weight:700">✓ Included</span></td></tr>`;
-    pricingRowsHtml += `<tr><td class="price-item-name">Permit & inspection</td><td>${fmt(permit)}</td></tr>`;
+    if (permit) pricingRowsHtml += `<tr><td class="price-item-name">Permit & inspection</td><td>${fmt(permit)}</td></tr>`;
     if (cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(cord)}</td></tr>`;
     if (mb) pricingRowsHtml += `<tr><td class="price-item-name">Main breaker replacement</td><td>${fmt(mb)}</td></tr>`;
     if (tq) pricingRowsHtml += `<tr><td class="price-item-name">Panel space optimization</td><td>${fmt(tq)}</td></tr>`;
@@ -1857,10 +1895,12 @@ async function downloadPDF() {
   const pr = getPrice(P.selected_amp || P.amp_type || '30');
   let pricingRows = '';
   if (P.pricing_30 || P.pricing_50) {
-    const base = pr.base || 0; const longRun = pr.longRun || 0; const mb = pr.mainBreaker || 0; const tq = pr.twinQuad || 0; const cord = pr.cord || 0; const permit = pr.permitInspection || 125;
+    const isV3Approved = P.creator_version === 'v3';
+    const base = pr.base || 0; const longRun = pr.longRun || 0; const mb = pr.mainBreaker || 0; const tq = pr.twinQuad || 0; const cord = pr.cord || 0;
+    const permit = isV3Approved ? (pr.permitInspection || 0) : (pr.permitInspection || 125);
     pricingRows += `<tr><td style="padding:6px 0">Installation</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(Math.max(0, base - longRun - mb - tq - cord - permit))}</td></tr>`;
     if (longRun) pricingRows += `<tr><td style="padding:6px 0">Extended wire run</td><td style="padding:6px 0;text-align:right;font-weight:600;color:#059669">✓ Included</td></tr>`;
-    pricingRows += `<tr><td style="padding:6px 0">Permit & inspection</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(permit)}</td></tr>`;
+    if (permit) pricingRows += `<tr><td style="padding:6px 0">Permit & inspection</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(permit)}</td></tr>`;
     if (cord) pricingRows += `<tr><td style="padding:6px 0">Power transfer cord</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(cord)}</td></tr>`;
     if (mb) pricingRows += `<tr><td style="padding:6px 0">Main breaker replacement</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(mb)}</td></tr>`;
     if (tq) pricingRows += `<tr><td style="padding:6px 0">Panel space optimization</td><td style="padding:6px 0;text-align:right;font-weight:600">${fmt(tq)}</td></tr>`;
