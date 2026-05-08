@@ -1726,12 +1726,52 @@ function renderApproved() {
     const isV3Approved = P.creator_version === 'v3';
     const base = pr.base || 0; const longRun = pr.longRun || 0; const mb = pr.mainBreaker || 0; const tq = pr.twinQuad || 0; const cord = pr.cord || 0;
     const permit = isV3Approved ? (pr.permitInspection || 0) : (pr.permitInspection || 125);
-    pricingRowsHtml += `<tr><td class="price-item-name">Installation</td><td>${fmt(Math.max(0, base - longRun - mb - tq - cord - permit))}</td></tr>`;
-    if (longRun) pricingRowsHtml += `<tr><td class="price-item-name">Extended wire run</td><td><span style="color:var(--green);font-size:12px;font-weight:700">✓ Included</span></td></tr>`;
-    if (permit) pricingRowsHtml += `<tr><td class="price-item-name">Permit & inspection</td><td>${fmt(permit)}</td></tr>`;
-    if (cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(cord)}</td></tr>`;
-    if (mb) pricingRowsHtml += `<tr><td class="price-item-name">Main breaker replacement</td><td>${fmt(mb)}</td></tr>`;
-    if (tq) pricingRowsHtml += `<tr><td class="price-item-name">Panel space optimization</td><td>${fmt(tq)}</td></tr>`;
+    // chosenAmp is set inside renderProposal but may be null when the page
+    // loads directly into renderApproved — pull from the approved proposal's
+    // own selected_amp / amp_type fields.
+    const _piA = (P.selected_amp || P.amp_type) === '50' ? '50' : '30';
+    // Use the same rich priceRow format as the pre-approval view —
+    // thumbnails + scope bullets, not a plain table. Customer sees the
+    // exact item-by-item detail they signed for, not a generic
+    // "Installation" line.
+    pricingRowsHtml += priceRow(
+      `${_piA} Amp Generator Home Connection Installation`,
+      null,
+      fmt(Math.max(0, base - longRun - mb - tq - cord - permit)),
+      `/assets/product-images/inlet-${_piA}amp.jpg`,
+      [
+        `${_piA}A weather-rated inlet box, exterior wall mount`,
+        'Interlock kit, panel-matched, prevents back-feed to the grid',
+        'Breaker wiring & panel work',
+        'Site cleanup, we leave it the way we found it',
+        'Step-by-step walkthrough before we leave',
+      ]
+    );
+    if (longRun) pricingRowsHtml += priceRowIncluded('Extended Wire Run', 'Extra wire length included, already in your quote', null, null);
+    if (permit) pricingRowsHtml += priceRow(
+      'Permit & County Inspection',
+      null,
+      fmt(permit),
+      '/assets/product-images/permit-inspection.jpg',
+      [
+        'Permit application filed with your county on your behalf',
+        'Inspection scheduled and coordinated by us',
+        'Certificate of completion, nothing for you to do',
+      ]
+    );
+    if (cord) pricingRowsHtml += priceRow(
+      `${_piA}A Power Transfer Cord`,
+      null,
+      fmt(cord),
+      `/assets/product-images/cord-${_piA}amp.jpg`,
+      [
+        `Matches your generator's ${_piA}-amp output`,
+        'Plugs directly into your new inlet box',
+        'Heavy-duty, weather-resistant',
+      ]
+    );
+    if (mb) pricingRowsHtml += priceRow('Main Breaker Replacement', 'Upgraded to current code requirements', fmt(mb));
+    if (tq) pricingRowsHtml += priceRow('Panel Space Optimization', 'Twin/quad breaker swap to free up slots', fmt(tq));
   } else {
     pricingRowsHtml += `<tr><td class="price-item-name">Base installation</td><td>${fmt(pr.base || P.price_base || 0)}</td></tr>`;
     if (P.include_cord) pricingRowsHtml += `<tr><td class="price-item-name">Power transfer cord</td><td>${fmt(P.price_cord || 0)}</td></tr>`;
