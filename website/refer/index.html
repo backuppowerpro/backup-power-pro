@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>You were referred here · Backup Power Pro</title>
+<meta name="description" content="Your neighbor knows we did them right. Generator hookup, one day, permit closed-out — flat $1,247. Plus a $100 thank-you to whoever sent you." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0b1f3b;
+    --navy-mid: #2c3e60;
+    --gold: #ffba00;
+    --gold-deep: #d99e00;
+    --gold-soft: #fff4d0;
+    --paper: #fbfaf6;
+    --paper-deep: #f4f1e6;
+    --rule: #d9d4c5;
+    --muted: #5a6478;
+    --ink: #0b1f3b;
+
+    --s-1: 8px;
+    --s-2: 16px;
+    --s-3: 24px;
+    --s-4: 40px;
+    --s-5: 64px;
+    --s-6: 96px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: var(--navy); }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 var(--s-3);
+  }
+
+  /* ────────── Nav ────────── */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(251,250,246,0.92);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px var(--s-3);
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .wordmark {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.18em;
+    color: var(--navy);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .wordmark .dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    background: var(--gold);
+    margin: 0 4px;
+    transform: translateY(-2px) rotate(45deg);
+  }
+
+  /* ────────── Buttons ────────── */
+  .btn {
+    display: inline-block;
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 12px 18px;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    line-height: 1;
+  }
+  .btn-gold {
+    background: var(--gold);
+    color: var(--navy);
+    box-shadow: 0 1px 0 var(--gold-deep);
+  }
+  .btn-gold:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 18px rgba(255,186,0,0.35);
+  }
+  .btn-lg {
+    font-size: 16px;
+    padding: 18px 28px;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--gold);
+    border-color: rgba(255,186,0,0.4);
+  }
+  .btn-ghost:hover {
+    color: var(--gold);
+    background: rgba(255,186,0,0.08);
+  }
+
+  /* ────────── Hero ────────── */
+  .hero {
+    padding: var(--s-5) 0 var(--s-5);
+    position: relative;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gold-deep);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin: 0 0 var(--s-2);
+  }
+  .hero h1 {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: clamp(40px, 7vw, 72px);
+    line-height: 1.02;
+    color: var(--navy);
+    margin: 0 0 var(--s-3);
+    letter-spacing: -0.025em;
+    max-width: 14ch;
+    text-wrap: balance;
+  }
+  .hero h1 .gold { color: var(--gold-deep); }
+  .hero .sub {
+    font-size: clamp(17px, 2vw, 20px);
+    line-height: 1.55;
+    color: var(--ink);
+    max-width: 600px;
+    margin: 0 0 var(--s-4);
+  }
+  .hero .cta-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-2);
+  }
+  .hero .cta-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  /* ────────── Section heads ────────── */
+  .section-head {
+    font-family: "Outfit", sans-serif;
+    font-weight: 700;
+    font-size: clamp(24px, 3.4vw, 34px);
+    color: var(--navy);
+    margin: 0 0 var(--s-4);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  .section-head .gold { color: var(--gold-deep); }
+  .kicker {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gold-deep);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin: 0 0 var(--s-1);
+  }
+
+  /* ────────── How it works ────────── */
+  .how {
+    padding: var(--s-5) 0;
+    background: var(--paper-deep);
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .how-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-3);
+  }
+  .step-card {
+    background: var(--paper);
+    padding: var(--s-3);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(11,31,59,0.04);
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .step-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(11,31,59,0.08);
+  }
+  .step-card .num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold-deep);
+    letter-spacing: 0.18em;
+    margin: 0 0 var(--s-1);
+  }
+  .step-card h3 {
+    font-family: "Outfit", sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--navy);
+    margin: 0 0 var(--s-1);
+    line-height: 1.2;
+  }
+  .step-card p {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* ────────── Testimonial ────────── */
+  .testimonial {
+    padding: var(--s-5) 0;
+  }
+  .quote-card {
+    border-left: 3px solid var(--gold);
+    padding: var(--s-3) 0 var(--s-3) var(--s-3);
+    position: relative;
+    max-width: 760px;
+  }
+  .quote-card::before {
+    content: "\201C";
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: 96px;
+    line-height: 0.6;
+    color: var(--gold);
+    position: absolute;
+    top: 12px;
+    left: var(--s-3);
+    opacity: 0.18;
+  }
+  .quote-card p {
+    font-family: "Inter", sans-serif;
+    font-style: italic;
+    font-size: clamp(20px, 2.4vw, 26px);
+    line-height: 1.45;
+    color: var(--navy);
+    margin: 0 0 var(--s-2);
+    text-wrap: pretty;
+    position: relative;
+    z-index: 1;
+  }
+  .quote-card .attrib {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  /* ────────── What you get ────────── */
+  .get {
+    padding: var(--s-5) 0;
+    background: var(--paper-deep);
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .get-card {
+    background: var(--paper);
+    padding: var(--s-4);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(11,31,59,0.04);
+    max-width: 760px;
+  }
+  .get-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--s-2);
+  }
+  .get-list li {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    align-items: start;
+    gap: 12px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .get-list .check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    margin-top: 2px;
+  }
+  .get-list b {
+    color: var(--navy);
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+  }
+
+  /* ────────── Photo strip ────────── */
+  .gallery {
+    padding: var(--s-5) 0;
+  }
+  .photo-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-2);
+  }
+  .photo-tile {
+    aspect-ratio: 4 / 3;
+    background:
+      repeating-linear-gradient(
+        135deg,
+        #ece7d3 0 12px,
+        #e3decb 12px 24px
+      );
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-tile .tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--navy);
+    background: var(--paper);
+    border: 1px solid var(--navy);
+    padding: 4px 8px;
+    border-radius: 2px;
+    line-height: 1.3;
+    max-width: 90%;
+  }
+
+  /* ────────── Final CTA ────────── */
+  .final-cta {
+    background: var(--navy);
+    color: var(--paper);
+    padding: var(--s-5) 0 var(--s-5);
+    position: relative;
+    text-align: center;
+  }
+  .final-cta::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .final-cta h2 {
+    font-family: "Outfit", sans-serif;
+    font-weight: 800;
+    font-size: clamp(28px, 4.5vw, 48px);
+    line-height: 1.05;
+    color: var(--paper);
+    margin: 0 0 var(--s-3);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .final-cta h2 .gold { color: var(--gold); }
+  .final-cta .alt {
+    font-size: 14px;
+    color: rgba(251,250,246,0.7);
+    margin: var(--s-2) 0 0;
+  }
+  .final-cta .alt a {
+    color: var(--gold);
+    font-family: "JetBrains Mono", monospace;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .final-cta .alt a:hover { text-decoration: underline; }
+
+  /* ────────── Footer ────────── */
+  .footer {
+    background: var(--navy);
+    color: rgba(251,250,246,0.6);
+    padding: var(--s-4) 0 var(--s-4);
+    border-top: 1px solid rgba(255,186,0,0.1);
+  }
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-3);
+    align-items: start;
+  }
+  .footer .wordmark { color: var(--paper); }
+  .footer .wordmark .dot { background: var(--gold); }
+  .footer .meta {
+    font-size: 12px;
+    line-height: 1.6;
+    color: rgba(251,250,246,0.6);
+  }
+  .footer .meta b { color: var(--paper); font-weight: 500; }
+  .footer .meta .mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .footer-links {
+    display: flex;
+    gap: var(--s-3);
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .footer-links a {
+    color: rgba(251,250,246,0.6);
+    text-decoration: none;
+  }
+  .footer-links a:hover { color: var(--gold); }
+
+  /* ────────── Responsive ────────── */
+  @media (min-width: 720px) {
+    .container { padding: 0 var(--s-4); }
+    .nav-inner { padding: 16px var(--s-4); }
+    .hero { padding: var(--s-6) 0; }
+    .how-grid { grid-template-columns: repeat(3, 1fr); }
+    .photo-row { grid-template-columns: repeat(3, 1fr); }
+    .footer-inner {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
+  }
+  @media (min-width: 960px) {
+    .hero .cta-row {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--s-3);
+    }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ NAV ════════════════════ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="wordmark" href="https://backuppowerpro.com">BACKUP<span class="dot"></span>POWER<span class="dot"></span>PRO</a>
+    <a class="btn btn-gold" href="https://backuppowerpro.com/quote">Get a Quote</a>
+  </div>
+</nav>
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow">You were referred here</p>
+    <h1>Your neighbor knows we did them <span class="gold">right.</span></h1>
+    <p class="sub">
+      They sent you here because something at their place worked. We'll do the same for you &mdash; generator hookup, one day, permit closed-out, <!-- TWEAK[pricing]: flat-rate --><b>$1,247 flat-rate</b>. Plus a <b>$100 thank-you</b> to whoever sent you.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-gold btn-lg" href="https://backuppowerpro.com/quote">Get a Quote in 30 Seconds &rarr;</a>
+      <p class="cta-sub">No call. No salesman. Text-back with your number same day.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════ HOW IT WORKS ════════════════════ -->
+<section class="how">
+  <div class="container">
+    <p class="kicker">How it works</p>
+    <h2 class="section-head">Three steps. Both of you win<span class="gold">.</span></h2>
+    <div class="how-grid">
+      <article class="step-card">
+        <p class="num">01</p>
+        <h3>Tell us who sent you</h3>
+        <p>Just say their name when you fill out the form. They get $100 the day you sign your proposal.</p>
+      </article>
+      <article class="step-card">
+        <p class="num">02</p>
+        <h3>Get your quote by text</h3>
+        <p>Same flow as everyone else. Ashley grabs the details, Key sends a quote that day.</p>
+      </article>
+      <article class="step-card">
+        <p class="num">03</p>
+        <h3>Both of you win</h3>
+        <p>You get a clean install. They get a thank-you. We get a happy referral.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ TESTIMONIAL ════════════════════ -->
+<section class="testimonial">
+  <div class="container">
+    <!-- TWEAK[testimonial]: rotate based on customer location / season -->
+    <figure class="quote-card">
+      <p>Key installed mine after a storm last year. When my neighbor's power went out for 3 days, I gave him this URL and Key showed up the next week.</p>
+      <figcaption class="attrib">&mdash; Sarah T., Greenville (SC)</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ════════════════════ WHAT YOU GET ════════════════════ -->
+<section class="get">
+  <div class="container">
+    <p class="kicker">What you get</p>
+    <h2 class="section-head">Everything you need. Nothing you don't<span class="gold">.</span></h2>
+    <div class="get-card">
+      <ul class="get-list">
+        <li>
+          <span class="check">&#10003;</span>
+          <span><b>30A inlet box</b> mounted on your exterior wall</span>
+        </li>
+        <li>
+          <span class="check">&#10003;</span>
+          <span><b>10ft generator cord</b> included</span>
+        </li>
+        <li>
+          <span class="check">&#10003;</span>
+          <span><b>Manual interlock kit</b> installed inside your panel</span>
+        </li>
+        <li>
+          <span class="check">&#10003;</span>
+          <span><b>Permit + inspection</b> with your county &mdash; fully closed-out</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ PHOTO STRIP ════════════════════ -->
+<section class="gallery">
+  <div class="container">
+    <p class="kicker">Recent installs</p>
+    <h2 class="section-head">Real Upstate homes<span class="gold">.</span></h2>
+    <!-- TWEAK[photos]: replace each .photo-tile with real install photos
+         suggested files: assets/installs/01-greenville.jpg etc. -->
+    <div class="photo-row">
+      <figure class="photo-tile" role="img" aria-label="Inlet install on a brick exterior, Greenville SC">
+        <span class="tag">[ install: brick exterior &middot; Greenville ]</span>
+      </figure>
+      <figure class="photo-tile" role="img" aria-label="Inlet install on vinyl siding next to electric meter, Spartanburg SC">
+        <span class="tag">[ install: vinyl siding &middot; Spartanburg ]</span>
+      </figure>
+      <figure class="photo-tile" role="img" aria-label="Generator inlet next to garage panel, Pickens SC">
+        <span class="tag">[ install: garage panel &middot; Pickens ]</span>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ FINAL CTA ════════════════════ -->
+<section class="final-cta">
+  <div class="container">
+    <h2>Ready to be the next <span class="gold">referral?</span></h2>
+    <a class="btn btn-gold btn-lg" href="https://backuppowerpro.com/quote">Get Your Quote</a>
+    <p class="alt">Or call Key direct: <a href="tel:+18648637800">(864)&nbsp;863-7800</a></p>
+  </div>
+</section>
+
+<!-- ════════════════════ FOOTER ════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div>
+        <a class="wordmark" href="https://backuppowerpro.com">BACKUP<span class="dot"></span>POWER<span class="dot"></span>PRO</a>
+        <p class="meta">
+          <b>Backup Power Pro</b><br />
+          <!-- TWEAK[business]: confirm address + license # before publish -->
+          221 W Stone Ave, Greenville, SC 29609<br />
+          <span class="mono">SC LIC #M-115482</span> &middot; Greenville &middot; Spartanburg &middot; Pickens
+        </p>
+      </div>
+      <div class="footer-links">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="https://backuppowerpro.com">Home</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
