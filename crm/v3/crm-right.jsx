@@ -2247,6 +2247,41 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     });
   };
 
+  // V3: bring a cancelled proposal back to life. The 5-second undo on
+  // cancelProposal handles same-tab mistakes; Revive handles "I cancelled
+  // this last week and now I want to follow up after all" — a real case
+  // when a customer goes silent and then circles back.
+  const reviveProposal = async (prop) => {
+    if (!CRM.__db) return;
+    const live = (CRM.proposals || []).find(x => x.id === prop.id) || prop;
+    const prev = live.status;
+    live.status = 'sent';
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    const { error } = await CRM.__db.from('proposals').update({ status: 'Sent' }).eq('id', prop.id);
+    if (error) {
+      live.status = prev;
+      window.dispatchEvent(new CustomEvent('crm-data-changed'));
+      window.showToast?.(`Revive failed: ${error.message}`);
+      return;
+    }
+    window.showToast?.('Proposal revived');
+  };
+  const reviveInvoice = async (inv) => {
+    if (!CRM.__db) return;
+    const live = (CRM.invoices || []).find(x => x.id === inv.id) || inv;
+    const prev = live.status;
+    live.status = 'sent';
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    const { error } = await CRM.__db.from('invoices').update({ status: 'unpaid' }).eq('id', inv.id);
+    if (error) {
+      live.status = prev;
+      window.dispatchEvent(new CustomEvent('crm-data-changed'));
+      window.showToast?.(`Revive failed: ${error.message}`);
+      return;
+    }
+    window.showToast?.('Invoice revived');
+  };
+
   // V3: hard delete (distinct from cancel/void which is reversible). Used
   // for proposals/invoices Key created by mistake or wants gone entirely.
   const deleteProposal = async (prop) => {
@@ -2474,7 +2509,7 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     window.open(linkUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid, onCancel, onVoid, onEdit, onDelete, onEmail, divided }) => {
+  const FinanceRow = ({ left, money, status, activity, linkUrl, onMarkPaid, onCancel, onVoid, onEdit, onDelete, onEmail, onRevive, divided }) => {
     // 40px on touch (Apple HIG = 44; 40 keeps the row visually compact
     // while staying above the "frustration threshold" Material flags at
     // 48px). Cursor-driven desktop is fine at 32 — but the inline style
@@ -2544,8 +2579,16 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
         {/* Secondary actions row — Edit / Email / Mark paid + destructive
             (Cancel/Void/Delete). Ghost styling so they don't compete with
             the gold Send CTA. */}
-        {(onMarkPaid || onCancel || onVoid || onEdit || onDelete || onEmail) && (
+        {(onMarkPaid || onCancel || onVoid || onEdit || onDelete || onEmail || onRevive) && (
           <div style={{ display:'flex', gap:6, marginTop:6, flexWrap:'wrap' }}>
+            {onRevive && (
+              <button onClick={onRevive} style={{
+                minHeight:40, padding:'0 14px', borderRadius:8,
+                background:'transparent', color:'#16a34a',
+                border:'1px solid rgba(22,163,74,0.35)',
+                fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+              }}>Revive</button>
+            )}
             {onEdit && (
               <button onClick={onEdit} style={{
                 minHeight:40, padding:'0 14px', borderRadius:8,
@@ -2661,6 +2704,7 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
             activity={propActivity(proposal)}
             linkUrl={proposalUrl(proposal)}
             onCancel={proposal.status === 'sent' || proposal.status === 'viewed' ? () => cancelProposal(proposal) : null}
+            onRevive={['declined','cancelled','expired'].includes(proposal.status) ? () => reviveProposal(proposal) : null}
             onEdit={['draft','sent','viewed'].includes(proposal.status) ? () => { setProposalModalOpen(false); setEditingProposalId(proposal.id); } : null}
             onDelete={['draft','sent','viewed','declined','cancelled','expired'].includes(proposal.status) ? () => deleteProposal(proposal) : null}
             onEmail={contact?.email && ['sent','viewed','draft'].includes(proposal.status) ? () => emailDoc({ template:'proposal', contact_id: contact.id, proposal }) : null}
@@ -2711,6 +2755,7 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
             divided
             onMarkPaid={['sent','viewed','overdue'].includes(inv.status) ? () => markPaid(inv) : null}
             onVoid={['sent','viewed','overdue'].includes(inv.status) ? () => voidInvoice(inv) : null}
+            onRevive={['voided','refunded'].includes(inv.status) ? () => reviveInvoice(inv) : null}
             onEdit={['draft','sent','viewed','overdue'].includes(inv.status) ? () => { setInvoiceModalOpen(false); setEditingInvoiceId(inv.id); } : null}
             onDelete={['draft','sent','viewed','overdue','voided','refunded'].includes(inv.status) ? () => deleteInvoice(inv) : null}
             onEmail={contact?.email && ['sent','viewed','draft','overdue'].includes(inv.status) ? () => emailDoc({ template:'invoice', contact_id: contact.id, invoice: inv }) : null}
