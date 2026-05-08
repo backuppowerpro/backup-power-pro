@@ -319,9 +319,9 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   // contact search box. Solo-operator workflow: 90% of CRM trips begin
   // with "find that one customer" — a keyboard shortcut beats tap-tap-type.
   // Skip when the user is already typing into another input/textarea so
-  // we don't hijack form fills. Only active on the Contacts tab.
+  // we don't hijack form fills. ContactsList only renders when the
+  // Contacts tab is active, so mount-scoped is enough — no `tab` guard.
   React.useEffect(() => {
-    if (tab !== 'contacts') return;
     const onKey = (e) => {
       const isCmdK = (e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K');
       const isSlash = e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey;
@@ -335,7 +335,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tab]);
+  }, []);
   // Recently-viewed contacts (max 5 chips). Stored by handleOpen in
   // crm-app.jsx — re-render when that fires crm-recent-changed.
   const RECENT_KEY = 'bpp_v3_recent_contacts';
