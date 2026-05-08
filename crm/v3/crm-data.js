@@ -131,6 +131,10 @@ function mapContact(r) {
     // Always derive a short ref_id from the UUID so any view/log line that
     // wants a human-readable handle has one even for named contacts.
     ref_id: (r.id || '').slice(0, 4).toUpperCase() || null,
+    // Pass through created_at — buildContactSignals uses it as a fallback
+    // for daysInStage when stage_history has no transitions for the
+    // contact (i.e., still in their initial 'new' stage).
+    created_at: r.created_at || null,
   };
 }
 
