@@ -419,14 +419,12 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     .filter(Boolean)
     .slice(0, 5);
   // Pinned contacts persist in localStorage (per-browser, single-user app).
-  // The contacts table has no pinned column, so this is the right place.
+  // Use the shared usePinned hook so any pin toggle anywhere in the app
+  // (right-pane ContactStrip, bulk-action bar, sub-pane stars) rerenders
+  // this list and resorts. Earlier this was rolled-its-own state and a
+  // pin from the right pane wouldn't reflow the contact list.
   const PIN_KEY = 'bpp_v3_pinned_contacts';
-  const [pinned, setPinned] = React.useState(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(PIN_KEY) || '[]');
-      return new Set([...stored, ...contacts.filter(c=>c.pinned).map(c=>c.id)]);
-    } catch { return new Set(contacts.filter(c=>c.pinned).map(c=>c.id)); }
-  });
+  const pinned = window.usePinned ? window.usePinned() : new Set();
 
   // Counts for filter chips — every stage in the canonical order (excludes archived)
   const visibleContacts = contacts.filter(c => !c.archived);
@@ -589,14 +587,13 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const togglePin = (e, id) => {
     e.stopPropagation();
     const wasOn = pinned.has(id);
-    setPinned(p => {
-      const n = new Set(p);
-      n.has(id) ? n.delete(id) : n.add(id);
-      window.safeSetItem?.(PIN_KEY, JSON.stringify([...n]));
-      // Notify ContactStrip (right pane) so its pin star re-syncs.
-      window.dispatchEvent(new CustomEvent('crm-pin-changed'));
-      return n;
-    });
+    // Source of truth is localStorage; the shared usePinned hook re-reads
+    // on the crm-pin-changed event and triggers a rerender across every
+    // pinned-aware list (Contacts, Messages, Calls, Finance, Calendar).
+    const next = new Set(pinned);
+    if (wasOn) next.delete(id); else next.add(id);
+    window.safeSetItem?.(PIN_KEY, JSON.stringify([...next]));
+    window.dispatchEvent(new CustomEvent('crm-pin-changed'));
     window.showToast?.(wasOn ? 'Unpinned' : 'Pinned to top');
   };
 
@@ -1607,10 +1604,13 @@ const QQ_V3_OFFS = () => ({
 
 function QuickQuoteModal({ onClose }) {
   const [amp, setAmp] = React.useState('30');
-  const [tier, setTier] = React.useState('standard');
   // v3 toggles: cord, inlet, permit are all DEFAULT-ON (folded into base
   // price — toggling off discounts). surge & pom are optional ADD-ONS
   // (default off). length defaults to 5' (no extra-foot adder).
+  // Tier was REMOVED 2026-05-09: the v3 proposal page (proposal.html)
+  // does not apply tier uplift, so showing $300/$600 here would have
+  // Key quoting a higher price on the phone than what the customer
+  // sees on the proposal — a guaranteed trust break.
   const [includeCord,   setIncludeCord]   = React.useState(true);
   const [includeInlet,  setIncludeInlet]  = React.useState(true);
   const [includePermit, setIncludePermit] = React.useState(true);
@@ -1624,7 +1624,7 @@ function QuickQuoteModal({ onClose }) {
   }, [onClose]);
 
   const reset = () => {
-    setAmp('30'); setTier('standard');
+    setAmp('30');
     setIncludeCord(true); setIncludeInlet(true); setIncludePermit(true);
     setIncludeSurge(false); setIncludePom(false);
   };
@@ -1640,9 +1640,7 @@ function QuickQuoteModal({ onClose }) {
         lineItems: includeSurge ? [{ kind:'item', amount: QQ_V3_OFFS().surge, checked: true }] : [],
       }) || 0
     : 0;
-  // Tier uplift applied on top, mirroring the v3 creator pattern.
-  const tierUplift = (window.TIER_META?.[tier]?.uplift) || 0;
-  const totalDollars = baseTotal + tierUplift + (includePom ? QQ_V3_OFFS().pom : 0);
+  const totalDollars = baseTotal + (includePom ? QQ_V3_OFFS().pom : 0);
   const total = totalDollars * 100;
 
   const Eyebrow = ({ children }) => (
@@ -1691,17 +1689,6 @@ function QuickQuoteModal({ onClose }) {
         <div style={{ display:'flex', gap:8, marginBottom:14 }}>
           {['30','50'].map(a => (
             <button key={a} onClick={()=>setAmp(a)} style={segBtn(amp===a)}>{a}A</button>
-          ))}
-        </div>
-
-        <Eyebrow>Tier</Eyebrow>
-        <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-          {[
-            { v:'standard',     label:'Standard'  },
-            { v:'premium',      label:'Premium'   },
-            { v:'premium_plus', label:'Premium+'  },
-          ].map(t => (
-            <button key={t.v} onClick={()=>setTier(t.v)} style={segBtn(tier===t.v)}>{t.label}</button>
           ))}
         </div>
 

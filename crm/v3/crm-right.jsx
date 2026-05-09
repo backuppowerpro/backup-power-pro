@@ -163,21 +163,43 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
       destructive: false,
     });
     if (!ok) return;
+    // Optimistic-first, then await + revert on error. Yesterday these
+    // were fire-and-forget so a failed write would leave the in-memory
+    // state diverged from the DB (and on TCPA-sensitive paths like DNC,
+    // that's an actual federal-violation risk). Now: optimistic flip,
+    // await the write, revert + toast on error.
     contact.archived = true;
     bumpData?.();
+    sweepContactLocal(contact.id);
+    if (CRM.__db) {
+      const { error } = await CRM.__db.from('contacts')
+        .update({ status: 'Archived', archived: true })
+        .eq('id', contact.id);
+      if (error) {
+        contact.archived = false;
+        bumpData?.();
+        window.showToast?.('Archive failed: ' + error.message);
+        return;
+      }
+    }
     window.showToast?.('Job archived', {
-      undo: () => {
-        // Realtime can swap CRM.contacts in the 5s undo window — re-resolve
-        // the live row by id so we mutate something still in the array.
+      undo: async () => {
         const live = (CRM.contacts || []).find(x => x.id === contact.id) || contact;
         live.archived = false;
         bumpData?.();
-        if (CRM.__db) CRM.__db.from('contacts').update({ status: 'Active' }).eq('id', contact.id);
+        if (CRM.__db) {
+          const { error } = await CRM.__db.from('contacts')
+            .update({ status: 'Active', archived: false })
+            .eq('id', contact.id);
+          if (error) {
+            live.archived = true;
+            bumpData?.();
+            window.showToast?.('Undo failed: ' + error.message);
+          }
+        }
       },
       duration: 5000,
     });
-    sweepContactLocal(contact.id);
-    if (CRM.__db) CRM.__db.from('contacts').update({ status: 'Archived' }).eq('id', contact.id);
   };
 
   const markDnc = async () => {
@@ -189,12 +211,21 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
       confirmLabel: 'Mark do not contact',
       destructive: true,
     });
-    if (ok) {
-      contact.do_not_contact = true;
-      // Pass the contact id so dncSet picks up the change — without the arg,
-      // toggleDnc tries to add `undefined` and the compose-bar lock breaks.
-      toggleDnc?.(contact.id);
-      if (CRM.__db) CRM.__db.from('contacts').update({ do_not_contact: true }).eq('id', contact.id);
+    if (!ok) return;
+    // TCPA-critical: must NOT diverge from DB. Optimistic flip, await,
+    // revert on error so a silent failure doesn't leave Key thinking
+    // the contact is DNC'd when the DB says otherwise.
+    contact.do_not_contact = true;
+    toggleDnc?.(contact.id);
+    if (CRM.__db) {
+      const { error } = await CRM.__db.from('contacts')
+        .update({ do_not_contact: true, dnc_at: new Date().toISOString(), dnc_source: 'crm_manual' })
+        .eq('id', contact.id);
+      if (error) {
+        contact.do_not_contact = false;
+        toggleDnc?.(contact.id);
+        window.showToast?.('DNC failed — contact NOT marked: ' + error.message);
+      }
     }
   };
 
@@ -209,34 +240,49 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
       body: 'Make sure they\'ve actually agreed to receive messages again. Removes the DNC flag.',
       confirmLabel: 'Allow again',
     });
-    if (ok) {
-      contact.do_not_contact = false;
-      toggleDnc?.(contact.id);
-      if (CRM.__db) CRM.__db.from('contacts').update({ do_not_contact: false }).eq('id', contact.id);
-      window.showToast?.(contactName(contact) + ' can be contacted again');
+    if (!ok) return;
+    contact.do_not_contact = false;
+    toggleDnc?.(contact.id);
+    if (CRM.__db) {
+      const { error } = await CRM.__db.from('contacts')
+        .update({ do_not_contact: false })
+        .eq('id', contact.id);
+      if (error) {
+        contact.do_not_contact = true;
+        toggleDnc?.(contact.id);
+        window.showToast?.('Allow-again failed — flag still set: ' + error.message);
+        return;
+      }
     }
+    window.showToast?.(contactName(contact) + ' can be contacted again');
   };
 
   const deleteContact = async () => {
     close();
     const ok = await window.confirmAction?.({
       title: 'Delete ' + contactName(contact) + '?',
-      // Honest copy: there's no archive view in v3 yet, so the contact is
-      // effectively gone from the UI. Restoration requires direct Supabase
-      // access — say so plainly so Key knows.
-      body: 'Hides this contact from the list. There\'s no archive view yet — to restore, flip status back in Supabase.',
+      body: 'Soft-deletes (archives) this contact. Recoverable from the Archived filter chip on the contact list.',
       confirmLabel: 'Delete contact',
       destructive: true,
     });
-    if (ok) {
-      const i = CRM.contacts.findIndex(c => c.id === contact.id);
-      if (i >= 0) CRM.contacts.splice(i, 1);
-      bumpData?.();
-      sweepContactLocal(contact.id);
-      window.showToast?.('Contact deleted');
-      // Soft delete: archive in DB rather than hard-delete the row.
-      if (CRM.__db) CRM.__db.from('contacts').update({ status: 'Archived' }).eq('id', contact.id);
+    if (!ok) return;
+    // Soft-delete via archived flag. Mirror the archive flow exactly so
+    // restoring works through the same Archived lens.
+    contact.archived = true;
+    bumpData?.();
+    sweepContactLocal(contact.id);
+    if (CRM.__db) {
+      const { error } = await CRM.__db.from('contacts')
+        .update({ status: 'Archived', archived: true })
+        .eq('id', contact.id);
+      if (error) {
+        contact.archived = false;
+        bumpData?.();
+        window.showToast?.('Delete failed: ' + error.message);
+        return;
+      }
     }
+    window.showToast?.('Contact archived (recoverable from Archived lens)');
   };
 
   // Snooze — hide a contact for N days. Stored in localStorage so this is
@@ -3071,6 +3117,10 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
   };
   // V3: email send via the send-email edge function with the proposal/invoice
   // template. Confirms before firing because email is more permanent than SMS.
+  // The function REQUIRES `subject` (validated server-side) and a brain-token
+  // header — otherwise it 401s or 400s with a generic non-2xx wrapper.
+  // Subject is templated per template type; brain-token wiring is tracked
+  // as a follow-up (function returns 401 without it today).
   const emailDoc = async ({ template, contact_id, proposal, invoice }) => {
     if (!contact?.email) { window.showToast?.('No email on contact — add one first'); return; }
     const ok = await window.confirmAction?.({
@@ -3081,20 +3131,47 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     if (!ok) return;
     const url = proposal ? proposalUrl(proposal) : (invoice ? invoiceUrl(invoice) : null);
     const total = (proposal?.amount_cents || invoice?.amount_cents || 0) / 100;
-    const { error } = await CRM.__invokeFn('send-email', {
+    const firstName = (contact.name || '').trim().split(/\s+/)[0] || 'there';
+    // Subjects mirror the email templates so the inbox preview reads
+    // naturally — Key's voice, customer's first name, no corporate fluff.
+    const SUBJECTS = {
+      proposal:    `Your generator inlet quote — Backup Power Pro`,
+      invoice:     `Invoice from Backup Power Pro`,
+      'permit-approved': `Permit approved — install scheduling next`,
+      completion:  `You're all set — backup power confirmed`,
+      review:      `Quick favor — Google review for Backup Power Pro?`,
+    };
+    const subject = SUBJECTS[template] || `Update from Backup Power Pro for ${firstName}`;
+    const { data, error } = await CRM.__invokeFn('send-email', {
       body: {
         template,
         contact_id,
+        subject,
         variables: {
           [`${template}_url`]: url,
           total: '$' + total.toLocaleString(),
           amp_type: proposal?.amp_type || '30',
+          first_name: firstName,
         },
         trigger_source: 'crm_v3_finance_action',
       },
     });
-    if (error) window.showToast?.(`Email failed: ${error.message}`);
-    else       window.showToast?.(`Email sent to ${contact.email}`);
+    if (error) {
+      // Surface the real error body — supabase-js wraps non-2xx as a
+      // generic "Edge Function returned a non-2xx status code" otherwise.
+      let detail = error.message || 'unknown';
+      try {
+        const body = await error.context?.json?.();
+        if (body?.error) detail = body.error + (body.need ? ` (needs: ${(body.need || []).join(', ')})` : '');
+      } catch (_) {}
+      window.showToast?.(`Email failed: ${detail}`);
+      return;
+    }
+    if (data?.skipped) {
+      window.showToast?.(`Skipped: ${data.skipped}`);
+      return;
+    }
+    window.showToast?.(`Email sent to ${contact.email}`);
   };
 
   const FIN_PILL = {
@@ -3886,11 +3963,26 @@ function ContactMessages({ contact, thread, isDnc }) {
     }
   };
   // Star a suggestion — saves it to reply_suggestion_stars so future
-  // suggest-reply calls weight it heavily.
+  // suggest-reply calls weight it heavily. Toast offers a 5s undo so a
+  // mis-tapped star isn't a permanent vote on the prompt's voice corpus.
   const starSuggestion = async (body) => {
     try {
-      await CRM.__db?.from('reply_suggestion_stars').insert({ body, contact_id: contact.id });
-      window.showToast?.('Saved as example');
+      const { data, error } = await CRM.__db?.from('reply_suggestion_stars')
+        .insert({ body, contact_id: contact.id })
+        .select()
+        .single();
+      if (error) {
+        window.showToast?.(`Star failed: ${error.message}`);
+        return;
+      }
+      window.showToast?.('Saved as example', {
+        undo: async () => {
+          if (!data?.id) return;
+          await CRM.__db?.from('reply_suggestion_stars').delete().eq('id', data.id);
+          window.showToast?.('Star removed');
+        },
+        duration: 5000,
+      });
     } catch (e) {
       window.showToast?.(`Star failed: ${e.message || e}`);
     }

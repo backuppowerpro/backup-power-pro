@@ -264,10 +264,10 @@ function mapInvoice(r) {
 }
 
 function mapMessage(r) {
-  // Real DB columns: id, contact_id, direction, body, created_at.
-  // sent_at and read_at don't exist; sent_at falls back to created_at,
-  // read_at stays null (every message renders as "read" — until the
-  // column is added the unread-badge feature is a no-op).
+  // Real DB columns: id, contact_id, direction, body, created_at,
+  // sender, read_at, status. NOTE: there is no `sent_at` or
+  // `sender_role` column — the mapper synthesizes them so the rest of
+  // the app can read familiar names without caring about schema.
   // Normalize direction at the boundary. Twilio/edge functions write
   // 'outbound'/'inbound' to DB; the rest of the app reads/filters with
   // 'out'/'in'. Until 2026-05-08 this mismatch silently nulled
@@ -275,11 +275,17 @@ function mapMessage(r) {
   // SMS — so "Rotting" + "Silent leads" chips undercounted dramatically.
   const dirRaw = r.direction || 'in';
   const dir = dirRaw === 'outbound' ? 'out' : dirRaw === 'inbound' ? 'in' : dirRaw;
+  // sender_role discriminates "key vs Alex bot vs raw customer" so the
+  // suggest-reply prompt can label voice samples correctly. The DB
+  // column is named `sender` (NOT `sender_role`); the prior mapper
+  // referenced the wrong name and the fallback always fired, erasing
+  // bot-vs-human distinctions in the inbox.
+  const senderRaw = r.sender || r.sender_role;
   return {
     id: r.id,
     contact_id: r.contact_id,
     direction: dir,
-    sender_role: r.sender_role || (dir === 'out' ? 'key' : 'customer'),
+    sender_role: senderRaw || (dir === 'out' ? 'key' : 'customer'),
     body: r.body || '',
     sent_at: r.sent_at || r.created_at,
     read_at: r.read_at || null,
@@ -476,9 +482,11 @@ async function loadLiveData() {
       .limit(500), 'invoices'),
     fetchTable(__db.from('messages')
       // Real DB columns: id, contact_id, direction, body, created_at.
-      // No `sender_role`, `sent_at`, or `read_at`. mapMessage aliases
-      // created_at → sent_at and defaults the rest.
-      .select('id, contact_id, direction, body, created_at')
+      // Pull every column the mapper or signal-builder needs:
+      // sender drives bot-vs-human voice attribution; read_at drives the
+      // unread inbox badge; status carries delivery state. created_at
+      // doubles as sent_at via the mapper.
+      .select('id, contact_id, direction, body, created_at, read_at, sender, status')
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .limit(2000), 'messages'),
@@ -531,8 +539,13 @@ async function loadLiveData() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => {
       try {
         const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+        // SELECT must include `read_at` and `sender` — without read_at,
+        // a realtime fire after the user marks a thread read clobbers
+        // the local read_at back to null and re-lights the unread badge.
+        // Without sender, the bot-vs-key distinction in the inbox is
+        // erased and the suggest-reply prompt mislabels voice samples.
         const { data, error } = await __db.from('messages')
-          .select('id, contact_id, direction, body, created_at')
+          .select('id, contact_id, direction, body, created_at, read_at, sender, status')
           .gte('created_at', since).order('created_at', { ascending: false }).limit(2000);
         if (error) { console.warn('[CRM] realtime messages refetch failed:', error.message); return; }
         window.CRM.messages = (data || []).map(mapMessage);
@@ -592,7 +605,7 @@ async function refetchAll() {
 // kind from a $-amount heuristic, sent_at from created_at, viewed_at = null.
 // If those columns ever get added, expand the SELECT and the mapper.
 'id, token, contact_id, proposal_id, total, status, created_at, paid_at, line_items, creator_version').order('created_at', { ascending: false }).limit(500),
-      __db.from('messages').select('id, contact_id, direction, body, created_at').gte('created_at', since).order('created_at', { ascending: false }).limit(2000),
+      __db.from('messages').select('id, contact_id, direction, body, created_at, read_at, sender, status').gte('created_at', since).order('created_at', { ascending: false }).limit(2000),
     ]);
     if (c.data) window.CRM.contacts = c.data.map(mapContact).filter(x => !x.archived);
     if (e.data) window.CRM.events = e.data.map(mapEvent);
