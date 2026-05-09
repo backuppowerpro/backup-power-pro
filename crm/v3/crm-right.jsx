@@ -2628,6 +2628,46 @@ function UpcomingEventCard({ event, subtitle, fmtRow, bumpData }) {
               borderRadius:14, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap',
             }}
           >Custom…</button>
+          {/* Cancel — soft-delete via status='cancelled'. Confirms first
+              because losing an install slot is high-cost and Key would
+              hate a stray click wiping a confirmed booking. */}
+          <button
+            onClick={async () => {
+              const ok = await window.confirmAction?.({
+                title: 'Cancel this ' + (event.kind || 'event') + '?',
+                body: 'Removes it from the schedule. Use Undo within 5 seconds if it was a mistake.',
+                confirmLabel: 'Cancel event',
+                destructive: true,
+              });
+              if (!ok) return;
+              const prev = event.status;
+              event.status = 'cancelled';
+              bumpData?.();
+              if (CRM.__db) {
+                const { error } = await CRM.__db.from('calendar_events').update({ status: 'cancelled' }).eq('id', event.id);
+                if (error) {
+                  event.status = prev;
+                  bumpData?.();
+                  window.showToast?.('Cancel failed: ' + error.message);
+                  return;
+                }
+              }
+              window.showToast?.('Event cancelled', {
+                undo: async () => {
+                  event.status = prev;
+                  bumpData?.();
+                  if (CRM.__db) await CRM.__db.from('calendar_events').update({ status: prev }).eq('id', event.id);
+                },
+                duration: 5000,
+              });
+            }}
+            style={{
+              padding:'4px 10px', fontSize:11, fontWeight:600, color:'#dc2626',
+              background:'white', border:'1px solid rgba(220,38,38,0.3)',
+              borderRadius:14, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap',
+              marginLeft:'auto',
+            }}
+          >Cancel event</button>
         </div>
       )}
     </div>
@@ -3829,7 +3869,15 @@ function ContactMessages({ contact, thread, isDnc }) {
     try {
       const { data, error } = await CRM.__invokeFn('suggest-reply', { body: { contactId: contact.id } });
       if (error || !data) {
-        setSuggestionsErr(`Failed: ${error?.message || 'unknown'}`);
+        // supabase-js wraps non-2xx as a generic "Edge Function returned a
+        // non-2xx status code". The actual error JSON lives on
+        // `error.context` (a Response) — read it so Key sees what broke.
+        let detail = error?.message || 'unknown';
+        try {
+          const body = await error?.context?.json?.();
+          if (body?.error) detail = body.error + (body.detail ? ` — ${body.detail}` : '');
+        } catch (_) {}
+        setSuggestionsErr(`Failed: ${detail}`);
         setSuggestions([]);
       } else if (data.error) {
         setSuggestionsErr(data.error);
@@ -3894,6 +3942,38 @@ function ContactMessages({ contact, thread, isDnc }) {
     setLocalMsgs([]);
     setAttachments(prev => { prev.forEach(a => revokeAndForget(a.url)); return []; });
   }, [contact.id]);
+
+  // Mark inbound messages as read whenever this thread is opened. Without
+  // this the unread badge / inbox badge / "needs reply" pill never clear,
+  // even after Key has obviously seen the conversation. Optimistic — flips
+  // the in-memory rows immediately so the UI updates without a refetch,
+  // then patches Supabase in the background.
+  React.useEffect(() => {
+    if (!CRM.__db) return;
+    const unread = (CRM.messages || []).filter(m =>
+      m.contact_id === contact.id &&
+      m.direction === 'in' &&
+      m.read_at == null
+    );
+    if (unread.length === 0) return;
+    const stamp = new Date().toISOString();
+    const ids = unread.map(m => m.id);
+    // Optimistic UI update — mutate in-place so the existing CRM data
+    // pipeline (signal map, inbox badges) sees fresh values immediately.
+    for (const m of unread) m.read_at = stamp;
+    // Fire the change event so anything that derives from the messages
+    // array (badge counts, "needs reply" filter, signal map) re-renders.
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    // Persist. .in() handles the chunk in one round-trip; if the patch
+    // fails we revert the optimistic write so badges stay accurate.
+    CRM.__db.from('messages').update({ read_at: stamp }).in('id', ids).then(({ error }) => {
+      if (error) {
+        for (const m of unread) m.read_at = null;
+        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        console.warn('[CRM] mark-as-read failed:', error.message);
+      }
+    });
+  }, [contact.id, thread.length]);
 
   // Revoke any remaining blob URLs on unmount.
   React.useEffect(() => () => {

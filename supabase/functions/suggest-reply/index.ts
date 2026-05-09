@@ -73,12 +73,27 @@ Deno.serve(async (req: Request) => {
   if (!rateOk) return json({ error: 'rate limit' }, 429)
 
   // ── Pull data ────────────────────────────────────────────────────
-  // (1) Active thread for the contact (last 30 messages)
+  // (1) Active thread for the contact (last 30 messages).
+  // The messages table uses `created_at` (NOT sent_at) and `sender`
+  // (NOT sender_role). Earlier versions of this fn referenced the wrong
+  // columns and PostgREST returned 400 → "thread fetch failed". The
+  // mapper below normalizes back to {sent_at, sender_role} so the rest
+  // of the function (and the prompt voice-rules) keeps working.
   const threadRes = await dbFetch(
-    `/messages?contact_id=eq.${contactId}&order=sent_at.desc&limit=30&select=direction,sender_role,body,sent_at`
+    `/messages?contact_id=eq.${contactId}&order=created_at.desc&limit=30&select=direction,sender,body,created_at`
   )
-  if (!threadRes.ok) return json({ error: 'thread fetch failed' }, 500)
-  const threadDesc = await threadRes.json() as Msg[]
+  if (!threadRes.ok) {
+    const t = await threadRes.text()
+    return json({ error: 'thread fetch failed', detail: t.slice(0, 200) }, 500)
+  }
+  const threadRaw = await threadRes.json() as Array<{ direction: string; sender?: string; body: string; created_at: string }>
+  const threadDesc: Msg[] = threadRaw.map(r => ({
+    contact_id: contactId,
+    direction: r.direction,
+    sender_role: r.sender,
+    body: r.body,
+    sent_at: r.created_at,
+  }))
   const thread = [...threadDesc].reverse() // chronological for the prompt
 
   if (thread.length === 0) {
@@ -101,8 +116,9 @@ Deno.serve(async (req: Request) => {
 
   // (3) Voice corpus — Key's last ~20 outbound replies across ALL contacts.
   // We treat these as in-context examples; Claude mimics tone and length.
+  // Same column-name fix: messages.created_at + messages.sender.
   const voiceRes = await dbFetch(
-    `/messages?or=(direction.eq.out,sender_role.eq.key)&order=sent_at.desc&limit=40&select=body`
+    `/messages?or=(direction.eq.out,sender.eq.key)&order=created_at.desc&limit=40&select=body`
   )
   const voiceMsgs = voiceRes.ok ? (await voiceRes.json() as { body: string }[]) : []
   const voiceSamples = voiceMsgs

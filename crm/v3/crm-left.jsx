@@ -1083,12 +1083,60 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
     // end-of-day "did you bill them?" prompt.
     const isPastInstall = ev.kind === 'install' && new Date(ev.start_at).getTime() < Date.now();
     const needsInvoice = isPastInstall && installNeedsInvoiceContactIds.has(ev.contact_id);
+
+    // Cancel an event from the list view without opening the contact.
+    // Mirrors the contact-tab calendar behavior: status='cancelled' is
+    // the canonical soft-delete (preserves the row for audit / undo).
+    const cancelEvent = async (e) => {
+      e.stopPropagation();
+      const ok = await window.confirmAction?.({
+        title: `Cancel ${ev.kind || 'event'}?`,
+        body: `${contactName(c) || 'Contact'} · ${formatDate(ev.start_at, { month:'short', day:'numeric' })} · ${formatTime(ev.start_at)}`,
+        confirmLabel: 'Cancel event',
+        destructive: true,
+      });
+      if (!ok) return;
+      const prevStatus = ev.status;
+      ev.status = 'cancelled';
+      window.dispatchEvent(new CustomEvent('crm-data-changed'));
+      if (window.CRM?.__db) {
+        const { error } = await window.CRM.__db.from('calendar_events').update({ status: 'cancelled' }).eq('id', ev.id);
+        if (error) {
+          ev.status = prevStatus;
+          window.dispatchEvent(new CustomEvent('crm-data-changed'));
+          window.showToast?.(`Cancel failed: ${error.message}`);
+          return;
+        }
+      }
+      window.showToast?.('Event cancelled', {
+        undo: async () => {
+          ev.status = prevStatus;
+          window.dispatchEvent(new CustomEvent('crm-data-changed'));
+          if (window.CRM?.__db) await window.CRM.__db.from('calendar_events').update({ status: prevStatus }).eq('id', ev.id);
+        },
+        duration: 5000,
+      });
+    };
+
+    // Edit jumps to the contact's calendar tab — that's where the
+    // reschedule controls / inline editor live (UpcomingEventCard with
+    // +1hr/+1d/+2d/+1w + custom date+time pickers shipped 2026-05-09).
+    const editEvent = (e) => {
+      e.stopPropagation();
+      onOpen(ev.contact_id, 'calendar', ev.id);
+    };
+
     return (
-      <button onClick={()=>onOpen(ev.contact_id,'calendar',ev.id)} style={{
-        width:'100%', background: highlight?'#FFFBEB':(activeContactId===ev.contact_id?'#FFFBEB':'white'), border:'none', cursor:'pointer',
-        display:'flex', alignItems:'stretch', borderBottom:'1px solid #F5F5F3', textAlign:'left', padding:0,
-        boxShadow: activeContactId===ev.contact_id?'inset 2px 0 0 '+GOLD:'none',
-      }}>
+      <div role="button" tabIndex={0}
+        onClick={()=>onOpen(ev.contact_id,'calendar',ev.id)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(ev.contact_id, 'calendar', ev.id); } }}
+        style={{
+          width:'100%', background: highlight?'#FFFBEB':(activeContactId===ev.contact_id?'#FFFBEB':'white'),
+          border:'none', cursor:'pointer',
+          display:'flex', alignItems:'stretch', borderBottom:'1px solid #F5F5F3', textAlign:'left', padding:0,
+          boxShadow: activeContactId===ev.contact_id?'inset 2px 0 0 '+GOLD:'none',
+          outline:'none',
+        }}>
         <div style={{ width:3, background: conflict?'#E53E3E':col.accent, margin:'6px 10px 6px 14px', borderRadius:4, flexShrink:0 }} />
         <div style={{ flex:1, padding:'13px 14px 13px 0', minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2, flexWrap:'wrap' }}>
@@ -1100,7 +1148,47 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
           <div style={{ fontSize:14, fontWeight:600, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</div>
           <div style={{ fontSize:11, color:MUTED, marginTop:1 }}>{ev.title} · {durationMin(ev)}min</div>
         </div>
-      </button>
+        {/* Edit / cancel actions — keep them lightweight + always-visible
+            so a 30-second day-shuffle doesn't require digging into the
+            contact tab. stopPropagation prevents the row's open-contact
+            click from firing under each. */}
+        <div style={{ display:'flex', alignItems:'center', gap:4, padding:'0 12px 0 4px', flexShrink:0 }}>
+          <button
+            onClick={editEvent}
+            title="Edit / reschedule"
+            aria-label="Edit event"
+            style={{
+              width:32, height:32, borderRadius:6,
+              background:'transparent', border:'none',
+              color: MUTED, cursor:'pointer',
+              display:'flex', alignItems:'center', justifyContent:'center',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#F0F4FF'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+            </svg>
+          </button>
+          <button
+            onClick={cancelEvent}
+            title="Cancel event"
+            aria-label="Cancel event"
+            style={{
+              width:32, height:32, borderRadius:6,
+              background:'transparent', border:'none',
+              color:'#dc2626', cursor:'pointer',
+              display:'flex', alignItems:'center', justifyContent:'center',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
     );
   };
 
@@ -1468,28 +1556,37 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
 }
 
 // ── Quick Quote Modal (ephemeral price calculator — no save/send/DB) ────
-// Single source of truth: window.quickQuoteTotal() from crm-shared.jsx.
-// The previous QQ_BASE/QQ_ADDONS literal-table approach diverged from
-// the real engine — Peace of Mind silently priced at $0 — and would
-// keep drifting whenever pricing changes. Now this modal computes the
-// same total NewProposalModal does.
-// Cord cents depends on amp (30A=$129, 50A=$198) — looked up at render
-// time so the chip label matches what the engine actually applies.
-const QQ_ADDON_DEFS = (amp) => [
-  { id:'cord',  label:'Generator cord',  cents: amp === '50' ? 19800 : 12900 }, // QB_S.cordValue30/50
-  { id:'surge', label:'Surge protector', cents: 37500 }, // QB_S.surge
-  { id:'pom',   label:'Peace of mind',   cents: 44700 }, // QB_S.pom
-  { id:'permit',label:'Permit',          cents: 12500 }, // QB_S.permitCustomer
-];
+// Wired to the v3 proposal-creator pricing engine (window.quoteV3Total)
+// so the modal's total matches dollar-for-dollar what the customer will
+// see on the proposal page. The old quickQuoteTotal engine had the
+// 50A cord stuck at $198 while v3 bumped it to $249 (2026-05-08), which
+// made Quick Quote disagree with the real proposal builder — Key
+// flagged this 2026-05-09. Length defaults to 5' (no extra-foot adder).
+//
+// Add-on chips correspond to the v3 toggles, all default-on. Toggling
+// off subtracts the listed value from the base. PoM is rendered as an
+// optional extra (added on top, since v3 explicitly excludes it from
+// the base total — same way the proposal page shows it).
+const QQ_V3_BASE = () => window.V3_PRICING?.base || { 30: 1197, 50: 1497 };
+const QQ_V3_OFFS = () => ({
+  cord:   window.V3_PRICING?.cordOff   || { 30: 129, 50: 249 },
+  inlet:  window.V3_PRICING?.inletOff  || { 30: 129, 50: 179 },
+  permit: window.V3_PRICING?.permitOff || 125,
+  pom:    window.V3_PRICING?.pom       || 447,
+  surge:  375,
+});
 
 function QuickQuoteModal({ onClose }) {
   const [amp, setAmp] = React.useState('30');
   const [tier, setTier] = React.useState('standard');
-  // Cord defaults bundled (true) to match NewProposalModal — without
-  // this Quick Quote landed on a different total than the real proposal
-  // builder for identical inputs because cordIncluded was inverted
-  // between the two surfaces.
-  const [addons, setAddons] = React.useState({ cord: true });
+  // v3 toggles: cord, inlet, permit are all DEFAULT-ON (folded into base
+  // price — toggling off discounts). surge & pom are optional ADD-ONS
+  // (default off). length defaults to 5' (no extra-foot adder).
+  const [includeCord,   setIncludeCord]   = React.useState(true);
+  const [includeInlet,  setIncludeInlet]  = React.useState(true);
+  const [includePermit, setIncludePermit] = React.useState(true);
+  const [includeSurge,  setIncludeSurge]  = React.useState(false);
+  const [includePom,    setIncludePom]    = React.useState(false);
 
   React.useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose(); };
@@ -1497,18 +1594,26 @@ function QuickQuoteModal({ onClose }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const reset = () => { setAmp('30'); setTier('standard'); setAddons({ cord: true }); };
+  const reset = () => {
+    setAmp('30'); setTier('standard');
+    setIncludeCord(true); setIncludeInlet(true); setIncludePermit(true);
+    setIncludeSurge(false); setIncludePom(false);
+  };
 
-  // Defer to the real engine. Cord defaults to bundled (cordIncluded=true)
-  // when the user hasn't toggled it; matches NewProposalModal behavior.
-  const totalDollars = window.quickQuoteTotal({
-    amp,
-    cordIncluded: !!addons.cord,
-    includeSurge: !!addons.surge,
-    includePom: !!addons.pom,
-    includePermit: !!addons.permit,
-    tier,
-  }) || 0;
+  // v3 engine: subtracts cord/inlet/permit if toggled off; adds line items
+  // (surge) on top. PoM is shown separately and explicitly NOT folded
+  // into the customer-facing total — same as proposal.html.
+  const baseTotal = window.quoteV3Total
+    ? window.quoteV3Total({
+        amp,
+        lengthFt: 5,
+        includeCord, includeInlet, includePermit,
+        lineItems: includeSurge ? [{ kind:'item', amount: QQ_V3_OFFS().surge, checked: true }] : [],
+      }) || 0
+    : 0;
+  // Tier uplift applied on top, mirroring the v3 creator pattern.
+  const tierUplift = (window.TIER_META?.[tier]?.uplift) || 0;
+  const totalDollars = baseTotal + tierUplift + (includePom ? QQ_V3_OFFS().pom : 0);
   const total = totalDollars * 100;
 
   const Eyebrow = ({ children }) => (
@@ -1571,17 +1676,35 @@ function QuickQuoteModal({ onClose }) {
           ))}
         </div>
 
-        <Eyebrow>Add-ons</Eyebrow>
+        <Eyebrow>Included (toggle off to discount)</Eyebrow>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:14 }}>
+          {[
+            { id:'cord',   label:'Generator cord', on: includeCord,   set: setIncludeCord,   off: QQ_V3_OFFS().cord[amp]   },
+            { id:'inlet',  label:'Inlet box',      on: includeInlet,  set: setIncludeInlet,  off: QQ_V3_OFFS().inlet[amp]  },
+            { id:'permit', label:'Permit',         on: includePermit, set: setIncludePermit, off: QQ_V3_OFFS().permit      },
+          ].map(a => (
+            <button key={a.id} onClick={() => a.set(v => !v)} style={chipBtn(a.on)}>
+              <span>{a.label}</span>
+              <span style={{ color: a.on ? NAVY : '#dc2626', fontSize:11, fontFamily:"'DM Mono', monospace" }}>
+                {a.on ? 'incl.' : `−${formatMoneyCents(a.off * 100)}`}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <Eyebrow>Optional add-ons</Eyebrow>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:18 }}>
-          {QQ_ADDON_DEFS(amp).map(a => {
-            const on = !!addons[a.id];
-            return (
-              <button key={a.id} onClick={()=>setAddons(s => ({...s, [a.id]: !s[a.id]}))} style={chipBtn(on)}>
-                <span>{a.label}</span>
-                <span style={{ color: on ? NAVY : '#666', fontSize:11, fontFamily:"'DM Mono', monospace" }}>+{formatMoneyCents(a.cents)}</span>
-              </button>
-            );
-          })}
+          {[
+            { id:'surge', label:'Surge protector', on: includeSurge, set: setIncludeSurge, add: QQ_V3_OFFS().surge },
+            { id:'pom',   label:'Peace of mind',   on: includePom,   set: setIncludePom,   add: QQ_V3_OFFS().pom   },
+          ].map(a => (
+            <button key={a.id} onClick={() => a.set(v => !v)} style={chipBtn(a.on)}>
+              <span>{a.label}</span>
+              <span style={{ color: a.on ? NAVY : '#666', fontSize:11, fontFamily:"'DM Mono', monospace" }}>
+                +{formatMoneyCents(a.add * 100)}
+              </span>
+            </button>
+          ))}
         </div>
 
         <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:16, paddingTop:14, borderTop:'1px solid rgba(11,31,59,0.08)' }}>
