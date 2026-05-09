@@ -13,12 +13,16 @@ const TODAY = `${_bppToday.getFullYear()}-${String(_bppToday.getMonth()+1).padSt
 function LeftPanel({ tab, onOpen, dncSet = new Set(), activeContactId }) {
   const { contacts, events, proposals, invoices, messages, calls } = CRM;
   return (
-    <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background: BG, minHeight:0 }}>
+    <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background: BG, minHeight:0, position:'relative' }}>
       {tab === 'contacts' && <ContactsList contacts={contacts} messages={messages} calls={calls} proposals={proposals} invoices={invoices} events={events} onOpen={onOpen} dncSet={dncSet} activeContactId={activeContactId} />}
       {tab === 'calendar' && <CalendarList events={events} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
       {tab === 'finance'  && <FinanceList proposals={proposals} invoices={invoices} contacts={contacts} events={events} onOpen={onOpen} activeContactId={activeContactId} />}
       {tab === 'messages' && <MessagesList messages={messages} calls={calls} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
       {tab === 'calls'    && <CallsList calls={calls} contacts={contacts} onOpen={onOpen} activeContactId={activeContactId} />}
+      {/* Quick-capture FAB — visible on every left-pane lens. ⌘. anywhere
+          opens the modal. Optional contact-link picker pre-fills with the
+          currently-active contact. Captures into bpp_todos. */}
+      <QuickCaptureFAB activeContactId={activeContactId} />
     </div>
   );
 }
@@ -315,6 +319,15 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const [search, setSearch] = React.useState('');
   const [stage, setStage] = React.useState('all');
   const [newContactOpen, setNewContactOpen] = React.useState(false);
+  // Saved searches — chip row above the list. localStorage-backed so it
+  // syncs across desktop/iPhone via Safari iCloud Tabs but not across
+  // accounts. ⌘S while typing a query saves the current search+stage as
+  // a named smart-list. Click a chip to apply both filters at once.
+  const SAVED_KEY = 'bpp_v3_saved_searches';
+  const [savedSearches, setSavedSearches] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]'); }
+    catch { return []; }
+  });
   // EmptyHero "Stuck deals" tile fires this event with detail.stage so
   // ContactsList can pre-select the matching filter chip on mount.
   React.useEffect(() => {
@@ -322,6 +335,28 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     window.addEventListener('crm-set-stage-filter', onSet);
     return () => window.removeEventListener('crm-set-stage-filter', onSet);
   }, []);
+  // ⌘S while typing → save the current search+stage combo as a chip.
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's' && (search || stage !== 'all')) {
+        e.preventDefault();
+        const name = window.prompt('Name this search:', search || stage);
+        if (!name) return;
+        const next = [...savedSearches.filter(s => s.name !== name), { name, search, stage }].slice(-8);
+        setSavedSearches(next);
+        try { localStorage.setItem(SAVED_KEY, JSON.stringify(next)); } catch {}
+        window.showToast?.(`Saved "${name}"`);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [search, stage, savedSearches]);
+  const applySavedSearch = (s) => { setSearch(s.search || ''); setStage(s.stage || 'all'); };
+  const removeSavedSearch = (name) => {
+    const next = savedSearches.filter(s => s.name !== name);
+    setSavedSearches(next);
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(next)); } catch {}
+  };
   // Cmd+K (Mac) / Ctrl+K (PC) / "/" anywhere on the page → focus the
   // contact search box. Solo-operator workflow: 90% of CRM trips begin
   // with "find that one customer" — a keyboard shortcut beats tap-tap-type.
@@ -479,10 +514,27 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
       // window so we don't parse JSON 112 times per keystroke.
       if (!window.__tagMapCache) window.__tagMapCache = (function(){ try { return JSON.parse(localStorage.getItem('bpp_v3_tags')||'{}'); } catch { return {}; } })();
       const tags = window.__tagMapCache[c.id] || [];
-      return contactName(c).toLowerCase().includes(q)
-        || (c.phone || '').includes(search)
-        || (c.address || '').toLowerCase().includes(q)
-        || tags.some(t => t.toLowerCase().includes(q));
+      // Quick checks first — name/phone/address/tag are O(1) per-row.
+      if (contactName(c).toLowerCase().includes(q)) return true;
+      if ((c.phone || '').includes(search)) return true;
+      if ((c.address || '').toLowerCase().includes(q)) return true;
+      if (tags.some(t => t.toLowerCase().includes(q))) return true;
+      // Full-text fallback: search message bodies for queries ≥3 chars
+      // (avoid single-letter matches firing scan on every keystroke).
+      // Index built lazily once per render via the closure below.
+      if (q.length < 3) return false;
+      const msgIdx = (window.__msgIdxCache ||= (() => {
+        const m = new Map();
+        for (const msg of (window.CRM?.messages || [])) {
+          if (!msg.body) continue;
+          const arr = m.get(msg.contact_id) || [];
+          arr.push(msg.body.toLowerCase());
+          m.set(msg.contact_id, arr);
+        }
+        return m;
+      })());
+      const bodies = msgIdx.get(c.id) || [];
+      return bodies.some(b => b.includes(q));
     })
     .sort((a,b) => (pinned.has(b.id)?1:0) - (pinned.has(a.id)?1:0));
 
@@ -543,6 +595,25 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                 const last = full.split(' ').slice(-1)[0];
                 return last && last !== first ? `${first} ${last[0]}` : first;
               })()}</button>
+            ))}
+          </div>
+        )}
+        {/* Saved searches — chip row, ⌘S to save the current search+stage
+            combo. Right-click / long-press a chip to remove it. Visible
+            below the search box once at least one is saved. */}
+        {savedSearches.length > 0 && (
+          <div className="hide-scrollbar" style={{ display:'flex', gap:6, overflowX:'auto', marginTop:8, paddingBottom:2 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:MUTED, alignSelf:'center', whiteSpace:'nowrap', letterSpacing:'0.05em' }}>SAVED</div>
+            {savedSearches.map(s => (
+              <button key={s.name}
+                onClick={() => applySavedSearch(s)}
+                onContextMenu={(e) => { e.preventDefault(); if (window.confirm(`Remove "${s.name}"?`)) removeSavedSearch(s.name); }}
+                title={`${s.search ? `"${s.search}"` : ''}${s.search && s.stage !== 'all' ? ' + ' : ''}${s.stage !== 'all' ? s.stage : ''} — right-click to remove`}
+                style={{
+                  height:26, padding:'0 10px', borderRadius:13, fontFamily:'inherit',
+                  background: '#fff8e0', color: NAVY, border: '1px solid rgba(255,186,0,0.4)',
+                  fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
+                }}>{s.name}</button>
             ))}
           </div>
         )}

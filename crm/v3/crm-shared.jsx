@@ -501,6 +501,126 @@ function SparkyFAB({ onClick }) {
   );
 }
 
+// ── Quick Capture FAB ─────────────────────────────────────────────
+// Floating "+" on the left pane — Key on a job site hears "follow up
+// with the Smith install Tuesday" and needs ONE tap to capture it.
+// Old flow: navigate to a contact → open todos popover (top-right
+// header) → type. New: tap the FAB anywhere → modal → save.
+//
+// This is the "always-available capture surface" pattern — the same
+// reason iOS has a Lock-screen camera button. The capture is 5 seconds;
+// triage happens later. Optional contact-link picker (pre-fills with
+// active contact when one is open).
+function QuickCaptureFAB({ activeContactId }) {
+  const [open, setOpen] = React.useState(false);
+  const [title, setTitle] = React.useState('');
+  const [linkContact, setLinkContact] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  const inputRef = React.useRef(null);
+  // Pre-link the active contact if one is open when the FAB fires.
+  React.useEffect(() => {
+    if (open) {
+      setLinkContact(activeContactId || null);
+      setTitle('');
+      setTimeout(() => inputRef.current?.focus(), 80);
+    }
+  }, [open, activeContactId]);
+  // ⌘. anywhere → toggle quick-capture (a chord that's NOT in the
+  // browser's reserved set + matches the iOS-Notes muscle memory).
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '.') {
+        e.preventDefault();
+        setOpen(v => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const submit = async () => {
+    if (busy || !title.trim() || !window.CRM?.__db) return;
+    setBusy(true);
+    try {
+      const { error } = await window.CRM.__db.from('bpp_todos').insert([{
+        title: title.trim(),
+        source: 'quick_capture',
+        priority: 2,
+        related_contact_id: linkContact,
+        completed: false,
+      }]);
+      if (error) {
+        window.showToast?.(`Save failed: ${error.message}`);
+      } else {
+        window.showToast?.('Saved to todos');
+        setOpen(false);
+        setTitle('');
+        // Refresh the todos surface if it's open.
+        window.dispatchEvent(new CustomEvent('crm-todos-changed'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+  const contact = (window.CRM?.contacts || []).find(c => c.id === linkContact);
+  return (
+    <>
+      <button onClick={() => setOpen(true)} aria-label="Quick capture todo" title="Quick capture (⌘.)" style={{
+        position:'absolute', bottom: 20, left: 16,
+        width: 48, height: 48, borderRadius: '50%',
+        background: NAVY, border: 'none', color: 'white',
+        cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+        boxShadow: '0 4px 14px rgba(11,31,59,0.35)',
+        fontSize: 26, fontWeight: 300, lineHeight: 1, paddingBottom: 2,
+        zIndex: 49,
+      }}>+</button>
+      {open && (
+        <div onClick={() => setOpen(false)} style={{
+          position:'fixed', inset:0, background:'rgba(11,31,59,0.45)',
+          display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background:'white', borderRadius:14, padding:20, maxWidth:480, width:'100%',
+            boxShadow:'0 20px 60px rgba(11,31,59,0.25)',
+          }}>
+            <div style={{ fontSize:11, fontWeight:700, color:'#666', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:8 }}>Quick capture</div>
+            <input
+              ref={inputRef}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && title.trim()) submit(); if (e.key === 'Escape') setOpen(false); }}
+              placeholder="What do you need to remember?"
+              style={{
+                width:'100%', height:44, padding:'0 12px',
+                border:'1.5px solid #EBEBEA', borderRadius:8,
+                fontSize:16, color:NAVY, fontFamily:'inherit', outline:'none', boxSizing:'border-box',
+              }}
+            />
+            {contact && (
+              <div style={{ marginTop:10, padding:'8px 12px', background:'#F3F4F6', borderRadius:8, fontSize:13, color:NAVY, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span>Linked to <strong>{contact.name || formatPhone(contact.phone)}</strong></span>
+                <button onClick={() => setLinkContact(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:13, fontFamily:'inherit' }}>Unlink</button>
+              </div>
+            )}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginTop:14 }}>
+              <button onClick={() => setOpen(false)} style={{
+                background:'transparent', border:'1px solid rgba(11,31,59,0.15)', color:NAVY,
+                borderRadius:8, padding:'8px 14px', fontSize:13, fontWeight:600, fontFamily:'inherit', cursor:'pointer',
+              }}>Cancel</button>
+              <button onClick={submit} disabled={busy || !title.trim()} style={{
+                background: busy || !title.trim() ? '#E5E5E5' : GOLD,
+                color: busy || !title.trim() ? '#999' : NAVY,
+                border:'none', borderRadius:8, padding:'8px 18px',
+                fontSize:13, fontWeight:700, fontFamily:'inherit',
+                cursor: busy || !title.trim() ? 'not-allowed' : 'pointer',
+              }}>{busy ? 'Saving…' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── Sparky Pill (detail view) ─────────────────────────────────────
 function SparkyPill({ onClick }) {
   return (
@@ -1207,7 +1327,7 @@ function quoteV3Total({ amp, lengthFt, includeCord, includeInlet, includePermit,
 Object.assign(window, {
   NAVY, GOLD, BG, CARD, MUTED, NOW, RADIUS, contactHasInstalled,
   Icons, NavBar, ContactAvatar, GoldDot, StatusPill,
-  SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero,
+  SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero, QuickCaptureFAB,
   capitalize, formatPhone, formatPhoneInput, linkify, formatRelative, formatMoneyCents, buildContactSignals,
   formatDate, formatTime, formatTimeShort, formatDuration, dayKey,
   relTime, fmtTime, fmtDate,

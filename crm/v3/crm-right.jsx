@@ -2226,9 +2226,34 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
         liveNow.status = prev;
         window.dispatchEvent(new CustomEvent('crm-data-changed'));
         if (CRM.__db) await CRM.__db.from('proposals').update({ status: prev }).eq('id', prop.id);
+        // Reverting the cancel — drop the auto-re-engagement todo we
+        // queued below so it doesn't fire after Key un-cancelled.
+        try {
+          await CRM.__db.from('bpp_todos').delete()
+            .eq('related_contact_id', prop.contact_id)
+            .eq('source', 'auto_cancel_reengage')
+            .eq('completed', false);
+        } catch (_) { /* best-effort */ }
       },
       duration: 5000,
     });
+    // Queue an auto re-engagement todo for +14d. Cancelled proposals
+    // aren't dead — silent prospects often warm back if checked at
+    // the 2-week mark (BPP follow-up framework). Stored with
+    // source='auto_cancel_reengage' so the undo path can roll it back
+    // and so future analytics can measure conversion-from-cancel.
+    if (!contact?.do_not_contact && CRM.__db) {
+      const firstName = ((contact?.name || '').trim().split(/\s+/)[0] || 'them');
+      CRM.__db.from('bpp_todos').insert([{
+        title: `Re-check ${firstName}: cancelled quote, 14-day touch`,
+        notes: `Quote was cancelled ${new Date().toLocaleDateString()}. Reach out at the 2-week mark — silent prospects often circle back if you check in.`,
+        source: 'auto_cancel_reengage',
+        priority: 2,
+        related_contact_id: prop.contact_id,
+        completed: false,
+        generated_for_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0,10),
+      }]).then(() => {}, () => {});
+    }
   };
 
   // Void an invoice — same pattern as cancelProposal. Flips to "voided"
