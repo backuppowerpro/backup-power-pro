@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
   // Plus stage 1 stalled (>14d) for the digest.
   const { data: candidates, error: candErr } = await sb
     .from('contacts')
-    .select('id, name, phone, stage, status, do_not_contact, ai_enabled, ai_paused_until, install_notes, notes, install_at')
+    .select('id, name, phone, stage, status, do_not_contact, ai_enabled, ai_paused_until, install_notes, notes, install_date')
     .in('stage', [1, 5, 6, 7, 8])
     .neq('status', 'Archived')
     .neq('status', 'Lost')
@@ -287,9 +287,12 @@ Deno.serve(async (req) => {
       continue
     }
 
-    // Stage 8: install reminder ~24h before install_at
-    if (stage === 8 && c.install_at && !hasMarker(notes, 'p8_reminder')) {
-      const installTime = new Date(c.install_at).getTime()
+    // Stage 8: install reminder ~24h before install_date.
+    // Audit-2026-05-09 L16: prior code read install_at which never existed,
+    // so this branch never fired. The canonical column added 2026-04-19 is
+    // contacts.install_date.
+    if (stage === 8 && c.install_date && !hasMarker(notes, 'p8_reminder')) {
+      const installTime = new Date(c.install_date).getTime()
       const hoursUntil = (installTime - now.getTime()) / (3600 * 1000)
       if (hoursUntil > 18 && hoursUntil <= 30) {
         if (quietHours) { skipped.push({ id: c.id, why: 'quiet_hours_p8' }); continue }

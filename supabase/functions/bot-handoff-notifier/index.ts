@@ -429,7 +429,7 @@ Deno.serve(async (req) => {
   } catch (_) { /* ignore */ }
 
   return new Response(
-    JSON.stringify({ notified: true, sms_length: smsBody.length, key_phone: KEY_PHONE }),
+    JSON.stringify({ notified: true, sms_length: smsBody.length, key_phone: KEY_CELL }),
     { status: 200, headers: { 'content-type': 'application/json' } },
   )
 })
