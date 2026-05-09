@@ -648,7 +648,9 @@ function QuickCaptureFAB({ activeContactId }) {
     try {
       const { error } = await window.CRM.__db.from('bpp_todos').insert([{
         title: title.trim(),
-        source: 'quick_capture',
+        // Lives under 'manual' until migration 20260509100000 is applied,
+        // which expands the source allow-list to include 'quick_capture'.
+        source: 'manual',
         priority: 2,
         related_contact_id: linkContact,
         completed: false,
