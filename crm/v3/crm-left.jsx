@@ -315,6 +315,13 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const [search, setSearch] = React.useState('');
   const [stage, setStage] = React.useState('all');
   const [newContactOpen, setNewContactOpen] = React.useState(false);
+  // EmptyHero "Stuck deals" tile fires this event with detail.stage so
+  // ContactsList can pre-select the matching filter chip on mount.
+  React.useEffect(() => {
+    const onSet = (e) => { if (e?.detail?.stage) setStage(e.detail.stage); };
+    window.addEventListener('crm-set-stage-filter', onSet);
+    return () => window.removeEventListener('crm-set-stage-filter', onSet);
+  }, []);
   // Cmd+K (Mac) / Ctrl+K (PC) / "/" anywhere on the page → focus the
   // contact search box. Solo-operator workflow: 90% of CRM trips begin
   // with "find that one customer" — a keyboard shortcut beats tap-tap-type.

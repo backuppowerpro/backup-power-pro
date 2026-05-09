@@ -576,14 +576,101 @@ function ConfirmHost() {
 }
 
 // ── Empty Hero (no contact selected) ──────────────────────────────
+// Steve-Jobs lens (Key 2026-05-08): a dead "select a contact" placeholder
+// is the laziest possible thing this screen can be. Use the data we
+// already have to show what NEEDS ACTION right now — today's events,
+// stuck deals, unread inbox, missed calls. Each pill drills into the
+// matching surface.
 function EmptyHero() {
+  const [data, setData] = React.useState({ contacts:[], events:[], messages:[], calls:[] });
+  // Re-read CRM globals on mount + on data-changed events (initial load
+  // can be empty on first render).
+  React.useEffect(() => {
+    const sync = () => setData({
+      contacts: window.CRM?.contacts || [],
+      events: window.CRM?.events || [],
+      messages: window.CRM?.messages || [],
+      calls: window.CRM?.calls || [],
+      stageHistory: window.CRM?.stageHistory || [],
+      proposals: window.CRM?.proposals || [],
+      invoices: window.CRM?.invoices || [],
+    });
+    sync();
+    window.addEventListener('crm-data-ready', sync);
+    window.addEventListener('crm-data-changed', sync);
+    return () => {
+      window.removeEventListener('crm-data-ready', sync);
+      window.removeEventListener('crm-data-changed', sync);
+    };
+  }, []);
+
+  // Today's events — installs + inspections happening today.
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const todayEnd   = new Date(); todayEnd.setHours(23,59,59,999);
+  const todays = (data.events || []).filter(e => {
+    if (!e.start_at) return false;
+    const t = new Date(e.start_at).getTime();
+    return t >= todayStart.getTime() && t <= todayEnd.getTime();
+  });
+
+  // Stuck contacts — re-derive locally so the dashboard stays consistent
+  // with the filter chip in the contact list.
+  let stuckCount = 0;
+  try {
+    const sigs = (typeof buildContactSignals === 'function')
+      ? buildContactSignals({
+          contacts: data.contacts, messages: data.messages, calls: data.calls,
+          proposals: data.proposals, invoices: data.invoices, events: data.events,
+          stageHistory: data.stageHistory,
+        })
+      : null;
+    if (sigs) {
+      for (const sig of sigs.values()) if (sig.stuck) stuckCount++;
+    }
+  } catch (_) { /* signals helper unavailable on first paint — show 0 */ }
+
+  // Unread inbox — inbound messages with no read_at + missed calls.
+  const unreadInbound = (data.messages || []).filter(m => m.direction === 'in' && !m.read_at).length;
+  const missedCalls   = (data.calls    || []).filter(c => c.direction === 'missed').length;
+  const inboxCount    = unreadInbound + missedCalls;
+
+  const tile = (label, count, color, onClick, icon) => (
+    <button onClick={onClick} disabled={!count} style={{
+      flex:'1 1 130px', minWidth:130, padding:'14px 14px',
+      background:'white', border:'1px solid #EBEBEA', borderRadius:10,
+      cursor: count ? 'pointer' : 'default', fontFamily:'inherit',
+      textAlign:'left', opacity: count ? 1 : 0.55,
+      transition:'transform 120ms, box-shadow 120ms',
+    }}
+    onMouseEnter={e => { if (count) { e.currentTarget.style.boxShadow='0 4px 12px rgba(11,31,59,0.08)'; e.currentTarget.style.transform='translateY(-1px)'; } }}
+    onMouseLeave={e => { e.currentTarget.style.boxShadow=''; e.currentTarget.style.transform=''; }}
+    >
+      <div style={{ fontSize:11, fontWeight:700, color:'#666', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6 }}>{icon} {label}</div>
+      <div style={{ fontSize:28, fontWeight:800, color: count ? color : '#9CA3AF', fontFamily:"'JetBrains Mono','DM Mono',monospace", letterSpacing:'-0.02em' }}>{count}</div>
+    </button>
+  );
+
+  // Tile click handlers route to the appropriate left-pane lens. They
+  // dispatch a custom event the LeftPanel listens for, since EmptyHero
+  // doesn't have direct access to onTab/onOpen.
+  const goTo = (lens) => () => {
+    window.dispatchEvent(new CustomEvent('crm-empty-hero-action', { detail: { lens } }));
+  };
+
   return (
-    <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', background:BG, flexDirection:'column', gap:14, padding:24 }}>
+    <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', background:BG, flexDirection:'column', gap:18, padding:24 }}>
       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
         <div style={{ width:36, height:36, borderRadius:8, background:NAVY, display:'flex', alignItems:'center', justifyContent:'center', color:GOLD, fontSize:14, fontWeight:800, letterSpacing:'-0.02em' }}>BPP</div>
-        <div style={{ fontSize:18, fontWeight:700, color:NAVY, letterSpacing:'-0.01em' }}>Backup Power Pros</div>
+        <div style={{ fontSize:18, fontWeight:700, color:NAVY, letterSpacing:'-0.01em' }}>Today</div>
       </div>
-      <div style={{ fontSize:13, color:MUTED, textAlign:'center', maxWidth:240, lineHeight:1.5 }}>Select a contact to start, or pick a row from the list on the left.</div>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:10, maxWidth:560, justifyContent:'center' }}>
+        {tile("Today's events", todays.length, NAVY, goTo('today'), '📅')}
+        {tile('Stuck deals',    stuckCount,    '#991B1B', goTo('rotting'), '⚠')}
+        {tile('Unread inbox',   inboxCount,    GOLD, goTo('inbox'),   '✉')}
+      </div>
+      <div style={{ fontSize:12, color:MUTED, textAlign:'center', maxWidth:340, lineHeight:1.5 }}>
+        Or pick a contact from the list on the left.
+      </div>
       <div style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:20, background:'white', border:'1px solid #EBEBEA', fontSize:11, color:MUTED, fontWeight:600 }}>
         <kbd style={{ background:BG, border:'1px solid #EBEBEA', borderRadius:4, padding:'1px 5px', fontSize:10, fontFamily:'inherit', color:NAVY }}>⌘K</kbd>
         <span>to search</span>

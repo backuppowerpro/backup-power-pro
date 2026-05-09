@@ -120,6 +120,25 @@ function Root() {
   // Left panel has its own tab state
   const [leftTab, setLeftTab] = React.useState('contacts');
 
+  // EmptyHero (right-pane "Today" dashboard) dispatches navigation
+  // events when a tile is clicked. Route them to the matching left-pane
+  // lens here at the Root level since EmptyHero doesn't have direct
+  // access to setLeftTab.
+  React.useEffect(() => {
+    const onAction = (e) => {
+      const lens = e?.detail?.lens;
+      if (lens === 'today')   setLeftTab('calendar');
+      else if (lens === 'inbox') setLeftTab('messages');
+      else if (lens === 'rotting') {
+        setLeftTab('contacts');
+        // Defer so ContactsList re-mounts with the chip selected.
+        setTimeout(() => window.dispatchEvent(new CustomEvent('crm-set-stage-filter', { detail: { stage: 'rotting' } })), 30);
+      }
+    };
+    window.addEventListener('crm-empty-hero-action', onAction);
+    return () => window.removeEventListener('crm-empty-hero-action', onAction);
+  }, []);
+
   // v10.1.16 mobile fix: when the user navigates between tabs, blur any
   // active text input so the iOS keyboard dismisses. Without this, leaving
   // Messages while a textarea has focus leaves the keyboard floating over
