@@ -1563,6 +1563,16 @@ const V3_PRICING = {
   inletOff:  { 30: 129,  50: 179  }, // discount when inlet toggled off
   permitOff: 125,                     // discount when permit toggled off
   pom:       447,                     // peace-of-mind add-on (not in total)
+  // Quick-add adders, Key's calculator design (2026-05-09). These are NOT
+  // baked into the base — they're optional one-click line items that get
+  // splatted into extra_line_items when the toggle/chip is on. Keeps the
+  // proposal page rendering them exactly like any custom line item; the
+  // creator just makes them a single tap to add.
+  mainBreaker:    225, // panel main breaker replacement
+  twinQuad:       125, // making panel space (twin / quad breaker)
+  surge:          446, // whole-home surge protector (panel-side)
+  surgeDiscount:  25,  // off when PoM is also offered (combo)
+  adapter:        150, // 30A→50A cord adapter (only when amp = 50)
 };
 
 // Compute the v3 customer-facing total. lineItems is an array of

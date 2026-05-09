@@ -1640,11 +1640,17 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
 // the base total — same way the proposal page shows it).
 const QQ_V3_BASE = () => window.V3_PRICING?.base || { 30: 1197, 50: 1497 };
 const QQ_V3_OFFS = () => ({
-  cord:   window.V3_PRICING?.cordOff   || { 30: 129, 50: 249 },
-  inlet:  window.V3_PRICING?.inletOff  || { 30: 129, 50: 179 },
-  permit: window.V3_PRICING?.permitOff || 125,
-  pom:    window.V3_PRICING?.pom       || 447,
-  surge:  375,
+  cord:        window.V3_PRICING?.cordOff       || { 30: 129, 50: 249 },
+  inlet:       window.V3_PRICING?.inletOff      || { 30: 129, 50: 179 },
+  permit:      window.V3_PRICING?.permitOff     || 125,
+  pom:         window.V3_PRICING?.pom           || 447,
+  // 2026-05-09: surge bumped 375→446 to match Key's quote-calculator design.
+  // Surge gets −$25 when PoM is also active (combo discount).
+  surge:         window.V3_PRICING?.surge         || 446,
+  surgeDiscount: window.V3_PRICING?.surgeDiscount || 25,
+  mainBreaker:   window.V3_PRICING?.mainBreaker   || 225,
+  twinQuad:      window.V3_PRICING?.twinQuad      || 125,
+  adapter:       window.V3_PRICING?.adapter       || 150,
 });
 
 function QuickQuoteModal({ onClose }) {
@@ -1661,6 +1667,18 @@ function QuickQuoteModal({ onClose }) {
   const [includePermit, setIncludePermit] = React.useState(true);
   const [includeSurge,  setIncludeSurge]  = React.useState(false);
   const [includePom,    setIncludePom]    = React.useState(false);
+  // 2026-05-09: panel-work + adapter quick-adds from Key's calculator
+  // design. All default off — toggle on to add to total. Adapter chip
+  // only renders when amp === '50' (it's a 30→50A passthrough piece;
+  // makes no sense for a 30A inlet).
+  const [includeMainBreaker, setIncludeMainBreaker] = React.useState(false);
+  const [includeTwinQuad,    setIncludeTwinQuad]    = React.useState(false);
+  const [includeAdapter,     setIncludeAdapter]     = React.useState(false);
+
+  // Auto-clear adapter when amp drops to 30 (it's 50A-only).
+  React.useEffect(() => {
+    if (amp !== '50' && includeAdapter) setIncludeAdapter(false);
+  }, [amp, includeAdapter]);
 
   React.useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose(); };
@@ -1672,20 +1690,30 @@ function QuickQuoteModal({ onClose }) {
     setAmp('30');
     setIncludeCord(true); setIncludeInlet(true); setIncludePermit(true);
     setIncludeSurge(false); setIncludePom(false);
+    setIncludeMainBreaker(false); setIncludeTwinQuad(false); setIncludeAdapter(false);
   };
 
   // v3 engine: subtracts cord/inlet/permit if toggled off; adds line items
-  // (surge) on top. PoM is shown separately and explicitly NOT folded
-  // into the customer-facing total — same as proposal.html.
+  // (surge, panel work, adapter) on top. PoM is shown separately and
+  // explicitly NOT folded into the customer-facing total — same as
+  // proposal.html. Surge gets −$25 combo discount when PoM is also on.
+  const offs = QQ_V3_OFFS();
+  const surgeAmount = offs.surge - (includePom ? offs.surgeDiscount : 0);
+  const lineItems = [
+    includeSurge       && { kind:'item', amount: surgeAmount,    checked:true },
+    includeMainBreaker && { kind:'item', amount: offs.mainBreaker,checked:true },
+    includeTwinQuad    && { kind:'item', amount: offs.twinQuad,   checked:true },
+    includeAdapter     && amp === '50' && { kind:'item', amount: offs.adapter,    checked:true },
+  ].filter(Boolean);
   const baseTotal = window.quoteV3Total
     ? window.quoteV3Total({
         amp,
         lengthFt: 5,
         includeCord, includeInlet, includePermit,
-        lineItems: includeSurge ? [{ kind:'item', amount: QQ_V3_OFFS().surge, checked: true }] : [],
+        lineItems,
       }) || 0
     : 0;
-  const totalDollars = baseTotal + (includePom ? QQ_V3_OFFS().pom : 0);
+  const totalDollars = baseTotal + (includePom ? offs.pom : 0);
   const total = totalDollars * 100;
 
   const Eyebrow = ({ children }) => (
@@ -1754,11 +1782,35 @@ function QuickQuoteModal({ onClose }) {
         </div>
 
         <Eyebrow>Optional add-ons</Eyebrow>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
+          {[
+            // Surge shows the live amount (446 normal, 421 with PoM combo).
+            // Tooltip explains the −$25 combo so Key can use it on the phone.
+            {
+              id:'surge', label:'Surge protector',
+              on: includeSurge, set: setIncludeSurge,
+              add: surgeAmount,
+              hint: includePom && includeSurge ? '−$25 combo' : null,
+            },
+            { id:'pom',   label:'Peace of mind',   on: includePom,   set: setIncludePom,   add: offs.pom   },
+          ].map(a => (
+            <button key={a.id} onClick={() => a.set(v => !v)} style={chipBtn(a.on)}>
+              <span>{a.label}</span>
+              {a.hint && <span style={{ color:'#15803D', fontSize:9, fontWeight:700 }}>{a.hint}</span>}
+              <span style={{ color: a.on ? NAVY : '#666', fontSize:11, fontFamily:"'DM Mono', monospace" }}>
+                +{formatMoneyCents(a.add * 100)}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <Eyebrow>Panel work + cord adapter</Eyebrow>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:18 }}>
           {[
-            { id:'surge', label:'Surge protector', on: includeSurge, set: setIncludeSurge, add: QQ_V3_OFFS().surge },
-            { id:'pom',   label:'Peace of mind',   on: includePom,   set: setIncludePom,   add: QQ_V3_OFFS().pom   },
-          ].map(a => (
+            { id:'mainBreaker', label:'Main breaker', on: includeMainBreaker, set: setIncludeMainBreaker, add: offs.mainBreaker, show:true },
+            { id:'twinQuad',    label:'Twin / quad',  on: includeTwinQuad,    set: setIncludeTwinQuad,    add: offs.twinQuad,    show:true },
+            { id:'adapter',     label:'30→50A adapter', on: includeAdapter,   set: setIncludeAdapter,     add: offs.adapter,     show: amp === '50' },
+          ].filter(a => a.show).map(a => (
             <button key={a.id} onClick={() => a.set(v => !v)} style={chipBtn(a.on)}>
               <span>{a.label}</span>
               <span style={{ color: a.on ? NAVY : '#666', fontSize:11, fontFamily:"'DM Mono', monospace" }}>

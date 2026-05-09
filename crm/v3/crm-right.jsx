@@ -5103,6 +5103,56 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
       kind: 'discount', name: 'Discount', discountType: 'dollar', amount: 0, checked: true,
     }]);
   };
+  // 2026-05-09: Quick Add — one-click pre-filled line items for the most
+  // common adders (panel work, surge, adapter). Sourced from V3_PRICING
+  // so the dollar amounts stay in sync with QuickQuoteModal. The user
+  // can edit name/amount/checked on the resulting row exactly like a
+  // hand-typed line item — these rows aren't system-locked.
+  const QA_PRICES = (window.V3_PRICING) || {};
+  // Surge combo discount: when PoM is also offered, surge drops by $25.
+  // The tile shows the live amount, and the existing surge row (if any)
+  // auto-adjusts on PoM toggle via the useEffect below.
+  const surgeBase   = QA_PRICES.surge         || 446;
+  const surgeOff    = QA_PRICES.surgeDiscount || 25;
+  const surgeAmount = surgeBase - (pomOffered ? surgeOff : 0);
+  const QA = [
+    { key:'mainBreaker', name:'Main breaker replacement',  amount: QA_PRICES.mainBreaker || 225, show: true },
+    { key:'twinQuad',    name:'Panel space (twin / quad)', amount: QA_PRICES.twinQuad    || 125, show: true },
+    { key:'surge',       name:'Surge protector',           amount: surgeAmount,                  show: true },
+    { key:'adapter',     name:'30→50A cord adapter',       amount: QA_PRICES.adapter     || 150, show: amp === '50' },
+  ];
+  // Hide a Quick Add tile (dim to 'added' state) if a row with the same
+  // name already exists, so Key doesn't double-add by accident.
+  const lineItemNames = new Set(lineItems.filter(li => li.kind === 'item').map(li => (li.name || '').toLowerCase()));
+  const addQuickItem = (qa) => {
+    if (lineItemNames.has(qa.name.toLowerCase())) return;
+    setLineItems(prev => [...prev, {
+      id: 'qa_' + Math.random().toString(36).slice(2,8),
+      kind: 'item', name: qa.name, amount: qa.amount, checked: true,
+    }]);
+  };
+  // When PoM toggles, auto-adjust an existing surge row's amount between
+  // the two known states (446 base ↔ 421 combo). Preserves user-edited
+  // amounts (only flips when matching one of the two known prices).
+  React.useEffect(() => {
+    setLineItems(prev => {
+      let changed = false;
+      const next = prev.map(li => {
+        if (li.kind !== 'item') return li;
+        if (!/surge/i.test(li.name || '')) return li;
+        if (pomOffered && li.amount === surgeBase) {
+          changed = true;
+          return { ...li, amount: surgeBase - surgeOff };
+        }
+        if (!pomOffered && li.amount === surgeBase - surgeOff) {
+          changed = true;
+          return { ...li, amount: surgeBase };
+        }
+        return li;
+      });
+      return changed ? next : prev;
+    });
+  }, [pomOffered]); // eslint-disable-line react-hooks/exhaustive-deps
   const updateItem = (i, patch) => setLineItems(prev => prev.map((li, idx) => idx === i ? { ...li, ...patch } : li));
   const removeItem = (i) => setLineItems(prev => prev.filter((_, idx) => idx !== i));
   const moveItem = (from, to) => setLineItems(prev => {
@@ -5410,7 +5460,49 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
           </div>
         )}
       </div>
-      {/* 4. + Line Item / + Discount */}
+      {/* 4. Quick Add — one-tap pre-filled rows for the most common adders.
+          Sourced from V3_PRICING so amounts stay in sync with the Quick
+          Quote calculator. Tile dims to 'added' state once a row with
+          matching name exists in the list. */}
+      <div>
+        <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Quick add</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:6 }}>
+          {QA.filter(qa => qa.show).map(qa => {
+            const added = lineItemNames.has(qa.name.toLowerCase());
+            return (
+              <button
+                key={qa.key} type="button"
+                onClick={() => addQuickItem(qa)}
+                disabled={added}
+                title={added ? 'Already on this proposal' : `Add "${qa.name}" line item`}
+                style={{
+                  height:42, padding:'0 10px', borderRadius:8,
+                  background: added ? '#F0FDF4' : 'white',
+                  border: '1px dashed ' + (added ? '#86EFAC' : 'rgba(11,31,59,0.18)'),
+                  color: added ? '#166534' : NAVY,
+                  fontSize:12, fontWeight:600, fontFamily:'inherit',
+                  cursor: added ? 'default' : 'pointer',
+                  display:'flex', alignItems:'center', justifyContent:'space-between', gap:6,
+                  textAlign:'left',
+                }}
+              >
+                <span style={{ display:'inline-flex', alignItems:'center', gap:6, minWidth:0 }}>
+                  <span aria-hidden="true" style={{ fontSize:14, fontWeight:700, lineHeight:1, flexShrink:0 }}>
+                    {added ? '✓' : '+'}
+                  </span>
+                  <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {qa.name.replace(' replacement','')}
+                  </span>
+                </span>
+                <span style={{ color: added ? '#166534' : '#666', fontSize:11, fontFamily:"'JetBrains Mono','DM Mono',monospace", fontWeight:700, flexShrink:0 }}>
+                  ${qa.amount}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {/* 5. + Line Item / + Discount */}
       <div>
         <div style={{ display:'flex', gap:8 }}>
           <button type="button" onClick={addItem} style={{
