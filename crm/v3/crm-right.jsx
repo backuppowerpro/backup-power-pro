@@ -19,7 +19,7 @@ function RightPanel({ contactId, tab, dncSet = new Set(), toggleDnc = () => {}, 
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:BG, minHeight:0 }}>
       <ContactStrip contact={contact} isDnc={dncSet.has(contactId)} toggleDnc={() => toggleDnc(contactId)} bumpData={bumpData} onOpenTab={onOpenTab} />
-      {tab==='contacts' && <ContactOverview contact={contact} events={cEvents} permits={cPermits} proposals={cProposals} invoices={cInvoices} materials={cMaterials} bumpData={bumpData} onOpenTab={onOpenTab} />}
+      {tab==='contacts' && <ContactOverview contact={contact} events={cEvents} permits={cPermits} proposals={cProposals} invoices={cInvoices} materials={cMaterials} messages={cMessages} calls={cCalls} bumpData={bumpData} onOpenTab={onOpenTab} />}
       {tab==='calendar' && <ContactCalendar contact={contact} events={cEvents} highlightId={highlightId} bumpData={bumpData} />}
       {tab==='finance'  && <ContactFinance  contact={contact} proposals={cProposals} invoices={cInvoices} highlightId={highlightId} />}
       {tab==='messages' && <ContactMessages contact={contact} thread={cMessages} isDnc={dncSet.has(contactId)} />}
@@ -92,12 +92,13 @@ function ContactStrip({ contact, isDnc, toggleDnc, bumpData, onOpenTab }) {
 // ── Overflow Menu (right-aligned dropdown anchored to the 3-dots button) ─
 function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab }) {
   const [open, setOpen] = React.useState(false);
+  const [openSubmenu, setOpenSubmenu] = React.useState(null); // label of open submenu
   const wrapRef = React.useRef(null);
 
   React.useEffect(() => {
     if (!open) return;
-    const onDoc = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
-    const onKey = e => { if (e.key === 'Escape') setOpen(false); };
+    const onDoc = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) { setOpen(false); setOpenSubmenu(null); } };
+    const onKey = e => { if (e.key === 'Escape') { setOpen(false); setOpenSubmenu(null); } };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onKey);
     return () => {
@@ -106,7 +107,7 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
     };
   }, [open]);
 
-  const close = () => setOpen(false);
+  const close = () => { setOpen(false); setOpenSubmenu(null); };
 
   const editContact = () => {
     close();
@@ -238,6 +239,48 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
     }
   };
 
+  // Snooze — hide a contact for N days. Stored in localStorage so this is
+  // a per-device gesture (no DB migration). Snooze auto-clears at the
+  // until-date; the overflow menu offers preset durations + a custom date.
+  const snooze = async (days) => {
+    close();
+    const until = new Date(Date.now() + days * 86400000);
+    window.snoozeContact?.(contact.id, until.toISOString());
+    bumpData?.();
+    const niceDate = until.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+    window.showToast?.('Snoozed until ' + niceDate, {
+      undo: () => { window.unsnoozeContact?.(contact.id); bumpData?.(); },
+      duration: 5000,
+    });
+  };
+  const snoozeCustom = async () => {
+    close();
+    const default14 = new Date(Date.now() + 14 * 86400000).toISOString().slice(0,10);
+    const v = window.prompt('Snooze until (YYYY-MM-DD):', default14);
+    if (!v) return;
+    const parsed = new Date(v + 'T08:00:00');
+    if (isNaN(parsed.getTime()) || parsed.getTime() < Date.now()) {
+      window.showToast?.('Pick a future date');
+      return;
+    }
+    window.snoozeContact?.(contact.id, parsed.toISOString());
+    bumpData?.();
+    window.showToast?.('Snoozed until ' + parsed.toLocaleDateString(), {
+      undo: () => { window.unsnoozeContact?.(contact.id); bumpData?.(); },
+      duration: 5000,
+    });
+  };
+  const unsnooze = () => {
+    close();
+    window.unsnoozeContact?.(contact.id);
+    bumpData?.();
+    window.showToast?.('Unsnoozed');
+  };
+  const snoozedTs = window.snoozedUntil?.(contact.id);
+  const snoozedLabel = snoozedTs
+    ? new Date(snoozedTs).toLocaleDateString(undefined, { month:'short', day:'numeric' })
+    : '';
+
   // Overflow menu — pruned to actions you can't already do inline. Open in
   // Maps and Copy phone live on their own rows in CONTACT INFO; duplicating
   // them here makes the menu noisy for no benefit. Delete copy now reflects
@@ -245,6 +288,18 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
   const items = [
     { kind:'item', icon:OFI.pencil, label:'Edit contact', onClick: editContact },
     { kind:'divider' },
+    snoozedTs
+      ? { kind:'item', icon:OFI.clock, label:'Unsnooze', sub:'Currently hidden until ' + snoozedLabel, onClick: unsnooze }
+      : { kind:'submenu', icon:OFI.clock, label:'Snooze',
+          children: [
+            { label:'1 day',     onClick:() => snooze(1) },
+            { label:'3 days',    onClick:() => snooze(3) },
+            { label:'1 week',    onClick:() => snooze(7) },
+            { label:'2 weeks',   onClick:() => snooze(14) },
+            { label:'1 month',   onClick:() => snooze(30) },
+            { label:'Pick date…', onClick: snoozeCustom },
+          ],
+        },
     { kind:'item', icon:OFI.archive, label:'Archive job', sub:'Move out of active list', onClick: archiveJob },
     isDnc
       ? { kind:'item', icon:OFI.ban, label:'Allow contact again', onClick: unmarkDnc }
@@ -286,6 +341,50 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
               return <div key={'d'+i} style={{ height:1, background:'rgba(27,43,75,0.08)', margin:'4px 4px' }} />;
             }
             const color = it.danger ? '#dc2626' : NAVY;
+            // Submenu: clicking the parent toggles an inline-expanded list
+            // of choices. Keeps the menu visually contained — no flying
+            // side-panels that fall off-screen on narrow CRM panes.
+            if (it.kind === 'submenu') {
+              const isOpen = openSubmenu === it.label;
+              return (
+                <React.Fragment key={it.label}>
+                  <button
+                    onClick={() => setOpenSubmenu(isOpen ? null : it.label)}
+                    style={{
+                      width:'100%', display:'flex', alignItems:'center', gap:10,
+                      padding:'8px 10px', borderRadius:8,
+                      background: isOpen ? '#F0F4FF' : 'none', border:'none', textAlign:'left',
+                      cursor:'pointer', fontFamily:'inherit', color: NAVY,
+                    }}
+                    onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = '#F8F8F6'; }}
+                    onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = 'none'; }}
+                  >
+                    <span style={{ width:14, height:14, flexShrink:0, color: NAVY }}>{it.icon}</span>
+                    <span style={{ flex:1, fontSize:13, fontWeight:500 }}>{it.label}</span>
+                    <span style={{
+                      fontSize:10, color: MUTED,
+                      transform: isOpen ? 'rotate(90deg)' : 'rotate(0)',
+                      transition:'transform 0.12s', display:'inline-block',
+                    }}>▶</span>
+                  </button>
+                  {isOpen && it.children.map((c, ci) => (
+                    <button
+                      key={c.label}
+                      onClick={c.onClick}
+                      style={{
+                        width:'100%', display:'block',
+                        padding:'6px 10px 6px 34px', borderRadius:8,
+                        background:'none', border:'none', textAlign:'left',
+                        cursor:'pointer', fontFamily:'inherit', color: NAVY,
+                        fontSize:12, lineHeight:1.3,
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#F8F8F6'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >{c.label}</button>
+                  ))}
+                </React.Fragment>
+              );
+            }
             return (
               <button
                 key={it.label}
@@ -323,10 +422,11 @@ const OFI = {
   archive:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg>,
   ban:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>,
   trash:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
+  clock:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>,
 };
 
 // ── Contact Overview ──────────────────────────────────────────────
-function ContactOverview({ contact, events, permits = [], proposals = [], materials = [], invoices = [], bumpData, onOpenTab }) {
+function ContactOverview({ contact, events, permits = [], proposals = [], materials = [], invoices = [], messages = [], calls = [], bumpData, onOpenTab }) {
   const [note, setNote] = React.useState(contact.notes || '');
   const [noteSaving, setNoteSaving] = React.useState(false);
   const [noteSaved, setNoteSaved] = React.useState(false);
@@ -458,6 +558,15 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
       </InfoSection>
       <PhotosSection contact={contact} />
       <StageHistoryCard contact={contact} />
+      <ActivityTimelineCard
+        contact={contact}
+        messages={messages}
+        calls={calls}
+        proposals={proposals}
+        invoices={invoices}
+        events={events}
+        onOpenTab={onOpenTab}
+      />
       {latestSigned && (
         <PermitsCard permits={permits} contact={contact} bumpData={bumpData} />
       )}
@@ -4535,6 +4644,203 @@ function StageHistoryCard({ contact }) {
           </React.Fragment>
         ))}
       </div>
+    </InfoSection>
+  );
+}
+
+// ── ActivityTimelineCard ──────────────────────────────────────────────
+// Unified chronological feed: every message, call, proposal change,
+// invoice change, calendar event, and stage transition for a contact —
+// in one timeline. Lets Key reconstruct a deal's full history without
+// hopping between tabs. Collapsed-by-default, expand on click.
+function ActivityTimelineCard({ contact, messages = [], calls = [], proposals = [], invoices = [], events = [], onOpenTab }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const stageHistory = (window.CRM?.stageHistory || []).filter(r => r.contact_id === contact.id);
+
+  // Build a flat list of {at, type, label, meta, color, action}.
+  const items = React.useMemo(() => {
+    const out = [];
+    // Messages
+    for (const m of messages) {
+      const at = m.created_at || m.sent_at || m.received_at;
+      if (!at) continue;
+      const dir = m.direction === 'in' ? 'in' : 'out';
+      out.push({
+        at, type:'message',
+        label: dir === 'in' ? 'Inbound message' : 'Outbound message',
+        meta: (m.body || '').slice(0, 70) + ((m.body || '').length > 70 ? '…' : ''),
+        color: dir === 'in' ? '#1E40AF' : '#065F46',
+        icon: dir === 'in' ? '📥' : '📤',
+        onClick: () => onOpenTab?.('messages'),
+      });
+    }
+    // Calls
+    for (const c of calls) {
+      const at = c.created_at || c.started_at;
+      if (!at) continue;
+      const direction = c.direction || 'unknown';
+      const isMissed = direction === 'missed' || c.status === 'missed';
+      out.push({
+        at, type:'call',
+        label: isMissed ? 'Missed call' : direction === 'in' ? 'Inbound call' : direction === 'out' ? 'Outbound call' : 'Call',
+        meta: c.duration_sec > 0 ? formatDuration(c.duration_sec) : (c.status || ''),
+        color: isMissed ? '#991B1B' : '#065F46',
+        icon: isMissed ? '📵' : '📞',
+        onClick: () => onOpenTab?.('calls'),
+      });
+    }
+    // Proposals
+    for (const p of proposals) {
+      if (p.created_at) out.push({
+        at: p.created_at, type:'proposal',
+        label: 'Quote drafted',
+        meta: p.amp_spec ? `${p.amp_spec}A` : '',
+        color: '#666',
+        icon: '📝',
+        onClick: () => onOpenTab?.('finance'),
+      });
+      if (p.sent_at) out.push({
+        at: p.sent_at, type:'proposal',
+        label: 'Quote sent',
+        meta: p.amp_spec ? `${p.amp_spec}A` : '',
+        color: '#1E40AF',
+        icon: '📤',
+        onClick: () => onOpenTab?.('finance'),
+      });
+      if (p.viewed_at) out.push({
+        at: p.viewed_at, type:'proposal',
+        label: 'Quote viewed',
+        meta: 'Customer opened proposal',
+        color: '#1E40AF',
+        icon: '👀',
+        onClick: () => onOpenTab?.('finance'),
+      });
+      if (p.approved_at) out.push({
+        at: p.approved_at, type:'proposal',
+        label: 'Quote approved',
+        meta: '',
+        color: '#065F46',
+        icon: '✅',
+        onClick: () => onOpenTab?.('finance'),
+      });
+      if (p.cancelled_at || p.cancellation_at) out.push({
+        at: p.cancelled_at || p.cancellation_at, type:'proposal',
+        label: 'Quote cancelled',
+        meta: p.cancellation_reason || '',
+        color: '#991B1B',
+        icon: '❌',
+        onClick: () => onOpenTab?.('finance'),
+      });
+    }
+    // Invoices
+    for (const inv of invoices) {
+      if (inv.created_at) out.push({
+        at: inv.created_at, type:'invoice',
+        label: 'Invoice drafted',
+        meta: formatMoneyCents(inv.amount_cents || 0),
+        color: '#666',
+        icon: '📄',
+        onClick: () => onOpenTab?.('finance'),
+      });
+      if (inv.sent_at) out.push({
+        at: inv.sent_at, type:'invoice',
+        label: 'Invoice sent',
+        meta: formatMoneyCents(inv.amount_cents || 0),
+        color: '#1E40AF',
+        icon: '📨',
+        onClick: () => onOpenTab?.('finance'),
+      });
+      if (inv.paid_at) out.push({
+        at: inv.paid_at, type:'invoice',
+        label: 'Invoice paid',
+        meta: formatMoneyCents(inv.amount_cents || 0),
+        color: '#065F46',
+        icon: '💰',
+        onClick: () => onOpenTab?.('finance'),
+      });
+      if (inv.voided_at) out.push({
+        at: inv.voided_at, type:'invoice',
+        label: 'Invoice voided',
+        meta: '',
+        color: '#991B1B',
+        icon: '🚫',
+        onClick: () => onOpenTab?.('finance'),
+      });
+    }
+    // Calendar events
+    for (const e of events) {
+      if (!e.start_at) continue;
+      out.push({
+        at: e.created_at || e.start_at, type:'event',
+        label: capitalize(e.kind || 'event') + (e.status === 'cancelled' ? ' cancelled' : ' scheduled'),
+        meta: formatDate(e.start_at) + ' ' + (e.start_at ? formatTime(e.start_at) : ''),
+        color: e.status === 'cancelled' ? '#991B1B' : '#92400E',
+        icon: e.status === 'cancelled' ? '🚫' : '📅',
+        onClick: () => onOpenTab?.('calendar'),
+      });
+    }
+    // Stage transitions
+    for (const r of stageHistory) {
+      if (!r.changed_at) continue;
+      const fromLbl = (window.CRM?.STAGE_LABELS || {})[(window.CRM?.STAGE_NUM_TO_STR || {})[r.from_stage]] || `Stage ${r.from_stage}`;
+      const toLbl = (window.CRM?.STAGE_LABELS || {})[(window.CRM?.STAGE_NUM_TO_STR || {})[r.to_stage]] || `Stage ${r.to_stage}`;
+      out.push({
+        at: r.changed_at, type:'stage',
+        label: 'Stage changed',
+        meta: `${fromLbl} → ${toLbl}`,
+        color: '#1E40AF',
+        icon: '🔁',
+      });
+    }
+    out.sort((a, b) => new Date(b.at) - new Date(a.at));
+    return out;
+  }, [messages, calls, proposals, invoices, events, stageHistory.length, contact.id]);
+
+  if (items.length === 0) return null;
+
+  const visible = expanded ? items : items.slice(0, 5);
+
+  return (
+    <InfoSection title={`Activity (${items.length})`} editAction={null}>
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        {visible.map((it, i) => (
+          <button
+            key={i}
+            onClick={it.onClick}
+            disabled={!it.onClick}
+            style={{
+              display:'flex', gap:10, alignItems:'flex-start',
+              background:'none', border:'none', textAlign:'left',
+              padding:'4px 0', fontFamily:'inherit',
+              cursor: it.onClick ? 'pointer' : 'default',
+              borderRadius:6,
+            }}
+            onMouseEnter={e => { if (it.onClick) e.currentTarget.style.background = '#F8F8F6'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+          >
+            <span style={{ fontSize:14, lineHeight:'18px', flexShrink:0, width:18 }}>{it.icon}</span>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:8, flexWrap:'wrap' }}>
+                <span style={{ fontSize:12, fontWeight:600, color: it.color }}>{it.label}</span>
+                <span style={{ fontSize:11, color: MUTED, fontVariantNumeric:'tabular-nums' }}>{formatRelative(it.at)}</span>
+              </div>
+              {it.meta && (
+                <div style={{ fontSize:12, color:'#444', marginTop:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{it.meta}</div>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+      {items.length > 5 && (
+        <button
+          onClick={() => setExpanded(v => !v)}
+          style={{
+            marginTop:8, fontSize:11, fontWeight:600, color: NAVY,
+            background:'none', border:'none', cursor:'pointer', padding:'4px 0',
+            textTransform:'uppercase', letterSpacing:'0.04em',
+          }}
+        >{expanded ? 'Show less ↑' : `Show ${items.length - 5} more ↓`}</button>
+      )}
     </InfoSection>
   );
 }

@@ -319,6 +319,20 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const [search, setSearch] = React.useState('');
   const [stage, setStage] = React.useState('all');
   const [newContactOpen, setNewContactOpen] = React.useState(false);
+  // Bulk-select mode: long-press / shift-click on a contact row enters
+  // multi-select. Action bar slides in at bottom-left with bulk SMS,
+  // tag, archive, snooze. Holds a Set of selected contact ids.
+  const [selected, setSelected] = React.useState(() => new Set());
+  const [bulkMode, setBulkMode] = React.useState(false);
+  const longPressTimer = React.useRef(null);
+  const exitBulk = () => { setBulkMode(false); setSelected(new Set()); };
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
   // Saved searches — chip row above the list. localStorage-backed so it
   // syncs across desktop/iPhone via Safari iCloud Tabs but not across
   // accounts. ⌘S while typing a query saves the current search+stage as
@@ -462,13 +476,17 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     for (const [id, sig] of signalMap.entries()) {
       const c = contacts.find(x => x.id === id);
       if (!c || c.archived) continue;
+      // Snoozed contacts don't count as "rotting" — they're intentionally
+      // hidden until their snooze date. Counting them inflates the rot
+      // count and undoes the point of snoozing.
+      if (snoozeMap[id]) continue;
       const isActiveStage = c.stage !== 'archived' && c.stage !== 'paid';
       const hasRot = sig.stale || sig.outstandingCents > 0 || sig.stuck
         || (isActiveStage && sig.daysSinceTouch != null && sig.daysSinceTouch >= 7);
       if (hasRot) s.add(id);
     }
     return s;
-  }, [signalMap, contacts]);
+  }, [signalMap, contacts, snoozeMap]);
 
   // "Silent leads" — stage='new' contacts with no inbound reply in 2+ days.
   // The 2026-05-08 audit found 71 silent stage-1 contacts (Alex's initial
@@ -480,18 +498,23 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     for (const [id, sig] of signalMap.entries()) {
       const c = contacts.find(x => x.id === id);
       if (!c || c.archived || c.stage !== 'new') continue;
+      if (snoozeMap[id]) continue;
       const days = sig.daysSinceTouch;
       if (days != null && days >= 2) s.add(id);
     }
     return s;
-  }, [signalMap, contacts]);
+  }, [signalMap, contacts, snoozeMap]);
 
+  const snoozedCount = Object.keys(snoozeMap).filter(id => contacts.some(c => c.id === id && !c.archived)).length;
   const stageOpts = [
     { value:'all',         label:'All',           count: visibleContacts.length },
     { value:'silent_new',  label:'Silent leads',  count: silentSet.size },
     { value:'rotting',     label:'Rotting',       count: rottingSet.size },
     { value:'needs_reply', label:'Needs reply',   count: needsReplySet.size },
-    ...CRM.STAGE_ORDER.map(s => ({ value:s, label: STAGE_COLORS[s].label, count: stageCounts[s] }))
+    ...CRM.STAGE_ORDER.map(s => ({ value:s, label: STAGE_COLORS[s].label, count: stageCounts[s] })),
+    // Snoozed only renders if there's at least one snoozed contact —
+    // keeps the chip row uncluttered when nothing is snoozed.
+    ...(snoozedCount > 0 ? [{ value:'snoozed', label:'Snoozed', count: snoozedCount }] : []),
   ];
 
   // A contact has unread if they have an unread inbound message
@@ -499,12 +522,30 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   // Or a missed call we haven't responded to (treat missed as unread signal)
   const hasMissedCall = cid => calls.some(c => c.contact_id === cid && c.direction === 'missed');
 
+  // Snooze map drives both filtering and the row pill. Subscribe to the
+  // crm-snooze-changed event so toggling snooze in the overflow menu
+  // re-renders the list without a manual refresh.
+  const [snoozeMap, setSnoozeMap] = React.useState(() => window.readSnoozeMap?.() || {});
+  React.useEffect(() => {
+    const refresh = () => setSnoozeMap(window.readSnoozeMap?.() || {});
+    window.addEventListener('crm-snooze-changed', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('crm-snooze-changed', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+
   const filtered = contacts
     .filter(c => !c.archived)
+    // Snoozed contacts hide from every view EXCEPT the "Snoozed" filter
+    // (so a snoozed customer never shows up in Today / Stuck / etc.)
+    .filter(c => stage === 'snoozed' ? !!snoozeMap[c.id] : !snoozeMap[c.id])
     .filter(c => stage === 'all' ? true
               : stage === 'needs_reply' ? needsReplySet.has(c.id)
               : stage === 'rotting' ? rottingSet.has(c.id)
               : stage === 'silent_new' ? silentSet.has(c.id)
+              : stage === 'snoozed' ? true
               : c.stage === stage)
     .filter(c => {
       if (!search) return true;
@@ -644,16 +685,50 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
             // inside a <button> still warn. Switching to a div skips the
             // warning while keeping click + keyboard activation intact.
             <div key={c.id} role="button" tabIndex={0}
-              onClick={() => onOpen(c.id,'contacts')}
+              onClick={(e) => {
+                if (bulkMode) { toggleSelect(c.id); return; }
+                if (e.shiftKey) { setBulkMode(true); toggleSelect(c.id); return; }
+                onOpen(c.id,'contacts');
+              }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(c.id,'contacts'); } }}
+              onPointerDown={() => {
+                if (bulkMode) return;
+                longPressTimer.current = setTimeout(() => {
+                  setBulkMode(true);
+                  toggleSelect(c.id);
+                  // Mild haptic for the device-feel; ignored on desktop.
+                  if (navigator.vibrate) try { navigator.vibrate(10); } catch {}
+                }, 500);
+              }}
+              onPointerUp={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+              onPointerLeave={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
               style={{
-                width:'100%', background: activeContactId===c.id?'#FFFBEB':'white', border:'none', cursor:'pointer',
+                width:'100%',
+                background: bulkMode && selected.has(c.id)
+                  ? '#EFF6FF'
+                  : activeContactId===c.id ? '#FFFBEB' : 'white',
+                border:'none', cursor:'pointer',
                 display:'flex', alignItems:'center', gap:10, padding:'13px 18px',
                 borderBottom:'1px solid #F5F5F3', textAlign:'left',
-                boxShadow: activeContactId===c.id?'inset 2px 0 0 '+GOLD:'none',
+                boxShadow: bulkMode && selected.has(c.id)
+                  ? 'inset 3px 0 0 #2563EB'
+                  : activeContactId===c.id ? 'inset 2px 0 0 '+GOLD : 'none',
                 transition:'background 0.15s',
                 outline:'none',
             }}>
+              {/* Checkbox slides in when bulk-mode is active. Visual lane
+                  of consistent width prevents the row from jumping when
+                  bulk-mode toggles on/off. */}
+              {bulkMode && (
+                <span style={{
+                  width:18, height:18, flexShrink:0,
+                  borderRadius:4,
+                  border: '1.5px solid ' + (selected.has(c.id) ? '#2563EB' : '#CBD5E1'),
+                  background: selected.has(c.id) ? '#2563EB' : 'white',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  color:'white', fontSize:12, fontWeight:700,
+                }}>{selected.has(c.id) ? '✓' : ''}</span>
+              )}
               <ContactAvatarHoverPreview contact={c} unread={unread} dncSet={dncSet} onOpen={onOpen} />
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
@@ -691,6 +766,15 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                     <span title={`Stuck in ${(window.CRM?.STAGE_LABELS||{})[c.stage] || c.stage} for ${sig.daysInStage}d`}
                       style={{ fontSize:9, fontWeight:700, color:'#7F1D1D', background:'#FEE2E2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
                       STUCK · {sig.daysInStage}d
+                    </span>
+                  )}
+                  {/* Snooze pill — only shows when viewing the Snoozed
+                      filter (otherwise snoozed contacts are filtered out
+                      entirely). Tells you when the snooze unlocks. */}
+                  {snoozeMap[c.id] && (
+                    <span title={`Snoozed until ${new Date(snoozeMap[c.id]).toLocaleString()}`}
+                      style={{ fontSize:9, fontWeight:700, color:'#1E3A8A', background:'#DBEAFE', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                      💤 {new Date(snoozeMap[c.id]).toLocaleDateString(undefined, { month:'short', day:'numeric' })}
                     </span>
                   )}
                   {/* "New" hidden — it's the default for ~80% of the
@@ -732,6 +816,91 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
           );
         })}
       </PullToRefreshList>
+      {/* Bulk action bar — slides up from the bottom when bulkMode is on.
+          Position:sticky inside the scrolling list keeps it visible
+          regardless of scroll position; on mobile the iOS home-indicator
+          gets safe-area padding via env(). */}
+      {bulkMode && (
+        <BulkActionBar
+          count={selected.size}
+          ids={[...selected]}
+          onCancel={exitBulk}
+          onSnooze={async (days) => {
+            const until = new Date(Date.now() + days * 86400000).toISOString();
+            for (const id of selected) window.snoozeContact?.(id, until);
+            window.showToast?.(`Snoozed ${selected.size} contact${selected.size === 1 ? '' : 's'}`);
+            exitBulk();
+          }}
+          onArchive={async () => {
+            const ok = await window.confirmAction?.({
+              title: `Archive ${selected.size} contact${selected.size === 1 ? '' : 's'}?`,
+              body: 'Moves these contacts out of the active list.',
+              confirmLabel: 'Archive all',
+              destructive: false,
+            });
+            if (!ok) return;
+            const ids = [...selected];
+            for (const id of ids) {
+              const c = contacts.find(x => x.id === id);
+              if (c) c.archived = true;
+              if (CRM.__db) CRM.__db.from('contacts').update({ status: 'Archived' }).eq('id', id);
+            }
+            window.dispatchEvent(new CustomEvent('crm-data-changed'));
+            window.showToast?.(`Archived ${ids.length}`);
+            exitBulk();
+          }}
+          onTag={async () => {
+            const tag = window.prompt('Add tag to selected contacts:');
+            if (!tag || !tag.trim()) return;
+            const t = tag.trim();
+            try {
+              const raw = localStorage.getItem('bpp_v3_tags') || '{}';
+              const map = JSON.parse(raw);
+              for (const id of selected) {
+                const cur = Array.isArray(map[id]) ? map[id] : [];
+                if (!cur.includes(t)) map[id] = [...cur, t];
+              }
+              localStorage.setItem('bpp_v3_tags', JSON.stringify(map));
+              window.__tagMapCache = map;
+            } catch (e) { window.showToast?.('Tag failed: ' + e.message); return; }
+            window.showToast?.(`Tagged ${selected.size} with "${t}"`);
+            exitBulk();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── BulkActionBar ────────────────────────────────────────────────────
+// Bottom-anchored bar that appears when bulk-select mode is active.
+// 4 actions: Tag (add tag), Snooze 7d, Archive, Cancel. Bulk SMS is
+// intentionally NOT here — sending the same SMS to N people is
+// usually a mistake (TCPA + per-recipient personalization), and a
+// confirm-before-send modal would defeat the point of bulk speed.
+function BulkActionBar({ count, ids, onCancel, onSnooze, onArchive, onTag }) {
+  const btnStyle = (color, bg) => ({
+    padding:'8px 14px', borderRadius:8, border:'none',
+    background: bg, color, fontSize:12, fontWeight:700,
+    fontFamily:'inherit', cursor:'pointer',
+    display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap',
+  });
+  return (
+    <div style={{
+      position:'sticky', bottom:0, left:0, right:0,
+      background:'white', borderTop:'1px solid rgba(11,31,59,0.12)',
+      boxShadow:'0 -4px 12px rgba(11,31,59,0.06)',
+      padding:'10px 14px', paddingBottom:'calc(10px + env(safe-area-inset-bottom))',
+      display:'flex', alignItems:'center', gap:10,
+      zIndex:5,
+    }}>
+      <span style={{ fontSize:12, fontWeight:700, color:NAVY, flexShrink:0 }}>{count} selected</span>
+      <div style={{ flex:1, display:'flex', gap:6, overflowX:'auto', justifyContent:'flex-end' }} className="hide-scrollbar">
+        <button onClick={onTag} style={btnStyle(NAVY, '#F0F4FF')}>+ Tag</button>
+        <button onClick={() => onSnooze(7)} style={btnStyle(NAVY, '#F0F4FF')}>Snooze 7d</button>
+        <button onClick={onArchive} style={btnStyle('#92400E', '#FEF3C7')}>Archive</button>
+        <button onClick={onCancel} style={btnStyle('#666', 'transparent')}>Cancel</button>
+      </div>
     </div>
   );
 }

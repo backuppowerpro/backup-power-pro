@@ -1193,6 +1193,53 @@ function safeSetItem(key, value) {
   }
 }
 
+// ── Snooze ────────────────────────────────────────────────────────────
+// Hide a contact from the active list until a date. Stored in localStorage
+// so no DB migration is needed; this is a per-device intent anyway. Map
+// shape: { [contactId]: ISO_TIMESTAMP }. Anything past now is auto-cleared
+// at read time (so an unsnooze is just "let time pass").
+const SNOOZE_KEY = 'bpp_v3_snoozed';
+function readSnoozeMap() {
+  try {
+    const raw = localStorage.getItem(SNOOZE_KEY);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    if (!obj || typeof obj !== 'object') return {};
+    const now = Date.now();
+    const next = {};
+    let dirty = false;
+    for (const [id, ts] of Object.entries(obj)) {
+      if (typeof ts !== 'string') { dirty = true; continue; }
+      if (Date.parse(ts) > now) next[id] = ts;
+      else dirty = true;
+    }
+    if (dirty) safeSetItem(SNOOZE_KEY, JSON.stringify(next));
+    return next;
+  } catch { return {}; }
+}
+function writeSnoozeMap(map) {
+  safeSetItem(SNOOZE_KEY, JSON.stringify(map || {}));
+  window.dispatchEvent(new CustomEvent('crm-snooze-changed'));
+}
+function snoozeContact(contactId, untilIso) {
+  const m = readSnoozeMap();
+  m[contactId] = untilIso;
+  writeSnoozeMap(m);
+}
+function unsnoozeContact(contactId) {
+  const m = readSnoozeMap();
+  delete m[contactId];
+  writeSnoozeMap(m);
+}
+function isSnoozed(contactId) {
+  const m = readSnoozeMap();
+  return !!m[contactId];
+}
+function snoozedUntil(contactId) {
+  const m = readSnoozeMap();
+  return m[contactId] || null;
+}
+
 // ── BPP pricing engine (mirrors v1/v2 — keep in sync) ──────────────────
 // QB_C = your real costs. QB_S = what the customer sees. Both in dollars.
 // When v1 changes, mirror here.
@@ -1334,4 +1381,5 @@ Object.assign(window, {
   QB_C, QB_S, TIER_META, TIER_IDS, quickQuoteTotal, quickQuoteCompute,
   V3_PRICING, quoteV3Total,
   safeSetItem, checkSvImagery, isAddressableStreet, copyText,
+  readSnoozeMap, snoozeContact, unsnoozeContact, isSnoozed, snoozedUntil,
 });
