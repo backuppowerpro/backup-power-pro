@@ -133,7 +133,8 @@ function Root() {
   // first load. Pull-to-refresh on iOS Safari, accidental tab close, or
   // a shared link can then restore the prior context. Format:
   //   ?c=<contactId>&t=<rightTab>&lt=<leftTab>
-  const VALID_TABS = ['contacts','calendar','finance','messages','calls'];
+  // Match the NavBar order — Contact, Messages, Finance, Calendar, Phone.
+  const VALID_TABS = ['contacts','messages','finance','calendar','calls'];
   const initialQuery = React.useMemo(() => {
     if (typeof window === 'undefined') return {};
     const p = new URLSearchParams(window.location.search);

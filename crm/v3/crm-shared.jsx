@@ -138,7 +138,11 @@ const Icons = {
 
 // ── Top Nav Bar ───────────────────────────────────────────────────
 function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, contextLabel }) {
-  const tabs = ['contacts','calendar','finance','messages','calls'];
+  // Tab order — Key 2026-05-08: Contact → Messages → Finance → Calendar → Phone.
+  // Reasoning: contact info is the entry point, then conversation
+  // (most-used surface), then money, then schedule, then calls. Old
+  // ordering put Calendar second which de-prioritized messaging.
+  const tabs = ['contacts','messages','finance','calendar','calls'];
   return (
     <div style={{
       background: NAVY,
