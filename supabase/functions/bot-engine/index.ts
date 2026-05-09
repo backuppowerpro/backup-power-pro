@@ -332,6 +332,40 @@ function applySlotUpdates(qd: Record<string, any>, classifier: any, photoResult:
   if (classifier?.competitor_quote_excerpt) {
     out.competitor_quote_excerpt = classifier.competitor_quote_excerpt
   }
+  // v10.1.66 — Type B injections (5). Excerpt persists; phraser
+  // injects until {signal}_acked flips on next-turn write below.
+  if (classifier?.diy_safety_excerpt) {
+    out.diy_safety_excerpt = classifier.diy_safety_excerpt
+  }
+  if (classifier?.life_event_excerpt) {
+    out.life_event_excerpt = classifier.life_event_excerpt
+    out.life_event = true
+  }
+  if (classifier?.partial_install_excerpt) {
+    out.partial_install_excerpt = classifier.partial_install_excerpt
+    out.partial_install = true
+  }
+  if (classifier?.large_load_excerpt) {
+    out.large_load_excerpt = classifier.large_load_excerpt
+  }
+  if (classifier?.finance_question_excerpt) {
+    out.finance_question_excerpt = classifier.finance_question_excerpt
+  }
+  // v10.1.66 — Type C handoff (3). Persist excerpt + flag for Key's
+  // handoff context. Phraser does NOT inject text on these (sensitive
+  // / low-value-add to mention in SMS).
+  if (classifier?.medical_priority_excerpt) {
+    out.medical_priority_excerpt = classifier.medical_priority_excerpt
+    out.medical_priority = true
+  }
+  if (classifier?.mobile_home_excerpt) {
+    out.mobile_home_excerpt = classifier.mobile_home_excerpt
+    out.mobile_home = true
+  }
+  if (classifier?.multi_property_excerpt) {
+    out.multi_property_excerpt = classifier.multi_property_excerpt
+    out.multi_property = true
+  }
   if (classifier?.email_likely_meant) out.email_likely_meant = classifier.email_likely_meant
   if (Array.isArray(classifier?.load_mentions) && classifier.load_mentions.length) {
     const prev = Array.isArray(out.load_mentions) ? out.load_mentions : []
@@ -383,6 +417,23 @@ function buildSmCtx(contact: any, classifier: any): any {
     price_concern_acked: !!contact.qualification_data?.price_concern_acked,
     competitor_quote_excerpt: classifier?.competitor_quote_excerpt || null,
     competitor_quote_acked: !!contact.qualification_data?.competitor_quote_acked,
+    // v10.1.66 — 5 Type B injections (D-H in phraser SECONDARY-SIGNAL
+    // INJECTION). Each fires once per contact: phraser injects when
+    // excerpt is set + _acked is false; engine flips _acked after the
+    // turn so the NEXT turn doesn't re-inject. The 3 Type C signals
+    // (medical / mobile / multi-property) are NOT threaded here —
+    // they're persisted to qualification_data only and never appear in
+    // Ashley's reply (handoff context only).
+    diy_safety_excerpt: classifier?.diy_safety_excerpt || null,
+    diy_safety_acked: !!contact.qualification_data?.diy_safety_acked,
+    life_event_excerpt: classifier?.life_event_excerpt || null,
+    life_event_acked: !!contact.qualification_data?.life_event_acked,
+    partial_install_excerpt: classifier?.partial_install_excerpt || null,
+    partial_install_acked: !!contact.qualification_data?.partial_install_acked,
+    large_load_excerpt: classifier?.large_load_excerpt || null,
+    large_load_acked: !!contact.qualification_data?.large_load_acked,
+    finance_question_excerpt: classifier?.finance_question_excerpt || null,
+    finance_question_acked: !!contact.qualification_data?.finance_question_acked,
     address_captured: false,
     time_of_day_bucket: timeOfDayBucket(),
     greeting_variant: contact.qualification_data?.greeting_variant || 'A',
@@ -959,6 +1010,27 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     if (ctx?.competitor_quote_excerpt && !ctx?.competitor_quote_acked) {
       newQd.competitor_quote_acked = true
       newQd.competitor_quote_acked_at = new Date().toISOString()
+    }
+    // v10.1.66 — 5 Type B signals (D-H): same _acked flag pattern.
+    if (ctx?.diy_safety_excerpt && !ctx?.diy_safety_acked) {
+      newQd.diy_safety_acked = true
+      newQd.diy_safety_acked_at = new Date().toISOString()
+    }
+    if (ctx?.life_event_excerpt && !ctx?.life_event_acked) {
+      newQd.life_event_acked = true
+      newQd.life_event_acked_at = new Date().toISOString()
+    }
+    if (ctx?.partial_install_excerpt && !ctx?.partial_install_acked) {
+      newQd.partial_install_acked = true
+      newQd.partial_install_acked_at = new Date().toISOString()
+    }
+    if (ctx?.large_load_excerpt && !ctx?.large_load_acked) {
+      newQd.large_load_acked = true
+      newQd.large_load_acked_at = new Date().toISOString()
+    }
+    if (ctx?.finance_question_excerpt && !ctx?.finance_question_acked) {
+      newQd.finance_question_acked = true
+      newQd.finance_question_acked_at = new Date().toISOString()
     }
     // v10.1.37, apply scope-mismatch flags computed earlier
     if (detectedOutOfScope) newQd.scope_mismatch_ats = true

@@ -71,6 +71,19 @@ const OUTPUT_SCHEMA = {
     storm_urgency_excerpt: { type: 'string' },
     price_concern_excerpt: { type: 'string' },
     competitor_quote_excerpt: { type: 'string' },
+    // v10.1.66 — 5 Type B signal injections + 3 Type C handoff context.
+    // See SECONDARY-SIGNAL INJECTION (D-H) in phraser system prompt for
+    // the Type B response patterns. Type C fields are persisted to
+    // qualification_data for Key's handoff context but the phraser does
+    // NOT inject text in Ashley's reply (sensitive / low-value-add).
+    diy_safety_excerpt: { type: 'string' },        // Type B: dryer-plug / backfeed / "do I need a permit"
+    life_event_excerpt: { type: 'string' },        // Type B: just-moved / new-baby / new-home
+    partial_install_excerpt: { type: 'string' },   // Type B: interlock already installed / panel work done
+    large_load_excerpt: { type: 'string' },        // Type B: well pump / heat pump / central AC
+    finance_question_excerpt: { type: 'string' },  // Type B: insurance / financing / Afterpay
+    medical_priority_excerpt: { type: 'string' },  // Type C: medical equipment / oxygen / dialysis
+    mobile_home_excerpt: { type: 'string' },       // Type C: mobile/manufactured home / trailer / park
+    multi_property_excerpt: { type: 'string' },    // Type C: cabin / rental / second home
     chitchat_excerpt: { type: 'string' },
     impatience_excerpt: { type: 'string' },
     amended_slot: {
