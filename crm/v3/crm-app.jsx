@@ -276,7 +276,9 @@ function Root() {
   // inbox-style badge ("how much work is on my plate?").
   const badgeCounts = {
     messages: CRM.messages.filter(m => m.direction === 'in' && m.read_at == null).length,
-    calls: CRM.calls.filter(c => c.voicemail_url).length,
+    // Calls badge = unheard voicemails (listened_at == null). Otherwise
+    // the badge stays lit forever and loses signal value.
+    calls: CRM.calls.filter(c => c.voicemail_url && c.listened_at == null).length,
     calendar: CRM.events.filter(e => (e.start_at || '').slice(0,10) === todayStr && e.status === 'scheduled').length,
     finance: CRM.invoices.filter(i => i.status === 'overdue').length,
   };
@@ -291,7 +293,7 @@ function Root() {
         m.contact_id === activeContact && m.direction === 'in' && m.read_at == null
       ).length,
       calls: CRM.calls.filter(c =>
-        c.contact_id === activeContact && c.voicemail_url
+        c.contact_id === activeContact && c.voicemail_url && c.listened_at == null
       ).length,
       calendar: CRM.events.filter(e =>
         e.contact_id === activeContact && (e.start_at || '').slice(0,10) === todayStr && e.status === 'scheduled'

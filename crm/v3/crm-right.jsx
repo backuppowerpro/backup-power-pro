@@ -1960,11 +1960,33 @@ function JurisdictionEditor({ permit, bumpData }) {
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
-  const pick = (name) => {
+  const pick = async (name) => {
     setOpen(false);
     if (permit.jurisdiction === name) return;
+    const prev = { jurisdiction: permit.jurisdiction, jurisdiction_name: permit.jurisdiction_name };
+    // Optimistic flip
     permit.jurisdiction = name;
+    permit.jurisdiction_name = name;
     bumpData?.();
+    // Persist + revert on error. Look up the jurisdiction_id from the
+    // existing permit_jurisdictions table by name so the FK stays valid.
+    if (!CRM.__db) return;
+    let jurisdictionId = null;
+    try {
+      const { data } = await CRM.__db.from('permit_jurisdictions').select('id').eq('name', name).limit(1);
+      if (data?.[0]?.id) jurisdictionId = data[0].id;
+    } catch (_) {}
+    const { error } = await CRM.__db.from('permits')
+      .update({ jurisdiction_name: name, jurisdiction_id: jurisdictionId })
+      .eq('id', permit.id);
+    if (error) {
+      permit.jurisdiction = prev.jurisdiction;
+      permit.jurisdiction_name = prev.jurisdiction_name;
+      bumpData?.();
+      window.showToast?.('Jurisdiction save failed: ' + error.message);
+      return;
+    }
+    permit.jurisdiction_id = jurisdictionId;
     window.showToast?.('Jurisdiction updated');
   };
 
@@ -1999,10 +2021,28 @@ function JurisdictionEditor({ permit, bumpData }) {
 }
 
 function PermitStatusActions({ permit, bumpData }) {
-  const advance = (toStatus, stamps = {}) => {
+  // Optimistic + await + revert on error. Persists the new status +
+  // any timestamp stamps (submitted_at, approved_at) and the
+  // blocker_note when transitioning to/from blocked.
+  const advance = async (toStatus, stamps = {}) => {
+    const prev = {
+      status: permit.status,
+      submitted_at: permit.submitted_at,
+      approved_at: permit.approved_at,
+      blocker_note: permit.blocker_note,
+    };
     permit.status = toStatus;
     Object.assign(permit, stamps);
     bumpData?.();
+    if (!CRM.__db) return;
+    const patch = { status: toStatus, ...stamps };
+    const { error } = await CRM.__db.from('permits').update(patch).eq('id', permit.id);
+    if (error) {
+      Object.assign(permit, prev);
+      bumpData?.();
+      window.showToast?.('Permit save failed: ' + error.message);
+      return;
+    }
     window.showToast?.(`Permit: ${capitalize(toStatus)}`);
   };
   const today = TODAY;
@@ -2067,42 +2107,68 @@ function PermitsCard({ permits, contact, bumpData }) {
     const j = contact.jurisdiction
       ? BPP_JURISDICTIONS.find(n => n.toLowerCase().includes(contact.jurisdiction.toLowerCase())) || BPP_JURISDICTIONS[0]
       : BPP_JURISDICTIONS[0];
-    CRM.permits.push({
-      id:'pm-'+Date.now(),
+    if (!CRM.__db) {
+      window.showToast?.('Supabase not loaded — permit not saved');
+      return;
+    }
+    // Resolve jurisdiction_id from the name so the FK is valid. If the
+    // lookup fails we proceed with a null FK rather than blocking — the
+    // jurisdiction_name still drives the UI.
+    let jurisdictionId = null;
+    try {
+      const { data: jdata } = await CRM.__db.from('permit_jurisdictions')
+        .select('id').eq('name', j).limit(1);
+      if (jdata?.[0]?.id) jurisdictionId = jdata[0].id;
+    } catch (_) {}
+    const { data, error } = await CRM.__db.from('permits').insert({
       contact_id: contact.id,
-      jurisdiction: j,
-      status:'not_started',
+      jurisdiction_id: jurisdictionId,
+      jurisdiction_name: j,
+      status: 'not_started',
       permit_number: 'PENDING',
-      submitted_at: null,
-      approved_at: null,
       cost_cents: 0,
-      blocker_note: null,
+    }).select().single();
+    if (error) {
+      window.showToast?.('Permit save failed: ' + error.message);
+      return;
+    }
+    // Optimistically push the mapped row into local state. Realtime
+    // will reconcile from the channel a moment later.
+    CRM.permits.push({
+      id: data.id,
+      contact_id: data.contact_id,
+      jurisdiction_id: data.jurisdiction_id || null,
+      jurisdiction: data.jurisdiction_name || j,
+      jurisdiction_name: data.jurisdiction_name || j,
+      permit_number: data.permit_number || 'PENDING',
+      status: data.status || 'not_started',
+      submitted_at: data.submitted_at || null,
+      approved_at: data.approved_at || null,
+      cost_cents: data.cost_cents || 0,
+      blocker_note: data.blocker_note || null,
     });
+    bumpData?.();
     // Advance the contact stage from "Booked" → "Permit submit" since
-    // starting a permit IS that transition. The Stage row CTA used to
-    // do this; now the Permits card handles it directly.
+    // starting a permit IS that transition.
     if (contact.stage === 'booked' && CRM.STAGE_STR_TO_NUM?.permit_submit != null) {
       const previous = contact.stage;
       contact.stage = 'permit_submit';
       bumpData?.();
       try {
-        if (CRM.__db) {
-          const { error } = await CRM.__db.from('contacts')
-            .update({ stage: CRM.STAGE_STR_TO_NUM.permit_submit })
-            .eq('id', contact.id);
-          if (error) {
-            contact.stage = previous;
-            bumpData?.();
-            window.showToast?.(`Permit added — stage save failed: ${error.message}`);
-            return;
-          }
+        const { error: stageErr } = await CRM.__db.from('contacts')
+          .update({ stage: CRM.STAGE_STR_TO_NUM.permit_submit })
+          .eq('id', contact.id);
+        if (stageErr) {
+          contact.stage = previous;
+          bumpData?.();
+          window.showToast?.(`Permit added — stage save failed: ${stageErr.message}`);
+          return;
         }
       } catch (e) {
         contact.stage = previous;
         bumpData?.();
       }
     }
-    bumpData?.();
     window.showToast?.('Permit started');
   };
 
@@ -2194,37 +2260,85 @@ function MaterialRow({ mat, contact, bumpData, isPlaceholder }) {
     mat.status === 'installed' ? 'Installed' :
     'Not ordered';
 
-  const advance = () => {
+  const advance = async () => {
     if (!next) return;
+    if (!CRM.__db) {
+      window.showToast?.('Supabase not loaded');
+      return;
+    }
     if (isPlaceholder) {
-      // create real material row
-      const realMat = {
-        id: 'mat-' + Date.now(),
-        contact_id: contact.id,
-        kind: mat.kind,
-        status: next.next,
+      // First advance on a permanent row (inlet/interlock/cord) → INSERT.
+      const stamps = {
         ordered_at: next.stamp === 'ordered_at' ? TODAY : null,
         received_at: next.stamp === 'received_at' ? TODAY : null,
         installed_at: next.stamp === 'installed_at' ? TODAY : null,
       };
-      CRM.materials.push(realMat);
-    } else {
-      mat.status = next.next;
-      mat[next.stamp] = TODAY;
+      const { data, error } = await CRM.__db.from('materials').insert({
+        contact_id: contact.id,
+        kind: mat.kind,
+        status: next.next,
+        ...stamps,
+      }).select().single();
+      if (error) {
+        window.showToast?.(`${MAT_KIND_LABEL(mat.kind)} save failed: ${error.message}`);
+        return;
+      }
+      CRM.materials.push({
+        id: data.id,
+        contact_id: data.contact_id,
+        kind: data.kind,
+        status: data.status,
+        ordered_at: data.ordered_at,
+        received_at: data.received_at,
+        installed_at: data.installed_at,
+      });
+      bumpData?.();
+      window.showToast?.(`${MAT_KIND_LABEL(mat.kind)}: ${next.label.toLowerCase()}`);
+      return;
     }
+    // UPDATE path for an existing row. Optimistic + revert on error.
+    const prev = { status: mat.status, [next.stamp]: mat[next.stamp] };
+    mat.status = next.next;
+    mat[next.stamp] = TODAY;
     bumpData?.();
+    const { error } = await CRM.__db.from('materials')
+      .update({ status: next.next, [next.stamp]: TODAY })
+      .eq('id', mat.id);
+    if (error) {
+      mat.status = prev.status;
+      mat[next.stamp] = prev[next.stamp];
+      bumpData?.();
+      window.showToast?.(`${MAT_KIND_LABEL(mat.kind)} save failed: ${error.message}`);
+      return;
+    }
     window.showToast?.(`${MAT_KIND_LABEL(mat.kind)}: ${next.label.toLowerCase()}`);
   };
 
   // Reset back to "Not ordered" — the only escape hatch from an
   // accidental "Mark installed". Wipes the date stamps.
-  const reset = () => {
-    if (isPlaceholder) return; // already at default
+  const reset = async () => {
+    if (isPlaceholder) return;
+    if (!CRM.__db) return;
+    const prev = {
+      status: mat.status,
+      ordered_at: mat.ordered_at,
+      received_at: mat.received_at,
+      installed_at: mat.installed_at,
+    };
     mat.status = 'not_ordered';
     mat.ordered_at = null;
     mat.received_at = null;
     mat.installed_at = null;
     bumpData?.();
+    const { error } = await CRM.__db.from('materials')
+      .update({ status: 'not_ordered', ordered_at: null, received_at: null, installed_at: null })
+      .eq('id', mat.id);
+    if (error) {
+      Object.assign(mat, prev);
+      bumpData?.();
+      window.showToast?.(`Reset failed: ${error.message}`);
+      return;
+    }
     window.showToast?.(`${MAT_KIND_LABEL(mat.kind)}: reset`);
   };
 
@@ -2232,12 +2346,43 @@ function MaterialRow({ mat, contact, bumpData, isPlaceholder }) {
   // interlock, cord — those always render as part of the install).
   const PERMANENT = new Set(['inlet','interlock','cord']);
   const canDelete = !isPlaceholder && !PERMANENT.has(mat.kind);
-  const remove = () => {
+  const remove = async () => {
     if (!canDelete) return;
+    if (!CRM.__db) return;
+    // Snapshot before delete so undo can re-insert
+    const snap = { ...mat };
     const i = (CRM.materials || []).findIndex(m => m.id === mat.id);
     if (i >= 0) CRM.materials.splice(i, 1);
     bumpData?.();
-    window.showToast?.(`${MAT_KIND_LABEL(mat.kind)} removed`);
+    const { error } = await CRM.__db.from('materials').delete().eq('id', mat.id);
+    if (error) {
+      // Re-insert into local array on persist failure
+      if (i >= 0) CRM.materials.splice(i, 0, snap);
+      bumpData?.();
+      window.showToast?.(`Remove failed: ${error.message}`);
+      return;
+    }
+    window.showToast?.(`${MAT_KIND_LABEL(mat.kind)} removed`, {
+      undo: async () => {
+        const { id, created_at, updated_at, ...rest } = snap;
+        const { data, error: e2 } = await CRM.__db.from('materials').insert(rest).select().single();
+        if (e2) {
+          window.showToast?.(`Undo failed: ${e2.message}`);
+          return;
+        }
+        CRM.materials.push({
+          id: data.id,
+          contact_id: data.contact_id,
+          kind: data.kind,
+          status: data.status,
+          ordered_at: data.ordered_at,
+          received_at: data.received_at,
+          installed_at: data.installed_at,
+        });
+        bumpData?.();
+      },
+      duration: 5000,
+    });
   };
 
   return (
@@ -2300,14 +2445,29 @@ function InstallSpecCard({ ampSpec, contact, materials = [], bumpData }) {
   const [showAddPicker, setShowAddPicker] = React.useState(false);
   const EXTRA_KINDS = ['breaker','whip','surge','other'];
 
-  const addExtra = (kind) => {
+  const addExtra = async (kind) => {
     setShowAddPicker(false);
-    CRM.materials.push({
-      id:'mat-'+Date.now(),
+    if (!CRM.__db) {
+      window.showToast?.('Supabase not loaded');
+      return;
+    }
+    const { data, error } = await CRM.__db.from('materials').insert({
       contact_id: contact.id,
       kind,
-      status:'not_ordered',
-      ordered_at:null, received_at:null, installed_at:null,
+      status: 'not_ordered',
+    }).select().single();
+    if (error) {
+      window.showToast?.(`Add ${MAT_KIND_LABEL(kind)} failed: ${error.message}`);
+      return;
+    }
+    CRM.materials.push({
+      id: data.id,
+      contact_id: data.contact_id,
+      kind: data.kind,
+      status: data.status,
+      ordered_at: data.ordered_at,
+      received_at: data.received_at,
+      installed_at: data.installed_at,
     });
     bumpData?.();
     window.showToast?.(`${MAT_KIND_LABEL(kind)} added`);
@@ -3685,6 +3845,172 @@ function loadTemplates() {
   return DEFAULT_TEMPLATES;
 }
 
+// ── StarredExamplesManager ──────────────────────────────────────────
+// Lists every row in reply_suggestion_stars with body + created_at +
+// contact name. Each row has an unstar (delete) action with confirm.
+// Without this, a typo'd star permanently weights future suggest-reply
+// calls — there was no escape hatch from the CRM until 2026-05-09.
+function StarredExamplesManager({ onClose }) {
+  const [rows, setRows] = React.useState(null); // null = loading, [] = empty, [...] = loaded
+  const [err, setErr] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+
+  const refresh = React.useCallback(async () => {
+    if (!CRM.__db) { setErr('Supabase not loaded'); return; }
+    setErr('');
+    const { data, error } = await CRM.__db
+      .from('reply_suggestion_stars')
+      .select('id, body, contact_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) {
+      setErr('Load failed: ' + error.message);
+      setRows([]);
+      return;
+    }
+    setRows(data || []);
+  }, []);
+
+  React.useEffect(() => { refresh(); }, [refresh]);
+
+  // ESC closes
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const lookupContactName = (cid) => {
+    const c = (CRM.contacts || []).find(x => x.id === cid);
+    if (!c) return '—';
+    return contactName(c) || (c.phone || c.id || '').slice(0, 12);
+  };
+
+  const remove = async (row) => {
+    const ok = await window.confirmAction?.({
+      title: 'Unstar this example?',
+      body: `It will no longer weight future reply suggestions:\n\n"${row.body}"`,
+      confirmLabel: 'Unstar',
+      destructive: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    const snap = { ...row };
+    setRows(prev => (prev || []).filter(r => r.id !== row.id));
+    const { error } = await CRM.__db.from('reply_suggestion_stars').delete().eq('id', row.id);
+    setBusy(false);
+    if (error) {
+      setRows(prev => [snap, ...(prev || [])]);
+      window.showToast?.('Unstar failed: ' + error.message);
+      return;
+    }
+    window.showToast?.('Unstarred', {
+      undo: async () => {
+        const { id, created_at, ...rest } = snap;
+        const { data, error: e2 } = await CRM.__db
+          .from('reply_suggestion_stars')
+          .insert(rest)
+          .select()
+          .single();
+        if (e2) {
+          window.showToast?.('Undo failed: ' + e2.message);
+          return;
+        }
+        setRows(prev => [data, ...(prev || [])]);
+      },
+      duration: 5000,
+    });
+  };
+
+  const fmtWhen = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, background:'rgba(11,31,59,0.45)', zIndex:200,
+      display:'flex', alignItems:'center', justifyContent:'center', padding:'24px',
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background:'white', borderRadius:12, width:'100%', maxWidth:560, maxHeight:'88vh',
+        display:'flex', flexDirection:'column', overflow:'hidden',
+        border:'1px solid rgba(11,31,59,0.12)',
+      }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderBottom:'1px solid #EBEBEA' }}>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700, color:NAVY }}>Starred reply examples</div>
+            <div style={{ fontSize:11, color:MUTED, marginTop:2 }}>These shape how the AI suggests replies in your voice.</div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{
+            fontSize:18, background:'none', border:'none', color:MUTED, cursor:'pointer', lineHeight:1, padding:4,
+          }}>×</button>
+        </div>
+        <div style={{ flex:1, overflowY:'auto', padding:'8px 0' }}>
+          {rows == null && (
+            <div style={{ padding:'24px 16px', textAlign:'center', fontSize:13, color:MUTED }}>Loading…</div>
+          )}
+          {err && (
+            <div style={{ padding:'12px 18px', fontSize:12, color:'#991B1B', background:'#FEF2F2' }}>{err}</div>
+          )}
+          {Array.isArray(rows) && rows.length === 0 && !err && (
+            <div style={{ padding:'40px 24px', textAlign:'center' }}>
+              <div style={{ fontSize:13, color:NAVY, fontWeight:600, marginBottom:6 }}>No starred examples yet</div>
+              <div style={{ fontSize:12, color:MUTED, lineHeight:1.5 }}>
+                Tap the star next to a Suggest result to save it as a high-weight example. Your AI suggestions will sound more like you over time.
+              </div>
+            </div>
+          )}
+          {Array.isArray(rows) && rows.map(r => (
+            <div key={r.id} style={{
+              display:'flex', alignItems:'flex-start', gap:10,
+              padding:'12px 18px',
+              borderBottom:'1px solid #F5F5F3',
+            }}>
+              <span style={{
+                width:20, height:20, borderRadius:'50%',
+                background:'#FEF3C7', color:'#92400E',
+                display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:1,
+              }}>
+                <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+              </span>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, color:NAVY, lineHeight:1.45, whiteSpace:'pre-wrap', wordBreak:'break-word' }}>{r.body}</div>
+                <div style={{ fontSize:11, color:MUTED, marginTop:4, display:'flex', gap:8, flexWrap:'wrap' }}>
+                  <span>{fmtWhen(r.created_at)}</span>
+                  {r.contact_id && <span>· {lookupContactName(r.contact_id)}</span>}
+                </div>
+              </div>
+              <button
+                onClick={() => remove(r)}
+                disabled={busy}
+                title="Unstar (delete)"
+                aria-label="Unstar"
+                style={{
+                  width:28, height:28, borderRadius:6, flexShrink:0,
+                  background:'transparent', color:'#dc2626',
+                  border:'1px solid rgba(220,38,38,0.22)', cursor: busy ? 'wait' : 'pointer',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              </button>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding:'10px 18px', borderTop:'1px solid #EBEBEA', fontSize:11, color:MUTED, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span>{Array.isArray(rows) ? `${rows.length} starred` : ''}</span>
+          <button onClick={refresh} style={{
+            fontSize:11, fontWeight:600, color:NAVY, background:'none',
+            border:'1px solid rgba(11,31,59,0.12)', borderRadius:6,
+            padding:'4px 10px', cursor:'pointer', fontFamily:'inherit',
+          }}>Refresh</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TemplateEditModal({ onClose }) {
   const [list, setList] = React.useState(loadTemplates);
   const [draft, setDraft] = React.useState('');
@@ -3933,6 +4259,7 @@ function ContactMessages({ contact, thread, isDnc }) {
   const [suggestions, setSuggestions] = React.useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = React.useState(false);
   const [suggestionsErr, setSuggestionsErr] = React.useState('');
+  const [starredManagerOpen, setStarredManagerOpen] = React.useState(false);
   const fetchSuggestions = async () => {
     if (suggestionsLoading) return;
     setSuggestionsLoading(true);
@@ -4293,6 +4620,19 @@ function ContactMessages({ contact, thread, isDnc }) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>
           {suggestionsLoading ? 'Thinking…' : 'Suggest'}
         </button>
+        <button
+          onClick={() => setStarredManagerOpen(true)}
+          aria-label="Manage starred examples"
+          title="Manage starred examples"
+          style={{
+            height:30, width:30, borderRadius:6,
+            border:'1px solid #DDD6FE', background:'white', color:'#5B21B6',
+            cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+            display:'flex', alignItems:'center', justifyContent:'center',
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        </button>
         <button onClick={() => setEditingTemplates(true)} aria-label="Edit templates" title="Edit templates" style={{
           width:30, height:30, borderRadius:6, border:'1px solid rgba(11,31,59,0.15)', background:'white',
           color:MUTED, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
@@ -4317,6 +4657,7 @@ function ContactMessages({ contact, thread, isDnc }) {
         })}
       </div>
       {editingTemplates && <TemplateEditModal onClose={() => setEditingTemplates(false)} />}
+      {starredManagerOpen && <StarredExamplesManager onClose={() => setStarredManagerOpen(false)} />}
 
       {/* Attachment preview */}
       {attachments.length > 0 && (
@@ -4415,6 +4756,31 @@ function ContactMessages({ contact, thread, isDnc }) {
 // ── Contact Calls ─────────────────────────────────────────────────
 function ContactCalls({ contact, calls, isDnc }) {
   const sorted = [...calls].sort((a,b) => (b.started_at||'').localeCompare(a.started_at||''));
+
+  // Clear voicemail badge on view — same class as the mark-message-read
+  // pattern shipped 2026-05-09 for messages. Whenever this tab mounts or
+  // the call list updates, mark every unlistened voicemail listened_at=now.
+  // Optimistic + revert on error.
+  React.useEffect(() => {
+    if (!CRM.__db) return;
+    const unlistened = (CRM.calls || []).filter(c =>
+      c.contact_id === contact.id &&
+      c.voicemail_url &&
+      c.listened_at == null
+    );
+    if (unlistened.length === 0) return;
+    const stamp = new Date().toISOString();
+    const ids = unlistened.map(c => c.id);
+    for (const c of unlistened) c.listened_at = stamp;
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    CRM.__db.from('calls').update({ listened_at: stamp }).in('id', ids).then(({ error }) => {
+      if (error) {
+        for (const c of unlistened) c.listened_at = null;
+        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        console.warn('[CRM] mark-voicemail-listened failed:', error.message);
+      }
+    });
+  }, [contact.id, calls.length]);
 
   const ICON_OUT = (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

@@ -1802,7 +1802,10 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
     const cMsgs = msgsByContact.get(c.id) || [];
     const last = cMsgs[cMsgs.length - 1];
     const cCalls = callsByContact.get(c.id) || [];
-    const hasVm = cCalls.some(cl => cl.voicemail_url);
+    // Voicemail badge clears when listened_at is set — same pattern as
+    // messages.read_at clearing the unread badge. Without this filter
+    // the purple voicemail dot stayed lit forever after Key heard it.
+    const hasVm = cCalls.some(cl => cl.voicemail_url && cl.listened_at == null);
     const unread = cMsgs.filter(m => m.direction === 'in' && m.read_at == null).length;
     return { contact: c, last, cCalls, hasVm, unread };
   })
@@ -1907,7 +1910,10 @@ function CallsList({ calls, contacts, onOpen, activeContactId }) {
   });
   const todayCalls   = sorted.filter(c => dayKey(c.started_at) === TODAY);
   const callbackQueue = sorted.filter(c => c.direction === 'missed');
-  const voicemails   = sorted.filter(c => c.voicemail_url);
+  // Voicemails filter: surface unheard voicemails first (listened_at==null).
+  // Once heard, they stay in the All view but drop out of this chip — same
+  // pattern as the inbox unread filter clearing on read.
+  const voicemails   = sorted.filter(c => c.voicemail_url && c.listened_at == null);
 
   const [filter, setFilter] = React.useState('all');
   const [dial, setDial] = React.useState('');

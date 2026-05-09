@@ -152,6 +152,70 @@ function mapEvent(r) {
   };
 }
 
+// Three tables added 2026-05-09 (migration 20260509130000). Mappers
+// preserve the in-memory shape the UI was already using so the
+// component code reads identically to before this migration.
+
+function mapPermit(r) {
+  return {
+    id: r.id,
+    contact_id: r.contact_id,
+    jurisdiction_id: r.jurisdiction_id || null,
+    // Denormalized name for the UI (matches the prior in-memory shape
+    // where `permit.jurisdiction` was a plain string).
+    jurisdiction: r.jurisdiction_name || '',
+    jurisdiction_name: r.jurisdiction_name || '',
+    permit_number: r.permit_number || 'PENDING',
+    status: r.status || 'not_started',
+    submitted_at: r.submitted_at || null,
+    approved_at: r.approved_at || null,
+    cost_cents: r.cost_cents || 0,
+    blocker_note: r.blocker_note || null,
+    created_at: r.created_at || null,
+    updated_at: r.updated_at || null,
+  };
+}
+
+function mapMaterial(r) {
+  return {
+    id: r.id,
+    contact_id: r.contact_id,
+    kind: r.kind,
+    status: r.status || 'not_ordered',
+    ordered_at: r.ordered_at || null,
+    received_at: r.received_at || null,
+    installed_at: r.installed_at || null,
+    notes: r.notes || null,
+    created_at: r.created_at || null,
+    updated_at: r.updated_at || null,
+  };
+}
+
+function mapCall(r) {
+  // Direction normalize: Twilio writes 'inbound'/'outbound'; UI uses
+  // 'in'/'out'/'missed'. Same convention as mapMessage.
+  const dirRaw = r.direction || 'in';
+  const dir = dirRaw === 'outbound' ? 'out' : dirRaw === 'inbound' ? 'in' : dirRaw;
+  return {
+    id: r.id,
+    contact_id: r.contact_id,
+    direction: dir,
+    started_at: r.started_at,
+    ended_at: r.ended_at || null,
+    duration_sec: r.duration_sec ?? null,
+    voicemail_url: r.voicemail_url || null,
+    voicemail_duration: r.voicemail_duration || null,
+    voicemail_transcript: r.voicemail_transcript || null,
+    listened_at: r.listened_at || null,
+    twilio_call_sid: r.twilio_call_sid || null,
+    from_phone: r.from_phone || null,
+    to_phone: r.to_phone || null,
+    status: r.status || null,
+    notes: r.notes || null,
+    created_at: r.created_at || null,
+  };
+}
+
 // BPP proposals schema uses dollars (total), pricing_tier, amp_type ('30'/'50'),
 // copied_at as send timestamp, signed_at as approval timestamp. Status is
 // title-case ('Copied'/'Signed'/'Viewed'/'Expired'/'Declined') so we lowercase
@@ -453,7 +517,7 @@ async function loadLiveData() {
   const fetchTable = (queryBuilder, label) =>
     withTimeout(queryBuilder, 8000, label).catch(e => ({ data: null, error: e }));
 
-  const [contactsR, eventsR, proposalsR, invoicesR, messagesR, stageHistoryR] = await Promise.all([
+  const [contactsR, eventsR, proposalsR, invoicesR, messagesR, stageHistoryR, permitsR, materialsR, callsR] = await Promise.all([
     fetchTable(__db.from('contacts')
       .select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes')
       .order('created_at', { ascending: false })
@@ -495,6 +559,22 @@ async function loadLiveData() {
       .select('id, contact_id, from_stage, to_stage, changed_at')
       .order('changed_at', { ascending: true })
       .limit(2000), 'stage_history'),
+    // permits / materials / calls — added 2026-05-09. Before this
+    // migration these were `permits: []` placeholders and every UI
+    // mutation was lost on refresh.
+    fetchTable(__db.from('permits')
+      .select('id, contact_id, jurisdiction_id, jurisdiction_name, permit_number, status, submitted_at, approved_at, cost_cents, blocker_note, created_at, updated_at')
+      .order('created_at', { ascending: true })
+      .limit(500), 'permits'),
+    fetchTable(__db.from('materials')
+      .select('id, contact_id, kind, status, ordered_at, received_at, installed_at, notes, created_at, updated_at')
+      .order('created_at', { ascending: true })
+      .limit(500), 'materials'),
+    fetchTable(__db.from('calls')
+      .select('id, contact_id, direction, started_at, ended_at, duration_sec, voicemail_url, voicemail_duration, voicemail_transcript, listened_at, twilio_call_sid, from_phone, to_phone, status, notes, created_at')
+      .gte('started_at', since)
+      .order('started_at', { ascending: false })
+      .limit(500), 'calls'),
   ]);
 
   // Surface any per-table failure once, quietly, in the console — not as a
@@ -502,6 +582,7 @@ async function loadLiveData() {
   const tableErrors = [
     ['contacts', contactsR], ['events', eventsR], ['proposals', proposalsR],
     ['invoices', invoicesR], ['messages', messagesR], ['stage_history', stageHistoryR],
+    ['permits', permitsR], ['materials', materialsR], ['calls', callsR],
   ].filter(([, r]) => r.error).map(([n, r]) => `${n}: ${r.error.message || r.error}`);
   if (tableErrors.length) console.warn('[CRM] partial load:', tableErrors);
 
@@ -511,10 +592,12 @@ async function loadLiveData() {
   window.CRM.invoices  = (invoicesR.data  || []).map(mapInvoice);
   window.CRM.messages  = (messagesR.data  || []).map(mapMessage);
   window.CRM.stageHistory = stageHistoryR.data || [];
-  // calls / permits / materials: not yet wired (no DB tables) — leave empty
+  window.CRM.permits   = (permitsR.data   || []).map(mapPermit);
+  window.CRM.materials = (materialsR.data || []).map(mapMaterial);
+  window.CRM.calls     = (callsR.data     || []).map(mapCall);
   window.CRM.loaded = true;
 
-  console.log(`[CRM] loaded ${CRM.contacts.length} contacts, ${CRM.events.length} events, ${CRM.proposals.length} proposals, ${CRM.invoices.length} invoices, ${CRM.messages.length} messages, ${CRM.stageHistory.length} stage transitions`);
+  console.log(`[CRM] loaded ${CRM.contacts.length} contacts, ${CRM.events.length} events, ${CRM.proposals.length} proposals, ${CRM.invoices.length} invoices, ${CRM.messages.length} messages, ${CRM.stageHistory.length} stage transitions, ${CRM.permits.length} permits, ${CRM.materials.length} materials, ${CRM.calls.length} calls`);
   window.dispatchEvent(new CustomEvent('crm-data-ready', { detail: { authed: true } }));
 
   // Realtime — re-fetch the whole table on any change. The lists are small
@@ -601,6 +684,52 @@ async function loadLiveData() {
         window.CRM.events = (data || []).map(mapEvent);
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'calendar_events' } }));
       } catch (e) { console.warn('[CRM] realtime calendar handler error:', e.message); }
+    })
+    .subscribe();
+
+  // permits / materials / calls realtime channels — needed because each
+  // mutation in the right pane (PermitStatusActions, MaterialRow, etc.)
+  // immediately optimistically mutates `CRM.permits[i]` then awaits the
+  // DB write. A second tab open on the same contact needs the change
+  // to propagate.
+  __db.channel('v3-permits')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'permits' }, async () => {
+      try {
+        const { data, error } = await __db.from('permits')
+          .select('id, contact_id, jurisdiction_id, jurisdiction_name, permit_number, status, submitted_at, approved_at, cost_cents, blocker_note, created_at, updated_at')
+          .order('created_at', { ascending: true }).limit(500);
+        if (error) { console.warn('[CRM] realtime permits refetch failed:', error.message); return; }
+        window.CRM.permits = (data || []).map(mapPermit);
+        window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'permits' } }));
+      } catch (e) { console.warn('[CRM] realtime permits handler error:', e.message); }
+    })
+    .subscribe();
+
+  __db.channel('v3-materials')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, async () => {
+      try {
+        const { data, error } = await __db.from('materials')
+          .select('id, contact_id, kind, status, ordered_at, received_at, installed_at, notes, created_at, updated_at')
+          .order('created_at', { ascending: true }).limit(500);
+        if (error) { console.warn('[CRM] realtime materials refetch failed:', error.message); return; }
+        window.CRM.materials = (data || []).map(mapMaterial);
+        window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'materials' } }));
+      } catch (e) { console.warn('[CRM] realtime materials handler error:', e.message); }
+    })
+    .subscribe();
+
+  __db.channel('v3-calls')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, async () => {
+      try {
+        const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await __db.from('calls')
+          .select('id, contact_id, direction, started_at, ended_at, duration_sec, voicemail_url, voicemail_duration, voicemail_transcript, listened_at, twilio_call_sid, from_phone, to_phone, status, notes, created_at')
+          .gte('started_at', since)
+          .order('started_at', { ascending: false }).limit(500);
+        if (error) { console.warn('[CRM] realtime calls refetch failed:', error.message); return; }
+        window.CRM.calls = (data || []).map(mapCall);
+        window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'calls' } }));
+      } catch (e) { console.warn('[CRM] realtime calls handler error:', e.message); }
     })
     .subscribe();
 
