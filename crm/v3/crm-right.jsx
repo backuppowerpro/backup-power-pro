@@ -145,11 +145,19 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
       // a soft-archived contact can resurface their old draft if the
       // status flips back to Active.
       sessionStorage.removeItem('draft:' + contactId);
-      const pinRaw = localStorage.getItem('bpp_v3_pinned_contacts');
-      if (pinRaw) {
-        const pinned = JSON.parse(pinRaw).filter(id => id !== contactId);
-        localStorage.setItem('bpp_v3_pinned_contacts', JSON.stringify(pinned));
-      }
+      // Pinned contacts moved to contacts.pinned column 2026-05-09 —
+      // localStorage backfill drains itself on first load. This sweep
+      // is now defensive only: if a stale entry sat in some browser,
+      // strip it so the migration completes cleanly. Will be deleted
+      // entirely after a few weeks.
+      try {
+        const pinRaw = localStorage.getItem('bpp_v3_pinned_contacts');
+        if (pinRaw) {
+          const pinned = JSON.parse(pinRaw).filter(id => id !== contactId);
+          if (pinned.length === 0) localStorage.removeItem('bpp_v3_pinned_contacts');
+          else localStorage.setItem('bpp_v3_pinned_contacts', JSON.stringify(pinned));
+        }
+      } catch (_) {}
     } catch {}
   };
 
@@ -1829,21 +1837,14 @@ function ContactInfoRows({ contact, bumpData, onOpenTab }) {
 }
 
 // ── Tags ────────────────────────────────────────────────────────────
-// Custom labels per-contact. Stored in localStorage (no DB column —
-// schema-mid-session is the bug pattern that bit this app before).
-// Filtering by tag is wired in ContactsList: search box matches tags.
-const TAGS_KEY = 'bpp_v3_tags';
-function loadTagMap() {
-  try { return JSON.parse(localStorage.getItem(TAGS_KEY) || '{}') || {}; }
-  catch { return {}; }
-}
-function saveTagMap(map) {
-  window.safeSetItem?.(TAGS_KEY, JSON.stringify(map));
-  window.dispatchEvent(new CustomEvent('crm-tags-changed'));
-}
+// Custom labels per-contact. Source of truth = contacts.tags column
+// (migration 20260509150000). Synced via the contacts realtime channel.
+// localStorage was the previous home; backfill in crm-app.jsx migrates
+// any leftover entries and the helper below reads from CRM.contacts so
+// every device sees the same labels.
 function tagsFor(contactId) {
-  const m = loadTagMap();
-  return Array.isArray(m[contactId]) ? m[contactId] : [];
+  const c = (window.CRM?.contacts || []).find(x => x.id === contactId);
+  return Array.isArray(c?.tags) ? c.tags : [];
 }
 
 function TagsRow({ contactId }) {
@@ -1855,15 +1856,35 @@ function TagsRow({ contactId }) {
   React.useEffect(() => {
     const refresh = () => setTags(tagsFor(contactId));
     window.addEventListener('crm-tags-changed', refresh);
-    return () => window.removeEventListener('crm-tags-changed', refresh);
+    window.addEventListener('crm-data-changed', refresh);
+    return () => {
+      window.removeEventListener('crm-tags-changed', refresh);
+      window.removeEventListener('crm-data-changed', refresh);
+    };
   }, [contactId]);
 
-  const commit = (next) => {
-    const map = loadTagMap();
-    if (next.length === 0) delete map[contactId];
-    else map[contactId] = next;
-    saveTagMap(map);
+  // Optimistic flip + DB write + revert on error. Same pattern as
+  // togglePin / DNC: in-memory mutation first so the chip reflects
+  // immediately, then persist.
+  const commit = async (next) => {
+    const live = (CRM.contacts || []).find(c => c.id === contactId);
+    const prev = live?.tags ? [...live.tags] : [];
+    if (live) live.tags = [...next];
     setTags(next);
+    window.dispatchEvent(new CustomEvent('crm-tags-changed'));
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    if (CRM.__db) {
+      const { error } = await CRM.__db.from('contacts')
+        .update({ tags: next })
+        .eq('id', contactId);
+      if (error) {
+        if (live) live.tags = prev;
+        setTags(prev);
+        window.dispatchEvent(new CustomEvent('crm-tags-changed'));
+        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        window.showToast?.('Tag save failed: ' + error.message);
+      }
+    }
   };
   const removeTag = (t) => commit(tags.filter(x => x !== t));
   const addTag = () => {
@@ -3144,7 +3165,9 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
         related_contact_id: prop.contact_id,
         completed: false,
         generated_for_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0,10),
-      }]).then(() => {}, () => {});
+      }]).then(({ error }) => {
+        if (error) console.warn('[CRM] auto-reengage queue failed (non-fatal):', error.message);
+      });
     }
   };
 

@@ -106,6 +106,49 @@ function Root() {
     const onReady = (e) => {
       setLoaded(true);
       setAuthed(!!e.detail?.authed);
+      // One-time backfill: migrate any localStorage tags map → contacts.tags
+      // Same bug class as the pin backfill below — caught by audit-crm
+      // 2026-05-09. Idempotent: subsequent loads find an empty key
+      // and no-op.
+      try {
+        const tagRaw = localStorage.getItem('bpp_v3_tags');
+        if (tagRaw) {
+          const map = JSON.parse(tagRaw);
+          if (map && typeof map === 'object') {
+            const liveContacts = window.CRM?.contacts || [];
+            const writes = [];
+            for (const [cid, tags] of Object.entries(map)) {
+              if (!Array.isArray(tags) || tags.length === 0) continue;
+              const c = liveContacts.find(x => x.id === cid);
+              if (!c) continue;
+              const merged = Array.from(new Set([...(c.tags || []), ...tags]));
+              if (merged.length === (c.tags || []).length) continue;
+              c.tags = merged; // optimistic
+              writes.push(window.CRM?.__db?.from('contacts').update({ tags: merged }).eq('id', cid));
+            }
+            if (writes.length > 0) {
+              Promise.all(writes).then((results) => {
+                const failed = results.filter(r => r && r.error);
+                if (failed.length === 0) {
+                  localStorage.removeItem('bpp_v3_tags');
+                  console.log(`[CRM] migrated tags on ${writes.length} contacts from localStorage to DB`);
+                } else {
+                  console.warn('[CRM] tags backfill partial:', failed.length, 'of', writes.length, 'failed');
+                }
+                window.dispatchEvent(new CustomEvent('crm-data-changed'));
+                window.dispatchEvent(new CustomEvent('crm-tags-changed'));
+              });
+            } else {
+              localStorage.removeItem('bpp_v3_tags');
+            }
+          } else {
+            localStorage.removeItem('bpp_v3_tags');
+          }
+        }
+      } catch (err) {
+        console.warn('[CRM] tags backfill error:', err?.message || err);
+      }
+
       // One-time backfill: migrate any localStorage pins → contacts.pinned
       // so users who starred contacts before the column existed don't
       // lose their pins. Runs once at first load after this ships;

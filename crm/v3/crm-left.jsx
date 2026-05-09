@@ -407,13 +407,10 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     window.addEventListener('crm-recent-changed', refresh);
     return () => window.removeEventListener('crm-recent-changed', refresh);
   }, []);
-  // Invalidate the tag-map cache when tags change so the search filter
-  // re-reads localStorage on the next keystroke.
-  React.useEffect(() => {
-    const onTags = () => { window.__tagMapCache = null; };
-    window.addEventListener('crm-tags-changed', onTags);
-    return () => window.removeEventListener('crm-tags-changed', onTags);
-  }, []);
+  // Tags now live on contacts.tags (column added 2026-05-09). The
+  // search filter reads c.tags directly, so no cache invalidation
+  // needed; the realtime contacts channel pushes updates and React
+  // re-renders. crm-tags-changed is kept as a fast local signal.
   const recentContacts = recentIds
     .map(id => contacts.find(c => c.id === id && !c.archived))
     .filter(Boolean)
@@ -555,11 +552,9 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     .filter(c => {
       if (!search) return true;
       const q = search.toLowerCase();
-      // Tag match — `bpp_v3_tags` is the source of truth for custom
-      // labels. Read once per filter loop via lazy memoization on the
-      // window so we don't parse JSON 112 times per keystroke.
-      if (!window.__tagMapCache) window.__tagMapCache = (function(){ try { return JSON.parse(localStorage.getItem('bpp_v3_tags')||'{}'); } catch { return {}; } })();
-      const tags = window.__tagMapCache[c.id] || [];
+      // Tag match — tags now live on `contacts.tags` (column added
+      // 2026-05-09). Read straight from the contact row.
+      const tags = Array.isArray(c.tags) ? c.tags : [];
       // Quick checks first — name/phone/address/tag are O(1) per-row.
       if (contactName(c).toLowerCase().includes(q)) return true;
       if ((c.phone || '').includes(search)) return true;
@@ -825,13 +820,20 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                   onClick={async (e) => {
                     e.stopPropagation();
                     c.archived = false;
-                    if (CRM.__db) await CRM.__db.from('contacts').update({ status: 'Active' }).eq('id', c.id);
+                    if (CRM.__db) await CRM.__db.from('contacts').update({ status: 'Active', archived: false }).eq('id', c.id);
                     window.dispatchEvent(new CustomEvent('crm-data-changed'));
                     window.showToast?.('Restored', {
-                      undo: () => {
+                      undo: async () => {
                         c.archived = true;
-                        if (CRM.__db) CRM.__db.from('contacts').update({ status: 'Archived' }).eq('id', c.id);
                         window.dispatchEvent(new CustomEvent('crm-data-changed'));
+                        if (CRM.__db) {
+                          const { error } = await CRM.__db.from('contacts').update({ status: 'Archived', archived: true }).eq('id', c.id);
+                          if (error) {
+                            c.archived = false;
+                            window.dispatchEvent(new CustomEvent('crm-data-changed'));
+                            window.showToast?.('Undo failed: ' + error.message);
+                          }
+                        }
                       },
                       duration: 5000,
                     });
@@ -885,30 +887,60 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
             });
             if (!ok) return;
             const ids = [...selected];
+            // Optimistic flip for every selected, then a single bulk
+            // update with .in() so we get one round-trip + one error
+            // path instead of N silent failures. Revert on error.
             for (const id of ids) {
               const c = contacts.find(x => x.id === id);
               if (c) c.archived = true;
-              if (CRM.__db) CRM.__db.from('contacts').update({ status: 'Archived' }).eq('id', id);
             }
             window.dispatchEvent(new CustomEvent('crm-data-changed'));
+            if (CRM.__db) {
+              const { error } = await CRM.__db.from('contacts')
+                .update({ status: 'Archived', archived: true })
+                .in('id', ids);
+              if (error) {
+                for (const id of ids) {
+                  const c = contacts.find(x => x.id === id);
+                  if (c) c.archived = false;
+                }
+                window.dispatchEvent(new CustomEvent('crm-data-changed'));
+                window.showToast?.(`Archive failed: ${error.message}`);
+                return;
+              }
+            }
             window.showToast?.(`Archived ${ids.length}`);
             exitBulk();
           }}
           onTag={async () => {
             const tag = window.prompt('Add tag to selected contacts:');
             if (!tag || !tag.trim()) return;
-            const t = tag.trim();
-            try {
-              const raw = localStorage.getItem('bpp_v3_tags') || '{}';
-              const map = JSON.parse(raw);
-              for (const id of selected) {
-                const cur = Array.isArray(map[id]) ? map[id] : [];
-                if (!cur.includes(t)) map[id] = [...cur, t];
-              }
-              localStorage.setItem('bpp_v3_tags', JSON.stringify(map));
-              window.__tagMapCache = map;
-            } catch (e) { window.showToast?.('Tag failed: ' + e.message); return; }
-            window.showToast?.(`Tagged ${selected.size} with "${t}"`);
+            const t = tag.trim().slice(0, 24);
+            // Tags live on `contacts.tags` (column added 2026-05-09).
+            // Per-contact array_append via PostgREST isn't ergonomic, so
+            // we compute the new array client-side and write each row.
+            // Done inside Promise.all for one round-trip set.
+            if (!CRM.__db) { window.showToast?.('Supabase not loaded'); return; }
+            const ids = [...selected];
+            const writes = ids.map(async (id) => {
+              const live = (CRM.contacts || []).find(c => c.id === id);
+              const cur = Array.isArray(live?.tags) ? live.tags : [];
+              if (cur.includes(t)) return null;
+              const next = [...cur, t];
+              if (live) live.tags = next; // optimistic
+              return CRM.__db.from('contacts').update({ tags: next }).eq('id', id);
+            });
+            const results = await Promise.all(writes);
+            const failed = results.filter(r => r && r.error);
+            if (failed.length) {
+              // Best-effort revert: realtime channel will reconcile
+              // any rows that did persist; surface the count to Key.
+              window.showToast?.(`Tag failed on ${failed.length} of ${ids.length}: ${failed[0].error.message}`);
+            } else {
+              window.showToast?.(`Tagged ${ids.length} with "${t}"`);
+            }
+            window.dispatchEvent(new CustomEvent('crm-data-changed'));
+            window.dispatchEvent(new CustomEvent('crm-tags-changed'));
             exitBulk();
           }}
         />
