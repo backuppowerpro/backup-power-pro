@@ -151,22 +151,25 @@ Deno.serve(async (req: Request) => {
     const safeText = (r.text || '').replace(/[^\w\s.,!?'"\-—]/g, '').replace(/\s+/g, ' ').trim().slice(0, 120)
     const truncated = (r.text || '').length > 120
     const body = `${stars} review from ${safeAuthor}${safeText ? `: "${safeText}${truncated ? '…' : ''}"` : ''} — reply on GBP for rank lift.`
-    // Idempotency key uses time (unique per second) + sanitised author —
-    // colons / special chars stripped so they can't poison the rate-limit
-    // hash key inside send-sms.
-    const idemAuthor = safeAuthor.replace(/\s+/g, '_')
+    // Audit-2026-05-09 M4: previously POSTed `{ to, body, idempotencyKey,
+    // internal }` to send-sms — but send-sms expects `{ contactId, body,
+    // ... }`, not `to`. Result: every review alert silently 400'd and Key
+    // never saw any review notifications. Route through sparky-notify
+    // instead (the canonical Key-internal alert path) so the alert lands
+    // in sparky_inbox AND fires an SMS to KEY_PHONE via Twilio.
     smsRequests.push(
-      fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
+      fetch(`${SUPABASE_URL}/functions/v1/sparky-notify`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          to: ALERT_NUMBER,
-          body,
-          idempotencyKey: `gbp-review-${r.time}-${idemAuthor}`,
-          internal: true,
+          agent:    'gbp-review-monitor',
+          priority: r.rating <= 3 ? 'urgent' : 'normal',
+          summary:  body,
+          sms_body: body,
+          suggested_action: 'Reply on GBP within 24h for SEO rank lift.',
         }),
       }).catch(() => null)
     )

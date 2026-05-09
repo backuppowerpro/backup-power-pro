@@ -6,6 +6,35 @@
 <title>Service Area Cities | Backup Power Pro</title>
 <meta name="description" content="Backup Power Pro serves 13+ Upstate SC cities with generator inlet installation. Find your city for location-specific pricing and permit info.">
 <link rel="canonical" href="https://backuppowerpro.com/city/">
+<!-- Audit-2026-05-09 H9: this page was the canonical landing for organic
+     "service area" queries (priority 0.7 in sitemap) but had no analytics,
+     theme-color, favicon, OG image, or Schema.org. Adding the same
+     baseline as the city detail pages so organic visitors get tracked
+     and social shares render with the brand. -->
+<meta name="theme-color" content="#0b1f3b">
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<meta property="og:title" content="Service Area Cities | Backup Power Pro">
+<meta property="og:description" content="Generator inlet installation across 13+ Upstate SC cities. Greenville, Spartanburg, and Pickens counties.">
+<meta property="og:image" content="https://backuppowerpro.com/og-image.png">
+<meta property="og:url" content="https://backuppowerpro.com/city/">
+<meta property="og:type" content="website">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Backup Power Pro Service Area",
+  "url": "https://backuppowerpro.com/city/",
+  "description": "Cities served by Backup Power Pro for generator inlet installation in Upstate SC.",
+  "publisher": {
+    "@type": "ElectricalContractor",
+    "name": "Backup Power Pro",
+    "telephone": "+1-864-863-7800",
+    "url": "https://backuppowerpro.com",
+    "image": "https://backuppowerpro.com/og-image.png"
+  }
+}
+</script>
 <style>
   :root { --navy: #0b1f3b; --gold: #ffba00; --bg: #f4f4f2; --card: #ffffff; --text: #1a1a1a; --text-muted: #5a5a5a; }
   * { box-sizing: border-box; } html, body { margin: 0; padding: 0; }
@@ -56,5 +85,15 @@
   <footer class="ftr">
     Don't see your city? <a href="/">Check the homepage</a> for the main quote form — we cover every address in Greenville, Spartanburg, and Pickens counties.
   </footer>
+
+<!-- PostHog (audit-2026-05-09 H9). Channel='organic', landing='/city/'
+     so this page's pageviews + outbound clicks join the city-detail
+     funnels in the dashboard. -->
+<script>!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);posthog.init('phc_qoA51lePZqXYtPJYkrIpdA4U8iMDJ79L1kje7r4pD4O',{api_host:'https://us.i.posthog.com',person_profiles:'identified_only',capture_pageview:true,capture_pageleave:true,enable_heatmaps:true})</script>
+<script>
+  if (typeof posthog !== 'undefined') {
+    posthog.register({ channel: 'organic', landing_page: '/city/' });
+  }
+</script>
 </body>
 </html>

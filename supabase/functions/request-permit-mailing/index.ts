@@ -26,11 +26,19 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1'
+// Audit-2026-05-09 H9: pull timingSafeEqual from the shared helper so
+// future fixes to _shared/auth.ts propagate here automatically (the
+// previous local copy drifted from the canonical implementation).
+import { timingSafeEqual } from '../_shared/auth.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SR = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const SECRET = Deno.env.get('MAIL_REQUEST_SECRET') || ''
-const KEY_CELL = Deno.env.get('KEY_PHONE') || '+19414417996'
+// Audit-2026-05-09 H9: drop the hardcoded `+19414417996` fallback. If
+// KEY_PHONE is unset, fail closed — better to log "permit-mail-request
+// alert dropped, KEY_PHONE not configured" than blast Key's personal
+// cell with no oversight when the secret rotates badly.
+const KEY_CELL = Deno.env.get('KEY_PHONE') || ''
 
 // SMS providers
 const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
@@ -72,12 +80,8 @@ async function hmacSha256Hex(secret: string, msg: string): Promise<string> {
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(msg))
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let r = 0
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return r === 0
-}
+// timingSafeEqual moved to _shared/auth.ts (imported above) so all
+// edge functions stay aligned on the same implementation. (audit-2026-05-09 H9)
 async function verifyToken(contact_id: string, token: string): Promise<boolean> {
   if (!SECRET || !token) return false
   try {
