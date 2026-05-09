@@ -432,6 +432,21 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const visibleContacts = contacts.filter(c => !c.archived);
   const stageCounts = CRM.STAGE_ORDER.reduce((acc,s) => ({ ...acc, [s]: visibleContacts.filter(c=>c.stage===s).length }), {});
 
+  // Snooze map declared early — it's referenced by the rottingSet and
+  // silentSet useMemos below, and Babel-standalone hoists destructured
+  // useState as `var` so a later declaration would surface as
+  // `undefined` on first render. Source-of-truth is localStorage.
+  const [snoozeMap, setSnoozeMap] = React.useState(() => window.readSnoozeMap?.() || {});
+  React.useEffect(() => {
+    const refresh = () => setSnoozeMap(window.readSnoozeMap?.() || {});
+    window.addEventListener('crm-snooze-changed', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('crm-snooze-changed', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+
   // "Needs reply" filter: an inbound message older than the most recent
   // outbound (or no outbound at all). One-glance answer to "who's
   // waiting on me?" — the highest-leverage filter for a solo pipeline.
@@ -523,20 +538,6 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   const hasUnread = cid => messages.some(m => m.contact_id === cid && m.direction === 'in' && m.read_at == null);
   // Or a missed call we haven't responded to (treat missed as unread signal)
   const hasMissedCall = cid => calls.some(c => c.contact_id === cid && c.direction === 'missed');
-
-  // Snooze map drives both filtering and the row pill. Subscribe to the
-  // crm-snooze-changed event so toggling snooze in the overflow menu
-  // re-renders the list without a manual refresh.
-  const [snoozeMap, setSnoozeMap] = React.useState(() => window.readSnoozeMap?.() || {});
-  React.useEffect(() => {
-    const refresh = () => setSnoozeMap(window.readSnoozeMap?.() || {});
-    window.addEventListener('crm-snooze-changed', refresh);
-    window.addEventListener('storage', refresh);
-    return () => {
-      window.removeEventListener('crm-snooze-changed', refresh);
-      window.removeEventListener('storage', refresh);
-    };
-  }, []);
 
   const filtered = contacts
     // Archive filter: when stage='archived', show ONLY archived; in
