@@ -319,6 +319,19 @@ function applySlotUpdates(qd: Record<string, any>, classifier: any, photoResult:
     out.capacity_signal_excerpts = [...prev, classifier.capacity_signal_excerpt]
     out.capacity_signal_excerpt = classifier.capacity_signal_excerpt // most-recent for quick read
   }
+  // v10.1.65 — secondary signals. Persist verbatim phrase + flag
+  // when Ashley acks it so we don't repeat the injection across
+  // turns. Each signal independent; multiple can fire on one inbound.
+  if (classifier?.storm_urgency_excerpt) {
+    out.storm_urgency_excerpt = classifier.storm_urgency_excerpt
+    out.storm_urgency = true
+  }
+  if (classifier?.price_concern_excerpt) {
+    out.price_concern_excerpt = classifier.price_concern_excerpt
+  }
+  if (classifier?.competitor_quote_excerpt) {
+    out.competitor_quote_excerpt = classifier.competitor_quote_excerpt
+  }
   if (classifier?.email_likely_meant) out.email_likely_meant = classifier.email_likely_meant
   if (Array.isArray(classifier?.load_mentions) && classifier.load_mentions.length) {
     const prev = Array.isArray(out.load_mentions) ? out.load_mentions : []
@@ -360,6 +373,16 @@ function buildSmCtx(contact: any, classifier: any): any {
       || contact.qualification_data?.capacity_signal_excerpt
       || null,
     load_already_asked: !!contact.qualification_data?.load_already_asked,
+    // v10.1.65 — secondary signals for SECONDARY-SIGNAL INJECTION.
+    // Each is paired with an `_acked` flag in qualification_data so
+    // the phraser knows whether to inject the line this turn or skip
+    // (already acked).
+    storm_urgency_excerpt: classifier?.storm_urgency_excerpt || null,
+    storm_urgency_acked: !!contact.qualification_data?.storm_urgency_acked,
+    price_concern_excerpt: classifier?.price_concern_excerpt || null,
+    price_concern_acked: !!contact.qualification_data?.price_concern_acked,
+    competitor_quote_excerpt: classifier?.competitor_quote_excerpt || null,
+    competitor_quote_acked: !!contact.qualification_data?.competitor_quote_acked,
     address_captured: false,
     time_of_day_bucket: timeOfDayBucket(),
     greeting_variant: contact.qualification_data?.greeting_variant || 'A',
@@ -917,6 +940,25 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     ) {
       newQd.load_already_asked = true
       newQd.load_asked_at = new Date().toISOString()
+    }
+    // v10.1.65 — flip secondary-signal acked flags when the phraser
+    // injects the line this turn. We trust the phraser to inject
+    // when ctx.{signal}_excerpt is set AND ctx.{signal}_acked is
+    // false; that contract is documented in
+    // SECONDARY-SIGNAL INJECTION in the phraser system prompt.
+    // Once acked, the next turn won't re-inject (avoids robot
+    // repetition).
+    if (ctx?.storm_urgency_excerpt && !ctx?.storm_urgency_acked) {
+      newQd.storm_urgency_acked = true
+      newQd.storm_urgency_acked_at = new Date().toISOString()
+    }
+    if (ctx?.price_concern_excerpt && !ctx?.price_concern_acked) {
+      newQd.price_concern_acked = true
+      newQd.price_concern_acked_at = new Date().toISOString()
+    }
+    if (ctx?.competitor_quote_excerpt && !ctx?.competitor_quote_acked) {
+      newQd.competitor_quote_acked = true
+      newQd.competitor_quote_acked_at = new Date().toISOString()
     }
     // v10.1.37, apply scope-mismatch flags computed earlier
     if (detectedOutOfScope) newQd.scope_mismatch_ats = true

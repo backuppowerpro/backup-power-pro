@@ -63,6 +63,14 @@ const OUTPUT_SCHEMA = {
     // capacity-thinking signal (sqft, sizing-hedge, multi-floor) when
     // it appears WITHOUT an explicit coverage question.
     capacity_signal_excerpt: { type: 'string' },
+    // v10.1.65 — secondary signals (Key directive 2026-05-09). Each
+    // captures a verbatim phrase from the customer's message that
+    // hints at a context Ashley should acknowledge. Phraser injects
+    // a one-line ack before the current state's question; state
+    // machine routing is unchanged.
+    storm_urgency_excerpt: { type: 'string' },
+    price_concern_excerpt: { type: 'string' },
+    competitor_quote_excerpt: { type: 'string' },
     chitchat_excerpt: { type: 'string' },
     impatience_excerpt: { type: 'string' },
     amended_slot: {
