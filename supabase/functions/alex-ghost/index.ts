@@ -39,10 +39,12 @@ Deno.serve(async (req) => {
 
   // Security audit #13: require service-role bearer auth (prior: anyone with URL
   // could trigger all ghost sends on demand — SMS budget burn + 3 AM blasts).
-  const expectedAuth = `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`
-  if (req.headers.get('authorization') !== expectedAuth) {
-    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: CORS })
-  }
+  // Audit-2026-05-09 B3: replaced plain `!==` with timing-safe helper. Endpoint
+  // sends real customer SMS, so a successful timing attack = arbitrary outbound
+  // TCPA blast. requireServiceRole already uses timingSafeEqual under the hood.
+  const { requireServiceRole } = await import('../_shared/auth.ts')
+  const gate = requireServiceRole(req)
+  if (gate) return gate
 
   // Legal audit C4: quiet-hour gate (TCPA 8am-9pm recipient-local; SC business
   // is ET). Most leads are Upstate SC. Out-of-state numbers: we fall back to

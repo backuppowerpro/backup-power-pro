@@ -82,7 +82,10 @@ Deno.serve(async (req) => {
     .update({ stage: 9 })
     .eq('id', contactId)
   if (updErr) {
-    return new Response(JSON.stringify({ error: updErr.message }), { status: 500, headers: CORS })
+    // Audit-2026-05-09 B5: scrub error message before returning to
+    // installer-token holder.
+    console.error('[sub-mark-complete] update error:', updErr.message)
+    return new Response(JSON.stringify({ error: 'server error' }), { status: 500, headers: CORS })
   }
 
   await supabase

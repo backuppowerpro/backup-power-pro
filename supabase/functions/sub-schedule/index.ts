@@ -77,7 +77,12 @@ Deno.serve(async (req) => {
     .order('install_date', { ascending: true })
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: CORS })
+    // Audit-2026-05-09 B5: never leak PostgREST/Supabase error.message to
+    // anonymous customer/installer-token holders — column names + RLS
+    // policy names + constraint names slip out. Log server-side, return
+    // generic.
+    console.error('[sub-schedule] db error:', error.message)
+    return new Response(JSON.stringify({ error: 'server error' }), { status: 500, headers: CORS })
   }
 
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)

@@ -98,7 +98,7 @@ Deno.serve(async (req: Request) => {
       }
       if (status === 'draft') patch.status = 'Viewed'
       const { error } = await sb.from('proposals').update(patch).eq('id', existing.id)
-      if (error) return jsonResp({ error: error.message }, 500)
+      if (error) { console.error('[proposal-mutate] db error:', error.message); return jsonResp({ error: 'server error' }, 500) }
       return jsonResp({ ok: true })
     }
 
@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
         }
       }
       const { error } = await sb.from('proposals').update(patch).eq('id', existing.id)
-      if (error) return jsonResp({ error: error.message }, 500)
+      if (error) { console.error('[proposal-mutate] db error:', error.message); return jsonResp({ error: 'server error' }, 500) }
       return jsonResp({ ok: true })
     }
 
@@ -157,7 +157,7 @@ Deno.serve(async (req: Request) => {
         approved_terms_snapshot: termsSnapshot,
       }
       const { error } = await sb.from('proposals').update(patch).eq('id', existing.id)
-      if (error) return jsonResp({ error: error.message }, 500)
+      if (error) { console.error('[proposal-mutate] db error:', error.message); return jsonResp({ error: 'server error' }, 500) }
       return jsonResp({ ok: true })
     }
 

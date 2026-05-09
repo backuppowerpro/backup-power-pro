@@ -177,10 +177,10 @@ Deno.serve(async (req) => {
 
   // Security audit #14: require service-role bearer auth (prior: anyone could
   // trigger the followup engine on demand, firing every queued reminder).
-  const expectedAuth = `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`
-  if (req.headers.get('authorization') !== expectedAuth) {
-    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: CORS })
-  }
+  // Audit-2026-05-09 B3: replaced plain `!==` with timing-safe helper.
+  const { requireServiceRole } = await import('../_shared/auth.ts')
+  const gate = requireServiceRole(req)
+  if (gate) return gate
 
   const db = createClient(
     Deno.env.get('SUPABASE_URL')!,
