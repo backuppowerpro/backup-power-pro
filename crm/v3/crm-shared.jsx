@@ -766,8 +766,14 @@ function ToastHost() {
       setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), opts.duration || 2600);
     };
   }, []);
-  return (
-    <div style={{ position:'fixed', bottom:'calc(20px + var(--kb-h, 0px) + var(--vvs, env(safe-area-inset-bottom, 0px)))', left:'50%', transform:'translateX(-50%)', zIndex:1000, display:'flex', flexDirection:'column', gap:6, pointerEvents:'none', alignItems:'center' }}>
+  if (toasts.length === 0) return null;
+  // Audit-2026-05-09 B2: zIndex was 1000 while ModalShell uses 9999, so
+  // toasts fired from inside modal submit handlers were invisible.
+  // Portal to document.body + bump zIndex above the modal layer so save-
+  // failure / send-failure feedback reaches the user. ReactDOM is the
+  // global one Babel-standalone exposes (see crm/v3/index.html).
+  return ReactDOM.createPortal(
+    <div style={{ position:'fixed', bottom:'calc(20px + var(--kb-h, 0px) + var(--vvs, env(safe-area-inset-bottom, 0px)))', left:'50%', transform:'translateX(-50%)', zIndex:10010, display:'flex', flexDirection:'column', gap:6, pointerEvents:'none', alignItems:'center' }}>
       {toasts.map(t => (
         <div key={t.id} style={{
           background: t.kind==='error'?'#991B1B':NAVY, color:'white',
@@ -781,22 +787,33 @@ function ToastHost() {
         </div>
       ))}
       <style>{`@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 // ── Confirm modal ─────────────────────────────────────────────────
+// Audit-2026-05-09 B1+M2: was position:'absolute' with zIndex:200.
+// Result: confirm dialogs invoked from inside modals (deleteProposal,
+// deleteInvoice, cancelEvent) were hidden behind the modal backdrop AND
+// rendered inside the React tree, not at the viewport — clicks fell on
+// the swipe container instead of the dialog. Now portals to body with
+// position:'fixed' and zIndex above the modal layer.
 function ConfirmHost() {
   const [c, setC] = React.useState(null);
   React.useEffect(() => {
     window.confirmAction = (opts) => new Promise(resolve => {
       setC({ ...opts, resolve });
     });
-  }, []);
+    // Escape handler — close the confirm dialog without confirming.
+    const onKey = (e) => { if (e.key === 'Escape' && c) close(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [c]);
   if (!c) return null;
   const close = (v) => { c.resolve(v); setC(null); };
-  return (
-    <div onClick={() => close(false)} style={{ position:'absolute', inset:0, background:'rgba(15,26,46,0.55)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', animation:'fadeIn 0.18s ease' }}>
+  return ReactDOM.createPortal(
+    <div onClick={() => close(false)} style={{ position:'fixed', inset:0, background:'rgba(15,26,46,0.55)', zIndex:10020, display:'flex', alignItems:'center', justifyContent:'center', animation:'fadeIn 0.18s ease' }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:'white', borderRadius:12, padding:'22px 22px 16px', maxWidth:300, width:'85%', boxShadow:'0 20px 60px rgba(0,0,0,0.4)', animation:'popIn 0.22s cubic-bezier(0.16,1,0.3,1)' }}>
         <div style={{ fontSize:16, fontWeight:700, color:NAVY, marginBottom:6 }}>{c.title}</div>
         <div style={{ fontSize:13, color:MUTED, lineHeight:1.5, marginBottom:16 }}>{c.body}</div>
@@ -806,7 +823,8 @@ function ConfirmHost() {
         </div>
       </div>
       <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes popIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}`}</style>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

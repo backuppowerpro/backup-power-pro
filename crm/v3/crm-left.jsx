@@ -534,6 +534,23 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   // Or a missed call we haven't responded to (treat missed as unread signal)
   const hasMissedCall = cid => calls.some(c => c.contact_id === cid && c.direction === 'missed');
 
+  // Audit-2026-05-09 H1: message search index was cached on window once
+  // and never invalidated, so new SMS arriving via realtime were invisible
+  // to the full-text search until reload. Memo on messages.length so a
+  // new inbound rebuilds the index automatically. Same memo holds the
+  // digit-stripped search query (Audit H2).
+  const msgIdx = React.useMemo(() => {
+    const m = new Map();
+    for (const msg of (messages || [])) {
+      if (!msg.body) continue;
+      const arr = m.get(msg.contact_id) || [];
+      arr.push(msg.body.toLowerCase());
+      m.set(msg.contact_id, arr);
+    }
+    return m;
+  }, [messages.length]);
+  const searchDigits = (search || '').replace(/\D/g, '');
+
   const filtered = contacts
     // Archive filter: when stage='archived', show ONLY archived; in
     // every other lens, hide them. This is what makes the Archived chip
@@ -557,23 +574,15 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
       const tags = Array.isArray(c.tags) ? c.tags : [];
       // Quick checks first — name/phone/address/tag are O(1) per-row.
       if (contactName(c).toLowerCase().includes(q)) return true;
-      if ((c.phone || '').includes(search)) return true;
+      // Audit-2026-05-09 H2: phone is stored E.164 (`+18648638700`); the
+      // user types `(864) 863-7800` or `8648637800` from a sticky note.
+      // Strip non-digits on both sides if the query has any digits.
+      if (searchDigits && (c.phone || '').replace(/\D/g, '').includes(searchDigits)) return true;
       if ((c.address || '').toLowerCase().includes(q)) return true;
       if (tags.some(t => t.toLowerCase().includes(q))) return true;
       // Full-text fallback: search message bodies for queries ≥3 chars
       // (avoid single-letter matches firing scan on every keystroke).
-      // Index built lazily once per render via the closure below.
       if (q.length < 3) return false;
-      const msgIdx = (window.__msgIdxCache ||= (() => {
-        const m = new Map();
-        for (const msg of (window.CRM?.messages || [])) {
-          if (!msg.body) continue;
-          const arr = m.get(msg.contact_id) || [];
-          arr.push(msg.body.toLowerCase());
-          m.set(msg.contact_id, arr);
-        }
-        return m;
-      })());
       const bodies = msgIdx.get(c.id) || [];
       return bodies.some(b => b.includes(q));
     })
