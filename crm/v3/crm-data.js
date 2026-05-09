@@ -139,9 +139,8 @@ function mapContact(r) {
 }
 
 function mapEvent(r) {
-  // Real DB column is `event_type`, not `kind`. Status column doesn't
-  // exist either — we default to 'scheduled' for everything since
-  // there's nothing to mark them otherwise today.
+  // Real DB column is `event_type`, not `kind`. `status` column added
+  // 2026-05-09 (migration 20260509120000) to support cancel-event flow.
   return {
     id: r.id,
     contact_id: r.contact_id,
@@ -461,15 +460,14 @@ async function loadLiveData() {
       .limit(500), 'contacts'),
     fetchTable(__db.from('calendar_events')
       // Real DB columns: id, contact_id, start_at, end_at, title,
-      // event_type, created_at. NO `kind` and NO `status`. mapEvent
-      // aliases event_type → kind and defaults status to 'scheduled'
-      // (since there's nothing else to mark them with today).
-      .select('id, contact_id, start_at, end_at, title, event_type, created_at')
+      // event_type, status, created_at. status added 2026-05-09 to
+      // back the cancel-event flow.
+      .select('id, contact_id, start_at, end_at, title, event_type, status, created_at')
       .gte('start_at', since)
       .order('start_at', { ascending: true })
       .limit(500), 'calendar_events'),
     fetchTable(__db.from('proposals')
-      .select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at, creator_version, length_ft, include_cord, include_inlet, include_permit, pom_offered, pom_accepted, require_deposit, extra_line_items, discount_type, discount_value, notes')
+      .select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at, sent_at, approved_at, creator_version, length_ft, include_cord, include_inlet, include_permit, pom_offered, pom_accepted, require_deposit, extra_line_items, discount_type, discount_value, notes')
       .order('created_at', { ascending: false })
       .limit(500), 'proposals'),
     fetchTable(__db.from('invoices')
@@ -578,12 +576,31 @@ async function loadLiveData() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, async () => {
       try {
         const { data, error } = await __db.from('proposals')
-          .select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at')
+          .select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at, sent_at, approved_at')
           .order('created_at', { ascending: false }).limit(500);
         if (error) { console.warn('[CRM] realtime proposals refetch failed:', error.message); return; }
         window.CRM.proposals = (data || []).map(mapProposal);
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'proposals' } }));
       } catch (e) { console.warn('[CRM] realtime proposals handler error:', e.message); }
+    })
+    .subscribe();
+
+  // calendar_events realtime — without this, an install scheduled in
+  // tab A stays invisible in tab B until a hard refresh, and a cancel
+  // in tab A leaves a stale "scheduled" event in tab B's calendar.
+  __db.channel('v3-calendar-events')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, async () => {
+      try {
+        const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await __db.from('calendar_events')
+          .select('id, contact_id, start_at, end_at, title, event_type, status, created_at')
+          .gte('start_at', since)
+          .order('start_at', { ascending: true })
+          .limit(500);
+        if (error) { console.warn('[CRM] realtime calendar refetch failed:', error.message); return; }
+        window.CRM.events = (data || []).map(mapEvent);
+        window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'calendar_events' } }));
+      } catch (e) { console.warn('[CRM] realtime calendar handler error:', e.message); }
     })
     .subscribe();
 
@@ -598,7 +615,7 @@ async function refetchAll() {
   try {
     const [c, e, p, i, m] = await Promise.all([
       __db.from('contacts').select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes').order('created_at', { ascending: false }).limit(500),
-      __db.from('calendar_events').select('id, contact_id, start_at, end_at, title, event_type, created_at').gte('start_at', since).order('start_at', { ascending: true }).limit(500),
+      __db.from('calendar_events').select('id, contact_id, start_at, end_at, title, event_type, status, created_at').gte('start_at', since).order('start_at', { ascending: true }).limit(500),
       __db.from('proposals').select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at').order('created_at', { ascending: false }).limit(500),
       __db.from('invoices').select(// Schema notes (verified empirically 2026-05-01): the invoices table has
 // NO `kind` / `sent_at` / `viewed_at` columns. mapInvoice derives them:

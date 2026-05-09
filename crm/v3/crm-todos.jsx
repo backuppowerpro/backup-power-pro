@@ -67,26 +67,42 @@ function TodosButton() {
     const { error } = await window.db
       .from('bpp_todos')
       .insert({ title, source: 'manual' });
-    if (!error) setDraft('');
     setAdding(false);
+    if (error) {
+      window.showToast?.('Add todo failed: ' + error.message);
+      return;
+    }
+    setDraft('');
   };
 
   const toggle = async (t) => {
-    if (t.completed) {
-      await window.db
-        .from('bpp_todos')
-        .update({ completed: false, completed_at: null })
-        .eq('id', t.id);
-    } else {
-      await window.db
-        .from('bpp_todos')
-        .update({ completed: true, completed_at: new Date().toISOString() })
-        .eq('id', t.id);
-    }
+    const patch = t.completed
+      ? { completed: false, completed_at: null }
+      : { completed: true, completed_at: new Date().toISOString() };
+    const { error } = await window.db.from('bpp_todos').update(patch).eq('id', t.id);
+    if (error) window.showToast?.('Toggle failed: ' + error.message);
   };
 
   const remove = async (t) => {
-    await window.db.from('bpp_todos').delete().eq('id', t.id);
+    // Re-insert on undo. Includes every column we read so the row
+    // round-trips identically. Capping the title display at 60 chars
+    // keeps the toast tidy on long todos.
+    const snapshot = { ...t };
+    const { error } = await window.db.from('bpp_todos').delete().eq('id', t.id);
+    if (error) {
+      window.showToast?.('Delete failed: ' + error.message);
+      return;
+    }
+    const previewTitle = (t.title || '').length > 60 ? (t.title || '').slice(0, 60) + '…' : (t.title || '');
+    window.showToast?.(`Deleted: ${previewTitle}`, {
+      undo: async () => {
+        // Strip auto-generated keys so the insert doesn't 409 on conflict.
+        const { id, created_at, ...rest } = snapshot;
+        const { error: insertErr } = await window.db.from('bpp_todos').insert([{ id, ...rest }]);
+        if (insertErr) window.showToast?.('Undo failed: ' + insertErr.message);
+      },
+      duration: 5000,
+    });
   };
 
   // Hide completed older than 6 hours so the list stays clean
