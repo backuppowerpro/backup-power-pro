@@ -436,4 +436,9 @@ function Root() {
   return isMobile ? mobileApp : desktopApp;
 }
 
+// Start the scheduled-SMS queue runner once at app load. Idempotent —
+// re-mounting (React strict-mode, hot-reload) won't double-init the
+// poller. Reads/sends every 60s after a 5s initial delay.
+window.startScheduledQueueRunner?.();
+
 ReactDOM.createRoot(document.getElementById('root')).render(<Root />);

@@ -511,6 +511,111 @@ function SparkyFAB({ onClick }) {
 // reason iOS has a Lock-screen camera button. The capture is 5 seconds;
 // triage happens later. Optional contact-link picker (pre-fills with
 // active contact when one is open).
+// ── VoiceMemoButton ────────────────────────────────────────────────
+// Web Speech API → live transcript → appends text on stop. Browser
+// support is good (Chrome desktop+Android, Safari iOS 14.5+, Edge);
+// Firefox is the gap. If the API isn't available, the button hides
+// itself rather than rendering a broken click target. Mic permission
+// is requested via getUserMedia indirectly when recognition.start()
+// fires — the browser-native prompt handles the consent flow, no
+// custom approval UI needed.
+function VoiceMemoButton({ onTranscript }) {
+  const [recording, setRecording] = React.useState(false);
+  const [interim, setInterim] = React.useState('');
+  const recRef = React.useRef(null);
+  const finalRef = React.useRef('');
+
+  // The class is webkit-prefixed in Safari/Chrome, plain in newer specs.
+  const SR = (typeof window !== 'undefined') &&
+    (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  if (!SR) return null;
+
+  const stop = () => {
+    if (recRef.current) {
+      try { recRef.current.stop(); } catch {}
+      recRef.current = null;
+    }
+    setRecording(false);
+    const text = finalRef.current.trim();
+    setInterim('');
+    if (text) onTranscript?.(text);
+    finalRef.current = '';
+  };
+
+  const start = () => {
+    finalRef.current = '';
+    setInterim('');
+    const r = new SR();
+    r.continuous = true;
+    r.interimResults = true;
+    r.lang = navigator.language || 'en-US';
+    r.onresult = (e) => {
+      let interimText = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const res = e.results[i];
+        if (res.isFinal) finalRef.current += res[0].transcript + ' ';
+        else interimText += res[0].transcript;
+      }
+      setInterim(interimText);
+    };
+    r.onerror = (e) => {
+      const err = e.error || 'unknown';
+      window.showToast?.('Voice memo: ' + err);
+      stop();
+    };
+    r.onend = () => {
+      // Browsers can auto-stop on long silence — only finalize if the
+      // user explicitly stopped (recording flag still true means manual
+      // stop already cleared it; here we treat auto-end as finalize).
+      if (recRef.current) {
+        recRef.current = null;
+        const text = finalRef.current.trim();
+        setRecording(false);
+        setInterim('');
+        if (text) onTranscript?.(text);
+        finalRef.current = '';
+      }
+    };
+    try {
+      r.start();
+      recRef.current = r;
+      setRecording(true);
+    } catch (e) {
+      window.showToast?.('Voice memo failed: ' + e.message);
+    }
+  };
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+      {recording && interim && (
+        <span style={{ fontSize:11, color:MUTED, fontStyle:'italic', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{interim}</span>
+      )}
+      <button
+        onClick={recording ? stop : start}
+        title={recording ? 'Stop recording' : 'Voice memo'}
+        aria-label={recording ? 'Stop recording' : 'Voice memo'}
+        style={{
+          width:32, height:32, borderRadius:8,
+          background: recording ? '#FEF2F2' : '#F0F4FF',
+          border:'1px solid ' + (recording ? '#FECACA' : 'rgba(11,31,59,0.08)'),
+          color: recording ? '#991B1B' : NAVY,
+          cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+          flexShrink:0,
+          animation: recording ? 'bppMicPulse 1.4s ease-in-out infinite' : 'none',
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill={recording ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"/>
+          <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </button>
+      <style>{`@keyframes bppMicPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.7;transform:scale(0.92)} }`}</style>
+    </div>
+  );
+}
+
 function QuickCaptureFAB({ activeContactId }) {
   const [open, setOpen] = React.useState(false);
   const [title, setTitle] = React.useState('');
@@ -1193,6 +1298,79 @@ function safeSetItem(key, value) {
   }
 }
 
+// ── Scheduled SMS queue ────────────────────────────────────────────────
+// Send-later: store messages locally with an `at` ISO timestamp; a single
+// global poller (mounted once at app load) scans every 60s, sends due
+// items via the existing send-sms edge function, and removes them from
+// the queue. Survives page reload because state lives in localStorage.
+// Tradeoff: requires the browser tab to be open within the minute the
+// message is due. For BPP scale (single-user CRM) this is acceptable —
+// Key has the CRM open most of the day. For real "send while I sleep"
+// scheduling, we'd need a Supabase pg_cron job; deferred until needed.
+const SCHED_KEY = 'bpp_v3_scheduled_msgs';
+function readSchedQueue() {
+  try { return JSON.parse(localStorage.getItem(SCHED_KEY) || '[]') || []; }
+  catch { return []; }
+}
+function writeSchedQueue(q) {
+  try { localStorage.setItem(SCHED_KEY, JSON.stringify(q || [])); } catch {}
+  window.dispatchEvent(new CustomEvent('crm-scheduled-msg-changed'));
+}
+function scheduleMessage({ contactId, body, atIso, attachments = [] }) {
+  const q = readSchedQueue();
+  q.push({
+    id: 'sched_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    contactId, body, attachments, at: atIso,
+    createdAt: new Date().toISOString(),
+  });
+  writeSchedQueue(q);
+}
+function cancelScheduledMessage(id) {
+  writeSchedQueue(readSchedQueue().filter(x => x.id !== id));
+}
+// One-shot mount at app load: runs the queue every 60s. Idempotent —
+// __schedRunning guards against double-init from React strict-mode
+// double-invoke.
+function startScheduledQueueRunner() {
+  if (typeof window === 'undefined') return;
+  if (window.__bppSchedRunning) return;
+  window.__bppSchedRunning = true;
+  const tick = async () => {
+    const q = readSchedQueue();
+    const now = Date.now();
+    const due = q.filter(m => Date.parse(m.at) <= now);
+    if (due.length === 0) return;
+    const remaining = q.filter(m => Date.parse(m.at) > now);
+    // Optimistically remove due items so a slow send doesn't double-fire.
+    writeSchedQueue(remaining);
+    for (const m of due) {
+      try {
+        if (!window.CRM?.__invokeFn) {
+          // No edge fn yet — re-queue with a 5min delay so we try again.
+          const requeued = readSchedQueue();
+          requeued.push({ ...m, at: new Date(now + 5 * 60_000).toISOString() });
+          writeSchedQueue(requeued);
+          continue;
+        }
+        const idempotencyKey = `v3-sched-${m.id}`;
+        const { data, error } = await window.CRM.__invokeFn('send-sms', {
+          body: { contactId: m.contactId, body: m.body, idempotencyKey },
+        });
+        if (error || (data && data.success === false)) {
+          window.showToast?.(`Scheduled SMS failed: ${error?.message || data?.error || 'unknown'}`);
+        } else {
+          window.showToast?.(`Scheduled SMS sent`);
+        }
+      } catch (e) {
+        window.showToast?.(`Scheduled SMS error: ${e.message || e}`);
+      }
+    }
+  };
+  // First tick after 5s (lets the data layer initialize), then every 60s.
+  setTimeout(tick, 5000);
+  setInterval(tick, 60_000);
+}
+
 // ── Snooze ────────────────────────────────────────────────────────────
 // Hide a contact from the active list until a date. Stored in localStorage
 // so no DB migration is needed; this is a per-device intent anyway. Map
@@ -1374,7 +1552,7 @@ function quoteV3Total({ amp, lengthFt, includeCord, includeInlet, includePermit,
 Object.assign(window, {
   NAVY, GOLD, BG, CARD, MUTED, NOW, RADIUS, contactHasInstalled,
   Icons, NavBar, ContactAvatar, GoldDot, StatusPill,
-  SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero, QuickCaptureFAB,
+  SparkyFAB, SparkyPill, ToastHost, ConfirmHost, EmptyHero, QuickCaptureFAB, VoiceMemoButton,
   capitalize, formatPhone, formatPhoneInput, linkify, formatRelative, formatMoneyCents, buildContactSignals,
   formatDate, formatTime, formatTimeShort, formatDuration, dayKey,
   relTime, fmtTime, fmtDate,
@@ -1382,4 +1560,5 @@ Object.assign(window, {
   V3_PRICING, quoteV3Total,
   safeSetItem, checkSvImagery, isAddressableStreet, copyText,
   readSnoozeMap, snoozeContact, unsnoozeContact, isSnoozed, snoozedUntil,
+  readSchedQueue, scheduleMessage, cancelScheduledMessage, startScheduledQueueRunner,
 });

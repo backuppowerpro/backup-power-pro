@@ -506,15 +506,17 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   }, [signalMap, contacts, snoozeMap]);
 
   const snoozedCount = Object.keys(snoozeMap).filter(id => contacts.some(c => c.id === id && !c.archived)).length;
+  const archivedCount = contacts.filter(c => c.archived).length;
   const stageOpts = [
     { value:'all',         label:'All',           count: visibleContacts.length },
     { value:'silent_new',  label:'Silent leads',  count: silentSet.size },
     { value:'rotting',     label:'Rotting',       count: rottingSet.size },
     { value:'needs_reply', label:'Needs reply',   count: needsReplySet.size },
     ...CRM.STAGE_ORDER.map(s => ({ value:s, label: STAGE_COLORS[s].label, count: stageCounts[s] })),
-    // Snoozed only renders if there's at least one snoozed contact —
-    // keeps the chip row uncluttered when nothing is snoozed.
+    // Snoozed/Archived only render if there's at least one — keeps the
+    // chip row uncluttered when there's nothing in those buckets.
     ...(snoozedCount > 0 ? [{ value:'snoozed', label:'Snoozed', count: snoozedCount }] : []),
+    ...(archivedCount > 0 ? [{ value:'archived', label:'Archived', count: archivedCount }] : []),
   ];
 
   // A contact has unread if they have an unread inbound message
@@ -537,7 +539,10 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
   }, []);
 
   const filtered = contacts
-    .filter(c => !c.archived)
+    // Archive filter: when stage='archived', show ONLY archived; in
+    // every other lens, hide them. This is what makes the Archived chip
+    // a recoverable view rather than a permanent eviction.
+    .filter(c => stage === 'archived' ? !!c.archived : !c.archived)
     // Snoozed contacts hide from every view EXCEPT the "Snoozed" filter
     // (so a snoozed customer never shows up in Today / Stuck / etc.)
     .filter(c => stage === 'snoozed' ? !!snoozeMap[c.id] : !snoozeMap[c.id])
@@ -546,6 +551,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
               : stage === 'rotting' ? rottingSet.has(c.id)
               : stage === 'silent_new' ? silentSet.has(c.id)
               : stage === 'snoozed' ? true
+              : stage === 'archived' ? true
               : c.stage === stage)
     .filter(c => {
       if (!search) return true;
@@ -800,18 +806,46 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                   </div>
                 )}
               </div>
-              <div onClick={e=>togglePin(e,c.id)} role="button" tabIndex={0}
-                aria-label={isPinned ? 'Unpin contact' : 'Pin contact'}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); togglePin(e, c.id); } }}
-                style={{
-                  // 44×44 hit area meets iOS HIG even though the visible icon
-                  // stays a 14px pixel-art star. Centered via flex.
-                  background:'none', cursor:'pointer', flexShrink:0,
-                  width:44, height:44, display:'flex', alignItems:'center', justifyContent:'center',
-                  color: isPinned ? GOLD : '#D1D5DB',
-                }}>
-                <svg viewBox="0 0 24 24" fill={isPinned?'currentColor':'none'} stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              </div>
+              {/* Restore button replaces the pin slot when viewing the
+                  Archived lens — surfaces the unarchive action where
+                  Key's eye is already trained for row-end actions. */}
+              {c.archived ? (
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    c.archived = false;
+                    if (CRM.__db) await CRM.__db.from('contacts').update({ status: 'Active' }).eq('id', c.id);
+                    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+                    window.showToast?.('Restored', {
+                      undo: () => {
+                        c.archived = true;
+                        if (CRM.__db) CRM.__db.from('contacts').update({ status: 'Archived' }).eq('id', c.id);
+                        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+                      },
+                      duration: 5000,
+                    });
+                  }}
+                  style={{
+                    background:'#D1FAE5', border:'1px solid #6EE7B7',
+                    color:'#065F46', fontSize:11, fontWeight:700,
+                    padding:'6px 10px', borderRadius:6, cursor:'pointer',
+                    fontFamily:'inherit', flexShrink:0,
+                  }}
+                >Restore</button>
+              ) : (
+                <div onClick={e=>togglePin(e,c.id)} role="button" tabIndex={0}
+                  aria-label={isPinned ? 'Unpin contact' : 'Pin contact'}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); togglePin(e, c.id); } }}
+                  style={{
+                    // 44×44 hit area meets iOS HIG even though the visible icon
+                    // stays a 14px pixel-art star. Centered via flex.
+                    background:'none', cursor:'pointer', flexShrink:0,
+                    width:44, height:44, display:'flex', alignItems:'center', justifyContent:'center',
+                    color: isPinned ? GOLD : '#D1D5DB',
+                  }}>
+                  <svg viewBox="0 0 24 24" fill={isPinned?'currentColor':'none'} stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </div>
+              )}
             </div>
           );
         })}

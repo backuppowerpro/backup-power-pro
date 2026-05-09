@@ -552,8 +552,16 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
       <InfoSection title="Notes" editAction={null}>
         <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Internal notes (auto-saves)…"
           style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'10px 12px',fontSize:16,color:NAVY,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box' }} />
-        <div style={{ marginTop:6, fontSize:11, color:'#999', minHeight:14 }}>
-          {noteSaving ? 'Saving…' : noteSaved ? 'Saved' : ' '}
+        <div style={{ marginTop:6, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+          <div style={{ fontSize:11, color:'#999', minHeight:14 }}>
+            {noteSaving ? 'Saving…' : noteSaved ? 'Saved' : ' '}
+          </div>
+          <VoiceMemoButton onTranscript={(text) => {
+            // Append the transcript to the note; auto-save effect kicks in.
+            const stamp = new Date().toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+            const existing = note ? note + '\n\n' : '';
+            setNote(existing + `[Voice ${stamp}] ${text}`);
+          }} />
         </div>
       </InfoSection>
       <PhotosSection contact={contact} />
@@ -2052,22 +2060,12 @@ function ContactCalendar({ contact, events, highlightId, bumpData }) {
       )}
 
       {upcoming && (
-        <div style={{
-          background:'white', borderRadius:8, marginBottom:10,
-          borderLeft:'3px solid #ffba00',
-          border:'1px solid rgba(11,31,59,0.08)',
-          borderLeftWidth:3, borderLeftColor:'#ffba00',
-          padding:'12px 14px',
-          display:'flex', alignItems:'center', justifyContent:'space-between', gap:12,
-        }}>
-          <div style={{ minWidth:0 }}>
-            <div style={{ fontSize:14, fontWeight:600, color:NAVY }}>{upcoming.title}</div>
-            <div style={{ fontSize:12, color:'#666', marginTop:2 }}>{subtitle(upcoming)}</div>
-          </div>
-          <div style={{ fontSize:12, color:NAVY, fontFamily:"'DM Mono', monospace", whiteSpace:'nowrap', flexShrink:0 }}>
-            {fmtRow(upcoming.start_at)}
-          </div>
-        </div>
+        <UpcomingEventCard
+          event={upcoming}
+          subtitle={subtitle(upcoming)}
+          fmtRow={fmtRow}
+          bumpData={bumpData}
+        />
       )}
 
       {past.map(ev => (
@@ -2091,6 +2089,123 @@ function ContactCalendar({ contact, events, highlightId, bumpData }) {
 
       {!upcoming && past.length === 0 && (
         <div style={{ padding:'48px 24px', textAlign:'center', color:MUTED, fontSize:13 }}>No events scheduled yet</div>
+      )}
+    </div>
+  );
+}
+
+// ── UpcomingEventCard ─────────────────────────────────────────────────
+// Hosts the next-up event row + quick reschedule controls. Click the
+// time to expand inline date/time pickers. Save shifts the event and
+// fires a toast with Undo. Avoids the "open a modal to move a meeting"
+// friction — most reschedules are 1 day or 1 hour off.
+function UpcomingEventCard({ event, subtitle, fmtRow, bumpData }) {
+  const [editing, setEditing] = React.useState(false);
+  // Seed pickers from event.start_at in LOCAL time so the date+time
+  // round-trip cleanly through `<input type=date|time>`.
+  const initial = React.useMemo(() => {
+    const d = new Date(event.start_at);
+    const pad = n => String(n).padStart(2, '0');
+    return {
+      date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+    };
+  }, [event.start_at, event.id]);
+  const [date, setDate] = React.useState(initial.date);
+  const [time, setTime] = React.useState(initial.time);
+  React.useEffect(() => { setDate(initial.date); setTime(initial.time); }, [initial.date, initial.time]);
+
+  const shiftBy = async (ms) => {
+    const prev = event.start_at;
+    const newStart = new Date(new Date(prev).getTime() + ms).toISOString();
+    event.start_at = newStart;
+    if (event.end_at) {
+      const dur = new Date(event.end_at).getTime() - new Date(prev).getTime();
+      event.end_at = new Date(new Date(newStart).getTime() + dur).toISOString();
+    }
+    bumpData?.();
+    if (CRM.__db) {
+      const patch = { start_at: newStart };
+      if (event.end_at) patch.end_at = event.end_at;
+      await CRM.__db.from('calendar_events').update(patch).eq('id', event.id);
+    }
+    window.showToast?.('Rescheduled to ' + new Date(newStart).toLocaleString(undefined, { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }), {
+      undo: async () => {
+        event.start_at = prev;
+        bumpData?.();
+        if (CRM.__db) await CRM.__db.from('calendar_events').update({ start_at: prev }).eq('id', event.id);
+      },
+      duration: 5000,
+    });
+  };
+
+  const saveCustom = async () => {
+    if (!date || !time) { window.showToast?.('Pick date and time'); return; }
+    const newStart = new Date(`${date}T${time}:00`);
+    if (isNaN(newStart.getTime())) { window.showToast?.('Invalid date'); return; }
+    const ms = newStart.getTime() - new Date(event.start_at).getTime();
+    if (ms === 0) { setEditing(false); return; }
+    setEditing(false);
+    await shiftBy(ms);
+  };
+
+  const quickBtn = (label, ms) => (
+    <button
+      onClick={() => shiftBy(ms)}
+      style={{
+        padding:'4px 8px', fontSize:11, fontWeight:600, color: NAVY,
+        background:'#F0F4FF', border:'1px solid rgba(11,31,59,0.08)',
+        borderRadius:14, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap',
+      }}
+    >{label}</button>
+  );
+
+  return (
+    <div style={{
+      background:'white', borderRadius:8, marginBottom:10,
+      borderLeft:'3px solid #ffba00',
+      border:'1px solid rgba(11,31,59,0.08)',
+      borderLeftWidth:3, borderLeftColor:'#ffba00',
+      padding:'12px 14px',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+        <div style={{ minWidth:0 }}>
+          <div style={{ fontSize:14, fontWeight:600, color:NAVY }}>{event.title}</div>
+          <div style={{ fontSize:12, color:'#666', marginTop:2 }}>{subtitle}</div>
+        </div>
+        <button
+          onClick={() => setEditing(v => !v)}
+          title="Reschedule"
+          style={{
+            fontSize:12, color:NAVY, fontFamily:"'DM Mono', monospace",
+            whiteSpace:'nowrap', flexShrink:0,
+            background:'none', border:'1px solid rgba(11,31,59,0.08)',
+            padding:'4px 8px', borderRadius:6, cursor:'pointer',
+          }}
+        >{fmtRow(event.start_at)}</button>
+      </div>
+      {editing ? (
+        <div style={{ marginTop:10, display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ fontSize:12, padding:'5px 8px', border:'1px solid #EBEBEA', borderRadius:6, fontFamily:'inherit' }} />
+          <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ fontSize:12, padding:'5px 8px', border:'1px solid #EBEBEA', borderRadius:6, fontFamily:'inherit' }} />
+          <button onClick={saveCustom} style={{ padding:'5px 12px', fontSize:12, fontWeight:700, color:NAVY, background:GOLD, border:'none', borderRadius:6, cursor:'pointer', fontFamily:'inherit' }}>Save</button>
+          <button onClick={() => setEditing(false)} style={{ padding:'5px 10px', fontSize:12, color:'#666', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>Cancel</button>
+        </div>
+      ) : (
+        <div style={{ marginTop:8, display:'flex', flexWrap:'wrap', gap:6 }}>
+          {quickBtn('+1 hr', 3600 * 1000)}
+          {quickBtn('+1 day', 86400 * 1000)}
+          {quickBtn('+2 days', 2 * 86400 * 1000)}
+          {quickBtn('+1 week', 7 * 86400 * 1000)}
+          <button
+            onClick={() => setEditing(true)}
+            style={{
+              padding:'4px 8px', fontSize:11, fontWeight:600, color: NAVY,
+              background:'white', border:'1px dashed rgba(11,31,59,0.25)',
+              borderRadius:14, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap',
+            }}
+          >Custom…</button>
+        </div>
       )}
     </div>
   );
@@ -3076,6 +3191,188 @@ function TemplateEditModal({ onClose }) {
   );
 }
 
+// ── ScheduledMessagesStrip ────────────────────────────────────────────
+// Shows queued scheduled messages for the active contact above the
+// compose bar. Each row shows the body preview + "in 2h" + cancel.
+// Subscribes to crm-scheduled-msg-changed so toggles update without a
+// full re-render.
+function ScheduledMessagesStrip({ contactId }) {
+  const [queue, setQueue] = React.useState(() => window.readSchedQueue?.() || []);
+  React.useEffect(() => {
+    const refresh = () => setQueue(window.readSchedQueue?.() || []);
+    window.addEventListener('crm-scheduled-msg-changed', refresh);
+    window.addEventListener('storage', refresh);
+    // Refresh every 30s so "in 1h" countdowns stay fresh.
+    const tick = setInterval(refresh, 30_000);
+    return () => {
+      window.removeEventListener('crm-scheduled-msg-changed', refresh);
+      window.removeEventListener('storage', refresh);
+      clearInterval(tick);
+    };
+  }, []);
+  const mine = queue.filter(m => m.contactId === contactId).sort((a, b) => new Date(a.at) - new Date(b.at));
+  if (mine.length === 0) return null;
+
+  const niceTime = (iso) => {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (ms < 0) return 'sending now…';
+    if (ms < 3600 * 1000) return `in ${Math.max(1, Math.round(ms / 60000))} min`;
+    if (ms < 86400 * 1000) return `in ${Math.round(ms / 3600000)} hr`;
+    return new Date(iso).toLocaleString(undefined, { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+  };
+
+  return (
+    <div style={{ margin:'8px 16px 0', display:'flex', flexDirection:'column', gap:6, flexShrink:0 }}>
+      {mine.map(m => (
+        <div key={m.id} style={{
+          display:'flex', alignItems:'center', gap:10,
+          padding:'8px 10px',
+          background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:8,
+          fontSize:12, color:'#1E40AF',
+        }}>
+          <span style={{ fontSize:13 }}>⏰</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontWeight:700 }}>Scheduled · {niceTime(m.at)}</div>
+            <div style={{ color:'#1E3A8A', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', marginTop:1 }}>{m.body || '(media-only)'}</div>
+          </div>
+          <button
+            onClick={() => {
+              window.cancelScheduledMessage?.(m.id);
+              window.showToast?.('Scheduled message cancelled');
+            }}
+            style={{
+              fontSize:11, fontWeight:700, color:'#991B1B',
+              background:'white', border:'1px solid #FECACA', borderRadius:6,
+              padding:'4px 8px', cursor:'pointer', fontFamily:'inherit',
+            }}
+          >Cancel</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── SendButton (split: send now / schedule later) ─────────────────────
+// Default tap = send now. Tap the chevron to open the schedule menu
+// with presets (1hr, tomorrow 9am, tomorrow 7pm) + a Custom datetime
+// picker. Survives reload via the localStorage queue + 60s poller in
+// crm-shared.jsx.
+function SendButton({ onSend, onSchedule }) {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const wrapRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setMenuOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, [menuOpen]);
+
+  const tomorrowAt = (hour, minute = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(hour, minute, 0, 0);
+    return d.toISOString();
+  };
+  const inHours = (h) => new Date(Date.now() + h * 3600 * 1000).toISOString();
+
+  const presets = [
+    { label:'In 1 hour',         at: inHours(1) },
+    { label:'In 4 hours',        at: inHours(4) },
+    { label:'Tomorrow 9 AM',     at: tomorrowAt(9, 0) },
+    { label:'Tomorrow 7 PM',     at: tomorrowAt(19, 0) },
+  ];
+
+  const customSchedule = () => {
+    const def = new Date(Date.now() + 3600 * 1000);
+    const pad = n => String(n).padStart(2, '0');
+    const defaultLocal = `${def.getFullYear()}-${pad(def.getMonth()+1)}-${pad(def.getDate())} ${pad(def.getHours())}:${pad(def.getMinutes())}`;
+    const v = window.prompt('Send at (YYYY-MM-DD HH:MM, 24-hour):', defaultLocal);
+    if (!v) return;
+    const cleaned = v.trim().replace(' ', 'T') + ':00';
+    const at = new Date(cleaned);
+    if (isNaN(at.getTime()) || at.getTime() < Date.now()) {
+      window.showToast?.('Pick a future date+time');
+      return;
+    }
+    setMenuOpen(false);
+    onSchedule?.(at.toISOString());
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position:'relative', display:'flex', flexShrink:0 }}>
+      <button
+        onClick={onSend}
+        aria-label="Send"
+        style={{
+          width:36, height:36,
+          borderTopLeftRadius:8, borderBottomLeftRadius:8,
+          borderTopRightRadius:0, borderBottomRightRadius:0,
+          background:'#ffba00', color:NAVY, border:'none', cursor:'pointer',
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+      <button
+        onClick={() => setMenuOpen(o => !o)}
+        aria-label="Send later options"
+        title="Send later"
+        style={{
+          width:22, height:36,
+          borderTopRightRadius:8, borderBottomRightRadius:8,
+          borderTopLeftRadius:0, borderBottomLeftRadius:0,
+          background:'#FFC933', color:NAVY,
+          border:'none', borderLeft:'1px solid rgba(11,31,59,0.18)',
+          cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      {menuOpen && (
+        <div style={{
+          position:'absolute', bottom:'calc(100% + 6px)', right:0,
+          width:180, background:'white',
+          border:'1px solid rgba(27,43,75,0.12)', borderRadius:10,
+          boxShadow:'0 8px 24px rgba(27,43,75,0.16)',
+          padding:6, zIndex:60,
+        }}>
+          <div style={{ padding:'4px 10px 6px', fontSize:10, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.06em' }}>Send later</div>
+          {presets.map(p => (
+            <button
+              key={p.label}
+              onClick={() => { setMenuOpen(false); onSchedule?.(p.at); }}
+              style={{
+                width:'100%', textAlign:'left',
+                padding:'6px 10px', fontSize:13, fontWeight:500, color:NAVY,
+                background:'none', border:'none', borderRadius:6,
+                cursor:'pointer', fontFamily:'inherit',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F8F8F6'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >{p.label}</button>
+          ))}
+          <div style={{ height:1, background:'rgba(27,43,75,0.08)', margin:'4px 4px' }} />
+          <button
+            onClick={customSchedule}
+            style={{
+              width:'100%', textAlign:'left',
+              padding:'6px 10px', fontSize:13, fontWeight:500, color:NAVY,
+              background:'none', border:'none', borderRadius:6,
+              cursor:'pointer', fontFamily:'inherit',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#F8F8F6'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          >Pick date + time…</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ContactMessages({ contact, thread, isDnc }) {
   const draftKey = 'draft:' + contact.id;
   // Sort thread chronologically (DB is unordered)
@@ -3400,6 +3697,8 @@ function ContactMessages({ contact, thread, isDnc }) {
         </div>
       )}
 
+      <ScheduledMessagesStrip contactId={contact.id} />
+
       {/* Compose. v10.1.27: padding-bottom uses --vvs which collapses to 0
           when the keyboard is open (visualViewport.height < 600), restoring
           to env(safe-area-inset-bottom) when keyboard closed. Eliminates
@@ -3445,15 +3744,19 @@ function ContactMessages({ contact, thread, isDnc }) {
               overflowY:'auto',
             }}
           />
-          <button onClick={send} aria-label="Send" style={{
-            width:36, height:36, borderRadius:8,
-            background:'#ffba00', color:NAVY, border:'none', cursor:'pointer',
-            display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
-          }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </button>
+          <SendButton
+            onSend={send}
+            onSchedule={(atIso) => {
+              const body = msg.trim();
+              if (!body && !attachments.length) return;
+              window.scheduleMessage?.({ contactId: contact.id, body, atIso, attachments: [...attachments] });
+              setMsg('');
+              setAttachments([]);
+              sessionStorage.removeItem(draftKey);
+              const niceTime = new Date(atIso).toLocaleString(undefined, { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+              window.showToast?.('Scheduled for ' + niceTime);
+            }}
+          />
         </div>
       )}
 
