@@ -4073,8 +4073,47 @@ function ContactMessages({ contact, thread, isDnc }) {
     else sessionStorage.removeItem(draftKey);
   }, [msg, draftKey]);
 
-  // Combined view = persisted + optimistic
-  const allMsgs = React.useMemo(() => [...sortedThread, ...localMsgs], [sortedThread, localMsgs]);
+  // Combined view = persisted + optimistic. Dedupe by body+minute-bucket
+  // so once realtime delivers the persisted row, the optimistic bubble
+  // collapses into it instead of the user seeing the same message twice
+  // until they switch contacts. (Server-side message ids are uuids that
+  // don't match the local 'n' + Date.now() id, so id-based dedupe alone
+  // doesn't work — body + minute-bucket of the persisted row is a
+  // reliable match for an optimistic row Key just sent.)
+  const allMsgs = React.useMemo(() => {
+    const persistedKeys = new Set();
+    for (const m of sortedThread) {
+      if (m.direction !== 'out') continue;
+      const minute = Math.floor(new Date(m.sent_at).getTime() / 60000);
+      persistedKeys.add(`${(m.body || '').trim()}::${minute}`);
+    }
+    const live = localMsgs.filter(m => {
+      const minute = Math.floor(new Date(m.sent_at).getTime() / 60000);
+      const key = `${(m.body || '').trim()}::${minute}`;
+      return !persistedKeys.has(key);
+    });
+    return [...sortedThread, ...live];
+  }, [sortedThread, localMsgs]);
+
+  // Garbage-collect optimistic bubbles that the realtime channel has now
+  // mirrored into sortedThread. Without this, localMsgs grows unbounded
+  // for a long-lived contact session and the dedupe runs against ever-
+  // larger arrays. Tied to sortedThread.length so it fires on every
+  // realtime push without a separate effect.
+  React.useEffect(() => {
+    if (localMsgs.length === 0) return;
+    const persistedKeys = new Set();
+    for (const m of sortedThread) {
+      if (m.direction !== 'out') continue;
+      const minute = Math.floor(new Date(m.sent_at).getTime() / 60000);
+      persistedKeys.add(`${(m.body || '').trim()}::${minute}`);
+    }
+    const surviving = localMsgs.filter(m => {
+      const minute = Math.floor(new Date(m.sent_at).getTime() / 60000);
+      return !persistedKeys.has(`${(m.body || '').trim()}::${minute}`);
+    });
+    if (surviving.length !== localMsgs.length) setLocalMsgs(surviving);
+  }, [sortedThread.length]);
 
   React.useEffect(() => { if (containerRef.current) containerRef.current.scrollTop = containerRef.current.scrollHeight; }, [allMsgs]);
 
@@ -4121,9 +4160,17 @@ function ContactMessages({ contact, thread, isDnc }) {
       if (error || (data && data.success === false)) {
         // Rollback the optimistic bubble + restore the compose so Key can
         // retry. Better than silently leaving a phantom "sent" message.
+        // Peek at error.context.json() so failures show the real reason
+        // (Twilio code, DNC block, rate-limit) instead of the wrapper's
+        // generic "Edge Function returned a non-2xx status code".
         setLocalMsgs(m => m.filter(x => x.id !== tempId));
         setMsg(body);
-        window.showToast?.(`Send failed: ${error?.message || data?.error || 'unknown'}`);
+        let detail = data?.error || error?.message || 'unknown';
+        try {
+          const errBody = error?.context ? await error.context.json() : null;
+          if (errBody?.error) detail = errBody.error + (errBody.detail ? ` — ${errBody.detail}` : '');
+        } catch (_) {}
+        window.showToast?.(`Send failed: ${detail}`);
         return;
       }
       window.showToast?.('Sent');
