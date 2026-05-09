@@ -49,12 +49,22 @@ Deno.serve(async (req) => {
 
   const { data: contact } = await supabase
     .from('contacts')
-    .select('id, name, phone, install_notes')
+    .select('id, name, phone, install_notes, do_not_contact')
     .eq('id', contactId)
     .single()
 
   if (!contact?.phone) {
     return new Response(JSON.stringify({ error: 'contact not found' }), { status: 404, headers: CORS })
+  }
+
+  // TCPA: post-install review request is still customer-outbound. A
+  // customer who texted STOP between install completion and the review
+  // trigger gets blocked here. auto-review-ask already does this; quo-ai-
+  // review is the older manual path. Audit-2026-05-09 B3.
+  if (contact.do_not_contact) {
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'do_not_contact' }), {
+      status: 200, headers: CORS,
+    })
   }
 
   const firstName = (contact.name || '').split(' ')[0] || ''

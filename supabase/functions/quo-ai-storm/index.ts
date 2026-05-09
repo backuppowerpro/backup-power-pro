@@ -48,11 +48,15 @@ Deno.serve(async (req) => {
   const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
   const warmStatuses = ['Quote Sent', 'Engaged', 'Photo Pending', 'On Hold', 'No Response']
 
+  // TCPA: never blast STOPPED contacts. ai_enabled is NOT a reliable proxy
+  // for DNC — they're set by different code paths and can drift. Audit-
+  // 2026-05-09 B2: mass-send blast radius required explicit DNC filter.
   const { data: contacts, error } = await supabase
     .from('contacts')
-    .select('id, name, phone, status, updated_at')
+    .select('id, name, phone, status, updated_at, do_not_contact')
     .in('status', warmStatuses)
     .eq('ai_enabled', true)
+    .eq('do_not_contact', false)
     .gte('updated_at', cutoff)
     .order('updated_at', { ascending: false })
 

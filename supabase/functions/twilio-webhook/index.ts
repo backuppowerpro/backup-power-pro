@@ -135,6 +135,55 @@ Deno.serve(async (req) => {
     return twiml()
   }
 
+  // ── STOP DETECTION (TCPA hard rule) ────────────────────────────────────────
+  // Twilio handles STOP at the carrier level (sets opt-out + returns 21610
+  // on subsequent attempts), but BPP's DB never learns about it. Until a
+  // subsequent send-sms fails with 21610, every cron / proposal-nudge /
+  // quo-ai-storm / alex-initiate flow keeps thinking the contact is
+  // contactable. Audit-2026-05-09 H1: TCPA $500-$1500 per send to STOPPED
+  // number. Detect here, flip DNC, log audit row, send brand-id confirmation,
+  // and skip Ashley/Alex dispatch entirely.
+  const stopRe = /^\s*(stop|stopall|unsubscribe|cancel|end|quit|opt[\s-]?out|remove\s*me|do\s*not\s*contact)\s*\.?\s*$/i
+  if (stopRe.test(body || '')) {
+    console.log(`[twilio-webhook] STOP detected from ${contact.name || contact.id}`)
+    // Save the inbound message first (audit trail of what triggered DNC).
+    await supabase.from('messages').insert({
+      contact_id:     contact.id,
+      direction:      'inbound',
+      body:           msgBody,
+      sender:         'lead',
+      sender_phone:   from,
+      quo_message_id: messageSid,
+      status:         'received',
+    })
+    // Flip DNC with full audit fields. Mirrors alex-agent/index.ts:2802 and
+    // crm-right.jsx:229. dnc_source='sms_stop' distinguishes from email-
+    // complaint / crm_manual writers.
+    const dncStamp = new Date().toISOString()
+    await supabase.from('contacts').update({
+      do_not_contact: true,
+      dnc_at:         dncStamp,
+      dnc_source:     'sms_stop',
+      ai_enabled:     false,
+      bot_state:      'STOPPED',
+    }).eq('id', contact.id)
+    // Audit row for TCPA litigation defense — matches alex-agent's insert
+    // shape exactly: phone, event, consent_at (no message body / sid).
+    await supabase.from('sms_consent_log').insert({
+      contact_id: contact.id,
+      phone:      from,
+      event:      'stop',
+      consent_at: dncStamp,
+    }).then(({ error: e }) => {
+      // Log-only failure — TCPA defense survives without the audit row, but
+      // log it so we can backfill if the table schema drifted.
+      if (e) console.warn('[twilio-webhook] sms_consent_log insert failed:', e.message)
+    })
+    // Reply with brand-identifying confirmation. Twilio's <Message> in TwiML
+    // sends the reply as part of the 200 OK — no separate API call needed.
+    return twiml('<Message>You have been unsubscribed from Backup Power Pro. No further texts will be sent. Reply START to opt back in.</Message>')
+  }
+
   // ── SAVE INBOUND MESSAGE ───────────────────────────────────────────────────
   // sender_phone is populated for known contacts too — useful for audit
   // queries (was this from the canonical phone or an alt?) and for the

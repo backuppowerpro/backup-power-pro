@@ -267,6 +267,27 @@ Deno.serve(async (req) => {
     })
   }
 
+  // ── DNC check (TCPA hard rule) ───────────────────────────────────────────
+  // Re-submitted forms / Meta lead ads can deliver a "fresh" lead with the
+  // same phone as a previously-STOPPED contact. The per-session opted_out
+  // flag above doesn't catch that — a brand-new alex_sessions row has
+  // opted_out=false even when contacts.do_not_contact has been true for
+  // months. Audit-2026-05-09 B1: TCPA exposure surface. Same pattern as
+  // quo-ai-new-lead/index.ts:246.
+  const { data: dncContact } = await db
+    .from('contacts')
+    .select('id, do_not_contact')
+    .eq('phone', phone)
+    .eq('do_not_contact', true)
+    .limit(1)
+
+  if (dncContact?.length) {
+    console.log('[initiate] DNC contact, not texting:', phone)
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'do_not_contact' }), {
+      status: 200, headers: CORS,
+    })
+  }
+
   // ── Pick A/B variant and create session ───────────────────────────────────
   const variant = pickVariant()
   const sessionId = crypto.randomUUID()

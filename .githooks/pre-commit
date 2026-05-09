@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Pre-commit hook: run brain validation when brain/ or wiki/Key/ files
-# are part of the staged change. Blocks the commit if validation fails.
+# Pre-commit hook — runs the right structural audit for whatever
+# part of the codebase is being touched. Blocks the commit on any
+# strict-mode finding so bug classes that previously slipped through
+# (TCPA writes that don't await, schema drift, voice violations,
+# missing auth gates) can't reach Key as "another bug I had to find."
 #
 # Activate once per machine:
 #   git config core.hooksPath .githooks
@@ -12,12 +15,40 @@ set -uo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 STAGED=$(git diff --cached --name-only)
 
-# Only run if brain/ or wiki/Key/ changed.
+# brain / wiki/Key validation
 if echo "$STAGED" | grep -qE '^(brain/|wiki/Key/|scripts/brain/)'; then
   if [[ -x "$REPO_ROOT/scripts/brain/validate.sh" ]]; then
     "$REPO_ROOT/scripts/brain/validate.sh" || {
       echo
-      echo "Pre-commit hook blocked. Fix the issues above, or run with --no-verify if you must."
+      echo "Pre-commit hook blocked (brain validation). Fix the issues above, or run with --no-verify if you must."
+      exit 1
+    }
+  fi
+fi
+
+# CRM v3 audit — run when any crm/v3/ file is staged. Catches the bug
+# classes Key kept finding manually: per-device localStorage that should
+# sync, schema drift, fire-and-forget DB writes, unknown edge fn refs,
+# silent error paths, fixed-shape badges.
+if echo "$STAGED" | grep -qE '^crm/v3/'; then
+  if [[ -x "$REPO_ROOT/scripts/audit-crm.sh" ]]; then
+    "$REPO_ROOT/scripts/audit-crm.sh" --strict || {
+      echo
+      echo "Pre-commit hook blocked (CRM audit). Fix the findings above, or run with --no-verify if you must."
+      exit 1
+    }
+  fi
+fi
+
+# Ashley audit — run when any bot-* edge function (or bot state machine,
+# or twilio webhook) is staged. Catches voice-rule violations in fallback
+# strings, missing auth gates, missing webhook signature verification,
+# missing inbound idempotency, schema drift on bot tables.
+if echo "$STAGED" | grep -qE '^supabase/functions/(bot-|twilio-webhook|twilio-status-callback|twilio-voice-)|^supabase/functions/_shared/bot-'; then
+  if [[ -x "$REPO_ROOT/scripts/audit-ashley.sh" ]]; then
+    "$REPO_ROOT/scripts/audit-ashley.sh" --strict || {
+      echo
+      echo "Pre-commit hook blocked (Ashley audit). Fix the findings above, or run with --no-verify if you must."
       exit 1
     }
   fi

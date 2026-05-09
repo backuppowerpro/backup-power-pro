@@ -676,12 +676,30 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     }
 
     // 4. STOP keyword fast path
+    // Audit-2026-05-09 M1: write full audit trail (dnc_at + dnc_source +
+    // sms_consent_log) to mirror alex-agent/index.ts:2802 and twilio-webhook
+    // STOP detection. TCPA litigation defense relies on knowing WHEN and HOW
+    // each contact opted out — `do_not_contact=true` alone has no provenance.
     if (STOP_RE.test(input.message_body || '')) {
+      const dncStamp = new Date().toISOString()
       await sb.from('contacts').update({
-        do_not_contact: true,
-        bot_state: 'STOPPED',
-        last_bot_inbound_at: new Date().toISOString(),
+        do_not_contact:      true,
+        dnc_at:              dncStamp,
+        dnc_source:          'sms_stop',
+        ai_enabled:          false,
+        bot_state:           'STOPPED',
+        last_bot_inbound_at: dncStamp,
       }).eq('id', contact.id)
+      // Audit row. Best-effort — TCPA defense survives without it.
+      // Schema matches alex-agent's insert: phone, event, consent_at.
+      sb.from('sms_consent_log').insert({
+        contact_id: contact.id,
+        phone:      contact.phone,
+        event:      'stop',
+        consent_at: dncStamp,
+      }).then(({ error: e }) => {
+        if (e) console.warn('[bot-engine] sms_consent_log insert failed:', e.message)
+      })
       outcome = 'silent'
       return new Response(JSON.stringify({ ok: true, stopped: true }),
         { status: 200, headers: { 'content-type': 'application/json' } })
