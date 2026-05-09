@@ -1381,6 +1381,31 @@ function startScheduledQueueRunner() {
   setInterval(tick, 60_000);
 }
 
+// ── Pinned-contacts hook ──────────────────────────────────────────────
+// Pins live in localStorage (no DB column). The Contacts list edits the
+// set; Messages / Calls / Finance / Calendar lists read it to sort
+// starred contacts to the top of every category. Subscribes to the
+// `crm-pin-changed` event so any pin toggle anywhere in the app
+// rerenders consumers without a full refresh.
+const PIN_KEY_SHARED = 'bpp_v3_pinned_contacts';
+function readPinnedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(PIN_KEY_SHARED) || '[]')); }
+  catch { return new Set(); }
+}
+function usePinned() {
+  const [pinned, setPinned] = React.useState(() => readPinnedSet());
+  React.useEffect(() => {
+    const refresh = () => setPinned(readPinnedSet());
+    window.addEventListener('crm-pin-changed', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('crm-pin-changed', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+  return pinned;
+}
+
 // ── Snooze ────────────────────────────────────────────────────────────
 // Hide a contact from the active list until a date. Stored in localStorage
 // so no DB migration is needed; this is a per-device intent anyway. Map
@@ -1571,4 +1596,5 @@ Object.assign(window, {
   safeSetItem, checkSvImagery, isAddressableStreet, copyText,
   readSnoozeMap, snoozeContact, unsnoozeContact, isSnoozed, snoozedUntil,
   readSchedQueue, scheduleMessage, cancelScheduledMessage, startScheduledQueueRunner,
+  usePinned, readPinnedSet,
 });

@@ -1016,6 +1016,7 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
   const getContact = id => contacts.find(c=>c.id===id);
   const [view, setView] = React.useState('today');
   const [addOpen, setAddOpen] = React.useState(false);
+  const pinned = window.usePinned ? window.usePinned() : new Set();
   // Per-event "needs invoice" flag — derived from the global signal map
   // so the rule matches what shows on contact rows + Money tab.
   const invoices = window.CRM?.invoices || [];
@@ -1026,10 +1027,18 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
     return s;
   }, [events, invoices, contacts]);
 
-  // Filter to scheduled (canonical: status === 'scheduled'), then sort by start_at.
+  // Filter to scheduled (canonical: status === 'scheduled'). Sort:
+  // pinned-contact events surface to the top, then chronological by
+  // start_at within each pin bucket. Matches the "starred contacts at
+  // the top of every left-panel list" rule (Key 2026-05-09).
   const scheduled = events
     .filter(e => e.status === 'scheduled')
-    .sort((a,b) => (a.start_at||'').localeCompare(b.start_at||''));
+    .sort((a, b) => {
+      const ap = pinned.has(a.contact_id) ? 1 : 0;
+      const bp = pinned.has(b.contact_id) ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      return (a.start_at || '').localeCompare(b.start_at || '');
+    });
 
   const todayEvents = scheduled.filter(e => dayKey(e.start_at) === TODAY);
   const upcoming    = scheduled.filter(e => dayKey(e.start_at) >  TODAY);
@@ -1145,7 +1154,14 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
             {conflict && <span style={{ fontSize:10, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 6px', borderRadius:20 }}>⚠ Conflict</span>}
             {needsInvoice && <span title="No invoice yet — bill before this slips" style={{ fontSize:10, fontWeight:700, color:'#9A3412', background:'#FFEDD5', padding:'1px 6px', borderRadius:20 }}>Needs invoice</span>}
           </div>
-          <div style={{ fontSize:14, fontWeight:600, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</div>
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            {pinned.has(ev.contact_id) && (
+              <svg viewBox="0 0 24 24" fill={GOLD} stroke={GOLD} strokeWidth="2" width="11" height="11" style={{ flexShrink:0 }}>
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            )}
+            <div style={{ fontSize:14, fontWeight:600, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', minWidth:0 }}>{contactName(c)}</div>
+          </div>
           <div style={{ fontSize:11, color:MUTED, marginTop:1 }}>{ev.title} · {durationMin(ev)}min</div>
         </div>
         {/* Edit / cancel actions — keep them lightweight + always-visible
@@ -1269,6 +1285,7 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
 function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activeContactId }) {
   const [view, setView] = React.useState('all'); // 'all' | 'invoices' | 'proposals'
   const getContact = id => contacts.find(c=>c.id===id);
+  const pinned = window.usePinned ? window.usePinned() : new Set();
 
   // Per Key's billing rule: don't count an invoice as Outstanding/Overdue
   // until the contact has actually had their install. Pre-install sent
@@ -1360,11 +1377,18 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
     return { curr, last, pct, monthLabel, prevLabel };
   }, [invoices]);
 
-  // Build mixed display list
+  // Build mixed display list. Pinned-first: any proposal/invoice belonging
+  // to a starred contact rises to the top of every view. Within each pin
+  // bucket the existing sent_at-desc order is preserved.
   const tagged = [
     ...proposals.map(p => ({ ...p, _kind:'proposal' })),
     ...invoices.map(i => ({ ...i, _kind:'invoice' })),
-  ].sort((a,b) => (b.sent_at||'').localeCompare(a.sent_at||''));
+  ].sort((a, b) => {
+    const ap = pinned.has(a.contact_id) ? 1 : 0;
+    const bp = pinned.has(b.contact_id) ? 1 : 0;
+    if (ap !== bp) return bp - ap;
+    return (b.sent_at || '').localeCompare(a.sent_at || '');
+  });
 
   const visible = view === 'all' ? tagged
                 : view === 'invoices' ? tagged.filter(x => x._kind === 'invoice')
@@ -1539,6 +1563,11 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
               <ContactAvatar contact={c} size={36} />
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                  {pinned.has(item.contact_id) && (
+                    <svg viewBox="0 0 24 24" fill={GOLD} stroke={GOLD} strokeWidth="2" width="11" height="11" style={{ flexShrink:0 }}>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  )}
                   <span style={{ fontWeight:600, fontSize:14, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</span>
                   <StatusPill status={item.status} />
                   <span style={{ fontSize:9, fontWeight:700, color:MUTED, background:BG, padding:'1px 5px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.04em' }}>{item._kind === 'proposal' ? 'Quote' : 'Invoice'}</span>
@@ -1734,6 +1763,7 @@ function QuickQuoteModal({ onClose }) {
 function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
   const [filter, setFilter] = React.useState('all');
   const [search, setSearch] = React.useState('');
+  const pinned = window.usePinned ? window.usePinned() : new Set();
 
   // Mark-all-read writes to DB so the next page load doesn't re-light the
   // unread badges. We optimistically stamp every inbound unread message
@@ -1790,7 +1820,15 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
     return { contact: c, last, cCalls, hasVm, unread };
   })
     .filter(e => e.last || e.cCalls.length > 0)
-    .sort((a,b) => (b.last?.sent_at || '').localeCompare(a.last?.sent_at || ''));
+    // Pinned-first, then most-recent-message-first within each group.
+    // localeCompare on the sent_at string preserves the prior secondary
+    // ordering exactly.
+    .sort((a, b) => {
+      const ap = pinned.has(a.contact.id) ? 1 : 0;
+      const bp = pinned.has(b.contact.id) ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      return (b.last?.sent_at || '').localeCompare(a.last?.sent_at || '');
+    });
 
   const totalUnread = entries.reduce((s,e) => s + e.unread, 0);
 
@@ -1837,8 +1875,15 @@ function MessagesList({ messages, calls, contacts, onOpen, activeContactId }) {
               {hasVm && <div style={{ position:'absolute',bottom:0,right:0,width:14,height:14,borderRadius:'50%',background:'#7C3AED',border:'2px solid white',display:'flex',alignItems:'center',justifyContent:'center',color:'white' }}><div style={{width:7,height:7}}>{Icons.voicemail}</div></div>}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:2 }}>
-                <span style={{ fontWeight:unread > 0 ? 700 : 500, fontSize:14, color:NAVY }}>{contactName(contact)}</span>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:2, gap:6 }}>
+                <span style={{ display:'flex', alignItems:'center', gap:5, minWidth:0, flex:1 }}>
+                  {pinned.has(contact.id) && (
+                    <svg viewBox="0 0 24 24" fill={GOLD} stroke={GOLD} strokeWidth="2" width="11" height="11" style={{ flexShrink:0 }}>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  )}
+                  <span style={{ fontWeight:unread > 0 ? 700 : 500, fontSize:14, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(contact)}</span>
+                </span>
                 <span style={{ fontSize:11, color:MUTED, flexShrink:0 }}>{last ? formatRelative(last.sent_at) : ''}</span>
               </div>
               <div style={{ fontSize:12, color:unread > 0 ? NAVY : MUTED, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:unread > 0 ? 500 : 400 }}>
@@ -1862,8 +1907,17 @@ const CALL_PALETTE = {
 
 function CallsList({ calls, contacts, onOpen, activeContactId }) {
   const getContact = id => contacts.find(c => c.id === id);
+  const pinned = window.usePinned ? window.usePinned() : new Set();
 
-  const sorted = [...calls].sort((a,b) => (b.started_at||'').localeCompare(a.started_at||''));
+  // Pinned-first: contacts you've starred surface to the top of every
+  // calls slice (today / missed / voicemails / all). Within each pin
+  // bucket the existing started_at-desc order is preserved.
+  const sorted = [...calls].sort((a, b) => {
+    const ap = pinned.has(a.contact_id) ? 1 : 0;
+    const bp = pinned.has(b.contact_id) ? 1 : 0;
+    if (ap !== bp) return bp - ap;
+    return (b.started_at || '').localeCompare(a.started_at || '');
+  });
   const todayCalls   = sorted.filter(c => dayKey(c.started_at) === TODAY);
   const callbackQueue = sorted.filter(c => c.direction === 'missed');
   const voicemails   = sorted.filter(c => c.voicemail_url);
@@ -1987,6 +2041,11 @@ function CallsList({ calls, contacts, onOpen, activeContactId }) {
               </div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                  {pinned.has(cl.contact_id) && (
+                    <svg viewBox="0 0 24 24" fill={GOLD} stroke={GOLD} strokeWidth="2" width="11" height="11" style={{ flexShrink:0 }}>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  )}
                   <span style={{ fontWeight:600, fontSize:13, color:NAVY }}>{contactName(c)}</span>
                   <span style={{ fontSize:10, fontWeight:700, color:p.color, background:p.bg, padding:'1px 6px', borderRadius:20 }}>{p.label}</span>
                 </div>
