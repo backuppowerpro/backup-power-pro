@@ -35,33 +35,32 @@ function RightPanel({ contactId, tab, dncSet = new Set(), toggleDnc = () => {}, 
 function ContactStrip({ contact, isDnc, toggleDnc, bumpData, onOpenTab }) {
   const isPremium = contact.pricing_tier === 'premium' || contact.pricing_tier === 'premium_plus';
 
-  // Pin state mirrors the ContactsList pin star — same localStorage key.
-  // Listening for the custom event keeps both components in sync without
-  // a shared parent.
-  const PIN_KEY = 'bpp_v3_pinned_contacts';
-  const readPinned = () => {
-    try { return new Set(JSON.parse(localStorage.getItem(PIN_KEY) || '[]')); }
-    catch { return new Set(); }
-  };
-  const [pinned, setPinned] = React.useState(readPinned);
-  React.useEffect(() => {
-    const onChanged = () => setPinned(readPinned());
-    window.addEventListener('crm-pin-changed', onChanged);
-    window.addEventListener('storage', onChanged);
-    return () => {
-      window.removeEventListener('crm-pin-changed', onChanged);
-      window.removeEventListener('storage', onChanged);
-    };
-  }, []);
+  // Pin state shares CRM.contacts as the source of truth (column added
+  // 2026-05-09 via migration 20260509140000). Pins now sync between
+  // desktop and mobile via the contacts realtime channel; before this
+  // change the star lived only in localStorage and never crossed devices.
+  const pinned = window.usePinned ? window.usePinned() : new Set();
   const isPinned = pinned.has(contact.id);
-  const togglePin = () => {
-    const next = new Set(pinned);
-    if (next.has(contact.id)) next.delete(contact.id);
-    else next.add(contact.id);
-    setPinned(next);
-    window.safeSetItem?.(PIN_KEY, JSON.stringify([...next]));
+  const togglePin = async () => {
+    const wasOn = isPinned;
+    // Optimistic flip on the live row, then persist + revert on error.
+    const live = (CRM.contacts || []).find(c => c.id === contact.id) || contact;
+    live.pinned = !wasOn;
     window.dispatchEvent(new CustomEvent('crm-pin-changed'));
-    window.showToast?.(isPinned ? 'Unpinned' : 'Pinned to top');
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    if (CRM.__db) {
+      const { error } = await CRM.__db.from('contacts')
+        .update({ pinned: !wasOn })
+        .eq('id', contact.id);
+      if (error) {
+        live.pinned = wasOn;
+        window.dispatchEvent(new CustomEvent('crm-pin-changed'));
+        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        window.showToast?.('Pin save failed: ' + error.message);
+        return;
+      }
+    }
+    window.showToast?.(wasOn ? 'Unpinned' : 'Pinned to top');
   };
 
   return (

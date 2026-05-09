@@ -106,6 +106,52 @@ function Root() {
     const onReady = (e) => {
       setLoaded(true);
       setAuthed(!!e.detail?.authed);
+      // One-time backfill: migrate any localStorage pins → contacts.pinned
+      // so users who starred contacts before the column existed don't
+      // lose their pins. Runs once at first load after this ships;
+      // subsequent loads find an empty localStorage and no-op.
+      try {
+        const raw = localStorage.getItem('bpp_v3_pinned_contacts');
+        if (!raw) return;
+        const ids = JSON.parse(raw);
+        if (!Array.isArray(ids) || ids.length === 0) {
+          localStorage.removeItem('bpp_v3_pinned_contacts');
+          return;
+        }
+        // Only backfill ids whose live contact row isn't already pinned.
+        const liveContacts = window.CRM?.contacts || [];
+        const toUpdate = ids.filter(id => {
+          const c = liveContacts.find(x => x.id === id);
+          return c && !c.pinned;
+        });
+        if (toUpdate.length > 0 && window.CRM?.__db) {
+          window.CRM.__db.from('contacts')
+            .update({ pinned: true })
+            .in('id', toUpdate)
+            .then(({ error }) => {
+              if (error) {
+                console.warn('[CRM] pinned backfill failed (will retry next load):', error.message);
+                return;
+              }
+              // Mirror into local state so the UI updates immediately
+              for (const id of toUpdate) {
+                const c = liveContacts.find(x => x.id === id);
+                if (c) c.pinned = true;
+              }
+              window.dispatchEvent(new CustomEvent('crm-pin-changed'));
+              window.dispatchEvent(new CustomEvent('crm-data-changed'));
+              localStorage.removeItem('bpp_v3_pinned_contacts');
+              console.log(`[CRM] migrated ${toUpdate.length} pinned contacts from localStorage to DB`);
+            });
+        } else {
+          // Either nothing to migrate or every id was already pinned in
+          // DB. Either way, drop the localStorage record so we don't
+          // keep retrying.
+          localStorage.removeItem('bpp_v3_pinned_contacts');
+        }
+      } catch (err) {
+        console.warn('[CRM] pinned backfill error:', err?.message || err);
+      }
     };
     window.addEventListener('crm-data-ready', onReady);
     return () => window.removeEventListener('crm-data-ready', onReady);

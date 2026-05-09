@@ -1382,25 +1382,36 @@ function startScheduledQueueRunner() {
 }
 
 // ── Pinned-contacts hook ──────────────────────────────────────────────
-// Pins live in localStorage (no DB column). The Contacts list edits the
-// set; Messages / Calls / Finance / Calendar lists read it to sort
-// starred contacts to the top of every category. Subscribes to the
-// `crm-pin-changed` event so any pin toggle anywhere in the app
-// rerenders consumers without a full refresh.
+// Source of truth is `contacts.pinned` (migration 20260509140000). Pins
+// sync between desktop and mobile via the existing contacts realtime
+// channel. Before this migration, pins lived only in localStorage —
+// per-device, no cross-device sync — Key noticed his phone's stars
+// didn't show on desktop.
+//
+// readPinnedSet() returns the set derived from CRM.contacts; the legacy
+// PIN_KEY_SHARED localStorage key is kept ONLY as a one-time backfill
+// source on first load (cleared in `migrateLocalPinsToDb` in crm-app).
 const PIN_KEY_SHARED = 'bpp_v3_pinned_contacts';
 function readPinnedSet() {
-  try { return new Set(JSON.parse(localStorage.getItem(PIN_KEY_SHARED) || '[]')); }
-  catch { return new Set(); }
+  const set = new Set();
+  for (const c of (window.CRM?.contacts || [])) {
+    if (c.pinned) set.add(c.id);
+  }
+  return set;
 }
 function usePinned() {
   const [pinned, setPinned] = React.useState(() => readPinnedSet());
   React.useEffect(() => {
     const refresh = () => setPinned(readPinnedSet());
+    // Pin state lives on contacts now, so any contacts data refresh
+    // (realtime fire, manual refetch, optimistic local mutation)
+    // triggers re-derivation. crm-pin-changed stays as a fast local
+    // signal so toggling a pin doesn't wait for a realtime round-trip.
+    window.addEventListener('crm-data-changed', refresh);
     window.addEventListener('crm-pin-changed', refresh);
-    window.addEventListener('storage', refresh);
     return () => {
+      window.removeEventListener('crm-data-changed', refresh);
       window.removeEventListener('crm-pin-changed', refresh);
-      window.removeEventListener('storage', refresh);
     };
   }, []);
   return pinned;

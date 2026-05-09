@@ -120,8 +120,16 @@ function mapContact(r) {
     pricing_tier: r.pricing_tier || 'standard',
     stage: STAGE_NUM_TO_STR[r.stage] || 'new',
     do_not_contact: !!r.do_not_contact,
-    archived: r.status === 'Archived',
-    pinned: false,
+    // Read both `archived` (column added 2026-05-09) and the legacy
+    // `status='Archived'` signal so old rows stay correct during the
+    // migration window. Once every row has been touched, drop the OR.
+    archived: !!r.archived || r.status === 'Archived',
+    // contacts.pinned column (migration 20260509140000). Replaces the
+    // localStorage-only pin set so stars sync between desktop and
+    // mobile via realtime. Falls back to false if the SELECT didn't
+    // pull the column (defensive — usePinned uses this as source of
+    // truth so missing it would silently de-star everyone).
+    pinned: !!r.pinned,
     // Pass through if the DB has them — UI components fall back gracefully
     // when null. Hardcoding null silently dropped real values.
     generator_model: r.generator_model || null,
@@ -519,7 +527,7 @@ async function loadLiveData() {
 
   const [contactsR, eventsR, proposalsR, invoicesR, messagesR, stageHistoryR, permitsR, materialsR, callsR] = await Promise.all([
     fetchTable(__db.from('contacts')
-      .select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes')
+      .select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes, archived, pinned')
       .order('created_at', { ascending: false })
       .limit(500), 'contacts'),
     fetchTable(__db.from('calendar_events')
@@ -607,7 +615,7 @@ async function loadLiveData() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, async () => {
       try {
         const { data, error } = await __db.from('contacts')
-          .select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes')
+          .select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes, archived, pinned')
           .order('created_at', { ascending: false }).limit(500);
         if (error) { console.warn('[CRM] realtime contacts refetch failed:', error.message); return; }
         window.CRM.contacts = (data || []).map(mapContact).filter(c => !c.archived);
@@ -743,7 +751,7 @@ async function refetchAll() {
   const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   try {
     const [c, e, p, i, m] = await Promise.all([
-      __db.from('contacts').select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes').order('created_at', { ascending: false }).limit(500),
+      __db.from('contacts').select('id, name, phone, email, address, stage, status, do_not_contact, pricing_tier, created_at, notes, archived, pinned').order('created_at', { ascending: false }).limit(500),
       __db.from('calendar_events').select('id, contact_id, start_at, end_at, title, event_type, status, created_at').gte('start_at', since).order('start_at', { ascending: true }).limit(500),
       __db.from('proposals').select('id, token, contact_id, pricing_tier, total, amp_type, selected_amp, status, copied_at, created_at, viewed_at, signed_at').order('created_at', { ascending: false }).limit(500),
       __db.from('invoices').select(// Schema notes (verified empirically 2026-05-01): the invoices table has

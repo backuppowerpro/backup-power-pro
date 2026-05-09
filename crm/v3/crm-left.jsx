@@ -418,12 +418,12 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     .map(id => contacts.find(c => c.id === id && !c.archived))
     .filter(Boolean)
     .slice(0, 5);
-  // Pinned contacts persist in localStorage (per-browser, single-user app).
-  // Use the shared usePinned hook so any pin toggle anywhere in the app
-  // (right-pane ContactStrip, bulk-action bar, sub-pane stars) rerenders
-  // this list and resorts. Earlier this was rolled-its-own state and a
-  // pin from the right pane wouldn't reflow the contact list.
-  const PIN_KEY = 'bpp_v3_pinned_contacts';
+  // Pinned contacts now persist on `contacts.pinned` (migration
+  // 20260509140000) so pins sync between desktop and mobile via the
+  // existing contacts realtime channel. The shared usePinned() hook
+  // derives the set from CRM.contacts, which means any pin toggle
+  // anywhere in the app rerenders every consumer once the realtime
+  // (or local optimistic) update lands.
   const pinned = window.usePinned ? window.usePinned() : new Set();
 
   // Counts for filter chips — every stage in the canonical order (excludes archived)
@@ -584,16 +584,29 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
     })
     .sort((a,b) => (pinned.has(b.id)?1:0) - (pinned.has(a.id)?1:0));
 
-  const togglePin = (e, id) => {
+  const togglePin = async (e, id) => {
     e.stopPropagation();
     const wasOn = pinned.has(id);
-    // Source of truth is localStorage; the shared usePinned hook re-reads
-    // on the crm-pin-changed event and triggers a rerender across every
-    // pinned-aware list (Contacts, Messages, Calls, Finance, Calendar).
-    const next = new Set(pinned);
-    if (wasOn) next.delete(id); else next.add(id);
-    window.safeSetItem?.(PIN_KEY, JSON.stringify([...next]));
+    // Optimistic flip the local row so the UI updates instantly, then
+    // persist to contacts.pinned. Realtime echoes back to other
+    // tabs/devices via the contacts channel.
+    const liveContact = (CRM.contacts || []).find(c => c.id === id);
+    if (liveContact) liveContact.pinned = !wasOn;
     window.dispatchEvent(new CustomEvent('crm-pin-changed'));
+    window.dispatchEvent(new CustomEvent('crm-data-changed'));
+    if (CRM.__db) {
+      const { error } = await CRM.__db.from('contacts')
+        .update({ pinned: !wasOn })
+        .eq('id', id);
+      if (error) {
+        // Revert on persist failure
+        if (liveContact) liveContact.pinned = wasOn;
+        window.dispatchEvent(new CustomEvent('crm-pin-changed'));
+        window.dispatchEvent(new CustomEvent('crm-data-changed'));
+        window.showToast?.('Pin save failed: ' + error.message);
+        return;
+      }
+    }
     window.showToast?.(wasOn ? 'Unpinned' : 'Pinned to top');
   };
 
