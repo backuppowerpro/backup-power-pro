@@ -213,7 +213,7 @@ function Root() {
   }, [activeContact, rightTab, leftTab]);
   const [highlightId, setHighlightId] = React.useState(null);
   // Force re-render after in-place CRM mutations (archive / DNC / delete)
-  const [, setBump] = React.useState(0);
+  const [bump, setBump] = React.useState(0);
   const bumpData = React.useCallback(() => setBump(n => n + 1), []);
   // Mobile: 'left' or 'right'
   const [mobileView, setMobileView] = React.useState('left');
@@ -272,12 +272,35 @@ function Root() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }, []);
+  // Left navbar shows GLOBAL counts across all contacts — that's the
+  // inbox-style badge ("how much work is on my plate?").
   const badgeCounts = {
     messages: CRM.messages.filter(m => m.direction === 'in' && m.read_at == null).length,
     calls: CRM.calls.filter(c => c.voicemail_url).length,
     calendar: CRM.events.filter(e => (e.start_at || '').slice(0,10) === todayStr && e.status === 'scheduled').length,
     finance: CRM.invoices.filter(i => i.status === 'overdue').length,
   };
+  // Right navbar is per-contact — sharing the global object made every
+  // contact's tab show 396 unread even when that contact had zero. Scope
+  // each count to the active contact id; falls back to {} when no contact
+  // is selected so we don't render misleading badges on the empty state.
+  const contactBadgeCounts = React.useMemo(() => {
+    if (!activeContact) return {};
+    return {
+      messages: CRM.messages.filter(m =>
+        m.contact_id === activeContact && m.direction === 'in' && m.read_at == null
+      ).length,
+      calls: CRM.calls.filter(c =>
+        c.contact_id === activeContact && c.voicemail_url
+      ).length,
+      calendar: CRM.events.filter(e =>
+        e.contact_id === activeContact && (e.start_at || '').slice(0,10) === todayStr && e.status === 'scheduled'
+      ).length,
+      finance: CRM.invoices.filter(i =>
+        i.contact_id === activeContact && i.status === 'overdue'
+      ).length,
+    };
+  }, [activeContact, bump, todayStr]);
 
   // Tapping a row opens the contact on the right, switches right tab to match context
   const handleOpen = (contactId, openTab, targetId) => {
@@ -342,7 +365,7 @@ function Root() {
         <NavBar
           tab={rightTab}
           onTab={t => { if (t === rightTab) setMobileView('left'); else setRightTab(t); }}
-          badgeCounts={badgeCounts}
+          badgeCounts={contactBadgeCounts}
           showBack
           onBack={() => setMobileView('left')}
         />
@@ -388,7 +411,7 @@ function Root() {
         <LeftPanel tab={leftTab} onOpen={handleOpen} dncSet={dncSet} activeContactId={activeContact} />
       </div>
       <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minWidth:0, background:'#F8F8F6' }}>
-        <NavBar tab={rightTab} onTab={setRightTab} badgeCounts={badgeCounts} compact />
+        <NavBar tab={rightTab} onTab={setRightTab} badgeCounts={contactBadgeCounts} compact />
         <RightPanel contactId={activeContact} tab={rightTab} dncSet={dncSet} toggleDnc={toggleDnc} highlightId={highlightId} bumpData={bumpData} onOpenTab={setRightTab} />
       </div>
       <ToastHost />

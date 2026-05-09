@@ -222,16 +222,26 @@ function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, conte
                 }}
               >
                 <div style={{ width: 22, height: 22 }}>{Icons[t]}</div>
-                {badge > 0 && (
-                  <div style={{
-                    position:'absolute', top: 6, right: 6,
-                    background: '#E53E3E', color:'white',
-                    width: 16, height: 16, borderRadius: '50%',
-                    fontSize: 9, fontWeight: 700,
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                    border: `2px solid ${NAVY}`,
-                  }}>{badge}</div>
-                )}
+                {badge > 0 && (() => {
+                  // Cap at 99+ and switch to a pill shape for two-digit counts
+                  // so the digits never spill past the red. The single-digit
+                  // case keeps the original 16×16 circle.
+                  const label = badge > 99 ? '99+' : String(badge);
+                  const wide = label.length >= 2;
+                  return (
+                    <div style={{
+                      position:'absolute', top: 6, right: 6,
+                      background:'#E53E3E', color:'white',
+                      // Pill grows horizontally; height stays consistent.
+                      minWidth: 16, height: 16, padding: wide ? '0 4px' : 0,
+                      borderRadius: wide ? 8 : '50%',
+                      fontSize: wide ? 10 : 11, fontWeight: 700, lineHeight: 1,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      border: `2px solid ${NAVY}`,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>{label}</div>
+                  );
+                })()}
               </button>
             );
           })}

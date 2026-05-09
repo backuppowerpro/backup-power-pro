@@ -62,7 +62,15 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script>
-  window.BPP_VERSION = '116';
+  // Derive version from the cache-busting ?v= param on the script tags
+  // so the visible version label is always in sync with the cache version.
+  // Earlier this was a hardcoded constant that drifted (was stuck at 116
+  // for 25+ commits because I kept forgetting to bump it alongside ?v=).
+  window.BPP_VERSION = (() => {
+    const tag = document.querySelector('script[src*="crm-app.jsx?v="]');
+    const m = tag && tag.getAttribute('src').match(/\?v=(\d+)/);
+    return m ? m[1] : '?';
+  })();
   // v10.1.28: gold-standard pattern + iOS programmatic-scroll defense.
   //
   // Real iPhone test on v=109 showed iOS still scrolls window on input
@@ -115,13 +123,13 @@
     });
   })();
 </script>
-<script src="crm-data.js?v=141"></script>
-<script type="text/babel" src="crm-shared.jsx?v=141"></script>
-<script type="text/babel" src="crm-left.jsx?v=141"></script>
-<script type="text/babel" src="crm-right.jsx?v=141"></script>
-<script type="text/babel" src="crm-permit-portals.jsx?v=141"></script>
-<script type="text/babel" src="crm-todos.jsx?v=141"></script>
-<script type="text/babel" src="crm-app.jsx?v=141"></script>
+<script src="crm-data.js?v=142"></script>
+<script type="text/babel" src="crm-shared.jsx?v=142"></script>
+<script type="text/babel" src="crm-left.jsx?v=142"></script>
+<script type="text/babel" src="crm-right.jsx?v=142"></script>
+<script type="text/babel" src="crm-permit-portals.jsx?v=142"></script>
+<script type="text/babel" src="crm-todos.jsx?v=142"></script>
+<script type="text/babel" src="crm-app.jsx?v=142"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   /* v10.1.18: transparent chin via fixed pseudo-element. Earlier attempt
