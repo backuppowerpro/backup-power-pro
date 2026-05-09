@@ -549,21 +549,12 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
       )}
       {/* Notes before Photos — Key references notes more often than
           photos when re-opening a contact. */}
-      <InfoSection title="Notes" editAction={null}>
-        <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Internal notes (auto-saves)…"
-          style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'10px 12px',fontSize:16,color:NAVY,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box' }} />
-        <div style={{ marginTop:6, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-          <div style={{ fontSize:11, color:'#999', minHeight:14 }}>
-            {noteSaving ? 'Saving…' : noteSaved ? 'Saved' : ' '}
-          </div>
-          <VoiceMemoButton onTranscript={(text) => {
-            // Append the transcript to the note; auto-save effect kicks in.
-            const stamp = new Date().toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
-            const existing = note ? note + '\n\n' : '';
-            setNote(existing + `[Voice ${stamp}] ${text}`);
-          }} />
-        </div>
-      </InfoSection>
+      <NotesWithMarkdownPreview
+        note={note}
+        setNote={setNote}
+        noteSaving={noteSaving}
+        noteSaved={noteSaved}
+      />
       <PhotosSection contact={contact} />
       <StageHistoryCard contact={contact} />
       <ActivityTimelineCard
@@ -579,6 +570,394 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
         <PermitsCard permits={permits} contact={contact} bumpData={bumpData} />
       )}
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
+    </div>
+  );
+}
+
+// ── PhotoAnnotateModal ────────────────────────────────────────────────
+// Full-screen modal: photo + canvas overlay. Pen draws red strokes;
+// undo pops the last stroke; clear wipes everything; save composites
+// the strokes onto the original image at full resolution and returns
+// a PNG blob via onSave. Pointer-events handle mouse/touch/pen alike.
+function PhotoAnnotateModal({ photo, onClose, onSave }) {
+  const imgRef = React.useRef(null);
+  const canvasRef = React.useRef(null);
+  const [strokes, setStrokes] = React.useState([]); // [[{x,y},...]]
+  const [drawing, setDrawing] = React.useState(false);
+  const [imgLoaded, setImgLoaded] = React.useState(false);
+  const [color, setColor] = React.useState('#dc2626');
+  const [thickness, setThickness] = React.useState(4);
+  const [saving, setSaving] = React.useState(false);
+
+  // Resize canvas to match the displayed image whenever the image loads
+  // or the window resizes.
+  React.useEffect(() => {
+    if (!imgLoaded) return;
+    const sync = () => {
+      const img = imgRef.current;
+      const canvas = canvasRef.current;
+      if (!img || !canvas) return;
+      const rect = img.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      redraw();
+    };
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  }, [imgLoaded, strokes, color, thickness]);
+
+  const redraw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const stroke of strokes) {
+      if (stroke.points.length < 2) continue;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.thickness;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+      for (let i = 1; i < stroke.points.length; i++) {
+        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+      }
+      ctx.stroke();
+    }
+  };
+
+  const xy = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const onPointerDown = (e) => {
+    e.preventDefault();
+    canvasRef.current?.setPointerCapture?.(e.pointerId);
+    setDrawing(true);
+    const p = xy(e);
+    setStrokes(s => [...s, { color, thickness, points: [p] }]);
+  };
+  const onPointerMove = (e) => {
+    if (!drawing) return;
+    const p = xy(e);
+    setStrokes(s => {
+      if (!s.length) return s;
+      const last = s[s.length - 1];
+      const next = { ...last, points: [...last.points, p] };
+      return [...s.slice(0, -1), next];
+    });
+  };
+  const onPointerUp = (e) => {
+    setDrawing(false);
+    try { canvasRef.current?.releasePointerCapture?.(e.pointerId); } catch {}
+  };
+
+  const undo = () => setStrokes(s => s.slice(0, -1));
+  const clear = () => setStrokes([]);
+
+  // Save: composite strokes onto the original image at full resolution.
+  // Scale stroke coords by (naturalWidth/displayedWidth) so annotations
+  // look correct at any export size. Resulting PNG is sent to onSave.
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const img = imgRef.current;
+      if (!img) { setSaving(false); return; }
+      const W = img.naturalWidth || img.width;
+      const H = img.naturalHeight || img.height;
+      const dRect = img.getBoundingClientRect();
+      const sx = W / dRect.width;
+      const sy = H / dRect.height;
+      // Use a separate offscreen canvas so we don't pollute the live one.
+      const out = document.createElement('canvas');
+      out.width = W;
+      out.height = H;
+      const ctx = out.getContext('2d');
+      // Draw the original image; if it errored as cross-origin, we'll
+      // fall through and just export the strokes on a transparent BG —
+      // strokes alone are still useful as an overlay.
+      try {
+        ctx.drawImage(img, 0, 0, W, H);
+      } catch (e) {
+        console.warn('[CRM] photo draw failed (likely CORS):', e?.message);
+      }
+      for (const stroke of strokes) {
+        if (stroke.points.length < 2) continue;
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.thickness * Math.max(sx, sy);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(stroke.points[0].x * sx, stroke.points[0].y * sy);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i].x * sx, stroke.points[i].y * sy);
+        }
+        ctx.stroke();
+      }
+      out.toBlob(blob => {
+        setSaving(false);
+        if (!blob) { window.showToast?.('Nothing to save'); return; }
+        onSave?.(blob);
+      }, 'image/png');
+    } catch (e) {
+      setSaving(false);
+      window.showToast?.('Save failed: ' + (e.message || e));
+    }
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position:'fixed', inset:0, background:'rgba(11,31,59,0.85)', zIndex:200,
+      display:'flex', alignItems:'center', justifyContent:'center', padding:'24px',
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background:'white', borderRadius:12, maxWidth:'90vw', maxHeight:'92vh',
+        display:'flex', flexDirection:'column', overflow:'hidden',
+      }}>
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid #EBEBEA' }}>
+          <div style={{ fontSize:13, fontWeight:700, color:NAVY }}>Annotate photo</div>
+          <button onClick={onClose} style={{ fontSize:14, background:'none', border:'none', color:MUTED, cursor:'pointer' }}>✕</button>
+        </div>
+        {/* Image + canvas overlay */}
+        <div style={{ position:'relative', overflow:'auto', minHeight:0, flex:1, display:'flex', alignItems:'center', justifyContent:'center', background:'#0b1f3b' }}>
+          <img
+            ref={imgRef}
+            src={photo.url}
+            alt=""
+            crossOrigin="anonymous"
+            onLoad={() => setImgLoaded(true)}
+            style={{ maxWidth:'80vw', maxHeight:'70vh', display:'block', userSelect:'none', pointerEvents:'none' }}
+          />
+          <canvas
+            ref={canvasRef}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%, -50%)', cursor:'crosshair', touchAction:'none' }}
+          />
+        </div>
+        {/* Toolbar */}
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderTop:'1px solid #EBEBEA', flexWrap:'wrap' }}>
+          {[{c:'#dc2626',l:'Red'},{c:'#facc15',l:'Yellow'},{c:'#0b1f3b',l:'Navy'},{c:'#ffffff',l:'White'}].map(swatch => (
+            <button key={swatch.c} onClick={() => setColor(swatch.c)} title={swatch.l}
+              style={{
+                width:24, height:24, borderRadius:'50%',
+                background: swatch.c,
+                border: color === swatch.c ? '2px solid #0b1f3b' : '1px solid #EBEBEA',
+                cursor:'pointer', flexShrink:0,
+              }} />
+          ))}
+          <span style={{ fontSize:11, color:MUTED, marginLeft:4 }}>Size</span>
+          {[2, 4, 8, 14].map(t => (
+            <button key={t} onClick={() => setThickness(t)} style={{
+              width:28, height:28, borderRadius:6,
+              border: thickness === t ? '2px solid #0b1f3b' : '1px solid #EBEBEA',
+              background:'white', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+              flexShrink:0,
+            }}>
+              <span style={{ width:t, height:t, borderRadius:'50%', background: NAVY, display:'block' }} />
+            </button>
+          ))}
+          <div style={{ flex:1 }} />
+          <button onClick={undo} disabled={strokes.length === 0} style={{
+            padding:'6px 10px', fontSize:12, fontWeight:600, color:NAVY,
+            background:'white', border:'1px solid #EBEBEA', borderRadius:6,
+            cursor: strokes.length === 0 ? 'not-allowed' : 'pointer', opacity: strokes.length === 0 ? 0.5 : 1,
+            fontFamily:'inherit',
+          }}>Undo</button>
+          <button onClick={clear} disabled={strokes.length === 0} style={{
+            padding:'6px 10px', fontSize:12, fontWeight:600, color:'#991B1B',
+            background:'white', border:'1px solid #FECACA', borderRadius:6,
+            cursor: strokes.length === 0 ? 'not-allowed' : 'pointer', opacity: strokes.length === 0 ? 0.5 : 1,
+            fontFamily:'inherit',
+          }}>Clear</button>
+          <button onClick={save} disabled={saving || strokes.length === 0} style={{
+            padding:'6px 14px', fontSize:13, fontWeight:700, color:NAVY,
+            background:'#ffba00', border:'none', borderRadius:6,
+            cursor: (saving || strokes.length === 0) ? 'not-allowed' : 'pointer', opacity: (saving || strokes.length === 0) ? 0.6 : 1,
+            fontFamily:'inherit',
+          }}>{saving ? 'Saving…' : 'Save'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── NotesWithMarkdownPreview ──────────────────────────────────────────
+// Internal notes textarea with a Preview tab showing rendered markdown
+// (bold, italic, headings, links, bullets, code). Voice memo button on
+// the meta row. Light markdown only — no HTML, no XSS surface; all
+// transforms produce plain text + safe React elements.
+function NotesWithMarkdownPreview({ note, setNote, noteSaving, noteSaved }) {
+  const [mode, setMode] = React.useState('edit'); // 'edit' | 'preview'
+  return (
+    <InfoSection title="Notes" editAction={null}>
+      {/* Tiny tab strip — Edit / Preview */}
+      <div style={{ display:'flex', gap:4, marginBottom:8 }}>
+        {['edit','preview'].map(m => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            style={{
+              fontSize:11, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase',
+              padding:'4px 10px', borderRadius:6,
+              background: mode === m ? NAVY : 'transparent',
+              color: mode === m ? 'white' : MUTED,
+              border: '1px solid ' + (mode === m ? NAVY : 'rgba(11,31,59,0.12)'),
+              cursor:'pointer', fontFamily:'inherit',
+            }}
+          >{m}</button>
+        ))}
+      </div>
+      {mode === 'edit' ? (
+        <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Internal notes (auto-saves)… Markdown supported."
+          style={{ width:'100%',minHeight:68,border:'1.5px solid #EBEBEA',borderRadius:8,background:BG,padding:'10px 12px',fontSize:16,color:NAVY,resize:'vertical',outline:'none',fontFamily:'inherit',lineHeight:1.5,boxSizing:'border-box' }} />
+      ) : (
+        <div style={{ width:'100%', minHeight:68, border:'1.5px solid #EBEBEA', borderRadius:8, background:'white', padding:'10px 14px', fontSize:14, color:NAVY, lineHeight:1.5, boxSizing:'border-box' }}>
+          {note.trim()
+            ? <MarkdownRender text={note} />
+            : <span style={{ color: MUTED, fontStyle:'italic' }}>(empty)</span>}
+        </div>
+      )}
+      <div style={{ marginTop:6, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+        <div style={{ fontSize:11, color:'#999', minHeight:14 }}>
+          {noteSaving ? 'Saving…' : noteSaved ? 'Saved' : ' '}
+        </div>
+        <VoiceMemoButton onTranscript={(text) => {
+          const stamp = new Date().toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+          const existing = note ? note + '\n\n' : '';
+          setNote(existing + `[Voice ${stamp}] ${text}`);
+        }} />
+      </div>
+    </InfoSection>
+  );
+}
+
+// Tiny markdown renderer: blocks (headings, bullets, blockquotes,
+// fenced code) + inline (bold, italic, code, links). Splits on blank
+// lines into blocks; each block rendered as the appropriate element.
+// All output is plain text + React elements — no innerHTML, no
+// dangerouslySetInnerHTML. Links open in a new tab with rel=noopener.
+function MarkdownRender({ text }) {
+  const blocks = React.useMemo(() => {
+    const out = [];
+    const lines = text.split(/\n/);
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line.startsWith('```')) {
+        const code = [];
+        i++;
+        while (i < lines.length && !lines[i].startsWith('```')) {
+          code.push(lines[i]);
+          i++;
+        }
+        i++; // skip closing fence
+        out.push({ kind:'code', value: code.join('\n') });
+      } else if (/^#{1,3}\s/.test(line)) {
+        const m = line.match(/^(#{1,3})\s+(.*)$/);
+        out.push({ kind:'heading', level: m[1].length, value: m[2] });
+        i++;
+      } else if (/^>\s/.test(line)) {
+        const quote = [line.replace(/^>\s?/, '')];
+        i++;
+        while (i < lines.length && /^>\s?/.test(lines[i])) {
+          quote.push(lines[i].replace(/^>\s?/, ''));
+          i++;
+        }
+        out.push({ kind:'quote', value: quote.join('\n') });
+      } else if (/^[-*]\s/.test(line)) {
+        const items = [line.replace(/^[-*]\s+/, '')];
+        i++;
+        while (i < lines.length && /^[-*]\s/.test(lines[i])) {
+          items.push(lines[i].replace(/^[-*]\s+/, ''));
+          i++;
+        }
+        out.push({ kind:'list', items });
+      } else if (line.trim() === '') {
+        i++;
+      } else {
+        const para = [line];
+        i++;
+        while (i < lines.length && lines[i].trim() !== '' && !/^(#{1,3}\s|>\s|[-*]\s|```)/.test(lines[i])) {
+          para.push(lines[i]);
+          i++;
+        }
+        out.push({ kind:'p', value: para.join(' ') });
+      }
+    }
+    return out;
+  }, [text]);
+
+  // Inline transform: returns an array of strings + React nodes.
+  const renderInline = (s) => {
+    if (!s) return null;
+    // Order matters: code first (claims its content), then links, then
+    // bold, then italic. Each pass walks the array looking for plain
+    // strings to split.
+    let parts = [s];
+    const passes = [
+      // inline code
+      { re: /`([^`]+)`/g, wrap: (m, _i) => <code key={'c'+_i} style={{ background:'#F0F0EE', padding:'1px 5px', borderRadius:4, fontFamily:"'DM Mono', monospace", fontSize:'90%' }}>{m[1]}</code> },
+      // links: [label](url)
+      { re: /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, wrap: (m, _i) => <a key={'a'+_i} href={m[2]} target="_blank" rel="noopener noreferrer" style={{ color: NAVY, textDecoration:'underline' }}>{m[1]}</a> },
+      // bold **x**
+      { re: /\*\*([^*]+)\*\*/g, wrap: (m, _i) => <strong key={'b'+_i}>{m[1]}</strong> },
+      // italic *x*
+      { re: /\*([^*]+)\*/g, wrap: (m, _i) => <em key={'i'+_i}>{m[1]}</em> },
+    ];
+    let counter = 0;
+    for (const { re, wrap } of passes) {
+      const next = [];
+      for (const part of parts) {
+        if (typeof part !== 'string') { next.push(part); continue; }
+        re.lastIndex = 0;
+        let lastIdx = 0;
+        let m;
+        while ((m = re.exec(part)) !== null) {
+          if (m.index > lastIdx) next.push(part.slice(lastIdx, m.index));
+          next.push(wrap(m, counter++));
+          lastIdx = m.index + m[0].length;
+        }
+        if (lastIdx < part.length) next.push(part.slice(lastIdx));
+      }
+      parts = next;
+    }
+    return parts;
+  };
+
+  return (
+    <div>
+      {blocks.map((b, i) => {
+        if (b.kind === 'heading') {
+          const sz = b.level === 1 ? 18 : b.level === 2 ? 16 : 14;
+          return <div key={i} style={{ fontSize:sz, fontWeight:700, color:NAVY, marginTop: i === 0 ? 0 : 8, marginBottom:4 }}>{renderInline(b.value)}</div>;
+        }
+        if (b.kind === 'list') {
+          return (
+            <ul key={i} style={{ margin:'4px 0 4px 20px', padding:0, color:NAVY }}>
+              {b.items.map((it, j) => <li key={j} style={{ marginBottom:2 }}>{renderInline(it)}</li>)}
+            </ul>
+          );
+        }
+        if (b.kind === 'quote') {
+          return (
+            <div key={i} style={{ borderLeft:'3px solid #EBEBEA', padding:'4px 12px', color:'#555', margin:'6px 0', whiteSpace:'pre-line' }}>
+              {renderInline(b.value)}
+            </div>
+          );
+        }
+        if (b.kind === 'code') {
+          return (
+            <pre key={i} style={{ background:'#F0F0EE', padding:'8px 12px', borderRadius:6, fontFamily:"'DM Mono', monospace", fontSize:12, overflowX:'auto', margin:'6px 0' }}>{b.value}</pre>
+          );
+        }
+        return <p key={i} style={{ margin: i === 0 ? 0 : '6px 0 0', color:NAVY }}>{renderInline(b.value)}</p>;
+      })}
     </div>
   );
 }
@@ -942,6 +1321,32 @@ function PhotosSection({ contact }) {
     window.showToast?.('Photo removed');
   };
 
+  // Photo annotation: click the pencil → opens overlay where Key can
+  // draw on the photo (red pen, undo, clear). Save uploads the
+  // annotated copy as a NEW jobPhoto so the original is preserved.
+  const [annotating, setAnnotating] = React.useState(null); // photo object
+  const finishAnnotation = async (annotatedBlob) => {
+    setAnnotating(null);
+    if (!annotatedBlob || !CRM.__db) return;
+    setUploading(true);
+    try {
+      const path = `crm-job-photos/${contact.id}/${Date.now()}-annotated.png`;
+      const { error: upErr } = await CRM.__db.storage.from('message-media').upload(path, annotatedBlob, { contentType: 'image/png' });
+      if (upErr) throw upErr;
+      const { data: pub } = CRM.__db.storage.from('message-media').getPublicUrl(path);
+      const url = pub?.publicUrl;
+      if (!url) throw new Error('No public URL');
+      const next = [...jobPhotos, { id: 'job-' + Date.now(), url, path, uploaded_at: new Date().toISOString(), annotated: true }];
+      setJobPhotos(next);
+      window.safeSetItem?.(STORAGE_KEY, JSON.stringify(next));
+      window.showToast?.('Annotated photo saved');
+    } catch (err) {
+      window.showToast?.(`Save failed: ${err.message || 'unknown'}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <InfoSection title="Photos" editAction={null}>
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={onFileChange} style={{ display:'none' }} />
@@ -959,6 +1364,15 @@ function PhotosSection({ contact }) {
               }} title={p.source === 'job' ? 'Job photo (private)' : (p.caption || 'From SMS')}>
                 <img src={p.url} alt="" loading="lazy" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               </a>
+              {/* Annotate pencil — top-left so the remove × stays
+                  visible in its top-right corner without overlap. */}
+              <button onClick={(e) => { e.preventDefault(); setAnnotating(p); }}
+                title="Annotate" aria-label="Annotate photo"
+                style={{
+                  position:'absolute', top:4, left:4, width:20, height:20, borderRadius:'50%',
+                  background:'rgba(11,31,59,0.7)', color:'white', border:'none', fontSize:11,
+                  cursor:'pointer', lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center',
+                }}>✎</button>
               {p.source === 'job' && (
                 <button onClick={() => removeJobPhoto(p.id)} title="Remove photo" style={{
                   position:'absolute', top:4, right:4, width:20, height:20, borderRadius:'50%',
@@ -972,9 +1386,18 @@ function PhotosSection({ contact }) {
                   background:'rgba(11,31,59,0.7)', color:'white', fontSize:9, fontWeight:600,
                 }}>SMS</span>
               )}
+              {p.annotated && (
+                <span title="Annotated" style={{
+                  position:'absolute', bottom:4, right:4, padding:'1px 5px', borderRadius:4,
+                  background:'rgba(220,38,38,0.85)', color:'white', fontSize:9, fontWeight:700,
+                }}>✎</span>
+              )}
             </div>
           ))}
         </div>
+      )}
+      {annotating && (
+        <PhotoAnnotateModal photo={annotating} onClose={() => setAnnotating(null)} onSave={finishAnnotation} />
       )}
       <div style={{ display:'flex', justifyContent:'flex-end' }}>
         <button onClick={onPick} disabled={uploading} style={{
