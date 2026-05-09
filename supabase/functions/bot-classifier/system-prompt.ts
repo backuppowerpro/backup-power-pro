@@ -23,6 +23,7 @@ Return JSON matching this exact schema (no extra fields):
   "off_topic_excerpt": <string, optional, only when label is off_topic_question>,
   "coverage_excerpt": <string, optional, only when label is coverage_question. Verbatim quote of the coverage/sizing question, ≤120 chars>,
   "load_mentions": <array of strings, optional, v10.1.9. ANY message may include this. Detect specific load mentions in the customer's text and emit them as keywords. Recognized values: "central_ac", "soft_start_ac", "well_pump", "heat_pump", "electric_water_heater", "tankless_water_heater", "electric_range", "induction_range", "ev_charger", "level_2_charger", "tesla_charger", "pool_pump", "spa", "hot_tub", "second_fridge", "freezer". Detection patterns are loose, match phrases like "central AC", "central air", "AC unit", "soft start kit", "EasyStart", "MicroAir", "well pump", "well water", "heat pump", "tankless", "electric range", "induction stove", "EV charger", "level 2", "Tesla charger", "wall connector", "pool pump", "hot tub", "second fridge", "deep freezer". The state machine ignores load_mentions for routing, it's pure metadata for Key's handoff context. Persist into qualification_data.load_mentions[] (deduped, append-only across turns).>,
+  "capacity_signal_excerpt": <string, optional, v10.1.64 (Key directive 2026-05-09). Verbatim quote of any capacity-thinking signal in the customer's CURRENT message — square footage of their home ("4800 sqft house", "2600 square feet"), sizing-hedge phrasing ("I can get a larger if needed", "is this big enough", "hopefully this is enough", "will this work for"), or a multi-floor mention combined with an amp/generator answer ("first level", "two-story", "main level plus basement"). Set ONLY when the customer is signaling concern about generator capacity WITHOUT explicitly asking a coverage question. If they directly ask "will my 6800 run my whole house?" use coverage_question label + coverage_excerpt instead. Truncate to ≤120 chars verbatim. The phraser uses this to route to a load-elicitation turn before the panel-photo ask (see PROACTIVE LOAD ELICITATION in phraser system prompt).>,
   "chitchat_excerpt": <string, optional, only when label is friendly_chitchat>,
   "impatience_excerpt": <string, optional, only when label is answered_with_impatience>,
   "amended_slot": <string, optional, only when label is amending_prior_answer>,
@@ -181,6 +182,31 @@ Generic:
                              personally). Bot defers + continues. Use
                              \`coverage_excerpt\` field to capture the question
                              verbatim (≤120 chars) so phraser can ack it.
+
+  CAPACITY-SIGNAL DETECTION (v10.1.64, paired with coverage_question):
+  Customers often signal they're THINKING about capacity without
+  asking a direct coverage question. When you see one of these
+  signals in the CURRENT message, ALSO emit a verbatim
+  \`capacity_signal_excerpt\` field (≤120 chars) — the LABEL stays
+  whatever the message's primary intent is (e.g., outlet_30a_4prong,
+  gen_240v, friendly_chitchat). Signals to detect:
+
+  1. Square footage of their home: "4800 sqft house", "2600 square
+     feet", "around 3000 sq ft", "3,400 ft²".
+  2. Sizing-hedge phrasing: "I can get a larger if needed",
+     "is this enough", "is this big enough", "hopefully this works",
+     "will this work for", "is this going to be enough".
+  3. Multi-floor mention combined with an amp/voltage/generator
+     answer in the same message: "first level + main", "two-story",
+     "basement plus main level", "upstairs and down".
+
+  The phraser will use capacity_signal_excerpt to insert a proactive
+  "what do you want to power?" question BEFORE the panel-photo ask,
+  matching Key's verified pattern. If the customer DIRECTLY asks a
+  coverage question (e.g., "will my 6800 run my whole house?"), use
+  the coverage_question LABEL with coverage_excerpt — that path defers
+  to Key. capacity_signal_excerpt is for the IMPLICIT-concern case
+  where Ashley should elicit a load list rather than defer.
 - "non_english_inbound", v10.1.8 (2026-05-03 Key directive: "no spanish,
                              i dont speak it so i cant help them"). Customer
                              typed in Spanish or another non-English language.

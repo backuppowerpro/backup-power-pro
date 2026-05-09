@@ -640,7 +640,19 @@ const STATES: Record<string, any> = {
   AWAIT_PANEL_PHOTO: {
     // v10: panel photo comes EARLY (after voltage/amp confirmed). Then we go to
     // AWAIT_RUN (default install offer) → AWAIT_EMAIL (combined close info).
-    intent: 'KEY-VOICE: ask for a photo of their main electrical panel and breakers with verified Key softener. IDENTITY-TRANSLATION RULE: Key verbatim was "I will also need", but Ashley is intake. Translate to "Key will need" or "we will need" (BPP-business voice). Bot output patterns: (1) "To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance." (2) "Got it. To put your quote together we will also need a picture of your main electrical panel and breakers. I know it is late, no rush, tomorrow works as well." Use evening variant if time_of_day_bucket is "evening" or "late". Closing softener "no rush, whenever you get the chance" is non-negotiable Key voice, always include it. NEVER use first-person "I will need" / "I install", Ashley is not the electrician.',
+    //
+    // v10.1.64 (Key directive 2026-05-09) — PROACTIVE LOAD ELICITATION:
+    // when ctx.capacity_signal_excerpt is present AND
+    // ctx.load_already_asked is false, the phraser splits this state's
+    // turn into TWO turns. First turn: vague-reassuring ack + "what
+    // are you looking to power during an outage?" (no wattage claims).
+    // After the customer answers (next inbound), turn 2: brief ack +
+    // panel-photo ask framed as "helps Key understand power
+    // requirements." See PROACTIVE LOAD ELICITATION section in
+    // bot-phraser/system-prompt.ts for full guidance + verbatim
+    // transcript exemplar.
+    intent: 'KEY-VOICE: ask for a photo of their main electrical panel and breakers with verified Key softener. IDENTITY-TRANSLATION RULE: Key verbatim was "I will also need", but Ashley is intake. Translate to "Key will need" or "we will need" (BPP-business voice). Bot output patterns: (1) "To put together an accurate quote, Key will also need a picture of your main electrical panel and breakers. No rush, whenever you get the chance." (2) "Got it. To put your quote together we will also need a picture of your main electrical panel and breakers. I know it is late, no rush, tomorrow works as well." Use evening variant if time_of_day_bucket is "evening" or "late". Closing softener "no rush, whenever you get the chance" is non-negotiable Key voice, always include it. NEVER use first-person "I will need" / "I install", Ashley is not the electrician. ' +
+      '\n\nPROACTIVE LOAD BRANCH (v10.1.64): if ctx.capacity_signal_excerpt is set AND ctx.load_already_asked is false, DO NOT ask for the panel photo this turn. Instead emit a load-elicitation message: brief vague-reassuring ack (NO wattage claim, NO specific load named) + open question about what they want to power during an outage. Sample (rotate, do not repeat): "Ok. That\'ll definitely allow you to power some essentials. Can I ask what you\'re looking to power during an outage?" / "Got it. That\'ll cover essentials nicely. What are you most hoping to keep running when the power goes out?" After this turn, the orchestrator will set qualification_data.load_already_asked = true and the next inbound (their answer) will route back here, this time with load_already_asked=true so the phraser proceeds to the panel-photo ask. On that next turn, lead with "Thanks." or "Thank you." then bridge to the photo: "When you get a chance could you share a picture of your electrical panel and breakers, that would help Key understand the power requirements for your home. No rush at all." See PROACTIVE LOAD ELICITATION in phraser system prompt for full exemplar + WHEN-NOT-TO-FIRE list.',
     fallback: ({ photo_classification } = {}) => {
       // v10.1.6 (2026-05-03 brutal-test fix): when photo_correction fires,
       // the orchestrator passes the photo_classification result. Render

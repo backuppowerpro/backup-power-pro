@@ -310,6 +310,15 @@ function applySlotUpdates(qd: Record<string, any>, classifier: any, photoResult:
   if (classifier?.referral_source) out.referral_source = classifier.referral_source
   if (classifier?.requested_time) out.requested_time = classifier.requested_time
   if (classifier?.coverage_excerpt) out.coverage_excerpt = classifier.coverage_excerpt
+  // v10.1.64 — proactive load elicitation. Persist the verbatim
+  // capacity-signal phrase so the phraser can route to a load-question
+  // turn before the panel-photo ask. Append to a list (not replace) so
+  // multiple turns of capacity-signal phrasing accumulate.
+  if (classifier?.capacity_signal_excerpt) {
+    const prev = Array.isArray(out.capacity_signal_excerpts) ? out.capacity_signal_excerpts : []
+    out.capacity_signal_excerpts = [...prev, classifier.capacity_signal_excerpt]
+    out.capacity_signal_excerpt = classifier.capacity_signal_excerpt // most-recent for quick read
+  }
   if (classifier?.email_likely_meant) out.email_likely_meant = classifier.email_likely_meant
   if (Array.isArray(classifier?.load_mentions) && classifier.load_mentions.length) {
     const prev = Array.isArray(out.load_mentions) ? out.load_mentions : []
@@ -343,6 +352,14 @@ function buildSmCtx(contact: any, classifier: any): any {
     requested_time: classifier?.requested_time || null,
     referral_source: classifier?.referral_source || null,
     coverage_excerpt: classifier?.coverage_excerpt || null,
+    // v10.1.64 — verbatim capacity-thinking phrase (sqft, sizing-hedge,
+    // multi-floor) for the phraser's PROACTIVE LOAD ELICITATION branch.
+    // Falls back to the most-recent persisted value so a multi-turn
+    // amp answer keeps the signal until the load question fires.
+    capacity_signal_excerpt: classifier?.capacity_signal_excerpt
+      || contact.qualification_data?.capacity_signal_excerpt
+      || null,
+    load_already_asked: !!contact.qualification_data?.load_already_asked,
     address_captured: false,
     time_of_day_bucket: timeOfDayBucket(),
     greeting_variant: contact.qualification_data?.greeting_variant || 'A',
@@ -885,6 +902,22 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     // 9. Persist slot updates + new state
     const newQd = applySlotUpdates(contact.qualification_data || {}, classifier, photoResult)
     if (transitionResult.onEnter) Object.assign(newQd, transitionResult.onEnter)
+    // v10.1.64 — proactive load elicitation. When the phraser fires
+    // the load-question branch at AWAIT_PANEL_PHOTO (because
+    // capacity_signal_excerpt was set and load_already_asked was
+    // false), flip the flag so the NEXT inbound from this customer
+    // routes to the panel-photo ask instead of re-asking the load
+    // question. We detect we just fired the branch by checking that
+    // the new state is still AWAIT_PANEL_PHOTO AND the prior ctx had
+    // capacity_signal_excerpt set AND load_already_asked was false.
+    if (
+      transitionResult.next === 'AWAIT_PANEL_PHOTO'
+      && ctx?.capacity_signal_excerpt
+      && !ctx?.load_already_asked
+    ) {
+      newQd.load_already_asked = true
+      newQd.load_asked_at = new Date().toISOString()
+    }
     // v10.1.37, apply scope-mismatch flags computed earlier
     if (detectedOutOfScope) newQd.scope_mismatch_ats = true
     if (detectedOutOfArea) newQd.scope_mismatch_oosa = true

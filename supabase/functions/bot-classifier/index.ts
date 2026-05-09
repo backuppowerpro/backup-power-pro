@@ -59,6 +59,10 @@ const OUTPUT_SCHEMA = {
     extracted_value: { type: 'string' },
     off_topic_excerpt: { type: 'string' },
     coverage_excerpt: { type: 'string' },
+    // v10.1.64 — proactive load elicitation. Verbatim quote of a
+    // capacity-thinking signal (sqft, sizing-hedge, multi-floor) when
+    // it appears WITHOUT an explicit coverage question.
+    capacity_signal_excerpt: { type: 'string' },
     chitchat_excerpt: { type: 'string' },
     impatience_excerpt: { type: 'string' },
     amended_slot: {
