@@ -2907,14 +2907,6 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
       window.showToast?.(`Cancel failed: ${error.message}`);
       return;
     }
-    // Notes marker discriminates the auto-queued row from any other
-    // 'manual' row on this contact — the bpp_todos.source CHECK
-    // constraint locks the column to ('ai','manual') today, so we
-    // can't rely on a custom source string until migration
-    // 20260509100000_bpp_todos_source_expand.sql is applied. Once it
-    // is, switch source back to 'auto_cancel_reengage' and remove the
-    // notes-prefix discriminator.
-    const REENGAGE_MARK = '[auto-reengage]';
     window.showToast?.('Proposal cancelled', {
       undo: async () => {
         const liveNow = (CRM.proposals || []).find(x => x.id === prop.id) || live;
@@ -2926,7 +2918,7 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
         try {
           await CRM.__db.from('bpp_todos').delete()
             .eq('related_contact_id', prop.contact_id)
-            .ilike('notes', REENGAGE_MARK + '%')
+            .eq('source', 'auto_cancel_reengage')
             .eq('completed', false);
         } catch (_) { /* best-effort */ }
       },
@@ -2934,13 +2926,15 @@ function ContactFinance({ contact, proposals, invoices, highlightId }) {
     });
     // Queue an auto re-engagement todo for +14d. Cancelled proposals
     // aren't dead — silent prospects often warm back if checked at
-    // the 2-week mark (BPP follow-up framework).
+    // the 2-week mark (BPP follow-up framework). Stored with
+    // source='auto_cancel_reengage' so the undo path can roll it back
+    // and so future analytics can measure conversion-from-cancel.
     if (!contact?.do_not_contact && CRM.__db) {
       const firstName = ((contact?.name || '').trim().split(/\s+/)[0] || 'them');
       CRM.__db.from('bpp_todos').insert([{
         title: `Re-check ${firstName}: cancelled quote, 14-day touch`,
-        notes: `${REENGAGE_MARK} Quote was cancelled ${new Date().toLocaleDateString()}. Reach out at the 2-week mark — silent prospects often circle back if you check in.`,
-        source: 'manual',
+        notes: `Quote was cancelled ${new Date().toLocaleDateString()}. Reach out at the 2-week mark — silent prospects often circle back if you check in.`,
+        source: 'auto_cancel_reengage',
         priority: 2,
         related_contact_id: prop.contact_id,
         completed: false,
