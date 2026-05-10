@@ -1664,25 +1664,31 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
 
   // fontSize 16 prevents iOS Safari auto-zoom on focus.
   const inputStyle = { width:'100%', padding:'10px 12px', fontSize:16, fontFamily:'inherit', border:'1px solid rgba(11,31,59,0.15)', borderRadius:6, background:'white', color:NAVY, boxSizing:'border-box' };
+  // Audit-2026-05-09 a11y M5: wrapping each input in a <label> gives the
+  // sibling `<div>` text its proper accessible role, makes tap-on-label
+  // focus the input on phones, and lets screen readers announce
+  // "Phone, edit text" instead of "edit text, blank".
+  const labelStyle = { display:'block', cursor:'text' };
+  const labelTextStyle = { fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 };
   return (
     <InfoSection title="Contact info">
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Name</div>
+        <label style={labelStyle}>
+          <div style={labelTextStyle}>Name</div>
           <input value={name} onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save(); } }}
             placeholder="Full name" autoCapitalize="words" style={inputStyle} />
-        </div>
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Phone</div>
+        </label>
+        <label style={labelStyle}>
+          <div style={labelTextStyle}>Phone</div>
           <input value={phone} onChange={e => setPhone(formatPhoneInput(e.target.value))}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save(); } }}
             placeholder="(864) 555-0192" type="tel" inputMode="tel" autoComplete="tel" style={inputStyle} />
-        </div>
-        <div>
-          <div style={{ fontSize:11, fontWeight:600, color:'#666', letterSpacing:'0.04em', marginBottom:4 }}>Address</div>
+        </label>
+        <label style={labelStyle}>
+          <div style={labelTextStyle}>Address</div>
           <AddressAutocomplete value={address} onChange={setAddress} placeholder="123 Main St, Spartanburg" style={inputStyle} />
-        </div>
+        </label>
         <div style={{ display:'flex', gap:8, marginTop:6 }}>
           <button onClick={() => {
             // Reset form state to the current contact's persisted values

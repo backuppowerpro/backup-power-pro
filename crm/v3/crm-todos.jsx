@@ -29,6 +29,33 @@ function TodosButton() {
     return () => { window.db.removeChannel(ch); };
   }, []);
 
+  // Audit-2026-05-09 M11: if Key's phone goes to sleep the realtime
+  // socket may drop; on wake the morning AI todos that were inserted
+  // at 5am ET don't appear until manual refresh. Bump tick on
+  // visibilitychange + window focus so we re-fetch when the tab/PWA
+  // becomes visible.
+  React.useEffect(() => {
+    let lastHidden = 0;
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        lastHidden = Date.now();
+        return;
+      }
+      // If we were hidden for more than 30s, refetch (covers laptop
+      // sleep, PWA backgrounded, etc.).
+      if (lastHidden && Date.now() - lastHidden > 30_000) {
+        setTick(n => n + 1);
+      }
+      lastHidden = 0;
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onVis);
+    };
+  }, []);
+
   // Load (and reload on tick or open)
   React.useEffect(() => {
     if (!window.db) return;
