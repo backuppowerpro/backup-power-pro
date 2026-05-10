@@ -73,7 +73,7 @@ function PermitPortalsButton() {
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <span style={{ fontSize:13, fontWeight:500, color:NAVY, flex:1, minWidth:0 }}>{j.name}</span>
                   <button
-                    onClick={() => window.open(j.portal_url, '_blank', 'noopener,width=1024,height=768')}
+                    onClick={() => window.open(j.portal_url, '_blank', 'noopener,noreferrer,width=1024,height=768')}
                     style={{ background:GOLD, color:NAVY, border:'none', borderRadius:4, padding:'4px 10px', fontSize:11, fontWeight:600, fontFamily:'inherit', cursor:'pointer' }}
                   >Open</button>
                 </div>

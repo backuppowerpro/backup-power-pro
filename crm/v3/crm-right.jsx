@@ -121,7 +121,7 @@ function ContactOverflowMenu({ contact, isDnc, toggleDnc, bumpData, onOpenTab })
 
   const openInMaps = () => {
     close();
-    window.open(`https://maps.google.com/?q=${encodeURIComponent(contact.address)}`, '_blank', 'noopener');
+    window.open(`https://maps.google.com/?q=${encodeURIComponent(contact.address)}`, '_blank', 'noopener,noreferrer');
   };
 
   const copyPhone = async () => {
@@ -510,7 +510,14 @@ function ContactOverview({ contact, events, permits = [], proposals = [], materi
       if (error) { window.showToast?.(`Notes save failed: ${error.message}`); return; }
       contact.notes = note;
       setNoteSaved(true);
-      setTimeout(() => setNoteSaved(false), 1800);
+      // Audit-2026-05-09 H11: capture the contact id at the time the
+      // saved-flag was set; if user switches contacts before the 1800ms
+      // tick fires, only clear the flag when we're still on the original
+      // contact (otherwise the new contact's render briefly flickers).
+      const savedFor = contact.id;
+      setTimeout(() => {
+        if (loadedForContactId.current === savedFor) setNoteSaved(false);
+      }, 1800);
     }, 800);
     return () => clearTimeout(timer);
   }, [note, contact.id]);
@@ -641,6 +648,15 @@ function PhotoAnnotateModal({ photo, onClose, onSave }) {
   const [color, setColor] = React.useState('#dc2626');
   const [thickness, setThickness] = React.useState(4);
   const [saving, setSaving] = React.useState(false);
+
+  // Audit-2026-05-09 H5: Escape-to-close was missing. On phone the canvas
+  // sometimes ate tap-to-close events and Key was locked into the modal
+  // until he hit the tiny X. Mirrors every other modal in the app.
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape' && !saving) onClose?.(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose, saving]);
 
   // Resize canvas to match the displayed image whenever the image loads
   // or the window resizes.
@@ -1796,7 +1812,7 @@ function ContactInfoRows({ contact, bumpData, onOpenTab }) {
           label="Address"
           value={addressDisplay}
           actions={<>
-            <MapIconBtn onClick={() => window.open(mapsUrl, '_blank', 'noopener')} />
+            <MapIconBtn onClick={() => window.open(mapsUrl, '_blank', 'noopener,noreferrer')} />
             <CopyBtn onClick={() => copy(addressForCopy, 'Address')} />
           </>}
         />
@@ -2764,25 +2780,59 @@ function UpcomingEventCard({ event, subtitle, fmtRow, bumpData }) {
   const [time, setTime] = React.useState(initial.time);
   React.useEffect(() => { setDate(initial.date); setTime(initial.time); }, [initial.date, initial.time]);
 
+  // Audit-2026-05-09 H4: rapid +1d / +1d clicks shared the same `event`
+  // reference; the second click read event.start_at AFTER the first
+  // mutation, the first DB write hadn't landed, both updates collided,
+  // and the undo reverted to the post-click-1 state instead of the true
+  // original. busyRef serializes; origRef captures the true pre-shift
+  // value once per UI session and re-resets after the toast window. On
+  // DB failure we revert in memory + alert.
+  const busyRef = React.useRef(false);
+  const origRef = React.useRef(null);
   const shiftBy = async (ms) => {
-    const prev = event.start_at;
-    const newStart = new Date(new Date(prev).getTime() + ms).toISOString();
+    if (busyRef.current) return;
+    busyRef.current = true;
+    if (origRef.current === null) origRef.current = event.start_at;
+    const trueOrig = origRef.current;
+    const fromAt = event.start_at;
+    const newStart = new Date(new Date(fromAt).getTime() + ms).toISOString();
+    const prevEnd = event.end_at;
     event.start_at = newStart;
-    if (event.end_at) {
-      const dur = new Date(event.end_at).getTime() - new Date(prev).getTime();
+    if (prevEnd) {
+      const dur = new Date(prevEnd).getTime() - new Date(fromAt).getTime();
       event.end_at = new Date(new Date(newStart).getTime() + dur).toISOString();
     }
     bumpData?.();
+    let dbErr = null;
     if (CRM.__db) {
       const patch = { start_at: newStart };
       if (event.end_at) patch.end_at = event.end_at;
-      await CRM.__db.from('calendar_events').update(patch).eq('id', event.id);
+      const { error } = await CRM.__db.from('calendar_events').update(patch).eq('id', event.id);
+      dbErr = error;
     }
+    busyRef.current = false;
+    if (dbErr) {
+      // Revert in-memory mutation; the DB write didn't land.
+      event.start_at = fromAt;
+      if (prevEnd) event.end_at = prevEnd;
+      bumpData?.();
+      window.showToast?.(`Reschedule failed: ${dbErr.message}`, { kind:'error', duration: 4000 });
+      return;
+    }
+    // Reset origRef after the undo window (5s) so the next "session" of
+    // shifts starts fresh. Prevents undo from reaching back two sessions.
+    setTimeout(() => { origRef.current = null; }, 5200);
     window.showToast?.('Rescheduled to ' + new Date(newStart).toLocaleString(undefined, { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }), {
       undo: async () => {
-        event.start_at = prev;
+        event.start_at = trueOrig;
+        if (prevEnd) event.end_at = prevEnd;
+        origRef.current = null;
         bumpData?.();
-        if (CRM.__db) await CRM.__db.from('calendar_events').update({ start_at: prev }).eq('id', event.id);
+        if (CRM.__db) {
+          const patch = { start_at: trueOrig };
+          if (prevEnd) patch.end_at = prevEnd;
+          await CRM.__db.from('calendar_events').update(patch).eq('id', event.id);
+        }
       },
       duration: 5000,
     });
@@ -5261,26 +5311,27 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
       const arr = (window.CRM.proposals = window.CRM.proposals || []);
       const idx = arr.findIndex(p => p.id === mapped.id);
       if (idx >= 0) arr[idx] = mapped; else arr.unshift(mapped);
-      // Bump contact stage NEW → QUOTED on first proposal create. Roll back
-      // the optimistic local mutation if the DB UPDATE fails so the next
-      // refresh doesn't show the contact stuck mid-state.
+      // Bump contact stage NEW → QUOTED on first proposal create.
+      // Audit-2026-05-09 H7: this was fire-and-forget — submit() called
+      // onClose() before the stage write resolved, so a failure toast
+      // landed after the modal had closed AND a subsequent close+open
+      // could race with the original write. Now awaited + rolled back
+      // before onClose so the user actually sees the failure feedback.
       if (!isEdit && contact.stage === 'new') {
         const numQuoted = CRM.STAGE_STR_TO_NUM?.quoted ?? 2;
         contact.stage = 'quoted';
-        CRM.__db.from('contacts').update({ stage: numQuoted }).eq('id', contact.id).then(
-          ({ error }) => {
-            if (error) {
-              contact.stage = 'new';
-              window.dispatchEvent(new CustomEvent('crm-data-changed'));
-              window.showToast?.(`Stage update failed: ${error.message}`);
-            }
-          },
-          (err) => {
+        try {
+          const { error: stageErr } = await CRM.__db.from('contacts').update({ stage: numQuoted }).eq('id', contact.id);
+          if (stageErr) {
             contact.stage = 'new';
             window.dispatchEvent(new CustomEvent('crm-data-changed'));
-            window.showToast?.(`Stage update failed: ${err?.message || err}`);
+            window.showToast?.(`Stage update failed: ${stageErr.message}`, { kind:'error' });
           }
-        );
+        } catch (err) {
+          contact.stage = 'new';
+          window.dispatchEvent(new CustomEvent('crm-data-changed'));
+          window.showToast?.(`Stage update failed: ${err?.message || err}`, { kind:'error' });
+        }
       }
       window.dispatchEvent(new CustomEvent('crm-data-changed'));
       window.showToast?.(isEdit ? 'Proposal updated' : 'Proposal created');

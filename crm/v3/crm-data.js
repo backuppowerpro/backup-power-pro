@@ -500,11 +500,34 @@ window.CRM = {
 const CRM = window.CRM;
 
 // ── Auth gate + fetch ───────────────────────────────────────────────────
+// Audit-2026-05-09 H12: realtime channels live forever once subscribed;
+// if loadLiveData() ever runs twice (e.g., transient auth failure → retry,
+// hot-reload during dev), every channel doubles up and refetches twice on
+// each event. Track subscription state at module level + tear down before
+// re-subscribing.
+let __realtimeChannels = [];
+let __loadInFlight = null;
+
 async function loadLiveData() {
+  if (__loadInFlight) return __loadInFlight;
+  __loadInFlight = (async () => {
+    try { await _loadLiveDataInner(); } finally { __loadInFlight = null; }
+  })();
+  return __loadInFlight;
+}
+
+async function _loadLiveDataInner() {
   if (!__db) {
     console.warn('[CRM] supabase-js not loaded — staying in empty state');
     return;
   }
+  // Tear down any pre-existing channels from a prior call. Safe no-op on
+  // first run (array is empty).
+  for (const ch of __realtimeChannels) {
+    try { await __db.removeChannel(ch); } catch (_) { /* ignore */ }
+  }
+  __realtimeChannels = [];
+
   const { data: { session } } = await __db.auth.getSession();
   if (!session) {
     window.CRM.authed = false;
@@ -615,7 +638,7 @@ async function loadLiveData() {
   // Realtime — re-fetch the whole table on any change. The lists are small
   // enough (under 500 rows) that a full refresh is simpler than a delta
   // merge and avoids drift bugs. Components re-render via crm-data-changed.
-  __db.channel('v3-contacts')
+  __realtimeChannels.push(__db.channel('v3-contacts')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, async () => {
       try {
         const { data, error } = await __db.from('contacts')
@@ -626,9 +649,9 @@ async function loadLiveData() {
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'contacts' } }));
       } catch (e) { console.warn('[CRM] realtime contacts handler error:', e.message); }
     })
-    .subscribe();
+    .subscribe());
 
-  __db.channel('v3-messages')
+  __realtimeChannels.push(__db.channel('v3-messages')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => {
       try {
         const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -645,12 +668,12 @@ async function loadLiveData() {
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'messages' } }));
       } catch (e) { console.warn('[CRM] realtime messages handler error:', e.message); }
     })
-    .subscribe();
+    .subscribe());
 
   // Invoices + proposals realtime — without these, Mark paid in one tab
   // doesn't propagate to another tab, and a freshly-created proposal sits
   // in stale state until the next online/visibility reconcile.
-  __db.channel('v3-invoices')
+  __realtimeChannels.push(__db.channel('v3-invoices')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, async () => {
       try {
         const { data, error } = await __db.from('invoices')
@@ -665,9 +688,9 @@ async function loadLiveData() {
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'invoices' } }));
       } catch (e) { console.warn('[CRM] realtime invoices handler error:', e.message); }
     })
-    .subscribe();
+    .subscribe());
 
-  __db.channel('v3-proposals')
+  __realtimeChannels.push(__db.channel('v3-proposals')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, async () => {
       try {
         const { data, error } = await __db.from('proposals')
@@ -678,12 +701,12 @@ async function loadLiveData() {
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'proposals' } }));
       } catch (e) { console.warn('[CRM] realtime proposals handler error:', e.message); }
     })
-    .subscribe();
+    .subscribe());
 
   // calendar_events realtime — without this, an install scheduled in
   // tab A stays invisible in tab B until a hard refresh, and a cancel
   // in tab A leaves a stale "scheduled" event in tab B's calendar.
-  __db.channel('v3-calendar-events')
+  __realtimeChannels.push(__db.channel('v3-calendar-events')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, async () => {
       try {
         const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
@@ -697,14 +720,14 @@ async function loadLiveData() {
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'calendar_events' } }));
       } catch (e) { console.warn('[CRM] realtime calendar handler error:', e.message); }
     })
-    .subscribe();
+    .subscribe());
 
   // permits / materials / calls realtime channels — needed because each
   // mutation in the right pane (PermitStatusActions, MaterialRow, etc.)
   // immediately optimistically mutates `CRM.permits[i]` then awaits the
   // DB write. A second tab open on the same contact needs the change
   // to propagate.
-  __db.channel('v3-permits')
+  __realtimeChannels.push(__db.channel('v3-permits')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'permits' }, async () => {
       try {
         const { data, error } = await __db.from('permits')
@@ -715,9 +738,9 @@ async function loadLiveData() {
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'permits' } }));
       } catch (e) { console.warn('[CRM] realtime permits handler error:', e.message); }
     })
-    .subscribe();
+    .subscribe());
 
-  __db.channel('v3-materials')
+  __realtimeChannels.push(__db.channel('v3-materials')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, async () => {
       try {
         const { data, error } = await __db.from('materials')
@@ -728,9 +751,9 @@ async function loadLiveData() {
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'materials' } }));
       } catch (e) { console.warn('[CRM] realtime materials handler error:', e.message); }
     })
-    .subscribe();
+    .subscribe());
 
-  __db.channel('v3-calls')
+  __realtimeChannels.push(__db.channel('v3-calls')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, async () => {
       try {
         const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -743,7 +766,7 @@ async function loadLiveData() {
         window.dispatchEvent(new CustomEvent('crm-data-changed', { detail: { table: 'calls' } }));
       } catch (e) { console.warn('[CRM] realtime calls handler error:', e.message); }
     })
-    .subscribe();
+    .subscribe());
 
 }
 
