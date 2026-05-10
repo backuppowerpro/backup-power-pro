@@ -241,6 +241,7 @@ function TodosButton() {
             <input
               type="text"
               value={draft}
+              aria-label="New todo"
               onChange={e => setDraft(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') addTodo(); }}
               placeholder="Add a todo and press Enter…"

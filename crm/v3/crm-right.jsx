@@ -5288,7 +5288,19 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
         include_permit:  !!includePermit,
         include_surge:   false,
         pom_offered:     !!pomOffered,
-        pom_accepted:    isEdit ? !!ep.pom_accepted : false,
+        // Audit-2026-05-09 M9: in edit mode `ep` was captured at modal
+        // mount; if the customer accepts PoM via the proposal page
+        // (realtime flips proposals.pom_accepted) WHILE the modal is
+        // open, saving any tweak silently overwrites the customer's
+        // choice with the stale false. Re-resolve from the live
+        // CRM.proposals row at submit time so we always merge in the
+        // latest server value.
+        pom_accepted:    (() => {
+          if (!isEdit) return false;
+          const live = (window.CRM?.proposals || []).find(p => p.id === ep.id);
+          if (live && typeof live.pom_accepted === 'boolean') return live.pom_accepted;
+          return !!ep.pom_accepted;
+        })(),
         include_pom:     false,                    // never auto-included; opt-in on client page
         selected_pom:    false,
         pom_price:       (window.V3_PRICING?.pom) || 447,
@@ -6621,22 +6633,25 @@ function NewContactModal({ onClose, onCreated }) {
       )}
     >
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        <div>
+        {/* Audit-2026-05-09 a11y M5: each input wrapped in <label> so
+            tap-on-label focuses the input and screen readers associate
+            them. Same pattern as ContactNotesSection edit form. */}
+        <label style={{ display:'block', cursor:'text' }}>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Name</div>
           <input value={name} onChange={e=>setName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && canSave) { e.preventDefault(); submit(); } }}
             placeholder="Full name" autoComplete="name" autoCapitalize="words" autoFocus style={inputStyle} />
-        </div>
-        <div>
+        </label>
+        <label style={{ display:'block', cursor:'text' }}>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Phone</div>
           <input value={phone} onChange={e=>setPhone(formatPhoneInput(e.target.value))}
             onKeyDown={e => { if (e.key === 'Enter' && canSave) { e.preventDefault(); submit(); } }}
             placeholder="(864) 555-0192" type="tel" inputMode="tel" autoComplete="tel" style={inputStyle} />
-        </div>
-        <div>
+        </label>
+        <label style={{ display:'block', cursor:'text' }}>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Address (optional)</div>
           <AddressAutocomplete value={address} onChange={setAddress} placeholder="123 Main St, Spartanburg" style={inputStyle} />
-        </div>
+        </label>
         <div style={{ fontSize:11, color:MUTED, lineHeight:1.5 }}>
           New leads land at stage 1 (New). You can advance the stage from the contact's overview after creating.
         </div>
@@ -6727,23 +6742,24 @@ function NewEventModal({ contacts = [], onClose }) {
       )}
     >
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        <div>
+        {/* Audit-2026-05-09 a11y M5: <label> wrap on each form control. */}
+        <label style={{ display:'block', cursor:'pointer' }}>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Contact</div>
           <select value={contactId} onChange={e => setContactId(e.target.value)} style={inputStyle}>
             <option value="">— pick a contact —</option>
             {pickable.map(c => <option key={c.id} value={c.id}>{c.name || formatPhone(c.phone) || c.id.slice(0,4)}</option>)}
           </select>
-        </div>
-        <div>
+        </label>
+        <label style={{ display:'block', cursor:'pointer' }}>
           <div style={{ fontSize:11, fontWeight:600, color:'#666', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Kind</div>
           <select value={kind} onChange={e => setKind(e.target.value)} style={inputStyle}>
             {KIND_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
           </select>
-        </div>
+        </label>
         <DatePresetRow value={date} onChange={setDate} />
         <div style={{ display:'flex', gap:8 }}>
-          <input type="date" value={date} min={todayMin} max="2099-12-31" onChange={e => setDate(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
-          <input type="time" value={time} step="900" onChange={e => setTime(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
+          <input type="date" aria-label="Event date" value={date} min={todayMin} max="2099-12-31" onChange={e => setDate(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
+          <input type="time" aria-label="Event time" value={time} step="900" onChange={e => setTime(e.target.value)} style={{ ...inputStyle, flex:'1 1 0', minWidth:0 }} />
         </div>
         {contactId && <ScheduleConflictHint date={date} time={time} durationMin={60} contactId={contactId} />}
       </div>
