@@ -378,10 +378,41 @@ Deno.serve(async (req) => {
         // Mid-flow resubmit. Don't fire a new GREETING; just stamp a note
         // so Key sees the customer pinged again, and let the existing
         // thread continue.
+        // Audit-2026-05-09 H10: an attacker who knows a customer's phone
+        // could spam form submissions to bloat their notes field with
+        // __resubmit lines, eventually exceeding any downstream length
+        // limit AND poisoning the bot's behavior on next greeting (since
+        // the state machine reads notes for context). Protections:
+        // (1) cap notes at 4000 chars, oldest content discarded;
+        // (2) skip the append if the most recent __resubmit was < 1h ago
+        // (one resubmit per hour is the legitimate ceiling).
+        const NOTES_MAX = 4000
+        const RESUBMIT_COOLDOWN_MS = 60 * 60 * 1000
+        const existingNotes = contact.notes || ''
+        const lastResubmitMatch = existingNotes.match(/__resubmit:\s*(\S+)/g)
+        const recentlyResubmitted = lastResubmitMatch && lastResubmitMatch.length > 0
+          && (() => {
+            const last = lastResubmitMatch[lastResubmitMatch.length - 1]
+            const ts = last.replace(/^__resubmit:\s*/, '')
+            const t = Date.parse(ts)
+            return Number.isFinite(t) && (Date.now() - t) < RESUBMIT_COOLDOWN_MS
+          })()
+        if (recentlyResubmitted) {
+          console.log('[ashley-greeting] resubmit suppressed (cooldown)')
+          return new Response(JSON.stringify({ success: true, contactId: contact.id, ashley: true, resubmit_suppressed: true, prior_state: priorState }), {
+            status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+          })
+        }
+        const appendLine = `__resubmit: ${nowIso} (was at ${priorState})`
+        let nextNotes = existingNotes ? existingNotes + '\n' + appendLine : appendLine
+        if (nextNotes.length > NOTES_MAX) {
+          // Drop oldest lines until under the cap. Always keep the new line.
+          const lines = nextNotes.split('\n')
+          while (lines.join('\n').length > NOTES_MAX && lines.length > 1) lines.shift()
+          nextNotes = lines.join('\n')
+        }
         console.log('[ashley-greeting] duplicate mid-flow submit; leaving bot_state', priorState)
-        await supabase.from('contacts').update({
-          notes: (contact.notes ? contact.notes + '\n' : '') + `__resubmit: ${nowIso} (was at ${priorState})`,
-        }).eq('id', contact.id)
+        await supabase.from('contacts').update({ notes: nextNotes }).eq('id', contact.id)
         return new Response(JSON.stringify({ success: true, contactId: contact.id, ashley: true, resubmit_inflight: true, prior_state: priorState }), {
           status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         })
