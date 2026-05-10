@@ -158,7 +158,7 @@ async function checkExp001AlexRollout(sb: any, brainToken: string): Promise<Aler
       experiment_id: 'EXP-2026-04-29-001',
       severity: 'med',
       rule_fired: 'monitor_error',
-      detail: `Could not fetch experiment-stats: ${String(e).slice(0, 200)}`,
+      detail: `Could not fetch experiment-stats: ${sanitizeForLog(e, 200)}`,
     })
   }
   return alerts
@@ -197,7 +197,7 @@ async function checkExp002MetaAds(sb: any, brainToken: string): Promise<Alert[]>
       experiment_id: 'EXP-2026-04-29-002',
       severity: 'low',
       rule_fired: 'monitor_error',
-      detail: `Could not query meta-control: ${String(e).slice(0, 200)}`,
+      detail: `Could not query meta-control: ${sanitizeForLog(e, 200)}`,
     })
   }
   return alerts
@@ -249,7 +249,7 @@ async function checkExp003HeroCopy(sb: any, brainToken: string): Promise<Alert[]
       experiment_id: 'EXP-2026-04-29-003',
       severity: 'med',
       rule_fired: 'monitor_error',
-      detail: `Could not query posthog-stats: ${String(e).slice(0, 200)}`,
+      detail: `Could not query posthog-stats: ${sanitizeForLog(e, 200)}`,
     })
   }
   return alerts
@@ -306,7 +306,7 @@ Deno.serve(async (req: Request) => {
       }),
     })
   } catch (e) {
-    console.warn('[experiment-monitor] summary persist failed:', String(e).slice(0, 200))
+    console.warn('[experiment-monitor] summary persist failed:', sanitizeForLog(e, 200))
   }
 
   return new Response(JSON.stringify({
