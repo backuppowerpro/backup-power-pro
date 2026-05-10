@@ -81,7 +81,7 @@ function ContactStrip({ contact, isDnc, toggleDnc, bumpData, onOpenTab }) {
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
         </button>
-        {isDnc && <span style={{ fontSize:9,fontWeight:700,color:'#991B1B',background:'#FEF2F2',padding:'1px 6px',borderRadius:20, flexShrink:0 }}>DO NOT CONTACT</span>}
+        {isDnc && <span style={{ fontSize:10,fontWeight:700,color:'#991B1B',background:'#FEF2F2',padding:'1px 6px',borderRadius:20, flexShrink:0 }}>DO NOT CONTACT</span>}
       </div>
       <ContactOverflowMenu contact={contact} isDnc={isDnc} toggleDnc={toggleDnc} bumpData={bumpData} onOpenTab={onOpenTab} />
     </div>
@@ -1452,13 +1452,13 @@ function PhotosSection({ contact }) {
               {p.source === 'sms' && (
                 <span title="From SMS" style={{
                   position:'absolute', bottom:4, left:4, padding:'1px 5px', borderRadius:4,
-                  background:'rgba(11,31,59,0.7)', color:'white', fontSize:9, fontWeight:600,
+                  background:'rgba(11,31,59,0.7)', color:'white', fontSize:10, fontWeight:600,
                 }}>SMS</span>
               )}
               {p.annotated && (
                 <span title="Annotated" style={{
                   position:'absolute', bottom:4, right:4, padding:'1px 5px', borderRadius:4,
-                  background:'rgba(220,38,38,0.85)', color:'white', fontSize:9, fontWeight:700,
+                  background:'rgba(220,38,38,0.85)', color:'white', fontSize:10, fontWeight:700,
                 }}>✎</span>
               )}
             </div>
@@ -1918,11 +1918,14 @@ function TagsRow({ contactId }) {
       value={
         <div style={{ display:'flex', flexWrap:'wrap', gap:5, alignItems:'center' }}>
           {tags.map(t => (
-            <button key={t} onClick={() => removeTag(t)} title="Remove tag" style={{
+            // Audit-2026-05-09 a11y L2: explicit aria-label so the button's
+            // accessible name is "Remove tag VIP" instead of just "VIP".
+            // Screen readers couldn't tell that tapping removed the tag.
+            <button key={t} onClick={() => removeTag(t)} title="Remove tag" aria-label={`Remove tag ${t}`} style={{
               height:22, padding:'0 8px', borderRadius:11, border:'none', cursor:'pointer',
               background:'#EEF2FF', color:'#3730A3', fontSize:11, fontWeight:600, fontFamily:'inherit',
               display:'inline-flex', alignItems:'center', gap:4,
-            }}>{t}<span style={{ opacity:0.5, fontSize:10 }}>✕</span></button>
+            }}>{t}<span aria-hidden="true" style={{ opacity:0.5, fontSize:10 }}>✕</span></button>
           ))}
           {adding ? (
             <input value={draft} onChange={e => setDraft(e.target.value)}
@@ -4109,7 +4112,10 @@ function TemplateEditModal({ onClose }) {
               flex:1, padding:'8px 10px', border:'1px solid rgba(11,31,59,0.15)', borderRadius:6, fontSize:13, color:NAVY, fontFamily:'inherit', resize:'vertical',
             }} />
             <button onClick={() => setList(l => l.filter((_,j) => j !== i))} aria-label="Delete template" style={{
-              width:32, height:32, borderRadius:6, background:'#FEE2E2', color:'#991B1B', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700, flexShrink:0,
+              // Audit-2026-05-09 a11y M4: 32×32 → 44×44 to meet WCAG 2.5.5
+              // / iOS HIG tap-target floor. Visual ✕ stays the same size.
+              width:44, height:44, borderRadius:6, background:'#FEE2E2', color:'#991B1B', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700, flexShrink:0,
+              display:'flex', alignItems:'center', justifyContent:'center',
             }}>✕</button>
           </div>
         ))}
@@ -4659,7 +4665,7 @@ function ContactMessages({ contact, thread, isDnc }) {
           highest). */}
       {(suggestions.length > 0 || suggestionsLoading || suggestionsErr) && (
         <div className="hide-scrollbar" style={{ padding:'4px 12px 0', display:'flex', gap:8, overflowX:'auto', flexShrink:0, alignItems:'center' }}>
-          <span style={{ fontSize:9, fontWeight:700, color:'#5B21B6', alignSelf:'center', whiteSpace:'nowrap', letterSpacing:'0.05em' }}>SUGGESTED</span>
+          <span style={{ fontSize:10, fontWeight:700, color:'#5B21B6', alignSelf:'center', whiteSpace:'nowrap', letterSpacing:'0.05em' }}>SUGGESTED</span>
           {suggestionsLoading && <span style={{ fontSize:11, color:MUTED, fontStyle:'italic' }}>Thinking…</span>}
           {suggestionsErr && <span style={{ fontSize:11, color:'#991B1B', fontStyle:'italic' }}>{suggestionsErr}</span>}
           {suggestions.map((s, i) => (
@@ -4739,7 +4745,7 @@ function ContactMessages({ contact, thread, isDnc }) {
               {a.type==='image'
                 ? <img src={a.url} alt={a.name} style={{ width:52, height:52, borderRadius:6, objectFit:'cover' }}/>
                 : <div style={{ width:52, height:52, borderRadius:6, background:'white', border:'1px solid rgba(11,31,59,0.12)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📎</div>}
-              <button onClick={()=>setAttachments(a => a.filter((_,j) => j !== i))} style={{ position:'absolute', top:-4, right:-4, width:16, height:16, borderRadius:'50%', background:'#E53E3E', border:'2px solid white', color:'white', fontSize:9, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'inherit', lineHeight:1 }}>✕</button>
+              <button onClick={()=>setAttachments(a => a.filter((_,j) => j !== i))} style={{ position:'absolute', top:-4, right:-4, width:16, height:16, borderRadius:'50%', background:'#E53E3E', border:'2px solid white', color:'white', fontSize:10, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'inherit', lineHeight:1 }}>✕</button>
             </div>
           ))}
         </div>
@@ -5011,7 +5017,37 @@ function ModalShell({ open, onClose, title, footer, children }) {
     __pushModalLock(closeFn);
     // Focus the card so subsequent Tab cycles inside it.
     setTimeout(() => cardRef.current?.focus(), 0);
-    return () => { __popModalLock(closeFn); };
+    // Audit-2026-05-09 a11y M1: focus trap. Without this, a keyboard-
+    // only user pressing Tab past the last focusable element in a modal
+    // moves focus into the underlying contact list / message thread /
+    // nav buttons. Cycle Tab inside the modal; Shift+Tab from the first
+    // focusable wraps to the last.
+    const onTab = (e) => {
+      if (e.key !== 'Tab' || !cardRef.current) return;
+      const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      const els = Array.from(cardRef.current.querySelectorAll(FOCUSABLE))
+        .filter((el) => el.offsetParent !== null /* visible */ );
+      if (els.length === 0) { e.preventDefault(); cardRef.current.focus(); return; }
+      const first = els[0];
+      const last  = els[els.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !cardRef.current.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', onTab);
+    return () => {
+      __popModalLock(closeFn);
+      document.removeEventListener('keydown', onTab);
+    };
   }, [open]);
 
   if (!open) return null;
@@ -5663,7 +5699,8 @@ function NewProposalModal({ contact, onClose, inline = false, editingProposal = 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 10px', borderBottom:'1px solid rgba(11,31,59,0.06)' }}>
           <div style={{ fontSize:13, fontWeight:600, color:NAVY }}>{isEdit ? 'Edit proposal' : 'New proposal'}</div>
           <button onClick={onClose} aria-label="Cancel" style={{
-            width:32, height:32, borderRadius:6, border:'none', background:'transparent',
+            // Audit-2026-05-09 a11y M4: 32×32 → 44×44.
+            width:44, height:44, borderRadius:6, border:'none', background:'transparent',
             color:'#666', fontSize:22, lineHeight:1, cursor:'pointer', fontFamily:'inherit',
             display:'flex', alignItems:'center', justifyContent:'center',
           }}>×</button>
@@ -6045,7 +6082,8 @@ function NewInvoiceModal({ contact, latestSignedProposal, invoices, onClose, inl
             {isEdit ? 'Edit invoice' : (latestSignedProposal ? 'Generate invoice' : 'New invoice')}
           </div>
           <button onClick={onClose} aria-label="Cancel" style={{
-            width:32, height:32, borderRadius:6, border:'none', background:'transparent',
+            // Audit-2026-05-09 a11y M4: 32×32 → 44×44.
+            width:44, height:44, borderRadius:6, border:'none', background:'transparent',
             color:'#666', fontSize:22, lineHeight:1, cursor:'pointer', fontFamily:'inherit',
             display:'flex', alignItems:'center', justifyContent:'center',
           }}>×</button>

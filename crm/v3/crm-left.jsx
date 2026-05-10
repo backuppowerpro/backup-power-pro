@@ -168,9 +168,9 @@ function ContactAvatarHoverPreview({ contact, unread, dncSet, onOpen }) {
               <div style={{ fontSize:14, fontWeight:700, color:NAVY, marginBottom:5, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(contact)}</div>
             )}
             <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:6 }}>
-              {isPremium && <span style={{ fontSize:9, fontWeight:700, color:NAVY, background:GOLD, padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>{contact.pricing_tier === 'premium_plus' ? 'PREMIUM+' : 'PREMIUM'}</span>}
-              <span style={{ fontSize:9, fontWeight:700, color:'#5B21B6', background:'#F5F3FF', padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>{(window.CRM?.STAGE_LABELS?.[contact.stage] || '').toUpperCase()}</span>
-              {dncSet.has(contact.id) && <span style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 6px', borderRadius:20 }}>DNC</span>}
+              {isPremium && <span style={{ fontSize:10, fontWeight:700, color:NAVY, background:GOLD, padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>{contact.pricing_tier === 'premium_plus' ? 'PREMIUM+' : 'PREMIUM'}</span>}
+              <span style={{ fontSize:10, fontWeight:700, color:'#5B21B6', background:'#F5F3FF', padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>{(window.CRM?.STAGE_LABELS?.[contact.stage] || '').toUpperCase()}</span>
+              {dncSet.has(contact.id) && <span style={{ fontSize:10, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 6px', borderRadius:20 }}>DNC</span>}
             </div>
             {heroAddress && (
               <div style={{ fontSize:11, color:'#666', marginBottom:6, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{heroAddress}</div>
@@ -755,37 +755,37 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                 <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
                   {isPremium && window.tweaksGlobal?.premiumDots !== false && <GoldDot />}
                   <span style={{ fontWeight:600, fontSize:14, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', minWidth:0 }}>{contactName(c)}</span>
-                  {dncSet.has(c.id) && <span style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>DNC</span>}
+                  {dncSet.has(c.id) && <span style={{ fontSize:10, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>DNC</span>}
                   {/* Rot pills — at most one renders so the row doesn't bloat.
                       Priority: $owed > stale-quote > needs-reply. Each comes
                       from buildContactSignals so the source of truth is
                       shared with Money + filter logic. */}
                   {sig.outstandingCents > 0 ? (
-                    <span title={`Owed${sig.outstandingOldestDays != null ? ` · ${sig.outstandingOldestDays}d` : ''}`} style={{ fontSize:9, fontWeight:700, color:'#9A3412', background:'#FFEDD5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                    <span title={`Owed${sig.outstandingOldestDays != null ? ` · ${sig.outstandingOldestDays}d` : ''}`} style={{ fontSize:10, fontWeight:700, color:'#9A3412', background:'#FFEDD5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
                       {formatMoneyCents(sig.outstandingCents)} OWED
                     </span>
                   ) : sig.veryStale ? (
-                    <span title={`Quote sent ${sig.proposalAgeDays}d ago, no response`} style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEE2E2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                    <span title={`Quote sent ${sig.proposalAgeDays}d ago, no response`} style={{ fontSize:10, fontWeight:700, color:'#991B1B', background:'#FEE2E2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
                       QUOTE {sig.proposalAgeDays}d
                     </span>
                   ) : sig.stale ? (
-                    <span title={`Quote sent ${sig.proposalAgeDays}d ago`} style={{ fontSize:9, fontWeight:700, color:'#92400E', background:'#FEF3C7', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                    <span title={`Quote sent ${sig.proposalAgeDays}d ago`} style={{ fontSize:10, fontWeight:700, color:'#92400E', background:'#FEF3C7', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
                       QUOTE {sig.proposalAgeDays}d
                     </span>
                   ) : needsReplySet.has(c.id) ? (
-                    <span style={{ fontSize:9, fontWeight:700, color:'#92400E', background:'#FEF3C7', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>NEEDS REPLY</span>
+                    <span style={{ fontSize:10, fontWeight:700, color:'#92400E', background:'#FEF3C7', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>NEEDS REPLY</span>
                   ) : null}
                   {sig.recentlyViewedProposal && !sig.outstandingCents && (
-                    <span title="Customer viewed your proposal recently" style={{ fontSize:9, fontWeight:700, color:'#1E40AF', background:'#DBEAFE', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>VIEWED</span>
+                    <span title="Customer viewed your proposal recently" style={{ fontSize:10, fontWeight:700, color:'#1E40AF', background:'#DBEAFE', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>VIEWED</span>
                   )}
-                  {recentCallSet.has(c.id) && <span title="Called within 24h" style={{ fontSize:9, fontWeight:700, color:'#065F46', background:'#D1FAE5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>📞 24h</span>}
+                  {recentCallSet.has(c.id) && <span title="Called within 24h" style={{ fontSize:10, fontWeight:700, color:'#065F46', background:'#D1FAE5', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>📞 24h</span>}
                   {/* Stage-stuck pill — surfaces deals that have sat in
                       their current stage past the per-stage SLA. Catches
                       stalls in booked/permit/install that the
                       "stale quote" detector misses. */}
                   {sig.stuck && c.stage !== 'new' && (
                     <span title={`Stuck in ${(window.CRM?.STAGE_LABELS||{})[c.stage] || c.stage} for ${sig.daysInStage}d`}
-                      style={{ fontSize:9, fontWeight:700, color:'#7F1D1D', background:'#FEE2E2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                      style={{ fontSize:10, fontWeight:700, color:'#7F1D1D', background:'#FEE2E2', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
                       STUCK · {sig.daysInStage}d
                     </span>
                   )}
@@ -794,7 +794,7 @@ function ContactsList({ contacts, messages, calls, onOpen, dncSet = new Set(), a
                       entirely). Tells you when the snooze unlocks. */}
                   {snoozeMap[c.id] && (
                     <span title={`Snoozed until ${new Date(snoozeMap[c.id]).toLocaleString()}`}
-                      style={{ fontSize:9, fontWeight:700, color:'#1E3A8A', background:'#DBEAFE', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
+                      style={{ fontSize:10, fontWeight:700, color:'#1E3A8A', background:'#DBEAFE', padding:'1px 5px', borderRadius:20, flexShrink:0 }}>
                       💤 {new Date(snoozeMap[c.id]).toLocaleDateString(undefined, { month:'short', day:'numeric' })}
                     </span>
                   )}
@@ -1225,7 +1225,8 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
             title="Edit / reschedule"
             aria-label="Edit event"
             style={{
-              width:32, height:32, borderRadius:6,
+              // Audit-2026-05-09 a11y M4: 32×32 → 44×44 hit target.
+              width:44, height:44, borderRadius:6,
               background:'transparent', border:'none',
               color: MUTED, cursor:'pointer',
               display:'flex', alignItems:'center', justifyContent:'center',
@@ -1242,7 +1243,8 @@ function CalendarList({ events, contacts, onOpen, activeContactId }) {
             title="Cancel event"
             aria-label="Cancel event"
             style={{
-              width:32, height:32, borderRadius:6,
+              // Audit-2026-05-09 a11y M4: 32×32 → 44×44 hit target.
+              width:44, height:44, borderRadius:6,
               background:'transparent', border:'none',
               color:'#dc2626', cursor:'pointer',
               display:'flex', alignItems:'center', justifyContent:'center',
@@ -1508,7 +1510,7 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
           <div key={k.label} style={{ flex:1, padding:'10px 12px', borderRight:i<3?'1px solid #F0F0EE':'none' }}>
             <div style={{ fontSize:10, color:MUTED, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:3 }}>{k.label}</div>
             <div style={{ fontSize:16, fontWeight:700, color:k.color, letterSpacing:'-0.5px' }}>{formatMoneyCents(k.val)}</div>
-            {k.sub && <div style={{ fontSize:9, color:MUTED, marginTop:1, fontWeight:500 }}>{k.sub}</div>}
+            {k.sub && <div style={{ fontSize:10, color:MUTED, marginTop:1, fontWeight:500 }}>{k.sub}</div>}
           </div>
         ))}
       </div>
@@ -1549,7 +1551,7 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
                     transition:'background 120ms, color 120ms',
                   }}
                 >
-                  <div style={{ fontSize:9, fontWeight:700, letterSpacing:'0.05em', color:'inherit' }}>{b.label}d</div>
+                  <div style={{ fontSize:10, fontWeight:700, letterSpacing:'0.05em', color:'inherit' }}>{b.label}d</div>
                   <div style={{ fontSize:13, fontWeight:700, fontFamily:"'DM Mono', monospace", marginTop:2, color:'inherit' }}>{formatMoneyCents(b.val)}</div>
                 </button>
               );
@@ -1581,7 +1583,7 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
                 background:'white', border:'none', cursor:'pointer', fontFamily:'inherit', textAlign:'left',
               }}>
                 <span style={{ flex:1, minWidth:0, fontSize:13, fontWeight:600, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</span>
-                {isOver && <span style={{ fontSize:9, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>OVERDUE</span>}
+                {isOver && <span style={{ fontSize:10, fontWeight:700, color:'#991B1B', background:'#FEF2F2', padding:'1px 6px', borderRadius:20, letterSpacing:'0.04em' }}>OVERDUE</span>}
                 <span style={{ fontSize:13, fontWeight:700, color: isOver ? '#991B1B' : NAVY, fontFamily:"'DM Mono', monospace", flexShrink:0 }}>{formatMoneyCents(cents)}</span>
               </button>
             );
@@ -1621,7 +1623,7 @@ function FinanceList({ proposals, invoices, contacts, events = [], onOpen, activ
                   )}
                   <span style={{ fontWeight:600, fontSize:14, color:NAVY, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{contactName(c)}</span>
                   <StatusPill status={item.status} />
-                  <span style={{ fontSize:9, fontWeight:700, color:MUTED, background:BG, padding:'1px 5px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.04em' }}>{item._kind === 'proposal' ? 'Quote' : 'Invoice'}</span>
+                  <span style={{ fontSize:10, fontWeight:700, color:MUTED, background:BG, padding:'1px 5px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.04em' }}>{item._kind === 'proposal' ? 'Quote' : 'Invoice'}</span>
                 </div>
                 <div style={{ fontSize:11, color:MUTED, marginTop:1 }}>{itemLabel}</div>
               </div>
@@ -1805,7 +1807,7 @@ function QuickQuoteModal({ onClose }) {
           ].map(a => (
             <button key={a.id} onClick={() => a.set(v => !v)} style={chipBtn(a.on)}>
               <span>{a.label}</span>
-              {a.hint && <span style={{ color:'#15803D', fontSize:9, fontWeight:700 }}>{a.hint}</span>}
+              {a.hint && <span style={{ color:'#15803D', fontSize:10, fontWeight:700 }}>{a.hint}</span>}
               <span style={{ color: a.on ? NAVY : '#666', fontSize:11, fontFamily:"'DM Mono', monospace" }}>
                 +{formatMoneyCents(a.add * 100)}
               </span>
@@ -2197,7 +2199,7 @@ function SectionHeader({ label, badge }) {
   return (
     <div style={{ padding:'10px 18px 6px', fontSize:10, fontWeight:700, color:MUTED, textTransform:'uppercase', letterSpacing:'0.08em', background:BG, display:'flex', alignItems:'center', gap:6, borderBottom:'1px solid #EBEBEA', flexShrink:0 }}>
       {label}
-      {badge>0 && <span style={{ background:NAVY, color:'white', borderRadius:20, fontSize:9, fontWeight:700, padding:'1px 5px' }}>{badge}</span>}
+      {badge>0 && <span style={{ background:NAVY, color:'white', borderRadius:20, fontSize:10, fontWeight:700, padding:'1px 5px' }}>{badge}</span>}
     </div>
   );
 }

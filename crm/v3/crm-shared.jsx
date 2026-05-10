@@ -252,7 +252,7 @@ function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, conte
             Reads BPP_VERSION from window (set by index.html). */}
         <div style={{ width: 44, flexShrink: 0, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <span style={{
-            fontSize: 9, fontWeight: 600,
+            fontSize:10, fontWeight: 600,
             color: 'rgba(255,255,255,0.45)',
             fontFamily: 'DM Mono, monospace',
             letterSpacing: '0.04em',
@@ -606,7 +606,8 @@ function VoiceMemoButton({ onTranscript }) {
         title={recording ? 'Stop recording' : 'Voice memo'}
         aria-label={recording ? 'Stop recording' : 'Voice memo'}
         style={{
-          width:32, height:32, borderRadius:8,
+          // Audit-2026-05-09 a11y M4: 32×32 → 44×44.
+          width:44, height:44, borderRadius:8,
           background: recording ? '#FEF2F2' : '#F0F4FF',
           border:'1px solid ' + (recording ? '#FECACA' : 'rgba(11,31,59,0.08)'),
           color: recording ? '#991B1B' : NAVY,
@@ -748,7 +749,7 @@ function SparkyPill({ onClick }) {
       alignItems:'center', gap: 4,
       boxShadow: '-2px 2px 12px rgba(201,160,72,0.4)',
       zIndex: 50,
-      fontSize: 9, fontWeight: 700,
+      fontSize:10, fontWeight: 700,
     }}>
       <div style={{width:16,height:16}}>{Icons.sparky}</div>
       <span style={{writingMode:'vertical-rl', transform:'rotate(180deg)', letterSpacing:1}}>SPARKY</span>
