@@ -2930,7 +2930,7 @@ Deno.serve(async (req) => {
       .from('contacts').select('name').eq('phone', fromPhone).limit(1).maybeSingle()
     const wipedFirstName = (postWipeContact?.name || '').split(' ')[0]?.trim() || ''
     const greeting = wipedFirstName ? `Hi ${wipedFirstName}` : 'Hey'
-    const canonicalOpener = `${greeting}, this is Alex with Backup Power Pro. Thanks for reaching out! To provide an accurate quote, I will need a picture of your main electrical panel and breakers. No rush at all, just send it here whenever you get the chance. Reply STOP to opt out.`
+    const canonicalOpener = `${greeting}, this is Key with Backup Power Pro. Thanks for reaching out! To provide an accurate quote, I will need a picture of your main electrical panel and breakers. No rush at all, just send it here whenever you get the chance. Reply STOP to opt out.`
 
     // Persist the opener as the assistant's first turn so subsequent inbound
     // replies build on it (same pattern quo-ai-new-lead uses for real form leads).

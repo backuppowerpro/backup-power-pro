@@ -479,7 +479,7 @@ Deno.serve(async (req) => {
   // customer knows exactly what to do next. alex-agent picks up from the reply.
   const alexSessionId = crypto.randomUUID()
   const variant = 'D'
-  const openerText = `${hi}, this is Alex with Backup Power Pro. Thanks for reaching out! To provide an accurate quote, I will need a picture of your main electrical panel and breakers. No rush at all, just send it here whenever you get the chance. Reply STOP to opt out.`
+  const openerText = `${hi}, this is Key with Backup Power Pro. Thanks for reaching out! To provide an accurate quote, I will need a picture of your main electrical panel and breakers. No rush at all, just send it here whenever you get the chance. Reply STOP to opt out.`
 
   // TEST_MODE gate — parity with alex-agent. Real clients don't get the
   // full Alex conversation yet; only Key's own phone (or smoke-test
