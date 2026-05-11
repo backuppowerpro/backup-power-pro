@@ -274,14 +274,27 @@ function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, conte
 const SV_KEY = 'AIzaSyB0xWm71ZDzS7ei5-vFx15rNP_lR1ZKbJs';
 const MAPBOX_TOKEN = 'pk.eyJ1Ijoia2V5ZWxlY3RyaWN1cHN0YXRlIiwiYSI6ImNtbWsyYzlybzFpbWwycW9pc2R2eW1wZ3UifQ.Y2nGIeYV6l57CMbf3sqbqw';
 
-// Satellite fallback: geocode via Nominatim (already in crm-data) then fetch
-// Mapbox satellite-v9 static image. Used when Street View has no coverage.
+// Satellite fallback: geocode via Mapbox (not Nominatim — avoids the shared
+// rate-limit queue and bad cache entries) then fetch mapbox/satellite-v9.
+// Used when Street View has no coverage.
+const __satGeoCache = new Map(); // address → {lng, lat}
 async function mapboxSatUrl(address, w, h) {
-  if (!address || typeof geocodeAddress !== 'function') return null;
+  if (!address) return null;
   try {
-    const coord = await geocodeAddress(address);
-    if (!coord) return null;
-    return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${coord.lng},${coord.lat},19/${w}x${h}?access_token=${MAPBOX_TOKEN}`;
+    if (!__satGeoCache.has(address)) {
+      const r = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json` +
+        `?access_token=${MAPBOX_TOKEN}&country=us&limit=1&types=address`
+      );
+      if (!r.ok) return null;
+      const d = await r.json();
+      const f = d.features?.[0];
+      if (!f) return null;
+      const [lng, lat] = f.center;
+      __satGeoCache.set(address, { lng, lat });
+    }
+    const { lng, lat } = __satGeoCache.get(address);
+    return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lng},${lat},19/${w}x${h}?access_token=${MAPBOX_TOKEN}`;
   } catch { return null; }
 }
 
