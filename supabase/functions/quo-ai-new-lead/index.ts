@@ -344,6 +344,18 @@ Deno.serve(async (req) => {
     }).catch(err => console.error('[notify-key] unhandled:', err))
   }
 
+  // ── GLOBAL AUTO-SMS KILL SWITCH ──────────────────────────────────────────
+  // SMS_AUTO_ENABLED must be 'true' to send any outbound automated text to
+  // leads. When false/unset: contact is created, CAPI fires, Key is notified
+  // — but NO automated text goes to the lead. Safe default = off.
+  const autoSmsEnabled = (Deno.env.get('SMS_AUTO_ENABLED') || 'false').toLowerCase() === 'true'
+  if (!autoSmsEnabled) {
+    console.log('[new-lead] SMS_AUTO_ENABLED=false — no auto-text to lead', normalizedPhone.slice(-4))
+    return new Response(JSON.stringify({ success: true, contactId: contact.id, auto_sms: false }), {
+      status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
+  }
+
   // v10.1.30 — Ashley gated entry. Phone-allowlist gate so only smoke-test
   // numbers (Key's cell, etc.) get the Ashley pipeline until A2P 10DLC clears.
   // When the gate is closed (no allowlist set or phone not on list), this
