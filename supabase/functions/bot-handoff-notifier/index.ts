@@ -372,6 +372,14 @@ Deno.serve(async (req) => {
     if (locSummary) lines.push(locSummary)
     lines.push('')
     if (setupLines.length) lines.push(...setupLines)
+    // v10.1.6 — post-DQ upgrade model. When a DQ'd 120V customer mentioned
+    // a 240V upgrade unit and NEEDS_CALLBACK was set, surface the model
+    // prominently so Key arrives at the follow-up knowing exactly what the
+    // customer is shopping for without reading the thread.
+    if (qd.upgrade_generator_model) {
+      lines.push(`Upgrade unit they're shopping: ${qd.upgrade_generator_model}`)
+    }
+
     // v10.1.34, only show "Why:" section when there's a SPECIFIC reason
     // (urgent flag, off-topic Q, etc). Was auto-echoing the customer's last
     // message which made benign data responses look like problems.

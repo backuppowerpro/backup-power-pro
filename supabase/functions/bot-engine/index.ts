@@ -366,6 +366,10 @@ function applySlotUpdates(qd: Record<string, any>, classifier: any, photoResult:
     out.multi_property_excerpt = classifier.multi_property_excerpt
     out.multi_property = true
   }
+  // v10.1.6 — if classifier ever extracts a post-DQ upgrade model directly,
+  // persist it. Primary path is the regex sniff in the engine body (after
+  // applySlotUpdates) for the DISQUALIFIED_120V → NEEDS_CALLBACK transition.
+  if (classifier?.upgrade_generator_model) out.upgrade_generator_model = classifier.upgrade_generator_model
   if (classifier?.email_likely_meant) out.email_likely_meant = classifier.email_likely_meant
   if (Array.isArray(classifier?.load_mentions) && classifier.load_mentions.length) {
     const prev = Array.isArray(out.load_mentions) ? out.load_mentions : []
@@ -994,6 +998,26 @@ async function handleInbound(input: InboundInput): Promise<Response> {
     // 9. Persist slot updates + new state
     const newQd = applySlotUpdates(contact.qualification_data || {}, classifier, photoResult)
     if (transitionResult.onEnter) Object.assign(newQd, transitionResult.onEnter)
+
+    // v10.1.6 — post-DQ upgrade model capture. When a 120V-DQ'd customer
+    // mentions a new generator model (upgrade scenario), the state machine
+    // routes them to NEEDS_CALLBACK so Key can follow up. Sniff the inbound
+    // for a generator brand+model and store it in qualification_data so the
+    // handoff notifier can surface it to Key without Key having to re-read
+    // the full thread to figure out what unit the customer is shopping for.
+    if (
+      contact.bot_state === 'DISQUALIFIED_120V' &&
+      transitionResult.next === 'NEEDS_CALLBACK' &&
+      !newQd.upgrade_generator_model
+    ) {
+      const upgradeMatch = inboundText.match(
+        /\b(generac|champion|westinghouse|honda|craftsman|dewalt|briggs\s*&?\s*stratton|predator|duromax|durostar|winco|kohler|ecoflow|jackery|firman|pulsar|ryobi)\b[\s-]*([a-z0-9]{2,12}(?:\s*[a-z0-9]{1,8})?)?/i
+      )
+      if (upgradeMatch) {
+        newQd.upgrade_generator_model = upgradeMatch[0].trim()
+        newQd.upgrade_gen_captured_from = inboundText.slice(0, 200)
+      }
+    }
     // v10.1.64 — proactive load elicitation. When the phraser fires
     // the load-question branch at AWAIT_PANEL_PHOTO (because
     // capacity_signal_excerpt was set and load_already_asked was
