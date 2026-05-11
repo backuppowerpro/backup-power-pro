@@ -1196,33 +1196,41 @@ function HouseHero({ contact }) {
   // Same cache pattern as ContactAvatar.
   const [hasImagery, setHasImagery] = React.useState(false);
   const [verified, setVerified] = React.useState(false);
+  const [satUrl, setSatUrl] = React.useState(null);
   const address = contact.address;
   React.useEffect(() => {
     setFailed(false);
     setVerified(false);
     setHasImagery(false);
+    setSatUrl(null);
     if (!address || !isAddressableStreet(address) || typeof window.checkSvImagery !== 'function') {
       setVerified(true);
       return;
     }
     let cancelled = false;
-    window.checkSvImagery(address).then(result => {
+    window.checkSvImagery(address).then(async result => {
       if (cancelled) return;
       setHasImagery(result === 'ok');
       setVerified(true);
+      if (result === 'none') {
+        const url = await window.mapboxSatUrl?.(address, 640, 240);
+        if (!cancelled) setSatUrl(url || null);
+      }
     });
     return () => { cancelled = true; };
   }, [contact.id, address]);
 
   if (!address || failed) return null;
   if (!isAddressableStreet(address)) return null;
-  // While verifying, render nothing (avoid flicker). Once verified
-  // without imagery, also render nothing — the colored ContactStrip
-  // avatar above plus the contact name carry the identity.
-  if (!verified || !hasImagery) return null;
-  const url = `https://maps.googleapis.com/maps/api/streetview?size=640x240&scale=2` +
-              `&location=${encodeURIComponent(address.trim())}` +
-              `&fov=90&pitch=2&source=outdoor&key=${SV_KEY}`;
+  // While verifying, render nothing (avoid flicker). Once verified,
+  // show Street View if available, satellite overhead as fallback,
+  // or nothing if neither is available.
+  if (!verified || (!hasImagery && !satUrl)) return null;
+  const url = hasImagery
+    ? `https://maps.googleapis.com/maps/api/streetview?size=640x240&scale=2` +
+      `&location=${encodeURIComponent(address.trim())}` +
+      `&fov=90&pitch=2&source=outdoor&key=${SV_KEY}`
+    : satUrl;
   const mapsLink = `https://www.google.com/maps?q=${encodeURIComponent(address.trim())}`;
   return (
     <a
@@ -1244,17 +1252,11 @@ function HouseHero({ contact }) {
         onError={() => setFailed(true)}
         style={{
           width:'100%', height:'100%', objectFit:'cover',
-          // Crop bottom-left a hair to push Google's watermark off the rendered
-          // box without losing the house. Combined with a soft gradient overlay
-          // below, the watermark is effectively invisible.
-          objectPosition:'50% 30%',
+          objectPosition: hasImagery ? '50% 30%' : 'center center',
           filter: 'saturate(1.2) contrast(1.05)',
           display:'block',
         }}
       />
-      {/* Bottom gradient covers Google's watermarks (bottom-left + bottom-
-          right) and gives the address overlay legibility. Heavier at the
-          bottom 18% to fully hide both attribution corners. */}
       <div style={{
         position:'absolute', inset:0,
         background:'linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.35) 78%, rgba(0,0,0,0.78) 100%)',
@@ -1553,18 +1555,24 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
   // ContactAvatar — checked once per address.
   const [heroVerified, setHeroVerified] = React.useState(false);
   const [heroHasImagery, setHeroHasImagery] = React.useState(false);
+  const [heroSatUrl, setHeroSatUrl] = React.useState(null);
   React.useEffect(() => {
     setHeroVerified(false);
     setHeroHasImagery(false);
+    setHeroSatUrl(null);
     if (!contact.address || !isAddressableStreet(contact.address)) {
       setHeroVerified(true);
       return;
     }
     let cancelled = false;
-    window.checkSvImagery(contact.address).then(result => {
+    window.checkSvImagery(contact.address).then(async result => {
       if (cancelled) return;
       setHeroHasImagery(result === 'ok');
       setHeroVerified(true);
+      if (result === 'none') {
+        const url = await window.mapboxSatUrl?.(contact.address, 640, 256);
+        if (!cancelled) setHeroSatUrl(url || null);
+      }
     });
     return () => { cancelled = true; };
   }, [contact.id, contact.address]);
@@ -1572,10 +1580,10 @@ function ContactInfoSection({ contact, bumpData, onOpenTab }) {
   if (!editing) {
     // Combined hero + contact info card. Image at top with name overlay
     // (large + bold) + Copy button. Below: phone/address/stage/tier rows.
-    const hasHero = isAddressableStreet(contact.address) && heroHasImagery;
-    const heroUrl = hasHero
+    const hasHero = isAddressableStreet(contact.address) && (heroHasImagery || heroSatUrl);
+    const heroUrl = isAddressableStreet(contact.address) && heroHasImagery
       ? `https://maps.googleapis.com/maps/api/streetview?size=640x200&scale=2&location=${encodeURIComponent(contact.address.trim())}&fov=90&pitch=2&source=outdoor&key=${SV_KEY}`
-      : null;
+      : heroSatUrl || null;
     const isPremium = contact.pricing_tier === 'premium' || contact.pricing_tier === 'premium_plus';
     const stageLabel = CRM.STAGE_LABELS[contact.stage] || '';
 

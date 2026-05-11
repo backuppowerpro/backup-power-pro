@@ -272,6 +272,18 @@ function NavBar({ tab, onTab, showBack, onBack, badgeCounts = {}, compact, conte
 // public browser use; not a secret and not a CLAUDE.md "AIza" violation.
 // Audits that grep for AIza will re-flag this — leave the comment.
 const SV_KEY = 'AIzaSyB0xWm71ZDzS7ei5-vFx15rNP_lR1ZKbJs';
+const MAPBOX_TOKEN = 'pk.eyJ1Ijoia2V5ZWxlY3RyaWN1cHN0YXRlIiwiYSI6ImNtbWsyYzlybzFpbWwycW9pc2R2eW1wZ3UifQ.Y2nGIeYV6l57CMbf3sqbqw';
+
+// Satellite fallback: geocode via Nominatim (already in crm-data) then fetch
+// Mapbox satellite-v9 static image. Used when Street View has no coverage.
+async function mapboxSatUrl(address, w, h) {
+  if (!address || typeof geocodeAddress !== 'function') return null;
+  try {
+    const coord = await geocodeAddress(address);
+    if (!coord) return null;
+    return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${coord.lng},${coord.lat},19/${w}x${h}?access_token=${MAPBOX_TOKEN}`;
+  } catch { return null; }
+}
 
 // Returns a Street View Static URL only when the address looks like an
 // actual street — has a number AND a road word (drive/street/lane/etc).
@@ -378,8 +390,10 @@ function ContactAvatar({ contact, size = 40 }) {
   const initialNone = cached === 'none';
   const [hasImagery, setHasImagery] = React.useState(initialReady);
   const [verified, setVerified] = React.useState(initialReady || initialNone);
+  const [satUrl, setSatUrl] = React.useState(null);
 
   React.useEffect(() => {
+    setSatUrl(null);
     if (!addressable) return;
     let cancelled = false;
     (async () => {
@@ -387,6 +401,10 @@ function ContactAvatar({ contact, size = 40 }) {
       if (cancelled) return;
       setHasImagery(result === 'ok');
       setVerified(true);
+      if (result === 'none') {
+        const url = await mapboxSatUrl(addr, size * 2, size * 2);
+        if (!cancelled) setSatUrl(url);
+      }
     })();
     return () => { cancelled = true; };
   }, [addr, addressable]);
@@ -417,6 +435,18 @@ function ContactAvatar({ contact, size = 40 }) {
             position:'absolute', inset:0, width:'100%', height:'100%',
             objectFit:'cover', objectPosition:'70% 30%', display:'block',
             filter: 'saturate(1.25) contrast(1.08) brightness(1.02)',
+          }}
+        />
+      )}
+      {!hasImagery && satUrl && (
+        <img
+          src={satUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          style={{
+            position:'absolute', inset:0, width:'100%', height:'100%',
+            objectFit:'cover', objectPosition:'center center', display:'block',
           }}
         />
       )}
@@ -1633,7 +1663,7 @@ Object.assign(window, {
   relTime, fmtTime, fmtDate,
   QB_C, QB_S, TIER_META, TIER_IDS, quickQuoteTotal, quickQuoteCompute,
   V3_PRICING, quoteV3Total,
-  safeSetItem, checkSvImagery, isAddressableStreet, copyText,
+  safeSetItem, checkSvImagery, mapboxSatUrl, isAddressableStreet, copyText,
   readSnoozeMap, snoozeContact, unsnoozeContact, isSnoozed, snoozedUntil,
   readSchedQueue, scheduleMessage, cancelScheduledMessage, startScheduledQueueRunner,
   usePinned, readPinnedSet,
