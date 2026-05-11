@@ -6739,6 +6739,7 @@ function panelAddrInput(val) {
         dd.appendChild(li);
       });
       dd.style.display = 'block';
+      _positionDropdown(dd, document.getElementById('panel-address'));
     } catch(e) { panelAddrHide(); }
   }, 250);
 }
@@ -6816,6 +6817,21 @@ const MAPBOX_PROXIMITY = '-82.3940,34.8526';
 let addrDebounce;
 let addrFocusedIdx = -1;
 
+// Move dropdown to document.body so it escapes overflow:hidden containers and
+// the modal's transform (which traps position:fixed children inside it).
+function _positionDropdown(dd, inputEl) {
+  if (dd.parentElement !== document.body) document.body.appendChild(dd);
+  const r = inputEl.getBoundingClientRect();
+  Object.assign(dd.style, {
+    position: 'fixed',
+    top: (r.bottom + 2) + 'px',
+    left: r.left + 'px',
+    width: r.width + 'px',
+    right: 'auto',
+    zIndex: '10000',
+  });
+}
+
 function addrInput(val) {
   clearTimeout(addrDebounce);
   if (val.length < 3) { addrHide(); return; }
@@ -6841,6 +6857,7 @@ function addrInput(val) {
         dd.appendChild(li);
       });
       dd.style.display = 'block';
+      _positionDropdown(dd, document.getElementById('c-address'));
     } catch(e) { addrHide(); }
   }, 250);
 }
