@@ -36,6 +36,10 @@ verify_jwt = false
 [functions.quo-ai-webhook]
 verify_jwt = false
 
+# Internal dojo helper — brain-token-gated, +1800555 hard-gate
+[functions.dojo-helper]
+verify_jwt = false
+
 # Public form-submit endpoint (rate-limited internally):
 [functions.quo-ai-new-lead]
 verify_jwt = false

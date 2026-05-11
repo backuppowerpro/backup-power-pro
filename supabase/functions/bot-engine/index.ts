@@ -704,6 +704,15 @@ async function handleInbound(input: InboundInput): Promise<Response> {
       }).then(({ error: e }) => {
         if (e) console.warn('[bot-engine] sms_consent_log insert failed:', e.message)
       })
+      // v10.2 (2026-05-12): one-shot confirmation before going silent.
+      // TCPA allows a single transactional confirmation of opt-out.
+      // Without this, customer sends STOP and gets silence — ambiguous.
+      // Message must be <100 chars, no em-dashes, no offers, no links.
+      try {
+        await sendCustomerReply(contact.id, "Got it. Removed from our list, you won't hear from us again.")
+      } catch (e) {
+        console.warn('[bot-engine] STOP confirmation send failed:', e)
+      }
       outcome = 'silent'
       return new Response(JSON.stringify({ ok: true, stopped: true }),
         { status: 200, headers: { 'content-type': 'application/json' } })

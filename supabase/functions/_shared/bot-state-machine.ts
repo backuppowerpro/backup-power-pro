@@ -329,6 +329,10 @@ const STATES: Record<string, any> = {
       outlet_50a: 'AWAIT_PANEL_PHOTO',
       outlet_unknown: 'AWAIT_OUTLET_PHOTO',
       photo_received: 'AWAIT_PANEL_PHOTO',
+      // v10.2 (2026-05-12): gen_120v must route to DISQUALIFIED_120V here too.
+      // Without this, "it's 120V" in AWAIT_OUTLET fell through to unclear →
+      // NEEDS_CALLBACK, bypassing the soft-DQ path and losing the upgrade offer.
+      gen_120v: 'DISQUALIFIED_120V',
       asking_for_human: 'NEEDS_CALLBACK',
       asking_if_human: 'AWAIT_OUTLET',
       asking_for_context: 'AWAIT_OUTLET',
@@ -532,6 +536,14 @@ const STATES: Record<string, any> = {
       asking_clarifying_technical: 'AWAIT_INLET_LOCATION',
       asking_for_human: 'NEEDS_CALLBACK',
       stop_variant: 'STOPPED',
+      // v10.2 (2026-05-12): panel_garage_exterior fires here when the
+      // classifier sees "right behind the panel" and pattern-matches to the
+      // panel-location label instead of inlet_default. Treat it as
+      // inlet_default — in AWAIT_INLET_LOCATION context, "behind the panel"
+      // IS the default inlet placement confirmation.
+      panel_garage_exterior: 'AWAIT_EMAIL',
+      panel_outdoor: 'AWAIT_EMAIL',  // same reasoning — exterior panel means default install
+      owner: 'AWAIT_INLET_LOCATION',  // sometimes captured alongside inlet answer; self-loop, re-ask
       unclear: 'AWAIT_EMAIL',  // accept and let Key clarify
     },
   },

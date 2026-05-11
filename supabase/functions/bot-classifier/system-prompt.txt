@@ -319,6 +319,29 @@ asks WHERE the panel is, not "how far"):
                              panel, route to AWAIT_INSTALL_PATH)
 - "run_unsure", doesn't know
 
+AWAIT_INLET_LOCATION (v10.1.14: where the customer wants the inlet box mounted):
+- "inlet_default", customer wants the inlet right behind/next to the panel
+                             on the exterior wall — the standard setup. Examples:
+                             "right behind the panel", "right next to the panel",
+                             "right there on the wall", "the default is fine",
+                             "wherever makes sense", "yeah that works",
+                             "right outside the panel sounds good",
+                             "next to the panel on the outside wall",
+                             "on the exterior right there". CRITICAL: in this
+                             state, "behind the panel" / "next to the panel"
+                             means INLET LOCATION, NOT panel location. Do NOT
+                             return panel_garage_exterior here.
+- "inlet_custom", customer wants the inlet somewhere OTHER than right behind
+                             the panel (e.g., around a corner, closer to where
+                             they park the generator). Examples: "I'd want it
+                             closer to the driveway", "around the corner of the
+                             house", "on the side by the generator".
+- "inlet_far", customer indicates they'd want it more than ~25ft from panel.
+                             Examples: "at the back of the yard", "over by the
+                             shed which is like 50 feet away".
+- "affirmative", simple yes — default setup is fine. Routes same as inlet_default.
+- "unclear", can't determine preference.
+
 AWAIT_INSTALL_PATH (v10.1.5: NEW state; cable routing for interior panels):
 - "attic_access", has attic access. Examples: "yeah we have
                              an attic", "attic is accessible", "I can
