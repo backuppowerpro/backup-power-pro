@@ -4152,6 +4152,27 @@ async function _svStatus(address) {
   return _svCache[address];
 }
 
+// Geocode cache: address → [lon, lat]
+const _geoCache = {};
+async function _mapboxSatUrl(address, w, h) {
+  if (!_geoCache[address]) {
+    try {
+      const r = await fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'
+        + encodeURIComponent(address)
+        + '.json?access_token=' + MAPBOX_TOKEN + '&country=us&limit=1&types=address');
+      const d = await r.json();
+      const f = d.features?.[0];
+      if (f) _geoCache[address] = f.center; // [lon, lat]
+    } catch(e) {}
+  }
+  const coords = _geoCache[address];
+  if (!coords) return null;
+  const [lon, lat] = coords;
+  // Mapbox satellite — skip @2x for sizes > 640 to stay under the 1280px cap
+  const suffix = (w <= 640 && h <= 640) ? '@2x' : '';
+  return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lon},${lat},19/${w}x${h}${suffix}?access_token=${MAPBOX_TOKEN}`;
+}
+
 function _avatarHtml(c, size) {
   const color = _avatarColor(c.id);
   const initials = _avatarInitials(c.name);
@@ -4160,16 +4181,23 @@ function _avatarHtml(c, size) {
   const span = `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${fs};font-family:'Outfit',sans-serif;pointer-events:none">${initials}</span>`;
   const elId = 'av-' + c.id;
   if (c.address) {
-    _svStatus(c.address).then(status => {
+    _svStatus(c.address).then(async status => {
       const el = document.getElementById(elId);
       if (!el) return;
       const px = size * 2;
+      let src;
+      if (status === 'ok') {
+        src = `https://maps.googleapis.com/maps/api/streetview?size=${px}x${px}&location=${encodeURIComponent(c.address)}&fov=90&pitch=0&key=${_SV_KEY}`;
+      } else {
+        src = await _mapboxSatUrl(c.address, px, px);
+        if (!src) return;
+      }
+      const el2 = document.getElementById(elId);
+      if (!el2 || el2.querySelector('img')) return;
       const img = document.createElement('img');
       img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none';
-      img.src = status === 'ok'
-        ? `https://maps.googleapis.com/maps/api/streetview?size=${px}x${px}&location=${encodeURIComponent(c.address)}&fov=90&pitch=0&key=${_SV_KEY}`
-        : `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(c.address)}&zoom=19&size=${px}x${px}&maptype=satellite&key=${_SV_KEY}`;
-      el.appendChild(img);
+      img.src = src;
+      el2.appendChild(img);
     });
   }
   return `<div id="${elId}" style="${base}">${span}</div>`;
@@ -4233,22 +4261,28 @@ function _bannerHtml(c) {
   const closeBtn = `<button class="modal-close" onclick="cancelPanel()" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,.48);color:#fff;z-index:3;border:none;box-shadow:inset 2px 2px 0 rgba(255,255,255,.2),inset -2px -2px 0 rgba(0,0,0,.6);width:44px;height:44px;min-width:44px;min-height:44px;border-radius:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:box-shadow .15s steps(4, end)">&#10005;</button>`;
   const bannerId = 'bnr-' + c.id;
   if (c.address) {
-    _svStatus(c.address).then(status => {
+    _svStatus(c.address).then(async status => {
       const el = document.getElementById(bannerId);
       if (!el) return;
+      let src, objPos;
+      if (status === 'ok') {
+        src = `https://maps.googleapis.com/maps/api/streetview?size=750x420&location=${encodeURIComponent(c.address)}&fov=80&pitch=5&key=${_SV_KEY}`;
+        objPos = 'center 70%';
+      } else {
+        src = await _mapboxSatUrl(c.address, 750, 420);
+        if (!src) return;
+        objPos = 'center center';
+      }
+      const el2 = document.getElementById(bannerId);
+      if (!el2) return;
       const img = document.createElement('img');
-      // Satellite gets center-top crop so the house roof is visible, not ground
-      img.style.cssText = status === 'ok'
-        ? 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 70%;z-index:0'
-        : 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:0';
+      img.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:${objPos};z-index:0`;
       img.onload = () => {
-        const fb = el.querySelector('.bnr-fallback');
+        const fb = el2.querySelector('.bnr-fallback');
         if (fb) fb.style.opacity = '0';
       };
-      img.src = status === 'ok'
-        ? `https://maps.googleapis.com/maps/api/streetview?size=750x420&location=${encodeURIComponent(c.address)}&fov=80&pitch=5&key=${_SV_KEY}`
-        : `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(c.address)}&zoom=19&size=750x420&maptype=satellite&key=${_SV_KEY}`;
-      el.insertBefore(img, el.firstChild);
+      img.src = src;
+      el2.insertBefore(img, el2.firstChild);
     });
   }
   return `<div id="${bannerId}" style="position:relative;width:100%;height:100%;background:${color};overflow:hidden">${fallbackInitials}${gradient}${nameGrad}${nameLabel}${stageBadge}${backBtn}${closeBtn}</div>`;
@@ -19481,24 +19515,28 @@ document.addEventListener('touchstart', function(e) {
 // One-time sweep: after contacts render, inject satellite images into any
 // avatar that's still showing only initials (address exists, no img loaded yet).
 // Runs 2.5s after page load to let the initial renderContacts settle.
-setTimeout(function _svAvatarSweep() {
+setTimeout(async function _svAvatarSweep() {
   if (!window.allContacts || !window._SV_KEY) return;
-  window.allContacts.forEach(function(c) {
-    if (!c.address) return;
-    var el = document.getElementById('av-' + c.id);
-    if (!el || el.querySelector('img')) return; // already has photo
-    var px = (el.offsetWidth || 40) * 2;
-    _svStatus(c.address).then(function(status) {
-      var el2 = document.getElementById('av-' + c.id);
-      if (!el2 || el2.querySelector('img')) return;
-      var img = document.createElement('img');
-      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none';
-      img.src = status === 'ok'
-        ? 'https://maps.googleapis.com/maps/api/streetview?size='+px+'x'+px+'&location='+encodeURIComponent(c.address)+'&fov=90&pitch=0&key='+_SV_KEY
-        : 'https://maps.googleapis.com/maps/api/staticmap?center='+encodeURIComponent(c.address)+'&zoom=19&size='+px+'x'+px+'&maptype=satellite&key='+_SV_KEY;
-      el2.appendChild(img);
-    });
-  });
+  for (const c of window.allContacts) {
+    if (!c.address) continue;
+    const el = document.getElementById('av-' + c.id);
+    if (!el || el.querySelector('img')) continue;
+    const px = (el.offsetWidth || 40) * 2;
+    const status = await _svStatus(c.address);
+    let src;
+    if (status === 'ok') {
+      src = `https://maps.googleapis.com/maps/api/streetview?size=${px}x${px}&location=${encodeURIComponent(c.address)}&fov=90&pitch=0&key=${_SV_KEY}`;
+    } else {
+      src = await _mapboxSatUrl(c.address, px, px);
+      if (!src) continue;
+    }
+    const el2 = document.getElementById('av-' + c.id);
+    if (!el2 || el2.querySelector('img')) continue;
+    const img = document.createElement('img');
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none';
+    img.src = src;
+    el2.appendChild(img);
+  }
 }, 2500);
 
 </script>
