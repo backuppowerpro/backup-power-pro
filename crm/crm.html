@@ -19478,6 +19478,29 @@ document.addEventListener('touchstart', function(e) {
   };
 })();
 
+// One-time sweep: after contacts render, inject satellite images into any
+// avatar that's still showing only initials (address exists, no img loaded yet).
+// Runs 2.5s after page load to let the initial renderContacts settle.
+setTimeout(function _svAvatarSweep() {
+  if (!window.allContacts || !window._SV_KEY) return;
+  window.allContacts.forEach(function(c) {
+    if (!c.address) return;
+    var el = document.getElementById('av-' + c.id);
+    if (!el || el.querySelector('img')) return; // already has photo
+    var px = (el.offsetWidth || 40) * 2;
+    _svStatus(c.address).then(function(status) {
+      var el2 = document.getElementById('av-' + c.id);
+      if (!el2 || el2.querySelector('img')) return;
+      var img = document.createElement('img');
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none';
+      img.src = status === 'ok'
+        ? 'https://maps.googleapis.com/maps/api/streetview?size='+px+'x'+px+'&location='+encodeURIComponent(c.address)+'&fov=90&pitch=0&key='+_SV_KEY
+        : 'https://maps.googleapis.com/maps/api/staticmap?center='+encodeURIComponent(c.address)+'&zoom=19&size='+px+'x'+px+'&maptype=satellite&key='+_SV_KEY;
+      el2.appendChild(img);
+    });
+  });
+}, 2500);
+
 </script>
 </body>
 </html>
