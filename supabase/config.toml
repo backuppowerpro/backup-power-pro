@@ -43,3 +43,7 @@ verify_jwt = false
 # Public form-submit endpoint (rate-limited internally):
 [functions.quo-ai-new-lead]
 verify_jwt = false
+
+# Ashley v2 unified engine — internal-only, service-role gated:
+[functions.ashley-v2]
+verify_jwt = false

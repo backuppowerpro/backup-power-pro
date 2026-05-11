@@ -254,5 +254,66 @@ Deno.serve(async (req: Request) => {
     }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
   }
 
+  // simulate_v2: same as simulate_inbound but routes through ashley-v2 (unified engine).
+  // Hard-gated to test phones + Key's cell. Use this to compare v1 vs v2 side-by-side.
+  if (action === 'simulate_v2') {
+    const inboundBody = String(body?.body || '')
+    const mediaUrls: string[] | undefined = Array.isArray(body?.media_urls) ? body.media_urls : undefined
+    if (!inboundBody && (!mediaUrls || mediaUrls.length === 0)) {
+      return new Response(JSON.stringify({ error: 'body or media_urls required' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    const { data: contacts3 } = await sb.from('contacts').select('id').eq('phone', phone).limit(1)
+    const contactId = contacts3?.[0]?.id
+    if (!contactId) {
+      return new Response(JSON.stringify({ error: 'no contact for this phone, init_contact first' }), { status: 404, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    // Write the inbound message to DB so ashley-v2 sees it in conversation history
+    const messageSid = `dojo-v2-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    await sb.from('messages').insert({
+      contact_id: contactId,
+      direction: 'inbound',
+      body: inboundBody || (mediaUrls ? `[media:${mediaUrls[0]}]` : ''),
+      sender: 'lead',
+      twilio_sid: messageSid,
+      status: 'received',
+    })
+    const SUPABASE_URL_LOCAL = Deno.env.get('SUPABASE_URL') || ''
+    const SR_KEY_LOCAL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    let botResp: any = null
+    let botStatus = 0
+    try {
+      const r = await fetch(`${SUPABASE_URL_LOCAL}/functions/v1/ashley-v2`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SR_KEY_LOCAL}`,
+          'apikey': SR_KEY_LOCAL,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contact_id: contactId,
+          message_body: inboundBody,
+          media_urls: mediaUrls,
+          dojo_mode: true,  // skip real SMS send
+        }),
+      })
+      botStatus = r.status
+      botResp = await r.json().catch(() => ({}))
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: 'ashley-v2 fetch failed', detail: String(e?.message || e) }), { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+    const { data: latestOutV2 } = await sb
+      .from('messages')
+      .select('id, direction, body, sender, created_at')
+      .eq('contact_id', contactId)
+      .eq('direction', 'outbound')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    return new Response(JSON.stringify({
+      ok: true, contact_id: contactId, message_sid: messageSid,
+      bot_status: botStatus, bot_response: botResp,
+      latest_outbound: latestOutV2?.[0] || null,
+    }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
+  }
+
   return new Response(JSON.stringify({ error: 'unknown action' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })
 })
