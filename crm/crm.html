@@ -4160,15 +4160,15 @@ function _avatarHtml(c, size) {
   const span = `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${fs};font-family:'Outfit',sans-serif;pointer-events:none">${initials}</span>`;
   const elId = 'av-' + c.id;
   if (c.address) {
-    // Check coverage async — inject photo only if Google has imagery
     _svStatus(c.address).then(status => {
-      if (status !== 'ok') return;
       const el = document.getElementById(elId);
       if (!el) return;
       const px = size * 2;
       const img = document.createElement('img');
       img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none';
-      img.src = `https://maps.googleapis.com/maps/api/streetview?size=${px}x${px}&location=${encodeURIComponent(c.address)}&fov=90&pitch=0&key=${_SV_KEY}`;
+      img.src = status === 'ok'
+        ? `https://maps.googleapis.com/maps/api/streetview?size=${px}x${px}&location=${encodeURIComponent(c.address)}&fov=90&pitch=0&key=${_SV_KEY}`
+        : `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(c.address)}&zoom=19&size=${px}x${px}&maptype=satellite&key=${_SV_KEY}`;
       el.appendChild(img);
     });
   }
@@ -4234,18 +4234,20 @@ function _bannerHtml(c) {
   const bannerId = 'bnr-' + c.id;
   if (c.address) {
     _svStatus(c.address).then(status => {
-      if (status !== 'ok') return;
       const el = document.getElementById(bannerId);
       if (!el) return;
       const img = document.createElement('img');
-      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 70%;z-index:0';
+      // Satellite gets center-top crop so the house roof is visible, not ground
+      img.style.cssText = status === 'ok'
+        ? 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 70%;z-index:0'
+        : 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:0';
       img.onload = () => {
-        // Photo arrived — hide the initials watermark behind it.
         const fb = el.querySelector('.bnr-fallback');
         if (fb) fb.style.opacity = '0';
       };
-      img.src = `https://maps.googleapis.com/maps/api/streetview?size=750x420&location=${encodeURIComponent(c.address)}&fov=80&pitch=5&key=${_SV_KEY}`;
-      // Insert behind everything (z-index handles stacking, but DOM order matters for fallback)
+      img.src = status === 'ok'
+        ? `https://maps.googleapis.com/maps/api/streetview?size=750x420&location=${encodeURIComponent(c.address)}&fov=80&pitch=5&key=${_SV_KEY}`
+        : `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(c.address)}&zoom=19&size=750x420&maptype=satellite&key=${_SV_KEY}`;
       el.insertBefore(img, el.firstChild);
     });
   }
