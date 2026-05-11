@@ -47,3 +47,7 @@ verify_jwt = false
 # Ashley v2 unified engine — internal-only, service-role gated:
 [functions.ashley-v2]
 verify_jwt = false
+
+# Quo-channel Ashley bridge — OpenPhone inbounds routed to ashley-v2:
+[functions.quo-ashley-webhook]
+verify_jwt = false
