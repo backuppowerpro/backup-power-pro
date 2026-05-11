@@ -1,18 +1,21 @@
 /**
  * ashley-v2 — unified single-model qualification engine.
  *
- * Replaces the 3-microservice pipeline (bot-classifier + bot-state-machine +
- * bot-phraser) with one Claude call that has the full conversation history.
- * Claude sees everything: prior turns, current state, collected slots. It
- * decides what the customer means, what state to advance to, and what to say.
+ * One Claude call per inbound with full conversation history. State machine
+ * embedded as knowledge in the system prompt; transitions validated in code
+ * as a guardrail. Replaces the 3-microservice pipeline (bot-classifier +
+ * bot-state-machine + bot-phraser).
  *
- * Auth: requireServiceRole (internal-only, called by dojo-helper or a future
- * inbound webhook route).
+ * Production features included:
+ *   - Photo classification (bot-photo-classifier) for MMS
+ *   - Handoff/callback notifier (bot-handoff-notifier)
+ *   - ai_paused_until + bot_disabled guards
+ *   - send-sms dispatch (skipped in dojo_mode)
+ *
+ * Auth: requireServiceRole, internal-only.
  *
  * Input:
- *   { contact_id, message_body, media_urls?, dojo_mode? }
- *
- * dojo_mode: when true, skips the send-sms call (for dojo testing).
+ *   { contact_id, message_body?, media_urls?, dojo_mode? }
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -28,21 +31,23 @@ const VALID_STATES = new Set([
   'NEEDS_CALLBACK', 'DO_NOT_CONTACT',
 ])
 
-// Only these forward/self transitions are allowed per state. Prevents the LLM
-// from jumping backwards or skipping required collection steps.
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  AWAIT_240V:        ['AWAIT_240V', 'AWAIT_OUTLET', 'NEEDS_CALLBACK'],
-  AWAIT_OUTLET:      ['AWAIT_OUTLET', 'AWAIT_OUTLET_PHOTO', 'AWAIT_PANEL_PHOTO', 'NEEDS_CALLBACK'],
-  AWAIT_OUTLET_PHOTO:['AWAIT_OUTLET_PHOTO', 'AWAIT_PANEL_PHOTO', 'NEEDS_CALLBACK'],
-  AWAIT_PANEL_PHOTO: ['AWAIT_PANEL_PHOTO', 'AWAIT_RUN', 'NEEDS_CALLBACK'],
-  AWAIT_RUN:         ['AWAIT_RUN', 'RECAP', 'NEEDS_CALLBACK'],
-  RECAP:             ['RECAP', 'AWAIT_EMAIL', 'NEEDS_CALLBACK'],
-  AWAIT_EMAIL:       ['AWAIT_EMAIL', 'AWAIT_ADDRESS', 'NEEDS_CALLBACK'],
-  AWAIT_ADDRESS:     ['AWAIT_ADDRESS', 'HANDOFF', 'NEEDS_CALLBACK'],
-  HANDOFF:           ['HANDOFF'],
-  NEEDS_CALLBACK:    ['NEEDS_CALLBACK'],
-  DO_NOT_CONTACT:    ['DO_NOT_CONTACT'],
+  // AWAIT_240V can skip to AWAIT_PANEL_PHOTO when customer confirms 240V + outlet type in one message
+  AWAIT_240V:         ['AWAIT_240V', 'AWAIT_OUTLET', 'AWAIT_OUTLET_PHOTO', 'AWAIT_PANEL_PHOTO', 'NEEDS_CALLBACK'],
+  AWAIT_OUTLET:       ['AWAIT_OUTLET', 'AWAIT_OUTLET_PHOTO', 'AWAIT_PANEL_PHOTO', 'NEEDS_CALLBACK'],
+  AWAIT_OUTLET_PHOTO: ['AWAIT_OUTLET_PHOTO', 'AWAIT_PANEL_PHOTO', 'NEEDS_CALLBACK'],
+  AWAIT_PANEL_PHOTO:  ['AWAIT_PANEL_PHOTO', 'AWAIT_RUN', 'NEEDS_CALLBACK'],
+  AWAIT_RUN:          ['AWAIT_RUN', 'RECAP', 'NEEDS_CALLBACK'],
+  RECAP:              ['RECAP', 'AWAIT_EMAIL', 'AWAIT_ADDRESS', 'HANDOFF', 'NEEDS_CALLBACK'],
+  AWAIT_EMAIL:        ['AWAIT_EMAIL', 'AWAIT_ADDRESS', 'NEEDS_CALLBACK'],
+  AWAIT_ADDRESS:      ['AWAIT_ADDRESS', 'HANDOFF', 'NEEDS_CALLBACK'],
+  HANDOFF:            ['HANDOFF'],
+  NEEDS_CALLBACK:     ['NEEDS_CALLBACK'],
+  DO_NOT_CONTACT:     ['DO_NOT_CONTACT'],
 }
+
+// States that trigger a notification to Key when first entered
+const NOTIFY_ON_ENTER = new Set(['HANDOFF', 'NEEDS_CALLBACK'])
 
 const DECIDE_TOOL = {
   name: 'decide',
@@ -66,14 +71,14 @@ const DECIDE_TOOL = {
         type: 'object',
         description: 'Newly learned slot values from this turn. Omit fields not newly learned.',
         properties: {
-          has_240v_outlet:   { type: 'boolean' },
-          outlet_type:       { type: 'string' },
-          panel_brand:       { type: 'string' },
-          panel_amps:        { type: 'number' },
-          run_feet:          { type: 'number' },
-          email:             { type: 'string' },
-          address:           { type: 'string' },
-          ownership_confirmed: { type: 'boolean' },
+          has_240v_outlet:      { type: 'boolean' },
+          outlet_type:          { type: 'string' },
+          panel_brand:          { type: 'string' },
+          panel_amps:           { type: 'number' },
+          run_feet:             { type: 'number' },
+          email:                { type: 'string' },
+          address:              { type: 'string' },
+          ownership_confirmed:  { type: 'boolean' },
         },
         additionalProperties: false,
       },
@@ -87,6 +92,28 @@ interface InboundInput {
   message_body?: string
   media_urls?: string[]
   dojo_mode?: boolean
+}
+
+async function callInternal(
+  supabaseUrl: string,
+  srKey: string,
+  fn: string,
+  body: unknown,
+): Promise<any> {
+  const r = await fetch(`${supabaseUrl}/functions/v1/${fn}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${srKey}`,
+      apikey: srKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) {
+    console.warn(`[ashley-v2] ${fn} returned ${r.status}`)
+    return null
+  }
+  return r.json().catch(() => null)
 }
 
 Deno.serve(async (req: Request) => {
@@ -106,13 +133,13 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'contact_id required' }), { status: 400 })
   }
 
-  const sb = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  )
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+  const SR_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+  const sb = createClient(SUPABASE_URL, SR_KEY)
 
   const { data: contact } = await sb.from('contacts')
-    .select('id, name, phone, bot_state, qualification_data, bot_disabled, do_not_contact, ai_enabled')
+    .select('id, name, phone, bot_state, qualification_data, bot_disabled, do_not_contact, ai_enabled, ai_paused_until')
     .eq('id', input.contact_id)
     .single()
 
@@ -120,28 +147,57 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'contact not found' }), { status: 404 })
   }
 
+  // Guards
   if (contact.bot_disabled || contact.do_not_contact || contact.ai_enabled === false) {
     return new Response(JSON.stringify({ ok: true, skipped: 'bot_off' }))
+  }
+  if (contact.ai_paused_until && new Date(contact.ai_paused_until) > new Date()) {
+    return new Response(JSON.stringify({ ok: true, skipped: 'paused' }))
   }
 
   const currentState: string = contact.bot_state || 'AWAIT_240V'
 
-  // Load last 20 messages (conversation history for context)
+  // ── PHOTO CLASSIFICATION ─────────────────────────────────────────────────
+  // If media present, classify the first image and inject the result into the
+  // conversation as structured context so Ashley can acknowledge specifics.
+  let photoContext = ''
+  if ((input.media_urls?.length ?? 0) > 0 && !input.dojo_mode) {
+    try {
+      const photoResult = await callInternal(SUPABASE_URL, SR_KEY, 'bot-photo-classifier', {
+        image_url: input.media_urls![0],
+        contact_id: input.contact_id,
+      })
+      if (photoResult?.subject) {
+        const brand = photoResult.panel_brand_visible || ''
+        const amps  = photoResult.panel_amperage_visible || photoResult.amperage_visible || ''
+        const subj  = photoResult.subject
+        // Build a terse annotation the LLM can use for specific acks
+        const parts = [`subject=${subj}`]
+        if (brand && brand !== 'unknown') parts.push(`brand=${brand}`)
+        if (amps  && amps  !== 'unknown') parts.push(`amps=${amps}`)
+        if (photoResult.obvious_issues?.length) parts.push(`issues=${photoResult.obvious_issues.join(',')}`)
+        photoContext = `[Photo classification: ${parts.join(', ')}]`
+        console.log(`[ashley-v2] photo classified: ${photoContext}`)
+      }
+    } catch (e) {
+      console.warn('[ashley-v2] photo classifier failed:', e)
+    }
+  }
+
+  // ── CONVERSATION HISTORY ─────────────────────────────────────────────────
   const { data: history } = await sb.from('messages')
     .select('direction, body, created_at')
     .eq('contact_id', contact.id)
     .order('created_at', { ascending: true })
     .limit(20)
 
-  // Build Claude messages array. Merge consecutive same-direction messages
-  // so the array alternates user/assistant as the API requires.
   const raw: Array<{ role: 'user' | 'assistant'; content: string }> = []
   for (const msg of (history || [])) {
     const role = msg.direction === 'inbound' ? 'user' : 'assistant'
     if (msg.body) raw.push({ role, content: msg.body })
   }
 
-  // Merge consecutive same-role messages (burst texters, etc.)
+  // Merge consecutive same-role messages (burst texters, multi-photo MMS)
   const merged: Array<{ role: 'user' | 'assistant'; content: string }> = []
   for (const m of raw) {
     const last = merged[merged.length - 1]
@@ -152,30 +208,35 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // Append the current inbound (if not already the last message)
-  const inboundText = String(input.message_body || '').trim()
-  const mediaNote = (input.media_urls?.length ?? 0) > 0
-    ? ` [Photo attached: ${input.media_urls![0]}]`
-    : ''
-  const currentContent = (inboundText + mediaNote) || '[No text — photo only]'
-
-  const lastMsg = merged[merged.length - 1]
-  if (!lastMsg || lastMsg.role !== 'user' || lastMsg.content !== currentContent) {
-    if (lastMsg?.role === 'user') {
-      lastMsg.content += '\n' + currentContent
-    } else {
-      merged.push({ role: 'user', content: currentContent })
-    }
+  // twilio-webhook and dojo-helper both save the inbound to DB before calling
+  // us, so it should already be in `merged`. But as a safety net: if merged
+  // has no user messages (race condition, failed insert, etc.), push the
+  // current inbound so Claude always gets at least one user turn.
+  const hasUserMsg = merged.some(m => m.role === 'user')
+  if (!hasUserMsg) {
+    const inboundText = String(input.message_body || '').trim()
+    const fallbackContent = inboundText || (input.media_urls?.length ? '[Photo]' : '[message]')
+    merged.push({ role: 'user', content: fallbackContent })
+    console.warn('[ashley-v2] merged had no user msgs from DB — used fallback. history len:', history?.length ?? 0)
   }
 
-  // Render system prompt with runtime context
-  const qdSummary = JSON.stringify(contact.qualification_data || {})
+  // For MMS: annotate the last user turn with photo classification so the
+  // LLM can acknowledge specifics even though the stored body is a [media:URL].
+  if (photoContext) {
+    const lastUser = merged.slice().reverse().find(m => m.role === 'user')
+    if (lastUser) lastUser.content += '\n' + photoContext
+  }
+
+  console.log(`[ashley-v2] state=${currentState} merged_turns=${merged.length}`)
+
+  // ── SYSTEM PROMPT ────────────────────────────────────────────────────────
+  const qdSummary   = JSON.stringify(contact.qualification_data || {})
   const systemPrompt = ASHLEY_V2_SYSTEM_PROMPT
-    .replaceAll('{{customer_name}}', contact.name || 'unknown')
-    .replaceAll('{{current_state}}', currentState)
+    .replaceAll('{{customer_name}}',      contact.name || 'unknown')
+    .replaceAll('{{current_state}}',      currentState)
     .replaceAll('{{qualification_data}}', qdSummary)
 
-  // Call Claude (Haiku for cost during dojo testing; swap to Sonnet for production)
+  // ── CLAUDE CALL ──────────────────────────────────────────────────────────
   const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -214,9 +275,9 @@ Deno.serve(async (req: Request) => {
     slots?: Record<string, unknown>
   }
 
-  // Validate state transition. If LLM picks an illegal jump, clamp to current.
+  // ── STATE VALIDATION ─────────────────────────────────────────────────────
   const allowedNext = VALID_TRANSITIONS[currentState] ?? [currentState]
-  const finalState = (VALID_STATES.has(next_state) && allowedNext.includes(next_state))
+  const finalState  = (VALID_STATES.has(next_state) && allowedNext.includes(next_state))
     ? next_state
     : currentState
   const stateOverridden = finalState !== next_state
@@ -225,58 +286,63 @@ Deno.serve(async (req: Request) => {
     console.warn('[ashley-v2] blocked transition', currentState, '->', next_state, '-> held at', finalState)
   }
 
-  // Merge new slot values into qualification_data
+  // ── DB WRITES ────────────────────────────────────────────────────────────
   const newQd = slots
     ? { ...(contact.qualification_data || {}), ...slots }
     : (contact.qualification_data || {})
 
-  // Update contact
   await sb.from('contacts').update({
-    bot_state: finalState,
-    qualification_data: newQd,
-    last_bot_inbound_at: new Date().toISOString(),
+    bot_state:            finalState,
+    qualification_data:   newQd,
+    last_bot_inbound_at:  new Date().toISOString(),
   }).eq('id', contact.id)
 
-  // Write outbound message to DB
   let outboundId: string | null = null
   if (outbound_text) {
     const { data: inserted } = await sb.from('messages').insert({
       contact_id: contact.id,
-      direction: 'outbound',
-      body: outbound_text,
-      sender: 'ashley-v2',
-      status: 'queued',
+      direction:  'outbound',
+      body:       outbound_text,
+      sender:     'ashley-v2',
+      status:     'queued',
     }).select('id').single()
     outboundId = inserted?.id ?? null
 
-    // Send SMS unless dojo mode
     if (!input.dojo_mode && contact.phone) {
       try {
-        const smsResp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-sms`, {
+        const smsResp = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            Authorization: `Bearer ${SR_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ to: contact.phone, body: outbound_text }),
         })
-        if (!smsResp.ok) {
-          console.error('[ashley-v2] send-sms error', smsResp.status)
-        }
+        if (!smsResp.ok) console.error('[ashley-v2] send-sms error', smsResp.status)
       } catch (e) {
         console.error('[ashley-v2] send-sms exception', e)
       }
     }
   }
 
+  // ── HANDOFF / CALLBACK NOTIFICATION ─────────────────────────────────────
+  // Fire when entering a notify state for the first time (prev != final).
+  if (!input.dojo_mode && NOTIFY_ON_ENTER.has(finalState) && finalState !== currentState) {
+    const terminalState = finalState === 'HANDOFF' ? 'COMPLETE' : 'NEEDS_CALLBACK'
+    callInternal(SUPABASE_URL, SR_KEY, 'bot-handoff-notifier', {
+      contact_id:     contact.id,
+      terminal_state: terminalState,
+    }).catch(e => console.error('[ashley-v2] handoff-notifier failed:', e))
+  }
+
   return new Response(JSON.stringify({
     ok: true,
-    prev_state: currentState,
-    next_state: finalState,
-    state_overridden: stateOverridden,
+    prev_state:           currentState,
+    next_state:           finalState,
+    state_overridden:     stateOverridden,
     outbound_text,
     reasoning,
-    slots: slots ?? null,
-    outbound_message_id: outboundId,
+    slots:                slots ?? null,
+    outbound_message_id:  outboundId,
   }), { headers: { 'content-type': 'application/json' } })
 })
