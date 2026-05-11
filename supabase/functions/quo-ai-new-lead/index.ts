@@ -475,12 +475,11 @@ Deno.serve(async (req) => {
   // discovery is primed.
   const openerFirstName = firstName || fullName.split(' ')[0] || ''
   const hi = openerFirstName ? `Hey ${openerFirstName}` : 'Hey'
-  // Discovery-led opener. Single message so the customer doesn't feel
-  // swarmed. Establishes rapport, identifies Alex + company, asks the
-  // current-state question. alex-agent picks up from the reply.
+  // Panel-photo opener. Warm intro + immediate actionable ask so the
+  // customer knows exactly what to do next. alex-agent picks up from the reply.
   const alexSessionId = crypto.randomUUID()
   const variant = 'D'
-  const openerText = `${hi}, this is Alex with Backup Power Pro. Thanks for reaching out. I help Key, our licensed electrician, line up his installs. Before we put a quote together, what got you interested in finding a backup power solution? Reply STOP to opt out.`
+  const openerText = `${hi}, this is Alex with Backup Power Pro. Thanks for reaching out! To provide an accurate quote, I will need a picture of your main electrical panel and breakers. No rush at all, just send it here whenever you get the chance. Reply STOP to opt out.`
 
   // TEST_MODE gate — parity with alex-agent. Real clients don't get the
   // full Alex conversation yet; only Key's own phone (or smoke-test

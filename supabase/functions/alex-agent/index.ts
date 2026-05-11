@@ -2500,6 +2500,15 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ skipped: true, reason: 'outbound' }), { status: 200, headers: CORS })
   }
 
+  // Ashley channel guard: messages arriving at (864) 400-5302 are handled
+  // exclusively by quo-ashley-webhook + ashley-v2. Skip here to avoid
+  // double-responding on the same inbound.
+  const incomingToPhone = Array.isArray(messageData.to) ? messageData.to[0] : (messageData.to || '')
+  if (incomingToPhone === '+18644005302' || messageData.phoneNumberId === QUO_PHONE_ID) {
+    console.log('[alex] Skipping — Ashley channel (quo-ashley-webhook handles)')
+    return new Response(JSON.stringify({ skipped: true, reason: 'ashley_channel' }), { status: 200, headers: CORS })
+  }
+
   const fromPhone     = normalizePhone(messageData.from || '')
   // Security audit #10: cap message body at 2000 chars to prevent cost-exhaustion
   // attacks (long MMS body blown up × Opus price × 5 tool loops). 99.9% of real
@@ -2921,7 +2930,7 @@ Deno.serve(async (req) => {
       .from('contacts').select('name').eq('phone', fromPhone).limit(1).maybeSingle()
     const wipedFirstName = (postWipeContact?.name || '').split(' ')[0]?.trim() || ''
     const greeting = wipedFirstName ? `Hi ${wipedFirstName}` : 'Hey'
-    const canonicalOpener = `${greeting}, this is Alex with Backup Power Pro. Thanks for reaching out. I help Key, our licensed electrician, line up his installs. Before we put a quote together, what got you interested in finding a backup power solution? Reply STOP to opt out.`
+    const canonicalOpener = `${greeting}, this is Alex with Backup Power Pro. Thanks for reaching out! To provide an accurate quote, I will need a picture of your main electrical panel and breakers. No rush at all, just send it here whenever you get the chance. Reply STOP to opt out.`
 
     // Persist the opener as the assistant's first turn so subsequent inbound
     // replies build on it (same pattern quo-ai-new-lead uses for real form leads).
