@@ -865,11 +865,14 @@ const STATES = {
   },
 
   STOPPED: {
-    intent: null,  // no outbound after STOP — TCPA
+    intent: null,  // no further outbound after confirmation — TCPA
     fallback: () => null,
     transitions: {},
     terminal: true,
-    onEnter: { dnc: true },
+    onEnter: {
+      dnc: true,
+      one_shot_outbound: "Got it. Removed from our list, you won't hear from us again.",
+    },
   },
 };
 
