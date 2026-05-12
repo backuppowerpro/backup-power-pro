@@ -68,7 +68,7 @@ async function fireMetaCAPI(payload: any): Promise<void> {
       custom_data: {
         content_name:     'generator-inlet-quote',
         content_category: 'generator-installation',
-        value:    1500,
+        value:    1197,
         currency: 'USD',
       },
     }],

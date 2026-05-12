@@ -37,11 +37,14 @@ export function timingSafeEqual(a: string, b: string): boolean {
 }
 
 // Accept either a Bearer token in Authorization OR an apikey header, and
-// match it against SUPABASE_SERVICE_ROLE_KEY. Returns a 401 Response if
-// the check fails, or null when the caller is authorized to proceed.
+// match it against SUPABASE_SERVICE_ROLE_KEY (legacy JWT, auto-injected by
+// Supabase) OR BPP_CRON_SECRET (the new sb_secret_... format key used by
+// all pg_cron jobs). Returns a 401 Response if the check fails, or null
+// when the caller is authorized to proceed.
 export function requireServiceRole(req: Request): Response | null {
-  const expected = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-  if (!expected) {
+  const legacy = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+  const cronKey = Deno.env.get('BPP_CRON_SECRET') || ''
+  if (!legacy && !cronKey) {
     // Server misconfigured — fail closed.
     return new Response(JSON.stringify({ error: 'server misconfig' }), {
       status: 500,
@@ -51,8 +54,11 @@ export function requireServiceRole(req: Request): Response | null {
   const auth = req.headers.get('authorization') || ''
   const apikey = req.headers.get('apikey') || ''
   const bearer = auth.replace(/^Bearer\s+/i, '').trim()
-  if (timingSafeEqual(bearer, expected)) return null
-  if (timingSafeEqual(apikey, expected)) return null
+  for (const k of [legacy, cronKey]) {
+    if (!k) continue
+    if (timingSafeEqual(bearer, k)) return null
+    if (timingSafeEqual(apikey, k)) return null
+  }
   return jsonUnauthorized()
 }
 
