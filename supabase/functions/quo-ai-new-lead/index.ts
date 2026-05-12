@@ -512,12 +512,9 @@ Deno.serve(async (req) => {
   if (!alexOptIn) {
     console.log('[new-lead] Sending panel photo text via Twilio to ***', normalizedPhone.slice(-4))
     const isDojo = normalizedPhone.startsWith('+1800555')
-    const openerPromise = (async () => {
-      await new Promise(r => setTimeout(r, 15000 + Math.floor(Math.random() * 5000)))
-      if (isDojo) {
-        console.log('[bg] DRY RUN — skipping panel photo SMS to dojo phone', normalizedPhone)
-        return
-      }
+    if (isDojo) {
+      console.log('[new-lead] DRY RUN — skipping panel photo SMS to dojo phone', normalizedPhone)
+    } else {
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!
         const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -528,30 +525,22 @@ Deno.serve(async (req) => {
         })
         if (!smsRes.ok) {
           const errText = await smsRes.text()
-          console.error('[bg] send-sms failed:', smsRes.status, errText)
+          console.error('[new-lead] send-sms failed:', smsRes.status, errText)
+        } else {
+          console.log('[new-lead] panel photo SMS sent successfully')
         }
 
-        // Queue a 48-hour follow-up nudge if they don't reply
-        const supabaseClient = (await import('https://esm.sh/@supabase/supabase-js@2')).createClient(
-          supabaseUrl, serviceKey
-        )
+        // Queue 48-hour follow-up nudge
         const sendAfter = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
-        await supabaseClient.from('follow_up_queue').insert({
+        await supabase.from('follow_up_queue').insert({
           contact_id: contact.id,
           stage: 1,
           send_after: sendAfter,
-        }).then(() => {}, (e: unknown) => console.error('[bg] follow_up_queue insert failed:', e))
-        console.log(`[bg] follow_up_queue entry created, fires at ${sendAfter}`)
+        }).then(() => console.log(`[new-lead] follow_up_queue entry created, fires at ${sendAfter}`),
+                (e: unknown) => console.error('[new-lead] follow_up_queue insert failed:', e))
       } catch (err) {
-        console.error('[bg] panel photo SMS failed:', err)
+        console.error('[new-lead] panel photo SMS failed:', err)
       }
-    })()
-    // @ts-expect-error
-    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
-      // @ts-expect-error
-      EdgeRuntime.waitUntil(openerPromise)
-    } else {
-      openerPromise.catch(e => console.error('[bg] opener top-level failed:', e))
     }
     return new Response(JSON.stringify({
       success: true, contactId: contact.id, alex: null, reason: 'panel_photo_text_sent',
