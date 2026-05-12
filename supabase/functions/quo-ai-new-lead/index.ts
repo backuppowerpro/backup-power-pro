@@ -502,53 +502,43 @@ Deno.serve(async (req) => {
   } else if (ROLLOUT_PCT >= 100) {
     inRolloutBucket = true
   }
-  const alexOptIn = !TEST_MODE || normalizedPhone === KEY_PHONE || TEST_ALLOWLIST.includes(normalizedPhone) || inRolloutBucket
+  // Alex disabled 2026-05-12 per Key directive. All leads get the panel photo
+  // text via Twilio (send-sms). No bot_state set, no automated follow-up.
+  const alexOptIn = false
   if (!alexOptIn) {
-    console.log('[new-lead] TEST_MODE — static holding SMS for non-allowlisted phone ***', normalizedPhone.slice(-4))
-    // Static holding-message — identifies brand (CTIA 10DLC compliant),
-    // confirms receipt, sets expectation, includes STOP opt-out.
-    const holdingMsg = `Hi ${firstName || 'there'}, thanks for reaching out to Backup Power Pro. Key, our licensed electrician, got your message and will follow up as soon as possible. Reply STOP to opt out.`
-    const isDojoHolding = normalizedPhone.startsWith('+1800555')
-    const holdingPromise = (async () => {
-      // Small typing delay so it feels like a real response, not an instant auto-reply.
+    console.log('[new-lead] Sending panel photo text via Twilio to ***', normalizedPhone.slice(-4))
+    const isDojo = normalizedPhone.startsWith('+1800555')
+    const openerPromise = (async () => {
       await new Promise(r => setTimeout(r, 6000 + Math.floor(Math.random() * 6000)))
-      let quoMsgId: string | null = null
-      // Apr 29: skip OpenPhone send for dojo test phones (+1800555). They
-      // don't exist in real telecom and failed sends count against BPP's
-      // OpenPhone account.
-      if (isDojoHolding) {
-        console.log('[bg] DRY RUN — skipping holding SMS to dojo phone', normalizedPhone)
-        quoMsgId = `dojo-dry-holding-${Date.now()}`
-      } else {
-        try {
-          const quoRes = await fetch('https://api.openphone.com/v1/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': QUO_API_KEY },
-            body: JSON.stringify({ from: QUO_PHONE_ID, to: [normalizedPhone], content: holdingMsg }),
-          })
-          const quoData = await quoRes.json()
-          quoMsgId = quoData.data?.id || null
-        } catch (err) {
-          console.error('[bg] holding SMS send failed:', err)
-        }
+      if (isDojo) {
+        console.log('[bg] DRY RUN — skipping panel photo SMS to dojo phone', normalizedPhone)
+        return
       }
-      await supabase.from('messages').insert({
-        contact_id: contact.id,
-        direction: 'outbound',
-        body: holdingMsg,
-        sender: 'ai',
-        quo_message_id: quoMsgId,
-      }).then(() => {}, () => {})
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        const smsRes = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ contactId: contact.id, body: openerText }),
+        })
+        if (!smsRes.ok) {
+          const errText = await smsRes.text()
+          console.error('[bg] send-sms failed:', smsRes.status, errText)
+        }
+      } catch (err) {
+        console.error('[bg] panel photo SMS failed:', err)
+      }
     })()
     // @ts-expect-error
     if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
       // @ts-expect-error
-      EdgeRuntime.waitUntil(holdingPromise)
+      EdgeRuntime.waitUntil(openerPromise)
     } else {
-      holdingPromise.catch(e => console.error('[bg] holding top-level failed:', e))
+      openerPromise.catch(e => console.error('[bg] opener top-level failed:', e))
     }
     return new Response(JSON.stringify({
-      success: true, contactId: contact.id, alex: null, reason: 'test_mode_static_holding',
+      success: true, contactId: contact.id, alex: null, reason: 'panel_photo_text_sent',
     }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } })
   }
 

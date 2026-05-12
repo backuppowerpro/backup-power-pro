@@ -57,6 +57,8 @@ Deno.serve(async (req) => {
   // can POST a fake inbound SMS and pollute the CRM / fire Alex replies
   // to attacker-controlled numbers.
   const twAuth = Deno.env.get('TWILIO_AUTH_TOKEN')
+  const sigHeader = req.headers.get('x-twilio-signature') || ''
+  console.log(`[twilio-webhook] sig-debug url=${req.url} sig-present=${!!sigHeader} token-set=${!!twAuth}`)
   const sigOk = await verifyTwilioSignature(req, rawBody, twAuth)
   if (!sigOk) {
     console.warn('[twilio-webhook] signature verification FAILED — rejecting')
@@ -236,7 +238,7 @@ Deno.serve(async (req) => {
           // 15s webhook timeout. Decouple by returning TwiML immediately
           // and using EdgeRuntime.waitUntil so the bot-engine call survives
           // after this function returns its response.
-          const dispatchPromise = fetch(`${SUPABASE_URL_LOCAL}/functions/v1/bot-engine`, {
+          const dispatchPromise = fetch(`${SUPABASE_URL_LOCAL}/functions/v1/ashley-v2`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${SUPABASE_SERVICE_KEY_LOCAL}`,
@@ -244,17 +246,11 @@ Deno.serve(async (req) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              trigger: 'inbound_message',
               contact_id: botContact.id,
-              message_sid: messageSid,
               message_body: body,
               media_urls: numMedia > 0 ? mediaUrls : undefined,
-              media_types: numMedia > 0
-                ? Array.from({ length: numMedia }).map((_, i) =>
-                    params.get(`MediaContentType${i}`) || 'image/jpeg')
-                : undefined,
             }),
-          }).catch(e => console.error('[ashley-route] bot-engine dispatch failed', e))
+          }).catch(e => console.error('[ashley-route] ashley-v2 dispatch failed', e))
           // Keep the dispatch alive past response return.
           try { (globalThis as any).EdgeRuntime?.waitUntil?.(dispatchPromise) } catch (_) { /* shim absent */ }
           // recordProcessed marks the lock as replied so duplicate webhooks
@@ -318,46 +314,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── FORWARD TO ALEX (fire-and-forget) ─────────────────────────────────────
-  // Before the Quo→Twilio port, OpenPhone webhooked alex-agent directly.
-  // After the port, inbounds land here and Alex never saw them. Bridge the
-  // gap by POSTing an OpenPhone-shaped payload to alex-agent, so the same
-  // code path (TEST_MODE, DNC, frustration detector, memory briefing,
-  // turn-reflection, vision classification, etc.) runs regardless of carrier.
-  //
-  // We don't await this — the webhook returns TwiML immediately so Twilio
-  // doesn't retry. Alex's reply goes out through Alex's own send path.
-  try {
-    const mediaArr = numMedia > 0
-      ? Array.from({ length: numMedia }).map((_, i) => ({
-          url: params.get(`MediaUrl${i}`) || '',
-          type: params.get(`MediaContentType${i}`) || 'image/jpeg',
-        })).filter(m => m.url)
-      : undefined
+  // Alex forward removed 2026-05-12 per Key directive. Alex is off.
 
-    const forwardPayload = {
-      type: 'message.received',
-      data: {
-        object: {
-          from:      from,
-          to:        [params.get('To') || ''],
-          body:      body || '',
-          id:        messageSid,
-          createdAt: new Date().toISOString(),
-          ...(mediaArr && mediaArr.length > 0 ? { media: mediaArr } : {}),
-        },
-      },
-    }
-    const sr = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    fetch('https://reowtzedjflwmlptupbk.supabase.co/functions/v1/alex-agent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sr}` },
-      body: JSON.stringify(forwardPayload),
-    }).catch((e) => console.error('[twilio-webhook] alex forward failed:', e))
-  } catch (err) {
-    console.error('[twilio-webhook] alex forward construction failed:', err)
-  }
-
-  // Return empty TwiML — no auto-reply (Alex handles replies async above)
+  // Return empty TwiML — no auto-reply
   return twiml()
 })
