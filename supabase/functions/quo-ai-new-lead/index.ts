@@ -285,6 +285,10 @@ Deno.serve(async (req) => {
         consent_ip: consentIp || null,
         consent_ua: consentUa || null,
         consent_page: consentPage || null,
+        // Attribution — stored for funnel/close-rate analysis
+        lead_fbclid: sanitize(rawBody.fbclid, 200) || null,
+        lead_source: sanitize(rawBody.source, 100) || null,
+        lead_utm_content: sanitize(rawBody.utm_content, 100) || null,
       })
       .select()
       .single()
@@ -526,6 +530,18 @@ Deno.serve(async (req) => {
           const errText = await smsRes.text()
           console.error('[bg] send-sms failed:', smsRes.status, errText)
         }
+
+        // Queue a 48-hour follow-up nudge if they don't reply
+        const supabaseClient = (await import('https://esm.sh/@supabase/supabase-js@2')).createClient(
+          supabaseUrl, serviceKey
+        )
+        const sendAfter = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+        await supabaseClient.from('follow_up_queue').insert({
+          contact_id: contact.id,
+          stage: 1,
+          send_after: sendAfter,
+        }).then(() => {}, (e: unknown) => console.error('[bg] follow_up_queue insert failed:', e))
+        console.log(`[bg] follow_up_queue entry created, fires at ${sendAfter}`)
       } catch (err) {
         console.error('[bg] panel photo SMS failed:', err)
       }

@@ -208,6 +208,22 @@ Deno.serve(async (req) => {
 
   console.log(`[twilio-webhook] saved inbound from ${contact.name || contact.id}`)
 
+  // Advance stage 1 → 2 on first reply and cancel any pending follow-up nudge.
+  // Both are best-effort — a failure here must never block the response.
+  try {
+    if ((contact.stage || 1) === 1) {
+      await supabase.from('contacts').update({ stage: 2 }).eq('id', contact.id).eq('stage', 1)
+    }
+    await supabase
+      .from('follow_up_queue')
+      .update({ cancelled_at: new Date().toISOString() })
+      .eq('contact_id', contact.id)
+      .is('sent_at', null)
+      .is('cancelled_at', null)
+  } catch (e) {
+    console.error('[twilio-webhook] stage/queue update failed:', e)
+  }
+
   // v10.1.30 — Ashley gated routing. If the sender is on the Ashley
   // allowlist AND has an active bot_state, dispatch to bot-engine instead
   // of falling through to alex-agent. Purely additive: when the gate is
