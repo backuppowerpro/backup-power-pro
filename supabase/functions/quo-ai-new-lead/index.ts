@@ -479,7 +479,7 @@ Deno.serve(async (req) => {
   // customer knows exactly what to do next. alex-agent picks up from the reply.
   const alexSessionId = crypto.randomUUID()
   const variant = 'D'
-  const openerText = `${hi}, this is Key with Backup Power Pro. Thanks for reaching out! To provide an accurate quote, I will need a picture of your main electrical panel and breakers. No rush at all, just send it here whenever you get the chance. Reply STOP to opt out.`
+  const openerText = `${hi}, this is Key with Backup Power Pro. Got your message. To put together an accurate quote I just need one photo: your main electrical panel and breakers. No rush at all, send it whenever you get a chance.\n\nLicensed electrician serving Greenville, Spartanburg, and Pickens. Reply STOP to opt out.`
 
   // TEST_MODE gate — parity with alex-agent. Real clients don't get the
   // full Alex conversation yet; only Key's own phone (or smoke-test
@@ -509,7 +509,7 @@ Deno.serve(async (req) => {
     console.log('[new-lead] Sending panel photo text via Twilio to ***', normalizedPhone.slice(-4))
     const isDojo = normalizedPhone.startsWith('+1800555')
     const openerPromise = (async () => {
-      await new Promise(r => setTimeout(r, 6000 + Math.floor(Math.random() * 6000)))
+      await new Promise(r => setTimeout(r, 15000 + Math.floor(Math.random() * 5000)))
       if (isDojo) {
         console.log('[bg] DRY RUN — skipping panel photo SMS to dojo phone', normalizedPhone)
         return
