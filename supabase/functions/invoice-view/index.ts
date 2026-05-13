@@ -47,8 +47,11 @@ Deno.serve(async (req: Request) => {
     proposal = p || null
   }
 
-  // Bump viewed_at (best-effort; fire-and-forget).
-  sb.from('invoices').update({ viewed_at: new Date().toISOString() }).eq('id', invoice.id).then(() => {}, () => {})
+  // Bump viewed_at + view_count (best-effort; fire-and-forget).
+  sb.from('invoices')
+    .update({ viewed_at: new Date().toISOString(), view_count: (invoice.view_count ?? 0) + 1 })
+    .eq('id', invoice.id)
+    .then(() => {}, () => {})
 
   return new Response(JSON.stringify({ invoice, proposal }), {
     status: 200, headers: { ...CORS, 'Content-Type': 'application/json' },
