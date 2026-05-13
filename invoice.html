@@ -92,7 +92,7 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 /* BUTTONS */
 .btn-pay{width:100%;padding:16px;background:var(--gold);color:var(--navy);border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
 .btn-pay:hover{filter:brightness(1.05);transform:translateY(-1px);box-shadow:0 4px 16px rgba(255,186,0,.3)}
-.btn-pay-card{width:100%;padding:13px;background:#fff;color:var(--navy);border:1.5px solid #d1d5db;border-radius:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;color:#6b7280}
+.btn-pay-card{width:100%;padding:13px;background:#fff;color:#6b7280;border:1.5px solid #d1d5db;border-radius:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
 .btn-pay-card:hover{border-color:var(--navy);color:var(--navy)}
 .ach-badge{display:inline-block;background:#dcfce7;color:#15803d;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:6px;letter-spacing:.3px;vertical-align:middle}
 .dl-btn{width:100%;padding:14px;background:#fff;color:var(--navy);border:2px solid var(--navy);border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
@@ -175,6 +175,10 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 .checkout-modal-scroll{overflow-y:auto;flex:1;padding:0 24px 28px}
 #checkout-container{min-height:120px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* TOAST */
+.inv-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;padding:12px 22px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .2s,transform .2s;z-index:2000;white-space:nowrap;pointer-events:none}
+.inv-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 <!-- PostHog — customer-facing invoice / deposit checkout tracking. Closes
      the bottom of the ad→lead→quote→deposit funnel. Pairs with
@@ -268,10 +272,10 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 
 <!-- Embedded Checkout Modal -->
 <div class="checkout-overlay" id="checkout-overlay" onclick="if(event.target===this)closeCheckout()">
-  <div class="checkout-modal">
+  <div class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-modal-title">
     <div class="checkout-modal-header">
-      <div class="checkout-modal-title">Secure Payment</div>
-      <button class="checkout-close" onclick="closeCheckout()">&#x2715;</button>
+      <div class="checkout-modal-title" id="checkout-modal-title">Secure Payment</div>
+      <button class="checkout-close" onclick="closeCheckout()" aria-label="Close payment modal">&#x2715;</button>
     </div>
     <div class="checkout-modal-scroll">
       <div id="checkout-container"></div>
@@ -293,6 +297,23 @@ html,body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:va
 const SUPABASE_URL = 'https://reowtzedjflwmlptupbk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_4tYd9eFAYCTjnoKl1hbBBg_yyO9-vMB';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let _toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('inv-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'inv-toast';
+    t.className = 'inv-toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  clearTimeout(_toastTimer);
+  requestAnimationFrame(() => {
+    t.classList.add('show');
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+  });
+}
 
 let INV = null; // invoice data
 let LINKED_PROPOSAL = null; // linked proposal data (if any)
@@ -567,8 +588,8 @@ function renderInvoice() {
 
     <!-- What You're Getting -->
     <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px">
-      <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Here's What's Included in Your Install</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+      <div style="font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;text-align:center">Here's What's Included in Your Install</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px">
         ${[
           ['⚡','Generator inlet box','Exterior, weather-rated'],
           ['🔒','Interlock kit','UL-listed, code-compliant'],
@@ -747,7 +768,7 @@ let _embeddedCheckout = null;
 
 // prefer_ach: true = show bank transfer first (default), false = card only (tap-to-pay mode)
 async function payOnline(prefer_ach = true) {
-  if (new URLSearchParams(window.location.search).get('preview') === '1') { alert('Preview mode — payment is disabled.'); return; }
+  if (new URLSearchParams(window.location.search).get('preview') === '1') { showToast('Preview mode — payment is disabled.'); return; }
 
   const btn = prefer_ach ? document.querySelector('.btn-pay') : document.querySelector('.btn-pay-card');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span style="opacity:.7">Opening checkout…</span>'; }
@@ -787,7 +808,7 @@ async function payOnline(prefer_ach = true) {
   } catch (err) {
     closeCheckout();
     if (btn) { btn.disabled = false; }
-    alert('Payment unavailable right now. Please call or text (864) 400-5302.');
+    showToast('Payment unavailable right now — call or text (864) 400-5302.');
     console.error(err);
   }
 }
@@ -798,8 +819,7 @@ function closeCheckout() {
     _embeddedCheckout.destroy();
     _embeddedCheckout = null;
   }
-  const btn = document.querySelector('.btn-pay');
-  if (btn) btn.disabled = false;
+  document.querySelectorAll('.btn-pay, .btn-pay-card').forEach(b => { b.disabled = false; });
 }
 
 // ── DOWNLOAD INVOICE PDF ────────────────────────────────────
