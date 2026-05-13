@@ -84,7 +84,7 @@ serve(async (req) => {
         payment_method_types: paymentMethods,
         payment_method_options: {
           us_bank_account: {
-            financial_connections: { permissions: ['payment'] },
+            financial_connections: { permissions: ['payment_method'] },
           },
         },
       })
@@ -103,7 +103,7 @@ serve(async (req) => {
         payment_method_types: paymentMethods,
         payment_method_options: {
           us_bank_account: {
-            financial_connections: { permissions: ['payment'] },
+            financial_connections: { permissions: ['payment_method'] },
           },
         },
       })
