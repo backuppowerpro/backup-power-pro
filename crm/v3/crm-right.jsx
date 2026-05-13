@@ -6400,8 +6400,12 @@ function AddressAutocomplete({ value, onChange, placeholder, style }) {
   React.useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const q = (value || '').trim();
-    if (q.length < 4 || q === lastQueriedRef.current) {
+    if (q.length < 4) {
       setHits([]);
+      lastQueriedRef.current = '';
+      return;
+    }
+    if (q === lastQueriedRef.current) {
       return;
     }
     debounceRef.current = setTimeout(async () => {
