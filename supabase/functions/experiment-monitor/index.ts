@@ -19,9 +19,15 @@
  *     for 3 days → ALERT
  *
  * EXP-2026-04-29-002 — Meta Advantage+ stays paused, Legacy active:
- *   - If Legacy daily CPL > $50 for 3 consecutive days → AUTO-PAUSE Legacy
- *   - If Legacy daily leads < 3 for 3 consecutive days → ALERT
- *   - If 7-day blended CPL <= $16 → ALERT (early-win signal)
+ *   CLOSED 2026-05-14. Superseded by EXP-2026-05-12-009 (May 12 audit
+ *   reactivated Advantage+ with new creative set). Monitor rules retired.
+ *
+ * EXP-2026-05-12-009 — May 2026 Advantage+ relaunch:
+ *   - If Advantage+ 3d CPL > $40 → ALERT (variant failing kill threshold)
+ *   - If Advantage+ 3d leads < 6 → ALERT (volume failing)
+ *   - If Advantage+ 7d CPL <= $25 AND leads >= 28 → ALERT (early-win signal)
+ *   - If Advantage+ unexpectedly PAUSED → ALERT
+ *   - If Legacy unexpectedly UNPAUSED (without registry update) → ALERT
  *
  * EXP-2026-04-29-003 — Hero copy A/B/C:
  *   - If any variant has form_started rate < 50% of control → AUTO-DISABLE that variant
@@ -164,37 +170,83 @@ async function checkExp001AlexRollout(sb: any, brainToken: string): Promise<Aler
   return alerts
 }
 
-async function checkExp002MetaAds(sb: any, brainToken: string): Promise<Alert[]> {
+async function checkExp009AdvantagePlusRelaunch(sb: any, brainToken: string): Promise<Alert[]> {
+  // Replaces the retired EXP-2026-04-29-002 check. Tracks the May 12 2026
+  // Advantage+ relaunch (new creative set + tightened placements). Design
+  // doc: wiki/Experiments/EXP-2026-05-12-009/DESIGN.md
   const alerts: Alert[] = []
   try {
-    // Read the wiki/Ads/Meta Performance.md? Or hit meta-control list?
-    // Simpler: query meta-control for current campaign status + use last 7d CPL from same data fetch-meta uses
     const campaigns = await callEdge('/functions/v1/meta-control?action=list_campaigns', brainToken)
-    const legacy = (campaigns.data || []).find((c: any) => c.name?.includes('Legacy'))
     const advPlus = (campaigns.data || []).find((c: any) => c.name?.includes('Advantage'))
+    const legacy = (campaigns.data || []).find((c: any) => c.name?.includes('Legacy'))
 
-    if (legacy && legacy.status === 'PAUSED') {
+    // The current variant expects Advantage+ ACTIVE. Surface if it flipped.
+    if (advPlus && advPlus.status === 'PAUSED') {
       alerts.push({
-        experiment_id: 'EXP-2026-04-29-002',
-        severity: 'low',
-        rule_fired: 'legacy_paused',
-        detail: 'Legacy campaign is currently PAUSED. No traffic flowing.',
-        action_required: 'Decide whether to resume or leave paused.',
+        experiment_id: 'EXP-2026-05-12-009',
+        severity: 'high',
+        rule_fired: 'advantage_plus_unexpectedly_paused',
+        detail: 'Advantage+ is PAUSED. EXP-009 variant requires it ACTIVE at ~$75/day.',
+        action_required: 'Verify intentional pause (decision-rule trip) OR re-activate.',
       })
     }
 
-    if (advPlus && advPlus.status === 'ACTIVE') {
+    // Legacy is expected paused. If it gets resumed, surface so the registry can be updated.
+    if (legacy && legacy.status === 'ACTIVE') {
       alerts.push({
-        experiment_id: 'EXP-2026-04-29-002',
-        severity: 'high',
-        rule_fired: 'advantage_plus_unexpectedly_active',
-        detail: 'Advantage+ campaign is ACTIVE despite EXP-002 saying it should stay paused due to 3.5x worse CPL.',
-        action_required: 'Verify intentional unpause, OR pause again.',
+        experiment_id: 'EXP-2026-05-12-009',
+        severity: 'med',
+        rule_fired: 'legacy_unexpectedly_active',
+        detail: 'Legacy campaign is ACTIVE. Either a parallel A/B was started or registry is out of date.',
+        action_required: 'Update Experiment Registry to reflect Legacy A/B, or pause Legacy.',
       })
+    }
+
+    // Pull 3d + 7d performance to evaluate kill / win rules.
+    try {
+      const perf3 = await callEdge('/functions/v1/meta-control?action=campaign_insights&days=3', brainToken)
+      const perf7 = await callEdge('/functions/v1/meta-control?action=campaign_insights&days=7', brainToken)
+      const advPerf3 = (perf3.data || []).find((c: any) => c.campaign_name?.includes('Advantage'))
+      const advPerf7 = (perf7.data || []).find((c: any) => c.campaign_name?.includes('Advantage'))
+
+      const cpl3 = advPerf3 ? parseFloat(advPerf3.cpl || '0') : 0
+      const leads3 = advPerf3 ? parseInt(advPerf3.leads || '0', 10) : 0
+      const cpl7 = advPerf7 ? parseFloat(advPerf7.cpl || '0') : 0
+      const leads7 = advPerf7 ? parseInt(advPerf7.leads || '0', 10) : 0
+
+      if (cpl3 > 40) {
+        alerts.push({
+          experiment_id: 'EXP-2026-05-12-009',
+          severity: 'high',
+          rule_fired: 'advantage_plus_cpl_kill_threshold',
+          detail: `Advantage+ 3d CPL = $${cpl3.toFixed(2)} (> $40 kill threshold).`,
+          action_required: 'Pause weakest creative(s) and re-evaluate. Consider rollback to Legacy posture.',
+        })
+      }
+      if (leads3 > 0 && leads3 < 6) {
+        alerts.push({
+          experiment_id: 'EXP-2026-05-12-009',
+          severity: 'med',
+          rule_fired: 'advantage_plus_low_volume',
+          detail: `Advantage+ 3d leads = ${leads3} (< 6 floor at $75/day spend).`,
+          action_required: 'Investigate delivery / audience pacing.',
+        })
+      }
+      if (cpl7 > 0 && cpl7 <= 25 && leads7 >= 28) {
+        alerts.push({
+          experiment_id: 'EXP-2026-05-12-009',
+          severity: 'low',
+          rule_fired: 'advantage_plus_early_win_signal',
+          detail: `Advantage+ 7d CPL = $${cpl7.toFixed(2)}, leads = ${leads7}. Win-signal thresholds met (CPL ≤ $25, leads ≥ 28).`,
+          action_required: 'Consider locking posture and proposing 25% budget scale-up to Key.',
+        })
+      }
+    } catch (_perfErr) {
+      // Performance fetch is best-effort — don't fail the entire check if meta-control doesn't expose insights here.
     }
   } catch (e) {
     alerts.push({
-      experiment_id: 'EXP-2026-04-29-002',
+      experiment_id: 'EXP-2026-05-12-009',
       severity: 'low',
       rule_fired: 'monitor_error',
       detail: `Could not query meta-control: ${sanitizeForLog(e, 200)}`,
@@ -270,19 +322,19 @@ Deno.serve(async (req: Request) => {
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
   // Run each experiment's checks
-  const [exp001Alerts, exp002Alerts, exp003Alerts] = await Promise.all([
+  const [exp001Alerts, exp009Alerts, exp003Alerts] = await Promise.all([
     checkExp001AlexRollout(sb, BRAIN).catch(e => [{
       experiment_id: 'EXP-2026-04-29-001', severity: 'med' as const, rule_fired: 'check_failed', detail: String(e),
     }]),
-    checkExp002MetaAds(sb, BRAIN).catch(e => [{
-      experiment_id: 'EXP-2026-04-29-002', severity: 'med' as const, rule_fired: 'check_failed', detail: String(e),
+    checkExp009AdvantagePlusRelaunch(sb, BRAIN).catch(e => [{
+      experiment_id: 'EXP-2026-05-12-009', severity: 'med' as const, rule_fired: 'check_failed', detail: String(e),
     }]),
     checkExp003HeroCopy(sb, BRAIN).catch(e => [{
       experiment_id: 'EXP-2026-04-29-003', severity: 'med' as const, rule_fired: 'check_failed', detail: String(e),
     }]),
   ])
 
-  const allAlerts = [...exp001Alerts, ...exp002Alerts, ...exp003Alerts]
+  const allAlerts = [...exp001Alerts, ...exp009Alerts, ...exp003Alerts]
 
   // Log critical / high alerts to sparky_inbox + sparky_memory
   for (const a of allAlerts) {
